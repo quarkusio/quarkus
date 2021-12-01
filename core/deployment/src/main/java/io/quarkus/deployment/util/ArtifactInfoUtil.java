@@ -27,7 +27,9 @@ public final class ArtifactInfoUtil {
      * The way this works is by depending on the pom.properties file that should be present in the deployment jar
      *
      * @return the result, or throws
+     * @deprecated use {@link #groupIdAndArtifactId(Class, CurateOutcomeBuildItem)}
      */
+    @Deprecated
     public static Map.Entry<String, String> groupIdAndArtifactId(Class<?> clazz) {
         return groupIdAndArtifactId(clazz, null);
     }
@@ -37,26 +39,26 @@ public final class ArtifactInfoUtil {
      * <p>
      * The way this works is by depending on the pom.properties file that should be present in the deployment jar
      *
+     * @param clazz the caller clazz. (must not be {@code null})
+     * @param curateOutcomeBuildItem the application model that gets searched for the caller clazz. optional
      * @return the result, or throws
      */
     public static Map.Entry<String, String> groupIdAndArtifactId(Class<?> clazz,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         try {
             URL codeLocation = clazz.getProtectionDomain().getCodeSource().getLocation();
-            if (codeLocation.toString().endsWith(".jar")) {
-                try (FileSystem fs = FileSystems.newFileSystem(Paths.get(codeLocation.toURI()),
-                        Thread.currentThread().getContextClassLoader())) {
-                    Entry<String, String> ret = groupIdAndArtifactId(fs);
-                    if (ret == null) {
-                        throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains "
-                                + clazz.getName() + " because the jar doesn't contain the necessary metadata");
-                    }
-                    return ret;
-                }
-            } else if (curateOutcomeBuildItem != null) {
-                // this is needed only for QuarkusDevModeTest inside Quarkus where the class is read from the corresponding directory
+            if (curateOutcomeBuildItem != null) {
                 Path path = Paths.get(codeLocation.toURI());
+                String pathAsString = path.toString();
+                // Workspace artifacts paths are resolved to the maven module, not the jar file
+                // If the clazz is inside a jar, but does not contain the artifact name, we have to open
+                // the jar to read the pom properties, which gets done as next attempt.
+                // This also acts as a fast path to prevent expensive path comparisons.
+                boolean isJar = pathAsString.endsWith(".jar");
                 for (ResolvedDependency i : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
+                    if (isJar && !pathAsString.contains(i.getArtifactId())) {
+                        continue;
+                    }
                     for (Path p : i.getResolvedPaths()) {
                         if (path.equals(p)) {
 
@@ -68,7 +70,19 @@ public final class ArtifactInfoUtil {
                         }
                     }
                 }
-                return new AbstractMap.SimpleEntry<>("unspecified", "unspecified");
+            }
+
+            if (codeLocation.toString().endsWith(".jar")) {
+                // Search inside the jar for pom properties, needed for workspace artifacts
+                try (FileSystem fs = FileSystems.newFileSystem(Paths.get(codeLocation.toURI()),
+                        Thread.currentThread().getContextClassLoader())) {
+                    Entry<String, String> ret = groupIdAndArtifactId(fs);
+                    if (ret == null) {
+                        throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains "
+                                + clazz.getName() + " because the jar doesn't contain the necessary metadata");
+                    }
+                    return ret;
+                }
             } else if ("file".equals(codeLocation.getProtocol())) {
                 // E.g. /quarkus/extensions/arc/deployment/target/classes/io/quarkus/arc/deployment/devconsole
                 // This can happen if you run an example app in dev mode

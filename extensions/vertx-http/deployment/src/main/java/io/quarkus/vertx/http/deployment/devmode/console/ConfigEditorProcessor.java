@@ -20,6 +20,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
@@ -38,7 +39,8 @@ public class ConfigEditorProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     public void config(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeTemplateProducer,
             List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
-            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         List<ConfigDescription> configDescriptions = new ArrayList<>();
         for (ConfigDescriptionBuildItem item : configDescriptionBuildItems) {
             configDescriptions.add(
@@ -52,12 +54,14 @@ public class ConfigEditorProcessor {
         }
 
         devConsoleRuntimeTemplateProducer.produce(new DevConsoleRuntimeTemplateInfoBuildItem("config",
-                new ConfigDescriptionsSupplier(configDescriptions)));
+                new ConfigDescriptionsSupplier(configDescriptions), this.getClass(), curateOutcomeBuildItem));
 
         devConsoleRuntimeTemplateProducer.produce(new DevConsoleRuntimeTemplateInfoBuildItem("hasDevServices",
                 new HasDevServicesSupplier(devServicesLauncherConfig.isPresent()
                         && devServicesLauncherConfig.get().getConfig() != null
-                        && !devServicesLauncherConfig.get().getConfig().isEmpty())));
+                        && !devServicesLauncherConfig.get().getConfig().isEmpty()),
+                this.getClass(),
+                curateOutcomeBuildItem));
     }
 
     @BuildStep

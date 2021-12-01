@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.ClassCreator;
@@ -263,13 +264,13 @@ public class SchedulerProcessor {
     @BuildStep
     @Record(value = STATIC_INIT, optional = true)
     public DevConsoleRouteBuildItem devConsole(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos,
-            SchedulerDevConsoleRecorder recorder) {
+            SchedulerDevConsoleRecorder recorder, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
-                new BeanLookupSupplier(SchedulerContext.class)));
+                new BeanLookupSupplier(SchedulerContext.class), this.getClass(), curateOutcomeBuildItem));
         infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("scheduler",
-                new BeanLookupSupplier(Scheduler.class)));
+                new BeanLookupSupplier(Scheduler.class), this.getClass(), curateOutcomeBuildItem));
         infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("configLookup",
-                recorder.getConfigLookup()));
+                recorder.getConfigLookup(), this.getClass(), curateOutcomeBuildItem));
         return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
     }
 

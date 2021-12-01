@@ -33,6 +33,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 
@@ -40,16 +41,17 @@ public class ArcDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
-    public DevConsoleRuntimeTemplateInfoBuildItem exposeArcContainer(ArcRecorder recorder) {
+    public DevConsoleRuntimeTemplateInfoBuildItem exposeArcContainer(ArcRecorder recorder,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         return new DevConsoleRuntimeTemplateInfoBuildItem("arcContainer",
-                new ArcContainerSupplier());
+                new ArcContainerSupplier(), this.getClass(), curateOutcomeBuildItem);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void monitor(ArcConfig config, BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfos,
             BuildProducer<AdditionalBeanBuildItem> beans, BuildProducer<AnnotationsTransformerBuildItem> annotationTransformers,
             CustomScopeAnnotationsBuildItem customScopes,
-            List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+            List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (!config.devMode.monitoringEnabled) {
             return;
         }
@@ -60,7 +62,7 @@ public class ArcDevConsoleProcessor {
         // Events
         runtimeInfos.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("eventsMonitor",
-                        new BeanLookupSupplier(EventsMonitor.class)));
+                        new BeanLookupSupplier(EventsMonitor.class), this.getClass(), curateOutcomeBuildItem));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(EventsMonitor.class));
         // Invocations
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
@@ -85,7 +87,7 @@ public class ArcDevConsoleProcessor {
             }
         }));
         runtimeInfos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("invocationsMonitor",
-                new BeanLookupSupplier(InvocationsMonitor.class)));
+                new BeanLookupSupplier(InvocationsMonitor.class), this.getClass(), curateOutcomeBuildItem));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

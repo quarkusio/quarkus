@@ -3,6 +3,8 @@ package io.quarkus.devtools.codestarts.quarkus;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language.JAVA;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
@@ -46,9 +48,20 @@ public class ReactiveMessagingCodestartIT {
     }
 
     @Test
-    void buildAll() throws Throwable {
+    @DisabledOnOs(OS.WINDOWS)
+    void buildKafka() throws Throwable {
         kafkaCodestartTest.buildAllProjects();
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void buildMQTT() throws Throwable {
         mqttCodestartTest.buildAllProjects();
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void buildAMQP() throws Throwable {
         amqpCodestartTest.buildAllProjects();
     }
 }

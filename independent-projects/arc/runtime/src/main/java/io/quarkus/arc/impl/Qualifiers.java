@@ -26,34 +26,34 @@ public final class Qualifiers {
     private Qualifiers() {
     }
 
-    static void verify(Collection<Annotation> qualifiers) {
+    static void verify(Collection<Annotation> qualifiers, Set<String> customQualifiers) {
         if (qualifiers.isEmpty()) {
             return;
         }
 
         if (qualifiers.size() == 1) {
-            verifyQualifier(qualifiers.iterator().next().annotationType());
+            verifyQualifier(qualifiers.iterator().next().annotationType(), customQualifiers);
         } else {
             Map<Class<? extends Annotation>, Integer> timesQualifierWasSeen = new HashMap<>();
             for (Annotation qualifier : qualifiers) {
-                verifyQualifier(qualifier.annotationType());
+                verifyQualifier(qualifier.annotationType(), customQualifiers);
                 timesQualifierWasSeen.compute(qualifier.annotationType(), TimesSeenBiFunction.INSTANCE);
             }
             checkQualifiersForDuplicates(timesQualifierWasSeen);
         }
     }
 
-    static void verify(Annotation... qualifiers) {
+    static void verify(Annotation[] qualifiers, Set<String> customQualifiers) {
         if (qualifiers.length == 0) {
             return;
         }
 
         if (qualifiers.length == 1) {
-            verifyQualifier(qualifiers[0].annotationType());
+            verifyQualifier(qualifiers[0].annotationType(), customQualifiers);
         } else {
             Map<Class<? extends Annotation>, Integer> timesQualifierWasSeen = new HashMap<>();
             for (Annotation qualifier : qualifiers) {
-                verifyQualifier(qualifier.annotationType());
+                verifyQualifier(qualifier.annotationType(), customQualifiers);
                 timesQualifierWasSeen.compute(qualifier.annotationType(), TimesSeenBiFunction.INSTANCE);
             }
             checkQualifiersForDuplicates(timesQualifierWasSeen);
@@ -145,7 +145,11 @@ public final class Qualifiers {
         }
     }
 
-    private static void verifyQualifier(Class<? extends Annotation> annotationType) {
+    private static void verifyQualifier(Class<? extends Annotation> annotationType, Set<String> customQualifiers) {
+        if (customQualifiers.contains(annotationType.getName())) {
+            return;
+        }
+
         if (!annotationType.isAnnotationPresent(Qualifier.class)) {
             throw new IllegalArgumentException("Annotation is not a qualifier: " + annotationType);
         }

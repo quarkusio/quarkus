@@ -9,6 +9,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -869,11 +870,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             //TODO: make this more pluggable
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();
+            Parameter[] parameters = invocationContext.getExecutable().getParameters();
             for (int i = 0; i < originalArguments.size(); i++) {
                 Object arg = originalArguments.get(i);
                 boolean cloneRequired = false;
                 Object replacement = null;
-                Class<?> argClass = invocationContext.getExecutable().getParameters()[i].getType();
+                Class<?> argClass = parameters[i].getType();
                 if (arg != null) {
                     Class<?> theclass = argClass;
                     while (theclass.isArray()) {

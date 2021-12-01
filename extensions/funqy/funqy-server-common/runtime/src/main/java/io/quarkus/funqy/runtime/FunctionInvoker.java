@@ -26,10 +26,13 @@ public class FunctionInvoker {
         this.method = method;
         if (method.getParameterCount() > 0) {
             parameterInjectors = new ArrayList<>(method.getParameterCount());
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            Type[] genericParameterTypes = method.getGenericParameterTypes();
+            Annotation[][] parameterAnnotations = method.getParameterAnnotations();
             for (int i = 0; i < method.getParameterCount(); i++) {
-                Type type = method.getGenericParameterTypes()[i];
-                Class clz = method.getParameterTypes()[i];
-                Annotation[] annotations = method.getParameterAnnotations()[i];
+                Type type = genericParameterTypes[i];
+                Class<?> clz = parameterTypes[i];
+                Annotation[] annotations = parameterAnnotations[i];
                 ValueInjector injector = ParameterInjector.createInjector(type, clz, annotations);
                 if (injector instanceof InputValueInjector) {
                     inputType = type;

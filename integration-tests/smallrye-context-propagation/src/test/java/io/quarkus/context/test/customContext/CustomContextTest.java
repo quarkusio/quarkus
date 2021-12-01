@@ -31,7 +31,7 @@ public class CustomContextTest {
 
     @Test
     public void testCustomContextPropagation() throws Exception {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
 
         // set something to custom context
         CustomContext.set("foo");

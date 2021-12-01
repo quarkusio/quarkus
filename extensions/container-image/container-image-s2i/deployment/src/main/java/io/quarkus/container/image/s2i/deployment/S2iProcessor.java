@@ -356,7 +356,7 @@ public class S2iProcessor {
     }
 
     private static void waitForBuildComplete(OpenShiftClient client, S2iConfig s2iConfig, String buildName, Closeable watch) {
-        Executor executor = Executors.newSingleThreadExecutor();
+        Executor executor = Executors.newFixedThreadPool(1);
         executor.execute(() -> {
             try {
                 client.builds().withName(buildName).waitUntilCondition(b -> !RUNNING.equalsIgnoreCase(b.getStatus().getPhase()),

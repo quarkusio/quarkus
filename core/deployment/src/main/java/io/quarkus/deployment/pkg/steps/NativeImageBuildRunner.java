@@ -58,7 +58,7 @@ public abstract class NativeImageBuildRunner {
             log.info(String.join(" ", buildCommand).replace("$", "\\$"));
             final Process process = ProcessUtil.launchProcessStreamStdOut(processBuilder, processInheritIODisabled);
             addShutdownHook(process);
-            ExecutorService executor = Executors.newSingleThreadExecutor();
+            ExecutorService executor = Executors.newFixedThreadPool(1);
             executor.submit(new ErrorReplacingProcessReader(process.getErrorStream(), outputDir.resolve("reports").toFile(),
                     errorReportLatch));
             executor.shutdown();

@@ -60,7 +60,7 @@ public class AsyncRequestFilterResource {
     @Path("async")
     @GET
     public CompletionStage<Response> async() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         CompletableFuture<Response> resp = new CompletableFuture<>();
         executor.submit(() -> {
             try {

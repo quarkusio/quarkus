@@ -295,7 +295,7 @@ public class PublisherSignatureTest {
 
     public static class Spy {
         List<Integer> items = new CopyOnWriteArrayList<>();
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
 
         public List<Integer> getItems() {
             return items;

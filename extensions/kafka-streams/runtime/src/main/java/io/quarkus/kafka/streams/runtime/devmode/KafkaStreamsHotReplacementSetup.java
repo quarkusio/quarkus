@@ -13,7 +13,7 @@ public class KafkaStreamsHotReplacementSetup implements HotReplacementSetup {
 
     private HotReplacementContext context;
     private volatile long nextUpdate;
-    private final Executor executor = Executors.newSingleThreadExecutor();
+    private final Executor executor = Executors.newFixedThreadPool(1);
 
     @Override
     public void setupHotDeployment(HotReplacementContext context) {

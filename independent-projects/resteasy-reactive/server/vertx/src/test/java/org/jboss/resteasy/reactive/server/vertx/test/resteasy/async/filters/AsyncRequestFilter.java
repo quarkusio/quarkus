@@ -33,14 +33,14 @@ public abstract class AsyncRequestFilter implements ResteasyReactiveContainerReq
             ctx.abortWith(Response.ok(name).build());
         } else if ("async-pass".equals(action)) {
             ctx.suspend();
-            ExecutorService executor = Executors.newSingleThreadExecutor();
+            ExecutorService executor = Executors.newFixedThreadPool(1);
             executor.submit(() -> ctx.resume());
         } else if ("async-pass-instant".equals(action)) {
             ctx.suspend();
             ctx.resume();
         } else if ("async-fail".equals(action)) {
             ctx.suspend();
-            ExecutorService executor = Executors.newSingleThreadExecutor();
+            ExecutorService executor = Executors.newFixedThreadPool(1);
             executor.submit(() -> ctx.abortWith(Response.ok(name).build()));
         } else if ("async-fail-instant".equals(action)) {
             ctx.suspend();
@@ -48,7 +48,7 @@ public abstract class AsyncRequestFilter implements ResteasyReactiveContainerReq
         } else if ("async-throw-late".equals(action)) {
             ctx.suspend();
             ServerRequestContext resteasyReactiveCallbackContext = ctx.getServerRequestContext();
-            ExecutorService executor = Executors.newSingleThreadExecutor();
+            ExecutorService executor = Executors.newFixedThreadPool(1);
             executor.submit(() -> {
                 try {
                     Thread.sleep(2000);

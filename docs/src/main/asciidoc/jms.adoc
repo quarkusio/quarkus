@@ -173,7 +173,7 @@ public class PriceConsumer implements Runnable {
     @Inject
     ConnectionFactory connectionFactory;
 
-    private final ExecutorService scheduler = Executors.newSingleThreadExecutor();
+    private final ExecutorService scheduler = Executors.newFixedThreadPool(1);
 
     private volatile String lastPrice;
 

@@ -60,7 +60,7 @@ public class ContextEndpoint {
     @GET
     @Path("/resteasy-tc")
     public CompletionStage<String> resteasyThreadContextTest(@Context UriInfo uriInfo) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
         return ret.thenApplyAsync(text -> {
             uriInfo.getAbsolutePath();
@@ -81,7 +81,7 @@ public class ContextEndpoint {
     @GET
     @Path("/servlet-tc")
     public CompletionStage<String> servletThreadContextTest(@Context UriInfo uriInfo) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
         return ret.thenApplyAsync(text -> {
             servletRequest.getContentType();
@@ -106,7 +106,7 @@ public class ContextEndpoint {
     @GET
     @Path("/arc-tc")
     public CompletionStage<String> arcThreadContextTest() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
 
         Assert.assertTrue(Arc.container().instance(RequestBean.class).isAvailable());
         RequestBean instance = Arc.container().instance(RequestBean.class).get();
@@ -137,7 +137,7 @@ public class ContextEndpoint {
     @GET
     @Path("/noarc-tc")
     public CompletionStage<String> noarcThreadContextTest() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         ThreadContext tc = ThreadContext.builder().cleared(ThreadContext.CDI).build();
         Assert.assertTrue(Arc.container().instance(RequestBean.class).isAvailable());
         RequestBean instance = Arc.container().instance(RequestBean.class).get();
@@ -182,7 +182,7 @@ public class ContextEndpoint {
     @GET
     @Path("/transaction-tc")
     public CompletionStage<String> transactionThreadContextTest() throws SystemException {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
 
         ContextEntity entity = new ContextEntity();

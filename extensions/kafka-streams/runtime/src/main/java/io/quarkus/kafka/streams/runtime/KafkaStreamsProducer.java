@@ -101,7 +101,7 @@ public class KafkaStreamsProducer {
                 runtimeConfig);
         this.kafkaAdminClient = Admin.create(getAdminClientConfig(kafkaStreamsProperties));
 
-        this.executorService = Executors.newSingleThreadExecutor();
+        this.executorService = Executors.newFixedThreadPool(1);
 
         this.kafkaStreams = initializeKafkaStreams(kafkaStreamsProperties, runtimeConfig, kafkaAdminClient, topology.get(),
                 kafkaClientSupplier, stateListener, globalStateRestoreListener, uncaughtExceptionHandlerListener,

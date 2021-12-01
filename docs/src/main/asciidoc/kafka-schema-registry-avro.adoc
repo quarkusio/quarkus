@@ -527,7 +527,7 @@ public class MovieResourceTest {
     }
 
     private ExecutorService startSendingMovies() {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
         executorService.execute(() -> {
             while (true) {
                 given()

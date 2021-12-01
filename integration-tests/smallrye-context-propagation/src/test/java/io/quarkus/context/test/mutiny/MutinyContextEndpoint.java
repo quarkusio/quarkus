@@ -49,7 +49,7 @@ public class MutinyContextEndpoint {
     @Inject
     HttpServletRequest servletRequest;
 
-    ExecutorService executor = Executors.newSingleThreadExecutor();
+    ExecutorService executor = Executors.newFixedThreadPool(1);
 
     @PreDestroy
     public void shutdown() {
@@ -173,7 +173,7 @@ public class MutinyContextEndpoint {
     @GET
     @Path("/arc-tc-uni")
     public Uni<String> arcContextPropagationWithThreadContext() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(1);
 
         Assert.assertTrue(Arc.container().instance(RequestBean.class).isAvailable());
         RequestBean instance = Arc.container().instance(RequestBean.class).get();

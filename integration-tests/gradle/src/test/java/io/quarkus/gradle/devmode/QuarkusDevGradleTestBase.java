@@ -34,7 +34,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         ExecutorService executor = null;
         final BuildResult[] buildResult = new BuildResult[1];
         try {
-            executor = Executors.newSingleThreadExecutor();
+            executor = Executors.newFixedThreadPool(1);
             quarkusDev = executor.submit(new Runnable() {
                 @Override
                 public void run() {

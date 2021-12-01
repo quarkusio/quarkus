@@ -419,7 +419,7 @@ public class ProcessorSignatureTest {
 
     public abstract static class Spy {
         List<String> items = new CopyOnWriteArrayList<>();
-        static ExecutorService executor = Executors.newSingleThreadExecutor();
+        static ExecutorService executor = Executors.newFixedThreadPool(1);
 
         public List<String> getItems() {
             return items;

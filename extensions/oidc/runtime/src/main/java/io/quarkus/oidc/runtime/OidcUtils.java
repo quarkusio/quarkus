@@ -143,7 +143,8 @@ public final class OidcUtils {
 
     static QuarkusSecurityIdentity validateAndCreateIdentity(
             RoutingContext vertxContext, TokenCredential credential,
-            TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo) {
+            TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo,
+            TokenIntrospection introspectionResult) {
 
         OidcTenantConfig config = resolvedContext.oidcConfig;
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
@@ -169,6 +170,7 @@ public final class OidcUtils {
         setRoutingContextAttribute(builder, vertxContext);
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);
+        setSecurityIdentityIntrospecton(builder, introspectionResult);
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
         setBlockinApiAttribute(builder, vertxContext);
         setTenantIdAttribute(builder, config);
@@ -205,7 +207,9 @@ public final class OidcUtils {
     }
 
     public static void setSecurityIdentityIntrospecton(Builder builder, TokenIntrospection introspectionResult) {
-        builder.addAttribute(INTROSPECTION_ATTRIBUTE, introspectionResult);
+        if (introspectionResult != null) {
+            builder.addAttribute(INTROSPECTION_ATTRIBUTE, introspectionResult);
+        }
     }
 
     public static void setSecurityIdentityConfigMetadata(QuarkusSecurityIdentity.Builder builder,

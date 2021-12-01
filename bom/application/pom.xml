@@ -136,6 +136,7 @@
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>
         <mutiny.version>1.2.0</mutiny.version>
         <kafka2.version>2.8.1</kafka2.version>
+        <snappy.version>1.1.8.1</snappy.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.12.13</scala.version>
@@ -3822,6 +3823,11 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>${snappy.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.avro</groupId>

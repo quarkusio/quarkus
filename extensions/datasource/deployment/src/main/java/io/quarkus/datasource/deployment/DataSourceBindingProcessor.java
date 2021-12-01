@@ -4,7 +4,7 @@ package io.quarkus.agroal.deployment;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.kubernetes.service.binding.spi.ServiceQualifierBuildItem;
+import io.quarkus.kubernetes.service.binding.spi.ServiceBindingQualifierBuildItem;
 
 public class DataSourceBindingProcessor {
 
@@ -12,7 +12,7 @@ public class DataSourceBindingProcessor {
     private static final String DEFAULT_DATASOURCE = "default";
 
     @BuildStep
-    public void process(DataSourcesBuildTimeConfig config, BuildProducer<ServiceQualifierBuildItem> bindings) {
+    public void process(DataSourcesBuildTimeConfig config, BuildProducer<ServiceBindingQualifierBuildItem> bindings) {
         config.defaultDataSource.dbKind.ifPresent(k -> {
             bindings.produce(createBuildItem(k, DEFAULT_DATASOURCE));
         });
@@ -24,7 +24,7 @@ public class DataSourceBindingProcessor {
         });
     }
 
-    private ServiceQualifierBuildItem createBuildItem(String dbKind, String name) {
-        return new ServiceQualifierBuildItem(dbKind, name);
+    private ServiceBindingQualifierBuildItem createBuildItem(String dbKind, String name) {
+        return new ServiceBindingQualifierBuildItem(dbKind, name);
     }
 }

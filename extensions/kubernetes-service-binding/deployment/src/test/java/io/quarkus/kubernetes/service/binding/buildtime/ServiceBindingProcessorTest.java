@@ -10,15 +10,16 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.kubernetes.service.binding.spi.ServiceQualifierBuildItem;
-import io.quarkus.kubernetes.service.binding.spi.ServiceRequirementBuildItem;
+import io.quarkus.kubernetes.service.binding.spi.ServiceBindingQualifierBuildItem;
+import io.quarkus.kubernetes.service.binding.spi.ServiceBindingRequirementBuildItem;
 
 class ServiceBindingProcessorTest {
 
     @Test
     public void testFullyAutomaticPostgresConfiguration() throws Exception {
-        Optional<ServiceRequirementBuildItem> requirement = createRequirement("app", new KubernetesServiceBindingConfig(),
-                new ServiceQualifierBuildItem("postgresql", "default"));
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement("app",
+                new KubernetesServiceBindingConfig(),
+                new ServiceBindingQualifierBuildItem("postgresql", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("postgres-operator.crunchydata.com/v1beta1", r.getApiVersion());
@@ -36,8 +37,8 @@ class ServiceBindingProcessorTest {
         userConfig.services.put("postgresql-default",
                 ServiceConfig.createNew().withName("my-postgresql").withBinding("custom-binding"));
 
-        Optional<ServiceRequirementBuildItem> requirement = createRequirement("app", userConfig,
-                new ServiceQualifierBuildItem("postgresql", "default"));
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement("app", userConfig,
+                new ServiceBindingQualifierBuildItem("postgresql", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("postgres-operator.crunchydata.com/v1beta1", r.getApiVersion());
@@ -58,7 +59,7 @@ class ServiceBindingProcessorTest {
                         .withKind("PostgresDB")
                         .withBinding("custom-binding"));
 
-        Optional<ServiceRequirementBuildItem> requirement = createRequirement("app", "my-postgresql", userConfig);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement("app", "my-postgresql", userConfig);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());
@@ -71,8 +72,9 @@ class ServiceBindingProcessorTest {
 
     @Test
     public void testFullyAutomaticMysqlConfiguration() throws Exception {
-        Optional<ServiceRequirementBuildItem> requirement = createRequirement("app", new KubernetesServiceBindingConfig(),
-                new ServiceQualifierBuildItem("mysql", "default"));
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement("app",
+                new KubernetesServiceBindingConfig(),
+                new ServiceBindingQualifierBuildItem("mysql", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("pxc.percona.com/v1-9-0", r.getApiVersion());
@@ -113,7 +115,7 @@ class ServiceBindingProcessorTest {
                         .withName("custom-name")
                         .withBinding("custom-binding"));
 
-        Optional<ServiceRequirementBuildItem> requirement = createRequirement("app", "my-mysql", userConfig);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement("app", "my-mysql", userConfig);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());
@@ -126,8 +128,9 @@ class ServiceBindingProcessorTest {
 
     @Test
     public void testFullyAutomaticMongoConfiguration() throws Exception {
-        Optional<ServiceRequirementBuildItem> requirement = createRequirement("app", new KubernetesServiceBindingConfig(),
-                new ServiceQualifierBuildItem("mongodb", "default"));
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement("app",
+                new KubernetesServiceBindingConfig(),
+                new ServiceBindingQualifierBuildItem("mongodb", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("psmdb.percona.com/v1-9-0", r.getApiVersion());
@@ -144,8 +147,8 @@ class ServiceBindingProcessorTest {
         userConfig.services = new HashMap<>();
         userConfig.services.put("mongodb-default", ServiceConfig.createNew().withName("my-mongo"));
 
-        Optional<ServiceRequirementBuildItem> requirement = createRequirement("app", userConfig,
-                new ServiceQualifierBuildItem("mongodb", "default"));
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement("app", userConfig,
+                new ServiceBindingQualifierBuildItem("mongodb", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("psmdb.percona.com/v1-9-0", r.getApiVersion());
@@ -167,7 +170,7 @@ class ServiceBindingProcessorTest {
                         .withName("custom-name")
                         .withBinding("custom-binding"));
 
-        Optional<ServiceRequirementBuildItem> requirement = createRequirement("app", "my-mongodb", userConfig);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement("app", "my-mongodb", userConfig);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());

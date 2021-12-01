@@ -5,14 +5,14 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * Build item that describes a kubernetes resource that the application needs to bind to.
  */
-public final class ServiceRequirementBuildItem extends MultiBuildItem {
+public final class ServiceBindingRequirementBuildItem extends MultiBuildItem {
 
     private final String binding;
     private final String apiVersion;
     private final String kind;
     private final String name;
 
-    public ServiceRequirementBuildItem(String binding, String apiVersion, String kind, String name) {
+    public ServiceBindingRequirementBuildItem(String binding, String apiVersion, String kind, String name) {
         this.binding = binding;
         this.apiVersion = apiVersion;
         this.kind = kind;

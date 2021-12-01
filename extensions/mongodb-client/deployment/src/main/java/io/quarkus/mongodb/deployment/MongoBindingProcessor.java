@@ -5,7 +5,7 @@ import java.util.List;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.kubernetes.service.binding.spi.ServiceQualifierBuildItem;
+import io.quarkus.kubernetes.service.binding.spi.ServiceBindingQualifierBuildItem;
 
 public class MongoBindingProcessor {
 
@@ -13,9 +13,9 @@ public class MongoBindingProcessor {
 
     @BuildStep
     public void process(MongoClientBuildTimeConfig config, List<MongoClientBuildItem> clients,
-            BuildProducer<ServiceQualifierBuildItem> bindings) {
+            BuildProducer<ServiceBindingQualifierBuildItem> bindings) {
         clients.forEach(client -> {
-            bindings.produce(new ServiceQualifierBuildItem(MONGO, client.getName()));
+            bindings.produce(new ServiceBindingQualifierBuildItem(MONGO, client.getName()));
         });
     }
 }

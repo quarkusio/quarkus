@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
-import io.quarkus.kubernetes.service.binding.spi.ServiceQualifierBuildItem;
-import io.quarkus.kubernetes.service.binding.spi.ServiceRequirementBuildItem;
+import io.quarkus.kubernetes.service.binding.spi.ServiceBindingQualifierBuildItem;
+import io.quarkus.kubernetes.service.binding.spi.ServiceBindingRequirementBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 
@@ -46,23 +46,22 @@ public class ServiceBindingProcessor {
     }
 
     @BuildStep
-    public List<ServiceRequirementBuildItem> createServiceBindingDecorators(ApplicationInfoBuildItem applicationInfo,
-            KubernetesServiceBindingConfig config, List<ServiceQualifierBuildItem> qualifiers) {
-        Map<String, ServiceRequirementBuildItem> requirements = new HashMap<>();
+    public List<ServiceBindingRequirementBuildItem> createServiceBindingDecorators(ApplicationInfoBuildItem applicationInfo,
+            KubernetesServiceBindingConfig config, List<ServiceBindingQualifierBuildItem> qualifiers) {
+        Map<String, ServiceBindingRequirementBuildItem> requirements = new HashMap<>();
 
         String applicationName = applicationInfo.getName();
         //First we add all user provided services
         config.services.forEach((key, s) -> {
-            System.out.println("Config with key:" + key);
             createRequirement(applicationName, key, config).ifPresent(r -> requirements.put(key, r));
         });
 
         //Then we try to make requirements out of qualifies for services not already provided by the user
         qualifiers.forEach(q -> {
-            Optional<ServiceRequirementBuildItem> requirement = createRequirement(applicationName, config, q);
+            Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement(applicationName, config, q);
             requirement.ifPresent(r -> {
-                String key = q.getKind() + "-" + q.getName();
-                requirements.putIfAbsent(key, r);
+                String id = q.getId();
+                requirements.putIfAbsent(id, r);
             });
         });
         return requirements.values().stream().collect(Collectors.toList());
@@ -70,7 +69,7 @@ public class ServiceBindingProcessor {
 
     @BuildStep
     public List<DecoratorBuildItem> createServiceBindingDecorators(KubernetesServiceBindingConfig serviceBindingConfig,
-            List<ServiceRequirementBuildItem> services, List<KubernetesResourceMetadataBuildItem> resources) {
+            List<ServiceBindingRequirementBuildItem> services, List<KubernetesResourceMetadataBuildItem> resources) {
         List<DecoratorBuildItem> result = new ArrayList<>();
         resources.stream()
                 .distinct()
@@ -85,7 +84,7 @@ public class ServiceBindingProcessor {
         return result;
     }
 
-    protected static Optional<ServiceRequirementBuildItem> createRequirement(String applicationName, String serviceKey,
+    protected static Optional<ServiceBindingRequirementBuildItem> createRequirement(String applicationName, String serviceKey,
             KubernetesServiceBindingConfig config) {
         String name = config.services != null && config.services.containsKey(serviceKey)
                 ? config.services.get(serviceKey).name.orElse(serviceKey)
@@ -94,7 +93,7 @@ public class ServiceBindingProcessor {
         return createRequirement(applicationName, serviceKey, serviceKey, name, config);
     }
 
-    protected static Optional<ServiceRequirementBuildItem> createRequirement(String applicationName, String serviceKey,
+    protected static Optional<ServiceBindingRequirementBuildItem> createRequirement(String applicationName, String serviceKey,
             String serviceId, String serviceName, KubernetesServiceBindingConfig config) {
         if (config.services != null && config.services.containsKey(serviceId)) {
             ServiceConfig provided = config.services.get(serviceId);
@@ -103,22 +102,23 @@ public class ServiceBindingProcessor {
             String kind = provided.kind.orElseGet(() -> getDefaultQualifiedKind(serviceKey).map(ServiceBindingProcessor::kind)
                     .orElseThrow(() -> new IllegalStateException("Failed to determing bindable service kind.")));
             //When a service is partically or fully configured, use the configured binding or fallback to the application name and service id combination.
-            return Optional.of(new ServiceRequirementBuildItem(provided.binding.orElse(applicationName + "-" + serviceId),
-                    apiVersion, kind, provided.name.orElse(serviceName)));
+            return Optional
+                    .of(new ServiceBindingRequirementBuildItem(provided.binding.orElse(applicationName + "-" + serviceId),
+                            apiVersion, kind, provided.name.orElse(serviceName)));
         }
         return Optional.empty();
     }
 
-    protected static Optional<ServiceRequirementBuildItem> createRequirement(String applicationName,
-            KubernetesServiceBindingConfig config, ServiceQualifierBuildItem qualifier) {
-        String serviceId = qualifier.getKind() + "-" + qualifier.getName();
+    protected static Optional<ServiceBindingRequirementBuildItem> createRequirement(String applicationName,
+            KubernetesServiceBindingConfig config, ServiceBindingQualifierBuildItem qualifier) {
+        String serviceId = qualifier.getId();
 
         if (config.services != null && config.services.containsKey(serviceId)) {
             return createRequirement(applicationName, qualifier.getKind(), serviceId, qualifier.getName(), config);
         } else if (DEFAULTS.containsKey(qualifier.getKind())) {
             String value = DEFAULTS.get(qualifier.getKind());
             //When no service is configured, we use as binding name the combination of kind and name.
-            return Optional.of(new ServiceRequirementBuildItem(applicationName + "-" + serviceId, apiVersion(value),
+            return Optional.of(new ServiceBindingRequirementBuildItem(applicationName + "-" + serviceId, apiVersion(value),
                     kind(value), serviceId));
         }
         return Optional.empty();

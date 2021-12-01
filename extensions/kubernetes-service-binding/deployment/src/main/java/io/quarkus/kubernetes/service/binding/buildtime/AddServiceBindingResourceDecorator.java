@@ -7,7 +7,7 @@ import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.dekorate.servicebinding.model.ServiceBindingBuilder;
 import io.dekorate.servicebinding.model.ServiceBindingSpecBuilder;
 import io.fabric8.kubernetes.api.model.KubernetesListFluent;
-import io.quarkus.kubernetes.service.binding.spi.ServiceRequirementBuildItem;
+import io.quarkus.kubernetes.service.binding.spi.ServiceBindingRequirementBuildItem;
 
 public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorator<KubernetesListFluent<?>> {
 
@@ -16,10 +16,10 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
     private final String kind;
     private final String name;
     private final KubernetesServiceBindingConfig config;
-    private final ServiceRequirementBuildItem service;
+    private final ServiceBindingRequirementBuildItem service;
 
     public AddServiceBindingResourceDecorator(String group, String version, String kind, String name,
-            KubernetesServiceBindingConfig config, ServiceRequirementBuildItem service) {
+            KubernetesServiceBindingConfig config, ServiceBindingRequirementBuildItem service) {
         this.group = group;
         this.version = version;
         this.kind = kind;

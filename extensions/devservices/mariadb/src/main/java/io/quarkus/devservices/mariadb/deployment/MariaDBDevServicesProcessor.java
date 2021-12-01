@@ -3,13 +3,13 @@ package io.quarkus.devservices.mariadb.deployment;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -29,15 +29,14 @@ public class MariaDBDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMariaDB(
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MARIADB, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout,
-                    boolean useTestContainersSharedNetwork) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusMariaDBContainer container = new QuarkusMariaDBContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent(), useTestContainersSharedNetwork);
+                        !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
@@ -67,15 +66,11 @@ public class MariaDBDevServicesProcessor {
 
         private String hostName = null;
 
-        public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
-                boolean useTestContainersSharedNetwork) {
+        public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
             super(DockerImageName.parse(imageName.orElse(MariaDBContainer.IMAGE + ":" + MariaDBDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MariaDBContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
-            if (useTestContainersSharedNetwork) {
-                withNetwork(Network.SHARED);
-            }
         }
 
         @Override
@@ -89,6 +84,8 @@ public class MariaDBDevServicesProcessor {
 
             if (fixedExposedPort.isPresent()) {
                 addFixedExposedPort(fixedExposedPort.getAsInt(), PORT);
+            } else {
+                addExposedPort(PORT);
             }
         }
 

@@ -1,7 +1,7 @@
 package io.quarkus.apicurio.registry.avro;
 
 import java.time.Duration;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -9,8 +9,6 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
-import org.testcontainers.utility.Base58;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.IsDockerWorking;
@@ -25,6 +23,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -60,7 +59,7 @@ public class DevServicesApicurioRegistryProcessor {
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public void startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
             ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devServicesConfiguration,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
@@ -82,7 +81,7 @@ public class DevServicesApicurioRegistryProcessor {
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
             apicurioRegistry = startApicurioRegistry(configuration, launchMode,
-                    devServicesSharedNetworkBuildItem.isPresent(), devServicesConfig.timeout);
+                    !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
             if (apicurioRegistry == null) {
                 compressor.close();
                 return;
@@ -254,7 +253,7 @@ public class DevServicesApicurioRegistryProcessor {
     }
 
     private static final class ApicurioRegistryContainer extends GenericContainer<ApicurioRegistryContainer> {
-        private final int port;
+        private final int fixedExposedPort;
         private final boolean useSharedNetwork;
 
         private String hostName = null;
@@ -262,15 +261,9 @@ public class DevServicesApicurioRegistryProcessor {
         private ApicurioRegistryContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
                 boolean useSharedNetwork) {
             super(dockerImageName);
-            this.port = fixedExposedPort;
+            this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
-            withNetwork(Network.SHARED);
-            if (useSharedNetwork) {
-                hostName = "kafka-" + Base58.randomString(5);
-                setNetworkAliases(Collections.singletonList(hostName));
-            } else {
-                withExposedPorts(APICURIO_REGISTRY_PORT);
-            }
+
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
@@ -283,8 +276,16 @@ public class DevServicesApicurioRegistryProcessor {
         @Override
         protected void configure() {
             super.configure();
-            if (port > 0 && !useSharedNetwork) {
-                addFixedExposedPort(port, APICURIO_REGISTRY_PORT);
+
+            if (useSharedNetwork) {
+                hostName = ConfigureUtil.configureSharedNetwork(this, "kafka");
+                return;
+            }
+
+            if (fixedExposedPort > 0) {
+                addFixedExposedPort(fixedExposedPort, APICURIO_REGISTRY_PORT);
+            } else {
+                addExposedPorts(APICURIO_REGISTRY_PORT);
             }
         }
 

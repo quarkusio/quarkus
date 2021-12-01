@@ -33,9 +33,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.Base58;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.IsDockerWorking;
@@ -50,6 +48,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
@@ -118,7 +117,7 @@ public class KeycloakDevServicesProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
     public KeycloakDevServicesConfigBuildItem startKeycloakContainer(
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devServices,
             Optional<OidcDevServicesBuildItem> oidcProviderBuildItem,
             KeycloakBuildTimeConfig config,
@@ -168,7 +167,7 @@ public class KeycloakDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "KeyCloak Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-            startResult = startContainer(devServicesSharedNetworkBuildItem.isPresent(), devServicesConfig.timeout);
+            startResult = startContainer(!devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
             if (startResult == null) {
                 compressor.close();
                 return null;
@@ -383,13 +382,9 @@ public class KeycloakDevServicesProcessor {
         @Override
         protected void configure() {
             super.configure();
+
             if (useSharedNetwork) {
-                // When a shared network is requested for the launched containers, we need to configure
-                // the container to use it. We also need to create a hostname that will be applied to the returned
-                // Keycloak URL
-                setNetwork(Network.SHARED);
-                hostName = "keycloak-" + Base58.randomString(5);
-                setNetworkAliases(Collections.singletonList(hostName));
+                hostName = ConfigureUtil.configureSharedNetwork(this, "keycloak");
             } else {
                 if (fixedExposedPort.isPresent()) {
                     addFixedExposedPort(fixedExposedPort.getAsInt(), KEYCLOAK_PORT);

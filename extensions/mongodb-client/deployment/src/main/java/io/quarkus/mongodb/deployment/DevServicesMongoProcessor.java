@@ -50,7 +50,7 @@ public class DevServicesMongoProcessor {
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public void startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devServices,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
@@ -102,7 +102,7 @@ public class DevServicesMongoProcessor {
                 loggingSetupBuildItem);
         try {
             startResult = startMongo(connectionName, currentCapturedProperties.get(connectionName),
-                    devServicesSharedNetworkBuildItem.isPresent(), globalDevServicesConfig.timeout);
+                    !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout);
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
@@ -314,6 +314,8 @@ public class DevServicesMongoProcessor {
 
             if (fixedExposedPort != null) {
                 addFixedExposedPort(fixedExposedPort, MONGODB_INTERNAL_PORT);
+            } else {
+                addExposedPort(MONGODB_INTERNAL_PORT);
             }
         }
 

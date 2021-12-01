@@ -30,8 +30,7 @@ public class H2DevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout,
-                    boolean useTestContainersSharedNetwork) {
+                    OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort",
                             port.isPresent() ? String.valueOf(port.getAsInt()) : "0");

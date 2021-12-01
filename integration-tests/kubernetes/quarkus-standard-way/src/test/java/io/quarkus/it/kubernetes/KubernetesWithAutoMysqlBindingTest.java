@@ -64,7 +64,7 @@ public class KubernetesWithAutoMysqlBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-mysql-binding-mysql-default");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-mysql-binding-mysql");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {
@@ -77,7 +77,7 @@ public class KubernetesWithAutoMysqlBindingTest {
                         assertThat(service.getGroup()).isEqualTo("pxc.percona.com");
                         assertThat(service.getVersion()).isEqualTo("v1-9-0");
                         assertThat(service.getKind()).isEqualTo("PerconaXtraDBCluster");
-                        assertThat(service.getName()).isEqualTo("mysql-default");
+                        assertThat(service.getName()).isEqualTo("mysql");
                     });
                 });
             });

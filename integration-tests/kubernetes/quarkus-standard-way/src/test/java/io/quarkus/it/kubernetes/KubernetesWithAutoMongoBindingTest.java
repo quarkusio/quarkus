@@ -63,7 +63,7 @@ public class KubernetesWithAutoMongoBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-mogno-binding-mongodb-default");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-mogno-binding-mongodb");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {
@@ -76,7 +76,7 @@ public class KubernetesWithAutoMongoBindingTest {
                         assertThat(service.getGroup()).isEqualTo("psmdb.percona.com");
                         assertThat(service.getVersion()).isEqualTo("v1-9-0");
                         assertThat(service.getKind()).isEqualTo("PerconaServerMongoDB");
-                        assertThat(service.getName()).isEqualTo("mongodb-default");
+                        assertThat(service.getName()).isEqualTo("mongodb");
                     });
                 });
             });

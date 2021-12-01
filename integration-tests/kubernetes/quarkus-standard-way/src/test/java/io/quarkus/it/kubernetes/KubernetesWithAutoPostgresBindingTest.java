@@ -64,7 +64,7 @@ public class KubernetesWithAutoPostgresBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-postgres-binding-postgresql-default");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-postgres-binding-postgresql");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {
@@ -77,7 +77,7 @@ public class KubernetesWithAutoPostgresBindingTest {
                         assertThat(service.getGroup()).isEqualTo("postgres-operator.crunchydata.com");
                         assertThat(service.getVersion()).isEqualTo("v1beta1");
                         assertThat(service.getKind()).isEqualTo("PostgresCluster");
-                        assertThat(service.getName()).isEqualTo("postgresql-default");
+                        assertThat(service.getName()).isEqualTo("postgresql");
                     });
                 });
             });

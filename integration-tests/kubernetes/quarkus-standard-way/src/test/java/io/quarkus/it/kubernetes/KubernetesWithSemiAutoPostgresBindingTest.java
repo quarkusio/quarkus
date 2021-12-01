@@ -64,7 +64,7 @@ public class KubernetesWithSemiAutoPostgresBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-semi-auto-postgres-binding-postgresql-default");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-semi-auto-postgres-binding-postgresql");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {
@@ -77,7 +77,7 @@ public class KubernetesWithSemiAutoPostgresBindingTest {
                         assertThat(service.getGroup()).isEqualTo("my.custom-operator.com");
                         assertThat(service.getVersion()).isEqualTo("v1alpha1");
                         assertThat(service.getKind()).isEqualTo("Postgres");
-                        assertThat(service.getName()).isEqualTo("postgresql-default");
+                        assertThat(service.getName()).isEqualTo("postgresql");
                     });
                 });
             });

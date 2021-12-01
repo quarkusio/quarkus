@@ -1344,14 +1344,14 @@ quarkus.datasource.db-kind=postgresql
 ----
 
 When the above configuration is provided and `quarkus-datasource`, `quarkus-jdbc-postgresql`, `quarkus-kubernetes` and `quarkus-kubernetes-service-binding` extensions are added to the application, then a `ServiceBinding` for `postgresql` will be generated.
-The generated `ServiceBinding` will bind to kubernetes resource with `apiVersion` and `kind` that matches the `postgresql` operator (see the table above) and `name` equal to `postgresql`. Since, the configured datasource is unamed, the `db-kind` with the `-default` is used.
+The generated `ServiceBinding` will bind to kubernetes resource with `apiVersion` and `kind` that matches the `postgresql` operator (see the table above) and `name` equal to `postgresql`. Since, the configured datasource is unamed, the `db-kind` is used.
 
 [source,yaml]
 ----
   services:
   - apiVersion: postgres-operator.crunchydata.com/v1beta1
     kind: PostgresCluster
-    name: postgresql-default
+    name: postgresql
 ----
 
 For named datasources, the name of the datasource is used instead:

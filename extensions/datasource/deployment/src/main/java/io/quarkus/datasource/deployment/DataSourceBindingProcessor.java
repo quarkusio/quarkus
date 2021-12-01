@@ -14,17 +14,13 @@ public class DataSourceBindingProcessor {
     @BuildStep
     public void process(DataSourcesBuildTimeConfig config, BuildProducer<ServiceBindingQualifierBuildItem> bindings) {
         config.defaultDataSource.dbKind.ifPresent(k -> {
-            bindings.produce(createBuildItem(k, DEFAULT_DATASOURCE));
+            bindings.produce(new ServiceBindingQualifierBuildItem(k, k, DEFAULT_DATASOURCE));
         });
 
         config.namedDataSources.forEach((n, c) -> {
             c.dbKind.ifPresent(dbKind -> {
-                bindings.produce(createBuildItem(dbKind, n));
+                bindings.produce(new ServiceBindingQualifierBuildItem(dbKind, n));
             });
         });
-    }
-
-    private ServiceBindingQualifierBuildItem createBuildItem(String dbKind, String name) {
-        return new ServiceBindingQualifierBuildItem(dbKind, name);
     }
 }

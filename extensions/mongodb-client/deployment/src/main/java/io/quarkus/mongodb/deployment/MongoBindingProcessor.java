@@ -10,12 +10,17 @@ import io.quarkus.kubernetes.service.binding.spi.ServiceBindingQualifierBuildIte
 public class MongoBindingProcessor {
 
     private static final String MONGO = "mongodb";
+    private static final String DEFAULT = "<default>";
 
     @BuildStep
     public void process(MongoClientBuildTimeConfig config, List<MongoClientBuildItem> clients,
             BuildProducer<ServiceBindingQualifierBuildItem> bindings) {
         clients.forEach(client -> {
-            bindings.produce(new ServiceBindingQualifierBuildItem(MONGO, client.getName()));
+            if (DEFAULT.equalsIgnoreCase(client.getName())) {
+                bindings.produce(new ServiceBindingQualifierBuildItem(MONGO, MONGO, client.getName()));
+            } else {
+                bindings.produce(new ServiceBindingQualifierBuildItem(MONGO, client.getName()));
+            }
         });
     }
 }

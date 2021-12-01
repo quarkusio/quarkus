@@ -19,6 +19,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.extension.gradle.dependency.DeploymentClasspathBuilder;
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
+import io.quarkus.extension.gradle.tasks.ValidateExtensionTask;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
@@ -26,7 +27,9 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     public static final String DEFAULT_DEPLOYMENT_PROJECT_NAME = "deployment";
     public static final String EXTENSION_CONFIGURATION_NAME = "quarkusExtension";
+
     public static final String EXTENSION_DESCRIPTOR_TASK_NAME = "extensionDescriptor";
+    public static final String VALIDATE_EXTENSION_TASK_NAME = "validateExtension";
 
     public static final String QUARKUS_ANNOTATION_PROCESSOR = "io.quarkus:quarkus-extension-processor";
 
@@ -39,6 +42,9 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     private void registerTasks(Project project, QuarkusExtensionConfiguration quarkusExt) {
         TaskContainer tasks = project.getTasks();
+        Configuration runtimeModuleClasspath = project.getConfigurations()
+                .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+
         TaskProvider<ExtensionDescriptorTask> extensionDescriptorTask = tasks.register(EXTENSION_DESCRIPTOR_TASK_NAME,
                 ExtensionDescriptorTask.class, task -> {
                     JavaPluginConvention convention = project.getConvention().getPlugin(JavaPluginConvention.class);
@@ -46,9 +52,14 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                     task.setOutputResourcesDir(mainSourceSet.getOutput().getResourcesDir());
                     task.setInputResourcesDir(mainSourceSet.getResources().getSourceDirectories().getAsPath());
                     task.setQuarkusExtensionConfiguration(quarkusExt);
-                    Configuration classpath = project.getConfigurations()
-                            .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-                    task.setClasspath(classpath);
+                    task.setClasspath(runtimeModuleClasspath);
+                });
+
+        TaskProvider<ValidateExtensionTask> validateExtensionTask = tasks.register(VALIDATE_EXTENSION_TASK_NAME,
+                ValidateExtensionTask.class, task -> {
+                    task.setRuntimeModuleClasspath(runtimeModuleClasspath);
+                    task.setQuarkusExtensionConfiguration(quarkusExt);
+                    task.onlyIf(t -> !quarkusExt.isValidationDisabled());
                 });
 
         project.getPlugins().withType(
@@ -67,6 +78,13 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
                 deploymentProject.getPlugins().withType(
                         JavaPlugin.class,
                         javaPlugin -> addAnnotationProcessorDependency(deploymentProject));
+
+                validateExtensionTask.configure(task -> {
+                    Configuration deploymentModuleClasspath = deploymentProject.getConfigurations()
+                            .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+                    task.setDeploymentModuleClasspath(deploymentModuleClasspath);
+                });
+
                 deploymentProject.getTasks().withType(Test.class, test -> {
                     test.useJUnitPlatform();
                     test.doFirst(task -> {
@@ -117,10 +135,14 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
         Project deploymentProject = project.getRootProject().findProject(deploymentProjectName);
         if (deploymentProject == null) {
-            project.getLogger().warn("Unable to find deployment project with name: " + deploymentProjectName
-                    + ". You can configure the deployment project name by setting the 'deploymentArtifact' property in the plugin extension.");
+            if (project.getParent() != null) {
+                deploymentProject = project.getParent().findProject(deploymentProjectName);
+            }
+            if (deploymentProject == null) {
+                project.getLogger().warn("Unable to find deployment project with name: " + deploymentProjectName
+                        + ". You can configure the deployment project name by setting the 'deploymentArtifact' property in the plugin extension.");
+            }
         }
-
         return deploymentProject;
     }
 

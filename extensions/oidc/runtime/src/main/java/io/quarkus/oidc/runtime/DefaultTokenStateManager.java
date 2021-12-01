@@ -31,13 +31,13 @@ public class DefaultTokenStateManager implements TokenStateManager {
             } else {
                 CodeAuthenticationMechanism.createCookie(routingContext,
                         oidcConfig,
-                        getAccessTokenCookieName(oidcConfig.getTenantId().get()),
+                        getAccessTokenCookieName(oidcConfig),
                         tokens.getAccessToken(),
                         routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
                 if (tokens.getRefreshToken() != null) {
                     CodeAuthenticationMechanism.createCookie(routingContext,
                             oidcConfig,
-                            getRefreshTokenCookieName(oidcConfig.getTenantId().get()),
+                            getRefreshTokenCookieName(oidcConfig),
                             tokens.getRefreshToken(),
                             routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
                 }
@@ -52,7 +52,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
                 if (tokens.getRefreshToken() != null) {
                     CodeAuthenticationMechanism.createCookie(routingContext,
                             oidcConfig,
-                            getRefreshTokenCookieName(oidcConfig.getTenantId().get()),
+                            getRefreshTokenCookieName(oidcConfig),
                             tokens.getRefreshToken(),
                             routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
                 }
@@ -110,20 +110,20 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private static ServerCookie getAccessTokenCookie(RoutingContext routingContext, OidcTenantConfig oidcConfig) {
-        return (ServerCookie) routingContext.request().getCookie(getAccessTokenCookieName(oidcConfig.getTenantId().get()));
+        return (ServerCookie) routingContext.request().getCookie(getAccessTokenCookieName(oidcConfig));
     }
 
     private static ServerCookie getRefreshTokenCookie(RoutingContext routingContext, OidcTenantConfig oidcConfig) {
-        return (ServerCookie) routingContext.request().getCookie(getRefreshTokenCookieName(oidcConfig.getTenantId().get()));
+        return (ServerCookie) routingContext.request().getCookie(getRefreshTokenCookieName(oidcConfig));
     }
 
-    private static String getAccessTokenCookieName(String tenantId) {
-        String cookieSuffix = CodeAuthenticationMechanism.getCookieSuffix(tenantId);
+    private static String getAccessTokenCookieName(OidcTenantConfig oidcConfig) {
+        String cookieSuffix = CodeAuthenticationMechanism.getCookieSuffix(oidcConfig);
         return SESSION_AT_COOKIE_NAME + cookieSuffix;
     }
 
-    private static String getRefreshTokenCookieName(String tenantId) {
-        String cookieSuffix = CodeAuthenticationMechanism.getCookieSuffix(tenantId);
+    private static String getRefreshTokenCookieName(OidcTenantConfig oidcConfig) {
+        String cookieSuffix = CodeAuthenticationMechanism.getCookieSuffix(oidcConfig);
         return SESSION_RT_COOKIE_NAME + cookieSuffix;
     }
 }

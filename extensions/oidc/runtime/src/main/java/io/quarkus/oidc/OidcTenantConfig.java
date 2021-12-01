@@ -505,6 +505,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean cookieForceSecure;
 
         /**
+         * Cookie name suffix.
+         * For example, a session cookie name for the default OIDC tenant is 'q_session' but can be changed to 'q_session_test'
+         * if this property is set to 'test'.
+         */
+        @ConfigItem
+        public Optional<String> cookieSuffix = Optional.empty();
+
+        /**
          * Cookie path parameter value which, if set, will be used to set a path parameter for the session, state and post
          * logout cookies.
          * The `cookie-path-header` property, if set, will be checked first.
@@ -680,6 +688,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setIdTokenRequired(boolean idTokenRequired) {
             this.idTokenRequired = idTokenRequired;
+        }
+
+        public Optional<String> getCookieSuffix() {
+            return cookieSuffix;
+        }
+
+        public void setCookieSuffix(String cookieSuffix) {
+            this.cookieSuffix = Optional.of(cookieSuffix);
         }
 
     }

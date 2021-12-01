@@ -670,21 +670,23 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private static String getStateCookieName(TenantConfigContext configContext) {
-        String cookieSuffix = getCookieSuffix(configContext.oidcConfig.tenantId.get());
-        return STATE_COOKIE_NAME + cookieSuffix;
+        return STATE_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
     }
 
     private static String getPostLogoutCookieName(TenantConfigContext configContext) {
-        String cookieSuffix = getCookieSuffix(configContext.oidcConfig.tenantId.get());
-        return POST_LOGOUT_COOKIE_NAME + cookieSuffix;
+        return POST_LOGOUT_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
     }
 
     private static String getSessionCookieName(OidcTenantConfig oidcConfig) {
-        String cookieSuffix = getCookieSuffix(oidcConfig.tenantId.get());
-        return SESSION_COOKIE_NAME + cookieSuffix;
+        return SESSION_COOKIE_NAME + getCookieSuffix(oidcConfig);
     }
 
-    static String getCookieSuffix(String tenantId) {
-        return !"Default".equals(tenantId) ? "_" + tenantId : "";
+    static String getCookieSuffix(OidcTenantConfig oidcConfig) {
+        String tenantId = oidcConfig.tenantId.get();
+        String tenantIdSuffix = !"Default".equals(tenantId) ? "_" + tenantId : "";
+
+        return oidcConfig.authentication.cookieSuffix.isPresent()
+                ? (tenantIdSuffix + "_" + oidcConfig.authentication.cookieSuffix.get())
+                : tenantIdSuffix;
     }
 }

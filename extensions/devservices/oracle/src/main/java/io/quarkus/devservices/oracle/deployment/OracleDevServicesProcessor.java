@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -37,9 +38,10 @@ public class OracleDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout,
+                    boolean useTestContainersSharedNetwork) {
                 QuarkusOracleServerContainer container = new QuarkusOracleServerContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        devServicesSharedNetworkBuildItem.isPresent(), useTestContainersSharedNetwork);
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withUsername(username.orElse(DEFAULT_DATABASE_USER))
                         .withPassword(password.orElse(DEFAULT_DATABASE_PASSWORD))
@@ -70,12 +72,15 @@ public class OracleDevServicesProcessor {
         private String hostName = null;
 
         public QuarkusOracleServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
-                boolean useSharedNetwork) {
+                boolean useSharedNetwork, boolean useTestContainersSharedNetwork) {
             super(DockerImageName
                     .parse(imageName.orElse(OracleDevServicesProcessor.IMAGE + ":" + OracleDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(OracleDevServicesProcessor.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            if (useTestContainersSharedNetwork) {
+                withNetwork(Network.SHARED);
+            }
         }
 
         @Override

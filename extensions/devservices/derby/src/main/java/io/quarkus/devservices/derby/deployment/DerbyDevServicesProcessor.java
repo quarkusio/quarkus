@@ -31,7 +31,8 @@ public class DerbyDevServicesProcessor {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout,
+                    boolean useTestContainersSharedNetwork) {
                 try {
                     int port = fixedExposedPort.isPresent() ? fixedExposedPort.getAsInt()
                             : 1527 + (launchMode == LaunchMode.TEST ? 0 : 1);

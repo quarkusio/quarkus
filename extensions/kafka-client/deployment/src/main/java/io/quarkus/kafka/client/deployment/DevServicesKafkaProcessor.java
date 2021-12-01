@@ -339,9 +339,8 @@ public class DevServicesKafkaProcessor {
     private static final class RedPandaKafkaContainer extends GenericContainer<RedPandaKafkaContainer> {
 
         private final int port;
+        private final String hostName;
         private final boolean useSharedNetwork;
-
-        private String hostName = null;
 
         private static final String STARTER_SCRIPT = "/var/lib/redpanda/redpanda.sh";
 
@@ -349,14 +348,11 @@ public class DevServicesKafkaProcessor {
                 boolean useSharedNetwork) {
             super(dockerImageName);
             this.port = fixedExposedPort;
+            this.hostName = "kafka-" + Base58.randomString(5);
             this.useSharedNetwork = useSharedNetwork;
             withNetwork(Network.SHARED);
-            if (useSharedNetwork) {
-                hostName = "kafka-" + Base58.randomString(5);
-                setNetworkAliases(Collections.singletonList(hostName));
-            } else {
-                withExposedPorts(KAFKA_PORT);
-            }
+            withExposedPorts(KAFKA_PORT);
+            setNetworkAliases(Collections.singletonList(hostName));
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
@@ -381,8 +377,10 @@ public class DevServicesKafkaProcessor {
             command += "/usr/bin/rpk redpanda start --check=false --node-id 0 --smp 1 ";
             command += "--memory 1G --overprovisioned --reserve-memory 0M ";
             command += "--kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092 ";
-            command += String.format("--advertise-kafka-addr PLAINTEXT://%s:29092,OUTSIDE://%s:%d", getHostToUse(),
-                    getHostToUse(), getPortToUse());
+            command += String.format("--advertise-kafka-addr PLAINTEXT://%s:29092,OUTSIDE://%s:%d ",
+                    hostName,
+                    getHostToUse(),
+                    getPortToUse());
 
             //noinspection OctalInteger
             copyFileToContainer(

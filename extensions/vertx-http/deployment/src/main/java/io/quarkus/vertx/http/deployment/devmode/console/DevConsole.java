@@ -121,6 +121,7 @@ public class DevConsole implements Handler<RoutingContext> {
                 ctx.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
                 TemplateInstance devTemplateInstance = devTemplate
                         .data("currentExtensionName", extName)
+                        .data("query-string", ctx.request().query())
                         .data("flash", FlashScopeUtil.getFlash(ctx))
                         .data("currentRequest", ctx.request());
                 renderTemplate(ctx, devTemplateInstance);

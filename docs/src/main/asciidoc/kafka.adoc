@@ -235,7 +235,6 @@ import javax.transaction.Transactional;
 public class PriceStorage {
 
     @Incoming("prices")
-    @Blocking
     @Transactional
     public void store(int priceInUsd) {
         Price price = new Price();
@@ -261,6 +260,12 @@ The first one provides more fine-grained tuning such as the worker pool to use a
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
 
 Detailed information on the usage of `@Blocking` annotation can be found in https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/advanced/blocking.html[SmallRye Reactive Messaging – Handling blocking execution].
+====
+
+[TIP]
+.@Transactional
+====
+If your method is annotated with `@Transactional`, it will be considered _blocking_ automatically, even if the method is not annotated with `@Blocking`.
 ====
 
 === Acknowledgment Strategies
@@ -1935,17 +1940,16 @@ public class FruitConsumer {
 
     @Incoming("fruits")                                     // <1>
     @Transactional                                          // <2>
-    @Blocking                                               // <3>
-    public void persistFruits(Fruit fruit) {                // <4>
-        fruit.persist();                                    // <5>
+    public void persistFruits(Fruit fruit) {                // <3>
+        fruit.persist();                                    // <4>
     }
 }
 ----
 <1> Configuring the incoming channel. This channel reads from Kafka.
 <2> As we are writing in a database, we must be in a transaction. This annotation starts a new transaction and commits it when the method returns.
-<3> Writing to a database using classic Hibernate is blocking. So, you must tell to Quarkus that the method must be called on a worker thread you can block (and not an I/O thread).
-<4> The method receives each Fruit. Note that you would need a deserializer to reconstruct the Fruit instances from the Kafka records.
-<5> Persist the received `fruit` object.
+Quarkus automatically considers the method as _blocking_. Indeed, writing to a database using classic Hibernate is blocking. So, Quarkus calls the method on a worker thread you can block (and not an I/O thread).
+<3> The method receives each Fruit. Note that you would need a deserializer to reconstruct the Fruit instances from the Kafka records.
+<4> Persist the received `fruit` object.
 
 As mentioned in <4>, you need a deserializer that can create a `Fruit` from the record.
 This can be done using a Jackson deserializer:

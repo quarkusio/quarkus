@@ -223,7 +223,7 @@ public class DevConsoleProcessor {
     /**
      * Boots the Vert.x instance used by the DevConsole,
      * applying some minimal tuning and customizations.
-     * 
+     *
      * @return the initialized Vert.x instance
      */
     private static Vertx initializeDevConsoleVertx() {
@@ -465,24 +465,28 @@ public class DevConsoleProcessor {
         if (context == null) {
             context = ConsoleStateManager.INSTANCE.createContext("HTTP");
         }
+        Config c = ConfigProvider.getConfig();
+        String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
+        String port = c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
         context.reset(
-                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/")),
-                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev")));
+                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/", host, port)),
+                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev", host, port)));
     }
 
-    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String s) {
-        if (s.startsWith("/q")) {
-            s = np.resolvePath(s.substring(3));
+    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
+            String port) {
+        if (path.startsWith("/q")) {
+            path = np.resolvePath(path.substring(3));
         } else {
-            s = rp.resolvePath(s.substring(1));
+            path = rp.resolvePath(path.substring(1));
         }
 
         StringBuilder sb = new StringBuilder("http://");
         Config c = ConfigProvider.getConfig();
-        sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
+        sb.append(host);
         sb.append(":");
-        sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
-        sb.append(s);
+        sb.append(port);
+        sb.append(path);
         String url = sb.toString();
 
         Runtime rt = Runtime.getRuntime();

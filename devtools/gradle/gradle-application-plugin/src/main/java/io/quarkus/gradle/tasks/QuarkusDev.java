@@ -24,6 +24,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Optional;
@@ -50,6 +51,7 @@ public class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
     private Set<File> filesIncludedInClasspath = new HashSet<>();
+    private Configuration quarkusDevConfiguration;
 
     private File buildDir;
 
@@ -74,6 +76,15 @@ public class QuarkusDev extends QuarkusTask {
 
     public QuarkusDev(String name) {
         super(name);
+    }
+
+    @CompileClasspath
+    public Configuration getQuarkusDevConfiguration() {
+        return this.quarkusDevConfiguration;
+    }
+
+    public void setQuarkusDevConfiguration(Configuration quarkusDevConfiguration) {
+        this.quarkusDevConfiguration = quarkusDevConfiguration;
     }
 
     @InputDirectory

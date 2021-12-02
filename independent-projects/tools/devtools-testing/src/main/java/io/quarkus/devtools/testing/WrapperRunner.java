@@ -9,7 +9,9 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -105,7 +107,7 @@ public final class WrapperRunner {
     private static String getMavenSettingsArg() {
         final String mavenSettings = System.getProperty("maven.settings");
         if (mavenSettings != null) {
-            return mavenSettings;
+            return Files.exists(Paths.get(mavenSettings)) ? mavenSettings : null;
         }
         return BootstrapMavenOptions.newInstance().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS);
     }

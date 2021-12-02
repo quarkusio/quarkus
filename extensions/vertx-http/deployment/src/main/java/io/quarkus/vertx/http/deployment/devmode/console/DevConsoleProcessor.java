@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -91,8 +91,10 @@ import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -477,13 +479,18 @@ public class DevConsoleProcessor {
             s = rp.resolvePath(s.substring(1));
         }
 
-        StringBuilder sb = new StringBuilder("http://");
-        Config c = ConfigProvider.getConfig();
-        sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
-        sb.append(":");
-        sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
-        sb.append(s);
-        String url = sb.toString();
+        // at this point Config has not been populated, so we go ahead and create a temp one just to pull out the host and port values
+        Config config = ConfigUtils.configBuilder(false, LaunchMode.DEVELOPMENT).build();
+        String url = "http://" +
+                config.getOptionalValue("quarkus.http.host", String.class).orElse("localhost") +
+                ":" +
+                config.getOptionalValue("quarkus.http.port", String.class).orElse("8080") +
+                s;
+        try {
+            ConfigProviderResolver.instance().releaseConfig(config);
+        } catch (Throwable ignored) {
+
+        }
 
         Runtime rt = Runtime.getRuntime();
         OS os = OS.determineOS();

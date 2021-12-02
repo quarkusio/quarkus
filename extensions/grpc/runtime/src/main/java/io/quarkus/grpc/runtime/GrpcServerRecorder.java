@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -311,6 +312,12 @@ public class GrpcServerRecorder {
 
     public static int getVerticleCount() {
         return grpcVerticleCount.get();
+    }
+
+    public RuntimeValue<ServerInterceptorStorage> initServerInterceptorStorage(
+            Map<String, Set<Class<?>>> perServiceInterceptors,
+            Set<Class<?>> globalInterceptors) {
+        return new RuntimeValue<>(new ServerInterceptorStorage(perServiceInterceptors, globalInterceptors));
     }
 
     private VertxServer buildServer(Vertx vertx, GrpcServerConfiguration configuration,

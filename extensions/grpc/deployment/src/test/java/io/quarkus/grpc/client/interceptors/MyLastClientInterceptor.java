@@ -11,11 +11,9 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
-import io.quarkus.grpc.GlobalInterceptor;
 
-@GlobalInterceptor
 @ApplicationScoped
-public class MyFirstClientInterceptor implements ClientInterceptor, Prioritized {
+public class MyLastClientInterceptor implements ClientInterceptor, Prioritized {
 
     @Override
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
@@ -29,7 +27,7 @@ public class MyFirstClientInterceptor implements ClientInterceptor, Prioritized 
 
                             @Override
                             public void onMessage(RespT message) {
-                                Calls.add(MyFirstClientInterceptor.class);
+                                Calls.add(MyLastClientInterceptor.class);
                                 super.onMessage(message);
                             }
                         }, headers);
@@ -39,6 +37,6 @@ public class MyFirstClientInterceptor implements ClientInterceptor, Prioritized 
 
     @Override
     public int getPriority() {
-        return 10;
+        return 600;
     }
 }

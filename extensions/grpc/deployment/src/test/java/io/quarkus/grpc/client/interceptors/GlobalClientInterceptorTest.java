@@ -1,8 +1,9 @@
 package io.quarkus.grpc.client.interceptors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
+import java.util.List;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -21,36 +22,30 @@ import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.MutinyHelloService;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ClientInterceptorPriorityReversedTest {
+public class GlobalClientInterceptorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MutinyHelloService.class, MySecondClientInterceptor.class,
-                            MyFirstClientInterceptor.class,
+                    .addClasses(MutinyHelloService.class, MyFirstClientInterceptor.class, Calls.class,
                             GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
                             MutinyGreeterGrpc.class,
                             HelloRequestOrBuilder.class, HelloReplyOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
-    @Inject
-    MyFirstClientInterceptor interceptor1;
-
-    @Inject
-    MySecondClientInterceptor interceptor2;
-
     @GrpcClient("hello-service")
     GreeterGrpc.GreeterBlockingStub client;
 
     @Test
-    public void testInterceptors() {
+    public void testInterceptorRegistration() {
+        Calls.LIST.clear();
+
         HelloReply reply = client
                 .sayHello(HelloRequest.newBuilder().setName("neo").build());
         assertThat(reply.getMessage()).isEqualTo("Hello neo");
 
-        assertThat(interceptor1.getLastCall()).isNotZero();
-        assertThat(interceptor2.getLastCall()).isNotZero();
-
-        assertThat(interceptor2.getLastCall()).isGreaterThan(interceptor1.getLastCall());
+        List<String> calls = Calls.LIST;
+        assertEquals(1, calls.size());
+        assertEquals(MyFirstClientInterceptor.class.getName(), calls.get(0));
     }
 }

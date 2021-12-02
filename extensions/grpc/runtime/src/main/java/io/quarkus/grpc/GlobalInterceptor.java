@@ -9,9 +9,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Denotes a ServerInterceptor that should be registered for all gRPC services
+ * Denotes a {@link io.grpc.ServerInterceptor} that should be registered for all gRPC services, or a
+ * {@link io.grpc.ClientInterceptor} that should be registered for all injected gRPC clients.
  *
  * @see RegisterInterceptor
+ * @see RegisterClientInterceptor
  */
 @Target({ FIELD, PARAMETER, TYPE })
 @Retention(RUNTIME)

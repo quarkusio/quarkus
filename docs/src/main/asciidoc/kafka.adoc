@@ -54,6 +54,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[NOTE]
+====
+The extension includes `kafka-clients` version 3.0.0 as a transitive dependency and is compatible with Kafka brokers version 2.x.
+====
+
 == Configuring Smallrye Kafka Connector
 
 Because Smallrye Reactive Messaging framework supports different messaging backends like Apache Kafka, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:

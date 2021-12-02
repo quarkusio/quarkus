@@ -69,13 +69,27 @@ A minimal configuration for the Kafka connector with an incoming channel looks l
 %prod.kafka.bootstrap.servers=kafka:9092 <1>
 mp.messaging.incoming.prices.connector=smallrye-kafka <2>
 ----
-
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.incoming.$channel.bootstrap.servers` property.
 In dev mode and when running tests, link:kafka-dev-services[Dev Services for Kafka] automatically starts a Kafka broker.
 When not provided this property defaults to `localhost:9092`.
 <2> Configure the connector to manage the prices channel. By default the topic name is same as the channel name. You can configure the topic attribute to override it.
 
 NOTE: The `%prod` prefix indicates that the property is only used when the application runs in prod mode (so not in dev or test). Refer to the xref:config-reference.adoc#profiles[Profile documentation] for further details.
+
+[TIP]
+.Connector auto-attachment
+====
+If you have a single connector on your classpath, you can omit the `connector` attribute configuration.
+Quarkus automatically associates _orphan_ channels to the (unique) connector found on the classpath.
+_Orphans_ channels are outgoing channels without a downstream consumer or incoming channels without an upstream producer.
+
+This auto-attachment can be disabled using:
+
+[source, properties]
+----
+quarkus.reactive-messaging.auto-connector-attachment=false
+----
+====
 
 == Receiving messages from Kafka
 

@@ -212,17 +212,11 @@ public class QuotesResource {
 <1> Inject a Reactive Messaging `Emitter` to send messages to the `quote-requests` channel.
 <2> On a post request, generate a random UUID and send it to the AMQP queue using the emitter.
 
-This channel is mapped to an AMQP queue using the configuration we will add to the `application.properties` file.
-Open the `src/main/resource/application.properties` file and add:
+The `quote-requests` channel is going to be managed as a AMQP queue, as that's the only connector on the classpath.
+If not indicated otherwise, like in this example, Quarkus uses the channel name as AMQP queue name.
+So, in this example, the application sends messages to the `quote-requests` queue.
 
-[source, properties]
-----
-# Configure the outgoing `quote-requests` queue
-mp.messaging.outgoing.quote-requests.connector=smallrye-amqp
-----
-
-All we need to specify is the `smallrye-amqp` connector.
-By default, reactive messaging maps the channel name `quote-requests` to the AMQP queue name.
+TIP: When you have multiple connectors, you would need to indicate which connector you want to use in the application configuration.
 
 == Processing quote requests
 
@@ -268,28 +262,19 @@ public class QuoteProcessor {
 
 The `process` method is called for every AMQP message from the `quote-requests` queue, and will send a `Quote` object to the `quotes` queue.
 
-As with the previous example we need to configure the connectors in the `application.properties` file.
+Because we want to consume messages from the `quotes-requests` queue into the `requests` channel, we need to configure this association.
 Open the `src/main/resources/application.properties` file and add:
 
 [source, properties]
 ----
-# Configure the incoming AMQP queue `quote-requests`
-mp.messaging.incoming.requests.connector=smallrye-amqp
 mp.messaging.incoming.requests.address=quote-requests
-
-# Configure the outgoing AMQP queue `quotes`
-mp.messaging.outgoing.quotes.connector=smallrye-amqp
 ----
 
-Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
 The configuration keys are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 
-The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
-
-* `quote-requests` -> AMQP queue from which we read the quote requests
-* `quotes` -> AMQP queue in which we write the quotes
+In our case, we want to configure the `address` attribute to indicate the name of the queue.
 
 == Receiving quotes
 
@@ -315,18 +300,6 @@ public Multi<Quote> stream() {
 <1> Injects the `quotes` channel using the `@Channel` qualifier
 <2> Indicates that the content is sent using `Server Sent Events`
 <3> Returns the stream (_Reactive Stream_)
-
-Again we need to configure the incoming `quotes` channel inside `producer` project.
-Add the following inside `application.properties` file:
-
-[source, properties]
-----
-# Configure the outgoing `quote-requests` queue
-mp.messaging.outgoing.quote-requests.connector=smallrye-amqp
-
-# Configure the incoming `quotes` queue
-mp.messaging.incoming.quotes.connector=smallrye-amqp
-----
 
 == The HTML page
 

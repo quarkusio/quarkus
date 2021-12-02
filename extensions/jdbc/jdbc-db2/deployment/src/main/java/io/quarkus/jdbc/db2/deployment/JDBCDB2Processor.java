@@ -80,7 +80,7 @@ public class JDBCDB2Processor {
     }
 
     @BuildStep
-    void addBouncyCastleExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports) {
+    void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports) {
         // com.ibm.db2:jcc:11.5.6.0 accesses sun.security.action.GetPropertyAction
         // which is strongly encapsulated in Java 17 requiring
         // --add-exports=java.base/sun.security.action=ALL-UNNAMED

@@ -69,9 +69,9 @@ https://download.jboss.org/jbosstools/intellij/snapshots/intellij-quarkus/[Devel
 | https://che.openshift.io/f?url=https://raw.githubusercontent.com/redhat-developer/devfile/master/getting-started/quarkus/devfile.yaml[Start Che Workspace]
 
 |Source
-|https://github.com/redhat-developer/vscode-quarkus[Github]
-|https://github.com/jbosstools/jbosstools-quarkus[Github]
-|https://github.com/redhat-developer/intellij-quarkus[Github]
+|https://github.com/redhat-developer/vscode-quarkus[GitHub]
+|https://github.com/jbosstools/jbosstools-quarkus[GitHub]
+|https://github.com/redhat-developer/intellij-quarkus[GitHub]
 |Closed-Source
 |
 

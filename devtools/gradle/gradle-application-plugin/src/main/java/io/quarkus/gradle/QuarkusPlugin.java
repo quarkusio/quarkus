@@ -166,6 +166,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                     project.afterEvaluate(this::afterEvaluate);
                     ConfigurationContainer configurations = project.getConfigurations();
 
+                    // create a custom configuration for devmode
+                    Configuration configuration = configurations.create(DEV_MODE_CONFIGURATION_NAME)
+                            .extendsFrom(configurations.findByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
+
                     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class,
                             compileJava -> {
                                 compileJava.mustRunAfter(quarkusGenerateCode);
@@ -188,9 +192,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                     quarkusGenerateCodeDev.configure(task -> task.dependsOn(resourcesTask));
                     quarkusGenerateCodeTests.configure(task -> task.dependsOn(resourcesTask));
 
-                    quarkusDev.configure(task -> task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
-                            quarkusGenerateCodeDev,
-                            quarkusGenerateCodeTests));
+                    quarkusDev.configure(task -> {
+                        task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
+                                quarkusGenerateCodeDev,
+                                quarkusGenerateCodeTests);
+                        task.setQuarkusDevConfiguration(configuration);
+                    });
                     quarkusRemoteDev.configure(task -> task.dependsOn(classesTask, resourcesTask));
                     quarkusTest.configure(task -> task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
                             quarkusGenerateCode,
@@ -217,9 +224,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                             nativeTestSourceSet.getRuntimeClasspath()
                                     .plus(mainSourceSet.getOutput())
                                     .plus(testSourceSet.getOutput()));
-
-                    // create a custom configuration for devmode
-                    configurations.create(DEV_MODE_CONFIGURATION_NAME);
 
                     // create a custom configuration to be used for the dependencies of the testNative task
                     configurations.maybeCreate(NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME)

@@ -558,9 +558,8 @@ final class Methods {
                     }
                     ClassInfo param = beanArchiveIndex.getClassByName(typeName);
                     if (param == null) {
-                        LOGGER.warn(String.format(
-                                "Parameter type info not available: %s - unable to validate the parameter type's visibility for method %s declared on %s",
-                                type.name(), method.name(), method.declaringClass().name()));
+                        //no need to warn here, if it was potentially a problem it would be in the index
+                        //otherwise this class would not be able to access it
                         continue;
                     }
                     if (Modifier.isPublic(param.flags()) || Modifier.isProtected(param.flags())) {

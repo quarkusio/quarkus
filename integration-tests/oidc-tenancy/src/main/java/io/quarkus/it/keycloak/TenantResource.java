@@ -13,6 +13,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.identity.SecurityIdentity;
 
@@ -54,7 +55,9 @@ public class TenantResource {
 
         String response = tenant + ":" + name;
         if (tenant.startsWith("tenant-oidc-introspection-only")) {
-            response += (":" + tokenCache.getCacheSize());
+            TokenIntrospection introspection = securityIdentity.getAttribute("introspection");
+            response += (",active:" + introspection.getBoolean("active"));
+            response += (",cache-size:" + tokenCache.getCacheSize());
         }
         return response;
     }

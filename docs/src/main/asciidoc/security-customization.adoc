@@ -274,6 +274,7 @@ and add the BouncyCastle provider dependency:
 </dependency>
 ----
 
+[[bouncy-castle-jsse]]
 === BouncyCastle JSSE
 
 If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use it instead of the default SunJSSE provider then please set a `BCJSSE` provider name:
@@ -301,6 +302,7 @@ and add the BouncyCastle TLS dependency:
 </dependency>
 ----
 
+[[bouncy-castle-fips]]
 === BouncyCastle FIPS
 
 If you need to register an `org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider` JCE provider then please set a `BCFIPS` provider name:
@@ -333,6 +335,7 @@ and add the BouncyCastle FIPS provider dependency:
 - `org.bouncycastle.crypto.fips.FipsRSA`
 ====
 
+[[bouncy-castle-jsse-fips]]
 === BouncyCastle JSSE FIPS
 
 If you need to register an `org.bouncycastle.jsse.provider.BouncyCastleJsseProvider` JSSE provider and use it in combination with `org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider` instead of the default SunJSSE provider then please set a `BCFIPSJSSE` provider name:

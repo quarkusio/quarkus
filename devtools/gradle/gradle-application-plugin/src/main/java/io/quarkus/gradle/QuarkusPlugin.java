@@ -177,6 +177,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                             });
                     tasks.named(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME, JavaCompile.class,
                             compileTestJava -> {
+                                compileTestJava.dependsOn(quarkusGenerateCode);
                                 compileTestJava.dependsOn(quarkusGenerateCodeTests);
                                 if (project.getGradle().getStartParameter().getTaskNames().contains(QUARKUS_DEV_TASK_NAME)) {
                                     compileTestJava.getOptions().setFailOnError(false);

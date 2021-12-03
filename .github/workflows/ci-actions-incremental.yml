@@ -476,6 +476,11 @@ jobs:
             os-name: "ubuntu-latest"
           }
           - {
+            name: "17",
+            java-version: 17,
+            os-name: "ubuntu-latest"
+          }
+          - {
             name: "11 Windows",
             java-version: 11,
             os-name: "windows-latest"

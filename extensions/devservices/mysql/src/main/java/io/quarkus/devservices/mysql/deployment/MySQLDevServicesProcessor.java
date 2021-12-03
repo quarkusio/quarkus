@@ -3,13 +3,13 @@ package io.quarkus.devservices.mysql.deployment;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -28,15 +28,14 @@ public class MySQLDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMysql(
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MYSQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout,
-                    boolean useTestContainersSharedNetwork) {
+                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusMySQLContainer container = new QuarkusMySQLContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent(), useTestContainersSharedNetwork);
+                        !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
@@ -66,15 +65,11 @@ public class MySQLDevServicesProcessor {
 
         private String hostName = null;
 
-        public QuarkusMySQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
-                boolean useTestContainersSharedNetwork) {
+        public QuarkusMySQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
             super(DockerImageName.parse(imageName.orElse(MySQLContainer.IMAGE + ":" + MySQLDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
-            if (useTestContainersSharedNetwork) {
-                withNetwork(Network.SHARED);
-            }
         }
 
         @Override
@@ -88,6 +83,8 @@ public class MySQLDevServicesProcessor {
 
             if (fixedExposedPort.isPresent()) {
                 addFixedExposedPort(fixedExposedPort.getAsInt(), MySQLContainer.MYSQL_PORT);
+            } else {
+                addExposedPort(MYSQL_PORT);
             }
         }
 

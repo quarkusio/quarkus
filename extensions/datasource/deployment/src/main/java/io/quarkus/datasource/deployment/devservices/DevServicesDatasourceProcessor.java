@@ -267,8 +267,7 @@ public class DevServicesDatasourceProcessor {
                             ConfigProvider.getConfig().getOptionalValue(prefix + "password", String.class),
                             Optional.ofNullable(dbName), dataSourceBuildTimeConfig.devservices.imageName,
                             dataSourceBuildTimeConfig.devservices.properties,
-                            dataSourceBuildTimeConfig.devservices.port, launchMode, globalDevServicesConfig.timeout,
-                            dataSourceBuildTimeConfig.devservices.useTestContainersSharedNetwork);
+                            dataSourceBuildTimeConfig.devservices.port, launchMode, globalDevServicesConfig.timeout);
             closeableList.add(datasource.getCloseTask());
 
             propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));

@@ -55,12 +55,4 @@ public class DevServicesBuildTimeConfig {
     @ConfigItem
     public OptionalInt port;
 
-    /**
-     * Whether this particular data source's container should join TestContainers Shared Network.
-     * <p>
-     * By default, the data source container will join Docker's default network.
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean useTestContainersSharedNetwork;
-
 }

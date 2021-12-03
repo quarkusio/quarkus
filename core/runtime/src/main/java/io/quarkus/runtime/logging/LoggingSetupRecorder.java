@@ -28,7 +28,8 @@ import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
-import org.jboss.logmanager.formatters.ColorPatternFormatter;
+import org.jboss.logmanager.formatters.ImmutableColorPatternFormatter;
+import org.jboss.logmanager.formatters.ImmutablePatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.ConsoleHandler;
@@ -401,7 +402,7 @@ public class LoggingSetupRecorder {
             }
             if (ColorSupport.isColorEnabled(consoleRuntimeConfig, config)) {
                 color = true;
-                ColorPatternFormatter colorPatternFormatter = new ColorPatternFormatter(config.darken,
+                ImmutableColorPatternFormatter colorPatternFormatter = new ImmutableColorPatternFormatter(config.darken,
                         config.format);
                 if (bannerSupplier != null) {
                     formatter = new BannerFormatter(colorPatternFormatter, true, bannerSupplier);
@@ -409,7 +410,7 @@ public class LoggingSetupRecorder {
                     formatter = colorPatternFormatter;
                 }
             } else {
-                PatternFormatter patternFormatter = new PatternFormatter(config.format);
+                ImmutablePatternFormatter patternFormatter = new ImmutablePatternFormatter(config.format);
                 if (bannerSupplier != null) {
                     formatter = new BannerFormatter(patternFormatter, false, bannerSupplier);
                 } else {
@@ -481,7 +482,7 @@ public class LoggingSetupRecorder {
             handler = periodicRotatingFileHandler;
         }
 
-        final PatternFormatter formatter = new PatternFormatter(config.format);
+        final ImmutablePatternFormatter formatter = new ImmutablePatternFormatter(config.format);
         handler.setFormatter(formatter);
         handler.setAppend(true);
         try {
@@ -512,7 +513,7 @@ public class LoggingSetupRecorder {
             handler.setTruncate(config.truncate);
             handler.setUseCountingFraming(config.useCountingFraming);
             handler.setLevel(config.level);
-            final PatternFormatter formatter = new PatternFormatter(config.format);
+            final ImmutablePatternFormatter formatter = new ImmutablePatternFormatter(config.format);
             handler.setFormatter(formatter);
             handler.setErrorManager(errorManager);
             handler.setFilter(logCleanupFilter);

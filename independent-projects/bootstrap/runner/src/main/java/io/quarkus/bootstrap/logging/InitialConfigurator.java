@@ -4,7 +4,7 @@ import io.quarkus.bootstrap.graal.ImageInfo;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import org.jboss.logmanager.EmbeddedConfigurator;
-import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.formatters.ImmutablePatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 
 /**
@@ -41,7 +41,7 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
     }
 
     public static ConsoleHandler createDefaultHandler() {
-        ConsoleHandler handler = new ConsoleHandler(new PatternFormatter("%d{HH:mm:ss,SSS} %-5p [%c{3.}] %s%e%n"));
+        ConsoleHandler handler = new ConsoleHandler(new ImmutablePatternFormatter("%d{HH:mm:ss,SSS} %-5p [%c{3.}] %s%e%n"));
         handler.setLevel(Level.INFO);
         return handler;
     }

@@ -35,7 +35,7 @@ import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.Level;
 import org.jboss.logmanager.StandardOutputStreams;
-import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.formatters.ImmutablePatternFormatter;
 
 /**
  * A handler that queues messages until it's at least one child handler is {@linkplain #addHandler(Handler) added} or
@@ -146,7 +146,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
             if (!logRecords.isEmpty()) {
                 Formatter formatter = getFormatter();
                 if (formatter == null) {
-                    formatter = new PatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n");
+                    formatter = new ImmutablePatternFormatter("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c] (%t) %s%e%n");
                 }
                 StandardOutputStreams.printError("The DelayedHandler was closed before any children handlers were " +
                         "configured. Messages will be written to stderr.");

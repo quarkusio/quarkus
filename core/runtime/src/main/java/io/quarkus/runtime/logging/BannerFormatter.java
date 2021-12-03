@@ -2,32 +2,24 @@ package io.quarkus.runtime.logging;
 
 import java.nio.charset.Charset;
 import java.util.function.Supplier;
-import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
 import org.jboss.logmanager.ExtLogRecord;
-import org.jboss.logmanager.formatters.ColorPatternFormatter;
-import org.jboss.logmanager.formatters.FormatStep;
-import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.formatters.ImmutablePatternFormatter;
 import org.wildfly.common.annotation.NotNull;
 
-public class BannerFormatter extends ColorPatternFormatter {
+public class BannerFormatter extends ImmutablePatternFormatter {
 
     private final Supplier<String> bannerSupplier;
-    private Formatter formatter;
-    private boolean isColorPattern;
+    private final ImmutablePatternFormatter formatter;
+    private final boolean isColorPattern;
 
-    BannerFormatter(@NotNull Formatter formatter, boolean isColorPattern, Supplier<String> bannerSupplier) {
+    BannerFormatter(@NotNull ImmutablePatternFormatter formatter, boolean isColorPattern, Supplier<String> bannerSupplier) {
+        super(formatter.getPattern());
         this.formatter = formatter;
         this.isColorPattern = isColorPattern;
         this.bannerSupplier = bannerSupplier;
-
-        if (isColorPattern) {
-            this.setPattern(((ColorPatternFormatter) formatter).getPattern());
-        } else {
-            this.setPattern(((PatternFormatter) formatter).getPattern());
-        }
     }
 
     @Override
@@ -40,21 +32,8 @@ public class BannerFormatter extends ColorPatternFormatter {
     }
 
     @Override
-    public void setSteps(FormatStep[] steps) {
-        if (isColorPattern) {
-            super.setSteps(steps);
-        } else {
-            ((PatternFormatter) formatter).setSteps(steps);
-        }
-    }
-
-    @Override
     public String format(ExtLogRecord extLogRecord) {
-        if (isColorPattern) {
-            return ((ColorPatternFormatter) formatter).format(extLogRecord);
-        } else {
-            return ((PatternFormatter) formatter).format(extLogRecord);
-        }
+        return formatter.format(extLogRecord);
     }
 
     @Override

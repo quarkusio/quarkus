@@ -25,7 +25,7 @@ public class OracleDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(OracleDevServicesProcessor.class);
 
     public static final String IMAGE = "gvenzl/oracle-xe";
-    public static final String TAG = "18.4.0-slim";
+    public static final String TAG = "21.3.0-slim";
     public static final String DEFAULT_DATABASE_USER = "quarkus";
     public static final String DEFAULT_DATABASE_PASSWORD = "quarkus";
     public static final String DEFAULT_DATABASE_NAME = "quarkusdb";

@@ -554,7 +554,11 @@ final class Methods {
                     }
                     DotName typeName = type.name();
                     if (type.kind() == Kind.ARRAY) {
-                        typeName = type.asArrayType().component().name();
+                        Type componentType = type.asArrayType().component();
+                        if (componentType.kind() == Kind.PRIMITIVE) {
+                            continue;
+                        }
+                        typeName = componentType.name();
                     }
                     ClassInfo param = beanArchiveIndex.getClassByName(typeName);
                     if (param == null) {

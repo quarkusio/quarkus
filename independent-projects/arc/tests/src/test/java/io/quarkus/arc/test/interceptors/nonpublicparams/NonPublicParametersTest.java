@@ -42,6 +42,11 @@ public class NonPublicParametersTest {
             return "foo";
         }
 
+        @Simple
+        String primitiveArray(int[] ints) {
+            return "foo";
+        }
+
         private static class Foo {
         }
 

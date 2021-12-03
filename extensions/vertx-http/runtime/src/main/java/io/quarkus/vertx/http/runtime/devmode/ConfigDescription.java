@@ -13,8 +13,14 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
     private String typeName;
     private List<String> allowedValues;
     private String configPhase;
+    private boolean wildcardEntry = false;
 
     public ConfigDescription() {
+    }
+
+    public ConfigDescription(String name, boolean wildcardEntry) {
+        this.name = name;
+        this.wildcardEntry = wildcardEntry;
     }
 
     public ConfigDescription(final String name, final String description, final String defaultValue,
@@ -101,6 +107,15 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
 
     public void setConfigPhase(String configPhase) {
         this.configPhase = configPhase;
+    }
+
+    public boolean isWildcardEntry() {
+        return wildcardEntry;
+    }
+
+    public ConfigDescription setWildcardEntry(boolean wildcardEntry) {
+        this.wildcardEntry = wildcardEntry;
+        return this;
     }
 
     @Override

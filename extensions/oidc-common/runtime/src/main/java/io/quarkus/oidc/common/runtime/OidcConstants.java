@@ -48,4 +48,5 @@ public final class OidcConstants {
     public static final String EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange";
 
     public static final String EXPIRES_IN = "expires_in";
+    public static final String REFRESH_EXPIRES_IN = "refresh_expires_in";
 }

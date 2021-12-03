@@ -113,10 +113,16 @@ public class OidcClientConfig extends OidcCommonConfig {
         public String refreshTokenProperty = OidcConstants.REFRESH_TOKEN_VALUE;
 
         /**
-         * Refresh token property name in a token grant response
+         * Access token expiry property name in a token grant response
          */
         @ConfigItem(defaultValue = OidcConstants.EXPIRES_IN)
         public String expiresInProperty = OidcConstants.EXPIRES_IN;
+
+        /**
+         * Refresh token expiry property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.REFRESH_EXPIRES_IN)
+        public String refreshExpiresInProperty = OidcConstants.REFRESH_EXPIRES_IN;
 
         public Type getType() {
             return type;
@@ -148,6 +154,14 @@ public class OidcClientConfig extends OidcCommonConfig {
 
         public void setExpiresInProperty(String expiresInProperty) {
             this.expiresInProperty = expiresInProperty;
+        }
+
+        public String getRefreshExpiresInProperty() {
+            return refreshExpiresInProperty;
+        }
+
+        public void setRefreshExpiresInProperty(String refreshExpiresInProperty) {
+            this.refreshExpiresInProperty = refreshExpiresInProperty;
         }
     }
 

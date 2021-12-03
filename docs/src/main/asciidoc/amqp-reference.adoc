@@ -50,6 +50,21 @@ mp.messaging.incoming.[channel-name].connector=smallrye-amqp
 mp.messaging.outgoing.[channel-name].connector=smallrye-amqp
 ----
 
+[TIP]
+.Connector auto-attachment
+====
+If you have a single connector on your classpath, you can omit the `connector` attribute configuration.
+Quarkus automatically associates _orphan_ channels to the (unique) connector found on the classpath.
+_Orphans_ channels are outgoing channels without a downstream consumer or incoming channels without an upstream producer.
+
+This auto-attachment can be disabled using:
+
+[source, properties]
+----
+quarkus.reactive-messaging.auto-connector-attachment=false
+----
+====
+
 == Configuring the AMQP Broker access
 
 The AMQP connector connects to AMQP 1.0 brokers such as Apache ActiveMQ or Artemis.

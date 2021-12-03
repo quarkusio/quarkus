@@ -369,7 +369,6 @@ import javax.transaction.Transactional;
 public class PriceStorage {
 
     @Incoming("prices")
-    @Blocking
     @Transactional
     public void store(int priceInUsd) {
         Price price = new Price();
@@ -391,6 +390,12 @@ They have the same effect.
 Thus, you can use both.
 The first one provides more fine-grained tuning such as the worker pool to use and whether it preserves the order.
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
+====
+
+[TIP]
+.@Transactional
+====
+If your method is annotated with `@Transactional`, it will be considered _blocking_ automatically, even if the method is not annotated with `@Blocking`.
 ====
 
 == Customizing the underlying AMQP client

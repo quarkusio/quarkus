@@ -102,6 +102,8 @@ updates:
       # Jackson
       - dependency-name: com.fasterxml.jackson:jackson-bom
       - dependency-name: com.fasterxml:classmate
+      # Yasson
+      - dependency-name: org.eclipse:yasson
       # AWS
       - dependency-name: software.amazon.awssdk:*
       - dependency-name: com.amazon.alexa:*
@@ -134,6 +136,8 @@ updates:
       - dependency-name: org.jetbrains.dokka:*
     ignore:
       - dependency-name: org.glassfish:jakarta-el
+        update-types: ["version-update:semver-major"]
+      - dependency-name: org.eclipse:yasson
         update-types: ["version-update:semver-major"]
     rebase-strategy: disabled
   - package-ecosystem: gradle

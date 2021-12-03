@@ -1,11 +1,15 @@
 package io.quarkus.jdbc.oracle.deployment;
 
+import java.util.Collections;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.maven.dependency.GACT;
 
 /**
  * The Oracle JDBC driver includes a {@literal META-INF/native-image} which enables a set
@@ -100,6 +104,12 @@ public final class OracleMetadataOverrides {
     @BuildStep
     NativeImageAllowIncompleteClasspathBuildItem naughtyDriver() {
         return new NativeImageAllowIncompleteClasspathBuildItem("quarkus-jdbc-oracle");
+    }
+
+    @BuildStep
+    RemovedResourceBuildItem overrideSubstitutions() {
+        return new RemovedResourceBuildItem(GACT.fromString("com.oracle.database.jdbc:ojdbc11"),
+                Collections.singleton("oracle/nativeimage/Target_java_io_ObjectStreamClass.class"));
     }
 
 }

@@ -55,6 +55,16 @@ public final class ImmutableList {
     }
 
     /**
+     * 
+     * @param <T>
+     * @param element
+     * @return an immutable list
+     */
+    public static <T> List<T> of(T element) {
+        return Collections.singletonList(element);
+    }
+
+    /**
      *
      * @return a builder
      */

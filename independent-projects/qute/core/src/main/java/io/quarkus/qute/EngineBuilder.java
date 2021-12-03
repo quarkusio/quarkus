@@ -37,6 +37,9 @@ public final class EngineBuilder {
     }
 
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {
+        if (factory.cacheFactoryConfig()) {
+            factory = new CachedConfigSectionHelperFactory<>(factory);
+        }
         for (String alias : factory.getDefaultAliases()) {
             sectionHelperFactories.put(alias, factory);
         }
@@ -199,6 +202,57 @@ public final class EngineBuilder {
      */
     public Engine build() {
         return new EngineImpl(this);
+    }
+
+    static class CachedConfigSectionHelperFactory<T extends SectionHelper> implements SectionHelperFactory<T> {
+
+        private final SectionHelperFactory<T> delegate;
+        private final List<String> defaultAliases;
+        private final ParametersInfo parameters;
+        private final List<String> blockLabels;
+
+        public CachedConfigSectionHelperFactory(SectionHelperFactory<T> delegate) {
+            this.delegate = delegate;
+            this.defaultAliases = delegate.getDefaultAliases();
+            this.parameters = delegate.getParameters();
+            this.blockLabels = delegate.getBlockLabels();
+        }
+
+        @Override
+        public List<String> getDefaultAliases() {
+            return defaultAliases;
+        }
+
+        @Override
+        public ParametersInfo getParameters() {
+            return parameters;
+        }
+
+        @Override
+        public List<String> getBlockLabels() {
+            return blockLabels;
+        }
+
+        @Override
+        public boolean cacheFactoryConfig() {
+            return true;
+        }
+
+        @Override
+        public T initialize(SectionInitContext context) {
+            return delegate.initialize(context);
+        }
+
+        @Override
+        public boolean treatUnknownSectionsAsBlocks() {
+            return delegate.treatUnknownSectionsAsBlocks();
+        }
+
+        @Override
+        public Scope initializeBlock(Scope outerScope, BlockInfo block) {
+            return delegate.initializeBlock(outerScope, block);
+        }
+
     }
 
 }

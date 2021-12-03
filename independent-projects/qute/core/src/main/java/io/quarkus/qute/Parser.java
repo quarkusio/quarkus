@@ -507,7 +507,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     private void processParams(String tag, String label, Iterator<String> iter, SectionBlock.Builder block) {
         Map<String, String> params = new LinkedHashMap<>();
-        List<Parameter> factoryParams = paramsStack.peek().get(label);
+        ParametersInfo factoryParamsInfo = paramsStack.peek();
+        List<Parameter> factoryParams = factoryParamsInfo.get(label);
         List<String> paramValues = new ArrayList<>();
 
         while (iter.hasNext()) {
@@ -519,8 +520,17 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
 
         int actualSize = paramValues.size();
-        if (actualSize > factoryParams.size()) {
-            LOGGER.debugf("Too many params [label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams);
+        if (factoryParamsInfo.isCheckNumberOfParams()
+                && actualSize > factoryParams.size()
+                && LOGGER.isDebugEnabled()) {
+            StringBuilder builder = new StringBuilder("Too many section params for ").append(tag);
+            Origin origin = origin(0);
+            if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
+                builder.append(" in template [").append(origin.getTemplateId()).append("]");
+            }
+            builder.append(" on line ").append(origin.getLine());
+            builder.append(String.format("[label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams));
+            LOGGER.debugf(builder.toString());
         }
 
         // Process named params first

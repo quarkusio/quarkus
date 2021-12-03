@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -81,15 +80,15 @@ public class IfSectionHelper implements SectionHelper {
 
         @Override
         public ParametersInfo getParameters() {
-            ParametersInfo.Builder builder = ParametersInfo.builder();
-            // {#if} must declare at least one condition param
-            builder.addParameter("condition");
-            return builder
+            return ParametersInfo.builder()
+                    .checkNumberOfParams(false)
+                    // {#if} must declare at least one condition param
+                    .addParameter("condition")
                     .build();
         }
 
         public List<String> getBlockLabels() {
-            return Collections.singletonList(ELSE);
+            return ImmutableList.of(ELSE);
         }
 
         @Override

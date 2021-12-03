@@ -11,3 +11,8 @@ metadata:
   config:
   - "mp.messaging."
   - "quarkus.reactive-messaging."
+  codestart:
+    name: "reactive-messaging"
+    languages:
+      - "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

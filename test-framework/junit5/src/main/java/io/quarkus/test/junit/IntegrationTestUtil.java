@@ -2,6 +2,7 @@ package io.quarkus.test.junit;
 
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static java.lang.ProcessBuilder.Redirect.DISCARD;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -57,6 +58,8 @@ public final class IntegrationTestUtil {
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
     public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
+
+    private static final String DOCKER_BINARY = "docker";
 
     private IntegrationTestUtil() {
     }
@@ -304,7 +307,43 @@ public final class IntegrationTestUtil {
             }
         }
 
-        return new DefaultDevServicesLaunchResult(propertyMap, networkId, manageNetwork, curatedApplication);
+        DefaultDevServicesLaunchResult result = new DefaultDevServicesLaunchResult(propertyMap, networkId, manageNetwork,
+                curatedApplication);
+        createNetworkIfNecessary(result);
+        return result;
+    }
+
+    // this probably isn't the best place for this method, but we need to create the docker container before
+    // user code is aware of the network
+    private static void createNetworkIfNecessary(
+            final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+        if (devServicesLaunchResult.manageNetwork() && (devServicesLaunchResult.networkId() != null)) {
+            try {
+                int networkCreateResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                        .command(DOCKER_BINARY, "network", "create", devServicesLaunchResult.networkId()).start().waitFor();
+                if (networkCreateResult > 0) {
+                    throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
+                            + "' completed unsuccessfully");
+                }
+                // do the cleanup in a shutdown hook because there might be more services (launched via QuarkusTestResourceLifecycleManager) connected to the network
+                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                                    .command(DOCKER_BINARY, "network", "rm", devServicesLaunchResult.networkId()).start()
+                                    .waitFor();
+                        } catch (InterruptedException | IOException ignored) {
+                            System.out.println(
+                                    "Unable to delete container network '" + devServicesLaunchResult.networkId() + "'");
+                        }
+                    }
+                }));
+            } catch (Exception e) {
+                throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
+                        + "' completed unsuccessfully");
+            }
+        }
     }
 
     static void activateLogging() {

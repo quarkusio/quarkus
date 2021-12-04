@@ -31,6 +31,7 @@ import io.quarkus.builder.item.BuildItem;
 public final class BuildChainBuilder {
 
     private static final String GRAPH_OUTPUT = System.getProperty("jboss.builder.graph-output");
+    static final boolean LOG_CONFLICT_CAUSING = Boolean.getBoolean("quarkus.builder.log-conflict-cause");
 
     private final BuildStepBuilder finalStep;
     private final List<BuildProvider> providers = new ArrayList<>();
@@ -175,9 +176,14 @@ public final class BuildChainBuilder {
                 if (!id.isMulti() && toBeAdded.getConstraint() == Constraint.REAL) {
                     // ensure only one producer
                     if (initialIds.contains(id)) {
-                        final ChainBuildException cbe = new ChainBuildException(
-                                "Item " + id + " cannot be produced here (it is an initial resource) ("
-                                        + toBeAdded.getStepBuilder().getBuildStep() + ")");
+                        String message = "Item " + id + " cannot be produced here (it is an initial resource) ("
+                                + toBeAdded.getStepBuilder().getBuildStep()
+                                + ").";
+                        if (!LOG_CONFLICT_CAUSING) {
+                            message += " Use -Dquarkus.builder.log-conflict-cause=true to see the full stacktrace.";
+                        }
+
+                        final ChainBuildException cbe = new ChainBuildException(message);
                         cbe.setStackTrace(steps.get(toBeAdded.getStepBuilder()));
                         throw cbe;
                     }
@@ -185,11 +191,18 @@ public final class BuildChainBuilder {
                     for (Produce produce : list) {
                         if (produce.getConstraint() == Constraint.REAL
                                 && produce.isOverridable() == overridable) {
-                            final Throwable cause = new Throwable("This is the location of the conflicting producer ("
-                                    + toBeAdded.getStepBuilder().getBuildStep() + ")");
+                            String message = "This is the location of the conflicting producer ("
+                                    + toBeAdded.getStepBuilder().getBuildStep()
+                                    + ").";
+                            if (!LOG_CONFLICT_CAUSING) {
+                                message += " Use -Dquarkus.builder.log-conflict-cause=true to see the full stacktrace.";
+                            }
+
+                            final Throwable cause = new Throwable(message);
                             cause.setStackTrace(steps.get(toBeAdded.getStepBuilder()));
                             final ChainBuildException cbe = new ChainBuildException(
-                                    String.format("Multiple %s" + "producers of item %s (%s)",
+                                    String.format("Multiple %s"
+                                            + "producers of item %s (%s)",
                                             overridable ? "overridable " : "", id, produce.getStepBuilder().getBuildStep()),
                                     cause);
                             cbe.setStackTrace(steps.get(produce.getStepBuilder()));

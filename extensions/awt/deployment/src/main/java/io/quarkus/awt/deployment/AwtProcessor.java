@@ -6,11 +6,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -20,18 +17,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
-import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 class AwtProcessor {
-
-    private static final Logger LOGGER = Logger.getLogger(AwtProcessor.class.getName());
-
-    public static final Pattern JDK_VERSION_FROM_NATIVE_IMAGE = Pattern
-            .compile(".*(Java Version ([0-9]*)\\.([0-9]*)\\.([0-9]*).*)\\).*");
 
     private static final String IIO_PLUGIN_I18N = "iio-plugin.properties";
 
@@ -53,31 +44,11 @@ class AwtProcessor {
         }
     }
 
-    /**
-     * TODO: This warning pops in the log *AFTER* the whole ordeal of native-image build
-     * is done to inform the user that the version of Java used to build the native-image
-     * toolchain is sketchy. That is annoying.
-     *
-     * It seems to be a chicken-egg problem: I cannot both have NativeImageBuildItem instance
-     * with getGraalVMInfo in it AND run the code before NativeImageBuild...
-     * Attempts to do so end up in creating cycles in build step pipeline.
-     *
-     * Do I have to go and refactor NativeImageBuildItem to move GraalVMInfo up the chain,
-     * to e.g. NativeImageResourceBuildItem...?
-     */
-    @BuildStep(onlyIf = NativeBuild.class)
-    @Produce(ArtifactResultBuildItem.class)
-    public void jdkVersionCheck(NativeImageBuildItem image) {
-        final Matcher m = JDK_VERSION_FROM_NATIVE_IMAGE.matcher(image.getGraalVMInfo().getFullVersion());
-        if (m.matches()) {
-            final int feature = Integer.parseInt(m.group(2));
-            final int update = Integer.parseInt(m.group(4));
-            if (feature == 11 && update < 13) {
-                LOGGER.warn(m.group(1) + " used with the native-image distribution is too old. " +
-                        "Some MLib related operations, such as filter in " +
-                        "awt.image.ConvolveOp will not work. See https://bugs.openjdk.java.net/browse/JDK-8254024");
-            }
-        }
+    @BuildStep
+    NativeMinimalJavaVersionBuildItem nativeMinimalJavaVersionBuildItem() {
+        return new NativeMinimalJavaVersionBuildItem(11, 13,
+                "AWT: Some MLib related operations, such as filter in awt.image.ConvolveOp will not work. " +
+                        "See https://bugs.openjdk.java.net/browse/JDK-8254024");
     }
 
     /**

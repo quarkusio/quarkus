@@ -15,6 +15,7 @@ updates:
       - dependency-name: org.apache.activemq:*
       - dependency-name: org.flywaydb:flyway-core
       - dependency-name: org.liquibase:liquibase-core
+      - dependency-name: org.liquibase.ext:liquibase-mongodb
       - dependency-name: org.freemarker:freemarker
       - dependency-name: org.eclipse.jgit:*
       - dependency-name: io.fabric8:kubernetes-client-bom

@@ -25,7 +25,7 @@ In your `pom.xml`, add the following dependencies:
 
 * the Flyway extension
 * your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
-
+* the SQL Server support is now in a separate dependency, SQL Server users need to add the `flyway-sqlserver` dependency from now on.
 [source,xml]
 ----
 <dependencies>
@@ -33,6 +33,12 @@ In your `pom.xml`, add the following dependencies:
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-flyway</artifactId>
+    </dependency>
+    
+    <!-- Flyway SQL Server specific dependencies -->
+    <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-sqlserver</artifactId>
     </dependency>
 
     <!-- JDBC driver dependencies -->

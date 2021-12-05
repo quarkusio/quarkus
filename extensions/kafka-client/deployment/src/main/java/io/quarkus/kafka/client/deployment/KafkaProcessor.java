@@ -264,9 +264,6 @@ public class KafkaProcessor {
         } else { // otherwise the native lib of the platform this build runs on
             String dir = OSInfo.getNativeLibFolderPathForCurrentOS();
             String snappyNativeLibraryName = System.mapLibraryName("snappyjava");
-            if (snappyNativeLibraryName.toLowerCase().endsWith(".dylib")) {
-                snappyNativeLibraryName = snappyNativeLibraryName.replace(".dylib", ".jnilib");
-            }
             String path = root + dir + "/" + snappyNativeLibraryName;
             nativeLibs.produce(new NativeImageResourceBuildItem(path));
         }

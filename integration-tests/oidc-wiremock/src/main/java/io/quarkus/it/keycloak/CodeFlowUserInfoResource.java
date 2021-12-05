@@ -5,6 +5,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 
@@ -18,8 +19,14 @@ public class CodeFlowUserInfoResource {
     @Inject
     SecurityIdentity identity;
 
+    @Inject
+    DefaultTokenIntrospectionUserInfoCache tokenCache;
+
     @GET
     public String access() {
-        return identity.getPrincipal().getName() + ":" + userInfo.getString("preferred_username");
+        int cacheSize = tokenCache.getCacheSize();
+        tokenCache.clearCache();
+        return identity.getPrincipal().getName() + ":" + userInfo.getString("preferred_username") + ", cache size: "
+                + cacheSize;
     }
 }

@@ -39,7 +39,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice, cache size: 0", page.getBody().asText());
         }
     }
 
@@ -56,7 +56,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice, cache size: 1", page.getBody().asText());
         }
     }
 

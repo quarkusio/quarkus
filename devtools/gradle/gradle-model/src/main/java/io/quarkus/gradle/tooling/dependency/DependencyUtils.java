@@ -89,11 +89,13 @@ public class DependencyUtils {
                     ((ProjectComponentIdentifier) artifact.getId().getComponentIdentifier()).getProjectPath());
             final JavaPluginConvention javaExtension = projectDep == null ? null
                     : projectDep.getConvention().findPlugin(JavaPluginConvention.class);
-            SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-            File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
-            Path descriptorPath = resourcesDir.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
-            if (Files.exists(descriptorPath)) {
-                return loadExtensionInfo(project, descriptorPath, artifactId, projectDep);
+            if (javaExtension != null) {
+                SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
+                Path descriptorPath = resourcesDir.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
+                if (Files.exists(descriptorPath)) {
+                    return loadExtensionInfo(project, descriptorPath, artifactId, projectDep);
+                }
             }
         }
 

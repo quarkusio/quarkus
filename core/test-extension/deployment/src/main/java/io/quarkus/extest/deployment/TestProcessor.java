@@ -38,8 +38,10 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
@@ -51,6 +53,8 @@ import io.quarkus.extest.runtime.beans.CommandServlet;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
 import io.quarkus.extest.runtime.config.ObjectValueOf;
+import io.quarkus.extest.runtime.config.RunTimeConfigBuilder;
+import io.quarkus.extest.runtime.config.StaticInitConfigBuilder;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestBuildTimeConfig;
 import io.quarkus.extest.runtime.config.TestConfigRoot;
@@ -223,7 +227,7 @@ public final class TestProcessor {
      * Validate the expected BUILD_TIME configuration
      */
     @BuildStep
-    void checkConfig() {
+    void checkConfig(BuildProducer<ReflectiveClassBuildItem> unused) {
         if (!configRoot.validateBuildConfig) {
             return;
         }
@@ -313,6 +317,12 @@ public final class TestProcessor {
             throw new IllegalStateException(
                     "buildTimeConfig.allValues.longList[2] != 3; " + buildTimeConfig.allValues.longList.get(2));
         }
+        if (buildTimeConfig.btConfigValue == null || !buildTimeConfig.btConfigValue.getValue().equals("value")) {
+            throw new IllegalStateException("buildTimeConfig.btConfigValue");
+        }
+        if (buildTimeConfig.btConfigValueEmpty == null || !buildTimeConfig.btConfigValueEmpty.getValue().equals("")) {
+            throw new IllegalStateException("buildTimeConfig.btConfigValueEmpty");
+        }
     }
 
     /**
@@ -400,6 +410,16 @@ public final class TestProcessor {
             BuildProducer<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders) {
         additionalStaticInitConfigSourceProviders.produce(new AdditionalStaticInitConfigSourceProviderBuildItem(
                 AdditionalStaticInitConfigSourceProvider.class.getName()));
+    }
+
+    @BuildStep
+    void staticInitConfigBuilder(BuildProducer<StaticInitConfigBuilderBuildItem> configBuilders) {
+        configBuilders.produce(new StaticInitConfigBuilderBuildItem(StaticInitConfigBuilder.class.getName()));
+    }
+
+    @BuildStep
+    void runTimeConfigBuilder(BuildProducer<RunTimeConfigBuilderBuildItem> configBuilders) {
+        configBuilders.produce(new RunTimeConfigBuilderBuildItem(RunTimeConfigBuilder.class.getName()));
     }
 
     @BuildStep(onlyIf = Never.class)

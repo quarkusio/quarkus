@@ -1,7 +1,7 @@
 package io.quarkus.rest.client.reactive.jackson.runtime.serialisers;
 
-import static io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriterUtil.createDefaultWriter;
-import static io.quarkus.resteasy.reactive.jackson.runtime.serialisers.JacksonMessageBodyWriterUtil.doLegacyWrite;
+import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.createDefaultWriter;
+import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.doLegacyWrite;
 
 import java.io.IOException;
 import java.io.OutputStream;

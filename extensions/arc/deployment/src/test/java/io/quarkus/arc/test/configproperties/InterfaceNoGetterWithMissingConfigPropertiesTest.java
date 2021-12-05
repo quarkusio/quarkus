@@ -9,8 +9,6 @@ import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class InterfaceNoGetterWithMissingConfigPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Configured.class, DummyProperties.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Configured.class, DummyProperties.class))
             .assertException(e -> {
                 assertEquals(DeploymentException.class, e.getClass());
                 assertTrue(e.getMessage().contains("dummy.foo"));

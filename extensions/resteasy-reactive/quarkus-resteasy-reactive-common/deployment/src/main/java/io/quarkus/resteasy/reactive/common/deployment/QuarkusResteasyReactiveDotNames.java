@@ -9,16 +9,15 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusResteasyReactiveDotNames {
 
     public static final DotName HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
     public static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
+    public static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
     public static final DotName JSON_IGNORE = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
     public static final DotName JSONB_TRANSIENT = DotName.createSimple("javax.json.bind.annotation.JsonbTransient");
-
-    public static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
-    public static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");
 
     public static final IgnoreTypeForReflectionPredicate IGNORE_TYPE_FOR_REFLECTION_PREDICATE = new IgnoreTypeForReflectionPredicate();
     public static final IgnoreFieldForReflectionPredicate IGNORE_FIELD_FOR_REFLECTION_PREDICATE = new IgnoreFieldForReflectionPredicate();

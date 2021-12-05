@@ -49,8 +49,6 @@ import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import io.quarkus.mongodb.deployment.MongoClientNameBuildItem;
 import io.quarkus.mongodb.deployment.MongoUnremovableClientsBuildItem;
-import io.quarkus.mongodb.panache.MongoEntity;
-import io.quarkus.mongodb.panache.ProjectionFor;
 import io.quarkus.mongodb.panache.common.PanacheMongoRecorder;
 import io.quarkus.mongodb.panache.jackson.ObjectIdDeserializer;
 import io.quarkus.mongodb.panache.jackson.ObjectIdSerializer;
@@ -70,10 +68,8 @@ public abstract class BasePanacheMongoResourceProcessor {
     public static final DotName BSON_IGNORE = createSimple(BsonIgnore.class.getName());
     public static final DotName BSON_PROPERTY = createSimple(BsonProperty.class.getName());
     public static final DotName MONGO_ENTITY = createSimple(io.quarkus.mongodb.panache.common.MongoEntity.class.getName());
-    public static final DotName DEPRECATED_MONGO_ENTITY = createSimple(MongoEntity.class.getName());
     public static final DotName OBJECT_ID = createSimple(ObjectId.class.getName());
     public static final DotName PROJECTION_FOR = createSimple(io.quarkus.mongodb.panache.common.ProjectionFor.class.getName());
-    public static final DotName DEPRECATED_PROJECTION_FOR = createSimple(ProjectionFor.class.getName());
 
     @BuildStep
     public void buildImperative(CombinedIndexBuildItem index,
@@ -230,27 +226,6 @@ public abstract class BasePanacheMongoResourceProcessor {
                     .produce(new PropertyMappingClassBuildStep(targetClass.name().toString(),
                             annotationInstance.target().asClass().name().toString()));
         }
-        for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DEPRECATED_PROJECTION_FOR)) {
-            Type targetClass = annotationInstance.value().asClass();
-            ClassInfo target = index.getIndex().getClassByName(targetClass.name());
-            Map<String, String> classPropertyMapping = new HashMap<>();
-            extractMappings(classPropertyMapping, target, index);
-            propertyMapping.put(targetClass.name(), classPropertyMapping);
-        }
-        for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DEPRECATED_PROJECTION_FOR)) {
-            Type targetClass = annotationInstance.value().asClass();
-            Map<String, String> targetPropertyMapping = propertyMapping.get(targetClass.name());
-            if (targetPropertyMapping != null && !targetPropertyMapping.isEmpty()) {
-                ClassInfo info = annotationInstance.target().asClass();
-                ProjectionForEnhancer fieldEnhancer = new ProjectionForEnhancer(targetPropertyMapping);
-                transformers.produce(new BytecodeTransformerBuildItem(info.name().toString(), fieldEnhancer));
-            }
-
-            // Register for building the property mapping cache
-            propertyMappingClass
-                    .produce(new PropertyMappingClassBuildStep(targetClass.name().toString(),
-                            annotationInstance.target().asClass().name().toString()));
-        }
     }
 
     @BuildStep
@@ -259,13 +234,6 @@ public abstract class BasePanacheMongoResourceProcessor {
         Set<String> values = new HashSet<>();
         IndexView indexView = applicationArchivesBuildItem.getRootArchive().getIndex();
         Collection<AnnotationInstance> instances = indexView.getAnnotations(MONGO_ENTITY);
-        for (AnnotationInstance annotation : instances) {
-            AnnotationValue clientName = annotation.value("clientName");
-            if ((clientName != null) && !clientName.asString().isEmpty()) {
-                values.add(clientName.asString());
-            }
-        }
-        instances = indexView.getAnnotations(DEPRECATED_MONGO_ENTITY);
         for (AnnotationInstance annotation : instances) {
             AnnotationValue clientName = annotation.value("clientName");
             if ((clientName != null) && !clientName.asString().isEmpty()) {

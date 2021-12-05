@@ -3,8 +3,6 @@ package io.quarkus.commandmode;
 import java.util.Collections;
 
 import org.assertj.core.api.Assertions;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class OverriddenProfileInjectingMainTestCase {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PropertyInjectingMain.class))
             .setApplicationName("property-injecting")
             .setApplicationVersion("0.1-SNAPSHOT")

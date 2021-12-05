@@ -4,8 +4,6 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 import io.quarkus.registry.client.RegistryNonPlatformExtensionsResolver;
 import io.quarkus.registry.config.RegistryNonPlatformExtensionsConfig;
 import java.nio.file.Path;
@@ -28,7 +26,7 @@ public class MavenNonPlatformExtensionsResolver
     }
 
     @Override
-    public ExtensionCatalog resolveNonPlatformExtensions(String quarkusVersion)
+    public ExtensionCatalog.Mutable resolveNonPlatformExtensions(String quarkusVersion)
             throws RegistryResolutionException {
         final ArtifactCoords baseCoords = config.getArtifact();
         final Artifact catalogArtifact = new DefaultArtifact(baseCoords.getGroupId(),
@@ -44,7 +42,7 @@ public class MavenNonPlatformExtensionsResolver
         }
 
         try {
-            return JsonCatalogMapperHelper.deserialize(jsonFile, JsonExtensionCatalog.class);
+            return ExtensionCatalog.mutableFromFile(jsonFile);
         } catch (Exception e) {
             throw new RegistryResolutionException("Failed to load non-platform extension catalog from " + jsonFile, e);
         }

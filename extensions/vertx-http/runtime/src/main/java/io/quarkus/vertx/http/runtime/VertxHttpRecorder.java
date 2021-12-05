@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -227,7 +228,8 @@ public class VertxHttpRecorder {
             doServerStart(vertx, buildConfig, config, LaunchMode.DEVELOPMENT, new Supplier<Integer>() {
                 @Override
                 public Integer get() {
-                    return ProcessorInfo.availableProcessors() * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
+                    return ProcessorInfo.availableProcessors()
+                            * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
                 }
             }, null, false);
         } catch (Exception e) {
@@ -253,6 +255,7 @@ public class VertxHttpRecorder {
 
         if (startVirtual) {
             initializeVirtual(vertx.get());
+            shutdown.addShutdownTask(() -> virtualBootstrap = null);
         }
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled)) {
@@ -359,6 +362,38 @@ public class VertxHttpRecorder {
                     event.next();
                 }
             });
+        }
+        // Headers sent on any request, regardless of the response
+        Map<String, HeaderConfig> headers = httpConfiguration.header;
+        if (!headers.isEmpty()) {
+            // Creates a handler for each header entry
+            for (Map.Entry<String, HeaderConfig> entry : headers.entrySet()) {
+                var name = entry.getKey();
+                var config = entry.getValue();
+                if (config.methods.isEmpty()) {
+                    httpRouteRouter.route(config.path)
+                            .order(Integer.MIN_VALUE)
+                            .handler(new Handler<RoutingContext>() {
+                                @Override
+                                public void handle(RoutingContext event) {
+                                    event.response().headers().add(name, config.value);
+                                    event.next();
+                                }
+                            });
+                } else {
+                    for (String method : config.methods.get()) {
+                        httpRouteRouter.route(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), config.path)
+                                .order(Integer.MIN_VALUE)
+                                .handler(new Handler<RoutingContext>() {
+                                    @Override
+                                    public void handle(RoutingContext event) {
+                                        event.response().headers().add(name, config.value);
+                                        event.next();
+                                    }
+                                });
+                    }
+                }
+            }
         }
 
         Handler<HttpServerRequest> root;
@@ -564,30 +599,30 @@ public class VertxHttpRecorder {
     private static void setHttpServerTiming(InsecureRequests insecureRequests, HttpServerOptions httpServerOptions,
             HttpServerOptions sslConfig,
             HttpServerOptions domainSocketOptions, boolean auxiliaryApplication) {
-        String serverListeningMessage = "Listening on: ";
+        StringBuilder serverListeningMessage = new StringBuilder("Listening on: ");
         int socketCount = 0;
 
         if (httpServerOptions != null && !InsecureRequests.DISABLED.equals(insecureRequests)) {
-            serverListeningMessage += String.format(
-                    "http://%s:%s", httpServerOptions.getHost(), actualHttpPort);
+            serverListeningMessage.append(String.format(
+                    "http://%s:%s", httpServerOptions.getHost(), actualHttpPort));
             socketCount++;
         }
 
         if (sslConfig != null) {
             if (socketCount > 0) {
-                serverListeningMessage += " and ";
+                serverListeningMessage.append(" and ");
             }
-            serverListeningMessage += String.format("https://%s:%s", sslConfig.getHost(), actualHttpsPort);
+            serverListeningMessage.append(String.format("https://%s:%s", sslConfig.getHost(), actualHttpsPort));
             socketCount++;
         }
 
         if (domainSocketOptions != null) {
             if (socketCount > 0) {
-                serverListeningMessage += " and ";
+                serverListeningMessage.append(" and ");
             }
-            serverListeningMessage += String.format("unix:%s", domainSocketOptions.getHost());
+            serverListeningMessage.append(String.format("unix:%s", domainSocketOptions.getHost()));
         }
-        Timing.setHttpServer(serverListeningMessage, auxiliaryApplication);
+        Timing.setHttpServer(serverListeningMessage.toString(), auxiliaryApplication);
     }
 
     /**
@@ -678,7 +713,9 @@ public class VertxHttpRecorder {
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
         serverOptions.setHost(httpConfiguration.host);
-        serverOptions.setPort(httpConfiguration.determineSslPort(launchMode));
+        int sslPort = httpConfiguration.determineSslPort(launchMode);
+        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
+        serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
         serverOptions.setReusePort(httpConfiguration.soReusePort);
         serverOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
@@ -779,7 +816,8 @@ public class VertxHttpRecorder {
         // TODO other config properties
         HttpServerOptions options = new HttpServerOptions();
         options.setHost(httpConfiguration.host);
-        options.setPort(httpConfiguration.determinePort(launchMode));
+        int port = httpConfiguration.determinePort(launchMode);
+        options.setPort(port == 0 ? -1 : port);
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
@@ -1009,49 +1047,51 @@ public class VertxHttpRecorder {
                 } else {
                     // Port may be random, so set the actual port
                     int actualPort = event.result().actualPort();
-                    if (actualPort != options.getPort()) {
-                        // Override quarkus.http(s)?.(test-)?port
-                        String schema;
-                        if (https) {
-                            clearHttpsProperty = true;
-                            schema = "https";
-                        } else {
-                            clearHttpProperty = true;
-                            actualHttpPort = actualPort;
-                            schema = "http";
-                        }
-                        portPropertiesToRestore = new HashMap<>();
-                        String portPropertyValue = String.valueOf(actualPort);
-                        //we always set the .port property, even if we are in test mode, so this will always
-                        //reflect the current port
-                        String portPropertyName = "quarkus." + schema + ".port";
-                        String prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
-                        if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
-                            portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
-                        }
-                        if (launchMode == LaunchMode.TEST) {
-                            //we also set the test-port property in a test
-                            String testPropName = "quarkus." + schema + ".test-port";
-                            String prevTestPropPrevValue = System.setProperty(testPropName, portPropertyValue);
-                            if (!Objects.equals(prevTestPropPrevValue, portPropertyValue)) {
-                                portPropertiesToRestore.put(testPropName, prevTestPropPrevValue);
-                            }
-                        }
-                        if (launchMode.isDevOrTest()) {
-                            // set the profile property as well to make sure we don't have any inconsistencies
-                            portPropertyName = propertyWithProfilePrefix(portPropertyName);
-                            prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
-                            if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
-                                portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
-                            }
-                        }
-                    }
+
                     if (https) {
                         actualHttpsPort = actualPort;
                     } else {
                         actualHttpPort = actualPort;
                     }
                     if (remainingCount.decrementAndGet() == 0) {
+                        //make sure we only set the properties once
+                        if (actualPort != options.getPort()) {
+                            // Override quarkus.http(s)?.(test-)?port
+                            String schema;
+                            if (https) {
+                                clearHttpsProperty = true;
+                                schema = "https";
+                            } else {
+                                clearHttpProperty = true;
+                                actualHttpPort = actualPort;
+                                schema = "http";
+                            }
+                            portPropertiesToRestore = new HashMap<>();
+                            String portPropertyValue = String.valueOf(actualPort);
+                            //we always set the .port property, even if we are in test mode, so this will always
+                            //reflect the current port
+                            String portPropertyName = "quarkus." + schema + ".port";
+                            String prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
+                            if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
+                                portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
+                            }
+                            if (launchMode == LaunchMode.TEST) {
+                                //we also set the test-port property in a test
+                                String testPropName = "quarkus." + schema + ".test-port";
+                                String prevTestPropPrevValue = System.setProperty(testPropName, portPropertyValue);
+                                if (!Objects.equals(prevTestPropPrevValue, portPropertyValue)) {
+                                    portPropertiesToRestore.put(testPropName, prevTestPropPrevValue);
+                                }
+                            }
+                            if (launchMode.isDevOrTest()) {
+                                // set the profile property as well to make sure we don't have any inconsistencies
+                                portPropertyName = propertyWithProfilePrefix(portPropertyName);
+                                prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
+                                if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
+                                    portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
+                                }
+                            }
+                        }
                         startFuture.complete(null);
                     }
 
@@ -1061,30 +1101,6 @@ public class VertxHttpRecorder {
 
         @Override
         public void stop(Promise<Void> stopFuture) {
-            if (clearHttpProperty) {
-                String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port";
-                System.clearProperty(portPropertyName);
-                if (launchMode.isDevOrTest()) {
-                    System.clearProperty(propertyWithProfilePrefix(portPropertyName));
-                }
-
-            }
-            if (clearHttpsProperty) {
-                String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.https.test-port" : "quarkus.https.port";
-                System.clearProperty(portPropertyName);
-                if (launchMode.isDevOrTest()) {
-                    System.clearProperty(propertyWithProfilePrefix(portPropertyName));
-                }
-            }
-            if (portPropertiesToRestore != null) {
-                for (Map.Entry<String, String> entry : portPropertiesToRestore.entrySet()) {
-                    if (entry.getValue() == null) {
-                        System.clearProperty(entry.getKey());
-                    } else {
-                        System.setProperty(entry.getKey(), entry.getValue());
-                    }
-                }
-            }
 
             final AtomicInteger remainingCount = new AtomicInteger(0);
             if (httpServer != null) {
@@ -1099,6 +1115,34 @@ public class VertxHttpRecorder {
 
             Handler<AsyncResult<Void>> handleClose = event -> {
                 if (remainingCount.decrementAndGet() == 0) {
+
+                    if (clearHttpProperty) {
+                        String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.http.test-port"
+                                : "quarkus.http.port";
+                        System.clearProperty(portPropertyName);
+                        if (launchMode.isDevOrTest()) {
+                            System.clearProperty(propertyWithProfilePrefix(portPropertyName));
+                        }
+
+                    }
+                    if (clearHttpsProperty) {
+                        String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.https.test-port"
+                                : "quarkus.https.port";
+                        System.clearProperty(portPropertyName);
+                        if (launchMode.isDevOrTest()) {
+                            System.clearProperty(propertyWithProfilePrefix(portPropertyName));
+                        }
+                    }
+                    if (portPropertiesToRestore != null) {
+                        for (Map.Entry<String, String> entry : portPropertiesToRestore.entrySet()) {
+                            if (entry.getValue() == null) {
+                                System.clearProperty(entry.getKey());
+                            } else {
+                                System.setProperty(entry.getKey(), entry.getValue());
+                            }
+                        }
+                    }
+
                     stopFuture.complete();
                 }
             };

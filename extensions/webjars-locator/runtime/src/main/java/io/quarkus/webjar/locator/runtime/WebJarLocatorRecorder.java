@@ -11,7 +11,7 @@ public class WebJarLocatorRecorder {
 
     public Handler<RoutingContext> getHandler(String webjarsRootUrl, Map<String, String> webjarNameToVersionMap) {
         return (event) -> {
-            String path = event.normalisedPath();
+            String path = event.normalizedPath();
             if (path.startsWith(webjarsRootUrl)) {
                 String rest = path.substring(webjarsRootUrl.length());
                 String webjar = rest.substring(0, rest.indexOf('/'));

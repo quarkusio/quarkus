@@ -4,8 +4,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,7 +15,7 @@ public class ServletDestroyTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PreDestroyServlet.class))
             .setAllowTestClassOutsideDeployment(true)
             .setAfterUndeployListener(() -> {

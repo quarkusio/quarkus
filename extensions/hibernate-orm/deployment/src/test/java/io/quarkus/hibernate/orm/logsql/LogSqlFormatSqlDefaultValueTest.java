@@ -8,8 +8,6 @@ import javax.inject.Inject;
 import javax.persistence.EntityManager;
 
 import org.hibernate.cfg.AvailableSettings;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class LogSqlFormatSqlDefaultValueTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class)
                     .addAsResource("application-log-sql-format-sql-default.properties", "application.properties"));
 

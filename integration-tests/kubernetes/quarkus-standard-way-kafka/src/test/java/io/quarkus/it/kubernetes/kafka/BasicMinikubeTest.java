@@ -7,8 +7,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class BasicMinikubeTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(DummyProcessor.class))
+            .withApplicationRoot((jar) -> jar.addClasses(DummyProcessor.class))
             .setApplicationName("minikube-with-defaults")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("basic-minikube.properties")

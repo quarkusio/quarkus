@@ -79,15 +79,17 @@ public class MethodNameParser {
     public Result parse(MethodInfo methodInfo) {
         String methodName = methodInfo.name();
         ClassInfo repositoryClassInfo = methodInfo.declaringClass();
-        String repositoryMethodDescription = methodName + " of Repository " + repositoryClassInfo;
+        String repositoryMethodDescription = "'" + methodName + "' of repository '" + repositoryClassInfo + "'";
         QueryType queryType = getType(methodName);
         if (queryType == null) {
-            throw new UnableToParseMethodException("Method " + repositoryMethodDescription + " cannot be parsed");
+            throw new UnableToParseMethodException("Method " + repositoryMethodDescription
+                    + " cannot be parsed. Did you forget to annotate the method with '@Query'?");
         }
 
         int byIndex = methodName.indexOf("By");
         if ((byIndex == -1) || (byIndex + 2 >= methodName.length())) {
-            throw new UnableToParseMethodException("Method " + repositoryMethodDescription + " cannot be parsed");
+            throw new UnableToParseMethodException("Method " + repositoryMethodDescription
+                    + " cannot be parsed as there is no proper 'By' clause in the name.");
         }
 
         // handle 'Top' and 'First'

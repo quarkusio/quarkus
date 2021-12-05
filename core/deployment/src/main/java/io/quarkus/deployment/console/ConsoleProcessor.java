@@ -48,7 +48,7 @@ public class ConsoleProcessor {
                     launchModeBuildItem.isTest());
             ConsoleStateManager.init(QuarkusConsole.INSTANCE, launchModeBuildItem.getDevModeType().get());
             //note that this bit needs to be refactored so it is no longer tied to continuous testing
-            if (!TestSupport.instance().isPresent() || config.continuousTesting == TestConfig.Mode.DISABLED
+            if (TestSupport.instance().isEmpty() || config.continuousTesting == TestConfig.Mode.DISABLED
                     || config.flatClassPath) {
                 return ConsoleInstalledBuildItem.INSTANCE;
             }

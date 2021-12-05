@@ -8,8 +8,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,7 +24,7 @@ public class GeneratedJaxRsResourceTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     @Test

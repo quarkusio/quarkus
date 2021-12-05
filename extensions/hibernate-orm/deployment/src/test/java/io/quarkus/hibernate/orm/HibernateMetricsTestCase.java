@@ -13,8 +13,6 @@ import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.annotation.RegistryType;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -28,7 +26,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HibernateMetricsTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+    static QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
             .addAsResource("application-metrics-enabled.properties", "application.properties")
             .addClasses(DummyEntity.class));
 

@@ -55,7 +55,8 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .scope(scope)
                     .types(types)
                     .qualifiers(qualifiers)
-                    .alternativePriority(alternativePriority)
+                    .alternative(alternative)
+                    .priority(priority)
                     .name(name)
                     .creator(creatorConsumer)
                     .destroyer(destroyerConsumer)
@@ -63,6 +64,7 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .defaultBean(defaultBean)
                     .removable(removable)
                     .forceApplicationClass(forceApplicationClass)
+                    .targetPackageName(targetPackageName)
                     .build());
         }
     }

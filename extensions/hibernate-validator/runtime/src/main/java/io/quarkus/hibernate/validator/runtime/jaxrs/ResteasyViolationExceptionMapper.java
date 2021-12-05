@@ -45,8 +45,10 @@ public class ResteasyViolationExceptionMapper implements ExceptionMapper<Validat
 
         // Check standard media types.
         MediaType mediaType = ValidatorMediaTypeUtil.getAcceptMediaType(headers.getAcceptableMediaTypes(),
-                exception.getAccept())
-                .orElse(MediaType.TEXT_PLAIN_TYPE);
+                exception.getAccept());
+        if (mediaType == null) {
+            mediaType = MediaType.TEXT_PLAIN_TYPE;
+        }
 
         if (MediaType.TEXT_PLAIN_TYPE.equals(mediaType)) {
             builder.entity(exception.toString());

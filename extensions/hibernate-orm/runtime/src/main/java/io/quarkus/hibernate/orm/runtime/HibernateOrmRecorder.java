@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -125,5 +126,26 @@ public class HibernateOrmRecorder {
                 return session;
             }
         };
+    }
+
+    public void doValidation(String puName) {
+        Optional<String> val;
+        if (puName.equals(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)) {
+            val = ConfigProvider.getConfig().getOptionalValue("quarkus.hibernate-orm.database.generation", String.class);
+        } else {
+            val = ConfigProvider.getConfig().getOptionalValue("quarkus.hibernate-orm.\"" + puName + "\".database.generation",
+                    String.class);
+        }
+        //if hibernate is already managing the schema we don't do this
+        if (val.isPresent() && !val.get().equals("none")) {
+            return;
+        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                SchemaManagementIntegrator.runPostBootValidation(puName);
+            }
+        }, "Hibernate post-boot validation thread for " + puName).start();
+
     }
 }

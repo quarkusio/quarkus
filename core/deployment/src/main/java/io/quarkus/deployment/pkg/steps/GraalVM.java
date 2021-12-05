@@ -8,24 +8,29 @@ import java.util.stream.Stream;
 final class GraalVM {
     static final class Version implements Comparable<Version> {
         private static final Pattern PATTERN = Pattern.compile(
-                "(GraalVM|native-image)( Version)? ([1-9][0-9]*)\\.([0-9]+)\\.[0-9]+(-dev\\p{XDigit}*)?([^\n$]*)\\s*");
+                "(GraalVM|native-image)( Version)? (?<version>[1-9][0-9]*(\\.[0-9]+)+(-dev\\p{XDigit}*)?)(?<distro>.*?)?(\\(Java Version (?<javaVersion>[^)]+)\\))?$");
 
-        static final Version UNVERSIONED = new Version("Undefined", -1, -1, Distribution.ORACLE);
-        static final Version VERSION_21_2 = new Version("GraalVM 21.2", 21, 2, Distribution.ORACLE);
-        static final Version VERSION_21_3 = new Version("GraalVM 21.3", 21, 3, Distribution.ORACLE);
+        static final Version UNVERSIONED = new Version("Undefined", "snapshot", Distribution.ORACLE);
+        static final Version VERSION_21_2 = new Version("GraalVM 21.2", "21.2", Distribution.ORACLE);
+        static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.ORACLE);
+        static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.ORACLE);
 
         static final Version MINIMUM = VERSION_21_2;
-        static final Version CURRENT = VERSION_21_2;
+        static final Version CURRENT = VERSION_21_3;
 
         final String fullVersion;
-        final int major;
-        final int minor;
+        final org.graalvm.home.Version version;
+        final int javaVersion;
         final Distribution distribution;
 
-        Version(String fullVersion, int major, int minor, Distribution distro) {
+        Version(String fullVersion, String version, Distribution distro) {
+            this(fullVersion, version, 11, distro);
+        }
+
+        Version(String fullVersion, String version, int javaVersion, Distribution distro) {
             this.fullVersion = fullVersion;
-            this.major = major;
-            this.minor = minor;
+            this.version = org.graalvm.home.Version.parse(version);
+            this.javaVersion = javaVersion;
             this.distribution = distro;
         }
 
@@ -53,21 +58,13 @@ final class GraalVM {
             return this.compareTo(version) < 0;
         }
 
+        boolean is(Version version) {
+            return this.compareTo(version) == 0;
+        }
+
         @Override
         public int compareTo(Version o) {
-            if (major > o.major) {
-                return 1;
-            }
-
-            if (major == o.major) {
-                if (minor > o.minor) {
-                    return 1;
-                } else if (minor == o.minor) {
-                    return 0;
-                }
-            }
-
-            return -1;
+            return this.version.compareTo(o.version);
         }
 
         static Version of(Stream<String> lines) {
@@ -75,13 +72,16 @@ final class GraalVM {
             while (it.hasNext()) {
                 final String line = it.next();
                 final Matcher matcher = PATTERN.matcher(line);
-                if (matcher.find() && matcher.groupCount() >= 3) {
-                    final String major = matcher.group(3);
-                    final String minor = matcher.group(4);
-                    final String distro = matcher.group(6);
+                if (matcher.find()) {
+                    final String version = matcher.group("version");
+                    final String distro = matcher.group("distro");
+                    String javaVersionMatch = matcher.group("javaVersion");
+                    final int javaVersion = javaVersionMatch == null ? // Old GraalVM versions, like 19, didn't report the Java version
+                            11 : Integer.parseInt(javaVersionMatch.split("\\.")[0]);
                     return new Version(
                             line,
-                            Integer.parseInt(major), Integer.parseInt(minor),
+                            version,
+                            javaVersion,
                             isMandrel(distro) ? Distribution.MANDREL : Distribution.ORACLE);
                 }
             }
@@ -90,16 +90,24 @@ final class GraalVM {
         }
 
         private static boolean isMandrel(String s) {
+            if (s == null) {
+                return false;
+            }
             return s.contains("Mandrel Distribution");
         }
 
         @Override
         public String toString() {
             return "Version{" +
-                    "major=" + major +
-                    ", minor=" + minor +
+                    "version=" + version +
+                    ", fullVersion=" + fullVersion +
                     ", distribution=" + distribution +
+                    ", javaVersion=" + javaVersion +
                     '}';
+        }
+
+        public boolean isJava17() {
+            return javaVersion == 17;
         }
     }
 

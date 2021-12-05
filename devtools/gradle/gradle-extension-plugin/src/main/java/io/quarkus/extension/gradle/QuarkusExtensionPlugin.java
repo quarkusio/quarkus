@@ -1,16 +1,26 @@
 package io.quarkus.extension.gradle;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Map;
+
+import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.testing.Test;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.extension.gradle.dependency.DeploymentClasspathBuilder;
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
+import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusExtensionPlugin implements Plugin<Project> {
 
@@ -44,9 +54,9 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
         project.getPlugins().withType(
                 JavaPlugin.class,
                 javaPlugin -> {
-                    Task jarTask = tasks.getByName(JavaPlugin.JAR_TASK_NAME);
-                    jarTask.dependsOn(extensionDescriptorTask);
-
+                    tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME, task -> task.finalizedBy(extensionDescriptorTask));
+                    tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, task -> task.dependsOn(extensionDescriptorTask));
+                    tasks.withType(Test.class, test -> test.useJUnitPlatform());
                     addAnnotationProcessorDependency(project);
                 });
 
@@ -56,11 +66,34 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
             if (deploymentProject != null) {
                 deploymentProject.getPlugins().withType(
                         JavaPlugin.class,
-                        javaPlugin -> {
-                            addAnnotationProcessorDependency(deploymentProject);
-                        });
+                        javaPlugin -> addAnnotationProcessorDependency(deploymentProject));
+                deploymentProject.getTasks().withType(Test.class, test -> {
+                    test.useJUnitPlatform();
+                    test.doFirst(task -> {
+                        final Map<String, Object> props = test.getSystemProperties();
+                        final ApplicationModel appModel = ToolingUtils.create(deploymentProject, LaunchMode.TEST);
+                        try {
+                            final Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
+                            props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
+                        } catch (IOException e) {
+                            throw new GradleException("Unable to serialiaze gradle application model", e);
+                        }
+                    });
+                });
+                exportDeploymentClasspath(deploymentProject);
             }
         });
+    }
+
+    private void exportDeploymentClasspath(Project project) {
+        DeploymentClasspathBuilder deploymentClasspathBuilder = new DeploymentClasspathBuilder(project);
+        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
+                .beforeResolve((dependencies) -> deploymentClasspathBuilder
+                        .exportDeploymentClasspath(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
+        project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
+                .beforeResolve((testDependencies) -> deploymentClasspathBuilder
+                        .exportDeploymentClasspath(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME));
+
     }
 
     private void addAnnotationProcessorDependency(Project project) {
@@ -85,7 +118,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
         Project deploymentProject = project.getRootProject().findProject(deploymentProjectName);
         if (deploymentProject == null) {
             project.getLogger().warn("Unable to find deployment project with name: " + deploymentProjectName
-                    + ". You can configure the deployment project name by setting the 'deploymentProject' property in the plugin extension.");
+                    + ". You can configure the deployment project name by setting the 'deploymentArtifact' property in the plugin extension.");
         }
 
         return deploymentProject;

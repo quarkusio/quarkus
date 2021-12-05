@@ -1,5 +1,8 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
+import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -12,6 +15,17 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot
 public class KubernetesConfig implements PlatformConfiguration {
+
+    public enum DeploymentResourceKind {
+        Deployment(DEPLOYMENT),
+        StatefulSet(STATEFULSET);
+
+        final String kind;
+
+        DeploymentResourceKind(String kind) {
+            this.kind = kind;
+        }
+    }
 
     /**
      * The name of the group this component belongs too
@@ -31,6 +45,13 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
     Optional<String> version;
+
+    /**
+     * The kind of the deployment resource to use.
+     * Supported values are 'Deployment' and 'StatefulSet' defaulting to the first.
+     */
+    @ConfigItem(defaultValue = "Deployment")
+    KubernetesConfig.DeploymentResourceKind deploymentKind;
 
     /**
      * The namespace the generated resources should belong to.
@@ -281,6 +302,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getVersion() {
         return version;
+    }
+
+    public String getDeploymentResourceKind() {
+        return deploymentKind.kind;
     }
 
     public Optional<String> getNamespace() {

@@ -56,13 +56,15 @@ public final class CodestartData {
     public static Map<String, Object> buildDependenciesData(Stream<Codestart> codestartsStream, String languageName,
             Collection<String> extensions, Collection<String> platforms) {
         final Map<String, Set<CodestartDep>> depsData = new HashMap<>();
-        final Set<CodestartDep> boms = platforms.stream()
-                .map(CodestartDep::new)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        final Set<CodestartDep> dependencies = extensions.stream()
-                .map(CodestartDep::new)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        final Set<CodestartDep> boms = new LinkedHashSet<>();
+        final Set<CodestartDep> dependencies = new LinkedHashSet<>();
         final Set<CodestartDep> testDependencies = new LinkedHashSet<>();
+        platforms.stream()
+                .map(CodestartDep::new)
+                .forEach(boms::add);
+        extensions.stream()
+                .map(CodestartDep::new)
+                .forEach(dependencies::add);
         codestartsStream
                 .flatMap(s -> Stream.of(s.getBaseLanguageSpec(), s.getLanguageSpec(languageName)))
                 .forEach(d -> {

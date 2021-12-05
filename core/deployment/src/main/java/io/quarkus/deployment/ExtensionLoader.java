@@ -852,7 +852,7 @@ public final class ExtensionLoader {
                                 BytecodeRecorderImpl bri = isRecorder
                                         ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
                                                 clazz.getSimpleName(), method.getName(),
-                                                Integer.toString(method.toString().hashCode()), identityComparison,
+                                                Integer.toString(Math.abs(method.toString().hashCode())), identityComparison,
                                                 s -> {
                                                     if (s instanceof Class) {
                                                         var cfg = ((Class<?>) s).getAnnotation(ConfigRoot.class);

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings
+        xmlns="http://xmlns.jcp.org/xml/ns/persistence/orm"
+        version="2.2">
+
+    <package>io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.entitylistener</package>
+
+    <entity class="EntityWithListenerThroughInstanceMethods"
+            metadata-complete="true">
+        <pre-persist method-name="prePersist"/>
+        <post-persist method-name="postPersist"/>
+        <pre-remove method-name="preRemove"/>
+        <post-remove method-name="postRemove"/>
+        <pre-update method-name="preUpdate"/>
+        <post-update method-name="postUpdate"/>
+        <post-load method-name="postLoad"/>
+        <attributes>
+            <id name="id">
+            </id>
+        </attributes>
+    </entity>
+
+    <entity class="EntityWithListenerThroughEntityListenersAnnotation"
+            metadata-complete="true">
+        <entity-listeners>
+            <entity-listener class="MyListenerRequiringCdi">
+                <pre-persist method-name="prePersist"/>
+                <post-persist method-name="postPersist"/>
+                <pre-remove method-name="preRemove"/>
+                <post-remove method-name="postRemove"/>
+                <pre-update method-name="preUpdate"/>
+                <post-update method-name="postUpdate"/>
+                <post-load method-name="postLoad"/>
+            </entity-listener>
+        </entity-listeners>
+        <attributes>
+            <id name="id">
+            </id>
+        </attributes>
+    </entity>
+
+</entity-mappings>

@@ -20,8 +20,6 @@ import javax.enterprise.inject.Model;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,7 +29,7 @@ public class AutoProducerMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(AutoProducerMethodTest.class, Client.class, Producers.class));
 
     @Inject

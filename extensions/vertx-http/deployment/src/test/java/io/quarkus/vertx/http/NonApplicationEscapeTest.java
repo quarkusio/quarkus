@@ -10,9 +10,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.awaitility.Awaitility;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,7 +37,7 @@ public class NonApplicationEscapeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());

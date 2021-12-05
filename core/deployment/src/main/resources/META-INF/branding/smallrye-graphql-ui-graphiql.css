@@ -27,7 +27,7 @@ body {
 }
 
 #graphiql .topBar::after {
-    content: "{applicationName} {applicationVersion} (powered by Quarkus {quarkusVersion})";
+    content: "{applicationHeader}";
     position: absolute;
     padding-top: 6px;
     right: 100px;

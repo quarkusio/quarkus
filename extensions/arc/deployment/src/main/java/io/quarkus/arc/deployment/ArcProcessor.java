@@ -20,11 +20,15 @@ import javax.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcContainer;
@@ -36,23 +40,33 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AlternativePriorities;
+import io.quarkus.arc.processor.AnnotationLiteralProcessor;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
+import io.quarkus.arc.processor.BeanGenerator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.processor.Beans;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.BytecodeTransformer;
 import io.quarkus.arc.processor.ContextConfigurator;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+import io.quarkus.arc.processor.MethodDescriptors;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.StereotypeInfo;
+import io.quarkus.arc.processor.Transformation;
+import io.quarkus.arc.processor.Types;
 import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -84,10 +98,13 @@ import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.test.TestApplicationClassPredicate;
+import io.quarkus.runtime.util.HashUtil;
 
 /**
  * This class contains build steps that trigger various phases of the bean processing.
@@ -389,11 +406,25 @@ public class ArcProcessor {
     // PHASE 3 - register synthetic observers
     @BuildStep
     public ObserverRegistrationPhaseBuildItem registerSyntheticObservers(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            List<BeanConfiguratorBuildItem> beanConfigurationRegistry) {
+            List<BeanConfiguratorBuildItem> beanConfigurators,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
-        for (BeanConfiguratorBuildItem configurator : beanConfigurationRegistry) {
+        for (BeanConfiguratorBuildItem configurator : beanConfigurators) {
             // Just make sure the configurator is processed
             configurator.getValues().forEach(BeanConfigurator::done);
+        }
+
+        // Initialize the type -> bean map
+        beanRegistrationPhase.getBeanProcessor().getBeanDeployment().initBeanByTypeMap();
+
+        // Register a synthetic bean for each List<?> with qualifier @All 
+        List<InjectionPointInfo> listAll = beanRegistrationPhase.getInjectionPoints().stream()
+                .filter(this::isListAllInjectionPoint).collect(Collectors.toList());
+        if (!listAll.isEmpty()) {
+            registerListInjectionPointsBeans(beanRegistrationPhase, listAll, reflectiveMethods, reflectiveFields,
+                    unremovableBeans);
         }
 
         BeanProcessor beanProcessor = beanRegistrationPhase.getBeanProcessor();
@@ -469,6 +500,7 @@ public class ArcProcessor {
             public void registerField(FieldInfo fieldInfo) {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
             }
+
         }, existingClasses.existingClasses, bytecodeTransformerConsumer,
                 config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives);
         for (ResourceOutput.Resource resource : resources) {
@@ -495,6 +527,11 @@ public class ArcProcessor {
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
         for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, qualifier.name().toString()));
+        }
+
+        // Register all interceptor bindings for reflection so that AnnotationLiteral.equals() works in a native image
+        for (ClassInfo binding : beanProcessor.getBeanDeployment().getInterceptorBindings()) {
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, binding.name().toString()));
         }
 
         ArcContainer container = recorder.getContainer(shutdown);
@@ -604,6 +641,190 @@ public class ArcProcessor {
     @BuildStep
     BeanDefiningAnnotationBuildItem quarkusMain() {
         return new BeanDefiningAnnotationBuildItem(DotName.createSimple(QuarkusMain.class.getName()), DotNames.SINGLETON);
+    }
+
+    @BuildStep
+    AnnotationsTransformerBuildItem transformListAllInjectionPoints() {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public int getPriority() {
+                return Integer.MIN_VALUE;
+            }
+
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.FIELD || kind == Kind.METHOD;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                if (Annotations.contains(ctx.getAnnotations(), DotNames.ALL)) {
+                    // For each injection point annotated with @All add a synthetic qualifier 
+                    AnnotationTarget target = ctx.getTarget();
+                    if (target.kind() == Kind.FIELD) {
+                        // Identifier is a hash of "type + field annotations" 
+                        String id = HashUtil
+                                .sha1(target.asField().type().toString() + target.asField().annotations().toString());
+                        ctx.transform().add(DotNames.IDENTIFIED,
+                                AnnotationValue.createStringValue("value", id)).done();
+                    } else {
+                        MethodInfo method = target.asMethod();
+                        Set<AnnotationInstance> alls = Annotations.getAnnotations(Kind.METHOD_PARAMETER, DotNames.ALL,
+                                ctx.getAnnotations());
+                        Set<AnnotationInstance> paramsAnnotations = Annotations.getAnnotations(Kind.METHOD_PARAMETER,
+                                ctx.getAnnotations());
+                        List<AnnotationInstance> toAdd = new ArrayList<>();
+                        for (AnnotationInstance annotation : alls) {
+                            short position = annotation.target().asMethodParameter().position();
+                            Set<AnnotationInstance> paramAnnotations = new HashSet<>();
+                            for (AnnotationInstance paramAnnotation : paramsAnnotations) {
+                                if (paramAnnotation.target().asMethodParameter().position() == position) {
+                                    paramAnnotations.add(paramAnnotation);
+                                }
+                            }
+                            // Identifier is a hash of "type + method param annotations" 
+                            String id = HashUtil.sha1(method.parameters().get(position) + paramAnnotations.toString());
+                            toAdd.add(
+                                    AnnotationInstance.create(DotNames.IDENTIFIED,
+                                            MethodParameterInfo.create(method,
+                                                    annotation.target().asMethodParameter().position()),
+                                            new AnnotationValue[] { AnnotationValue.createStringValue("value", id) }));
+                        }
+                        Transformation transform = ctx.transform();
+                        toAdd.forEach(transform::add);
+                        transform.done();
+                    }
+                }
+            }
+
+        });
+    }
+
+    private void registerListInjectionPointsBeans(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            List<InjectionPointInfo> injectionPoints, BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        BeanDeployment beanDeployment = beanRegistrationPhase.getBeanProcessor().getBeanDeployment();
+        AnnotationLiteralProcessor annotationLiterals = beanRegistrationPhase.getBeanProcessor()
+                .getAnnotationLiteralProcessor();
+        ReflectionRegistration reflectionRegistration = new ReflectionRegistration() {
+            @Override
+            public void registerMethod(MethodInfo methodInfo) {
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
+            }
+
+            @Override
+            public void registerField(FieldInfo fieldInfo) {
+                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+            }
+
+        };
+
+        Set<TypeAndQualifiers> unremovables = new HashSet<>();
+        for (InjectionPointInfo injectionPoint : injectionPoints) {
+
+            // The injection point must be registered immediately and NOT inside the creator callback
+            if (injectionPoint.isField()) {
+                reflectionRegistration.registerField(injectionPoint.getTarget().asField());
+            } else {
+                reflectionRegistration.registerMethod(injectionPoint.getTarget().asMethod());
+            }
+
+            // All qualifiers but @All and @Identified
+            Set<AnnotationInstance> qualifiers = injectionPoint.getRequiredQualifiers().stream()
+                    .filter(a -> !DotNames.ALL.equals(a.name()) && !DotNames.IDENTIFIED.equals(a.name()))
+                    .collect(Collectors.toSet());
+            if (qualifiers.isEmpty()) {
+                // If no other qualifier is used then add @Any
+                qualifiers.add(AnnotationInstance.create(DotNames.ANY, null, new AnnotationValue[] {}));
+            }
+
+            Type elementType = injectionPoint.getType().asParameterizedType().arguments().get(0);
+
+            if (!unremovables
+                    .add(new TypeAndQualifiers(
+                            elementType.name().equals(DotNames.INSTANCE_HANDLE)
+                                    ? elementType.asParameterizedType().arguments().get(0)
+                                    : elementType,
+                            qualifiers))) {
+                continue;
+            }
+
+            BeanConfigurator<?> configurator = beanRegistrationPhase.getContext()
+                    .configure(List.class)
+                    .forceApplicationClass()
+                    .scope(BuiltinScope.DEPENDENT.getInfo())
+                    .addType(injectionPoint.getRequiredType());
+
+            injectionPoint.getRequiredQualifiers().forEach(configurator::addQualifier);
+
+            if (injectionPoint.getTargetBean().isPresent()) {
+                // Generate the bean class in the same package as the target bean
+                configurator.targetPackageName(injectionPoint.getTargetBean().get().getTargetPackageName());
+            }
+
+            configurator.creator(mc -> {
+                ResultHandle injetionPointType = Types.getTypeHandle(mc, injectionPoint.getType());
+
+                // List<T> or List<InstanceHandle<T>
+                ResultHandle requiredType;
+                MethodDescriptor instancesMethod;
+                if (elementType.name().equals(DotNames.INSTANCE_HANDLE)) {
+                    requiredType = Types.getTypeHandle(mc, elementType.asParameterizedType().arguments().get(0));
+                    instancesMethod = MethodDescriptors.INSTANCES_LIST_OF_HANDLES;
+                } else {
+                    requiredType = Types.getTypeHandle(mc, elementType);
+                    instancesMethod = MethodDescriptors.INSTANCES_LIST_OF;
+                }
+
+                ResultHandle requiredQualifiers = BeanGenerator.collectQualifiers(null, null,
+                        beanDeployment, mc, annotationLiterals, qualifiers);
+                ResultHandle injectionPointAnnotations = BeanGenerator.collectInjectionPointAnnotations(null, null,
+                        beanDeployment,
+                        mc, injectionPoint, annotationLiterals,
+                        annotationName -> !annotationName.equals(DotNames.DEPRECATED));
+                ResultHandle javaMember = BeanGenerator.getJavaMemberHandle(mc, injectionPoint,
+                        ReflectionRegistration.NOOP);
+                ResultHandle container = mc
+                        .invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+                ResultHandle targetBean = mc.invokeInterfaceMethod(
+                        MethodDescriptors.ARC_CONTAINER_BEAN,
+                        container,
+                        injectionPoint.getTargetBean().isPresent()
+                                ? mc.load(injectionPoint.getTargetBean().get().getIdentifier())
+                                : mc.loadNull());
+
+                ResultHandle ret = mc.invokeStaticMethod(instancesMethod, targetBean,
+                        injetionPointType, requiredType, requiredQualifiers, mc.getMethodParam(0),
+                        injectionPointAnnotations,
+                        javaMember, mc.load(injectionPoint.getPosition()));
+                mc.returnValue(ret);
+            });
+            configurator.done();
+        }
+        if (!unremovables.isEmpty()) {
+            // New beans were registered - we need to re-init the type -> bean map
+            // Also make all beans that match the List<> injection points unremovable
+            beanDeployment.initBeanByTypeMap();
+            // And make all the matching beans unremovable
+            unremovableBeans.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
+                @Override
+                public boolean test(BeanInfo bean) {
+                    for (TypeAndQualifiers tq : unremovables) {
+                        if (Beans.matches(bean, tq)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }));
+        }
+    }
+
+    private boolean isListAllInjectionPoint(InjectionPointInfo injectionPoint) {
+        return DotNames.LIST.equals(injectionPoint.getRequiredType().name())
+                && Annotations.contains(injectionPoint.getRequiredQualifiers(), DotNames.ALL);
     }
 
     private abstract static class AbstractCompositeApplicationClassesPredicate<T> implements Predicate<T> {

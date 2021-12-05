@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.is;
+
 import java.util.function.Supplier;
 
 import javax.ws.rs.client.Client;
@@ -143,5 +146,13 @@ public class ResourceLocatorTest {
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("posted: hello!", response.readEntity(String.class));
         }
+    }
+
+    @Test
+    @DisplayName("Test @BeanParam annotation in Subresources")
+    public void testBeanParamsInSubresource() {
+        given().get("/sub3/first/resources/subresource3?value=second")
+                .then()
+                .body(is("first and second"));
     }
 }

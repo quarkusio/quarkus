@@ -92,7 +92,7 @@ public class CodeGenerator {
 
             final PropertiesConfigSource pcs = new PropertiesConfigSource(properties, "Build system");
 
-            final SmallRyeConfig config = ConfigUtils.configBuilder(false, launchMode)
+            final SmallRyeConfig config = ConfigUtils.configBuilder(false, false, launchMode)
                     .withProfile(launchMode.getDefaultProfile())
                     .withSources(pcs)
                     .build();

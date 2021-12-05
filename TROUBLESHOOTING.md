@@ -81,12 +81,11 @@ To end profiling and gather the results you can launch the same command with the
 The output is a text file that is not really usable, so let's use our preferred performance representation: the  flame graph.
 
 ```shell script
-/path/to/async-profiler/profiler.sh stop -f /tmp/cpu-profile.svg --width 1600 <pid>
+/path/to/async-profiler/profiler.sh stop -f /tmp/cpu-profile.html <pid>
 ```
 
-It will create an SVG  flame graph (Async Profiler automatically detect that you ask for a  flame graph thanks to the `svg` file extension)
-that you can open in your browser (and even zoom inside it by clicking on a frame).    
-The example command will create an SVG of 1600 pixels width.
+It will create an HTML flame graph (Async Profiler automatically detect that you ask for a  flame graph thanks to the `html` file extension)
+that you can open in your browser (and even zoom inside it by clicking on a frame).
 
 One very useful option is `-s` (or `--simple`) that results in simple class names being used instead of fully qualified class names, 
 thus making the  flame graph more readable (at cost of not showing the package names of classes).    
@@ -106,7 +105,7 @@ To start allocation profiling, execute the following command:
 Stopping allocation profiling is done in the same way as for the previously shown CPU profiling.
 
 ```shell script
-/path/to/async-profiler/profiler.sh stop -f /tmp/alloc-profile.svg --width 1600 <pid>
+/path/to/async-profiler/profiler.sh stop -f /tmp/alloc-profile.html <pid>
 ```
 
 ## Profiling application startup with Async Profiler
@@ -120,11 +119,11 @@ Some example usages are:
 
 ```shell script
 # profile CPU startup
-java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.svg,interval=1000000,width=1600,simple\
+java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.html,interval=1000000,simple\
     -jar my-application.jar
 
 # profile allocation startup
-java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.svg,interval=1000000,width=1600,simple\
+java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.html,interval=1000000,simple\
     -jar my-application.jar
 ```
 
@@ -141,10 +140,10 @@ It can be used in the same way as for the production application with the except
 
 ```shell script
 # profile CPU startup
-mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.svg,interval=1000000,width=1600,simple"
+mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.html,interval=1000000,simple"
 
 # profile allocation startup
-mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.svg,interval=1000000,width=1600,simple"
+mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.html,interval=1000000,simple"
 ```
 
 You can also configure the `jvm.args` system property directly inside the `quarkus-maven-plugin` section of your pom.xml.

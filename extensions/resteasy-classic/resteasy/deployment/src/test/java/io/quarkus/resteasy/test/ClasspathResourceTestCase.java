@@ -1,9 +1,7 @@
 package io.quarkus.resteasy.test;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ import io.restassured.RestAssured;
 public class ClasspathResourceTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(RootResource.class)
                     .addAsManifestResource(new StringAsset("hello"), "resources/other/hello.txt")
                     .addAsManifestResource(new StringAsset("index"), "resources/index.html")

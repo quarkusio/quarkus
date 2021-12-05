@@ -2,8 +2,6 @@ package io.quarkus.hibernate.orm.sql_load_script;
 
 import javax.persistence.PersistenceException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -15,7 +13,7 @@ public class InvalidMultilineSqlLoadScriptTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setExpectedException(PersistenceException.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("application-invalid-multiline-test.properties", "application.properties")
                     .addAsResource("invalid-multiline.sql")
                     .addClasses(MyEntity.class));

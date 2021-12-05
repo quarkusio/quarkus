@@ -8,6 +8,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = "opentelemetry")
 public final class OpenTelemetryConfig {
+    public static final String INSTRUMENTATION_NAME = "io.quarkus.opentelemetry";
 
     /**
      * OpenTelemetry support.

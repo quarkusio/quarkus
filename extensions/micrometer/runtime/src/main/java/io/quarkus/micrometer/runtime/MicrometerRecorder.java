@@ -1,7 +1,6 @@
 package io.quarkus.micrometer.runtime;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -127,21 +126,24 @@ public class MicrometerRecorder {
         // configured, some measurements may be missed.
         Instance<MeterBinder> allBinders = beanManager.createInstance()
                 .select(MeterBinder.class, Any.Literal.INSTANCE);
-        allBinders.forEach(x -> x.bindTo(Metrics.globalRegistry));
+        for (MeterBinder meterBinder : allBinders) {
+            meterBinder.bindTo(Metrics.globalRegistry);
+        }
 
         context.addShutdownTask(new Runnable() {
             @Override
             public void run() {
                 if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
                     // Drop existing meters (recreated on next use)
-                    Collection<Meter> meters = new ArrayList<>(Metrics.globalRegistry.getMeters());
-                    meters.forEach(m -> Metrics.globalRegistry.remove(m));
+                    for (Meter meter : Metrics.globalRegistry.getMeters()) {
+                        Metrics.globalRegistry.remove(meter);
+                    }
                 }
-                Collection<MeterRegistry> cleanup = new ArrayList<>(Metrics.globalRegistry.getRegistries());
-                cleanup.forEach(x -> {
-                    x.close();
-                    Metrics.removeRegistry(x);
-                });
+                // iterate over defensive copy to avoid ConcurrentModificationException
+                for (MeterRegistry meterRegistry : new ArrayList<>(Metrics.globalRegistry.getRegistries())) {
+                    meterRegistry.close();
+                    Metrics.removeRegistry(meterRegistry);
+                }
             }
         });
     }
@@ -173,7 +175,7 @@ public class MicrometerRecorder {
         Class<?> clazz = null;
         try {
             clazz = Class.forName(classname, false, Thread.currentThread().getContextClassLoader());
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException ignored) {
         }
         log.debugf("getClass: TCCL: %s ## %s : %s", Thread.currentThread().getContextClassLoader(), classname, (clazz != null));
         return clazz;

@@ -14,15 +14,19 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.workspace.ProcessedSources;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
+import org.assertj.core.api.Assertions;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -569,6 +573,16 @@ public class LocalWorkspaceDiscoveryTest {
         final URL rootPomUrl = Thread.currentThread().getContextClassLoader()
                 .getResource(testResourceDirName + "/root/pom.xml");
         assertEquals(new File(rootPomUrl.toURI()), root);
+
+        final WorkspaceModule wsModule = module1.toWorkspaceModule();
+        Assertions.assertThat(wsModule.getModuleDir()).isEqualTo(module1Dir.toFile());
+        Assertions.assertThat(wsModule.getBuildDir()).isEqualTo(module1Dir.resolve("target").toFile());
+        Collection<ProcessedSources> c = wsModule.getMainResources();
+        Assertions.assertThat(c).hasSize(1);
+        final ProcessedSources src = c.iterator().next();
+        Assertions.assertThat(src.getSourceDir()).isEqualTo(module1Dir.resolve("build").toFile());
+        Assertions.assertThat(src.getDestinationDir())
+                .isEqualTo(module1Dir.resolve("target/classes/META-INF/resources").toFile());
     }
 
     private void assertCompleteWorkspace(final LocalProject project) {

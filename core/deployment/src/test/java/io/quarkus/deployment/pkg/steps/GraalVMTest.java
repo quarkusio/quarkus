@@ -15,30 +15,30 @@ public class GraalVMTest {
 
     @Test
     public void testGraalVMVersionDetected() {
-        assertVersion(20, 1, ORACLE, Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
-        assertVersion(20, 1, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(20, 1), ORACLE,
+                Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
+        assertVersion(org.graalvm.home.Version.create(20, 1, 0, 1), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(20, 1, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(20, 1, 0, 1), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1-Final 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(21, 0, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(21, 0), MANDREL, Version
                 .of(Stream.of("GraalVM Version 21.0.0.0-0b3 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(20, 3, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(20, 3, 1, 2), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.3.1.2-dev (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(21, 1, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(21, 1), MANDREL, Version
                 .of(Stream.of("native-image 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(21, 1, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(21, 1), MANDREL, Version
                 .of(Stream.of("GraalVM 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(21, 1, ORACLE, Version
+        assertVersion(org.graalvm.home.Version.create(21, 1), ORACLE, Version
                 .of(Stream.of("GraalVM 21.1.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(21, 1, ORACLE, Version
+        assertVersion(org.graalvm.home.Version.create(21, 1), ORACLE, Version
                 .of(Stream.of("native-image 21.1.0.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(21, 2, MANDREL, Version
+        assertVersion(org.graalvm.home.Version.create(21, 2), MANDREL, Version
                 .of(Stream.of("native-image 21.2.0.0-Final Mandrel Distribution (Java Version 11.0.12+7)")));
     }
 
-    static void assertVersion(int major, int minor, Distribution distro, Version version) {
-        assertThat(version.major).isEqualTo(major);
-        assertThat(version.minor).isEqualTo(minor);
+    static void assertVersion(org.graalvm.home.Version graalVmVersion, Distribution distro, Version version) {
+        assertThat(graalVmVersion.compareTo(version.version)).isEqualTo(0);
 
         assertThat(version.distribution).isEqualTo(distro);
         if (distro == MANDREL)
@@ -54,8 +54,10 @@ public class GraalVMTest {
 
     @Test
     public void testGraalVMVersionsOlderThan() {
-        assertOlderThan("GraalVM Version 19.3.0", "GraalVM Version 20.2.0");
-        assertOlderThan("GraalVM Version 20.0.0", "GraalVM Version 20.1.0");
+        assertOlderThan("GraalVM Version 19.3.6 CE", "GraalVM Version 20.2.0 (Java Version 11.0.9)");
+        assertOlderThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");
+        assertOlderThan("GraalVM Version 21.2.0 (Java Version 11.0.12)", Version.VERSION_21_3);
+        assertOlderThan("GraalVM Version 21.2.0 (Java Version 11.0.12)", Version.VERSION_21_3_0);
     }
 
     /**
@@ -65,14 +67,24 @@ public class GraalVMTest {
         assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other)))).isLessThan(0);
     }
 
+    static void assertOlderThan(String version, GraalVM.Version other) {
+        assertThat(Version.of(Stream.of(version)).compareTo(other)).isLessThan(0);
+    }
+
     @Test
     public void testGraalVMVersionsCompareEqualTo() {
-        assertCompareEqualTo("GraalVM Version 20.1.0", "GraalVM Version 20.1.0");
+        assertCompareEqualTo("GraalVM Version 20.1.0 (Java Version 11.0.8)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");
         // Distributions don't impact newer/older/same comparisons
-        assertCompareEqualTo("GraalVM Version 20.1.0",
+        assertCompareEqualTo("GraalVM Version 20.1.0.1 (Java Version 11.0.8)",
                 "GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)");
-        // Micro versions ignored, hence two micros are considered the same right now
-        assertCompareEqualTo("GraalVM Version 19.3.0", "GraalVM Version 19.3.3");
+        // Don't ignore micro versions
+        assertCompareNotEqualTo("GraalVM Version 19.3.0", "GraalVM Version 19.3.6 CE");
+        // Trailing zeros don't affect comparison
+        assertCompareEqualTo("GraalVM 21.3 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
+                "GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
+        assertCompareEqualTo("GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
+                "GraalVM 21.3.0.0.0.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
+        assertThat(Version.VERSION_21_3.compareTo(Version.VERSION_21_3_0)).isEqualTo(0);
     }
 
     /**
@@ -82,11 +94,19 @@ public class GraalVMTest {
         assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other)))).isEqualTo(0);
     }
 
+    static void assertCompareNotEqualTo(String version, String other) {
+        assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other)))).isNotEqualTo(0);
+    }
+
     @Test
     public void testGraalVMVersionsNewerThan() {
-        assertNewerThan("GraalVM Version 20.0.0", "GraalVM Version 19.3.0");
+        assertNewerThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 19.3.0");
         assertNewerThan("GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)",
-                "GraalVM Version 20.0.0");
+                "GraalVM Version 20.0.0 (Java Version 11.0.7)");
+        assertNewerThan("GraalVM 21.3.1 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
+                "GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
+        assertNewerThan("GraalVM 21.3.1 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
+                "GraalVM 21.3 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
     }
 
     /**
@@ -96,4 +116,17 @@ public class GraalVMTest {
         assertThat(Version.of(Stream.of(version)).isNewerThan(Version.of(Stream.of(other)))).isTrue();
     }
 
+    @Test
+    public void testGraalVMVersionIsJava17() {
+        Version graalVM21_3_11 = Version.of(Stream.of("GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)"));
+        assertThat(graalVM21_3_11.isJava17()).isFalse();
+        Version graalVM21_3_17 = Version.of(Stream.of("GraalVM 21.3.0 Java 17 CE (Java Version 17.0.1+12-jvmci-21.3-b05)"));
+        assertThat(graalVM21_3_17.isJava17()).isTrue();
+        Version mandrel21_3_11 = Version
+                .of(Stream.of("native-image 21.3.0.0-Final Mandrel Distribution (Java Version 11.0.13+8)"));
+        assertThat(mandrel21_3_11.isJava17()).isFalse();
+        Version mandrel21_3_17 = Version
+                .of(Stream.of("native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17.0.1+12)"));
+        assertThat(mandrel21_3_17.isJava17()).isTrue();
+    }
 }

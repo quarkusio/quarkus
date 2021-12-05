@@ -21,6 +21,8 @@ import io.quarkus.arc.processor.DotNames;
 
 public final class Types {
 
+    static final String JAVA_LANG_PREFIX = "java.lang.";
+
     static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
             IndexView index) {
         Set<Type> types = new HashSet<>();
@@ -76,11 +78,25 @@ public final class Types {
     }
 
     static Type resolveTypeParam(Type typeParam, Map<TypeVariable, Type> resolvedTypeParameters, IndexView index) {
-        if (typeParam.kind() == Kind.TYPE_VARIABLE) {
+        if (typeParam.kind() == Kind.CLASS) {
+            ClassInfo classInfo = index.getClassByName(typeParam.name());
+            if (classInfo == null && !typeParam.name().toString().contains(".")) {
+                // If not indexed and no package then try the java.lang prefix 
+                classInfo = index.getClassByName(DotName.createSimple(JAVA_LANG_PREFIX + typeParam.name().toString()));
+                if (classInfo != null) {
+                    return Type.create(classInfo.name(), Kind.CLASS);
+                }
+            }
+            return typeParam;
+        } else if (typeParam.kind() == Kind.TYPE_VARIABLE) {
             return resolvedTypeParameters.getOrDefault(typeParam, typeParam);
         } else if (typeParam.kind() == Kind.PARAMETERIZED_TYPE) {
             ParameterizedType parameterizedType = typeParam.asParameterizedType();
             ClassInfo classInfo = index.getClassByName(parameterizedType.name());
+            if (classInfo == null && !parameterizedType.name().toString().contains(".")) {
+                // If not indexed and no package then try the java.lang prefix 
+                classInfo = index.getClassByName(DotName.createSimple(JAVA_LANG_PREFIX + parameterizedType.name().toString()));
+            }
             if (classInfo != null) {
                 List<TypeVariable> typeParameters = classInfo.typeParameters();
                 List<Type> arguments = parameterizedType.arguments();

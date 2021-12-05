@@ -4,32 +4,40 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
 public final class ConfigClassBuildItem extends MultiBuildItem {
     private final Class<?> configClass;
+    private final Set<Type> types;
     private final Set<String> generatedClasses;
     private final String prefix;
-    private final Type type;
+    private final Kind kind;
 
     private final DotName name;
 
     public ConfigClassBuildItem(
             final Class<?> configClass,
+            final Set<Type> types,
             final Set<String> generatedClasses,
             final String prefix,
-            final Type type) {
+            final Kind kind) {
 
         this.configClass = configClass;
+        this.types = types;
         this.generatedClasses = generatedClasses;
         this.prefix = prefix;
-        this.type = type;
+        this.kind = kind;
         this.name = DotName.createSimple(configClass.getName());
     }
 
     public Class<?> getConfigClass() {
         return configClass;
+    }
+
+    public Set<Type> getTypes() {
+        return types;
     }
 
     public Set<String> getGeneratedClasses() {
@@ -40,8 +48,8 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
         return prefix;
     }
 
-    public Type getType() {
-        return type;
+    public Kind getKind() {
+        return kind;
     }
 
     public DotName getName() {
@@ -49,14 +57,14 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
     }
 
     public boolean isMapping() {
-        return Type.MAPPING.equals(type);
+        return Kind.MAPPING.equals(kind);
     }
 
     public boolean isProperties() {
-        return Type.PROPERTIES.equals(type);
+        return Kind.PROPERTIES.equals(kind);
     }
 
-    public enum Type {
+    public enum Kind {
         MAPPING,
         PROPERTIES
     }
@@ -72,11 +80,11 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
         final ConfigClassBuildItem that = (ConfigClassBuildItem) o;
         return configClass.equals(that.configClass) &&
                 prefix.equals(that.prefix) &&
-                type == that.type;
+                kind == that.kind;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(configClass, prefix, type);
+        return Objects.hash(configClass, prefix, kind);
     }
 }

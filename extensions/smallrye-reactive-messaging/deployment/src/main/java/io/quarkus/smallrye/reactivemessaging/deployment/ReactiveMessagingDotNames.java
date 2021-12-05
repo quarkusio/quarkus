@@ -5,6 +5,7 @@ import java.util.concurrent.CompletionStage;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.eclipse.microprofile.reactive.messaging.spi.IncomingConnectorFactory;
 import org.eclipse.microprofile.reactive.messaging.spi.OutgoingConnectorFactory;
 import org.jboss.jandex.DotName;
@@ -13,6 +14,8 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.smallrye.reactive.messaging.annotations.Channel;
+import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
+import io.smallrye.reactive.messaging.annotations.ConnectorAttributes;
 import io.smallrye.reactive.messaging.annotations.Emitter;
 import io.smallrye.reactive.messaging.annotations.Incomings;
 import io.smallrye.reactive.messaging.annotations.Merge;
@@ -27,6 +30,11 @@ public final class ReactiveMessagingDotNames {
     static final DotName INCOMING = DotName.createSimple(Incoming.class.getName());
     static final DotName INCOMINGS = DotName.createSimple(Incomings.class.getName());
     static final DotName OUTGOING = DotName.createSimple(Outgoing.class.getName());
+
+    public static final DotName CONNECTOR = DotName.createSimple(Connector.class.getName());
+    static final DotName CONNECTOR_ATTRIBUTES = DotName.createSimple(ConnectorAttributes.class.getName());
+    static final DotName CONNECTOR_ATTRIBUTE = DotName.createSimple(ConnectorAttribute.class.getName());
+
     static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName CHANNEL = DotName
             .createSimple(org.eclipse.microprofile.reactive.messaging.Channel.class.getName());
@@ -48,7 +56,10 @@ public final class ReactiveMessagingDotNames {
     static final DotName SMALLRYE_BLOCKING = DotName.createSimple(io.smallrye.common.annotation.Blocking.class.getName());
 
     // Do not directly reference the MetricDecorator (due to its direct references to MP Metrics, which may not be present)
-    static final DotName METRIC_DECORATOR = DotName.createSimple("io.smallrye.reactive.messaging.metrics.MetricDecorator");
+    static final DotName METRIC_DECORATOR = DotName
+            .createSimple("io.smallrye.reactive.messaging.providers.metrics.MetricDecorator");
+    static final DotName MICROMETER_DECORATOR = DotName
+            .createSimple("io.smallrye.reactive.messaging.providers.metrics.MicrometerDecorator");
 
     // Used to detect REST endpoints and JAX-RS provider
     public static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");
@@ -60,6 +71,8 @@ public final class ReactiveMessagingDotNames {
     static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");
     static final DotName ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER = DotName
             .createSimple("io.quarkus.smallrye.reactivemessaging.runtime.kotlin.AbstractSubscribingCoroutineInvoker");
+
+    static final DotName TRANSACTIONAL = DotName.createSimple("javax.transaction.Transactional");
 
     private ReactiveMessagingDotNames() {
     }

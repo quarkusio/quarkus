@@ -9,6 +9,8 @@ import java.util.TreeSet;
 
 import javax.persistence.Entity;
 
+import org.jboss.jandex.DotName;
+
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 
@@ -20,13 +22,16 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
 
     private final Set<String> allModelPackageNames = new TreeSet<>();
     private final Set<String> entityClassNames = new TreeSet<>();
+    private final Set<DotName> potentialCdiBeanClassNames = new TreeSet<>();
     private final Set<String> allModelClassNames = new TreeSet<>();
     private final Map<String, List<RecordableXmlMapping>> xmlMappingsByPU = new HashMap<>();
 
     public JpaModelBuildItem(Set<String> allModelPackageNames, Set<String> entityClassNames,
-            Set<String> allModelClassNames, Map<String, List<RecordableXmlMapping>> xmlMappingsByPU) {
+            Set<DotName> potentialCdiBeanClassNames, Set<String> allModelClassNames,
+            Map<String, List<RecordableXmlMapping>> xmlMappingsByPU) {
         this.allModelPackageNames.addAll(allModelPackageNames);
         this.entityClassNames.addAll(entityClassNames);
+        this.potentialCdiBeanClassNames.addAll(potentialCdiBeanClassNames);
         this.allModelClassNames.addAll(allModelClassNames);
         this.xmlMappingsByPU.putAll(xmlMappingsByPU);
     }
@@ -46,7 +51,15 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * @return the list of all model class names: entities, mapped super classes, converters...
+     * @return the list of classes that might be retrieved by Hibernate ORM as CDI beans,
+     *         e.g. converters, listeners, ...
+     */
+    public Set<DotName> getPotentialCdiBeanClassNames() {
+        return potentialCdiBeanClassNames;
+    }
+
+    /**
+     * @return the list of all model class names: entities, mapped super classes, {@link #getPotentialCdiBeanClassNames()}...
      */
     public Set<String> getAllModelClassNames() {
         return allModelClassNames;

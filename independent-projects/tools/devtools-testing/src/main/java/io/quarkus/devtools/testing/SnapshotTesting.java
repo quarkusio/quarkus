@@ -22,10 +22,10 @@ import org.junit.jupiter.api.TestInfo;
 
 /**
  * Test file content and directory tree to make sure they are valid by comparing them to their snapshots.
- * The snapshots can easily be updated when necessary and reviewed to confirm they are consistent with the changes.
+ * The snapshots files can easily be updated when necessary and reviewed to confirm they are consistent with the changes.
  * <br />
  * <br />
- * The snapshots will be created/updated using <code>-Dsnap</code> or
+ * The snapshots files will be created/updated using <code>-Dsnap</code> or
  * <code>-Dupdate-snapshots</code>
  * <br />
  * Snapshots are created in {@link #SNAPSHOTS_DIR}
@@ -39,10 +39,10 @@ public class SnapshotTesting {
     /**
      * Test file content to make sure it is valid by comparing it to its snapshots.
      * <br />
-     * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
+     * The snapshot file can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
      * <br />
      * <br />
-     * The snapshot will be created/updated using <code>-Dsnap</code> or
+     * The snapshot file will be created/updated using <code>-Dsnap</code> or
      * <code>-Dupdate-snapshots</code>
      * <br />
      * <br />
@@ -75,10 +75,10 @@ public class SnapshotTesting {
     /**
      * Test file content to make sure it is valid by comparing it to a snapshot.
      * <br />
-     * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
+     * The snapshot file can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
      * <br />
      * <br />
-     * The snapshot will be created/updated using <code>-Dsnap</code> or
+     * The snapshot file will be created/updated using <code>-Dsnap</code> or
      * <code>-Dupdate-snapshots</code>
      * <br />
      * <br />
@@ -103,7 +103,7 @@ public class SnapshotTesting {
             FileUtils.copyFile(fileToCheck.toFile(), snapshotFile.toFile());
         }
 
-        final String snapshotNotFoundDescription = "corresponding snapshot not found for " + snapshotIdentifier
+        final String snapshotNotFoundDescription = "corresponding snapshot file not found for " + snapshotIdentifier
                 + " (Use -Dsnap to create it automatically)";
         final String description = "Snapshot is not matching (use -Dsnap to udpate it automatically): " + snapshotIdentifier;
         if (isUTF8File(fileToCheck)) {
@@ -122,10 +122,10 @@ public class SnapshotTesting {
     /**
      * Test directory tree to make sure it is valid by comparing it to a snapshot.
      * <br />
-     * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
+     * The snapshot file can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
      * <br />
      * <br />
-     * The snapshot will be created/updated using <code>-Dsnap</code> or
+     * The snapshot file will be created/updated using <code>-Dsnap</code> or
      * <code>-Dupdate-snapshots</code>
      *
      * @param testInfo the {@link TestInfo} from the {@Link Test} parameter (used to get the current test class & method to
@@ -141,10 +141,10 @@ public class SnapshotTesting {
     /**
      * Test directory tree to make sure it is valid by comparing it to a snapshot.
      * <br />
-     * The snapshot can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
+     * The snapshot file can easily be updated when necessary and reviewed to confirm it is consistent with the changes.
      * <br />
      * <br />
-     * The snapshot will be created/updated using <code>-Dsnap</code> or
+     * The snapshot file will be created/updated using <code>-Dsnap</code> or
      * <code>-Dupdate-snapshots</code>
      *
      * @param snapshotDirName the snapshot dir name for storage
@@ -180,7 +180,7 @@ public class SnapshotTesting {
         }
 
         assertThat(snapshotFile)
-                .as("corresponding snapshot not found for " + snapshotName + " (Use -Dsnap to create it automatically)")
+                .as("corresponding snapshot file not found for " + snapshotName + " (Use -Dsnap to create it automatically)")
                 .isRegularFile();
 
         final List<String> content = Arrays.stream(getTextContent(snapshotFile).split("\\v"))

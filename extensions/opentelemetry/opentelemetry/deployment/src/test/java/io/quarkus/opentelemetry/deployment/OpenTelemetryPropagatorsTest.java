@@ -5,8 +5,6 @@ import static org.hamcrest.collection.ArrayMatching.arrayContainingInAnyOrder;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +18,7 @@ public class OpenTelemetryPropagatorsTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.opentelemetry.propagators", "tracecontext,xray")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(TestUtil.class));
+            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class));
 
     @Inject
     OpenTelemetry openTelemetry;

@@ -2,8 +2,6 @@ package io.quarkus.hibernate.orm.config.namedpu;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -23,7 +21,7 @@ public class EntitiesInNamedPUWithExplicitUnconfiguredDatasourceTest {
                                 "To solve this, configure datasource 'ds-1'.",
                                 "Refer to https://quarkus.io/guides/datasource for guidance.");
             })
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addPackage(MyEntity.class.getPackage().getName())
                     .addAsResource("application-named-pu-explicit-unconfigured-datasource.properties",
                             "application.properties"));

@@ -145,7 +145,6 @@ public final class LoggingResourceProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     LoggingSetupBuildItem setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, LogBuildTimeConfig buildLog,
-            ConsoleRuntimeConfig consoleRuntimeConfig,
             Optional<WebSocketLogHandlerBuildItem> logStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
             List<NamedLogHandlersBuildItem> namedHandlerBuildItems, List<LogConsoleFormatBuildItem> consoleFormatItems,
@@ -179,7 +178,7 @@ public final class LoggingResourceProcessor {
                 alwaysEnableLogStream = true;
             }
 
-            recorder.initializeLogging(log, buildLog, consoleRuntimeConfig, alwaysEnableLogStream, devUiLogHandler, handlers,
+            recorder.initializeLogging(log, buildLog, alwaysEnableLogStream, devUiLogHandler, handlers,
                     namedHandlers,
                     consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
                     possibleSupplier, launchModeBuildItem.getLaunchMode());

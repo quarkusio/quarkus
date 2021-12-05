@@ -171,6 +171,7 @@ public class QuarkusCompiler implements Closeable {
                                 new File(compilationUnit.getClassesPath()),
                                 context.getSourceEncoding(),
                                 context.getCompilerOptions(),
+                                context.getReleaseJavaVersion(),
                                 context.getSourceJavaVersion(),
                                 context.getTargetJvmVersion(),
                                 context.getCompilerPluginArtifacts(),

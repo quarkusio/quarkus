@@ -11,9 +11,11 @@ updates:
       - area/dependencies
     allow:
       - dependency-name: org.jboss:jboss-parent
+      - dependency-name: org.jboss.resteasy:*
       - dependency-name: org.apache.activemq:*
       - dependency-name: org.flywaydb:flyway-core
       - dependency-name: org.liquibase:liquibase-core
+      - dependency-name: org.liquibase.ext:liquibase-mongodb
       - dependency-name: org.freemarker:freemarker
       - dependency-name: org.eclipse.jgit:*
       - dependency-name: io.fabric8:kubernetes-client-bom
@@ -101,6 +103,8 @@ updates:
       # Jackson
       - dependency-name: com.fasterxml.jackson:jackson-bom
       - dependency-name: com.fasterxml:classmate
+      # Yasson
+      - dependency-name: org.eclipse:yasson
       # AWS
       - dependency-name: software.amazon.awssdk:*
       - dependency-name: com.amazon.alexa:*
@@ -133,6 +137,8 @@ updates:
       - dependency-name: org.jetbrains.dokka:*
     ignore:
       - dependency-name: org.glassfish:jakarta-el
+        update-types: ["version-update:semver-major"]
+      - dependency-name: org.eclipse:yasson
         update-types: ["version-update:semver-major"]
     rebase-strategy: disabled
   - package-ecosystem: gradle

@@ -12,8 +12,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,8 +29,8 @@ public class CacheNamesTest {
     private static final String CACHE_NAME_3 = "test-cache-3";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClasses(CachedService1.class, CachedService2.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClasses(CachedService1.class, CachedService2.class));
 
     @Inject
     CacheManager cacheManager;

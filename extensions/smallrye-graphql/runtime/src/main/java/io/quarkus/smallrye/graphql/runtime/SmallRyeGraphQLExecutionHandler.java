@@ -20,6 +20,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.MIMEHeader;
+import io.vertx.ext.web.ParsedHeaderValues;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -211,9 +213,19 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private String getRequestAccept(RoutingContext ctx) {
-        String accept = ctx.request().getHeader("Accept");
-        if (accept != null && !accept.isEmpty() && !accept.startsWith("*/*")) {
-            return accept;
+        ParsedHeaderValues parsedHeaders = ctx.parsedHeaders();
+        if (parsedHeaders != null && parsedHeaders.accept() != null && !parsedHeaders.accept().isEmpty()) {
+            List<MIMEHeader> acceptList = parsedHeaders.accept();
+            for (MIMEHeader a : acceptList) {
+                if (isValidAcceptRequest(a.rawValue())) {
+                    return a.rawValue();
+                }
+            }
+            // Seems like an unknown accept is passed in
+            String accept = ctx.request().getHeader("Accept");
+            if (accept != null && !accept.isEmpty() && !accept.startsWith("*/*")) {
+                return accept;
+            }
         }
         return DEFAULT_RESPONSE_CONTENT_TYPE;
     }

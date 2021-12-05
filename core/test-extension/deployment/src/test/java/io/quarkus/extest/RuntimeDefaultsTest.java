@@ -9,8 +9,6 @@ import java.util.Optional;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +18,7 @@ import io.smallrye.config.SmallRyeConfig;
 public class RuntimeDefaultsTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     // Don't change this to types, because of classloader class cast exception.
                     .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
                             "io.quarkus.extest.runtime.config.EnvBuildTimeConfigSource")

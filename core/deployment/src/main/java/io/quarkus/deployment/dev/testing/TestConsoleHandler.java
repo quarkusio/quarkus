@@ -49,7 +49,6 @@ public class TestConsoleHandler implements TestListener {
     private volatile ConsoleStateManager.ConsoleContext consoleContext;
     private volatile StatusLine resultsOutput;
     private volatile StatusLine testsStatusOutput;
-    private volatile StatusLine testsCompileOutput;
 
     public TestConsoleHandler(DevModeType devModeType) {
         this.devModeType = devModeType;
@@ -79,7 +78,6 @@ public class TestConsoleHandler implements TestListener {
         this.consoleContext = ConsoleStateManager.INSTANCE.createContext("Continuous Testing");
         this.resultsOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.TEST_RESULTS);
         this.testsStatusOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.TEST_STATUS);
-        this.testsCompileOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.COMPILE_ERROR);
         setupPausedConsole();
     }
 
@@ -143,16 +141,6 @@ public class TestConsoleHandler implements TestListener {
     public void testsDisabled() {
         disabled = true;
         setupPausedConsole();
-    }
-
-    @Override
-    public void testCompileFailed(String message) {
-        testsCompileOutput.setMessage(message);
-    }
-
-    @Override
-    public void testCompileSucceeded() {
-        testsCompileOutput.setMessage(null);
     }
 
     @Override

@@ -30,7 +30,7 @@ public class GreetingProfileTestCase {
                 .get("/greeting/Stu")
                 .then()
                 .statusCode(200)
-                .body(is("Bonjour Stu"));
+                .body(is("Hey Stu"));
     }
 
     @Test
@@ -60,6 +60,16 @@ public class GreetingProfileTestCase {
         public List<TestResourceEntry> testResources() {
             return Collections
                     .singletonList(new TestResourceEntry(DummyTestResource.class, Collections.singletonMap("num", "100")));
+        }
+
+        @Override
+        public String[] commandLineParameters() {
+            return new String[] { "Hey" };
+        }
+
+        @Override
+        public boolean runMainMethod() {
+            return true;
         }
     }
 

@@ -481,7 +481,7 @@ public class MessageBundleProcessor {
                             for (Expression param : params) {
                                 if (param.hasTypeInfo()) {
                                     Map<String, Match> results = new HashMap<>();
-                                    QuteProcessor.validateNestedExpressions(exprEntry.getKey(), defaultBundleInterface,
+                                    QuteProcessor.validateNestedExpressions(config, exprEntry.getKey(), defaultBundleInterface,
                                             results, excludes, incorrectExpressions, expression, index,
                                             implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
                                             checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,

@@ -3,7 +3,7 @@ package io.quarkus.kafka.client.deployment;
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +26,8 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
-import org.testcontainers.utility.Base58;
 import org.testcontainers.utility.DockerImageName;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
@@ -46,6 +44,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
@@ -78,11 +77,11 @@ public class DevServicesKafkaProcessor {
     public DevServicesKafkaBrokerBuildItem startKafkaDevService(
             LaunchModeBuildItem launchMode,
             KafkaBuildTimeConfig kafkaClientBuildTimeConfig,
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
 
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
 
@@ -101,7 +100,11 @@ public class DevServicesKafkaProcessor {
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
 
-            kafkaBroker = startKafka(configuration, launchMode, devServicesSharedNetworkBuildItem.isPresent());
+            kafkaBroker = startKafka(configuration, launchMode,
+                    !devServicesSharedNetworkBuildItem.isEmpty(),
+                    devServicesSharedNetworkBuildItem.stream()
+                            .anyMatch(DevServicesSharedNetworkBuildItem::isExposedOnDockerHost),
+                    devServicesConfig.timeout);
             bootstrapServers = null;
             if (kafkaBroker != null) {
                 closeable = kafkaBroker.getCloseable();
@@ -199,7 +202,7 @@ public class DevServicesKafkaProcessor {
     }
 
     private KafkaBroker startKafka(KafkaDevServiceCfg config,
-            LaunchModeBuildItem launchMode, boolean useSharedNetwork) {
+            LaunchModeBuildItem launchMode, boolean useSharedNetwork, boolean exposeOnDockerHost, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting dev services for Kafka, as it has been disabled in the config.");
@@ -234,7 +237,9 @@ public class DevServicesKafkaProcessor {
                     DockerImageName.parse(config.imageName),
                     config.fixedExposedPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
-                    useSharedNetwork);
+                    useSharedNetwork,
+                    exposeOnDockerHost);
+            timeout.ifPresent(container::withStartupTimeout);
             container.start();
 
             return new KafkaBroker(
@@ -336,28 +341,25 @@ public class DevServicesKafkaProcessor {
      */
     private static final class RedPandaKafkaContainer extends GenericContainer<RedPandaKafkaContainer> {
 
-        private final int port;
+        private final Integer fixedExposedPort;
         private final boolean useSharedNetwork;
+        private final boolean exposeOnDockerHost;
 
         private String hostName = null;
 
         private static final String STARTER_SCRIPT = "/var/lib/redpanda/redpanda.sh";
 
         private RedPandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-                boolean useSharedNetwork) {
+                boolean useSharedNetwork, boolean exposeOnDockerHost) {
             super(dockerImageName);
-            this.port = fixedExposedPort;
+            this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
-            withNetwork(Network.SHARED);
-            if (useSharedNetwork) {
-                hostName = "kafka-" + Base58.randomString(5);
-                setNetworkAliases(Collections.singletonList(hostName));
-            } else {
-                withExposedPorts(KAFKA_PORT);
-            }
+            this.exposeOnDockerHost = exposeOnDockerHost;
+
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
+
             // For redpanda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/
             if (dockerImageName.getRepository().equals("vectorized/redpanda")) {
                 withCreateContainerCmdModifier(cmd -> {
@@ -378,9 +380,8 @@ public class DevServicesKafkaProcessor {
             String command = "#!/bin/bash\n";
             command += "/usr/bin/rpk redpanda start --check=false --node-id 0 --smp 1 ";
             command += "--memory 1G --overprovisioned --reserve-memory 0M ";
-            command += "--kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092 ";
-            command += String.format("--advertise-kafka-addr PLAINTEXT://%s:29092,OUTSIDE://%s:%d", getHostToUse(),
-                    getHostToUse(), getPortToUse());
+            command += String.format("--kafka-addr %s ", getKafkaAddresses());
+            command += String.format("--advertise-kafka-addr %s ", getKafkaAdvertisedAddresses());
 
             //noinspection OctalInteger
             copyFileToContainer(
@@ -388,24 +389,43 @@ public class DevServicesKafkaProcessor {
                     STARTER_SCRIPT);
         }
 
+        private String getKafkaAddresses() {
+            List<String> addresses = new ArrayList<>();
+            if (useSharedNetwork) {
+                addresses.add("PLAINTEXT://0.0.0.0:29092");
+            }
+            if (exposeOnDockerHost || !useSharedNetwork) {
+                addresses.add("OUTSIDE://0.0.0.0:9092");
+            }
+            return String.join(",", addresses);
+        }
+
+        private String getKafkaAdvertisedAddresses() {
+            List<String> addresses = new ArrayList<>();
+            if (useSharedNetwork) {
+                addresses.add(String.format("PLAINTEXT://%s:29092", hostName));
+            }
+            if (exposeOnDockerHost || !useSharedNetwork) {
+                addresses.add(String.format("OUTSIDE://%s:%d", getHost(), getMappedPort(KAFKA_PORT)));
+            }
+            return String.join(",", addresses);
+        }
+
         @Override
         protected void configure() {
             super.configure();
-            if ((port > 0) && !useSharedNetwork) {
-                addFixedExposedPort(port, KAFKA_PORT);
+
+            addExposedPort(KAFKA_PORT);
+            hostName = ConfigureUtil.configureSharedNetwork(this, "kafka");
+
+            if (fixedExposedPort != null) {
+                addFixedExposedPort(fixedExposedPort, KAFKA_PORT);
             }
         }
 
         public String getBootstrapServers() {
-            return String.format("PLAINTEXT://%s:%d", getHostToUse(), getPortToUse());
+            return getKafkaAdvertisedAddresses();
         }
 
-        private String getHostToUse() {
-            return useSharedNetwork ? hostName : getHost();
-        }
-
-        private int getPortToUse() {
-            return useSharedNetwork ? KAFKA_PORT : getMappedPort(KAFKA_PORT);
-        }
     }
 }

@@ -52,7 +52,9 @@ public class ElytronTrustedIdentityProvider implements IdentityProvider<TrustedA
                     PasswordCredential cred = id.getCredential(PasswordCredential.class);
                     try (ServerAuthenticationContext ac = domain.createNewAuthenticationContext()) {
                         ac.setAuthenticationName(request.getPrincipal());
-                        ac.addPrivateCredential(cred);
+                        if (cred != null) {
+                            ac.addPrivateCredential(cred);
+                        }
                         ac.authorize();
                         result = ac.getAuthorizedIdentity();
 

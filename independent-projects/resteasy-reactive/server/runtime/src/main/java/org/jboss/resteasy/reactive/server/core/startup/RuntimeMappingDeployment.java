@@ -14,55 +14,86 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
-public class RuntimeMappingDeployment {
+class RuntimeMappingDeployment {
 
-    public static Map<String, RequestMapper<RuntimeResource>> buildClassMapper(
-            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers) {
-        Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
-        SortedMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> nullMethod = perClassMappers.get(null);
-        if (nullMethod == null) {
-            nullMethod = Collections.emptySortedMap();
+    private final Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> classTemplates;
+
+    private final SortedMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> nullMethod;
+
+    private String currentHttpMethod;
+    private List<RequestMapper.RequestPath<RuntimeResource>> currentMapperPerMethodTemplates;
+
+    private Map<String, RequestMapper<RuntimeResource>> classMapper;
+    private int maxMethodTemplateNameCount = -1;
+
+    RuntimeMappingDeployment(
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> classTemplates) {
+        this.classTemplates = classTemplates;
+        this.nullMethod = classTemplates.get(null);
+    }
+
+    int getMaxMethodTemplateNameCount() {
+        if (maxMethodTemplateNameCount == -1) {
+            throw new IllegalStateException("Method can only be called after 'buildClassMapper'");
         }
-        for (Map.Entry<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> i : perClassMappers
-                .entrySet()) {
-            for (Map.Entry<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> nm : nullMethod.entrySet()) {
-                TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> templateMap = i.getValue();
-                if (!templateMap.containsKey(nm.getKey())) {
+        return maxMethodTemplateNameCount;
+    }
+
+    Map<String, RequestMapper<RuntimeResource>> buildClassMapper() {
+        classMapper = new HashMap<>();
+        maxMethodTemplateNameCount = 0;
+        classTemplates.forEach(this::forEachClassTemplate);
+        return classMapper;
+    }
+
+    private void forEachClassTemplate(String httpMethod,
+            TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> perMethodTemplateMap) {
+        currentHttpMethod = httpMethod;
+
+        if (nullMethod != null) {
+            for (var nm : nullMethod.entrySet()) {
+                if (!perMethodTemplateMap.containsKey(nm.getKey())) {
                     //resource methods take precedence
                     //just skip sub resource locators for now
                     //may need to be revisited if we want to pass the TCK 100%
-                    templateMap.put(nm.getKey(), nm.getValue());
+                    perMethodTemplateMap.put(nm.getKey(), nm.getValue());
                 }
             }
-            //now we have all our possible resources
-            List<RequestMapper.RequestPath<RuntimeResource>> result = new ArrayList<>();
-            for (Map.Entry<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> entry : i.getValue().entrySet()) {
-                List<RequestMapper.RequestPath<RuntimeResource>> requestPaths = entry.getValue();
-                if (requestPaths.size() == 1) {
-                    //simple case, only one match
-                    result.addAll(requestPaths);
-                } else {
-                    List<RuntimeResource> resources = new ArrayList<>(requestPaths.size());
-                    for (int j = 0; j < requestPaths.size(); j++) {
-                        resources.add(requestPaths.get(j).value);
-                    }
-                    MediaTypeMapper mapper = new MediaTypeMapper(resources);
-                    //now we just create a fake RuntimeResource
-                    //we could add another layer of indirection, however this is not a common case
-                    //so we don't want to add any extra latency into the common case
-                    RuntimeResource fake = new RuntimeResource(i.getKey(), entry.getKey(), null, null, Collections.emptyList(),
-                            null, null,
-                            new ServerRestHandler[] { mapper }, null, new Class[0], null, false, null, null, null, null, null,
-                            Collections.emptyMap());
-                    result.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
-                }
-            }
-            mappersByMethod.put(i.getKey(), new RequestMapper<>(result));
         }
-        return mappersByMethod;
+
+        //now we have all our possible resources
+        currentMapperPerMethodTemplates = new ArrayList<>();
+        perMethodTemplateMap.forEach(this::forEachMethodTemplateMap);
+
+        classMapper.put(httpMethod, new RequestMapper<>(currentMapperPerMethodTemplates));
     }
 
-    public static void buildMethodMapper(
+    private void forEachMethodTemplateMap(URITemplate path, List<RequestMapper.RequestPath<RuntimeResource>> requestPaths) {
+        int methodTemplateNameCount = path.countPathParamNames();
+        if (methodTemplateNameCount > maxMethodTemplateNameCount) {
+            maxMethodTemplateNameCount = methodTemplateNameCount;
+        }
+        if (requestPaths.size() == 1) {
+            //simple case, only one match
+            currentMapperPerMethodTemplates.addAll(requestPaths);
+        } else {
+            List<RuntimeResource> resources = new ArrayList<>(requestPaths.size());
+            for (int j = 0; j < requestPaths.size(); j++) {
+                resources.add(requestPaths.get(j).value);
+            }
+            MediaTypeMapper mapper = new MediaTypeMapper(resources);
+            //now we just create a fake RuntimeResource
+            //we could add another layer of indirection, however this is not a common case
+            //so we don't want to add any extra latency into the common case
+            RuntimeResource fake = new RuntimeResource(currentHttpMethod, path, null, null, Collections.emptyList(),
+                    null, null,
+                    new ServerRestHandler[] { mapper }, null, new Class[0], null, false, null, null, null, null, null,
+                    Collections.emptyMap());
+            currentMapperPerMethodTemplates.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
+        }
+    }
+
+    static void buildMethodMapper(
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers,
             ResourceMethod method, RuntimeResource runtimeResource) {
         TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> templateMap = perClassMappers

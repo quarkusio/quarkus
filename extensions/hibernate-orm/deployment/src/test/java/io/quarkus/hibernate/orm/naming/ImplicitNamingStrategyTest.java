@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ImplicitNamingStrategyTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, CustomImplicitNamingStrategy.class)
                     .addAsResource(EmptyAsset.INSTANCE, "import.sql")
                     .addAsResource("application-implicit-naming-strategy.properties", "application.properties"));

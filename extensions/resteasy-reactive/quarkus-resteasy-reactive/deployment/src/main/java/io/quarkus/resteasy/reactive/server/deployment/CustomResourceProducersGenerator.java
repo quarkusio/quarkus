@@ -9,7 +9,6 @@ import java.util.Set;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -37,7 +36,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.util.HashUtil;
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
 final class CustomResourceProducersGenerator {
 
@@ -151,8 +149,8 @@ final class CustomResourceProducersGenerator {
                 ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
                         m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(PathParamExtractor.class, int.class, boolean.class),
-                        m.getMethodParam(0), m.load(false));
+                        MethodDescriptor.ofConstructor(PathParamExtractor.class, int.class, boolean.class, boolean.class),
+                        m.getMethodParam(0), m.load(false), m.load(true));
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(PathParamExtractor.class,
                         "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);

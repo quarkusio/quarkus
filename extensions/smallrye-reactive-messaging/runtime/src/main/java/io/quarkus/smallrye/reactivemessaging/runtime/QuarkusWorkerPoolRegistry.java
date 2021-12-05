@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
 import io.quarkus.arc.AlternativePriority;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.annotations.Blocking;
-import io.smallrye.reactive.messaging.connectors.ExecutionHolder;
-import io.smallrye.reactive.messaging.connectors.WorkerPoolRegistry;
-import io.smallrye.reactive.messaging.helpers.Validation;
+import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
+import io.smallrye.reactive.messaging.providers.connectors.WorkerPoolRegistry;
+import io.smallrye.reactive.messaging.providers.helpers.Validation;
 import io.vertx.mutiny.core.WorkerExecutor;
 
 @AlternativePriority(1)

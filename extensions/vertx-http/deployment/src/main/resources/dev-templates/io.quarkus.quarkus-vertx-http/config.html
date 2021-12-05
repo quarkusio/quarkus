@@ -401,10 +401,10 @@ function clearConfigFilter(){
     </table>
     
     <div id="application-properties-form" class="overflow-auto">
-        {#for configsource in info:config}
+        {#for configsource in info:config.values()}
 
         <div class="card">
-            <table id="configTable{count}" class="table filterableTable">
+            <table id="configTable{configsource_count}" class="table filterableTable">
                 <thead class="thead-light">
                     <tr>
                         <th scope="col" colspan="3">{configsource.key}</th>
@@ -427,51 +427,60 @@ function clearConfigFilter(){
                             {#if item.autoFromDevServices}
                             <i class="fas fa-magic text-primary" data-toggle="tooltip" data-placement="top" title="Automatically set by Dev Services"></i>
                             {/if}
+                            {#if item.wildcardEntry}
+                            <i class="fas fa-plus text-primary" data-toggle="tooltip" data-placement="top" title="This will add a new named config group"></i>
+                            {/if}
                             
                         </td>
                         <td>
-                            {#if configsource.key.editable}
-                            
-                                {#if item.typeName && item.typeName == "java.lang.Boolean"}
-                                <div class="input-group flex-row-reverse" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
-                                    <div class="custom-control custom-switch">
-                                        <input id="{item.configValue.name}" type="checkbox" name="value" onclick="changeCheckboxValue(this, '{item.configValue.name}');" class="custom-control-input" {#if item.configValue.value == "true" || item.configValue.value == true}checked{/if}/>
-                                        <label class="custom-control-label" for="{item.configValue.name}"></label>
-                                    </div>
+                            {#if item.wildcardEntry}
+                            <form action="add-named-group?{query-string}" method="POST" id="{item.configValue.name}-form">
+                            <div class="input-group">
+                                <input type="hidden" name="name" value="{item.configValue.name}"/>
+                                <input id="{item.configValue.name}" type="text" name="value" class="form-control" value=""/>
+                                <div class="input-group-append" onclick="document.getElementById('{item.configValue.name}-form').submit()">
+                                    <span class="input-group-text formInputButton" ><i class="fas fa-check text-success"></i></span>
                                 </div>
-                                {#else if item.typeName && (item.typeName == "java.lang.Integer" || item.typeName == "java.lang.Long")}
-                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
-                                    <input id="{item.configValue.name}" type="number" name="value" class="form-control configInput" value="{item.configValue.value}" onkeydown="javascript: return event.keyCode === 8 || event.keyCode === 46 || event.keyCode === 13 ? true : !isNaN(Number(event.key))"/>
-                                    <div class="input-group-append">
-                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
-                                    </div>
+                            </div>
+                            </form>
+                            {#else if item.typeName && item.typeName == "java.lang.Boolean"}
+                            <div class="input-group flex-row-reverse" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                <div class="custom-control custom-switch">
+                                    <input id="{item.configValue.name}" type="checkbox" name="value" onclick="changeCheckboxValue(this, '{item.configValue.name}');" class="custom-control-input" {#if item.configValue.value == "true" || item.configValue.value == true}checked{/if}/>
+                                    <label class="custom-control-label" for="{item.configValue.name}"></label>
                                 </div>
-                                {#else if item.typeName && (item.typeName == "java.lang.Float" || item.typeName == "java.lang.Double")}
-                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
-                                    <input id="{item.configValue.name}" type="text" name="value" step="any" class="form-control configInput" value="{item.configValue.value}" onkeydown="javascript: return event.keyCode === 8 || event.keyCode === 46  || event.keyCode === 190 || event.keyCode === 70 || event.keyCode === 13 ? true : !isNaN(Number(event.key))"/>
-                                    <div class="input-group-append">
-                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
-                                    </div>
-                                </div>    
-                                {#else if item.typeName && (item.typeName == "java.lang.Enum" || item.typeName == "java.util.logging.Level")}
-                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
-                                    <select id="{item.configValue.name}" class="form-control" onchange="changeSelectValue(this, '{item.configValue.name}');">
-                                        <option></option>
-                                        {#for e in item.allowedValues}
-                                        <option value="{e}" {#if e == item.configValue.value}selected="selected"{/if}>{e}</option>
-                                        {/for}
-                                    </select>
+                            </div>
+                            {#else if item.typeName && (item.typeName == "java.lang.Integer" || item.typeName == "java.lang.Long")}
+                            <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                <input id="{item.configValue.name}" type="number" name="value" class="form-control configInput" value="{item.configValue.value}" onkeydown="javascript: return event.keyCode === 8 || event.keyCode === 46 || event.keyCode === 13 ? true : !isNaN(Number(event.key))"/>
+                                <div class="input-group-append">
+                                    <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}','{item.wildcardEntry}');"><i class="fas fa-check text-success"></i></span>
                                 </div>
-                                {#else}
-                                <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>    
-                                    <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
-                                    <div class="input-group-append">
-                                        <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}');"><i class="fas fa-check text-success"></i></span>
-                                    </div>
-                                </div>    
-                                {/if}
+                            </div>
+                            {#else if item.typeName && (item.typeName == "java.lang.Float" || item.typeName == "java.lang.Double")}
+                            <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                <input id="{item.configValue.name}" type="text" name="value" step="any" class="form-control configInput" value="{item.configValue.value}" onkeydown="javascript: return event.keyCode === 8 || event.keyCode === 46  || event.keyCode === 190 || event.keyCode === 70 || event.keyCode === 13 ? true : !isNaN(Number(event.key))"/>
+                                <div class="input-group-append">
+                                    <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}','{item.wildcardEntry}');"><i class="fas fa-check text-success"></i></span>
+                                </div>
+                            </div>
+                            {#else if item.typeName && (item.typeName == "java.lang.Enum" || item.typeName == "java.util.logging.Level")}
+                            <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                <select id="{item.configValue.name}" class="form-control" onchange="changeSelectValue(this, '{item.configValue.name}');">
+                                    <option></option>
+                                    {#for e in item.allowedValues}
+                                    <option value="{e}" {#if e == item.configValue.value}selected="selected"{/if}>{e}</option>
+                                    {/for}
+                                </select>
+                            </div>
                             {#else}
-                                {item.configValue.value}
+                            <div class="input-group" {#if item.defaultValue}data-togglMessagee="tooltip" data-placement="top" title="Default value: {item.defaultValue}"{/if}>
+                                <input id="{item.configValue.name}" type="text" name="value" class="form-control configInput" value="{item.configValue.value}"/>
+                                <div class="input-group-append">
+                                    <span class="input-group-text formInputButton" onclick="changeInputValue('{item.configValue.name}','{item.wildcardEntry}');"><i class="fas fa-check text-success"></i></span>
+                                </div>
+                            </div>
+
                             {/if}
                         </td>
                         <td>

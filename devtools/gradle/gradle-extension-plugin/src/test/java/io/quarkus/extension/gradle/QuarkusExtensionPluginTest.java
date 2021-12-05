@@ -37,12 +37,12 @@ public class QuarkusExtensionPluginTest {
     @Test
     public void jarShouldContainsExtensionPropertiesFile() throws IOException {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent());
+
         BuildResult jarResult = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)
                 .withArguments("jar", "-S")
                 .build();
-
         assertThat(jarResult.task(":jar").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
         assertThat(jarResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SUCCESS);

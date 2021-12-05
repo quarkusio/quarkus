@@ -15,14 +15,12 @@ public class DecoratorInfo extends BeanInfo implements Comparable<DecoratorInfo>
 
     private final InjectionPointInfo delegateInjectionPoint;
     private final Set<Type> decoratedTypes;
-    private final int priority;
 
     DecoratorInfo(AnnotationTarget target, BeanDeployment beanDeployment, InjectionPointInfo delegateInjectionPoint,
             Set<Type> decoratedTypes, List<Injection> injections, int priority) {
         super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
                 Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
-                null, null, null, Collections.emptyList(), null, false);
-        this.priority = priority;
+                null, null, false, Collections.emptyList(), null, false, null, priority);
         this.delegateInjectionPoint = delegateInjectionPoint;
         this.decoratedTypes = decoratedTypes;
     }
@@ -45,10 +43,6 @@ public class DecoratorInfo extends BeanInfo implements Comparable<DecoratorInfo>
 
     public Set<Type> getDecoratedTypes() {
         return decoratedTypes;
-    }
-
-    public int getPriority() {
-        return priority;
     }
 
     public boolean isAbstract() {

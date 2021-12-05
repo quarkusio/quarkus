@@ -1,10 +1,19 @@
 package io.quarkus.opentelemetry.deployment;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.DotName;
+
+import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
+import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -19,6 +28,7 @@ import io.quarkus.opentelemetry.runtime.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryProducer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
+import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -54,6 +64,36 @@ public class OpenTelemetryProcessor {
                 "META-INF/services/io.opentelemetry.context.ContextStorageProvider"));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(true, true, QuarkusContextStorage.class));
+    }
+
+    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    void registerWithSpan(
+            BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrar,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+
+        interceptorBindingRegistrar.produce(new InterceptorBindingRegistrarBuildItem(
+                new InterceptorBindingRegistrar() {
+                    @Override
+                    public List<InterceptorBinding> getAdditionalBindings() {
+                        return List.of(InterceptorBinding.of(WithSpan.class, Set.of("value", "kind")));
+                    }
+                }));
+
+        additionalBeans.produce(new AdditionalBeanBuildItem(WithSpanInterceptor.class));
+    }
+
+    @BuildStep(onlyIf = OpenTelemetryEnabled.class)
+    void transformWithSpan(
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(transformationContext -> {
+            AnnotationTarget target = transformationContext.getTarget();
+            if (target.kind().equals(AnnotationTarget.Kind.CLASS)) {
+                if (target.asClass().name().equals(DotName.createSimple(WithSpanInterceptor.class.getName()))) {
+                    transformationContext.transform().add(DotName.createSimple(WithSpan.class.getName())).done();
+                }
+            }
+        }));
     }
 
     @BuildStep(onlyIf = OpenTelemetryEnabled.class)

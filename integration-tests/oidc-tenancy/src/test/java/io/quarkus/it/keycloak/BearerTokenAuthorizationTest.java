@@ -360,7 +360,7 @@ public class BearerTokenAuthorizationTest {
                     .when().get("/tenant/tenant-oidc-introspection-only/api/user")
                     .then()
                     .statusCode(200)
-                    .body(equalTo("tenant-oidc-introspection-only:alice:0"));
+                    .body(equalTo("tenant-oidc-introspection-only:alice,active:true,cache-size:0"));
         }
 
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
@@ -404,7 +404,7 @@ public class BearerTokenAuthorizationTest {
                     .when().get("/tenant/tenant-oidc-introspection-only-cache/api/user")
                     .then()
                     .statusCode(200)
-                    .body(equalTo("tenant-oidc-introspection-only-cache:alice:" + expectedCacheSize));
+                    .body(equalTo("tenant-oidc-introspection-only-cache:alice,active:true,cache-size:" + expectedCacheSize));
         }
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));
         RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));

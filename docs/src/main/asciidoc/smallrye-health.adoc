@@ -80,6 +80,7 @@ Importing the `smallrye-health` extension directly exposes three REST endpoints:
 
 - `/q/health/live` - The application is up and running.
 - `/q/health/ready` - The application is ready to serve requests.
+- `/q/health/started` - The application is started.
 - `/q/health` - Accumulating all health check procedures in the application.
  
 To check that the `smallrye-health` extension is working as expected:
@@ -193,6 +194,37 @@ More information about which health check procedures should be used in which sit
 is detailed in the MicroProfile Health specification. Generally, the liveness 
 procedures determine whether the application should be restarted while readiness 
 procedures determine whether it makes sense to contact the application with requests.
+
+== Adding a startup health check procedure
+
+The third and final type of health check procedures is startup. Startup procedures are defined as an option for slow starting containers (should not be needed in Quarkus) to delay the invocations of liveness probe which will take over from startup once the startup responds UP for the first time. Startup health checks are defined with the `@Startup` qualifier.
+
+NOTE: Please make sure that you import the microprofile `org.eclipse.microprofile.health.Startup` annotation since there is an unfortunate clash with `io.quarkus.runtime.Startup`.
+
+Create `org.acme.microprofile.health.StartupHealthCheck` class:
+
+[source,java]
+----
+package org.acme.microprofile.health;
+
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Startup;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@Startup
+@ApplicationScoped
+public class StartupHealthCheck implements HealthCheck {
+
+    @Override
+    public HealthCheckResponse call() {
+        return HealthCheckResponse.up("Startup health check");
+    }
+}
+----
+
+The startup health check will be available either at `http://localhost:8080/q/health/started` or together with other health check procedure at `http://localhost:8080/q/health`.
 
 == Negative health check procedures
 

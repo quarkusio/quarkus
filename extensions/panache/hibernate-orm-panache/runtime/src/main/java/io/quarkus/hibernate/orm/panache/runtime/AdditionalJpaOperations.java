@@ -88,9 +88,8 @@ public class AdditionalJpaOperations {
         boolean doCascade = Arrays.stream(propertyCascadeStyles)
                 .anyMatch(cascadeStyle -> cascadeStyle.doCascade(CascadingActions.DELETE));
         boolean hasElementCollection = declaredAttributes.stream()
-                .filter(attribute -> attribute.getPersistentAttributeType()
-                        .equals(Attribute.PersistentAttributeType.ELEMENT_COLLECTION))
-                .count() > 0;
+                .anyMatch(attribute -> attribute.getPersistentAttributeType()
+                        .equals(Attribute.PersistentAttributeType.ELEMENT_COLLECTION));
         return doCascade || hasElementCollection;
 
     }

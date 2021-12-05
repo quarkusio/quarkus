@@ -6,7 +6,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.OptionalLong;
 
 import org.eclipse.microprofile.config.Config;
 
@@ -35,8 +34,8 @@ public final class ConfigUtil {
     }
 
     public static Duration waitTimeValue(Config config) {
-        return Duration.ofSeconds(config.getValue("quarkus.test.wait-time", OptionalLong.class)
-                .orElse(config.getValue("quarkus.test.jar-wait-time", OptionalLong.class) // legacy value
-                        .orElse(DEFAULT_WAIT_TIME_SECONDS)));
+        return config.getOptionalValue("quarkus.test.wait-time", Duration.class)
+                .orElseGet(() -> config.getOptionalValue("quarkus.test.jar-wait-time", Duration.class) // legacy value
+                        .orElseGet(() -> Duration.ofSeconds(DEFAULT_WAIT_TIME_SECONDS)));
     }
 }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +21,7 @@ public class InterceptorSubclassesAreSharedTest {
             SomeBean.class);
 
     @Test
-    public void testInterception() {
+    public void testInterception() throws IOException {
         ArcContainer arc = Arc.container();
 
         SomeBean bean = arc.instance(SomeBean.class).get();

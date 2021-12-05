@@ -17,24 +17,9 @@ public interface TenantConfigResolver {
     /**
      * Returns a {@link OidcTenantConfig} given a {@code RoutingContext}.
      *
-     * @param context the routing context
-     * @return the tenant configuration. If {@code null}, indicates that the default configuration/tenant should be chosen
-     *
-     * @deprecated Use {@link #resolve(RoutingContext, OidcRequestContext<OidcTenantConfig>))} instead.
-     */
-    @Deprecated
-    default OidcTenantConfig resolve(RoutingContext context) {
-        throw new UnsupportedOperationException("resolve is not implemented");
-    }
-
-    /**
-     * Returns a {@link OidcTenantConfig} given a {@code RoutingContext}.
-     *
      * @param requestContext the routing context
      * @return the tenant configuration. If the uni resolves to {@code null}, indicates that the default configuration/tenant
      *         should be chosen
      */
-    default Uni<OidcTenantConfig> resolve(RoutingContext routingContext, OidcRequestContext<OidcTenantConfig> requestContext) {
-        return Uni.createFrom().item(resolve(routingContext));
-    }
+    Uni<OidcTenantConfig> resolve(RoutingContext routingContext, OidcRequestContext<OidcTenantConfig> requestContext);
 }

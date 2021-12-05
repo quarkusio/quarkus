@@ -55,16 +55,18 @@ public class ResourceWriter {
         return builtin;
     }
 
-    public void setBuiltin(boolean builtin) {
+    public ResourceWriter setBuiltin(boolean builtin) {
         this.builtin = builtin;
+        return this;
     }
 
     public Integer getPriority() {
         return priority;
     }
 
-    public void setPriority(Integer priority) {
+    public ResourceWriter setPriority(Integer priority) {
         this.priority = priority;
+        return this;
     }
 
     public MessageBodyWriter<?> instance() {

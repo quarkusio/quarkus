@@ -3,8 +3,6 @@ package io.quarkus.vault;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -20,7 +18,7 @@ public class VaultKubernetesITCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("application-vault-kubernetes.properties", "application.properties"));
 
     @ConfigProperty(name = "quarkus.vault.authentication.kubernetes.role")

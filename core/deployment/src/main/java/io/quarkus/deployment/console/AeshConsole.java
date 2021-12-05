@@ -368,7 +368,9 @@ public class AeshConsole extends QuarkusConsole {
                         bottomBlankSpace -= usedBlankSpace;
                     }
                     //move the existing content up by the number of lines
-                    int appendLines = Math.max(Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines), 1);
+                    int appendLines = Math.max(
+                            Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines + 1) //+1 for the extra blank line above the status line
+                            , 1);
                     appendLines -= usedBlankSpace;
                     clearStatusMessages(buffer);
                     buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank - (cursorPos > 0 ? 1 : 0))

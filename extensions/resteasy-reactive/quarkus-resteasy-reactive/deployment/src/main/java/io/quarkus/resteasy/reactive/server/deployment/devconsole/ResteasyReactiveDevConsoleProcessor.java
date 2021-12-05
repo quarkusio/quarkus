@@ -15,6 +15,7 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.resteasy.reactive.server.runtime.EndpointScoresSupplier;
@@ -24,8 +25,9 @@ import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 public class ResteasyReactiveDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleRuntimeTemplateInfoBuildItem collectScores() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("endpointScores", new EndpointScoresSupplier());
+    public DevConsoleRuntimeTemplateInfoBuildItem collectScores(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("endpointScores", new EndpointScoresSupplier(), this.getClass(),
+                curateOutcomeBuildItem);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

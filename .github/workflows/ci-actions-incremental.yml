@@ -304,8 +304,9 @@ jobs:
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Clean Gradle temp directory
+        if: always()
         shell: bash
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
       - name: Prepare failure archive (if maven failed)
@@ -475,6 +476,11 @@ jobs:
             os-name: "ubuntu-latest"
           }
           - {
+            name: "17",
+            java-version: 17,
+            os-name: "ubuntu-latest"
+          }
+          - {
             name: "11 Windows",
             java-version: 11,
             os-name: "windows-latest"
@@ -611,7 +617,7 @@ jobs:
         uses: DeLaGuardo/setup-graalvm@master
         if: startsWith(matrix.os-name, 'windows')
         with:
-          graalvm-version: '21.2.0.java11'
+          graalvm-version: '21.3.0.java11'
       - name: Install native-image component
         if: startsWith(matrix.os-name, 'windows')
         run: |

@@ -131,7 +131,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
      *         executable exists in the environment or if the docker executable is an alias to podman
      * @throws IllegalStateException if no container runtime was found to build the image
      */
-    private static NativeConfig.ContainerRuntime detectContainerRuntime() {
+    public static NativeConfig.ContainerRuntime detectContainerRuntime() {
         // Docker version 19.03.14, build 5eb3275d40
         String dockerVersionOutput = getVersionOutputFor(NativeConfig.ContainerRuntime.DOCKER);
         boolean dockerAvailable = dockerVersionOutput.contains("Docker version");

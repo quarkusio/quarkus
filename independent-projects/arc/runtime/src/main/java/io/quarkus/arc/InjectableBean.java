@@ -97,7 +97,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
 
     @Override
     default boolean isAlternative() {
-        return getAlternativePriority() != null;
+        return false;
     }
 
     /**
@@ -105,7 +105,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      * @return the priority if the bean is an alternative, or {@code null}
      */
     default Integer getAlternativePriority() {
-        return null;
+        return isAlternative() ? getPriority() : null;
     }
 
     /**
@@ -122,6 +122,22 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      */
     default boolean isSuppressed() {
         return false;
+    }
+
+    /**
+     * A bean may have a priority assigned.
+     * <p>
+     * Class-based beans can specify the priority declaratively via {@link javax.annotation.Priority} and
+     * {@link io.quarkus.arc.Priority}. If no priority annotation is used then a bean has the priority of value 0.
+     * <p>
+     * This priority is used to sort the resolved beans when performing programmatic lookup via
+     * {@link Instance} or when injecting a list of beans by means of the {@link All} qualifier.
+     * 
+     * @return the priority
+     * @see Priority
+     */
+    default int getPriority() {
+        return 0;
     }
 
     enum Kind {

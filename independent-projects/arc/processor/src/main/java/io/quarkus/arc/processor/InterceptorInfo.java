@@ -36,22 +36,12 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
     private final MethodInfo preDestroy;
 
-    private final int priority;
-
-    /**
-     *
-     * @param target
-     * @param beanDeployment
-     * @param bindings
-     * @param injections
-     */
     InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings,
             List<Injection> injections, int priority) {
         super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
                 Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
-                null, null, null, Collections.emptyList(), null, false);
+                null, null, false, Collections.emptyList(), null, false, null, priority);
         this.bindings = bindings;
-        this.priority = priority;
         List<MethodInfo> aroundInvokes = new ArrayList<>();
         List<MethodInfo> aroundConstructs = new ArrayList<>();
         List<MethodInfo> postConstructs = new ArrayList<>();
@@ -110,10 +100,6 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
     public Set<AnnotationInstance> getBindings() {
         return bindings;
-    }
-
-    public int getPriority() {
-        return priority;
     }
 
     public MethodInfo getAroundInvoke() {

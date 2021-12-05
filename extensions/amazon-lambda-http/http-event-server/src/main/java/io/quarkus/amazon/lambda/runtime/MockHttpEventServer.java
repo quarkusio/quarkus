@@ -23,12 +23,11 @@ import io.vertx.ext.web.RoutingContext;
 
 public class MockHttpEventServer extends MockEventServer {
 
-    private final ObjectMapper objectMapper;
     private final ObjectWriter eventWriter;
     private final ObjectReader responseReader;
 
     public MockHttpEventServer() {
-        objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
         eventWriter = objectMapper.writerFor(APIGatewayV2HTTPEvent.class);
@@ -69,7 +68,7 @@ public class MockHttpEventServer extends MockEventServer {
         if (body != null) {
             String ct = ctx.request().getHeader("content-type");
             if (ct == null || isBinary(ct)) {
-                String encoded = Base64.getMimeEncoder().encodeToString(body.getBytes());
+                String encoded = Base64.getEncoder().encodeToString(body.getBytes());
                 event.setBody(encoded);
                 event.setIsBase64Encoded(true);
             } else {

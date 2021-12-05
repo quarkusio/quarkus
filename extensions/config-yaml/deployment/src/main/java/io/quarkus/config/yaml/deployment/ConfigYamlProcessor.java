@@ -1,5 +1,9 @@
 package io.quarkus.config.yaml.deployment;
 
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
 import io.quarkus.config.yaml.runtime.ApplicationYamlConfigSourceLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -32,12 +36,27 @@ public final class ConfigYamlProcessor {
     }
 
     @BuildStep
-    void watchYamlConfig(BuildProducer<HotDeploymentWatchedFileBuildItem> items) {
-        items.produce(new HotDeploymentWatchedFileBuildItem("application.yaml"));
-        items.produce(new HotDeploymentWatchedFileBuildItem("application.yml"));
+    void watchYamlConfig(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
+        List<String> configWatchedFiles = new ArrayList<>();
+        String userDir = System.getProperty("user.dir");
 
-        String activeProfile = ProfileManager.getActiveProfile();
-        items.produce(new HotDeploymentWatchedFileBuildItem(String.format("application-%s.yml", activeProfile)));
-        items.produce(new HotDeploymentWatchedFileBuildItem(String.format("application-%s.yaml", activeProfile)));
+        // Main files
+        configWatchedFiles.add("application.yaml");
+        configWatchedFiles.add("application.yml");
+        configWatchedFiles.add(Paths.get(userDir, "config", "application.yaml").toAbsolutePath().toString());
+        configWatchedFiles.add(Paths.get(userDir, "config", "application.yml").toAbsolutePath().toString());
+
+        // Profiles
+        String profile = ProfileManager.getActiveProfile();
+        configWatchedFiles.add(String.format("application-%s.yaml", profile));
+        configWatchedFiles.add(String.format("application-%s.yml", profile));
+        configWatchedFiles
+                .add(Paths.get(userDir, "config", String.format("application-%s.yaml", profile)).toAbsolutePath().toString());
+        configWatchedFiles
+                .add(Paths.get(userDir, "config", String.format("application-%s.yml", profile)).toAbsolutePath().toString());
+
+        for (String configWatchedFile : configWatchedFiles) {
+            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(configWatchedFile));
+        }
     }
 }

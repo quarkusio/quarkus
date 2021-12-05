@@ -16,8 +16,8 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
-import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
-import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
+import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
+import io.smallrye.reactive.messaging.providers.extension.EmitterConfiguration;
 
 public class DevReactiveMessagingInfos {
 
@@ -40,9 +40,7 @@ public class DevReactiveMessagingInfos {
 
                 // Unfortunately, there is no easy way to obtain the connectors metadata
                 Connectors connectors = container.instance(Connectors.class).get();
-                for (Entry<String, Component> entry : connectors.outgoingConnectors.entrySet()) {
-                    publishers.put(entry.getKey(), entry.getValue());
-                }
+                publishers.putAll(connectors.outgoingConnectors);
                 for (Entry<String, Component> entry : connectors.incomingConnectors.entrySet()) {
                     consumers.computeIfAbsent(entry.getKey(), fun)
                             .add(entry.getValue());

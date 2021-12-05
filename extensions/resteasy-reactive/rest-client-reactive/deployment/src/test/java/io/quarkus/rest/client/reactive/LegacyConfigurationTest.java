@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,8 +16,8 @@ public class LegacyConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloClientWithBaseUri.class, EchoResource.class))
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(HelloClientWithBaseUri.class, EchoResource.class, HelloClient.class))
             .withConfigurationResource("legacy-configuration-test-application.properties");
 
     @Inject
@@ -31,13 +29,12 @@ public class LegacyConfigurationTest {
         assertThat(configRoot.disableSmartProduces.get()).isTrue();
         assertThat(configRoot.multipartPostEncoderMode).isPresent();
         assertThat(configRoot.multipartPostEncoderMode.get()).isEqualTo("RFC3986");
-        assertThat(configRoot.configs.size()).isEqualTo(2);
 
-        RestClientConfig clientConfig = configRoot.configs.get("a.b.c.RestClient");
+        RestClientConfig clientConfig = RestClientConfig.load(io.quarkus.rest.client.reactive.HelloClient.class);
         assertThat(clientConfig.maxRedirects).isPresent();
         assertThat(clientConfig.maxRedirects.get()).isEqualTo(4);
 
-        clientConfig = configRoot.configs.get("client-prefix");
+        clientConfig = RestClientConfig.load("client-prefix");
         assertThat(clientConfig.maxRedirects).isPresent();
         assertThat(clientConfig.maxRedirects.get()).isEqualTo(4);
     }

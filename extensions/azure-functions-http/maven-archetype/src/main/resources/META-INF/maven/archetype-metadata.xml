@@ -64,7 +64,7 @@ under the License.
     <fileSet filtered="true" packaged="true">
       <directory>src/test/java</directory>
     </fileSet>
-    <fileSet>
+    <fileSet filtered="true">
       <directory>azure-config</directory>
       <includes>
         <include>*.json</include>

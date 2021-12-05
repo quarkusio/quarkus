@@ -14,7 +14,7 @@ import javax.inject.Qualifier;
 /**
  * <p>
  * Use this annotation on a field, a constructor parameter or a method parameter to inject a {@link Cache} and interact with it
- * programmatically.
+ * programmatically e.g. store, retrieve or delete cache values.
  * </p>
  * <p>
  * Field injection example:
@@ -26,7 +26,10 @@ import javax.inject.Qualifier;
  *     {@literal @}CacheName("my-cache")
  *     Cache cache;
  *     
- *     // Interact with the cache.
+ *     String getExpensiveValue(Object key) {
+ *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
+ *         return cacheValue.await().indefinitely();
+ *     }
  * }
  * </pre>
  * 
@@ -42,7 +45,10 @@ import javax.inject.Qualifier;
  *         this.cache = cache;
  *     }
  *     
- *     // Interact with the cache.
+ *     String getExpensiveValue(Object key) {
+ *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
+ *         return cacheValue.await().indefinitely();
+ *     }
  * }
  * </pre>
  * 
@@ -59,7 +65,10 @@ import javax.inject.Qualifier;
  *         this.cache = cache;
  *     }
  *     
- *     // Interact with the cache.
+ *     String getExpensiveValue(Object key) {
+ *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
+ *         return cacheValue.await().indefinitely();
+ *     }
  * }
  * </pre>
  * </p>

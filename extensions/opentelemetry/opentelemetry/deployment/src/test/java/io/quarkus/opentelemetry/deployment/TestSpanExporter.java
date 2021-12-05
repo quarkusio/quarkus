@@ -2,7 +2,6 @@ package io.quarkus.opentelemetry.deployment;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -20,7 +19,7 @@ public class TestSpanExporter implements SpanExporter {
 
     public List<SpanData> getFinishedSpanItems() {
         synchronized (this) {
-            return Collections.unmodifiableList(new ArrayList<>(finishedSpanItems));
+            return List.copyOf(finishedSpanItems);
         }
     }
 

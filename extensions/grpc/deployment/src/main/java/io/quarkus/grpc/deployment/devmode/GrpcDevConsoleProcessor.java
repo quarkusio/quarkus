@@ -46,6 +46,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.testing.GrpcWebSocketProxy;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
@@ -64,10 +65,11 @@ import io.quarkus.grpc.runtime.devmode.StreamCollectorInterceptor;
 public class GrpcDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public void devConsoleInfo(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos) {
+    public void devConsoleInfo(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         infos.produce(
                 new DevConsoleRuntimeTemplateInfoBuildItem("grpcServices",
-                        new BeanLookupSupplier(GrpcServices.class)));
+                        new BeanLookupSupplier(GrpcServices.class), this.getClass(), curateOutcomeBuildItem));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

@@ -19,7 +19,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -279,7 +278,7 @@ public class WebJarUtil {
     }
 
     public static void updateUrl(Path original, String path, String lineStartsWith, String format) throws IOException {
-        String content = new String(Files.readAllBytes(original), StandardCharsets.UTF_8);
+        String content = Files.readString(original);
         String result = updateUrl(content, path, lineStartsWith, format);
         if (result != null && !result.equals(content)) {
             Files.write(original, result.getBytes(StandardCharsets.UTF_8));
@@ -344,18 +343,32 @@ public class WebJarUtil {
         if (filename.endsWith(CSS)) {
             Config c = ConfigProvider.getConfig();
             String contents = new String(IoUtil.readBytes(is));
-            contents = contents.replace("{applicationName}",
-                    c.getOptionalValue("quarkus.application.name", String.class)
-                            .orElse(appArtifact.getArtifactId()));
 
-            contents = contents.replace("{applicationVersion}",
-                    c.getOptionalValue("quarkus.application.version", String.class)
-                            .orElse(appArtifact.getVersion()));
+            String applicationName = c.getOptionalValue("quarkus.application.name", String.class)
+                    .orElse(appArtifact.getArtifactId());
 
-            contents = contents.replace("{quarkusVersion}", Version.getVersion());
+            String applicationVersion = c.getOptionalValue("quarkus.application.version", String.class)
+                    .orElse(appArtifact.getVersion());
+
+            contents = replaceHeaderVars(contents, applicationName, applicationVersion);
+
+            contents = contents.replace("{applicationHeader}", getUIHeader(c, applicationName, applicationVersion));
+
             is = new ByteArrayInputStream(contents.getBytes());
         }
         return is;
+    }
+
+    private static String getUIHeader(Config c, String applicationName, String applicationVersion) {
+        String applicationHeader = c.getOptionalValue("quarkus.application.ui-header", String.class).orElse("");
+        return replaceHeaderVars(applicationHeader, applicationName, applicationVersion);
+    }
+
+    private static String replaceHeaderVars(String contents, String applicationName, String applicationVersion) {
+        contents = contents.replace("{applicationName}", applicationName);
+        contents = contents.replace("{applicationVersion}", applicationVersion);
+        contents = contents.replace("{quarkusVersion}", Version.getVersion());
+        return contents;
     }
 
     private static InputStream getCustomOverride(PathCollection paths, String filename, String modulename) {
@@ -370,9 +383,7 @@ public class WebJarUtil {
     private static Path getCustomOverridePath(PathCollection paths, String filename, String modulename) {
 
         // First check if the developer supplied the files
-        Iterator<Path> iterator = paths.iterator();
-        while (iterator.hasNext()) {
-            Path root = iterator.next();
+        for (Path root : paths) {
             Path customModuleOverride = root.resolve(CUSTOM_MEDIA_FOLDER + modulename);
             if (Files.exists(customModuleOverride)) {
                 return customModuleOverride;
@@ -410,9 +421,7 @@ public class WebJarUtil {
     }
 
     private static boolean isCustomOverride(PathCollection paths, String filename, String modulename) {
-        Iterator<Path> iterator = paths.iterator();
-        while (iterator.hasNext()) {
-            Path root = iterator.next();
+        for (Path root : paths) {
             Path customModuleOverride = root.resolve(CUSTOM_MEDIA_FOLDER + modulename);
             if (Files.exists(customModuleOverride)) {
                 return true;

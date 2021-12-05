@@ -2,8 +2,6 @@ package io.quarkus.hibernate.orm.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,7 +19,7 @@ public class EntitiesInDefaultPUWithImplicitUnconfiguredDatasourceTest {
                         .hasMessageContainingAll(
                                 "Model classes are defined for the default persistence unit, but no default datasource was found. The default EntityManagerFactory will not be created. To solve this, configure the default datasource. Refer to https://quarkus.io/guides/datasource for guidance.");
             })
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class))
             .overrideConfigKey("quarkus.datasource.devservices", "false");
 

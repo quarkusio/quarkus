@@ -56,7 +56,8 @@ public class DevServicesDatasourceProcessor {
             BuildProducer<DevServicesConfigResultBuildItem> devServicesResultBuildItemBuildProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            GlobalDevServicesConfig globalDevServicesConfig) {
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
         if (databases != null) {
@@ -122,7 +123,7 @@ public class DevServicesDatasourceProcessor {
                 devDBProviderMap,
                 dataSourceBuildTimeConfig.defaultDataSource,
                 configHandlersByDbType, propertiesMap, closeableList, launchMode.getLaunchMode(), consoleInstalledBuildItem,
-                loggingSetupBuildItem);
+                loggingSetupBuildItem, globalDevServicesConfig);
         List<DevServicesConfigResultBuildItem> dbConfig = new ArrayList<>();
         if (defaultResult != null) {
             for (Map.Entry<String, String> i : defaultResult.getConfigProperties().entrySet()) {
@@ -133,7 +134,7 @@ public class DevServicesDatasourceProcessor {
             DevServicesDatasourceResultBuildItem.DbResult result = startDevDb(entry.getKey(), curateOutcomeBuildItem,
                     installedDrivers, true,
                     devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap, closeableList,
-                    launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem);
+                    launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem, globalDevServicesConfig);
             if (result != null) {
                 namedResults.put(entry.getKey(), result);
                 for (Map.Entry<String, String> i : result.getConfigProperties().entrySet()) {
@@ -187,7 +188,7 @@ public class DevServicesDatasourceProcessor {
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
             Map<String, String> propertiesMap, List<Closeable> closeableList,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig globalDevServicesConfig) {
         boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled
                 .orElse(dataSourceBuildTimeConfig.devservices.enabledDeprecated.orElse(true)));
         if (explicitlyDisabled) {
@@ -266,7 +267,7 @@ public class DevServicesDatasourceProcessor {
                             ConfigProvider.getConfig().getOptionalValue(prefix + "password", String.class),
                             Optional.ofNullable(dbName), dataSourceBuildTimeConfig.devservices.imageName,
                             dataSourceBuildTimeConfig.devservices.properties,
-                            dataSourceBuildTimeConfig.devservices.port, launchMode);
+                            dataSourceBuildTimeConfig.devservices.port, launchMode, globalDevServicesConfig.timeout);
             closeableList.add(datasource.getCloseTask());
 
             propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));

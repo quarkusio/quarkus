@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 
-import io.quarkus.mongodb.panache.PanacheUpdate;
+import io.quarkus.mongodb.panache.common.PanacheUpdate;
 import io.quarkus.panache.common.Parameters;
 
 class MongoOperationsTest {

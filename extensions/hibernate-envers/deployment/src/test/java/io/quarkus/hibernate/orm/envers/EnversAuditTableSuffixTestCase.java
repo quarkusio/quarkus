@@ -2,8 +2,6 @@ package io.quarkus.hibernate.orm.envers;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class EnversAuditTableSuffixTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyAuditedEntity.class, MyRevisionEntity.class, MyRevisionListener.class,
                             EnversTestAuditTableSuffixResource.class)
                     .addAsResource("application-with-store-data-at-delete.properties", "application.properties"));

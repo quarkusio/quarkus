@@ -4,7 +4,6 @@ import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.vault.runtime.VaultAuthManager.USERPASS_WRAPPING_TOKEN_PASSWORD_KEY;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.regex.Pattern.MULTILINE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,6 +47,7 @@ import org.testcontainers.containers.output.OutputFrame;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.runtime.VaultConfigHolder;
+import io.quarkus.vault.runtime.VaultIOException;
 import io.quarkus.vault.runtime.VaultVersions;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
@@ -251,15 +251,15 @@ public class VaultTestExtension {
 
     private void initVault() throws InterruptedException, IOException {
 
+        waitForContainerToStart();
         vaultClient = createVaultClient();
         VaultInternalSystemBackend vaultInternalSystemBackend = new VaultInternalSystemBackend();
         vaultInternalSystemBackend.setVaultClient(vaultClient);
+        waitForVaultAPIToBeReady(vaultInternalSystemBackend);
 
         VaultInitResponse vaultInit = vaultInternalSystemBackend.init(1, 1);
         String unsealKey = vaultInit.keys.get(0);
         rootToken = vaultInit.rootToken;
-
-        waitForContainerToStart();
 
         try {
             vaultInternalSystemBackend.systemHealthStatus(false, false);
@@ -423,9 +423,28 @@ public class VaultTestExtension {
         Instant started = Instant.now();
         while (Instant.now().isBefore(started.plusSeconds(20))) {
             Container.ExecResult vault_status = vaultContainer.execInContainer(createVaultCommand("vault status"));
-            if (vault_status.getExitCode() == 2) { // 2 => sealed
+            int exitCode = vault_status.getExitCode();
+            log.info("vault status exit code = " + exitCode + " (0=unsealed, 1=error, 2=sealed)");
+            if (exitCode == 2) { // 2 => sealed
                 return;
             }
+            Thread.sleep(1000);
+        }
+        fail("vault failed to start");
+    }
+
+    private void waitForVaultAPIToBeReady(VaultInternalSystemBackend vaultInternalSystemBackend) throws InterruptedException {
+        Instant started = Instant.now();
+        while (Instant.now().isBefore(started.plusSeconds(20))) {
+            try {
+                log.info("checking seal status");
+                VaultSealStatusResult sealStatus = vaultInternalSystemBackend.systemSealStatus();
+                log.info(sealStatus);
+                return;
+            } catch (VaultIOException e) {
+                log.info("vault api not ready: " + e);
+            }
+            Thread.sleep(1000L);
         }
         fail("vault failed to start");
     }
@@ -443,7 +462,7 @@ public class VaultTestExtension {
     private String exec(GenericContainer container, String command, String[] cmd, String outFile)
             throws IOException, InterruptedException {
         exec(container, cmd);
-        String out = new String(Files.readAllBytes(Paths.get(outFile)), UTF_8);
+        String out = Files.readString(Paths.get(outFile));
         log.info("> " + command + "\n" + out);
         return out;
     }

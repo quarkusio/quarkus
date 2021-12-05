@@ -15,6 +15,7 @@ import org.hibernate.Filter;
 import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
 import io.quarkus.panache.common.exception.PanacheQueryException;
@@ -78,16 +79,24 @@ public class CommonPanacheQueryImpl<Entity> {
         StringBuilder select = new StringBuilder("SELECT new ").append(type.getName()).append(" (");
         int selectInitialLength = select.length();
         for (Parameter parameter : constructor.getParameters()) {
-            if (!parameter.isNamePresent()) {
+            String parameterName;
+            if (parameter.isAnnotationPresent(ProjectedFieldName.class)) {
+                final String name = parameter.getAnnotation(ProjectedFieldName.class).value();
+                if (name.isEmpty()) {
+                    throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
+                }
+                parameterName = name;
+            } else if (!parameter.isNamePresent()) {
                 throw new PanacheQueryException(
                         "Your application must be built with parameter names, this should be the default if" +
                                 " using Quarkus artifacts. Check the maven or gradle compiler configuration to include '-parameters'.");
+            } else {
+                parameterName = parameter.getName();
             }
-
             if (select.length() > selectInitialLength) {
                 select.append(", ");
             }
-            select.append(parameter.getName());
+            select.append(parameterName);
         }
         select.append(") ");
 

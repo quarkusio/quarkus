@@ -57,15 +57,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
     private final Predicate<DotName> applicationClassPredicate;
     private final boolean mockable;
-    private final ReflectionRegistration reflectionRegistration;
     private final Set<String> existingClasses;
 
     public ClientProxyGenerator(Predicate<DotName> applicationClassPredicate, boolean generateSources, boolean mockable,
             ReflectionRegistration reflectionRegistration, Set<String> existingClasses) {
-        super(generateSources);
+        super(generateSources, reflectionRegistration);
         this.applicationClassPredicate = applicationClassPredicate;
         this.mockable = mockable;
-        this.reflectionRegistration = reflectionRegistration;
         this.existingClasses = existingClasses;
     }
 
@@ -86,7 +84,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ProviderType providerType = new ProviderType(bean.getProviderType());
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String baseName = getBaseName(bean, beanClassName);
-        String targetPackage = getPackageName(bean);
+        String targetPackage = bean.getTargetPackageName();
         String generatedName = generatedNameFromTarget(targetPackage, baseName, CLIENT_PROXY_SUFFIX);
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();

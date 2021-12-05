@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import org.hibernate.MappingException;
 import org.hibernate.SessionFactory;
-import org.hibernate.boot.Metadata;
 import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;

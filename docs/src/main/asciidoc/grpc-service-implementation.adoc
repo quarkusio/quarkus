@@ -319,11 +319,48 @@ public class HelloServiceTest implements Greeter {
     Greeter client;
 
     @Test
-    void shouldReturnHello() throws Exception {
+    void shouldReturnHello() {
         CompletableFuture<String> message = new CompletableFuture<>();
         client.sayHello(HelloRequest.newBuilder().setName("Quarkus").build())
                 .subscribe().with(reply -> message.complete(reply.getMessage()));
         assertThat(message.get(5, TimeUnit.SECONDS)).isEqualTo("Hello Quarkus");
     }
 }
+----
+
+== gRPC Server metrics
+
+=== Enabling metrics collection
+
+gRPC server metrics are automatically enabled when the application also uses the xref:micrometer.adoc[`quarkus-micrometer`] extension.
+Micrometer collects the metrics of all the gRPC services implemented by the application.
+
+As an example, if you export the metrics to Prometheus, you will get:
+
+[source, text]
+----
+# HELP grpc_server_responses_sent_messages_total The total number of responses sent
+# TYPE grpc_server_responses_sent_messages_total counter
+grpc_server_responses_sent_messages_total{method="SayHello",methodType="UNARY",service="helloworld.Greeter",} 6.0
+# HELP grpc_server_processing_duration_seconds The total time taken for the server to complete the call
+# TYPE grpc_server_processing_duration_seconds summary
+grpc_server_processing_duration_seconds_count{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 6.0
+grpc_server_processing_duration_seconds_sum{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 0.016216771
+# HELP grpc_server_processing_duration_seconds_max The total time taken for the server to complete the call
+# TYPE grpc_server_processing_duration_seconds_max gauge
+grpc_server_processing_duration_seconds_max{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 0.007985236
+# HELP grpc_server_requests_received_messages_total The total number of requests received
+# TYPE grpc_server_requests_received_messages_total counter
+grpc_server_requests_received_messages_total{method="SayHello",methodType="UNARY",service="helloworld.Greeter",} 6.0
+----
+
+The service name, method and type can be found in the _tags_.
+
+=== Disabling metrics collection
+
+To disable the gRPC server metrics when `quarkus-micrometer` is used, add the following property to the application configuration:
+
+[source, properties]
+----
+quarkus.micrometer.binder.grpc-server.enabled=false
 ----

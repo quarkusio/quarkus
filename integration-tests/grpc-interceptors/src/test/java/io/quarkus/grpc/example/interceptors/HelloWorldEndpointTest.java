@@ -18,12 +18,24 @@ class HelloWorldEndpointTest {
         String responseMsg = response.asString();
         assertThat(responseMsg).isEqualTo("Hello neo");
         assertThat(intercepted).isEqualTo("true");
+
+        ensureThatMetricsAreProduced();
     }
 
     @Test
     public void testHelloWorldServiceUsingMutinyStub() {
         String response = get("/hello/mutiny/neo-mutiny").asString();
         assertThat(response).isEqualTo("Hello neo-mutiny");
+    }
+
+    public void ensureThatMetricsAreProduced() {
+        String metrics = get("/q/metrics")
+                .then().statusCode(200)
+                .extract().asString();
+
+        assertThat(metrics)
+                .contains("grpc_server_processing_duration_seconds_max") // server
+                .contains("grpc_client_processing_duration_seconds_count"); // client
     }
 
 }

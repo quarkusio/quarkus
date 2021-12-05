@@ -10,7 +10,7 @@ import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
 import io.quarkus.it.mongodb.panache.book.BookDetail;
-import io.quarkus.mongodb.panache.MongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 
 @MongoEntity(collection = "TheBookEntity", clientName = "cl2")

@@ -1,6 +1,6 @@
 package io.quarkus.it.mongodb.panache.book
 
-import io.quarkus.mongodb.panache.ProjectionFor
+import io.quarkus.mongodb.panache.common.ProjectionFor
 import java.time.LocalDate
 import javax.json.bind.annotation.JsonbDateFormat
 

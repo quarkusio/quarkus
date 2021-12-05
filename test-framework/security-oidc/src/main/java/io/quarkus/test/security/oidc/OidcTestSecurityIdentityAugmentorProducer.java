@@ -78,8 +78,8 @@ public class OidcTestSecurityIdentityAugmentorProducer {
                     }
                 }
                 String jwt = generateToken(claims);
-                IdTokenCredential idToken = new IdTokenCredential(jwt, null);
-                AccessTokenCredential accessToken = new AccessTokenCredential(jwt, null);
+                IdTokenCredential idToken = new IdTokenCredential(jwt);
+                AccessTokenCredential accessToken = new AccessTokenCredential(jwt);
 
                 JsonWebToken principal = new OidcJwtCallerPrincipal(claims, idToken);
                 builder.setPrincipal(principal);

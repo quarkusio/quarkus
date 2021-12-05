@@ -85,7 +85,7 @@ class QuarkusCodestartGenerationTest {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getGenerationTestInputData())
                 .addBoms(QuarkusCodestartTesting.getPlatformBoms())
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(ArtifactCoords.fromString("io.quarkus:quarkus-resteasy:1.8"))
                 .addExtension(ArtifactCoords.fromString("commons-io:commons-io:2.5"))
 
                 .build();
@@ -102,6 +102,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("<dependency>\n" +
                         "      <groupId>io.quarkus</groupId>\n" +
                         "      <artifactId>quarkus-resteasy</artifactId>\n" +
+                        "      <version>1.8</version>\n" +
                         "    </dependency>\n"));
     }
 
@@ -276,18 +277,18 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
-                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
-                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10"))//TODO: make a teste to java17
+                .satisfies(checkContains("ENTRYPOINT [ \"java\", \"-jar\", \"/deployments/quarkus-run.jar\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
-                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
-                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10"))
+                .satisfies(checkContains("EXPOSE 8080"))
+                .satisfies(checkContains("USER 185"))
+                .satisfies(checkContains("ENTRYPOINT [ \"java\", \"-jar\", \"/deployments/quarkus-run.jar\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./mvnw package -Pnative"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
+                .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:1.0"))
                 .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 
@@ -307,7 +308,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
+                .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:1.0"))
                 .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 

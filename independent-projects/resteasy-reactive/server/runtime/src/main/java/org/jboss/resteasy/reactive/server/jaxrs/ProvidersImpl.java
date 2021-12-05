@@ -48,7 +48,7 @@ public class ProvidersImpl implements Providers {
     @SuppressWarnings("unchecked")
     @Override
     public <T extends Throwable> ExceptionMapper<T> getExceptionMapper(Class<T> type) {
-        Map.Entry<Throwable, ExceptionMapper<? extends Throwable>> entry = deployment.getExceptionMapping()
+        Map.Entry<Throwable, ExceptionMapper<? extends Throwable>> entry = deployment.getExceptionMapper()
                 .getExceptionMapper(type, null, null);
         if (entry != null) {
             return (ExceptionMapper<T>) entry.getValue();

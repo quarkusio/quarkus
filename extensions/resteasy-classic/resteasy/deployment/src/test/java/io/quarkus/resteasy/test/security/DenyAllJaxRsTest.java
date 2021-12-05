@@ -2,10 +2,9 @@ package io.quarkus.resteasy.test.security;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.emptyString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -20,7 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DenyAllJaxRsTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,
@@ -33,6 +32,19 @@ public class DenyAllJaxRsTest {
         TestIdentityController.resetRoles()
                 .add("admin", "admin", "admin")
                 .add("user", "user", "user");
+    }
+
+    @Test
+    public void shouldPermitAllMethodWithPathParam() {
+        assertStatus("/unsecured/permitAllPathParam/1", 200, 200);
+    }
+
+    @Test
+    public void shouldReportNoImplementationDetailsWithWrongPathParam() {
+        when().get("/unsecured/permitAllPathParam/string")
+                .then()
+                .statusCode(404)
+                .body(emptyString());
     }
 
     @Test

@@ -25,6 +25,7 @@ import org.jboss.logging.Logger;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ConnectionValidator;
+import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.TransactionRequirement;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
 import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
@@ -186,7 +187,9 @@ public class DataSources {
         // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
         AgroalDataSourceConfiguration agroalConfiguration = dataSourceConfiguration.get();
         AgroalDataSource dataSource = new io.agroal.pool.DataSource(agroalConfiguration,
-                new AgroalEventLoggingListener(dataSourceName));
+                new AgroalEventLoggingListener(dataSourceName,
+                        agroalConfiguration.connectionPoolConfiguration()
+                                .transactionRequirement() == TransactionRequirement.WARN));
         log.debugv("Started datasource {0} connected to {1}", dataSourceName,
                 agroalConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl());
 

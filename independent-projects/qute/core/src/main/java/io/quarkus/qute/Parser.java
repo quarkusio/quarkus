@@ -1,5 +1,7 @@
 package io.quarkus.qute;
 
+import static java.util.function.Predicate.not;
+
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.TemplateNode.Origin;
@@ -505,7 +507,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     private void processParams(String tag, String label, Iterator<String> iter, SectionBlock.Builder block) {
         Map<String, String> params = new LinkedHashMap<>();
-        List<Parameter> factoryParams = paramsStack.peek().get(label);
+        ParametersInfo factoryParamsInfo = paramsStack.peek();
+        List<Parameter> factoryParams = factoryParamsInfo.get(label);
         List<String> paramValues = new ArrayList<>();
 
         while (iter.hasNext()) {
@@ -515,37 +518,48 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 paramValues.add(val);
             }
         }
-        if (paramValues.size() > factoryParams.size()) {
-            LOGGER.debugf("Too many params [label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams);
+
+        int actualSize = paramValues.size();
+        if (factoryParamsInfo.isCheckNumberOfParams()
+                && actualSize > factoryParams.size()
+                && LOGGER.isDebugEnabled()) {
+            StringBuilder builder = new StringBuilder("Too many section params for ").append(tag);
+            Origin origin = origin(0);
+            if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
+                builder.append(" in template [").append(origin.getTemplateId()).append("]");
+            }
+            builder.append(" on line ").append(origin.getLine());
+            builder.append(String.format("[label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams));
+            LOGGER.debugf(builder.toString());
         }
-        if (paramValues.size() < factoryParams.size()) {
+
+        // Process named params first
+        for (Iterator<String> it = paramValues.iterator(); it.hasNext();) {
+            String param = it.next();
+            int equalsPosition = getFirstDeterminingEqualsCharPosition(param);
+            if (equalsPosition != -1) {
+                // Named param
+                params.put(param.substring(0, equalsPosition), param.substring(equalsPosition + 1,
+                        param.length()));
+                it.remove();
+            }
+        }
+
+        // Then process positional params
+        if (actualSize < factoryParams.size()) {
+            // The number of actual params is less than factory params
+            // We need to choose the best fit for positional params
             for (String param : paramValues) {
-                int equalsPosition = getFirstDeterminingEqualsCharPosition(param);
-                if (equalsPosition != -1) {
-                    // Named param
-                    params.put(param.substring(0, equalsPosition), param.substring(equalsPosition + 1,
-                            param.length()));
-                } else {
-                    // Positional param - first non-default section param
-                    for (Parameter factoryParam : factoryParams) {
-                        if (factoryParam.defaultValue == null && !params.containsKey(factoryParam.name)) {
-                            params.put(factoryParam.name, param);
-                            break;
-                        }
+                Parameter found = null;
+                for (Parameter factoryParam : factoryParams) {
+                    // Prefer params with no default value
+                    if (factoryParam.defaultValue == null && !params.containsKey(factoryParam.name)) {
+                        found = factoryParam;
+                        params.put(factoryParam.name, param);
+                        break;
                     }
                 }
-            }
-        } else {
-            int generatedIdx = 0;
-            for (String param : paramValues) {
-                int equalsPosition = getFirstDeterminingEqualsCharPosition(param);
-                if (equalsPosition != -1) {
-                    // Named param
-                    params.put(param.substring(0, equalsPosition), param.substring(equalsPosition + 1,
-                            param.length()));
-                } else {
-                    // Positional param - first non-default section param
-                    Parameter found = null;
+                if (found == null) {
                     for (Parameter factoryParam : factoryParams) {
                         if (!params.containsKey(factoryParam.name)) {
                             found = factoryParam;
@@ -553,17 +567,37 @@ class Parser implements Function<String, Expression>, ParserHelper {
                             break;
                         }
                     }
-                    if (found == null) {
-                        params.put("" + generatedIdx++, param);
+                }
+            }
+        } else {
+            // The number of actual params is greater or equals to factory params
+            int generatedIdx = 0;
+            for (String param : paramValues) {
+                // Positional param
+                Parameter found = null;
+                for (Parameter factoryParam : factoryParams) {
+                    if (!params.containsKey(factoryParam.name)) {
+                        found = factoryParam;
+                        params.put(factoryParam.name, param);
+                        break;
                     }
+                }
+                if (found == null) {
+                    params.put("" + generatedIdx++, param);
                 }
             }
         }
 
-        factoryParams.stream().filter(p -> p.defaultValue != null).forEach(p -> params.putIfAbsent(p.name, p.defaultValue));
+        // Use the default values if needed
+        factoryParams.stream()
+                .filter(Parameter::hasDefatulValue)
+                .forEach(p -> params.putIfAbsent(p.name, p.defaultValue));
 
-        // TODO validate params
-        List<Parameter> undeclaredParams = factoryParams.stream().filter(p -> !p.optional && !params.containsKey(p.name))
+        // Find undeclared mandatory params
+        List<String> undeclaredParams = factoryParams.stream()
+                .filter(not(Parameter::isOptional))
+                .map(Parameter::getName)
+                .filter(not(params::containsKey))
                 .collect(Collectors.toList());
         if (!undeclaredParams.isEmpty()) {
             throw parserError("mandatory section parameters not declared for " + tag + ": " + undeclaredParams);

@@ -223,7 +223,7 @@ public class DevConsoleProcessor {
     /**
      * Boots the Vert.x instance used by the DevConsole,
      * applying some minimal tuning and customizations.
-     * 
+     *
      * @return the initialized Vert.x instance
      */
     private static Vertx initializeDevConsoleVertx() {
@@ -323,6 +323,7 @@ public class DevConsoleProcessor {
         for (DevConsoleRuntimeTemplateInfoBuildItem i : items) {
             recorder.addInfo(i.getGroupId(), i.getArtifactId(), i.getName(), i.getObject());
         }
+        recorder.initConfigFun();
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -464,24 +465,28 @@ public class DevConsoleProcessor {
         if (context == null) {
             context = ConsoleStateManager.INSTANCE.createContext("HTTP");
         }
+        Config c = ConfigProvider.getConfig();
+        String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
+        String port = c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
         context.reset(
-                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/")),
-                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev")));
+                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/", host, port)),
+                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev", host, port)));
     }
 
-    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String s) {
-        if (s.startsWith("/q")) {
-            s = np.resolvePath(s.substring(3));
+    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
+            String port) {
+        if (path.startsWith("/q")) {
+            path = np.resolvePath(path.substring(3));
         } else {
-            s = rp.resolvePath(s.substring(1));
+            path = rp.resolvePath(path.substring(1));
         }
 
         StringBuilder sb = new StringBuilder("http://");
         Config c = ConfigProvider.getConfig();
-        sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
+        sb.append(host);
         sb.append(":");
-        sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
-        sb.append(s);
+        sb.append(port);
+        sb.append(path);
         String url = sb.toString();
 
         Runtime rt = Runtime.getRuntime();
@@ -516,7 +521,7 @@ public class DevConsoleProcessor {
         EngineBuilder builder = Engine.builder().addDefaults();
 
         // Escape some characters for HTML templates
-        builder.addResultMapper(new HtmlEscaper());
+        builder.addResultMapper(new HtmlEscaper(List.of(Variant.TEXT_HTML)));
 
         builder.strictRendering(true)
                 .addValueResolver(new ReflectionValueResolver())
@@ -567,8 +572,9 @@ public class DevConsoleProcessor {
                 });
             } else {
                 return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
-                    String val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class)
-                            .orElse(defaultValues.get(propertyName.toString()));
+                    // Use the function stored in the DevConsoleRecorder to make sure the config is obtained using the correct TCCL
+                    Function<String, Optional<String>> configFun = DevConsoleManager.getGlobal("devui-config-fun");
+                    String val = configFun.apply(propertyName.toString()).orElse(defaultValues.get(propertyName.toString()));
                     return CompletableFuture.completedFuture(val != null ? val : Results.NotFound.from(ctx));
                 });
             }
@@ -766,7 +772,7 @@ public class DevConsoleProcessor {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    String contents = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                    String contents = Files.readString(file);
                     // don't move tags yet, since we don't know how to use them afterwards
                     String relativePath = devTemplatesPath.relativize(file).toString();
                     String correctedPath;

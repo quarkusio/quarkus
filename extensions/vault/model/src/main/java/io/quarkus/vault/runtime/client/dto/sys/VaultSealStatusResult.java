@@ -27,6 +27,7 @@ public class VaultSealStatusResult implements VaultModel {
         return "VaultSealStatus{" +
                 "type: '" + type + '\'' +
                 ", sealed: " + sealed +
+                ", initialized: " + initialized +
                 '}';
     }
 }

@@ -15,8 +15,6 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -30,7 +28,7 @@ public class PublicFieldAccessFieldTypesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addClass(FieldAccessEnhancedDelegate.class))
             .withConfigurationResource("application.properties");

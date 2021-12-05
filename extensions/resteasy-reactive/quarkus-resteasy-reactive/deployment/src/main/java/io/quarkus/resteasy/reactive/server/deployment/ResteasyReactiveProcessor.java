@@ -1,13 +1,13 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
 import static java.util.stream.Collectors.toList;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.Reader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -17,17 +17,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -39,10 +39,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.FilePart;
-import org.jboss.resteasy.reactive.PathPart;
-import org.jboss.resteasy.reactive.ResponseHeader;
-import org.jboss.resteasy.reactive.ResponseStatus;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.InjectableBean;
@@ -60,40 +56,35 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
-import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
-import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
-import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
-import org.jboss.resteasy.reactive.server.model.FixedResponseBuilderAndStreamingResponseCustomizer;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.processor.generation.converters.GeneratedConverterIndexerExtension;
+import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
+import org.jboss.resteasy.reactive.server.processor.generation.injection.TransformedFieldInjectionIndexerExtension;
+import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratedHandlerMultipartReturnTypeIndexerExtension;
+import org.jboss.resteasy.reactive.server.processor.generation.multipart.GeneratedMultipartParamIndexerExtension;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerBooleanMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerByteArrayMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerCharArrayMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerCharacterMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerDefaultTextPlainBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFileBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFilePartBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFormUrlEncodedProvider;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerInputStreamMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerNumberMessageBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathPartBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
-import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMethodScanner;
+import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
+import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
+import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -122,6 +113,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
@@ -136,9 +128,6 @@ import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveServerRuntimeConfig;
-import io.quarkus.resteasy.reactive.server.runtime.ServerMutinyAsyncFileMessageBodyWriter;
-import io.quarkus.resteasy.reactive.server.runtime.ServerVertxAsyncFileMessageBodyWriter;
-import io.quarkus.resteasy.reactive.server.runtime.ServerVertxBufferMessageBodyWriter;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationRedirectExceptionMapper;
@@ -165,67 +154,21 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class ResteasyReactiveProcessor {
 
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
 
-    private static final DotName RESPONSE_HEADER = DotName.createSimple(ResponseHeader.class.getName());
-    private static final DotName RESPONSE_HEADER_LIST = DotName.createSimple(ResponseHeader.List.class.getName());
-    private static final DotName RESPONSE_STATUS = DotName.createSimple(ResponseStatus.class.getName());
-
-    private final static Serialisers.BuiltinReader[] BUILTIN_READERS = new Serialisers.BuiltinReader[] {
-            new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(Boolean.class, ServerBooleanMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinReader(Character.class, ServerCharacterMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinReader(Number.class, ServerNumberMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinReader(InputStream.class, ServerInputStreamMessageBodyHandler.class, MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(Reader.class, ServerReaderBodyHandler.class, MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(File.class, ServerFileBodyHandler.class, MediaType.WILDCARD),
-
-            new Serialisers.BuiltinReader(byte[].class, ServerByteArrayMessageBodyHandler.class, MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(Object.class, ServerDefaultTextPlainBodyHandler.class, MediaType.TEXT_PLAIN,
-                    RuntimeType.SERVER),
-    };
-    private final static Serialisers.BuiltinWriter[] BUILTIN_WRITERS = new Serialisers.BuiltinWriter[] {
-            new Serialisers.BuiltinWriter(String.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Number.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Boolean.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Character.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Object.class, ServerStringMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(char[].class, ServerCharArrayMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(byte[].class, ServerByteArrayMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(MultivaluedMap.class, ServerFormUrlEncodedProvider.class,
-                    MediaType.APPLICATION_FORM_URLENCODED),
-            new Serialisers.BuiltinWriter(InputStream.class, ServerInputStreamMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(Reader.class, ServerReaderBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(File.class, ServerFileBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(FilePart.class, ServerFilePartBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(java.nio.file.Path.class, ServerPathBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(PathPart.class, ServerPathPartBodyHandler.class,
-                    MediaType.WILDCARD),
-    };
+    private static final Set<DotName> CONTEXT_TYPES = Set.of(
+            DotName.createSimple(HttpServerRequest.class.getName()),
+            DotName.createSimple(HttpServerResponse.class.getName()),
+            DotName.createSimple(RoutingContext.class.getName()));
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
@@ -262,67 +205,12 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     MethodScannerBuildItem responseStatusSupport() {
-        return new MethodScannerBuildItem(new MethodScanner() {
-            @Override
-            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
-                    Map<String, Object> methodContext) {
-                AnnotationStore annotationStore = (AnnotationStore) methodContext
-                        .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
-                AnnotationInstance annotationInstance = annotationStore.getAnnotation(method, RESPONSE_STATUS);
-                if (annotationInstance == null) {
-                    return Collections.emptyList();
-                }
-                AnnotationValue responseStatusValue = annotationInstance.value();
-                if (responseStatusValue == null) {
-                    return Collections.emptyList();
-                }
-                int statusCode = responseStatusValue.asInt();
-                ResponseHandler.ResponseBuilderCustomizer.StatusCustomizer responseBuilderCustomizer = new ResponseHandler.ResponseBuilderCustomizer.StatusCustomizer();
-                responseBuilderCustomizer.setStatus(statusCode);
-                PublisherResponseHandler.StreamingResponseCustomizer.StatusCustomizer streamingResponseCustomizer = new PublisherResponseHandler.StreamingResponseCustomizer.StatusCustomizer();
-                streamingResponseCustomizer.setStatus(statusCode);
-                return Collections.singletonList(new FixedResponseBuilderAndStreamingResponseCustomizer(
-                        responseBuilderCustomizer, streamingResponseCustomizer));
-            }
-        });
+        return new MethodScannerBuildItem(new ResponseStatusMethodScanner());
     }
 
     @BuildStep
     MethodScannerBuildItem responseHeaderSupport() {
-        return new MethodScannerBuildItem(new MethodScanner() {
-            @Override
-            public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
-                    Map<String, Object> methodContext) {
-                AnnotationStore annotationStore = (AnnotationStore) methodContext
-                        .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
-                AnnotationInstance responseHeaderInstance = annotationStore.getAnnotation(method, RESPONSE_HEADER);
-                AnnotationInstance responseHeadersInstance = annotationStore.getAnnotation(method, RESPONSE_HEADER_LIST);
-                if ((responseHeaderInstance == null) && (responseHeadersInstance == null)) {
-                    return Collections.emptyList();
-                }
-                List<AnnotationInstance> instances = new ArrayList<>();
-                if (responseHeaderInstance != null) {
-                    instances.add(responseHeaderInstance);
-                }
-                if (responseHeadersInstance != null) {
-                    AnnotationValue value = responseHeadersInstance.value();
-                    if (value != null) {
-                        instances.addAll(Arrays.asList(value.asNestedArray()));
-                    }
-                }
-                Map<String, List<String>> headers = new HashMap<>();
-                for (AnnotationInstance headerInstance : instances) {
-                    headers.put(headerInstance.value("name").asString(),
-                            Arrays.asList(headerInstance.value("value").asStringArray()));
-                }
-                ResponseHandler.ResponseBuilderCustomizer.AddHeadersCustomizer responseBuilderCustomizer = new ResponseHandler.ResponseBuilderCustomizer.AddHeadersCustomizer();
-                responseBuilderCustomizer.setHeaders(headers);
-                PublisherResponseHandler.StreamingResponseCustomizer.AddHeadersCustomizer streamingResponseCustomizer = new PublisherResponseHandler.StreamingResponseCustomizer.AddHeadersCustomizer();
-                streamingResponseCustomizer.setHeaders(headers);
-                return Collections.singletonList(new FixedResponseBuilderAndStreamingResponseCustomizer(
-                        responseBuilderCustomizer, streamingResponseCustomizer));
-            }
-        });
+        return new MethodScannerBuildItem(new ResponseHeaderMethodScanner());
     }
 
     @BuildStep
@@ -361,6 +249,7 @@ public class ResteasyReactiveProcessor {
         }
     }
 
+    //TODO: replace with MethodLevelExceptionMappingFeature
     @BuildStep
     void handleClassLevelExceptionMappers(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
@@ -378,7 +267,8 @@ public class ResteasyReactiveProcessor {
         final Map<DotName, Map<String, String>> resultingMappers = new HashMap<>(methodExceptionMapper.size());
         for (MethodInfo methodInfo : methodExceptionMapper) {
             Map<String, String> generationResult = ServerExceptionMapperGenerator.generatePerClassMapper(methodInfo,
-                    classOutput);
+                    classOutput,
+                    Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(true, false, false, generationResult.values().toArray(new String[0])));
             Map<String, String> classMappers;
@@ -448,7 +338,6 @@ public class ResteasyReactiveProcessor {
         ResourceScanningResult result = resourceScanningResultBuildItem.get().getResult();
         Map<DotName, ClassInfo> scannedResources = result.getScannedResources();
         Map<DotName, String> scannedResourcePaths = result.getScannedResourcePaths();
-        Map<DotName, ClassInfo> possibleSubResources = result.getPossibleSubResources();
         Map<DotName, String> pathInterfaces = result.getPathInterfaces();
 
         ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
@@ -468,16 +357,30 @@ public class ResteasyReactiveProcessor {
         paramConverterProviders.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.sort();
 
-        try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
+        GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true);
+        try (ClassCreator c = new ClassCreator(classOutput,
                 QUARKUS_INIT_CLASS, null, Object.class.getName(), ResteasyReactiveInitialiser.class.getName());
                 MethodCreator initConverters = c.getMethodCreator("init", void.class, Deployment.class)) {
 
             List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> resourceMethodEntries = new ArrayList<>();
 
+            Predicate<String> applicationClassPredicate = s -> {
+                for (ApplicationClassPredicateBuildItem i : applicationClassPredicateBuildItems) {
+                    if (i.test(s)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            BiConsumer<String, BiFunction<String, ClassVisitor, ClassVisitor>> transformationConsumer = (name,
+                    function) -> bytecodeTransformerBuildItemBuildProducer
+                            .produce(new BytecodeTransformerBuildItem(name, function));
             QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder()
                     .addMethodScanners(
                             methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
                     .setIndex(index)
+                    .addContextTypes(CONTEXT_TYPES)
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
@@ -491,6 +394,21 @@ public class ResteasyReactiveProcessor {
                     .setInjectableBeans(injectableBeans)
                     .setAdditionalWriters(additionalWriters)
                     .setDefaultBlocking(appResult.getBlockingDefault())
+                    .setApplicationScanningResult(appResult)
+                    .setMultipartParameterIndexerExtension(
+                            new GeneratedMultipartParamIndexerExtension(transformationConsumer, classOutput))
+                    .setMultipartReturnTypeIndexerExtension(
+                            new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput))
+                    .setFieldInjectionIndexerExtension(
+                            new TransformedFieldInjectionIndexerExtension(transformationConsumer, false, (field) -> {
+                                initConverters.invokeStaticMethod(MethodDescriptor.ofMethod(field.getInjectedClassName(),
+                                        field.getMethodName(),
+                                        void.class, Deployment.class),
+                                        initConverters.getMethodParam(0));
+                            }))
+                    .setConverterSupplierIndexerExtension(new GeneratedConverterIndexerExtension(
+                            (name) -> new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
+                                    applicationClassPredicate.test(name))))
                     .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
                     .setClassLevelExceptionMappers(
                             classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
@@ -554,16 +472,8 @@ public class ResteasyReactiveProcessor {
                             return false;
                         }
                     })
-                    .setInitConverters(initConverters)
                     .setResteasyReactiveRecorder(recorder)
-                    .setApplicationClassPredicate(s -> {
-                        for (ApplicationClassPredicateBuildItem i : applicationClassPredicateBuildItems) {
-                            if (i.test(s)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    });
+                    .setApplicationClassPredicate(applicationClassPredicate);
 
             if (!serverDefaultProducesHandlers.isEmpty()) {
                 List<DefaultProducesHandler> handlers = new ArrayList<>(serverDefaultProducesHandlers.size());
@@ -582,18 +492,20 @@ public class ResteasyReactiveProcessor {
                 serverEndpointIndexerBuilder.setAnnotationsTransformers(annotationsTransformers);
             }
 
+            serverEndpointIndexerBuilder.setMultipartReturnTypeIndexerExtension(new QuarkusMultipartReturnTypeHandler(
+                    generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClassBuildItemBuildProducer));
+            serverEndpointIndexerBuilder.setMultipartParameterIndexerExtension(new QuarkusMultipartParamHandler(
+                    generatedClassBuildItemBuildProducer, applicationClassPredicate, reflectiveClassBuildItemBuildProducer,
+                    bytecodeTransformerBuildItemBuildProducer));
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
             for (ClassInfo i : scannedResources.values()) {
-                if (!appResult.keepClass(i.name().toString())) {
-                    continue;
-                }
-                ResourceClass endpoints = serverEndpointIndexer.createEndpoints(i);
-                if (singletonClasses.contains(i.name().toString())) {
-                    endpoints.setFactory(new SingletonBeanFactory<>(i.name().toString()));
-                }
-                if (endpoints != null) {
-                    resourceClasses.add(endpoints);
+                Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(i, true);
+                if (endpoints.isPresent()) {
+                    if (singletonClasses.contains(i.name().toString())) {
+                        endpoints.get().setFactory(new SingletonBeanFactory<>(i.name().toString()));
+                    }
+                    resourceClasses.add(endpoints.get());
                 }
             }
             //now index possible sub resources. These are all classes that have method annotations
@@ -615,6 +527,7 @@ public class ResteasyReactiveProcessor {
                     toScan.add(classInfo);
                 }
             }
+            Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
             while (!toScan.isEmpty()) {
                 ClassInfo classInfo = toScan.poll();
                 if (scannedResources.containsKey(classInfo.name()) ||
@@ -623,9 +536,9 @@ public class ResteasyReactiveProcessor {
                     continue;
                 }
                 possibleSubResources.put(classInfo.name(), classInfo);
-                ResourceClass endpoints = serverEndpointIndexer.createEndpoints(classInfo);
-                if (endpoints != null) {
-                    subResourceClasses.add(endpoints);
+                Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(classInfo, false);
+                if (endpoints.isPresent()) {
+                    subResourceClasses.add(endpoints.get());
                 }
                 //we need to also look for all sub classes and interfaces
                 //they may have type variables that need to be handled
@@ -639,6 +552,26 @@ public class ResteasyReactiveProcessor {
                     .produce(new ResteasyReactiveResourceMethodEntriesBuildItem(resourceMethodEntries));
 
             initConverters.returnValue(null);
+        }
+
+        handleDateFormatReflection(reflectiveClass, index);
+    }
+
+    private void handleDateFormatReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, IndexView index) {
+        Collection<AnnotationInstance> dateFormatInstances = index.getAnnotations(DATE_FORMAT);
+        if (dateFormatInstances.isEmpty()) {
+            return;
+        }
+        List<String> dateTimeFormatterProviderClassNames = new ArrayList<>();
+        for (AnnotationInstance instance : dateFormatInstances) {
+            AnnotationValue dateTimeFormatterProviderValue = instance.value("dateTimeFormatterProvider");
+            if (dateTimeFormatterProviderValue != null) {
+                dateTimeFormatterProviderClassNames.add(dateTimeFormatterProviderValue.asClass().name().toString());
+            }
+        }
+        if (!dateTimeFormatterProviderClassNames.isEmpty()) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, false,
+                    dateTimeFormatterProviderClassNames.toArray(new String[0])));
         }
     }
 
@@ -661,14 +594,14 @@ public class ResteasyReactiveProcessor {
                 RuntimeType.SERVER);
 
         // built-ins
-        for (Serialisers.BuiltinWriter builtinWriter : BUILTIN_WRITERS) {
-            registerWriter(recorder, serialisers, builtinWriter.entityClass, builtinWriter.writerClass,
+        for (Serialisers.BuiltinWriter builtinWriter : ServerSerialisers.BUILTIN_WRITERS) {
+            registerWriter(recorder, serialisers, builtinWriter.entityClass.getName(), builtinWriter.writerClass.getName(),
                     beanContainerBuildItem.getValue(),
                     builtinWriter.mediaType);
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinWriter.writerClass.getName()));
         }
-        for (Serialisers.BuiltinReader builtinReader : BUILTIN_READERS) {
-            registerReader(recorder, serialisers, builtinReader.entityClass, builtinReader.readerClass,
+        for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
+            registerReader(recorder, serialisers, builtinReader.entityClass.getName(), builtinReader.readerClass.getName(),
                     beanContainerBuildItem.getValue(),
                     builtinReader.mediaType, builtinReader.constraint);
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, builtinReader.readerClass.getName()));
@@ -737,6 +670,7 @@ public class ResteasyReactiveProcessor {
         interceptors.initializeDefaultFactories(factoryFunction);
         exceptionMapping.initializeDefaultFactories(factoryFunction);
         contextResolvers.initializeDefaultFactories(factoryFunction);
+
         paramConverterProviders.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.sort();
         interceptors.sort();
@@ -763,17 +697,17 @@ public class ResteasyReactiveProcessor {
         ServerSerialisers serialisers = serverSerialisersBuildItem.getSerialisers();
 
         for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
-            Class readerClass = additionalReader.getHandlerClass();
+            String readerClass = additionalReader.getHandlerClass();
             registerReader(recorder, serialisers, additionalReader.getEntityClass(), readerClass,
                     beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClass.getName()));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClass));
         }
 
         for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
-            Class writerClass = entry.getHandlerClass();
+            String writerClass = entry.getHandlerClass();
             registerWriter(recorder, serialisers, entry.getEntityClass(), writerClass,
                     beanContainerBuildItem.getValue(), entry.getMediaType());
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClass.getName()));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClass));
         }
 
         BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
@@ -802,8 +736,7 @@ public class ResteasyReactiveProcessor {
                 .setDynamicFeatures(dynamicFeats)
                 .setSerialisers(serialisers)
                 .setApplicationPath(applicationPath)
-                .setGlobalHandlerCustomers(
-                        new ArrayList<>(Collections.singletonList(new SecurityContextOverrideHandler.Customizer()))) //TODO: should be pluggable
+                .setGlobalHandlerCustomizers(Collections.singletonList(new SecurityContextOverrideHandler.Customizer())) //TODO: should be pluggable
                 .setResourceClasses(resourceClasses)
                 .setDevelopmentMode(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT)
                 .setLocatableResourceClasses(subResourceClasses)
@@ -868,11 +801,11 @@ public class ResteasyReactiveProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void applyRuntimeConfig(ResteasyReactiveRuntimeRecorder recorder,
             Optional<ResteasyReactiveDeploymentBuildItem> deployment,
-            HttpConfiguration httpConf, ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf) {
+            ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf) {
         if (!deployment.isPresent()) {
             return;
         }
-        recorder.configure(deployment.get().getDeployment(), httpConf, resteasyReactiveServerRuntimeConf);
+        recorder.configure(deployment.get().getDeployment(), resteasyReactiveServerRuntimeConf);
     }
 
     @BuildStep
@@ -988,22 +921,23 @@ public class ResteasyReactiveProcessor {
         return applicationPath;
     }
 
-    private void registerWriter(ResteasyReactiveRecorder recorder, ServerSerialisers serialisers, Class<?> entityClass,
-            Class<? extends MessageBodyWriter<?>> writerClass, BeanContainer beanContainer,
+    private void registerWriter(ResteasyReactiveRecorder recorder, ServerSerialisers serialisers, String entityClass,
+            String writerClass, BeanContainer beanContainer,
             String mediaType) {
         ResourceWriter writer = new ResourceWriter();
-        writer.setFactory(recorder.factory(writerClass.getName(), beanContainer));
+        writer.setFactory(recorder.factory(writerClass, beanContainer));
         writer.setMediaTypeStrings(Collections.singletonList(mediaType));
-        recorder.registerWriter(serialisers, entityClass.getName(), writer);
+        recorder.registerWriter(serialisers, entityClass, writer);
     }
 
-    private void registerReader(ResteasyReactiveRecorder recorder, ServerSerialisers serialisers, Class<?> entityClass,
-            Class<? extends MessageBodyReader<?>> readerClass, BeanContainer beanContainer, String mediaType,
+    private void registerReader(ResteasyReactiveRecorder recorder, ServerSerialisers serialisers, String entityClass,
+            String readerClass, BeanContainer beanContainer, String mediaType,
             RuntimeType constraint) {
         ResourceReader reader = new ResourceReader();
-        reader.setFactory(recorder.factory(readerClass.getName(), beanContainer));
+        reader.setFactory(recorder.factory(readerClass, beanContainer));
         reader.setMediaTypeStrings(Collections.singletonList(mediaType));
         reader.setConstraint(constraint);
-        recorder.registerReader(serialisers, entityClass.getName(), reader);
+        recorder.registerReader(serialisers, entityClass, reader);
     }
+
 }

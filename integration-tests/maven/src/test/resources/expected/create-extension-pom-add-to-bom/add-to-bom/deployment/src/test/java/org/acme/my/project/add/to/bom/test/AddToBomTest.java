@@ -12,7 +12,7 @@ class AddToBomTest {
 
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest() // Start unit test with your extension loaded
-        .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+        .withEmptyApplication();
 
     @Test
     public void test() {

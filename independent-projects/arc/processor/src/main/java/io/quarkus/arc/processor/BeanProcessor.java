@@ -256,6 +256,7 @@ public class BeanProcessor {
         registerCustomContexts();
         registerScopes();
         registerBeans();
+        beanDeployment.initBeanByTypeMap();
         registerSyntheticObservers();
         initialize(unsupportedBytecodeTransformer, Collections.emptyList());
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);

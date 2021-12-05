@@ -2,8 +2,6 @@ package io.quarkus.funqy.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,7 +24,7 @@ public class WithDuplicateAttributeFilterTest {
 
         assertTrue(found, "Build failed with wrong exception, expected IllegalStateException but got " + t);
     })
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(WithDuplicateAttributeFilter.class, Identity.class));
 
     @Test

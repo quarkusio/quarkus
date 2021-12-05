@@ -7,8 +7,6 @@ import javax.inject.Inject;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class SinglePersistenceUnitCdiMutinySessionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(DefaultEntity.class)
                     .addAsResource("application.properties"));
 

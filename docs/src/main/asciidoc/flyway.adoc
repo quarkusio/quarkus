@@ -190,3 +190,8 @@ public class MigrationService {
 <3> Inject Flyway for named datasources
 <4> Use the Flyway instance directly
 
+== Flyway and Hibernate ORM
+
+When using Flyway together with Hibernate ORM, you can use the Dev UI to generate the initial schema creation script.
+
+You can find more information about this feature in the xref:hibernate-orm.adoc#flyway[Hibernate ORM guide].

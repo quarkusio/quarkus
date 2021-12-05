@@ -7,10 +7,8 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.registry.CatalogMergeUtility;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonCatalogMerger;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 import io.quarkus.registry.catalog.selection.OriginPreference;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -119,7 +117,7 @@ public class ToolsUtils {
         }
         ExtensionCatalog catalog;
         try {
-            catalog = JsonCatalogMapperHelper.deserialize(platformJson, JsonExtensionCatalog.class);
+            catalog = ExtensionCatalog.fromFile(platformJson);
         } catch (IOException e) {
             throw new RuntimeException("Failed to deserialize extension catalog " + platformJson, e);
         }
@@ -147,8 +145,7 @@ public class ToolsUtils {
                                         coords.getClassifier(), coords.getType(), coords.getVersion());
                                 log.debug("Resolving platform descriptor %s", catalogCoords);
                                 final Path jsonPath = artifactResolver.resolve(catalogCoords).getArtifact().getFile().toPath();
-                                memberCatalog = JsonCatalogMapperHelper.deserialize(jsonPath,
-                                        JsonExtensionCatalog.class);
+                                memberCatalog = ExtensionCatalog.fromFile(jsonPath);
                             } catch (Exception e) {
                                 log.warn("Failed to resolve member catalog " + m, e);
                                 continue;
@@ -158,10 +155,10 @@ public class ToolsUtils {
                         final OriginPreference originPreference = new OriginPreference(1, 1, 1, ++memberIndex, 1);
                         Map<String, Object> metadata = new HashMap<>(memberCatalog.getMetadata());
                         metadata.put("origin-preference", originPreference);
-                        ((JsonExtensionCatalog) memberCatalog).setMetadata(metadata);
+                        ((ExtensionCatalog.Mutable) memberCatalog).setMetadata(metadata);
                         catalogs.add(memberCatalog);
                     }
-                    catalog = JsonCatalogMerger.merge(catalogs);
+                    catalog = CatalogMergeUtility.merge(catalogs);
                 }
             }
         }
@@ -186,12 +183,12 @@ public class ToolsUtils {
                 throw new RuntimeException("Failed to resolve platform descriptor " + platform, e);
             }
             try {
-                catalogs.add(JsonCatalogMapperHelper.deserialize(json, JsonExtensionCatalog.class));
+                catalogs.add(ExtensionCatalog.fromFile(json));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to deserialize platform descriptor " + json, e);
             }
         }
-        return JsonCatalogMerger.merge(catalogs);
+        return CatalogMergeUtility.merge(catalogs);
     }
 
     @SuppressWarnings("unchecked")

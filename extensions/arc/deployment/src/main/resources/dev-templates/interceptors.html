@@ -54,7 +54,7 @@
    <tbody>
     {#for interceptor in info:devBeanInfos.interceptors}
     <tr>
-      <td>{count}.</td>
+      <td>{interceptor_count}.</td>
       <td><span class="class-candidate">{interceptor.interceptorClass}</span></td>
       <td><span class="badge rounded-pill bg-info text-light larger-badge" title="Priority: {interceptor.priority}">{interceptor.priority}</span></td>
       <td>

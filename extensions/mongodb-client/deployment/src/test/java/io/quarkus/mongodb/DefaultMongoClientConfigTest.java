@@ -9,8 +9,6 @@ import javax.enterprise.inject.Any;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -25,7 +23,7 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
             .withConfigurationResource("default-mongoclient.properties");
 
     @Inject

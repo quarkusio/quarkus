@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -62,6 +63,7 @@ public class SubclassGenerator extends AbstractGenerator {
     private static final DotName JAVA_LANG_THROWABLE = DotNames.create(Throwable.class.getName());
     private static final DotName JAVA_LANG_EXCEPTION = DotNames.create(Exception.class.getName());
     private static final DotName JAVA_LANG_RUNTIME_EXCEPTION = DotNames.create(RuntimeException.class.getName());
+    private static final DotName KOTLIN_METADATA_ANNOTATION = DotNames.create("kotlin.Metadata");
 
     static final String SUBCLASS_SUFFIX = "_Subclass";
     static final String DESTROY_METHOD_NAME = "arc$destroy";
@@ -76,7 +78,6 @@ public class SubclassGenerator extends AbstractGenerator {
             "bindings", Set.class);
 
     private final Predicate<DotName> applicationClassPredicate;
-    private final ReflectionRegistration reflectionRegistration;
     private final Set<String> existingClasses;
 
     static String generatedName(DotName providerTypeName, String baseName) {
@@ -89,10 +90,9 @@ public class SubclassGenerator extends AbstractGenerator {
     public SubclassGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses) {
-        super(generateSources);
+        super(generateSources, reflectionRegistration);
         this.applicationClassPredicate = applicationClassPredicate;
         this.annotationLiterals = annotationLiterals;
-        this.reflectionRegistration = reflectionRegistration;
         this.existingClasses = existingClasses;
     }
 
@@ -258,7 +258,7 @@ public class SubclassGenerator extends AbstractGenerator {
                         constructor.writeArrayValue(bindingsArray, bindingsIndex++,
                                 bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
                     }
-                    return constructor.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF, bindingsArray);
+                    return constructor.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray);
                 }
             }
         };
@@ -741,16 +741,21 @@ public class SubclassGenerator extends AbstractGenerator {
         // catch exceptions declared on the original method
         boolean addCatchRuntimeException = true;
         boolean addCatchException = true;
+        boolean isKotlin = method.declaringClass().classAnnotation(KOTLIN_METADATA_ANNOTATION) != null;
+        Set<DotName> declaredExceptions = new LinkedHashSet<>(method.exceptions().size());
         for (Type declaredException : method.exceptions()) {
-            CatchBlockCreator catchDeclaredException = tryCatch.addCatch(declaredException.name().toString());
+            declaredExceptions.add(declaredException.name());
+        }
+        for (DotName declaredException : declaredExceptions) {
+            CatchBlockCreator catchDeclaredException = tryCatch.addCatch(declaredException.toString());
             catchDeclaredException.throwException(catchDeclaredException.getCaughtException());
 
-            if (JAVA_LANG_RUNTIME_EXCEPTION.equals(declaredException.name()) ||
-                    JAVA_LANG_THROWABLE.equals(declaredException.name())) {
+            if (JAVA_LANG_RUNTIME_EXCEPTION.equals(declaredException) ||
+                    JAVA_LANG_THROWABLE.equals(declaredException)) {
                 addCatchRuntimeException = false;
             }
-            if (JAVA_LANG_EXCEPTION.equals(declaredException.name()) ||
-                    JAVA_LANG_THROWABLE.equals(declaredException.name())) {
+            if (JAVA_LANG_EXCEPTION.equals(declaredException) ||
+                    JAVA_LANG_THROWABLE.equals(declaredException)) {
                 addCatchException = false;
             }
         }
@@ -760,7 +765,8 @@ public class SubclassGenerator extends AbstractGenerator {
             catchRuntimeException.throwException(catchRuntimeException.getCaughtException());
         }
         // now catch the rest (Exception e) if not already caught
-        if (addCatchException) {
+        // this catch is _not_ included for Kotlin methods because Kotlin has not checked exceptions contract
+        if (addCatchException && !isKotlin) {
             CatchBlockCreator catchOtherExceptions = tryCatch.addCatch(Exception.class);
             // and wrap them in a new RuntimeException(e)
             catchOtherExceptions.throwException(ArcUndeclaredThrowableException.class, "Error invoking subclass method",
@@ -812,7 +818,7 @@ public class SubclassGenerator extends AbstractGenerator {
             // InvocationContextImpl.preDestroy(this,predestroys)
             ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXTS_PRE_DESTROY,
                     tryCatch.getThis(), predestroysHandle,
-                    tryCatch.invokeStaticInterfaceMethod(MethodDescriptors.SET_OF, bindingsArray));
+                    tryCatch.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
 
             // InvocationContext.proceed()
             tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);

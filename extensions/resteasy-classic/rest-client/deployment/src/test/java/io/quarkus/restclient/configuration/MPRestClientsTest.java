@@ -7,8 +7,6 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -23,7 +21,7 @@ public class MPRestClientsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(EchoResource.class,
                             EchoClient.class, EchoClientWithConfigKey.class, ShortNameEchoClient.class))
             .withConfigurationResource("mp-restclients-test-application.properties");

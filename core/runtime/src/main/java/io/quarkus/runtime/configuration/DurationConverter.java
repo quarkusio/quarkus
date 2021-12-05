@@ -51,7 +51,7 @@ public class DurationConverter implements Converter<Duration>, Serializable {
             return null;
         }
         if (DIGITS.asPredicate().test(value)) {
-            return Duration.ofSeconds(Long.valueOf(value));
+            return Duration.ofSeconds(Long.parseLong(value));
         }
 
         try {

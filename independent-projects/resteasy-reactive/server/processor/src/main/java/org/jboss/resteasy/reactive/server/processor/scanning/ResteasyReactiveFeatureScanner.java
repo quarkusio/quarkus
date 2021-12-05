@@ -12,7 +12,6 @@ import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
-import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -26,7 +25,7 @@ public class ResteasyReactiveFeatureScanner {
      * Creates a fully populated resource features instance, that are created via reflection.
      */
     public static Features createFeatures(IndexView indexView, ApplicationScanningResult result) {
-        return createFeatures(indexView, result, new ReflectionBeanFactoryCreator());
+        return createFeatures(indexView, result, null);
     }
 
     /**
@@ -37,7 +36,10 @@ public class ResteasyReactiveFeatureScanner {
         Features features = new Features();
         for (String i : scanForFeatures(indexView, result)) {
             ResourceFeature resourceFeature = new ResourceFeature();
-            resourceFeature.setFactory((BeanFactory<Feature>) factoryCreator.apply(i));
+            resourceFeature.setClassName(i);
+            if (factoryCreator != null) {
+                resourceFeature.setFactory((BeanFactory<Feature>) factoryCreator.apply(i));
+            }
             features.addFeature(resourceFeature);
         }
         return features;
@@ -47,7 +49,7 @@ public class ResteasyReactiveFeatureScanner {
      * Creates a fully populated resource dynamic features instance, that are created via reflection.
      */
     public static DynamicFeatures createDynamicFeatures(IndexView indexView, ApplicationScanningResult result) {
-        return createDynamicFeatures(indexView, result, new ReflectionBeanFactoryCreator());
+        return createDynamicFeatures(indexView, result, null);
     }
 
     /**
@@ -58,7 +60,10 @@ public class ResteasyReactiveFeatureScanner {
         DynamicFeatures features = new DynamicFeatures();
         for (String i : scanForDynamicFeatures(indexView, result)) {
             ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
-            resourceFeature.setFactory((BeanFactory<DynamicFeature>) factoryCreator.apply(i));
+            resourceFeature.setClassName(i);
+            if (factoryCreator != null) {
+                resourceFeature.setFactory((BeanFactory<DynamicFeature>) factoryCreator.apply(i));
+            }
             features.addFeature(resourceFeature);
         }
         return features;

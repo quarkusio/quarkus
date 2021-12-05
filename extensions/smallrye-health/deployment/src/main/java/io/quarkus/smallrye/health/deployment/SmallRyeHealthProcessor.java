@@ -53,7 +53,6 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.deployment.util.WebJarUtil;
@@ -61,6 +60,8 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthStartupPathBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.QuarkusAsyncHealthCheckFactory;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
@@ -413,14 +414,15 @@ class SmallRyeHealthProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeHealthConfig healthConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            LaunchModeBuildItem launchMode,
+            LaunchModeBuildItem launchModeBuildItem,
             LiveReloadBuildItem liveReloadBuildItem) throws Exception {
 
-        if (shouldInclude(launchMode, healthConfig)) {
+        if (shouldInclude(launchModeBuildItem, healthConfig)) {
 
             if ("/".equals(healthConfig.ui.rootPath)) {
-                throw new ConfigurationError(
-                        "quarkus.smallrye-health.root-path-ui was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
+                throw new ConfigurationException(
+                        "quarkus.smallrye-health.root-path-ui was set to \"/\", this is not allowed as it blocks the application from serving anything else.",
+                        Set.of("quarkus.smallrye-health.root-path-ui"));
             }
 
             String healthPath = nonApplicationRootPathBuildItem.resolvePath(healthConfig.rootPath);
@@ -429,19 +431,22 @@ class SmallRyeHealthProcessor {
             ResolvedDependency artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, HEALTH_UI_WEBJAR_GROUP_ID,
                     HEALTH_UI_WEBJAR_ARTIFACT_ID);
 
-            if (launchMode.getLaunchMode().isDevOrTest()) {
-                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
+            if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem,
+                        launchModeBuildItem,
                         artifact,
                         HEALTH_UI_WEBJAR_PREFIX);
-                updateApiUrl(tempPath.resolve(JS_FILE_TO_UPDATE), healthPath);
-                updateApiUrl(tempPath.resolve(INDEX_FILE_TO_UPDATE), healthPath);
+                if (launchModeBuildItem.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
+                    updateApiUrl(tempPath.resolve(JS_FILE_TO_UPDATE), healthPath);
+                    updateApiUrl(tempPath.resolve(INDEX_FILE_TO_UPDATE), healthPath);
+                }
 
                 smallRyeHealthBuildProducer
                         .produce(new SmallRyeHealthBuildItem(tempPath.toAbsolutePath().toString(), healthUiPath));
 
                 // Handle live reload of branding files
                 if (liveReloadBuildItem.isLiveReload() && !liveReloadBuildItem.getChangedResources().isEmpty()) {
-                    WebJarUtil.hotReloadBrandingChanges(curateOutcomeBuildItem, launchMode, artifact,
+                    WebJarUtil.hotReloadBrandingChanges(curateOutcomeBuildItem, launchModeBuildItem, artifact,
                             liveReloadBuildItem.getChangedResources());
                 }
             } else {
@@ -497,7 +502,7 @@ class SmallRyeHealthProcessor {
     }
 
     private void updateApiUrl(Path fileToUpdate, String healthPath) throws IOException {
-        String content = new String(Files.readAllBytes(fileToUpdate), StandardCharsets.UTF_8);
+        String content = Files.readString(fileToUpdate);
         String result = updateApiUrl(content, healthPath);
         if (result != null) {
             Files.write(fileToUpdate, result.getBytes(StandardCharsets.UTF_8));

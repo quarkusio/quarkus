@@ -24,7 +24,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     protected Throwable throwable;
     private boolean suspended = false;
     private volatile boolean requestScopeActivated = false;
-    private volatile boolean running = false;
+    private boolean running = false;
     private volatile Executor executor; // ephemerally set by handlers to signal that we resume, it needs to be on this executor
     private volatile Executor lastExecutor; // contains the last executor which was provided during resume - needed to submit there if suspended again
     private Map<String, Object> properties;
@@ -141,6 +141,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     handlers[pos].handle((T) this);
                     if (suspended) {
                         synchronized (this) {
+                            // as running is not volatile but instead read from inside the same monitor,
+                            // we write it from inside this monitor as well to ensure
+                            // that the read is visible regardless of the reading thread
+                            running = true;
                             if (isRequestScopeManagementRequired()) {
                                 if (requestScopeActivated) {
                                     disasociateRequestScope = true;
@@ -156,12 +160,13 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                             }
                         }
                     }
+
                 } catch (Throwable t) {
                     aborted = abortHandlerChainStarted;
                     if (t instanceof PreserveTargetException) {
                         handleException(t.getCause(), true);
                     } else {
-                        handleException(t);
+                        handleException(t, true);
                     }
                     if (aborted) {
                         return;
@@ -222,9 +227,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
      * Ensures the CDI request scope is running when inside a handler chain
      */
     public void requireCDIRequestScope() {
-        if (!running) {
-            throw new RuntimeException("Cannot be called when outside a handler chain");
-        }
         if (requestScopeActivated) {
             return;
         }
@@ -276,15 +278,6 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     public T setSuspended(boolean suspended) {
         this.suspended = suspended;
-        return (T) this;
-    }
-
-    public boolean isRunning() {
-        return running;
-    }
-
-    public T setRunning(boolean running) {
-        this.running = running;
         return (T) this;
     }
 

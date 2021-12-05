@@ -4,8 +4,6 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.util.Base64;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,7 +14,7 @@ import io.restassured.RestAssured;
 public class BinaryPayloadTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(BinaryPayload.class));
 
     private static final byte[] IN = new byte[] { 0x12, 0x34, 0x56, 0x78 };

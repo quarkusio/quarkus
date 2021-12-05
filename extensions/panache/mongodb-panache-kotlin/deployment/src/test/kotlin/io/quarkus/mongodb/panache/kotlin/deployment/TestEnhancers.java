@@ -45,7 +45,7 @@ public class TestEnhancers {
     public static final Pattern LABEL = Pattern.compile("^L(\\d)$");
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Book.class)
                     .addClasses(Student.class)
                     .addClasses(StudentRepository.class));

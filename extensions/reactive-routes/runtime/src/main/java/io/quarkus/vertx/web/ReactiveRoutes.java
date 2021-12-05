@@ -12,6 +12,74 @@ import io.smallrye.mutiny.Multi;
  */
 public class ReactiveRoutes {
 
+    /**
+     * The content-type to use to indicate you want to produce an JSON Array response, such as in:
+     * 
+     * <pre>
+     * {@code
+     * &#64;Route(path = "/heroes", produces = ReactiveRoutes.APPLICATION_JSON_CONTENT_TYPE)
+     * Multi<Person> heroes() {
+     *     return Multi.createFrom().items(
+     *             new Person("superman", 1),
+     *             new Person("batman", 2),
+     *             new Person("spiderman", 3));
+     * }
+     * }
+     * </pre>
+     *
+     * Note that the array is streamed object per object.
+     * Each object is written individually in the response, until the last one.
+     */
+    public static final String APPLICATION_JSON = "application/json";
+
+    /**
+     * The content-type to use to indicate you want to produce a server-sent-event (SSE) stream response, such as in:
+     * 
+     * <pre>
+     * {@code
+     * &#64;Route(path = "/heroes", produces = ReactiveRoutes.EVENT_STREAM_CONTENT_TYPE)
+     * Multi<Person> heroes() {
+     *     return Multi.createFrom().items(
+     *             new Person("superman", 1),
+     *             new Person("batman", 2),
+     *             new Person("spiderman", 3));
+     * }
+     * }
+     * </pre>
+     *
+     */
+    public static final String EVENT_STREAM = "text/event-stream";
+
+    /**
+     * The content-type to use to indicate you want to produce <a href="http://ndjson.org/">NDJSON stream</a> response,
+     * such as in:
+     * 
+     * <pre>
+     * {@code
+     * &#64;Route(path = "/heroes", produces = ReactiveRoutes.ND_JSON_CONTENT_TYPE)
+     * Multi<Person> heroes() {
+     *     return Multi.createFrom().items(
+     *             new Person("superman", 1),
+     *             new Person("batman", 2),
+     *             new Person("spiderman", 3));
+     * }
+     * }
+     * </pre>
+     *
+     * NDJSON stands for <em>Newline Delimited JSON</em>.
+     * NDJSON is a convenient format for storing or streaming structured data that may be processed one record at a time:
+     * <ol>
+     * <li>Line Separator is '\n',</li>
+     * <li>Each Line is a valid JSON value.</li>
+     * </ol>
+     */
+    public static final String ND_JSON = "application/x-ndjson";
+
+    /**
+     * A content-type providing the same output as {@link #ND_JSON}.
+     */
+    public static final String JSON_STREAM = "application/stream+json";
+
     private ReactiveRoutes() {
         // Avoid direct instantiation.
     }
@@ -48,7 +116,10 @@ public class ReactiveRoutes {
      * @param multi the multi to be written
      * @param <T> the type of item, can be string, buffer, object or io.quarkus.vertx.web.ReactiveRoutes.ServerSentEvent
      * @return the wrapped multi
+     * @deprecated Instead, set the `produces` attribute of the {@link Route} annotation to
+     *             {@link ReactiveRoutes#EVENT_STREAM} and return a <em>plain</em> Multi.
      */
+    @Deprecated
     public static <T> Multi<T> asEventStream(Multi<T> multi) {
         return new SSEMulti<>(Objects.requireNonNull(multi, "The passed multi must not be `null`"));
     }
@@ -85,7 +156,10 @@ public class ReactiveRoutes {
      * @param multi the multi to be written
      * @param <T> the type of item, can be string, object
      * @return the wrapped multi
+     * @deprecated Instead, set the `produces` attribute of the {@link Route} annotation to
+     *             {@link ReactiveRoutes#ND_JSON} and return a <em>plain</em> Multi.
      */
+    @Deprecated
     public static <T> Multi<T> asJsonStream(Multi<T> multi) {
         return new NdjsonMulti<>(Objects.requireNonNull(multi, "The passed multi must not be `null`"));
     }
@@ -118,7 +192,10 @@ public class ReactiveRoutes {
      * @param multi the multi to be written
      * @param <T> the type of item, can be string or object
      * @return the wrapped multi
+     * @deprecated Instead, set the `produces` attribute of the {@link Route} annotation to
+     *             {@link ReactiveRoutes#APPLICATION_JSON} and return a <em>plain</em> Multi.
      */
+    @Deprecated
     public static <T> Multi<T> asJsonArray(Multi<T> multi) {
         return new JsonArrayMulti<>(Objects.requireNonNull(multi, "The passed multi must not be `null`"));
     }

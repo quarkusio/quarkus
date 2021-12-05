@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -67,7 +68,8 @@ public class AmqpDevServicesProcessor {
             BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem) {
+            LoggingSetupBuildItem loggingSetupBuildItem,
+            GlobalDevServicesConfig devServicesConfig) {
 
         AmqpDevServiceCfg configuration = getConfiguration(amqpClientBuildTimeConfig);
 
@@ -86,7 +88,7 @@ public class AmqpDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "AMQP Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            broker = startAmqpBroker(configuration, launchMode);
+            broker = startAmqpBroker(configuration, launchMode, devServicesConfig.timeout);
             if (broker != null) {
                 closeable = broker.getCloseable();
                 devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_HOST_PROP, broker.host));
@@ -142,7 +144,7 @@ public class AmqpDevServicesProcessor {
         }
     }
 
-    private AmqpBroker startAmqpBroker(AmqpDevServiceCfg config, LaunchModeBuildItem launchMode) {
+    private AmqpBroker startAmqpBroker(AmqpDevServiceCfg config, LaunchModeBuildItem launchMode, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for AMQP, as it has been disabled in the config.");
@@ -174,6 +176,7 @@ public class AmqpDevServicesProcessor {
                     config.fixedExposedPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null);
 
+            timeout.ifPresent(container::withStartupTimeout);
             container.start();
 
             return new AmqpBroker(

@@ -9,7 +9,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
-import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -22,7 +21,7 @@ public class ResteasyReactiveParamConverterScanner {
      * Creates a fully populated param converter instance, that are created via reflection.
      */
     public static ParamConverterProviders createParamConverters(IndexView indexView, ApplicationScanningResult result) {
-        return createParamConverters(indexView, result, new ReflectionBeanFactoryCreator());
+        return createParamConverters(indexView, result, null);
     }
 
     /**
@@ -31,7 +30,9 @@ public class ResteasyReactiveParamConverterScanner {
     public static ParamConverterProviders createParamConverters(IndexView indexView, ApplicationScanningResult result,
             Function<String, BeanFactory<?>> factoryCreator) {
         ParamConverterProviders ret = scanForParamConverters(indexView, result);
-        ret.initializeDefaultFactories(factoryCreator);
+        if (factoryCreator != null) {
+            ret.initializeDefaultFactories(factoryCreator);
+        }
         return ret;
     }
 

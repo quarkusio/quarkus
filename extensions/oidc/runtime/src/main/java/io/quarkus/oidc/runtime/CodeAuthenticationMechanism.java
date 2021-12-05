@@ -112,7 +112,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), session);
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(session.getIdToken(), context,
+                                new IdTokenCredential(session.getIdToken(),
                                         !configContext.oidcConfig.authentication.isIdTokenRequired()))
                                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                                     @Override
@@ -229,13 +229,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 .append(generateCodeFlowState(context, configContext, redirectPath));
 
                         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
-                        if (configContext.oidcConfig.authentication.getExtraParams() != null) {
-                            for (Map.Entry<String, String> entry : configContext.oidcConfig.authentication.getExtraParams()
-                                    .entrySet()) {
-                                codeFlowParams.append(AMP).append(entry.getKey()).append(EQ)
-                                        .append(OidcCommonUtils.urlEncode(entry.getValue()));
-                            }
-                        }
+                        addExtraParamsToUri(codeFlowParams, configContext.oidcConfig.authentication.getExtraParams());
 
                         String authorizationURL = configContext.provider.getMetadata().getAuthorizationUri() + "?"
                                 + codeFlowParams.toString();
@@ -317,7 +311,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(AuthorizationCodeTokens.class.getName(), tokens);
 
                         return authenticate(identityProviderManager, context,
-                                new IdTokenCredential(tokens.getIdToken(), context, internalIdToken))
+                                new IdTokenCredential(tokens.getIdToken(), internalIdToken))
                                         .call(new Function<SecurityIdentity, Uni<?>>() {
                                             @Override
                                             public Uni<Void> apply(SecurityIdentity identity) {
@@ -586,7 +580,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
 
                             return authenticate(identityProviderManager, context,
-                                    new IdTokenCredential(tokens.getIdToken(), context))
+                                    new IdTokenCredential(tokens.getIdToken()))
                                             .call(new Function<SecurityIdentity, Uni<?>>() {
                                                 @Override
                                                 public Uni<Void> apply(SecurityIdentity identity) {
@@ -632,15 +626,32 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String buildLogoutRedirectUri(TenantConfigContext configContext, String idToken, RoutingContext context) {
         String logoutPath = configContext.provider.getMetadata().getEndSessionUri();
-        StringBuilder logoutUri = new StringBuilder(logoutPath).append("?").append("id_token_hint=").append(idToken);
-
-        if (configContext.oidcConfig.logout.postLogoutPath.isPresent()) {
-            logoutUri.append("&post_logout_redirect_uri=").append(
-                    buildUri(context, isForceHttps(configContext), configContext.oidcConfig.logout.postLogoutPath.get()));
-            logoutUri.append("&state=").append(generatePostLogoutState(context, configContext));
+        StringBuilder logoutUri = new StringBuilder(logoutPath);
+        if (idToken != null || configContext.oidcConfig.logout.postLogoutPath.isPresent()) {
+            logoutUri.append("?");
+        }
+        if (idToken != null) {
+            logoutUri.append(OidcConstants.LOGOUT_ID_TOKEN_HINT).append(EQ).append(idToken);
         }
 
+        if (configContext.oidcConfig.logout.postLogoutPath.isPresent()) {
+            logoutUri.append(AMP).append(configContext.oidcConfig.logout.getPostLogoutUriParam()).append(EQ).append(
+                    buildUri(context, isForceHttps(configContext), configContext.oidcConfig.logout.postLogoutPath.get()));
+            logoutUri.append(AMP).append(OidcConstants.LOGOUT_STATE).append(EQ)
+                    .append(generatePostLogoutState(context, configContext));
+        }
+
+        addExtraParamsToUri(logoutUri, configContext.oidcConfig.logout.extraParams);
+
         return logoutUri.toString();
+    }
+
+    private static void addExtraParamsToUri(StringBuilder builder, Map<String, String> extraParams) {
+        if (extraParams != null) {
+            for (Map.Entry<String, String> entry : extraParams.entrySet()) {
+                builder.append(AMP).append(entry.getKey()).append(EQ).append(OidcCommonUtils.urlEncode(entry.getValue()));
+            }
+        }
     }
 
     private boolean isForceHttps(TenantConfigContext configContext) {
@@ -659,21 +670,23 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private static String getStateCookieName(TenantConfigContext configContext) {
-        String cookieSuffix = getCookieSuffix(configContext.oidcConfig.tenantId.get());
-        return STATE_COOKIE_NAME + cookieSuffix;
+        return STATE_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
     }
 
     private static String getPostLogoutCookieName(TenantConfigContext configContext) {
-        String cookieSuffix = getCookieSuffix(configContext.oidcConfig.tenantId.get());
-        return POST_LOGOUT_COOKIE_NAME + cookieSuffix;
+        return POST_LOGOUT_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
     }
 
     private static String getSessionCookieName(OidcTenantConfig oidcConfig) {
-        String cookieSuffix = getCookieSuffix(oidcConfig.tenantId.get());
-        return SESSION_COOKIE_NAME + cookieSuffix;
+        return SESSION_COOKIE_NAME + getCookieSuffix(oidcConfig);
     }
 
-    static String getCookieSuffix(String tenantId) {
-        return !"Default".equals(tenantId) ? "_" + tenantId : "";
+    static String getCookieSuffix(OidcTenantConfig oidcConfig) {
+        String tenantId = oidcConfig.tenantId.get();
+        String tenantIdSuffix = !"Default".equals(tenantId) ? "_" + tenantId : "";
+
+        return oidcConfig.authentication.cookieSuffix.isPresent()
+                ? (tenantIdSuffix + "_" + oidcConfig.authentication.cookieSuffix.get())
+                : tenantIdSuffix;
     }
 }

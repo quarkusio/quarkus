@@ -20,6 +20,8 @@ import io.narayana.lra.client.internal.proxy.ParticipantProxyResource;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.jandex.DotNames;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -28,12 +30,26 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.narayana.lra.runtime.LRAConfiguration;
 import io.quarkus.narayana.lra.runtime.NarayanaLRAProducers;
 import io.quarkus.narayana.lra.runtime.NarayanaLRARecorder;
-import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 
 class NarayanaLRAProcessor {
 
+    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
+
     @BuildStep
-    void registerFeature(BuildProducer<FeatureBuildItem> feature) {
+    void registerFeature(BuildProducer<FeatureBuildItem> feature, Capabilities capabilities) {
+        boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON);
+        boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JACKSON);
+
+        if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
+            throw new IllegalStateException(
+                    "'quarkus-narayana-lra' can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
+        }
+
+        if (!capabilities.isPresent(Capability.REST_CLIENT)) {
+            throw new IllegalStateException(
+                    "'quarkus-narayana-lra' can only work if 'quarkus-rest-client' or 'quarkus-rest-client-reactive' is present");
+        }
+
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_LRA));
     }
 
@@ -53,7 +69,7 @@ class NarayanaLRAProcessor {
         final List<String> classNames = new ArrayList<>();
 
         IndexView index = beanArchiveIndex.getIndex();
-        Collection<AnnotationInstance> annotations = index.getAnnotations(ResteasyDotNames.PATH);
+        Collection<AnnotationInstance> annotations = index.getAnnotations(PATH);
 
         for (AnnotationInstance annotation : annotations) {
             ClassInfo classInfo;

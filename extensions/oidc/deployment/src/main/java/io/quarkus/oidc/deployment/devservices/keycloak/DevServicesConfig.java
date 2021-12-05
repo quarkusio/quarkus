@@ -24,9 +24,30 @@ public class DevServicesConfig {
 
     /**
      * The container image name to use, for container based DevServices providers.
+     *
+     * Image with a WildFly based Keycloak distribution is used by default.
+     * Image with a Quarkus based Keycloak-X distribution can be selected instead, for example:
+     * 'quay.io/keycloak/keycloak-x:15.0.2'.
+     * <p>
+     * Note Keycloak-X and Keycloak images are initialized differently.
+     * By default, Dev Services for Keycloak will assume it is a Keycloak-X image if the image name contains a 'keycloak-x'
+     * string.
+     * Set 'quarkus.devservices.keycloak.keycloak-x-image' to override this check.
      */
     @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:15.0.2")
     public String imageName;
+
+    /**
+     * If Keycloak-X image is used.
+     *
+     * By default, Dev Services for Keycloak will assume a Keycloak-X image is used if the image name contains a 'keycloak-x'
+     * string.
+     * Set 'quarkus.devservices.keycloak.keycloak-x-image' to override this check which may be necessary if you build custom
+     * Keycloak-X or Keycloak images.
+     * You do not need to set this property if the default check works.
+     */
+    @ConfigItem
+    public Optional<Boolean> keycloakXImage;
 
     /**
      * Indicates if the Keycloak container managed by Quarkus Dev Services is shared.

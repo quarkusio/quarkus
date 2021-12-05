@@ -3,9 +3,12 @@ package io.quarkus.apicurio.registry.avro;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class ApicurioRegistryAvroProcessor {
     @BuildStep
@@ -35,10 +38,11 @@ public class ApicurioRegistryAvroProcessor {
                 "io.apicurio.registry.serde.Legacy4ByteIdHandler",
                 "io.apicurio.registry.serde.fallback.DefaultFallbackArtifactProvider",
                 "io.apicurio.registry.serde.headers.DefaultHeadersHandler"));
+    }
 
-        // Apicurio Registry 2.x uses the JDK 11 HTTP client, which unconditionally requires SSL
-        // TODO when the new HTTP client SPI in Apicurio Registry client appears, this will no longer be needed
-        //  (but we'll have to make sure that the Vert.x HTTP client is used)
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.APICURIO_REGISTRY_AVRO));
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void apicurioRegistryClient(VertxBuildItem vertx, ApicurioRegistryClient client) {
+        client.setup(vertx.getVertx());
     }
 }

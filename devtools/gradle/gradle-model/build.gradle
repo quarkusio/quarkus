@@ -13,7 +13,18 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+group = 'io.quarkus'
+
 artifacts {
     archives sourcesJar
     archives javadocJar
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId = 'quarkus-gradle-model'
+            from components.java
+        }
+    }
 }

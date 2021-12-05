@@ -1,14 +1,11 @@
 package io.quarkus.cli;
 
-import java.nio.file.Path;
-
 import io.quarkus.cli.registry.BaseRegistryCommand;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformStream;
 import io.quarkus.registry.config.RegistriesConfig;
-import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
 import picocli.CommandLine;
 
@@ -51,10 +48,7 @@ public class RegistryListCommand extends BaseRegistryCommand {
             }
         }
 
-        final Path configYaml = RegistriesConfigLocator.locateConfigYaml();
-        if (configYaml != null) {
-            output.info("(Read from " + configYaml + ")");
-        }
+        output.info("(Config source: " + config.getSource().describe() + ")");
 
         return CommandLine.ExitCode.OK;
     }

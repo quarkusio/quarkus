@@ -3,6 +3,7 @@ package io.quarkus.deployment.pkg;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -381,6 +382,34 @@ public class NativeConfig {
      */
     @ConfigItem
     public boolean enableDashboardDump;
+
+    /**
+     * Configure native executable compression using UPX.
+     */
+    @ConfigItem
+    public Compression compression;
+
+    @ConfigGroup
+    public static class Compression {
+        /**
+         * The compression level in [1, 10].
+         * 10 means <em>best</em>
+         *
+         * Higher compression level requires more time to compress the executable.
+         */
+        @ConfigItem
+        public OptionalInt level;
+
+        /**
+         * Allows passing extra arguments to the UPX command line (like --brute).
+         * The arguments are comma-separated.
+         *
+         * The exhaustive list of parameters can be found in
+         * <a href="https://github.com/upx/upx/blob/devel/doc/upx.pod">https://github.com/upx/upx/blob/devel/doc/upx.pod</a>.
+         */
+        @ConfigItem
+        public Optional<List<String>> additionalArgs;
+    }
 
     /**
      * Supported Container runtimes

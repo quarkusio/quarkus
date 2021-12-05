@@ -2,9 +2,7 @@ package io.quarkus.opentelemetry.deployment;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ import io.restassured.RestAssured;
 public class OpenTelemetryDevModeTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TestSpanExporter.class, TracerRouter.class, HelloResource.class)
                     .add(new StringAsset(ContinuousTestingTestUtils.appProperties("")), "application.properties"));
 

@@ -13,7 +13,6 @@ pluginManagement {
     }
     //noinspection GroovyAssignabilityCheck
     plugins {
-        id 'io.quarkus' version "${quarkusPluginVersion}"
         id 'io.quarkus.extension' version "${quarkusPluginVersion}"
     }
 }

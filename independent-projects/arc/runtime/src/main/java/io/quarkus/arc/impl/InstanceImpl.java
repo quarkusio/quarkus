@@ -16,11 +16,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.AmbiguousResolutionException;
@@ -42,10 +41,8 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
                 Collections.emptySet(), null, -1);
     }
 
-    private static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[] {};
-
     private final CreationalContextImpl<?> creationalContext;
-    private final Set<InjectableBean<?>> resolvedBeans;
+    private final List<InjectableBean<?>> resolvedBeans;
 
     private final Type requiredType;
     private final Set<Annotation> requiredQualifiers;
@@ -186,7 +183,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     @SuppressWarnings("unchecked")
     private InjectableBean<T> bean() {
-        Set<InjectableBean<?>> beans = beans();
+        List<InjectableBean<?>> beans = beans();
         if (beans.isEmpty()) {
             throw new UnsatisfiedResolutionException(
                     "No bean found for required type [" + requiredType + "] and qualifiers [" + requiredQualifiers + "]");
@@ -230,16 +227,12 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         return instance;
     }
 
-    private Set<InjectableBean<?>> beans() {
+    private List<InjectableBean<?>> beans() {
         return resolvedBeans != null ? resolvedBeans : resolve();
     }
 
-    private Set<InjectableBean<?>> resolve() {
-        return ArcContainerImpl.instance()
-                .getResolvedBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY))
-                .stream()
-                .filter(Predicate.not(InjectableBean::isSuppressed))
-                .collect(Collectors.toUnmodifiableSet());
+    private List<InjectableBean<?>> resolve() {
+        return Instances.resolveBeans(requiredType, requiredQualifiers);
     }
 
     class InstanceIterator implements Iterator<T> {

@@ -2,6 +2,8 @@
 # The format of this file is documented here:
 # https://github.com/quarkusio/quarkus-bot#triage-issues
 triage:
+  discussions:
+    logCategories: true
   rules:
     - labels: [area/amazon-lambda]
       title: "lambda"
@@ -297,7 +299,18 @@ triage:
         - integration-tests/google-cloud-functions
     - labels: [area/mandrel]
       titleBody: "mandrel"
-      notify: [galderz, zakkak]
+      notify: [galderz, zakkak, Karm]
+    - labels: [area/graphics]
+      expression: |
+              matches("sun.font", titleBody)
+              || matches("sun.java2d", titleBody)
+              || matches("javax.imageio", titleBody)
+              || matches("sun.awt", titleBody)
+      notify: [galderz, zakkak, Karm]
+      notifyInPullRequest: true
+      directories:
+        - extensions/awt/
+        - integration-tests/awt/
     - labels: [area/artemis]
       directories:
         - extensions/artemis-core/
@@ -364,8 +377,11 @@ triage:
       directories:
         - extensions/narayana-jta/
         - extensions/narayana-stm/
+        - extensions/narayana-lra/
         - integration-tests/narayana-jta/
         - integration-tests/narayana-stm/
+        - integration-tests/narayana-lra/
+      notify: [mmusgrov]
     - labels: [area/neo4j]
       title: "neo4j"
       notify: [michael-simons]

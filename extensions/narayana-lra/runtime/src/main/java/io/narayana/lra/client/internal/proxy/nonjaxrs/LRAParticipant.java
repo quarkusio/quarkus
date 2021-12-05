@@ -117,13 +117,12 @@ public class LRAParticipant {
 
         verifyReturnType(method);
 
-        Class<?>[] parameterTypes = method.getParameterTypes();
-
-        if (parameterTypes.length > 2) {
+        if (method.getParameterCount() > 2) {
             throw new IllegalStateException(String.format("%s: %s",
                     method.toGenericString(), "Participant method cannot have more than 2 arguments"));
         }
 
+        Class<?>[] parameterTypes = method.getParameterTypes();
         if (parameterTypes.length > 0 && !parameterTypes[0].equals(URI.class)) {
             throw new IllegalStateException(String.format("%s: %s",
                     method.toGenericString(), "Invalid argument type in LRA participant method: " + parameterTypes[0]));
@@ -146,12 +145,12 @@ public class LRAParticipant {
                     method.toGenericString(), "Invalid return type for @AfterLRA method: " + method.getReturnType()));
         }
 
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        if (parameterTypes.length > 2) {
+        if (method.getParameterCount() > 2) {
             throw new IllegalStateException(String.format("%s: %s",
                     method.toGenericString(), "@AfterLRA method cannot have more than 2 arguments"));
         }
 
+        Class<?>[] parameterTypes = method.getParameterTypes();
         if (parameterTypes.length > 0 && !parameterTypes[0].equals(URI.class)) {
             throw new IllegalStateException(String.format("%s: %s",
                     method.toGenericString(), "Invalid first argument of @AfterLRA method: " + parameterTypes[0]));

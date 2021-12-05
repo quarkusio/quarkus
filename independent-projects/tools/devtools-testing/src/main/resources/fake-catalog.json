@@ -172,6 +172,21 @@
       "origins": [
         "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
+    },
+    {
+      "name": "Uncategorized extension",
+      "description": "Some uncategorized extension",
+      "metadata": {
+        "keywords": [
+          "uncategorized"
+        ],
+        "status": "preview",
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-uncategorized-extension::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
     }
   ],
   "categories": [
@@ -214,7 +229,8 @@
           "io.quarkus:quarkus-smallrye-reactive-messaging",
           "io.quarkus:quarkus-smallrye-reactive-messaging-amqp",
           "io.quarkus:quarkus-smallrye-reactive-messaging-kafka",
-          "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt"
+          "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt",
+          "io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq"
         ]
       }
     },
@@ -312,9 +328,9 @@
         "gradle-plugin-id": "io.quarkus",
         "gradle-plugin-version": "999-FAKE",
         "supported-maven-versions": "[3.6.2,)",
-        "proposed-maven-version": "3.8.1",
+        "proposed-maven-version": "3.8.4",
         "maven-wrapper-version": "0.7.7",
-        "gradle-wrapper-version": "7.2"
+        "gradle-wrapper-version": "7.3.1"
       }
     },
     "codestarts-artifacts": [

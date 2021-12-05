@@ -1,8 +1,6 @@
 package io.quarkus.forkjoin;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -13,7 +11,7 @@ public class ForkJoinProdModeTestCase {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ProductionModeTestsEndpoint.class, ForkJoinPoolAssertions.class)
                     .addAsResource(new StringAsset("quarkus.banner.enabled=false\nquarkus.log.level=ERROR"),
                             "application.properties"))

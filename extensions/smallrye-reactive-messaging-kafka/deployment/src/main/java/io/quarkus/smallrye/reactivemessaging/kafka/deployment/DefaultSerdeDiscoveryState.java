@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,6 +16,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.reactive.messaging.kafka.KafkaConnector;
 
 class DefaultSerdeDiscoveryState {
@@ -32,7 +35,16 @@ class DefaultSerdeDiscoveryState {
         this.index = index;
     }
 
-    boolean isKafkaConnector(boolean incoming, String channelName) {
+    boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors, boolean incoming,
+            String channelName) {
+        // First look in the channelsManagedByConnectors list
+        Optional<ConnectorManagedChannelBuildItem> match = channelsManagedByConnectors.stream().filter(cn -> cn
+                .getDirection() == (incoming ? ChannelDirection.INCOMING : ChannelDirection.OUTGOING)
+                && cn.getName().equalsIgnoreCase(channelName)).findFirst();
+        if (match.isPresent()) {
+            return true;
+        }
+
         String channelType = incoming ? "incoming" : "outgoing";
         return isKafkaConnector.computeIfAbsent(channelType + "|" + channelName, ignored -> {
             String connectorKey = "mp.messaging." + channelType + "." + channelName + ".connector";

@@ -76,6 +76,10 @@ public class VertxBlockingOutput implements VertxOutput {
             return;
         }
         if (throwable != null) {
+            if (data != null && data.refCnt() > 0) {
+                data.release();
+            }
+            request.response().end();
             throw new IOException(throwable);
         }
         try {

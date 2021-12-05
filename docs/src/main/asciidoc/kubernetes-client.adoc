@@ -173,18 +173,38 @@ public class KubernetesClientTest {
 }
 ----
 
+You can also use the `setup` attribute on the `@WithKubernetesTestServer` annotation to provide a class that will configure the `KubernetesServer` instance:
 
-Alternately, you can create a `CustomKubernetesMockServerTestResource.java` to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup:
+[source%nowrap,java]
+----
+@WithKubernetesTestServer(setup = MyTest.Setup.class)
+@QuarkusTest
+public class MyTest {
+
+    public static class Setup implements Consumer<KubernetesServer> {
+
+        @Override
+        public void accept(KubernetesServer server) {
+          server.expect().get().withPath("/api/v1/namespaces/test/pods")
+            .andReturn(200, new PodList()).always();
+        }
+    }
+
+    // tests
+}
+----
+
+Alternately, you can create an extension of the `KubernetesServerTestResource` class to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup via the `QuarkusTestResource` annotation:
 
 [source%nowrap,java]
 ----
 public class CustomKubernetesMockServerTestResource extends KubernetesServerTestResource {
 
     @Override
-    public void configureMockServer(KubernetesServer mockServer) {
-        mockServer.expect().get().withPath("/api/v1/namespaces/test/pods")
-                .andReturn(200, new PodList())
-                .always();
+    protected void configureServer() {
+        super.configureServer();
+        server.expect().get().withPath("/api/v1/namespaces/test/pods")
+          .andReturn(200, new PodList()).always();
     }
 }
 ----
@@ -192,7 +212,7 @@ public class CustomKubernetesMockServerTestResource extends KubernetesServerTest
 and use this in your other test classes as follows:
 [source%nowrap,java]
 ----
-@QuarkusTestResource(KubernetesMockServerTestResource.class)
+@QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
 @QuarkusTest
 public class KubernetesClientTest {
 
@@ -283,6 +303,22 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
 client.pods().watch(new ResourceWatcher<Pod>());
 ----
 
+[#note-on-ec-keys]
+== Note on using Elliptic Curve keys
+
+Please note that if you would like to use Elliptic Curve keys with Kubernetes Client then adding a BouncyCastle PKIX dependency is required:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcpkix-jdk15on</artifactId>
+</dependency>
+----
+
+Note that internally an `org.bouncycastle.jce.provider.BouncyCastleProvider` provider will be registered if it has not already been registered.
+
+You can have this provider registered as described in the link:security-customization#bouncy-castle[BouncyCastle] or link:security-customization#bouncy-castle-fips[BouncyCastle FIPS] sections.
 
 == Access to the Kubernetes API
 

@@ -32,9 +32,9 @@ import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
+import org.jboss.resteasy.reactive.common.reflection.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
-import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
@@ -101,7 +101,6 @@ public class RuntimeResourceDeployment {
     private final ServerSerialisers serialisers;
     private final ResteasyReactiveConfig quarkusRestConfig;
     private final Supplier<Executor> executorSupplier;
-    private final CustomServerRestHandlers customServerRestHandlers;
     private final RuntimeInterceptorDeployment runtimeInterceptorDeployment;
     private final DynamicEntityWriter dynamicEntityWriter;
     private final ResourceLocatorHandler resourceLocatorHandler;
@@ -113,14 +112,12 @@ public class RuntimeResourceDeployment {
     private final ResponseWriterHandler responseWriterHandler;
 
     public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
-            CustomServerRestHandlers customServerRestHandlers,
             RuntimeInterceptorDeployment runtimeInterceptorDeployment, DynamicEntityWriter dynamicEntityWriter,
             ResourceLocatorHandler resourceLocatorHandler, boolean defaultBlocking) {
         this.info = info;
         this.serialisers = info.getSerialisers();
         this.quarkusRestConfig = info.getConfig();
         this.executorSupplier = executorSupplier;
-        this.customServerRestHandlers = customServerRestHandlers;
         this.runtimeInterceptorDeployment = runtimeInterceptorDeployment;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.resourceLocatorHandler = resourceLocatorHandler;
@@ -163,10 +160,17 @@ public class RuntimeResourceDeployment {
             }
         }
 
-        Set<String> classAnnotationNames = new HashSet<>();
-        for (Annotation annotation : resourceClass.getAnnotations()) {
-            classAnnotationNames.add(annotation.annotationType().getName());
+        Annotation[] resourceClassAnnotations = resourceClass.getAnnotations();
+        Set<String> classAnnotationNames;
+        if (resourceClassAnnotations.length == 0) {
+            classAnnotationNames = Collections.emptySet();
+        } else {
+            classAnnotationNames = new HashSet<>(resourceClassAnnotations.length);
+            for (Annotation annotation : resourceClassAnnotations) {
+                classAnnotationNames.add(annotation.annotationType().getName());
+            }
         }
+
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
                 parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames());
 
@@ -174,13 +178,19 @@ public class RuntimeResourceDeployment {
                 .forMethod(method, lazyMethod);
 
         //setup reader and writer interceptors first
-        List<ServerRestHandler> interceptorHandlers = interceptorDeployment.setupInterceptorHandler();
+        ServerRestHandler interceptorHandler = interceptorDeployment.setupInterceptorHandler();
         //we want interceptors in the abort handler chain
-        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(interceptorHandlers);
+        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(3 + (interceptorHandler != null ? 1 : 0));
 
-        List<ServerRestHandler> handlers = new ArrayList<>();
+        List<ServerRestHandler> handlers = new ArrayList<>(10);
+        // we add null as the first item to make sure that subsequent items are added in the proper positions
+        // and that the items don't need to shifted when at the end of the method we set the
+        // first item
+        handlers.add(null);
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.AFTER_MATCH);
-        handlers.addAll(interceptorHandlers);
+        if (interceptorHandler != null) {
+            handlers.add(interceptorHandler);
+        }
 
         // when a method is blocking, we also want all the request filters to run on the worker thread
         // because they can potentially set thread local variables
@@ -205,7 +215,7 @@ public class RuntimeResourceDeployment {
         }
 
         //spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources (which makes sense)
-        //so only only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
+        //so only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
         if (method.getHttpMethod() != null) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
                     .setupRequestFilterHandler();
@@ -245,17 +255,7 @@ public class RuntimeResourceDeployment {
             handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
         } else if (bodyParameter != null) {
             if (!defaultBlocking) {
-                if (method.isBlocking()) {
-                    Supplier<ServerRestHandler> blockingInputHandlerSupplier = customServerRestHandlers
-                            .getBlockingInputHandlerSupplier();
-                    if (blockingInputHandlerSupplier != null) {
-                        // when the method is blocking, we will already be on a worker thread
-                        handlers.add(blockingInputHandlerSupplier.get());
-                    } else {
-                        throw new RuntimeException(
-                                "The current execution environment does not implement a ServerRestHandler for blocking input");
-                    }
-                } else if (!method.isBlocking()) {
+                if (!method.isBlocking()) {
                     // allow the body to be read by chunks
                     handlers.add(new InputHandler(quarkusRestConfig.getInputBufferSize(), executorSupplier));
                 }
@@ -303,14 +303,15 @@ public class RuntimeResourceDeployment {
                     Method javaMethod = lazyMethod.getMethod();
                     // Workaround our lack of support for generic params by not doing this init if there are not runtime
                     // param converter providers
-                    converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
-                            javaMethod.getGenericParameterTypes()[i],
-                            javaMethod.getParameterAnnotations()[i]);
+                    Class<?>[] parameterTypes = javaMethod.getParameterTypes();
+                    Type[] genericParameterTypes = javaMethod.getGenericParameterTypes();
+                    Annotation[][] parameterAnnotations = javaMethod.getParameterAnnotations();
+                    converter.init(paramConverterProviders, parameterTypes[i], genericParameterTypes[i],
+                            parameterAnnotations[i]);
                     // make sure we give the user provided resolvers the chance to convert
                     converter = new RuntimeResolvedConverter(converter);
-                    converter.init(paramConverterProviders, javaMethod.getParameterTypes()[i],
-                            javaMethod.getGenericParameterTypes()[i],
-                            javaMethod.getParameterAnnotations()[i]);
+                    converter.init(paramConverterProviders, parameterTypes[i], genericParameterTypes[i],
+                            parameterAnnotations[i]);
                 }
             }
 
@@ -431,9 +432,9 @@ public class RuntimeResourceDeployment {
         abortHandlingChain.add(ExceptionHandler.INSTANCE);
         abortHandlingChain.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
         abortHandlingChain.addAll(responseFilterHandlers);
-
         abortHandlingChain.add(responseWriterHandler);
-        handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
+
+        handlers.set(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,
@@ -538,7 +539,7 @@ public class RuntimeResourceDeployment {
                         extractor = new NullParamExtractor();
                     }
                 } else {
-                    extractor = new PathParamExtractor(index, encoded);
+                    extractor = new PathParamExtractor(index, encoded, single);
                 }
                 return extractor;
             case CONTEXT:

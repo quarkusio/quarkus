@@ -11,8 +11,6 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.h2.jdbc.JdbcSQLException;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -34,7 +32,7 @@ public class LiquibaseExtensionCleanAtStartTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("clean-at-start-config.properties", "application.properties"));
 

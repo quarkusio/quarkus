@@ -72,6 +72,10 @@
                     <groupId>org.apache.johnzon</groupId>
                     <artifactId>johnzon-core</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>jakarta.json</groupId>
+                    <artifactId>jakarta.json-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

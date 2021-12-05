@@ -8,8 +8,6 @@ import java.net.URL;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +27,7 @@ public class MtlsRequestTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new File("src/test/resources/conf/mtls/mtls-no-auth-jks.conf"), "application.properties")
                     .addAsResource(new File("src/test/resources/conf/mtls/server-keystore.jks"), "server-keystore.jks")

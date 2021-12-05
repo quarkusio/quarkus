@@ -518,7 +518,7 @@ import org.bson.codecs.configuration.CodecRegistry;
 public class FruitCodecProvider implements CodecProvider {
     @Override
     public <T> Codec<T> get(Class<T> clazz, CodecRegistry registry) {
-        if (clazz == Fruit.class) {
+        if (clazz.equals(Fruit.class)) {
             return (Codec<T>) new FruitCodec();
         }
         return null;
@@ -527,7 +527,7 @@ public class FruitCodecProvider implements CodecProvider {
 }
 ----
 
-Quarkus takes care of registering the `CodecProvider` for you.
+Quarkus takes care of registering the `CodecProvider` for you as a CDI bean of `@Singleton` scope.
 
 Finally, when getting the `MongoCollection` from the database you can use directly the `Fruit` class instead of the `Document` one, the codec will automatically map the `Document` to/from your `Fruit` class.
 
@@ -586,7 +586,7 @@ a discriminator field inside the document. It can be useful when working with ab
 Quarkus will automatically register all the classes annotated with `@BsonDiscriminator` with the POJO codec.
 
 The POJO Codec have enhanced generic support via `PropertyCodecProvider`,
-Quarkus will automatically register any `PropertyCodecProvider` with the POJO Codec.
+Quarkus will automatically register any `PropertyCodecProvider` with the POJO Codec (these classes are automatically made CDI beans of `@Singleton` scope).
 When building native executables and using generic types, you might need to register the type arguments for reflection.
 
 == Simplifying MongoDB with Panache

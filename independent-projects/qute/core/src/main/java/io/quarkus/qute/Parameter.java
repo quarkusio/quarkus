@@ -3,8 +3,10 @@ package io.quarkus.qute;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 
 /**
+ * Definition of a section parameter.
  * 
  * @see ParametersInfo
+ * @see SectionHelperFactory#getParameters()
  */
 public class Parameter {
 
@@ -20,6 +22,22 @@ public class Parameter {
         this.name = name;
         this.defaultValue = defaultValue;
         this.optional = optional;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public boolean hasDefatulValue() {
+        return defaultValue != null;
+    }
+
+    public boolean isOptional() {
+        return optional;
     }
 
     @Override

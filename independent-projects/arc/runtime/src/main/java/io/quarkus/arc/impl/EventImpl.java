@@ -118,7 +118,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public Event<T> select(Annotation... qualifiers) {
-        Qualifiers.verify(qualifiers);
+        Qualifiers.verify(qualifiers, ArcContainerImpl.instance().getCustomQualifiers());
         Set<Annotation> mergedQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergedQualifiers, qualifiers);
         return new EventImpl<T>(eventType, mergedQualifiers);
@@ -126,7 +126,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
-        Qualifiers.verify(qualifiers);
+        Qualifiers.verify(qualifiers, ArcContainerImpl.instance().getCustomQualifiers());
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
         return new EventImpl<U>(subtype, mergerdQualifiers);
@@ -134,7 +134,7 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
-        Qualifiers.verify(qualifiers);
+        Qualifiers.verify(qualifiers, ArcContainerImpl.instance().getCustomQualifiers());
         if (Types.containsTypeVariable(subtype.getType())) {
             throw new IllegalArgumentException(
                     "Event#select(TypeLiteral, Annotation...) cannot be used with type variable parameter");
@@ -157,10 +157,8 @@ class EventImpl<T> implements Event<T> {
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container, boolean activateRequestContext) {
         EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
-        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
-        for (ObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
-            notifierObserverMethods.add(observerMethod);
-        }
+        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
+                container.resolveObservers(eventType, qualifiers));
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
     }
 

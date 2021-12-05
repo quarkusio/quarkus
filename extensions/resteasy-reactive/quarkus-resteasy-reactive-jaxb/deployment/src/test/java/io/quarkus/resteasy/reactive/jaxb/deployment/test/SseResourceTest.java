@@ -28,8 +28,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -42,7 +40,7 @@ public class SseResourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(SseResource.class, Message.class));
 
     @TestHTTPResource

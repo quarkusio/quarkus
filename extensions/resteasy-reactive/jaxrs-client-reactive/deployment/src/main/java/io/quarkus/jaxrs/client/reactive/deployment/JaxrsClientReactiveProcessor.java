@@ -297,25 +297,25 @@ public class JaxrsClientReactiveProcessor {
         recorder.setupClientProxies(clientImplementations, failures);
 
         for (AdditionalReaderWriter.Entry additionalReader : additionalReaders.get()) {
-            Class<?> readerClass = additionalReader.getHandlerClass();
+            String readerClass = additionalReader.getHandlerClass();
             ResourceReader reader = new ResourceReader();
             reader.setBuiltin(true);
-            reader.setFactory(recorder.factory(readerClass.getName(), beanContainerBuildItem.getValue()));
+            reader.setFactory(recorder.factory(readerClass, beanContainerBuildItem.getValue()));
             reader.setMediaTypeStrings(Collections.singletonList(additionalReader.getMediaType()));
-            recorder.registerReader(serialisers, additionalReader.getEntityClass().getName(), reader);
+            recorder.registerReader(serialisers, additionalReader.getEntityClass(), reader);
             reflectiveClassBuildItemBuildProducer
-                    .produce(new ReflectiveClassBuildItem(true, false, false, readerClass.getName()));
+                    .produce(new ReflectiveClassBuildItem(true, false, false, readerClass));
         }
 
         for (AdditionalReaderWriter.Entry entry : additionalWriters.get()) {
-            Class<?> writerClass = entry.getHandlerClass();
+            String writerClass = entry.getHandlerClass();
             ResourceWriter writer = new ResourceWriter();
             writer.setBuiltin(true);
-            writer.setFactory(recorder.factory(writerClass.getName(), beanContainerBuildItem.getValue()));
+            writer.setFactory(recorder.factory(writerClass, beanContainerBuildItem.getValue()));
             writer.setMediaTypeStrings(Collections.singletonList(entry.getMediaType()));
-            recorder.registerWriter(serialisers, entry.getEntityClass().getName(), writer);
+            recorder.registerWriter(serialisers, entry.getEntityClass(), writer);
             reflectiveClassBuildItemBuildProducer
-                    .produce(new ReflectiveClassBuildItem(true, false, false, writerClass.getName()));
+                    .produce(new ReflectiveClassBuildItem(true, false, false, writerClass));
         }
 
     }
@@ -1348,7 +1348,7 @@ public class JaxrsClientReactiveProcessor {
                         genericReturnType = createGenericTypeFromParameterizedType(methodCreator,
                                 type.asParameterizedType());
                     } else {
-                        simpleReturnType = type.toString();
+                        simpleReturnType = type.name().toString();
                     }
                 }
             } else {
@@ -1388,7 +1388,7 @@ public class JaxrsClientReactiveProcessor {
                                 type = type.asWildcardType().extendsBound();
                             }
                         } else {
-                            simpleReturnType = type.toString();
+                            simpleReturnType = type.name().toString();
                             break;
                         }
                     }

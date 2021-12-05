@@ -1,5 +1,7 @@
 package io.quarkus.amazon.lambda.http.deployment;
 
+import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.amazon.lambda.deployment.LambdaUtil;
@@ -25,7 +27,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
-import io.vertx.core.file.impl.FileResolver;
 
 public class AmazonLambdaHttpProcessor {
     private static final Logger log = Logger.getLogger(AmazonLambdaHttpProcessor.class);
@@ -74,7 +75,7 @@ public class AmazonLambdaHttpProcessor {
      */
     @BuildStep
     void setTempDir(BuildProducer<SystemPropertyBuildItem> systemProperty) {
-        systemProperty.produce(new SystemPropertyBuildItem(FileResolver.CACHE_DIR_BASE_PROP_NAME, "/tmp/quarkus"));
+        systemProperty.produce(new SystemPropertyBuildItem(CACHE_DIR_BASE_PROP_NAME, "/tmp/quarkus"));
     }
 
     @BuildStep

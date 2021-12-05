@@ -12,9 +12,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.awaitility.Awaitility;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -33,7 +31,7 @@ public class MicrometerTimedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Jobs.class)
                     .addAsResource(new StringAsset("quarkus.scheduler.metrics.enabled=true"),
                             "application.properties"));

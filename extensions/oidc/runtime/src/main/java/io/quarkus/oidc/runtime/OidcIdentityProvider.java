@@ -16,7 +16,6 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
-import io.quarkus.oidc.OidcTokenCredential;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
@@ -29,6 +28,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -58,8 +58,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        OidcTokenCredential credential = (OidcTokenCredential) request.getToken();
-        RoutingContext vertxContext = credential.getRoutingContext();
+        RoutingContext vertxContext = HttpSecurityUtils.getRoutingContextAttribute(request);
         vertxContext.put(AuthenticationRequestContext.class.getName(), context);
 
         Uni<TenantConfigContext> tenantConfigContext = tenantResolver.resolveContext(vertxContext);
@@ -162,7 +161,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
                                         userInfo);
                                 SecurityIdentity securityIdentity = validateAndCreateIdentity(vertxContext, tokenCred,
-                                        resolvedContext, tokenJson, rolesJson, userInfo);
+                                        resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult);
                                 if (tokenAutoRefreshPrepared(tokenJson, vertxContext, resolvedContext.oidcConfig)) {
                                     return Uni.createFrom().failure(new TokenAutoRefreshException(securityIdentity));
                                 } else {
@@ -209,22 +208,21 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             }
                             OidcUtils.setBlockinApiAttribute(builder, vertxContext);
                             OidcUtils.setTenantIdAttribute(builder, resolvedContext.oidcConfig);
+                            OidcUtils.setRoutingContextAttribute(builder, vertxContext);
                             return Uni.createFrom().item(builder.build());
                         }
                     }
                 });
     }
 
-    @Deprecated
     private static boolean tokenAutoRefreshPrepared(JsonObject tokenJson, RoutingContext vertxContext,
             OidcTenantConfig oidcConfig) {
         if (tokenJson != null
                 && oidcConfig.token.refreshExpired
-                && (oidcConfig.token.getRefreshTokenTimeSkew().isPresent() || oidcConfig.token.autoRefreshInterval.isPresent())
+                && oidcConfig.token.getRefreshTokenTimeSkew().isPresent()
                 && vertxContext.get(REFRESH_TOKEN_GRANT_RESPONSE) != Boolean.TRUE
                 && vertxContext.get(NEW_AUTHENTICATION) != Boolean.TRUE) {
-            final long refreshTokenTimeSkew = (oidcConfig.token.getRefreshTokenTimeSkew()
-                    .orElse(oidcConfig.token.autoRefreshInterval.get())).getSeconds();
+            final long refreshTokenTimeSkew = oidcConfig.token.getRefreshTokenTimeSkew().get().getSeconds();
             final long expiry = tokenJson.getLong("exp");
             final long now = System.currentTimeMillis() / 1000;
             return now + refreshTokenTimeSkew > expiry;
@@ -341,7 +339,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken());
             return Uni.createFrom()
                     .item(validateAndCreateIdentity(null, request.getToken(), resolvedContext,
-                            result.localVerificationResult, result.localVerificationResult, null));
+                            result.localVerificationResult, result.localVerificationResult, null, null));
         } catch (Throwable t) {
             return Uni.createFrom().failure(new AuthenticationFailedException(t));
         }

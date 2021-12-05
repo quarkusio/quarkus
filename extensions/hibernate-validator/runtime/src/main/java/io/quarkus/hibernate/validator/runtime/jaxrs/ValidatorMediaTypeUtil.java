@@ -2,7 +2,6 @@ package io.quarkus.hibernate.validator.runtime.jaxrs;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import javax.ws.rs.core.MediaType;
 
@@ -11,11 +10,22 @@ import javax.ws.rs.core.MediaType;
  */
 public final class ValidatorMediaTypeUtil {
 
-    private static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(MediaType.APPLICATION_XML_TYPE,
-            MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_PLAIN_TYPE);
+    private static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(MediaType.APPLICATION_JSON_TYPE,
+            MediaType.APPLICATION_XML_TYPE,
+            MediaType.TEXT_PLAIN_TYPE);
 
     private ValidatorMediaTypeUtil() {
 
+    }
+
+    /**
+     * Look up the right media type taking into account the HTTP request and the supported media types.
+     *
+     * @param mediaTypesFromRequest list of media types in the HTTP request.
+     * @return one supported media type from either the HTTP request or the annotation.
+     */
+    public static MediaType getAcceptMediaTypeFromSupported(List<MediaType> mediaTypesFromRequest) {
+        return getAcceptMediaType(mediaTypesFromRequest, SUPPORTED_MEDIA_TYPES);
     }
 
     /**
@@ -26,18 +36,33 @@ public final class ValidatorMediaTypeUtil {
      * @param mediaTypesFromProducesAnnotation list of media types set in the `@Produces` annotation.
      * @return one supported media type from either the HTTP request or the annotation.
      */
-    public static Optional<MediaType> getAcceptMediaType(List<MediaType> mediaTypesFromRequest,
+    public static MediaType getAcceptMediaType(List<MediaType> mediaTypesFromRequest,
             List<MediaType> mediaTypesFromProducesAnnotation) {
 
-        Optional<MediaType> mediaType = mediaTypesFromRequest.stream()
-                // It's supported
-                .filter(SUPPORTED_MEDIA_TYPES::contains)
-                // It's included in the `@Produces` annotation
-                .filter(mediaTypesFromProducesAnnotation::contains)
-                .findFirst()
-                // if none is found, then return the first from the annotation
-                .or(mediaTypesFromProducesAnnotation.stream()::findFirst);
+        for (MediaType mediaType : mediaTypesFromRequest) {
+            // It's supported and is included in the `@Produces` annotation
+            if (isMediaTypeInList(mediaType, SUPPORTED_MEDIA_TYPES)
+                    && isMediaTypeInList(mediaType, mediaTypesFromProducesAnnotation)) {
+                return mediaType;
+            }
+        }
 
-        return mediaType;
+        // if none is found, then return the first from the annotation or empty if no produces annotation
+        if (mediaTypesFromProducesAnnotation.isEmpty()) {
+            return null;
+        }
+
+        return mediaTypesFromProducesAnnotation.get(0);
+    }
+
+    private static boolean isMediaTypeInList(MediaType mediaType, List<MediaType> list) {
+        for (MediaType item : list) {
+            if (mediaType.getType().equalsIgnoreCase(item.getType())
+                    && mediaType.getSubtype().equalsIgnoreCase(item.getSubtype())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

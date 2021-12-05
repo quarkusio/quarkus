@@ -3,9 +3,7 @@ package io.quarkus.qute.deployment.i18n;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class MessageBundleTemplateExpressionValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyBundle.class, Item.class)
                     .addAsResource(new StringAsset(
                             "{@java.util.List<java.lang.Integer> names} {msg:hello('foo')} {msg:hello_and_bye} {msg:hello(1,2)} {#each names}{msg:helloName(it)}{/each}"),

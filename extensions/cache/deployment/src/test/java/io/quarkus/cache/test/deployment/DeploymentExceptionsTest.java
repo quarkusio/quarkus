@@ -11,8 +11,6 @@ import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -38,7 +36,7 @@ public class DeploymentExceptionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class, TestBean.class))
+            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, TestBean.class))
             .assertException(t -> {
                 assertEquals(DeploymentException.class, t.getClass());
                 assertEquals(10, t.getSuppressed().length);

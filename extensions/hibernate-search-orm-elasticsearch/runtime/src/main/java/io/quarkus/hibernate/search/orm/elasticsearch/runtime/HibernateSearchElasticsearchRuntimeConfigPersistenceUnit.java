@@ -23,6 +23,12 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
     /**
+     * Whether Hibernate Search is enabled.
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean enabled;
+
+    /**
      * Default backend
      */
     @ConfigItem(name = "elasticsearch")

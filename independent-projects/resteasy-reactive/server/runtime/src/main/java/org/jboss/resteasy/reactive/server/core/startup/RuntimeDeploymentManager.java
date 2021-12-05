@@ -26,6 +26,7 @@ import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
+import org.jboss.resteasy.reactive.server.core.RuntimeExceptionMapper;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.serialization.DynamicEntityWriter;
 import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
@@ -52,20 +53,19 @@ public class RuntimeDeploymentManager {
     public static final ServerRestHandler[] EMPTY_REST_HANDLER_ARRAY = new ServerRestHandler[0];
     private final DeploymentInfo info;
     private final Supplier<Executor> executorSupplier;
-    private final CustomServerRestHandlers customServerRestHandlers;
     private final Consumer<Closeable> closeTaskHandler;
     private final RequestContextFactory requestContextFactory;
     private final ThreadSetupAction threadSetupAction;
     private final String rootPath;
 
+    private List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
+
     public RuntimeDeploymentManager(DeploymentInfo info,
             Supplier<Executor> executorSupplier,
-            CustomServerRestHandlers customServerRestHandlers,
             Consumer<Closeable> closeTaskHandler,
             RequestContextFactory requestContextFactory, ThreadSetupAction threadSetupAction, String rootPath) {
         this.info = info;
         this.executorSupplier = executorSupplier;
-        this.customServerRestHandlers = customServerRestHandlers;
         this.closeTaskHandler = closeTaskHandler;
         this.requestContextFactory = requestContextFactory;
         this.threadSetupAction = threadSetupAction;
@@ -85,7 +85,9 @@ public class RuntimeDeploymentManager {
 
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
-        ConfigurationImpl configurationImpl = configureFeatures(features, interceptors, exceptionMapping);
+        RuntimeExceptionMapper exceptionMapper = new RuntimeExceptionMapper(exceptionMapping,
+                Thread.currentThread().getContextClassLoader());
+        ConfigurationImpl configurationImpl = configureFeatures(features, interceptors, exceptionMapper);
 
         RuntimeInterceptorDeployment interceptorDeployment = new RuntimeInterceptorDeployment(info, configurationImpl,
                 closeTaskHandler);
@@ -98,21 +100,23 @@ public class RuntimeDeploymentManager {
                 });
         List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = new ArrayList<>();
         RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, executorSupplier,
-                customServerRestHandlers,
                 interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler, requestContextFactory.isDefaultBlocking());
         List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
         possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources
-        for (ResourceClass clazz : possibleSubResource) {
+        for (int i = 0; i < possibleSubResource.size(); i++) {
+            ResourceClass clazz = possibleSubResource.get(i);
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> templates = new HashMap<>();
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
-            for (ResourceMethod method : clazz.getMethods()) {
+            for (int j = 0; j < clazz.getMethods().size(); j++) {
+                ResourceMethod method = clazz.getMethods().get(j);
                 RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
                         clazz, (ServerResourceMethod) method, true, classPathTemplate, info);
                 addRuntimeConfigurableHandlers(runtimeResource, runtimeConfigurableServerRestHandlers);
 
                 RuntimeMappingDeployment.buildMethodMapper(templates, method, runtimeResource);
             }
-            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = RuntimeMappingDeployment.buildClassMapper(templates);
+            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new RuntimeMappingDeployment(templates)
+                    .buildClassMapper();
             resourceLocatorHandler.addResource(loadClass(clazz.getClassName()), mappersByMethod);
         }
 
@@ -120,13 +124,15 @@ public class RuntimeDeploymentManager {
         //we use this map to merge them
         Map<URITemplate, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> mappers = new TreeMap<>();
 
-        for (ResourceClass clazz : resourceClasses) {
+        for (int i = 0; i < resourceClasses.size(); i++) {
+            ResourceClass clazz = resourceClasses.get(i);
             URITemplate classTemplate = new URITemplate(clazz.getPath(), true);
             var perClassMappers = mappers.get(classTemplate);
             if (perClassMappers == null) {
                 mappers.put(classTemplate, perClassMappers = new HashMap<>());
             }
-            for (ResourceMethod method : clazz.getMethods()) {
+            for (int j = 0; j < clazz.getMethods().size(); j++) {
+                ResourceMethod method = clazz.getMethods().get(j);
                 RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
                         clazz, (ServerResourceMethod) method, false, classTemplate, info);
                 addRuntimeConfigurableHandlers(runtimeResource, runtimeConfigurableServerRestHandlers);
@@ -135,25 +141,8 @@ public class RuntimeDeploymentManager {
             }
 
         }
-        List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers = new ArrayList<>(mappers.size());
-        for (var entry : mappers.entrySet()) {
-            URITemplate classTemplate = entry.getKey();
-            int classTemplateNameCount = classTemplate.countPathParamNames();
-            var perClassMappers = entry.getValue();
-            var mappersByMethod = RuntimeMappingDeployment.buildClassMapper(perClassMappers);
-            ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod, classTemplateNameCount,
-                    info.isResumeOn404());
-
-            int maxMethodTemplateNameCount = 0;
-            for (var i : perClassMappers.values()) {
-                for (URITemplate j : i.keySet()) {
-                    maxMethodTemplateNameCount = Math.max(maxMethodTemplateNameCount, j.countPathParamNames());
-                }
-            }
-            classMappers.add(new RequestMapper.RequestPath<>(true, classTemplate,
-                    new RestInitialHandler.InitialMatch(new ServerRestHandler[] { classRoutingHandler },
-                            maxMethodTemplateNameCount + classTemplateNameCount)));
-        }
+        classMappers = new ArrayList<>(mappers.size());
+        mappers.forEach(this::forEachMapperEntry);
 
         List<ServerRestHandler> abortHandlingChain = new ArrayList<>(3);
 
@@ -198,12 +187,23 @@ public class RuntimeDeploymentManager {
                     .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH,
                             null, null));
         }
-
         return new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
-                runtimeConfigurableServerRestHandlers, info.isResumeOn404());
+                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404());
+    }
+
+    private void forEachMapperEntry(URITemplate path,
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> classTemplates) {
+        int classTemplateNameCount = path.countPathParamNames();
+        RuntimeMappingDeployment runtimeMappingDeployment = new RuntimeMappingDeployment(classTemplates);
+        ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(runtimeMappingDeployment.buildClassMapper(),
+                classTemplateNameCount,
+                info.isResumeOn404());
+        classMappers.add(new RequestMapper.RequestPath<>(true, path,
+                new RestInitialHandler.InitialMatch(new ServerRestHandler[] { classRoutingHandler },
+                        runtimeMappingDeployment.getMaxMethodTemplateNameCount() + classTemplateNameCount)));
     }
 
     private void addRuntimeConfigurableHandlers(RuntimeResource runtimeResource,
@@ -217,7 +217,7 @@ public class RuntimeDeploymentManager {
 
     //TODO: this needs plenty more work to support all possible types and provide all information the FeatureContext allows
     private ConfigurationImpl configureFeatures(Features features, ResourceInterceptors interceptors,
-            ExceptionMapping exceptionMapping) {
+            RuntimeExceptionMapper exceptionMapping) {
 
         ConfigurationImpl configuration = new ConfigurationImpl(RuntimeType.SERVER);
         if (features.getResourceFeatures().isEmpty()) {

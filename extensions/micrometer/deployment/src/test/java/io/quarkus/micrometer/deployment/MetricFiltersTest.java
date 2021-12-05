@@ -8,8 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Singleton;
 import javax.ws.rs.Produces;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class MetricFiltersTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(AnnotatedFilter.class, NonAnnotatedFilter.class,
                             MeterFilterProducer.class));
 

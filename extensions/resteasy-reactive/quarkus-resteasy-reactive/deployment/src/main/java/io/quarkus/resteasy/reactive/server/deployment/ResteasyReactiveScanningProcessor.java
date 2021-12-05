@@ -1,8 +1,8 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
-import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER;
-import static io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
+import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +36,8 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInt
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
+import org.jboss.resteasy.reactive.server.processor.generation.filters.FilterGeneration;
 import org.jboss.resteasy.reactive.server.processor.scanning.AsyncReturnTypeScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.CacheControlScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveContextResolverScanner;
@@ -44,6 +46,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFea
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
 
 import io.quarkus.arc.ArcUndeclaredThrowableException;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -120,14 +123,14 @@ public class ResteasyReactiveScanningProcessor {
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         exceptions.addBlockingProblem(BlockingNotAllowedException.class);
         for (UnwrappedExceptionBuildItem bi : unwrappedExceptions) {
-            exceptions.addUnwrappedException(bi.getThrowableClass());
+            exceptions.addUnwrappedException(bi.getThrowableClass().getName());
         }
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
             exceptions.addNonBlockingProblem(
                     new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(IllegalStateException.class, "HR000068"));
         }
 
-        for (Map.Entry<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers()
+        for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers()
                 .entrySet()) {
             beanBuilder.addBeanClass(i.getValue().getClassName());
         }
@@ -145,13 +148,7 @@ public class ResteasyReactiveScanningProcessor {
             ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
             mapper.setPriority(priority);
             mapper.setClassName(additionalExceptionMapper.getClassName());
-            try {
-                exceptions.addExceptionMapper((Class) Class.forName(additionalExceptionMapper.getHandledExceptionName(), false,
-                        Thread.currentThread().getContextClassLoader()), mapper);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(
-                        "Unable to load handled exception type " + additionalExceptionMapper.getHandledExceptionName(), e);
-            }
+            exceptions.addExceptionMapper(additionalExceptionMapper.getHandledExceptionName(), mapper);
         }
         additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
         return new ExceptionMappersBuildItem(exceptions);
@@ -311,76 +308,40 @@ public class ResteasyReactiveScanningProcessor {
             index = CompositeIndex.create(index, indexer.complete());
         }
 
-        for (AnnotationInstance instance : index
-                .getAnnotations(SERVER_REQUEST_FILTER)) {
-            if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
-                continue;
+        List<FilterGeneration.GeneratedFilter> generatedFilters = FilterGeneration.generate(index,
+                Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
+        for (var generated : generatedFilters) {
+            for (var i : generated.getGeneratedClasses()) {
+                generatedBean.produce(new GeneratedBeanBuildItem(i.getName(), i.getData()));
             }
-            MethodInfo methodInfo = instance.target().asMethod();
-            // the user class itself is made to be a bean as we want the user to be able to declare dependencies
-            additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
-            String generatedClassName = CustomFilterGenerator.generateContainerRequestFilter(methodInfo,
-                    new GeneratedBeanGizmoAdaptor(generatedBean));
-
-            ContainerRequestFilterBuildItem.Builder builder = new ContainerRequestFilterBuildItem.Builder(generatedClassName)
-                    .setRegisterAsBean(false); // it has already been made a bean
-            AnnotationValue priorityValue = instance.value("priority");
-            if (priorityValue != null) {
-                builder.setPriority(priorityValue.asInt());
-            }
-            AnnotationValue preMatchingValue = instance.value("preMatching");
-            if (preMatchingValue != null) {
-                builder.setPreMatching(preMatchingValue.asBoolean());
-            }
-            AnnotationValue nonBlockingRequiredValue = instance.value("nonBlocking");
-            if (nonBlockingRequiredValue != null) {
-                builder.setNonBlockingRequired(nonBlockingRequiredValue.asBoolean());
-            }
-
-            List<AnnotationInstance> annotations = methodInfo.annotations();
-            Set<String> nameBindingNames = new HashSet<>();
-            for (AnnotationInstance annotation : annotations) {
-                if (SERVER_REQUEST_FILTER.equals(annotation.name())) {
-                    continue;
+            if (generated.isRequestFilter()) {
+                // the user class itself is made to be a bean as we want the user to be able to declare dependencies
+                additionalBeans.addBeanClass(generated.getDeclaringClassName());
+                ContainerRequestFilterBuildItem.Builder builder = new ContainerRequestFilterBuildItem.Builder(
+                        generated.getGeneratedClassName())
+                                .setRegisterAsBean(false) // it has already been made a bean
+                                .setPriority(generated.getPriority())
+                                .setPreMatching(generated.isPreMatching())
+                                .setNonBlockingRequired(generated.isNonBlocking());
+                if (!generated.getNameBindingNames().isEmpty()) {
+                    builder.setNameBindingNames(generated.getNameBindingNames());
                 }
-                DotName annotationDotName = annotation.name();
-                ClassInfo annotationClassInfo = index.getClassByName(annotationDotName);
-                if (annotationClassInfo == null) {
-                    continue;
-                }
-                if ((annotationClassInfo.classAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
-                    nameBindingNames.add(annotationDotName.toString());
-                }
-            }
-            if (!nameBindingNames.isEmpty()) {
-                builder.setNameBindingNames(nameBindingNames);
-            }
 
-            additionalContainerRequestFilters.produce(builder.build());
+                additionalContainerRequestFilters.produce(builder.build());
+            } else {
+                // the user class itself is made to be a bean as we want the user to be able to declare dependencies
+                additionalBeans.addBeanClass(generated.getDeclaringClassName());
+                ContainerResponseFilterBuildItem.Builder builder = new ContainerResponseFilterBuildItem.Builder(
+                        generated.getGeneratedClassName())
+                                .setRegisterAsBean(false)// it has already been made a bean
+                                .setPriority(generated.getPriority());
+                additionalContainerResponseFilters.produce(builder.build());
+            }
         }
-        for (AnnotationInstance instance : index
-                .getAnnotations(SERVER_RESPONSE_FILTER)) {
-            if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
-                continue;
-            }
-            MethodInfo methodInfo = instance.target().asMethod();
-            // the user class itself is made to be a bean as we want the user to be able to declare dependencies
-            additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
-            String generatedClassName = CustomFilterGenerator.generateContainerResponseFilter(methodInfo,
-                    new GeneratedBeanGizmoAdaptor(generatedBean));
-            ContainerResponseFilterBuildItem.Builder builder = new ContainerResponseFilterBuildItem.Builder(generatedClassName)
-                    .setRegisterAsBean(false);// it has already been made a bean
-            AnnotationValue priorityValue = instance.value("priority");
-            if (priorityValue != null) {
-                builder.setPriority(priorityValue.asInt());
-            }
-            additionalContainerResponseFilters.produce(builder.build());
-        }
-
         Set<MethodInfo> classLevelExceptionMappers = new HashSet<>(resourceScanningResultBuildItem
                 .map(s -> s.getResult().getClassLevelExceptionMappers()).orElse(Collections.emptyList()));
         for (AnnotationInstance instance : index
-                .getAnnotations(SERVER_EXCEPTION_MAPPER)) {
+                .getAnnotations(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
@@ -391,7 +352,8 @@ public class ResteasyReactiveScanningProcessor {
             // the user class itself is made to be a bean as we want the user to be able to declare dependencies
             additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
-                    new GeneratedBeanGizmoAdaptor(generatedBean));
+                    new GeneratedBeanGizmoAdaptor(generatedBean),
+                    Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
             for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
                 ExceptionMapperBuildItem.Builder builder = new ExceptionMapperBuildItem.Builder(entry.getValue(),
                         entry.getKey()).setRegisterAsBean(false);// it has already been made a bean

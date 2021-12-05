@@ -159,7 +159,7 @@ final class Methods {
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses) {
-        return addInterceptedMethodCandidates(beanDeployment, classInfo, classInfo, candidates, classLevelBindings,
+        return addInterceptedMethodCandidates(beanDeployment, classInfo, classInfo, candidates, Set.copyOf(classLevelBindings),
                 bytecodeTransformerConsumer, transformUnproxyableClasses,
                 new SubclassSkipPredicate(beanDeployment.getAssignabilityCheck()::isAssignableFrom,
                         beanDeployment.getBeanArchiveIndex()),
@@ -169,7 +169,7 @@ final class Methods {
     static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             ClassInfo originalClassInfo,
             Map<MethodKey, Set<AnnotationInstance>> candidates,
-            List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            Set<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses, SubclassSkipPredicate skipPredicate, boolean ignoreMethodLevelBindings) {
 
         Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
@@ -177,38 +177,22 @@ final class Methods {
         skipPredicate.startProcessing(classInfo, originalClassInfo);
 
         for (MethodInfo method : classInfo.methods()) {
-            if (skipPredicate.test(method)) {
+            Set<AnnotationInstance> merged = mergeBindings(beanDeployment, originalClassInfo, classLevelBindings,
+                    ignoreMethodLevelBindings, method);
+            if (merged.isEmpty() || skipPredicate.test(method)) {
                 continue;
             }
-            Set<AnnotationInstance> merged = new HashSet<>();
-            if (ignoreMethodLevelBindings) {
-                merged.addAll(classLevelBindings);
-            } else {
-                Collection<AnnotationInstance> methodAnnnotations = beanDeployment.getAnnotations(method);
-                List<AnnotationInstance> methodLevelBindings = methodAnnnotations.stream()
-                        .flatMap(a -> beanDeployment.extractInterceptorBindings(a).stream())
-                        .collect(Collectors.toList());
-                merged.addAll(methodLevelBindings);
-                for (AnnotationInstance classLevelBinding : classLevelBindings) {
-                    if (methodLevelBindings.isEmpty()
-                            || methodLevelBindings.stream().noneMatch(a -> classLevelBinding.name().equals(a.name()))) {
-                        merged.add(classLevelBinding);
-                    }
+            boolean addToCandidates = true;
+            if (Modifier.isFinal(method.flags())) {
+                if (transformUnproxyableClasses) {
+                    methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
+                } else {
+                    addToCandidates = false;
+                    finalMethodsFoundAndNotChanged.add(method);
                 }
             }
-            if (!merged.isEmpty()) {
-                boolean addToCandidates = true;
-                if (Modifier.isFinal(method.flags())) {
-                    if (transformUnproxyableClasses) {
-                        methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
-                    } else {
-                        addToCandidates = false;
-                        finalMethodsFoundAndNotChanged.add(method);
-                    }
-                }
-                if (addToCandidates) {
-                    candidates.computeIfAbsent(new Methods.MethodKey(method), key -> merged);
-                }
+            if (addToCandidates) {
+                candidates.computeIfAbsent(new Methods.MethodKey(method), key -> merged);
             }
         }
         skipPredicate.methodsProcessed();
@@ -239,6 +223,49 @@ final class Methods {
             }
         }
         return finalMethodsFoundAndNotChanged;
+    }
+
+    private static Set<AnnotationInstance> mergeBindings(BeanDeployment beanDeployment, ClassInfo classInfo,
+            Set<AnnotationInstance> classLevelBindings, boolean ignoreMethodLevelBindings, MethodInfo method) {
+        if (ignoreMethodLevelBindings) {
+            return classLevelBindings;
+        }
+
+        Collection<AnnotationInstance> methodAnnotations = beanDeployment.getAnnotations(method);
+        if (methodAnnotations.isEmpty()) {
+            // No annotations declared on the method
+            return classLevelBindings;
+        }
+        List<AnnotationInstance> methodLevelBindings = new ArrayList<>();
+        for (AnnotationInstance annotation : methodAnnotations) {
+            methodLevelBindings.addAll(beanDeployment.extractInterceptorBindings(annotation));
+        }
+
+        Set<AnnotationInstance> merged;
+        if (methodLevelBindings.isEmpty()) {
+            merged = classLevelBindings;
+        } else {
+            merged = new HashSet<>(methodLevelBindings);
+            for (AnnotationInstance binding : classLevelBindings) {
+                if (methodLevelBindings.stream().noneMatch(a -> binding.name().equals(a.name()))) {
+                    merged.add(binding);
+                }
+            }
+
+            if (Modifier.isPrivate(method.flags())
+                    && !Annotations.contains(methodAnnotations, DotNames.OBSERVES)
+                    && !Annotations.contains(methodAnnotations, DotNames.OBSERVES_ASYNC)) {
+                if (methodLevelBindings.size() == 1) {
+                    LOGGER.warnf("%s will have no effect on method %s.%s() because the method is private",
+                            methodLevelBindings.iterator().next(), classInfo.name(), method.name());
+                } else {
+                    LOGGER.warnf("Annotations %s will have no effect on method %s.%s() because the method is private",
+                            methodLevelBindings.stream().map(AnnotationInstance::toString).collect(Collectors.joining(",")),
+                            classInfo.name(), method.name());
+                }
+            }
+        }
+        return merged;
     }
 
     static class NameAndDescriptor {
@@ -522,17 +549,34 @@ final class Methods {
             if (!parameters.isEmpty() && (beanArchiveIndex != null)) {
                 String originalClassPackage = DotNames.packageName(originalClazz.name());
                 for (Type type : parameters) {
-                    ClassInfo parameterClassInfo = beanArchiveIndex.getClassByName(type.name());
-                    if (parameterClassInfo == null) {
-                        continue; // hope for the best
+                    if (type.kind() == Kind.PRIMITIVE) {
+                        continue;
                     }
-                    if (Modifier.isPrivate(parameterClassInfo.flags())) {
-                        return true; // parameters whose class is private can not be loaded, as we would end up with IllegalAccessError when trying to access the use the load the class
+                    DotName typeName = type.name();
+                    if (type.kind() == Kind.ARRAY) {
+                        Type componentType = type.asArrayType().component();
+                        if (componentType.kind() == Kind.PRIMITIVE) {
+                            continue;
+                        }
+                        typeName = componentType.name();
                     }
-                    if (!Modifier.isPublic(parameterClassInfo.flags())) {
-                        // parameters whose class is package-private and the package is not the same as the package of the method for which we are checking can not be loaded,
-                        // as we would end up with IllegalAccessError when trying to access the use the load the class
-                        return !DotNames.packageName(parameterClassInfo.name()).equals(originalClassPackage);
+                    ClassInfo param = beanArchiveIndex.getClassByName(typeName);
+                    if (param == null) {
+                        LOGGER.warn(String.format(
+                                "Parameter type info not available: %s - unable to validate the parameter type's visibility for method %s declared on %s",
+                                type.name(), method.name(), method.declaringClass().name()));
+                        continue;
+                    }
+                    if (Modifier.isPublic(param.flags()) || Modifier.isProtected(param.flags())) {
+                        continue;
+                    }
+                    // e.g. parameters whose class is package-private and the package is not the same as the package of the method for which we are checking can not be loaded,
+                    // as we would end up with IllegalAccessError when trying to access the use the load the class
+                    if (!DotNames.packageName(param.name()).equals(originalClassPackage)) {
+                        LOGGER.warn(String.format(
+                                "A method %s() declared on %s has a non-public parameter of type %s which prevents it from being intercepted. Please change the parameter type visibility in order to make it intercepted.",
+                                method.name(), method.declaringClass().name(), type));
+                        return true;
                     }
                 }
             }

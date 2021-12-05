@@ -1,8 +1,6 @@
 package io.quarkus.hibernate.orm.sql_load_script;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ import io.restassured.RestAssured;
 public class NoFileOptionTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
                     .addAsResource("application-no-file-option-test.properties", "application.properties")
                     .addAsResource("import.sql"));

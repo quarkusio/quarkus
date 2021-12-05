@@ -1,6 +1,8 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,7 +23,7 @@ public class RemoveDeploymentConfigResourceDecorator extends Decorator<Kubernete
         List<HasMetadata> imageStreams = builder.getItems().stream()
                 .filter(d -> d instanceof HasMetadata)
                 .map(d -> (HasMetadata) d)
-                .filter(i -> i.getKind().equals("DeploymentConfig") && i.getMetadata().getName().equalsIgnoreCase(name))
+                .filter(i -> i.getKind().equals(DEPLOYMENT_CONFIG) && i.getMetadata().getName().equalsIgnoreCase(name))
                 .collect(Collectors.toList());
 
         builder.removeAllFromItems(imageStreams);

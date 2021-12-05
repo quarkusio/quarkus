@@ -488,12 +488,17 @@ Order.update("update from Person set name = 'Mortal' where status = ?", Status.A
 
 === Named queries
 
-You can reference a named query instead of a (simplified) HQL query by prefixing its name with the '#' character.
+You can reference a named query instead of a (simplified) HQL query by prefixing its name with the '#' character. You can also use named queries for count, update and delete queries.
 
 [source,java]
 ----
 @Entity
-@NamedQuery(name = "Person.getByName", query = "from Person where name = :name")
+@NamedQueries({
+    @NamedQuery(name = "Person.getByName", query = "from Person where name = ?1"),
+    @NamedQuery(name = "Person.countByStatus", query = "select count(*) from Person p where p.status = :status"),
+    @NamedQuery(name = "Person.updateStatusById", query = "update Person p set p.status = :status where p.id = :id"),
+    @NamedQuery(name = "Person.deleteById", query = "delete from Person p where p.id = ?1")
+})
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
@@ -501,6 +506,18 @@ public class Person extends PanacheEntity {
 
     public static Uni<Person> findByName(String name){
         return find("#Person.getByName", name).firstResult();
+    }
+
+    public static Uni<Long> countByStatus(Status status) {
+        return count("#Person.countByStatus", Parameters.with("status", status).map());
+    }
+
+    public static Uni<Long> updateStatusById(Status status, Long id) {
+        return update("#Person.updateStatusById", Parameters.with("status", status).and("id", id));
+    }
+
+    public static Uni<Long> deleteById(Long id) {
+        return delete("#Person.deleteById", id);
     }
 }
 ----

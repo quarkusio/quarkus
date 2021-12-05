@@ -5,6 +5,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
+import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -47,7 +48,6 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.dns.AddressResolverOptions;
 import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.file.FileSystemOptions;
-import io.vertx.core.file.impl.FileResolver;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxBuilder;
@@ -299,7 +299,7 @@ public class VertxCoreRecorder {
             initializeClusterOptions(conf, options);
         }
 
-        String fileCacheDir = System.getProperty(FileResolver.CACHE_DIR_BASE_PROP_NAME);
+        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
         if (fileCacheDir == null) {
             File tmp = new File(System.getProperty("java.io.tmpdir", ".") + File.separator + VERTX_CACHE);
             if (!tmp.isDirectory()) {

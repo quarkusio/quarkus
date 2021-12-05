@@ -1,6 +1,7 @@
 package io.quarkus.oidc.deployment.devservices;
 
 import java.time.Duration;
+import java.util.Map;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.vertx.core.MultiMap;
@@ -27,6 +28,7 @@ public final class OidcDevServicesUtils {
             String clientSecret,
             String userName,
             String userPassword,
+            Map<String, String> passwordGrantOptions,
             Duration timeout) throws Exception {
         HttpRequest<Buffer> request = client.postAbs(tokenUrl);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
@@ -40,6 +42,9 @@ public final class OidcDevServicesUtils {
         props.add("username", userName);
         props.add("password", userPassword);
         props.add("grant_type", "password");
+        if (passwordGrantOptions != null) {
+            props.addAll(passwordGrantOptions);
+        }
 
         return request.sendBuffer(OidcCommonUtils.encodeForm(props)).onItem()
                 .transform(resp -> getAccessTokenFromJson(resp)).await().atMost(timeout);
@@ -49,6 +54,7 @@ public final class OidcDevServicesUtils {
             String tokenUrl,
             String clientId,
             String clientSecret,
+            Map<String, String> clientCredGrantOptions,
             Duration timeout) throws Exception {
         HttpRequest<Buffer> request = client.postAbs(tokenUrl);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
@@ -60,6 +66,9 @@ public final class OidcDevServicesUtils {
         }
 
         props.add("grant_type", "client_credentials");
+        if (clientCredGrantOptions != null) {
+            props.addAll(clientCredGrantOptions);
+        }
 
         return request.sendBuffer(OidcCommonUtils.encodeForm(props)).onItem()
                 .transform(resp -> getAccessTokenFromJson(resp)).await().atMost(timeout);

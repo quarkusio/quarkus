@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.processor;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Supplier;
@@ -26,7 +27,14 @@ public class ReflectionEndpointInvokerFactory implements EndpointInvokerFactory 
                     return new EndpointInvoker() {
                         @Override
                         public Object invoke(Object instance, Object[] parameters) throws Exception {
-                            return meth.invoke(instance, parameters);
+                            try {
+                                return meth.invoke(instance, parameters);
+                            } catch (InvocationTargetException e) {
+                                if (e.getCause() instanceof Exception) {
+                                    throw (Exception) e.getCause();
+                                }
+                                throw e;
+                            }
                         }
                     };
                 } catch (Exception e) {

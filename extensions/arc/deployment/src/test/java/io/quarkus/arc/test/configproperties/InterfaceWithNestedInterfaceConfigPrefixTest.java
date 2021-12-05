@@ -11,9 +11,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class InterfaceWithNestedInterfaceConfigPrefixTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DummyBean.class, DummyProperties.class, DummyProperties.NestedDummy.class)
                     .addAsResource(new StringAsset(
                             "dummy.name=quarkus\ndummy.boolWD=true\ndummy.nested-dummy.foo=bar\ndummy.nested-dummy.other=some\ndummy.other-nested.foo=bar2\ndummy.other-nested.other=some2"),

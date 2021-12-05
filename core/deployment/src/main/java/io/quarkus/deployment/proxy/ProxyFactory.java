@@ -137,8 +137,13 @@ public class ProxyFactory<T> {
             if (methodInfo.getName().equals("finalize") && methodInfo.getParameterCount() == 0) {
                 continue;
             }
-            if (!Modifier.isStatic(methodInfo.getModifiers()) &&
-                    !Modifier.isFinal(methodInfo.getModifiers()) &&
+            int modifiers = methodInfo.getModifiers();
+            if (Modifier.isPublic(modifiers) && Modifier.isFinal(modifiers) && !Modifier.isStatic(modifiers)
+                    && clazz != Object.class) {
+                throw new RuntimeException("Public method " + methodInfo + " cannot be proxied as it is final");
+            }
+            if (!Modifier.isStatic(modifiers) &&
+                    !Modifier.isFinal(modifiers) &&
                     !methodInfo.getName().equals("<init>")) {
                 methods.add(methodInfo);
             }
@@ -185,18 +190,19 @@ public class ProxyFactory<T> {
                 ctor.returnValue(null);
             }
 
+            Class<?>[] parameterTypes = injectConstructor.getParameterTypes();
             List<Class<?>> args = new ArrayList<>();
             args.add(InvocationHandler.class);
-            args.addAll(Arrays.asList(injectConstructor.getParameterTypes()));
+            args.addAll(Arrays.asList(parameterTypes));
             try (MethodCreator ctor = cc
                     .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, args.toArray(Class[]::new)))) {
                 List<ResultHandle> params = new ArrayList<>();
-                for (int i = 0; i < injectConstructor.getParameterTypes().length; ++i) {
+                for (int i = 0; i < injectConstructor.getParameterCount(); ++i) {
                     params.add(ctor.getMethodParam(i + 1));
                 }
                 ctor.invokeSpecialMethod(
                         MethodDescriptor.ofConstructor(injectConstructor.getDeclaringClass(),
-                                injectConstructor.getParameterTypes()),
+                                parameterTypes),
                         ctor.getThis(),
                         params.toArray(ResultHandle[]::new));
                 ctor.writeInstanceField(invocationHandlerField, ctor.getThis(), ctor.getMethodParam(0));
@@ -211,9 +217,12 @@ public class ProxyFactory<T> {
 
                     ResultHandle getDeclaredMethodParamsArray = mc.newArray(Class.class,
                             methodInfo.getParameterCount());
-                    for (int i = 0; i < methodInfo.getParameterCount(); i++) {
-                        ResultHandle paramClass = mc.loadClass(methodInfo.getParameters()[i].getType());
-                        mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
+                    if (methodInfo.getParameterCount() > 0) {
+                        Parameter[] methodInfoParameters = methodInfo.getParameters();
+                        for (int i = 0; i < methodInfo.getParameterCount(); i++) {
+                            ResultHandle paramClass = mc.loadClass(methodInfoParameters[i].getType());
+                            mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
+                        }
                     }
                     ResultHandle method = mc.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class,
@@ -260,8 +269,9 @@ public class ProxyFactory<T> {
                 defineClass();
                 Object[] args = new Object[constructor.getParameterCount()];
                 args[0] = handler;
+                Class<?>[] parameterTypes = this.constructor.getParameterTypes();
                 for (int i = 1; i < constructor.getParameterCount(); ++i) {
-                    Constructor<?> ctor = this.constructor.getParameterTypes()[i].getConstructor();
+                    Constructor<?> ctor = parameterTypes[i].getConstructor();
                     ctor.setAccessible(true);
                     args[i] = ctor.newInstance();
                 }

@@ -11,8 +11,6 @@ import java.util.concurrent.TimeUnit;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,7 +29,7 @@ public class MessageConsumerContextTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MessageConsumers.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MessageConsumers.class));
 
     @Inject
     MessageConsumers messageConsumers;

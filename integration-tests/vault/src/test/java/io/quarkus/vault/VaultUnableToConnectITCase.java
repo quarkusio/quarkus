@@ -3,8 +3,6 @@ package io.quarkus.vault;
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -25,7 +23,7 @@ public class VaultUnableToConnectITCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("application-unable-to-connect.properties", "application.properties"));
 
     @ConfigProperty(name = PASSWORD_PROPERTY_NAME)

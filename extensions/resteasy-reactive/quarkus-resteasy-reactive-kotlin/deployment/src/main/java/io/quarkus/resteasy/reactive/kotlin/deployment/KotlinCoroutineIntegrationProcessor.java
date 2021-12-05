@@ -24,6 +24,7 @@ import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineEndpointInvoke
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineMethodProcessor;
 import org.jboss.resteasy.reactive.server.runtime.kotlin.FlowToPublisherHandler;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -33,7 +34,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.reactive.server.common.runtime.EndpointInvokerFactory;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 
 public class KotlinCoroutineIntegrationProcessor {

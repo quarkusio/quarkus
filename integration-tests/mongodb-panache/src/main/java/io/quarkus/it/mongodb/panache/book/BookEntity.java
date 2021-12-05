@@ -9,8 +9,8 @@ import javax.json.bind.annotation.JsonbDateFormat;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
-import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
 
 @MongoEntity(collection = "TheBookEntity", clientName = "cl2")
 public class BookEntity extends PanacheMongoEntity {

@@ -6,8 +6,6 @@ import java.lang.reflect.InvocationTargetException;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ public class OpenTelemetrySamplerConfigTest {
             .overrideConfigKey("quarkus.opentelemetry.tracer.sampler.ratio", "0.5")
             .overrideConfigKey("quarkus.opentelemetry.tracer.sampler.parent-based", "false")
             .overrideConfigKey("quarkus.opentelemetry.tracer.suppress-non-application-uris", "false")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(TestUtil.class));
+            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class));
 
     @Inject
     OpenTelemetry openTelemetry;

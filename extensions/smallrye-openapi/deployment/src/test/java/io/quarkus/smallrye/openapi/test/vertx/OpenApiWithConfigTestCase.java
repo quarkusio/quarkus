@@ -1,9 +1,7 @@
 package io.quarkus.smallrye.openapi.test.vertx;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ public class OpenApiWithConfigTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
                     .addAsManifestResource("test-openapi.yaml", "openapi.yaml")
                     .addAsResource(new StringAsset("mp.openapi.scan.disable=true\nmp.openapi.servers=https://api.acme.org/"),

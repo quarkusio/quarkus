@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -77,8 +78,11 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Engine;
@@ -107,6 +111,7 @@ import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator.ResolveCreator;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.Param;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.runtime.ContentTypes;
 import io.quarkus.qute.runtime.EngineProducer;
@@ -129,6 +134,10 @@ public class QuteProcessor {
 
     private static final String CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE = "requireTypeSafeExpressions";
     private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
+    private static final String BASE_PATH = "templates";
+
+    private static final Set<String> ITERATION_METADATA_KEYS = Set.of("count", "index", "indexParity", "hasNext", "odd",
+            "isOdd", "even", "isEven", "isLast", "isFirst");
 
     private static final Function<FieldInfo, String> GETTER_FUN = new Function<FieldInfo, String>() {
         @Override
@@ -331,7 +340,10 @@ public class QuteProcessor {
     TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
             TemplateFilePathsBuildItem filePaths, List<CheckedTemplateBuildItem> checkedTemplates,
             List<MessageBundleMethodBuildItem> messageBundleMethods, QuteConfig config) {
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
+
+        checkDuplicatePaths(templatePaths);
+
         List<TemplateAnalysis> analysis = new ArrayList<>();
 
         // A dummy engine instance is used to parse and validate all templates during the build
@@ -462,7 +474,8 @@ public class QuteProcessor {
                             + "()"));
         }
 
-        LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(), System.currentTimeMillis() - start);
+        LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         return new TemplatesAnalysisBuildItem(analysis);
     }
 
@@ -521,7 +534,8 @@ public class QuteProcessor {
                 if (expression.isLiteral()) {
                     continue;
                 }
-                Match match = validateNestedExpressions(templateAnalysis, null, new HashMap<>(), excludes, incorrectExpressions,
+                Match match = validateNestedExpressions(config, templateAnalysis, null, new HashMap<>(), excludes,
+                        incorrectExpressions,
                         expression, index, implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
                         checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData, regularExtensionMethods,
                         namespaceExtensionMethods);
@@ -581,7 +595,8 @@ public class QuteProcessor {
         return ignorePattern.toString();
     }
 
-    static Match validateNestedExpressions(TemplateAnalysis templateAnalysis, ClassInfo rootClazz, Map<String, Match> results,
+    static Match validateNestedExpressions(QuteConfig config, TemplateAnalysis templateAnalysis, ClassInfo rootClazz,
+            Map<String, Match> results,
             List<TypeCheckExcludeBuildItem> excludes, BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             Expression expression, IndexView index,
             Map<DotName, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun,
@@ -600,7 +615,7 @@ public class QuteProcessor {
                         continue;
                     }
                     if (!results.containsKey(param.toOriginalString())) {
-                        validateNestedExpressions(templateAnalysis, null, results, excludes,
+                        validateNestedExpressions(config, templateAnalysis, null, results, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
                                 generatedIdsToMatches, checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,
                                 regularExtensionMethods, namespaceExtensionMethods);
@@ -645,14 +660,39 @@ public class QuteProcessor {
         }
 
         if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions && !expression.hasTypeInfo()) {
-            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                    "Only type-safe expressions are allowed in the checked template defined via: "
-                            + checkedTemplate.method.declaringClass().name() + "."
-                            + checkedTemplate.method.name()
-                            + "(); an expression must be based on a checked template parameter "
-                            + checkedTemplate.bindings.keySet()
-                            + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
-                    expression.getOrigin()));
+            if (!expression.hasNamespace() && expression.getParts().size() == 1
+                    && ITERATION_METADATA_KEYS.contains(expression.getParts().get(0).getName())) {
+                String prefixInfo;
+                if (config.iterationMetadataPrefix
+                        .equals(LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE)) {
+                    prefixInfo = String.format(
+                            "based on the iteration alias, i.e. the correct key should be something like {it_%1$s} or {element_%1$s}",
+                            expression.getParts().get(0).getName());
+                } else if (config.iterationMetadataPrefix
+                        .equals(LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_QM)) {
+                    prefixInfo = String.format(
+                            "based on the iteration alias, i.e. the correct key should be something like {it?%1$s} or {element?%1$s}",
+                            expression.getParts().get(0).getName());
+                } else {
+                    prefixInfo = ": " + config.iterationMetadataPrefix + ", i.e. the correct key should be: "
+                            + config.iterationMetadataPrefix + expression.getParts().get(0).getName();
+                }
+                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                        "An invalid iteration metadata key is probably used\n\t- The configured iteration metadata prefix is "
+                                + prefixInfo
+                                + "\n\t- You can configure the prefix via the io.quarkus.qute.iteration-metadata-prefix configuration property",
+                        expression.getOrigin()));
+            } else {
+                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                        "Only type-safe expressions are allowed in the checked template defined via: "
+                                + checkedTemplate.method.declaringClass().name() + "."
+                                + checkedTemplate.method.name()
+                                + "(); an expression must be based on a checked template parameter "
+                                + checkedTemplate.bindings.keySet()
+                                + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
+                        expression.getOrigin()));
+
+            }
             return putResult(match, results, expression);
         }
 
@@ -674,6 +714,15 @@ public class QuteProcessor {
                 ClassInfo returnType = index.getClassByName(method.returnType().name());
                 if (returnType != null) {
                     match.setValues(returnType, method.returnType());
+                    if (root.hasHints()) {
+                        // Root is a property with hint
+                        // E.g. 'it<loop#123>' and 'STATUS<when#123>'
+                        if (processHints(templateAnalysis, root.asHintInfo().hints, match, index, expression,
+                                generatedIdsToMatches, incorrectExpressions)) {
+                            // In some cases it's necessary to reset the iterator
+                            iterator = parts.iterator();
+                        }
+                    }
                 } else {
                     // Return type not available
                     return putResult(match, results, expression);
@@ -1168,26 +1217,50 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void collectTemplates(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    void collectTemplates(ApplicationArchivesBuildItem applicationArchives,
+            CurateOutcomeBuildItem curateOutcome,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            QuteConfig config)
             throws IOException {
-        ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-        String basePath = "templates";
-        Path templatesPath = null;
-        for (Path rootDir : applicationArchive.getRootDirectories()) {
-            // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
-            // a wrong directory name on case-insensitive file systems 
-            templatesPath = Files.list(rootDir).filter(p -> p.getFileName().toString().equals(basePath)).findFirst()
-                    .orElse(null);
-            if (templatesPath != null) {
-                break;
+        Set<Path> basePaths = new HashSet<>();
+        Set<ApplicationArchive> allApplicationArchives = applicationArchives.getAllApplicationArchives();
+        List<ResolvedDependency> extensionArtifacts = curateOutcome.getApplicationModel().getDependencies().stream()
+                .filter(Dependency::isRuntimeExtensionArtifact).collect(Collectors.toList());
+
+        for (ResolvedDependency artifact : extensionArtifacts) {
+            if (isApplicationArchive(artifact, allApplicationArchives)) {
+                // Skip extension archives that are also application archives
+                continue;
+            }
+            for (Path p : artifact.getResolvedPaths()) {
+                if (Files.isDirectory(p)) {
+                    // Try to find the templates in the root dir
+                    Path basePath = Files.list(p).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                    if (basePath != null) {
+                        LOGGER.debugf("Found extension templates dir: %s", p);
+                        basePaths.add(basePath);
+                        break;
+                    }
+                }
             }
         }
-        LOGGER.debugf("Found templates dir: %s", templatesPath);
-        if (templatesPath != null) {
-            scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources);
+        for (ApplicationArchive archive : allApplicationArchives) {
+            for (Path rootDir : archive.getRootDirectories()) {
+                // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
+                // a wrong directory name on case-insensitive file systems 
+                Path basePath = Files.list(rootDir).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                if (basePath != null) {
+                    LOGGER.debugf("Found templates dir: %s", basePath);
+                    basePaths.add(basePath);
+                    break;
+                }
+            }
+        }
+        for (Path base : basePaths) {
+            scan(base, base, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
+                    config.templatePathExclude);
         }
     }
 
@@ -1230,7 +1303,11 @@ public class QuteProcessor {
                     // For "@Location("foo/bar/baz.txt") Template baz" we try to match "foo/bar/baz.txt"
                     if (!filePaths.contains(name)) {
                         validationErrors.produce(new ValidationErrorBuildItem(
-                                new TemplateException("No template found for " + injectionPoint.getTargetInfo())));
+                                new TemplateException(
+                                        String.format(
+                                                "No template found for path [%s] defined at %s\n\t- available templates: %s",
+                                                name, injectionPoint.getTargetInfo(), templatePaths.stream()
+                                                        .map(TemplatePathBuildItem::getPath).collect(Collectors.toList())))));
                     }
                 }
             }
@@ -1244,7 +1321,7 @@ public class QuteProcessor {
         // ItemResource/item -> -> [ItemResource/item.html, ItemResource/item.xml]
         Map<String, List<String>> baseToVariants = new HashMap<>();
         for (String path : allPaths) {
-            int idx = path.lastIndexOf('.');
+            int idx = path.indexOf('.');
             if (idx != -1) {
                 String base = path.substring(0, idx);
                 List<String> variants = baseToVariants.get(base);
@@ -1653,31 +1730,26 @@ public class QuteProcessor {
                 // Name does not match
                 continue;
             }
-            List<Type> parameters = extensionMethod.getMethod().parameters();
-            int realParamSize = parameters.size();
-            if (!extensionMethod.hasNamespace()) {
-                realParamSize -= 1;
-            }
-            if (TemplateExtension.ANY.equals(extensionMethod.getMatchName())) {
-                realParamSize -= 1;
-            }
-            if (realParamSize > 0 && !info.isVirtualMethod()) {
+
+            List<Param> evaluatedParams = extensionMethod.getParams().evaluated();
+            if (evaluatedParams.size() > 0 && !info.isVirtualMethod()) {
                 // If method accepts additional params the info must be a virtual method
                 continue;
             }
             if (info.isVirtualMethod()) {
                 // For virtual method validate the number of params and attempt to validate the parameter types if available
                 VirtualMethodPart virtualMethod = info.part.asVirtualMethod();
+
                 boolean isVarArgs = ValueResolverGenerator.isVarArgs(extensionMethod.getMethod());
-                int lastParamIdx = parameters.size() - 1;
+                int lastParamIdx = evaluatedParams.size() - 1;
 
                 if (isVarArgs) {
                     // For varargs methods match the minimal number of params
-                    if ((realParamSize - 1) > virtualMethod.getParameters().size()) {
+                    if ((evaluatedParams.size() - 1) > virtualMethod.getParameters().size()) {
                         continue;
                     }
                 } else {
-                    if (virtualMethod.getParameters().size() != realParamSize) {
+                    if (virtualMethod.getParameters().size() != evaluatedParams.size()) {
                         // Check number of parameters; some of params of the extension method must be ignored
                         continue;
                     }
@@ -1685,8 +1757,7 @@ public class QuteProcessor {
 
                 // Check parameter types if available
                 boolean matches = true;
-                // Skip base and name param if needed
-                int idx = parameters.size() - realParamSize;
+                int idx = 0;
 
                 for (Expression param : virtualMethod.getParameters()) {
 
@@ -1696,9 +1767,9 @@ public class QuteProcessor {
                         Type paramType;
                         if (isVarArgs && (idx >= lastParamIdx)) {
                             // Replace the type for varargs methods
-                            paramType = parameters.get(lastParamIdx).asArrayType().component();
+                            paramType = evaluatedParams.get(lastParamIdx).type.asArrayType().component();
                         } else {
-                            paramType = parameters.get(idx);
+                            paramType = evaluatedParams.get(idx).type;
                         }
                         if (!Types.isAssignableFrom(paramType,
                                 result.type, index)) {
@@ -2048,7 +2119,8 @@ public class QuteProcessor {
 
     private void scan(Path root, Path directory, String basePath, BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            Pattern templatePathExclude)
             throws IOException {
         try (Stream<Path> files = Files.list(directory)) {
             Iterator<Path> iter = files.iterator();
@@ -2060,11 +2132,15 @@ public class QuteProcessor {
                     if (File.separatorChar != '/') {
                         templatePath = templatePath.replace(File.separatorChar, '/');
                     }
+                    if (templatePathExclude.matcher(templatePath).matches()) {
+                        LOGGER.debugf("Template file exluded: %s", filePath);
+                        continue;
+                    }
                     produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath,
                             filePath);
                 } else if (Files.isDirectory(filePath)) {
                     LOGGER.debugf("Scan directory: %s", filePath);
-                    scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources);
+                    scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources, templatePathExclude);
                 }
             }
         }
@@ -2073,6 +2149,42 @@ public class QuteProcessor {
     private static boolean isExcluded(TypeCheck check, List<TypeCheckExcludeBuildItem> excludes) {
         for (TypeCheckExcludeBuildItem exclude : excludes) {
             if (exclude.getPredicate().test(check)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isBasePath(Path path) {
+        return path.getFileName().toString().equals(BASE_PATH);
+    }
+
+    private void checkDuplicatePaths(List<TemplatePathBuildItem> templatePaths) {
+        Map<String, List<TemplatePathBuildItem>> duplicates = templatePaths.stream()
+                .collect(Collectors.groupingBy(TemplatePathBuildItem::getPath));
+        for (Iterator<List<TemplatePathBuildItem>> it = duplicates.values().iterator(); it.hasNext();) {
+            List<TemplatePathBuildItem> paths = it.next();
+            if (paths.isEmpty() || paths.size() == 1) {
+                it.remove();
+            }
+        }
+        if (!duplicates.isEmpty()) {
+            StringBuilder builder = new StringBuilder("Duplicate templates found:");
+            for (Entry<String, List<TemplatePathBuildItem>> e : duplicates.entrySet()) {
+                builder.append("\n\t- ").append(e.getKey()).append(": ")
+                        .append(e.getValue().stream().map(TemplatePathBuildItem::getFullPath).collect(Collectors.toList()));
+            }
+            throw new IllegalStateException(builder.toString());
+        }
+    }
+
+    private boolean isApplicationArchive(ResolvedDependency dependency, Set<ApplicationArchive> applicationArchives) {
+        for (ApplicationArchive archive : applicationArchives) {
+            if (archive.getKey() == null) {
+                continue;
+            }
+            if (dependency.getGroupId().equals(archive.getKey().getGroupId())
+                    && dependency.getArtifactId().equals(archive.getKey().getArtifactId())) {
                 return true;
             }
         }

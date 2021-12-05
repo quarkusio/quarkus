@@ -2,8 +2,6 @@ package io.quarkus.vertx.http.hotreload;
 
 import static org.hamcrest.core.Is.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class HotReloadWithRouteTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(DevBean.class));
+            .withApplicationRoot((jar) -> jar.addClass(DevBean.class));
     private static final String USER_FILE = "DevBean.java";
 
     @Test

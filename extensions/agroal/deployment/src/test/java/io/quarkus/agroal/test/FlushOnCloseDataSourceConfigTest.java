@@ -12,9 +12,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -33,7 +31,7 @@ class FlushOnCloseDataSourceConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
                     .addClasses(FlushOnCloseDataSourceConfigTest.class)
                     .addClasses(ClientUserTrackerInterceptor.class))

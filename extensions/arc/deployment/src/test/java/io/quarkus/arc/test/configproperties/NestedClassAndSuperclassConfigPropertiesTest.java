@@ -10,9 +10,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class NestedClassAndSuperclassConfigPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DummyBean.class, DummyProperties.class, DummyProperties.NestedDummyProperties.class)
                     .addAsResource(new StringAsset(
                             "dummy.lname=redhat\ndummy.name=quarkus\ndummy.nested.ages=1,2,3,4\ndummy.supernested.afraid-of-heights=100,200\ndummy.unused=whatever\ndummy.nested.unused=whatever2"),

@@ -2,6 +2,7 @@ package io.quarkus.test.junit;
 
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static java.lang.ProcessBuilder.Redirect.DISCARD;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
@@ -56,6 +58,8 @@ public final class IntegrationTestUtil {
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
     public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
+
+    private static final String DOCKER_BINARY = "docker";
 
     private IntegrationTestUtil() {
     }
@@ -288,6 +292,7 @@ public final class IntegrationTestUtil {
             }
         }, DevServicesLauncherConfigResultBuildItem.class.getName());
 
+        boolean manageNetwork = false;
         if (isDockerAppLaunch) {
             // obtain the ID of the shared network - this needs to be done after the augmentation has been run
             // or else we run into various ClassLoader problems
@@ -297,11 +302,48 @@ public final class IntegrationTestUtil {
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
                 networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
             } catch (Exception e) {
-                networkId = null;
+                networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+                manageNetwork = true;
             }
         }
 
-        return new DefaultDevServicesLaunchResult(propertyMap, networkId, curatedApplication);
+        DefaultDevServicesLaunchResult result = new DefaultDevServicesLaunchResult(propertyMap, networkId, manageNetwork,
+                curatedApplication);
+        createNetworkIfNecessary(result);
+        return result;
+    }
+
+    // this probably isn't the best place for this method, but we need to create the docker container before
+    // user code is aware of the network
+    private static void createNetworkIfNecessary(
+            final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+        if (devServicesLaunchResult.manageNetwork() && (devServicesLaunchResult.networkId() != null)) {
+            try {
+                int networkCreateResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                        .command(DOCKER_BINARY, "network", "create", devServicesLaunchResult.networkId()).start().waitFor();
+                if (networkCreateResult > 0) {
+                    throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
+                            + "' completed unsuccessfully");
+                }
+                // do the cleanup in a shutdown hook because there might be more services (launched via QuarkusTestResourceLifecycleManager) connected to the network
+                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                                    .command(DOCKER_BINARY, "network", "rm", devServicesLaunchResult.networkId()).start()
+                                    .waitFor();
+                        } catch (InterruptedException | IOException ignored) {
+                            System.out.println(
+                                    "Unable to delete container network '" + devServicesLaunchResult.networkId() + "'");
+                        }
+                    }
+                }));
+            } catch (Exception e) {
+                throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
+                        + "' completed unsuccessfully");
+            }
+        }
     }
 
     static void activateLogging() {
@@ -313,12 +355,14 @@ public final class IntegrationTestUtil {
     static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {
         private final Map<String, String> properties;
         private final String networkId;
+        private final boolean manageNetwork;
         private final CuratedApplication curatedApplication;
 
         DefaultDevServicesLaunchResult(Map<String, String> properties, String networkId,
-                CuratedApplication curatedApplication) {
+                boolean manageNetwork, CuratedApplication curatedApplication) {
             this.properties = properties;
             this.networkId = networkId;
+            this.manageNetwork = manageNetwork;
             this.curatedApplication = curatedApplication;
         }
 
@@ -328,6 +372,11 @@ public final class IntegrationTestUtil {
 
         public String networkId() {
             return networkId;
+        }
+
+        @Override
+        public boolean manageNetwork() {
+            return manageNetwork;
         }
 
         @Override

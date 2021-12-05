@@ -69,11 +69,11 @@ class RegistryExtensionResolver {
         return checkQuarkusVersion(platform.getVersion());
     }
 
-    PlatformCatalog resolvePlatformCatalog() throws RegistryResolutionException {
+    PlatformCatalog.Mutable resolvePlatformCatalog() throws RegistryResolutionException {
         return resolvePlatformCatalog(null);
     }
 
-    PlatformCatalog resolvePlatformCatalog(String quarkusCoreVersion) throws RegistryResolutionException {
+    PlatformCatalog.Mutable resolvePlatformCatalog(String quarkusCoreVersion) throws RegistryResolutionException {
         return extensionResolver.resolvePlatforms(quarkusCoreVersion);
     }
 
@@ -81,11 +81,11 @@ class RegistryExtensionResolver {
         return resolvePlatformCatalog().getRecommendedPlatform();
     }
 
-    ExtensionCatalog resolveNonPlatformExtensions(String quarkusCoreVersion) throws RegistryResolutionException {
+    ExtensionCatalog.Mutable resolveNonPlatformExtensions(String quarkusCoreVersion) throws RegistryResolutionException {
         return extensionResolver.resolveNonPlatformExtensions(quarkusCoreVersion);
     }
 
-    ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platform) throws RegistryResolutionException {
+    ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platform) throws RegistryResolutionException {
         return extensionResolver.resolvePlatformExtensions(platform);
     }
 

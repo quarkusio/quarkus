@@ -12,7 +12,7 @@ import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
-import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
+import org.hibernate.engine.jdbc.batch.internal.UnmodifiableBatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
@@ -26,11 +26,11 @@ import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
+import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
@@ -163,9 +163,6 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         // Custom one!
         serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
 
-        // TODO disable?
-        serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
-
         // Replaces JdbcEnvironmentInitiator.INSTANCE :
         serviceInitiators.add(new QuarkusNoJdbcEnvironmentInitiator(rs.getDialect()));
 
@@ -189,11 +186,13 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         // Disabled: Dialect is injected explicitly
         // serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
 
-        serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
+        // Non-default implementation: optimised for lack of JMX management
+        serviceInitiators.add(UnmodifiableBatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 
         // Custom for Hibernate Reactive:
+        serviceInitiators.add(ReactiveSchemaManagementToolInitiator.INSTANCE);
         //serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
         serviceInitiators.add(ReactiveQueryTranslatorFactoryInitiator.INSTANCE);
 

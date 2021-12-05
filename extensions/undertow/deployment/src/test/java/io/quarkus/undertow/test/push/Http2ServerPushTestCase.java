@@ -9,8 +9,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -37,7 +35,7 @@ public class Http2ServerPushTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ServerPushServlet.class, MessageServlet.class)
                     .addAsResource(new File("src/test/resources/ssl-jks.conf"), "application.properties")
                     .addAsResource(new File("src/test/resources/server-keystore.jks"), "server-keystore.jks"));

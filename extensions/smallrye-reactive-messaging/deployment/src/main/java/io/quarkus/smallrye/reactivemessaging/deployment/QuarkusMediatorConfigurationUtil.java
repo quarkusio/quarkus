@@ -10,6 +10,7 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.TRANSACTIONAL;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.VOID_CLASS;
 
 import java.util.ArrayList;
@@ -30,10 +31,10 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
-import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
 import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Merge;
+import io.smallrye.reactive.messaging.providers.MediatorConfigurationSupport;
 
 public final class QuarkusMediatorConfigurationUtil {
 
@@ -158,7 +159,8 @@ public final class QuarkusMediatorConfigurationUtil {
 
         AnnotationInstance blockingAnnotation = methodInfo.annotation(BLOCKING);
         AnnotationInstance smallryeBlockingAnnotation = methodInfo.annotation(SMALLRYE_BLOCKING);
-        if (blockingAnnotation != null || smallryeBlockingAnnotation != null) {
+        AnnotationInstance transactionalAnnotation = methodInfo.annotation(TRANSACTIONAL);
+        if (blockingAnnotation != null || smallryeBlockingAnnotation != null || transactionalAnnotation != null) {
             mediatorConfigurationSupport.validateBlocking(validationOutput);
             configuration.setBlocking(true);
             if (blockingAnnotation != null) {

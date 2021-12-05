@@ -56,7 +56,7 @@ import javax.ws.rs.Path;
 public class Endpoint {
 
     @GET
-    public String hello(){
+    public String hello() {
         return "Hello, World!";
     }
 }
@@ -97,7 +97,7 @@ public class Endpoint {
 
     @Path("hello")
     @GET
-    public String hello(){
+    public String hello() {
         return "Hello, World!";
     }
 }
@@ -178,7 +178,7 @@ import javax.ws.rs.Path;
 public class Endpoint {
 
     @FROMAGE
-    public String hello(){
+    public String hello() {
         return "Hello, Cheese World!";
     }
 }
@@ -291,7 +291,7 @@ public class Endpoint {
                             @RestCookie String level,
                             @RestHeader("X-Cheese-Secret-Handshake")
                             String secretHandshake,
-                            @RestForm String smell){
+                            @RestForm String smell) {
         return type + "/" + variant + "/" + age + "/" + level + "/" + secretHandshake + "/" + smell;
     }
 }
@@ -331,12 +331,12 @@ public class Endpoint {
 
     @Path("{name}/{age:\\d+}")
     @GET
-    public String personalisedHello(String name, int age){
+    public String personalisedHello(String name, int age) {
         return "Hello " + name + " is your age really " + age + "?";
     }
 
     @GET
-    public String genericHello(){
+    public String genericHello() {
         return "Hello stranger";
     }
 }
@@ -406,8 +406,6 @@ that will hold this information like so:
 
 [source,java]
 ----
-import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.PartType;
@@ -474,6 +472,49 @@ Moreoever if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Qu
 the file will reside on the file system of the server (in the directory defined by the `quarkus.http.body.uploads-directory` configuration option), but as the uploaded files are saved
 with a UUID file name and no additional metadata is saved, these files are essentially a random dump of files.
 
+Similarly, RESTEasy Reactive can produce Multipart Form data to allow users download files from the server. For example, we could write a POJO
+that will hold the information we want to expose as:
+
+[source,java]
+----
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.PartType;
+import org.jboss.resteasy.reactive.RestForm;
+
+public class DownloadFormData {
+
+    @RestForm
+    String name;
+
+    @RestForm
+    @PartType(MediaType.APPLICATION_OCTET_STREAM)
+    File file;
+}
+----
+
+And then expose this POJO via a Resource like so:
+
+[source,java]
+----
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("multipart")
+public class Endpoint {
+
+    @GET
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    @Path("file")
+    public DownloadFormData getFile() {
+        // return something
+    }
+}
+----
+
+WARNING: For the time being, returning Multipart data is limited to be blocking endpoints. 
 
 === Returning a response body
 
@@ -607,7 +648,7 @@ import io.smallrye.mutiny.Uni;
 public class Endpoint {
 
     @GET
-    public Uni<Book> culinaryGuide(){
+    public Uni<Book> culinaryGuide() {
         return Book.findByIsbn("978-2081229297");
     }
 }
@@ -845,7 +886,7 @@ public class Endpoint {
 
     SecurityContext security;
 
-    Endpoint(SecurityContext security){
+    Endpoint(SecurityContext security) {
         this.security = security;
     }
 
@@ -902,7 +943,7 @@ import io.quarkus.resteasy.reactive.jackson.SecureField;
 
 public class Person {
 
-    @SecureField("id")
+    @SecureField(rolesAllowed = "admin")
     private final Long id;
     private final String first;
     private final String last;
@@ -925,7 +966,6 @@ public class Person {
         return last;
     }
 }
-
 ----
 
 A very simple JAX-RS Resource that uses `Person` could be:
@@ -1778,12 +1818,17 @@ public class Endpoint {
     @GET
     public String convertions(Converter converter, Constructor constructor,
                               int primitive, ValueOf valueOf, 
-                              @RestQuery List<Constructor> list){
+                              @RestQuery List<Constructor> list) {
         return converter + "/" + constructor + "/" + primitive 
                + "/" + valueOf + "/" + list;
     }
 }
 ----
+
+==== Handling dates
+
+RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path or form params. Furthermore it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation which can be used to
+set a custom expected pattern (otherwise the JDK's default format for each type is used implicitly).
 
 === Preconditions
 
@@ -1824,7 +1869,7 @@ public class Endpoint {
     private String resource = "Some resource";
     
     @GET
-    public Response get(Request request){
+    public Response get(Request request) {
         // first evaluate preconditions
         ResponseBuilder conditionalResponse = request.evaluatePreconditions(date, tag);
         if(conditionalResponse != null)
@@ -1837,7 +1882,7 @@ public class Endpoint {
     }
 
     @PUT
-    public Response put(Request request, String body){
+    public Response put(Request request, String body) {
         // first evaluate preconditions
         ResponseBuilder conditionalResponse = request.evaluatePreconditions(date, tag);
         if(conditionalResponse != null)
@@ -1951,19 +1996,19 @@ public class Endpoint {
 
     @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
     @GET
-    public FroMage get(){
+    public FroMage get() {
         return new FroMage("Morbier");
     }
 
     @Consumes(MediaType.TEXT_PLAIN)
     @PUT
-    public FroMage putString(String cheese){
+    public FroMage putString(String cheese) {
         return new FroMage(cheese);
     }
 
     @Consumes(MediaType.APPLICATION_JSON)
     @PUT
-    public FroMage putJson(FroMage fromage){
+    public FroMage putJson(FroMage fromage) {
         return fromage;
     }
 }

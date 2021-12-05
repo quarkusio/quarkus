@@ -2,8 +2,10 @@ package io.quarkus.it.keycloak;
 
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -41,6 +43,15 @@ public class FrontendResource {
     public String userNameAccessTokenPropagation() {
         checkIssuerAndAudience();
         return accessTokenPropagationService.getUserName();
+    }
+
+    @POST
+    @Path("access-token-propagation")
+    @RolesAllowed("user")
+    @Consumes("application/json")
+    public String userNameAccessTokenPropagationPost(User user) {
+        checkIssuerAndAudience();
+        return accessTokenPropagationService.echoUserName(user.getName());
     }
 
     private void checkIssuerAndAudience() {

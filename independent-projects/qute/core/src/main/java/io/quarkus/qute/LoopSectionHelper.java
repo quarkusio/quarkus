@@ -26,11 +26,13 @@ public class LoopSectionHelper implements SectionHelper {
     private static final String ITERABLE = "iterable";
 
     private final String alias;
+    private final String metadataPrefix;
     private final Expression iterable;
     private final SectionBlock elseBlock;
 
-    LoopSectionHelper(SectionInitContext context) {
+    LoopSectionHelper(SectionInitContext context, String metadataPrefix) {
         this.alias = context.getParameterOrDefault(ALIAS, DEFAULT_ALIAS);
+        this.metadataPrefix = LoopSectionHelper.Factory.prefixValue(alias, metadataPrefix);
         this.iterable = Objects.requireNonNull(context.getExpression(ITERABLE));
         this.elseBlock = context.getBlock(ELSE);
     }
@@ -116,16 +118,47 @@ public class LoopSectionHelper implements SectionHelper {
     }
 
     CompletionStage<ResultNode> nextElement(Object element, int index, boolean hasNext, SectionResolutionContext context) {
-        ResolutionContext child = context.resolutionContext().createChild(new IterationElement(alias, element, index, hasNext),
+        ResolutionContext child = context.resolutionContext().createChild(
+                new IterationElement(alias, metadataPrefix, element, index, hasNext),
                 null);
         return context.execute(child);
     }
 
     public static class Factory implements SectionHelperFactory<LoopSectionHelper> {
 
+        /**
+         * Constant value for iteration metadata prefix indicating that the alias suffixed with a question mark should be used.
+         */
+        public static final String ITERATION_METADATA_PREFIX_ALIAS_QM = "<alias?>";
+
+        /**
+         * Constant value for iteration metadata prefix indicating that the alias suffixed with an underscore should be used.
+         */
+        public static final String ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE = "<alias_>";
+
+        /**
+         * Constant value for iteration metadata prefix indicating that no prefix should be used.
+         */
+        public static final String ITERATION_METADATA_PREFIX_NONE = "<none>";
+
         public static final String HINT_ELEMENT = "<loop-element>";
         public static final String HINT_PREFIX = "<loop#";
         private static final String IN = "in";
+
+        private final String metadataPrefix;
+
+        public Factory() {
+            this(ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE);
+        }
+
+        public Factory(String metadataPrefix) {
+            Objects.requireNonNull(metadataPrefix, "Iteration metadata must not be null");
+            if (metadataPrefix.isBlank() || metadataPrefix.equals(ITERATION_METADATA_PREFIX_NONE)) {
+                this.metadataPrefix = null;
+            } else {
+                this.metadataPrefix = metadataPrefix;
+            }
+        }
 
         @Override
         public List<String> getDefaultAliases() {
@@ -147,7 +180,7 @@ public class LoopSectionHelper implements SectionHelper {
 
         @Override
         public LoopSectionHelper initialize(SectionInitContext context) {
-            return new LoopSectionHelper(context);
+            return new LoopSectionHelper(context, metadataPrefix);
         }
 
         @Override
@@ -170,14 +203,17 @@ public class LoopSectionHelper implements SectionHelper {
                     Scope newScope = new Scope(previousScope);
                     newScope.putBinding(alias, alias + HINT_PREFIX + iterableExpr.getGeneratedId() + ">");
                     // Put bindings for iteration metadata
-                    newScope.putBinding("count", Expressions.typeInfoFrom(Integer.class.getName()));
-                    newScope.putBinding("index", Expressions.typeInfoFrom(Integer.class.getName()));
-                    newScope.putBinding("indexParity", Expressions.typeInfoFrom(String.class.getName()));
-                    newScope.putBinding("hasNext", Expressions.typeInfoFrom(Boolean.class.getName()));
-                    newScope.putBinding("odd", Expressions.typeInfoFrom(Boolean.class.getName()));
-                    newScope.putBinding("isOdd", Expressions.typeInfoFrom(Boolean.class.getName()));
-                    newScope.putBinding("even", Expressions.typeInfoFrom(Boolean.class.getName()));
-                    newScope.putBinding("isEven", Expressions.typeInfoFrom(Boolean.class.getName()));
+                    String prefix = prefixValue(alias, metadataPrefix);
+                    newScopeBinding(newScope, prefix, "count", Integer.class.getName());
+                    newScopeBinding(newScope, prefix, "index", Integer.class.getName());
+                    newScopeBinding(newScope, prefix, "indexParity", String.class.getName());
+                    newScopeBinding(newScope, prefix, "hasNext", Boolean.class.getName());
+                    newScopeBinding(newScope, prefix, "isLast", Boolean.class.getName());
+                    newScopeBinding(newScope, prefix, "isFirst", Boolean.class.getName());
+                    newScopeBinding(newScope, prefix, "odd", Boolean.class.getName());
+                    newScopeBinding(newScope, prefix, "isOdd", Boolean.class.getName());
+                    newScopeBinding(newScope, prefix, "even", Boolean.class.getName());
+                    newScopeBinding(newScope, prefix, "isEven", Boolean.class.getName());
                     return newScope;
                 } else {
                     // Make sure we do not try to validate against the parent context
@@ -189,20 +225,38 @@ public class LoopSectionHelper implements SectionHelper {
                 return previousScope;
             }
         }
+
+        private void newScopeBinding(Scope scope, String prefix, String name, String typeName) {
+            scope.putBinding(prefix != null ? prefix + name : name, Expressions.typeInfoFrom(typeName));
+        }
+
+        static String prefixValue(String alias, String metadataPrefix) {
+            if (metadataPrefix == null || ITERATION_METADATA_PREFIX_NONE.equals(metadataPrefix)) {
+                return null;
+            } else if (ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE.equals(metadataPrefix)) {
+                return alias + "_";
+            } else if (ITERATION_METADATA_PREFIX_ALIAS_QM.equals(metadataPrefix)) {
+                return alias + "?";
+            } else {
+                return metadataPrefix;
+            }
+        }
     }
 
     static class IterationElement implements Mapper {
 
         static final CompletedStage<Object> EVEN = CompletedStage.of("even");
-        static final CompletedStage<Object> ODD = CompletedStage.of("odd");;
+        static final CompletedStage<Object> ODD = CompletedStage.of("odd");
 
         final String alias;
+        final String metadataPrefix;
         final CompletedStage<Object> element;
         final int index;
         final boolean hasNext;
 
-        public IterationElement(String alias, Object element, int index, boolean hasNext) {
+        public IterationElement(String alias, String metadataPrefix, Object element, int index, boolean hasNext) {
             this.alias = alias;
+            this.metadataPrefix = metadataPrefix;
             this.element = CompletedStage.of(element);
             this.index = index;
             this.hasNext = hasNext;
@@ -212,6 +266,13 @@ public class LoopSectionHelper implements SectionHelper {
         public CompletionStage<Object> getAsync(String key) {
             if (alias.equals(key)) {
                 return element;
+            }
+            if (metadataPrefix != null) {
+                if (key.startsWith(metadataPrefix)) {
+                    key = key.substring(metadataPrefix.length(), key.length());
+                } else {
+                    return Results.notFound(key);
+                }
             }
             // Iteration metadata
             switch (key) {
@@ -223,6 +284,10 @@ public class LoopSectionHelper implements SectionHelper {
                     return index % 2 != 0 ? EVEN : ODD;
                 case "hasNext":
                     return hasNext ? Results.TRUE : Results.FALSE;
+                case "isLast":
+                    return hasNext ? Results.FALSE : Results.TRUE;
+                case "isFirst":
+                    return index == 0 ? Results.TRUE : Results.FALSE;
                 case "isOdd":
                 case "odd":
                     return (index % 2 == 0) ? Results.TRUE : Results.FALSE;

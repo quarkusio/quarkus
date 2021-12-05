@@ -96,13 +96,12 @@ public class ResteasyBuiltinsProcessor {
     }
 
     @BuildStep
-    void vertxProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers, Capabilities capabilities) {
-        if (capabilities.isPresent(Capability.JACKSON)) {
-            providers.produce(new ResteasyJaxrsProviderBuildItem(JsonArrayReader.class.getName()));
-            providers.produce(new ResteasyJaxrsProviderBuildItem(JsonArrayWriter.class.getName()));
-            providers.produce(new ResteasyJaxrsProviderBuildItem(JsonObjectReader.class.getName()));
-            providers.produce(new ResteasyJaxrsProviderBuildItem(JsonObjectWriter.class.getName()));
-        }
+    void vertxProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+        // These providers should work even if jackson-databind is not on the classpath
+        providers.produce(new ResteasyJaxrsProviderBuildItem(JsonArrayReader.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(JsonArrayWriter.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(JsonObjectReader.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(JsonObjectWriter.class.getName()));
     }
 
     @Record(STATIC_INIT)

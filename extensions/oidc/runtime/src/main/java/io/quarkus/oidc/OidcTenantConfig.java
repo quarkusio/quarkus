@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -34,7 +36,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public ApplicationType applicationType = ApplicationType.SERVICE;
 
     /**
-     * Relative path of the OIDC authorization endpoint which authenticates the users.
+     * Relative path or absolute URL of the OIDC authorization endpoint which authenticates the users.
      * This property must be set for the 'web-app' applications if OIDC discovery is disabled.
      * This property will be ignored if the discovery is enabled.
      */
@@ -42,7 +44,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> authorizationPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC userinfo endpoint.
+     * Relative path or absolute URL of the OIDC userinfo endpoint.
      * This property must only be set for the 'web-app' applications if OIDC discovery is disabled
      * and 'authentication.user-info-required' property is enabled.
      * This property will be ignored if the discovery is enabled.
@@ -51,7 +53,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> userInfoPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC RFC7662 introspection endpoint which can introspect both opaque and JWT tokens.
+     * Relative path or absolute URL of the OIDC RFC7662 introspection endpoint which can introspect both opaque and JWT tokens.
      * This property must be set if OIDC discovery is disabled and 1) the opaque bearer access tokens have to be verified
      * or 2) JWT tokens have to be verified while the cached JWK verification set with no matching JWK is being refreshed.
      * This property will be ignored if the discovery is enabled.
@@ -60,7 +62,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> introspectionPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC JWKS endpoint which returns a JSON Web Key Verification Set.
+     * Relative path or absolute URL of the OIDC JWKS endpoint which returns a JSON Web Key Verification Set.
      * This property should be set if OIDC discovery is disabled and the local JWT verification is required.
      * This property will be ignored if the discovery is enabled.
      */
@@ -68,7 +70,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> jwksPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC end_session_endpoint.
+     * Relative path or absolute URL of the OIDC end_session_endpoint.
      * This property must be set if OIDC discovery is disabled and RP Initiated Logout support for the 'web-app' applications is
      * required.
      * This property will be ignored if the discovery is enabled.
@@ -148,6 +150,18 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<String> postLogoutPath = Optional.empty();
 
+        /**
+         * Name of the post logout URI parameter which will be added as a query parameter to the logout redirect URI.
+         */
+        @ConfigItem(defaultValue = OidcConstants.POST_LOGOUT_REDIRECT_URI)
+        public String postLogoutUriParam;
+
+        /**
+         * Additional properties which will be added as the query parameters to the logout redirect URI.
+         */
+        @ConfigItem
+        public Map<String, String> extraParams;
+
         public void setPath(Optional<String> path) {
             this.path = path;
         }
@@ -162,6 +176,22 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public Optional<String> getPostLogoutPath() {
             return postLogoutPath;
+        }
+
+        public Map<String, String> getExtraParams() {
+            return extraParams;
+        }
+
+        public void setExtraParams(Map<String, String> extraParams) {
+            this.extraParams = extraParams;
+        }
+
+        public String getPostLogoutUriParam() {
+            return postLogoutUriParam;
+        }
+
+        public void setPostLogoutUriParam(String postLogoutUriParam) {
+            this.postLogoutUriParam = postLogoutUriParam;
         }
     }
 
@@ -475,6 +505,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean cookieForceSecure;
 
         /**
+         * Cookie name suffix.
+         * For example, a session cookie name for the default OIDC tenant is 'q_session' but can be changed to 'q_session_test'
+         * if this property is set to 'test'.
+         */
+        @ConfigItem
+        public Optional<String> cookieSuffix = Optional.empty();
+
+        /**
          * Cookie path parameter value which, if set, will be used to set a path parameter for the session, state and post
          * logout cookies.
          * The `cookie-path-header` property, if set, will be checked first.
@@ -652,6 +690,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.idTokenRequired = idTokenRequired;
         }
 
+        public Optional<String> getCookieSuffix() {
+            return cookieSuffix;
+        }
+
+        public void setCookieSuffix(String cookieSuffix) {
+            this.cookieSuffix = Optional.of(cookieSuffix);
+        }
+
     }
 
     @ConfigGroup
@@ -726,20 +772,6 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem
         public boolean refreshExpired;
-
-        /**
-         * Token auto-refresh interval in seconds during the user re-authentication.
-         * If this option is set then the valid ID token will be refreshed if it will expire in less than a number of seconds
-         * set by this option. The user will still be authenticated if the ID token can no longer be refreshed but is still
-         * valid.
-         * This option will be ignored if the 'refresh-expired' property is not enabled.
-         *
-         * Note this property is deprecated and will be removed in one of the next releases.
-         * Please use 'quarkus.oidc.token.refresh-token-time-skew'
-         */
-        @ConfigItem
-        @Deprecated
-        public Optional<Duration> autoRefreshInterval = Optional.empty();
 
         /**
          * Refresh token time skew in seconds.

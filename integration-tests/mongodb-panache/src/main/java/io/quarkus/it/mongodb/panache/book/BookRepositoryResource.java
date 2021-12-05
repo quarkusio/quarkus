@@ -84,12 +84,6 @@ public class BookRepositoryResource {
     }
 
     @GET
-    @Path("/legacy-search/{author}")
-    public List<LegacyBookShortView> getLegacyBooksByAuthor(@PathParam("author") String author) {
-        return bookRepository.find("author", author).project(LegacyBookShortView.class).list();
-    }
-
-    @GET
     @Path("/search")
     public Book search(@QueryParam("author") String author, @QueryParam("title") String title,
             @QueryParam("dateFrom") String dateFrom, @QueryParam("dateTo") String dateTo) {

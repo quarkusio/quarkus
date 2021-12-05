@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.common.model;
 public class BeanParamInfo implements InjectableBean {
     private boolean isFormParamRequired;
     private boolean isInjectionRequired;
+    private int fieldExtractorsCount;
 
     @Override
     public boolean isFormParamRequired() {
@@ -24,5 +25,15 @@ public class BeanParamInfo implements InjectableBean {
     public InjectableBean setInjectionRequired(boolean isInjectionRequired) {
         this.isInjectionRequired = isInjectionRequired;
         return this;
+    }
+
+    @Override
+    public int getFieldExtractorsCount() {
+        return fieldExtractorsCount;
+    }
+
+    @Override
+    public void setFieldExtractorsCount(int fieldExtractorsCount) {
+        this.fieldExtractorsCount = fieldExtractorsCount;
     }
 }

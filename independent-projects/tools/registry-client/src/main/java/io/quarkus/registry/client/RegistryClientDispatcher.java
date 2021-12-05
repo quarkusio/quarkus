@@ -33,18 +33,18 @@ public class RegistryClientDispatcher implements RegistryClient {
     }
 
     @Override
-    public PlatformCatalog resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
+    public PlatformCatalog.Mutable resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
         return platforms == null ? null : platforms.resolvePlatforms(quarkusVersion);
     }
 
     @Override
-    public ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platformCoords)
+    public ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platformCoords)
             throws RegistryResolutionException {
         return platformExtensions.resolvePlatformExtensions(platformCoords);
     }
 
     @Override
-    public ExtensionCatalog resolveNonPlatformExtensions(String quarkusVersion) throws RegistryResolutionException {
+    public ExtensionCatalog.Mutable resolveNonPlatformExtensions(String quarkusVersion) throws RegistryResolutionException {
         return nonPlatformExtensions == null ? null
                 : nonPlatformExtensions.resolveNonPlatformExtensions(quarkusVersion);
     }

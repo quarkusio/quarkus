@@ -22,6 +22,8 @@ import javax.net.ssl.SSLContext;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
@@ -45,9 +47,12 @@ public class ClientBuilderImpl extends ClientBuilder {
     private boolean followRedirects;
     private boolean trustAll;
 
+    private LoggingScope loggingScope;
+    private Integer loggingBodySize = 100;
     private MultiQueryParamMode multiQueryParamMode;
 
     private HttpClientOptions httpClientOptions = new HttpClientOptions();
+    private ClientLogger clientLogger = new DefaultClientLogger();
 
     @Override
     public ClientBuilder withConfig(Configuration config) {
@@ -123,6 +128,21 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder loggingScope(LoggingScope loggingScope) {
+        this.loggingScope = loggingScope;
+        return this;
+    }
+
+    public ClientBuilder loggingBodySize(Integer loggingBodySize) {
+        this.loggingBodySize = loggingBodySize;
+        return this;
+    }
+
+    public ClientBuilder clientLogger(ClientLogger clientLogger) {
+        this.clientLogger = clientLogger;
+        return this;
+    }
+
     @Override
     public ClientImpl build() {
         Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
@@ -158,13 +178,17 @@ public class ClientBuilderImpl extends ClientBuilder {
                             .setPort(proxyPort));
         }
 
+        clientLogger.setBodySize(loggingBodySize);
+
         return new ClientImpl(httpClientOptions,
                 configuration,
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),
                 hostnameVerifier,
                 sslContext,
                 followRedirects,
-                multiQueryParamMode);
+                multiQueryParamMode,
+                loggingScope,
+                clientLogger);
 
     }
 

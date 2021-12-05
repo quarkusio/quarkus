@@ -2,6 +2,8 @@ package io.quarkus.it.keycloak;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.util.Set;
@@ -12,6 +14,7 @@ import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.util.Cookie;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
@@ -40,6 +43,13 @@ public class CodeFlowAuthorizationTest {
             page = form.getInputByValue("login").click();
 
             assertEquals("alice", page.getBody().asText());
+            assertNotNull(getSessionCookie(webClient, "code-flow"));
+
+            page = webClient.getPage("http://localhost:8081/code-flow/logout");
+            assertEquals("Welcome, clientId: quarkus-web-app", page.getBody().asText());
+            assertNull(getSessionCookie(webClient, "code-flow"));
+            // Clear the post logout cookie
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -56,7 +66,9 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice:alice", page.getBody().asText());
+            assertNotNull(getSessionCookie(webClient, "code-flow-user-info-only"));
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -75,5 +87,9 @@ public class CodeFlowAuthorizationTest {
                                 "  \"access_token\": \""
                                 + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
                                 + "}")));
+    }
+
+    private Cookie getSessionCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
     }
 }

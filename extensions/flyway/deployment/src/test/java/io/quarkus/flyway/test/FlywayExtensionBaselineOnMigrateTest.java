@@ -6,8 +6,6 @@ import javax.inject.Inject;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -28,7 +26,7 @@ public class FlywayExtensionBaselineOnMigrateTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setBeforeAllCustomizer(customizer::startH2)
             .setAfterAllCustomizer(customizer::stopH2)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(FlywayH2TestCustomizer.class)
                     .addAsResource("baseline-on-migrate.properties", "application.properties"));
 

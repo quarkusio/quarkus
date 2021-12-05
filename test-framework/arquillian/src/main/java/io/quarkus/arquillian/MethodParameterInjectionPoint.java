@@ -63,8 +63,9 @@ public class MethodParameterInjectionPoint<T> implements InjectionPoint {
     }
 
     private Type findTypeOrGenericType() {
-        if (method.getGenericParameterTypes().length > 0) {
-            return method.getGenericParameterTypes()[position];
+        Type[] genericParameterTypes = method.getGenericParameterTypes();
+        if (genericParameterTypes.length > 0) {
+            return genericParameterTypes[position];
         }
         return method.getParameterTypes()[position];
     }

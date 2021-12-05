@@ -26,6 +26,8 @@ public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse
 
     Iterable<Map.Entry<String, String>> getAllResponseHeaders();
 
+    String getResponseHeader(String name);
+
     boolean closed();
 
     ServerHttpResponse setChunked(boolean chunked);

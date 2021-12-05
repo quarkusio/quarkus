@@ -3,8 +3,6 @@ package io.quarkus.hibernate.orm;
 import javax.inject.Inject;
 
 import org.hibernate.Session;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.wildfly.common.Assert;
@@ -27,7 +25,7 @@ public class JPAFastBootingTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(Address.class))
             .withConfigurationResource("application.properties")
             .addClassLoaderEventListener(limitsChecker);

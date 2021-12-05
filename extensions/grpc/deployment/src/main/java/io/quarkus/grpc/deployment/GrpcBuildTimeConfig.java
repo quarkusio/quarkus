@@ -6,11 +6,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class GrpcBuildTimeConfig {
-    /**
-     * Whether or not metrics are published in case a metrics extension is present.
-     */
-    @ConfigItem(name = "metrics.enabled")
-    public boolean metricsEnabled;
 
     /**
      * Configuration gRPC dev mode.

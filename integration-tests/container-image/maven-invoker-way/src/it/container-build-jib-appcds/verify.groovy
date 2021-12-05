@@ -1,12 +1,6 @@
 import io.quarkus.deployment.util.ExecUtil
-import io.quarkus.runtime.util.JavaVersionUtil
 
 import java.util.concurrent.ThreadLocalRandom
-
-if (!JavaVersionUtil.java11OrHigher) {
-    // AppCDS don't work in Java 8
-    return
-}
 
 try {
     ExecUtil.exec("docker", "version", "--format", "'{{.Server.Version}}'")

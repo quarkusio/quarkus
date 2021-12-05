@@ -63,7 +63,7 @@
         {
             "category": "Messaging2",
             "timeout": 70,
-            "test-modules": "artemis-core, artemis-jms, reactive-messaging-amqp, reactive-messaging-http",
+            "test-modules": "artemis-core, artemis-jms, reactive-messaging-amqp, reactive-messaging-http, reactive-messaging-rabbitmq",
             "os-name": "ubuntu-latest"
         },
         {
@@ -92,8 +92,8 @@
         },
         {
             "category": "HTTP",
-            "timeout": 75,
-            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client",
+            "timeout": 90,
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart",
             "os-name": "ubuntu-latest"
         },
         {
@@ -133,9 +133,9 @@
             "os-name": "ubuntu-latest"
         },
         {
-            "category": "Windows - hibernate-validator",
+            "category": "Windows - RESTEasy Jackson",
             "timeout": 20,
-            "test-modules": "hibernate-validator",
+            "test-modules": "resteasy-jackson",
             "os-name": "windows-latest"
         },
         {

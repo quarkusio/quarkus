@@ -9,8 +9,6 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,7 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class LoggingWithPanacheTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(LoggingBean.class, NoStackTraceTestException.class))
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".min-level", "TRACE")
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".level", "TRACE")

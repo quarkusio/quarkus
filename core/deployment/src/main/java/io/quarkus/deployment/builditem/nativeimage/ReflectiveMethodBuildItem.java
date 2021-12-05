@@ -25,11 +25,13 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
     }
 
     public ReflectiveMethodBuildItem(Method method) {
-        String[] params = new String[method.getParameterTypes().length];
-        for (int i = 0; i < params.length; ++i) {
-            params[i] = method.getParameterTypes()[i].getName();
+        this.params = new String[method.getParameterCount()];
+        if (method.getParameterCount() > 0) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            for (int i = 0; i < params.length; ++i) {
+                params[i] = parameterTypes[i].getName();
+            }
         }
-        this.params = params;
         this.name = method.getName();
         this.declaringClass = method.getDeclaringClass().getName();
     }

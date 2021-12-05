@@ -45,4 +45,4 @@ mvn package -Pnative -Dquarkus.native.container-build=true
 
 You can then execute your native executable with: `./target/test-codestart-1.0.0-codestart-runner`
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.html.
+If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.

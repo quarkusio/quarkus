@@ -189,6 +189,7 @@ public class DevModeMain implements Closeable {
             } catch (IOException | InterruptedException e) {
                 log.warn("Unable to link .env file", e);
             }
+            link.toFile().deleteOnExit();
         }
     }
 

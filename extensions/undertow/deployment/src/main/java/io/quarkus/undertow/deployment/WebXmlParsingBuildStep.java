@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -91,7 +91,7 @@ public class WebXmlParsingBuildStep {
         } else {
             result = new WebMetaData();
         }
-        Set<WebFragmentMetaData> webFragments = parseWebFragments(applicationArchivesBuildItem);
+        List<WebFragmentMetaData> webFragments = parseWebFragments(applicationArchivesBuildItem);
         for (WebFragmentMetaData webFragment : webFragments) {
             //merge in any web fragments
             //at the moment this is fairly simplistic, as it does not handle all the ordering and metadata complete bits
@@ -107,8 +107,8 @@ public class WebXmlParsingBuildStep {
     /**
      * parse web-fragment.xml
      */
-    private Set<WebFragmentMetaData> parseWebFragments(ApplicationArchivesBuildItem applicationArchivesBuildItem) {
-        Set<WebFragmentMetaData> webFragments = new LinkedHashSet<>();
+    private List<WebFragmentMetaData> parseWebFragments(ApplicationArchivesBuildItem applicationArchivesBuildItem) {
+        List<WebFragmentMetaData> webFragments = new ArrayList<>();
         for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
             Path webFragment = archive.getChildPath(WEB_FRAGMENT_XML);
             if (webFragment != null && Files.isRegularFile(webFragment)) {

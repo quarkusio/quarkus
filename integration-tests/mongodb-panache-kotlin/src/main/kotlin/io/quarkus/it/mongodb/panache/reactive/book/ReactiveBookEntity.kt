@@ -1,7 +1,7 @@
 package io.quarkus.it.mongodb.panache.reactive.book
 
 import io.quarkus.it.mongodb.panache.book.BookDetail
-import io.quarkus.mongodb.panache.MongoEntity
+import io.quarkus.mongodb.panache.common.MongoEntity
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoCompanion
 import io.quarkus.mongodb.panache.kotlin.reactive.ReactivePanacheMongoEntity
 import org.bson.codecs.pojo.annotations.BsonIgnore

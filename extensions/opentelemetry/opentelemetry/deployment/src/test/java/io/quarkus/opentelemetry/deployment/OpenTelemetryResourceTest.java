@@ -11,8 +11,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +27,7 @@ public class OpenTelemetryResourceTest {
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setBeforeAllCustomizer(() -> System.setProperty(RESOURCE_ATTRIBUTES, "service.name=authservice"))
             .setAfterAllCustomizer(() -> System.getProperties().remove(RESOURCE_ATTRIBUTES))
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(TestUtil.class)
                     .addAsResource("resource-config/application.properties"));
 

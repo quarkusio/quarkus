@@ -39,6 +39,7 @@ public interface CompilationProvider extends Closeable {
         private final File outputDirectory;
         private final Charset sourceEncoding;
         private final List<String> compilerOptions;
+        private final String releaseJavaVersion;
         private final String sourceJavaVersion;
         private final String targetJvmVersion;
         private final List<String> compilePluginArtifacts;
@@ -52,6 +53,7 @@ public interface CompilationProvider extends Closeable {
                 File outputDirectory,
                 String sourceEncoding,
                 List<String> compilerOptions,
+                String releaseJavaVersion,
                 String sourceJavaVersion,
                 String targetJvmVersion,
                 List<String> compilePluginArtifacts,
@@ -64,6 +66,7 @@ public interface CompilationProvider extends Closeable {
             this.outputDirectory = outputDirectory;
             this.sourceEncoding = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
             this.compilerOptions = compilerOptions == null ? new ArrayList<String>() : compilerOptions;
+            this.releaseJavaVersion = releaseJavaVersion;
             this.sourceJavaVersion = sourceJavaVersion;
             this.targetJvmVersion = targetJvmVersion;
             this.compilePluginArtifacts = compilePluginArtifacts;
@@ -96,6 +99,10 @@ public interface CompilationProvider extends Closeable {
 
         public List<String> getCompilerOptions() {
             return compilerOptions;
+        }
+
+        public String getReleaseJavaVersion() {
+            return releaseJavaVersion;
         }
 
         public String getSourceJavaVersion() {

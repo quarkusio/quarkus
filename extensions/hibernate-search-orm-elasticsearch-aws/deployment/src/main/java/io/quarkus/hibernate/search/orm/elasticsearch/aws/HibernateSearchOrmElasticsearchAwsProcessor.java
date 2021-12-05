@@ -6,8 +6,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
+import io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem;
+import io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.aws.runtime.HibernateSearchOrmElasticsearchAwsRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.aws.runtime.HibernateSearchOrmElasticsearchAwsRuntimeConfig;
 
@@ -19,14 +19,13 @@ class HibernateSearchOrmElasticsearchAwsProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setRuntimeConfig(HibernateSearchOrmElasticsearchAwsRecorder recorder,
             HibernateSearchOrmElasticsearchAwsRuntimeConfig runtimeConfig,
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
-            BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
-            runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(
-                    HIBERNATE_SEARCH_ORM_ELASTICSEARCH_AWS,
-                    puDescriptor.getPersistenceUnitName())
-                            .setInitListener(
-                                    recorder.createRuntimeInitListener(runtimeConfig, puDescriptor.getPersistenceUnitName())));
+            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            BuildProducer<HibernateSearchIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
+        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
+            String puName = configuredPersistenceUnit.getPersistenceUnitName();
+            runtimeConfigured.produce(new HibernateSearchIntegrationRuntimeConfiguredBuildItem(
+                    HIBERNATE_SEARCH_ORM_ELASTICSEARCH_AWS, puName,
+                    recorder.createRuntimeInitListener(runtimeConfig, puName)));
         }
     }
 

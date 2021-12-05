@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.AbstractObjectAssert;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,7 +23,7 @@ public class BasicOpenshiftTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("basic-openshift")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift.properties");

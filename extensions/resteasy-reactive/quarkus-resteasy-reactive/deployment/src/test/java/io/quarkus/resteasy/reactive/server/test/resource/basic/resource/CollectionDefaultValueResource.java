@@ -15,6 +15,11 @@ import org.junit.jupiter.api.Assertions;
 public class CollectionDefaultValueResource {
 
     private static class MyParams {
+
+        public MyParams() {
+            System.out.println("constructed");
+        }
+
         @QueryParam("nada")
         List<String> params;
         @DefaultValue("foo")

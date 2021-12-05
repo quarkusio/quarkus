@@ -606,8 +606,6 @@ is not used at all (since all the necessary plumbing is done at build time). Sim
 * Native and named queries when using `@Query`
 * https://github.com/spring-projects/spring-data-jpa/blob/main/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
 via `EntityInformation`.
-** As of Quarkus 1.6.0, only "Version-Property and Id-Property inspection" is implemented (which should cover most cases).
-** As of Quarkus 1.7.0, `org.springframework.data.domain.Persistable` is also implemented.
 
 The Quarkus team is exploring various alternatives to bridging the gap between the JPA and Reactive worlds.
 

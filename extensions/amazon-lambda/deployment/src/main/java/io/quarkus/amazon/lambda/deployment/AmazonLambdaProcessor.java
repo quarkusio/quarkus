@@ -162,15 +162,17 @@ public final class AmazonLambdaProcessor {
         // for reflection.  Shouldn't have to do this.
         for (Method method : handlerClass.getMethods()) {
             if (method.getName().equals("handleRequest")
-                    && method.getParameterTypes().length == 2
-                    && !method.getParameterTypes()[0].equals(Object.class)) {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, true, true, method.getParameterTypes()[0].getName()));
-                reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, true, true, method.getReturnType().getName()));
-                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, true, true,
-                        DateTime.class));
-                break;
+                    && method.getParameterCount() == 2) {
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                if (!parameterTypes[0].equals(Object.class)) {
+                    reflectiveClassBuildItemBuildProducer
+                            .produce(new ReflectiveClassBuildItem(true, true, true, parameterTypes[0].getName()));
+                    reflectiveClassBuildItemBuildProducer
+                            .produce(new ReflectiveClassBuildItem(true, true, true, method.getReturnType().getName()));
+                    reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, true, true,
+                            DateTime.class));
+                    break;
+                }
             }
         }
     }

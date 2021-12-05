@@ -61,6 +61,6 @@ public class PropertiesUtil {
 
     public static final boolean getBoolean(String name, boolean notFoundValue) {
         final String value = getProperty(name, (notFoundValue ? TRUE : FALSE));
-        return value.isEmpty() ? true : Boolean.parseBoolean(value);
+        return value.isEmpty() || Boolean.parseBoolean(value);
     }
 }

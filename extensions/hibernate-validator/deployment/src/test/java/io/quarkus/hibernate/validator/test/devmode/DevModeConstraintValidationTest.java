@@ -2,8 +2,6 @@ package io.quarkus.hibernate.validator.test.devmode;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class DevModeConstraintValidationTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestBean.class,
+            .withApplicationRoot((jar) -> jar.addClasses(TestBean.class,
                     DevModeTestResource.class, ClassLevelConstraint.class, ClassLevelValidator.class, DependentTestBean.class));
 
     @Test

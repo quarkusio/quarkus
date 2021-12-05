@@ -3,8 +3,6 @@ package io.quarkus.hibernate.orm.panache.deployment.test.multiple_pu;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,7 +15,7 @@ public class DefaultPersistenceUnitConfigTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(FirstEntity.class, SecondEntity.class, PanacheTestResource.class)
                     .addAsResource("application-test.properties", "application.properties"));
 

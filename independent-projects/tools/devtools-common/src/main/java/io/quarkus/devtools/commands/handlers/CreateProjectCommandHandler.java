@@ -30,10 +30,10 @@ import io.quarkus.devtools.project.codegen.ProjectGenerator;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.CatalogMergeUtility;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
-import io.quarkus.registry.catalog.json.JsonCatalogMerger;
 import io.quarkus.registry.catalog.selection.ExtensionOrigins;
 import io.quarkus.registry.catalog.selection.OriginCombination;
 import io.quarkus.registry.catalog.selection.OriginPreference;
@@ -90,7 +90,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         final List<ArtifactCoords> platformBoms = new ArrayList<>(Math.max(extensionOrigins.size(), 1));
         if (extensionOrigins.size() > 0) {
             // necessary to set the versions from the selected origins
-            extensionsToAdd = computeRequiredExtensions(JsonCatalogMerger.merge(extensionOrigins), extensionsQuery,
+            extensionsToAdd = computeRequiredExtensions(CatalogMergeUtility.merge(extensionOrigins), extensionsQuery,
                     invocation.log());
             // collect platform BOMs to import
             boolean sawFirstPlatform = false;

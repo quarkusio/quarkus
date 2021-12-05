@@ -4,12 +4,14 @@ import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.io.Closeable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -327,7 +329,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 storedMethodCalls.add(storedMethodCall);
                 Class<?> returnType = method.getReturnType();
                 if (method.getName().equals("toString")
-                        && method.getParameterTypes().length == 0
+                        && method.getParameterCount() == 0
                         && returnType.equals(String.class)) {
                     return proxy.getClass().getName();
                 }
@@ -414,17 +416,17 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     return staticInit;
                 }
                 if (method.getName().equals("toString")
-                        && method.getParameterTypes().length == 0
+                        && method.getParameterCount() == 0
                         && method.getReturnType().equals(String.class)) {
                     return "Runtime proxy of " + returnType + " with id " + key;
                 }
                 if (method.getName().equals("hashCode")
-                        && method.getParameterTypes().length == 0
+                        && method.getParameterCount() == 0
                         && method.getReturnType().equals(int.class)) {
                     return System.identityHashCode(proxy);
                 }
                 if (method.getName().equals("equals")
-                        && method.getParameterTypes().length == 1
+                        && method.getParameterCount() == 1
                         && method.getParameterTypes()[0] == Object.class
                         && method.getReturnType().equals(boolean.class)) {
                     return proxy == args[0];
@@ -496,9 +498,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     //for every parameter that was passed into the method we create a deferred value
                     //this will allocate a space in the array, so the value can be deserialized correctly
                     //even if the code for an invocation is split over several methods
+                    Class<?>[] parameterTypes = call.method.getParameterTypes();
+                    Annotation[][] parameterAnnotations = call.method.getParameterAnnotations();
                     for (int i = 0; i < call.parameters.length; ++i) {
                         call.deferredParameters[i] = loadObjectInstance(call.parameters[i], parameterMap,
-                                call.method.getParameterTypes()[i], Arrays.stream(call.method.getParameterAnnotations()[i])
+                                parameterTypes[i], Arrays.stream(parameterAnnotations[i])
                                         .anyMatch(s -> s.annotationType() == RelaxedValidation.class));
                     }
                 } catch (Exception e) {
@@ -1147,19 +1151,20 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
             int count = 0;
             nonDefaultConstructorHandles = new DeferredParameter[params.size()];
+            Class<?>[] parameterTypes = nonDefaultConstructorHolder.constructor.getParameterTypes();
             for (int i = 0; i < params.size(); i++) {
                 Object obj = params.get(i);
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
-                        nonDefaultConstructorHolder.constructor.getParameterTypes()[count++], relaxedValidation);
+                        parameterTypes[count++], relaxedValidation);
             }
         } else if (classesToUseRecorableConstructor.contains(param.getClass())) {
             Constructor<?> current = null;
             int count = 0;
             for (var c : param.getClass().getConstructors()) {
-                if (current == null || current.getParameterTypes().length < c.getParameterTypes().length) {
+                if (current == null || current.getParameterCount() < c.getParameterCount()) {
                     current = c;
                     count = 0;
-                } else if (current != null && current.getParameterTypes().length == c.getParameterTypes().length) {
+                } else if (current != null && current.getParameterCount() == c.getParameterCount()) {
                     count++;
                 }
             }
@@ -1168,18 +1173,25 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
             nonDefaultConstructorHolder = new NonDefaultConstructorHolder(current, null);
             nonDefaultConstructorHandles = new DeferredParameter[current.getParameterCount()];
-            for (int i = 0; i < current.getParameterCount(); ++i) {
-                String name = current.getParameters()[i].getName();
-                constructorParamNameMap.put(name, i);
+            if (current.getParameterCount() > 0) {
+                Parameter[] parameters = current.getParameters();
+                for (int i = 0; i < current.getParameterCount(); ++i) {
+                    String name = parameters[i].getName();
+                    constructorParamNameMap.put(name, i);
+                }
             }
         } else {
             for (Constructor<?> ctor : param.getClass().getConstructors()) {
                 if (ctor.isAnnotationPresent(RecordableConstructor.class)) {
                     nonDefaultConstructorHolder = new NonDefaultConstructorHolder(ctor, null);
                     nonDefaultConstructorHandles = new DeferredParameter[ctor.getParameterCount()];
-                    for (int i = 0; i < ctor.getParameterCount(); ++i) {
-                        String name = ctor.getParameters()[i].getName();
-                        constructorParamNameMap.put(name, i);
+
+                    if (ctor.getParameterCount() > 0) {
+                        Parameter[] ctorParameters = ctor.getParameters();
+                        for (int i = 0; i < ctor.getParameterCount(); ++i) {
+                            String name = ctorParameters[i].getName();
+                            constructorParamNameMap.put(name, i);
+                        }
                     }
                     break;
                 }
@@ -1319,10 +1331,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                                 for (Method m : param.getClass().getMethods()) {
                                     if (m.getName().equals(i.getWriteMethod().getName())) {
-                                        if (m.getParameterTypes().length > 0
-                                                && m.getParameterTypes()[0].isAssignableFrom(param.getClass())) {
-                                            propertyType = m.getParameterTypes()[0];
-                                            break;
+                                        if (m.getParameterCount() > 0) {
+                                            Class<?>[] parameterTypes = m.getParameterTypes();
+                                            if (parameterTypes[0].isAssignableFrom(param.getClass())) {
+                                                propertyType = parameterTypes[0];
+                                                break;
+                                            }
                                         }
                                     }
 

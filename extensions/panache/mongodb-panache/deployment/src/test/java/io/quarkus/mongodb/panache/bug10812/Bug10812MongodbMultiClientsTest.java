@@ -2,8 +2,6 @@ package io.quarkus.mongodb.panache.bug10812;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -12,7 +10,7 @@ import io.quarkus.test.QuarkusUnitTest;
 class Bug10812MongodbMultiClientsTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(
                             Bug10812BookNotAnnotatedEntity.class,
                             Bug10812BookDefaultClientNameEntity.class,

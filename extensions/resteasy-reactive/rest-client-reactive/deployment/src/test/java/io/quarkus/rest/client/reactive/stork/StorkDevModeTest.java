@@ -8,8 +8,6 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.io.File;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -42,7 +40,7 @@ public class StorkDevModeTest {
 
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PassThroughResource.class, HelloResource.class, HelloClient.class)
                     .addAsResource(
                             new File("src/test/resources/stork-dev-application.properties"),

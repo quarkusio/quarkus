@@ -73,6 +73,7 @@ Then the service interface name is: `hello.Greeter`, the Mutiny stub name is: `h
 [source, java]
 ----
 import io.quarkus.grpc.GrpcClient;
+import io.smallrye.mutiny.Uni;
 
 import hello.Greeter;
 
@@ -102,7 +103,6 @@ public class ExampleResource {
 
 [source, java]
 ----
----
 import io.quarkus.grpc.GrpcClient;
 
 import hello.GreeterGrpc.GreeterBlockingStub;
@@ -153,6 +153,7 @@ import io.grpc.examples.streaming.MutinyStreamingGrpc;
 import io.quarkus.grpc.GrpcClient;
 
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -171,7 +172,7 @@ public class StreamingEndpoint {
     @GET
     public Multi<String> invokeSource() {
         // Retrieve a stream
-        return client.source(Empty.newBuilder().build())
+        return streaming.source(Empty.newBuilder().build())
                 .onItem().transform(Item::getValue);
     }
 
@@ -182,7 +183,7 @@ public class StreamingEndpoint {
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
                 .map(i -> Item.newBuilder().setValue(i).build());
-        return client.sink(inputs).onItem().ignore().andContinueWithNull();
+        return streaming.sink(inputs).onItem().ignore().andContinueWithNull();
     }
 
     @GET
@@ -192,7 +193,7 @@ public class StreamingEndpoint {
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
                 .map(i -> Item.newBuilder().setValue(i).build());
-        return client.pipe(inputs).onItem().transform(Item::getValue);
+        return streaming.pipe(inputs).onItem().transform(Item::getValue);
     }
 
 }
@@ -333,3 +334,40 @@ public class MyInterceptor implements ClientInterceptor, Prioritized {
 
 Interceptors with the highest priority are called first.
 The default priority, used if the interceptor does not implement the `Prioritized` interface, is `0`.
+
+== gRPC Client metrics
+
+=== Enabling metrics collection
+
+gRPC client metrics are automatically enabled when the application also uses the xref:micrometer.adoc[`quarkus-micrometer`] extension.
+Micrometer collects the metrics of all the gRPC clients used by the application.
+
+As an example, if you export the metrics to Prometheus, you will get:
+
+[source, text]
+----
+# HELP grpc_client_responses_received_messages_total The total number of responses received
+# TYPE grpc_client_responses_received_messages_total counter
+grpc_client_responses_received_messages_total{method="SayHello",methodType="UNARY",service="helloworld.Greeter",} 6.0
+# HELP grpc_client_requests_sent_messages_total The total number of requests sent
+# TYPE grpc_client_requests_sent_messages_total counter
+grpc_client_requests_sent_messages_total{method="SayHello",methodType="UNARY",service="helloworld.Greeter",} 6.0
+# HELP grpc_client_processing_duration_seconds The total time taken for the client to complete the call, including network delay
+# TYPE grpc_client_processing_duration_seconds summary
+grpc_client_processing_duration_seconds_count{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 6.0
+grpc_client_processing_duration_seconds_sum{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 0.167411625
+# HELP grpc_client_processing_duration_seconds_max The total time taken for the client to complete the call, including network delay
+# TYPE grpc_client_processing_duration_seconds_max gauge
+grpc_client_processing_duration_seconds_max{method="SayHello",methodType="UNARY",service="helloworld.Greeter",statusCode="OK",} 0.136478028
+----
+
+The service name, method and type can be found in the _tags_.
+
+=== Disabling metrics collection
+
+To disable the gRPC client metrics when `quarkus-micrometer` is used, add the following property to the application configuration:
+
+[source, properties]
+----
+quarkus.micrometer.binder.grpc-client.enabled=false
+----

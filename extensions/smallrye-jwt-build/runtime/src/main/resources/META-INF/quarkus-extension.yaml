@@ -7,7 +7,7 @@ metadata:
   - "smallrye-jwt-build"
   - "jwt"
   - "json-web-token"
-  guide: "https://quarkus.io/guides/security-jwt"
+  guide: "https://quarkus.io/guides/security-jwt-build"
   categories:
   - "security"
   status: "stable"

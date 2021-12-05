@@ -2,14 +2,12 @@ package io.quarkus.oidc.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URI;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -33,14 +31,16 @@ public class CodeFlowDevModeTestCase {
             UnprotectedResource.class,
             CustomTenantConfigResolver.class,
             CustomTokenStateManager.class,
+            OidcConfigSource.class,
             SecretProvider.class
     };
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
-                    .addAsResource("application-dev-mode.properties", "application.properties"));
+                    .addAsResource("application-dev-mode.properties", "application.properties")
+                    .addAsServiceProvider(ConfigSource.class, OidcConfigSource.class));
 
     @Test
     public void testAccessAndRefreshTokenInjectionDevMode() throws IOException, InterruptedException {
@@ -49,13 +49,13 @@ public class CodeFlowDevModeTestCase {
 
         try (final WebClient webClient = createWebClient()) {
 
-            // Default tenant is disabled and client-id is wrong
+            // Default tenant is disabled and client secret is wrong
             HtmlPage page = webClient.getPage("http://localhost:8080/unprotected");
             assertEquals("unprotected", page.getBody().asText());
 
             try {
                 webClient.getPage("http://localhost:8080/protected");
-                fail("Exception is expected because the tenant is disabled and invalid client_id is used");
+                fail("Exception is expected because the tenant is disabled and invalid client secret is used");
             } catch (FailingHttpStatusCodeException ex) {
                 // Reported by Quarkus
                 assertEquals(401, ex.getStatusCode());
@@ -63,18 +63,26 @@ public class CodeFlowDevModeTestCase {
 
             // Enable the default tenant
             test.modifyResourceFile("application.properties", s -> s.replace("tenant-enabled=false", "tenant-enabled=true"));
-            // Default tenant is enabled, client-id is wrong
+            // Default tenant is enabled, client secret is wrong
             try {
-                webClient.getPage("http://localhost:8080/protected");
-                fail("Exception is expected because the tenant is disabled and invalid client_id is used");
+                page = webClient.getPage("http://localhost:8080/protected");
+
+                assertEquals("Sign in to quarkus", page.getTitleText());
+
+                HtmlForm loginForm = page.getForms().get(0);
+
+                loginForm.getInputByName("username").setValueAttribute("alice");
+                loginForm.getInputByName("password").setValueAttribute("alice");
+
+                page = loginForm.getInputByName("login").click();
+                fail("Exception is expected because an invalid client secret is used");
             } catch (FailingHttpStatusCodeException ex) {
-                // Reported by Keycloak
-                assertEquals(400, ex.getStatusCode());
-                assertTrue(ex.getResponse().getContentAsString().contains("Client not found"));
+                assertEquals(401, ex.getStatusCode());
             }
+            webClient.getCookieManager().clearCookies();
 
             // Now set the correct client-id
-            test.modifyResourceFile("application.properties", s -> s.replace("client-dev", "quarkus-web-app"));
+            test.modifyResourceFile("application.properties", s -> s.replace("secret-from-vault-typo", "secret-from-vault"));
 
             page = webClient.getPage("http://localhost:8080/protected");
 

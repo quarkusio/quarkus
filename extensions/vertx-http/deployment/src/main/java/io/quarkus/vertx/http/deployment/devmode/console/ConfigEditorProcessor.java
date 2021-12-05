@@ -9,13 +9,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.quarkus.arc.runtime.ConfigRecorder;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -23,6 +24,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
@@ -30,7 +32,8 @@ import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
-import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsSupplier;
+import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
+import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsRecorder;
 import io.quarkus.vertx.http.runtime.devmode.HasDevServicesSupplier;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
@@ -41,9 +44,9 @@ public class ConfigEditorProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void config(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeTemplateProducer,
-            ConfigRecorder recorder,
             List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
-            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem, BuildProducer<DevConsoleRouteBuildItem> devConsoleRouteProducer,
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig, ConfigDescriptionsRecorder recorder) {
         List<ConfigDescription> configDescriptions = new ArrayList<>();
         for (ConfigDescriptionBuildItem item : configDescriptionBuildItems) {
             configDescriptions.add(
@@ -55,22 +58,23 @@ public class ConfigEditorProcessor {
                             item.getAllowedValues(),
                             item.getConfigPhase().name()));
         }
+        Set<String> devServicesConfig = new HashSet<>();
+        if (devServicesLauncherConfig.isPresent()) {
+            devServicesConfig.addAll(devServicesLauncherConfig.get().getConfig().keySet());
+        }
 
+        ConfigDescriptionsManager configDescriptionsManager = recorder.manager(configDescriptions, devServicesConfig);
         devConsoleRuntimeTemplateProducer.produce(new DevConsoleRuntimeTemplateInfoBuildItem("config",
-                new ConfigDescriptionsSupplier(configDescriptions)));
+                configDescriptionsManager, this.getClass(), curateOutcomeBuildItem));
 
         devConsoleRuntimeTemplateProducer.produce(new DevConsoleRuntimeTemplateInfoBuildItem("hasDevServices",
                 new HasDevServicesSupplier(devServicesLauncherConfig.isPresent()
                         && devServicesLauncherConfig.get().getConfig() != null
-                        && !devServicesLauncherConfig.get().getConfig().isEmpty())));
-    }
+                        && !devServicesLauncherConfig.get().getConfig().isEmpty()),
+                this.getClass(),
+                curateOutcomeBuildItem));
 
-    @BuildStep
-    void handleRequests(BuildProducer<DevConsoleRouteBuildItem> devConsoleRouteProducer,
-            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
-
-        CurrentConfig.EDITOR = ConfigEditorProcessor::updateConfig;
-
+        devConsoleRouteProducer.produce(new DevConsoleRouteBuildItem("add-named-group", "POST", configDescriptionsManager));
         devConsoleRouteProducer.produce(new DevConsoleRouteBuildItem("config", "POST", new DevConsolePostHandler() {
             @Override
             protected void handlePost(RoutingContext event, MultiMap form) throws Exception {
@@ -78,9 +82,14 @@ public class ConfigEditorProcessor {
                 if (action.equals("updateProperty")) {
                     String name = event.request().getFormAttribute("name");
                     String value = event.request().getFormAttribute("value");
-                    Map<String, String> values = Collections.singletonMap(name, value);
-
-                    updateConfig(values);
+                    String wildcard = event.request().getFormAttribute("wildcard");
+                    if (!"true".equals(wildcard)) {
+                        Map<String, String> values = Collections.singletonMap(name, value);
+                        updateConfig(values);
+                    } else {
+                        String newProp = name + value;
+                        configDescriptionsManager.addNamedConfigGroup(newProp);
+                    }
                 } else if (action.equals("copyDevServices") && devServicesLauncherConfig.isPresent()) {
                     String environment = event.request().getFormAttribute("environment");
                     String filter = event.request().getParam("filterConfigKeys");
@@ -97,6 +106,14 @@ public class ConfigEditorProcessor {
                 }
             }
         }));
+
+    }
+
+    @BuildStep
+    void handleRequests(BuildProducer<DevConsoleRouteBuildItem> devConsoleRouteProducer,
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
+
+        CurrentConfig.EDITOR = ConfigEditorProcessor::updateConfig;
 
         devConsoleRouteProducer.produce(new DevConsoleRouteBuildItem("config/all", "GET", (e) -> {
             e.end(Buffer.buffer(getConfig()));

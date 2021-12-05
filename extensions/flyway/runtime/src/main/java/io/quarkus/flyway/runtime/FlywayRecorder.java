@@ -45,7 +45,7 @@ public class FlywayRecorder {
         FLYWAY_CONTAINERS.clear();
     }
 
-    public Supplier<Flyway> flywaySupplier(String dataSourceName) {
+    public Supplier<Flyway> flywaySupplier(String dataSourceName, boolean hasMigrations, boolean createPossible) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
         if (dataSource instanceof UnconfiguredDataSource) {
             return new Supplier<Flyway>() {
@@ -56,7 +56,8 @@ public class FlywayRecorder {
             };
         }
         FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
-        FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName);
+        FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations,
+                createPossible);
         FLYWAY_CONTAINERS.add(flywayContainer);
         return new Supplier<Flyway>() {
             @Override

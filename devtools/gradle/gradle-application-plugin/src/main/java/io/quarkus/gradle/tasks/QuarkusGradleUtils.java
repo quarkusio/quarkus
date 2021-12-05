@@ -2,7 +2,6 @@ package io.quarkus.gradle.tasks;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,27 +9,16 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
-import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.util.IoUtils;
 
 public class QuarkusGradleUtils {
 
     private static final String ERROR_COLLECTING_PROJECT_CLASSES = "Failed to collect project's classes in a temporary dir";
-
-    public static Path serializeAppModel(ApplicationModel appModel, Task context, boolean test) throws IOException {
-        final Path serializedModel = context.getTemporaryDir().toPath()
-                .resolve("quarkus-app" + (test ? "-test" : "") + "-model.dat");
-        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
-            out.writeObject(appModel);
-        }
-        return serializedModel;
-    }
 
     public static SourceSet getSourceSet(Project project, String sourceSetName) {
         final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);

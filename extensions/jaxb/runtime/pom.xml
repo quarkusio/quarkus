@@ -26,6 +26,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jaxp</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-awt</artifactId>
+        </dependency>
         <!-- Don't rely on the JDK impl to be present as it's not present in JDK 11+ -->
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>

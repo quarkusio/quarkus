@@ -2,15 +2,22 @@ package org.jboss.resteasy.reactive.server.processor;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_NUMBER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
-import io.quarkus.gizmo.MethodCreator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,8 +29,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
+import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.PathSegment;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -41,16 +52,25 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateTimeParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalTimeParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetDateTimeParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OptionalConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegmentParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ZonedDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.processor.reflection.ReflectionConverterIndexerExtension;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.server.providers.serialisers.jsonp.ServerJsonArrayHandler;
@@ -61,15 +81,17 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
 public class ServerEndpointIndexer
         extends EndpointIndexer<ServerEndpointIndexer, ServerIndexedParameter, ServerResourceMethod> {
-    private final MethodCreator initConverters;
     protected final EndpointInvokerFactory endpointInvokerFactory;
     protected final List<MethodScanner> methodScanners;
+    protected final FieldInjectionIndexerExtension fieldInjectionHandler;
+    protected final ConverterSupplierIndexerExtension converterSupplierIndexerExtension;
 
     protected ServerEndpointIndexer(AbstractBuilder builder) {
         super(builder);
-        this.initConverters = builder.initConverters;
         this.endpointInvokerFactory = builder.endpointInvokerFactory;
         this.methodScanners = new ArrayList<>(builder.methodScanners);
+        this.fieldInjectionHandler = builder.fieldInjectionIndexerExtension;
+        this.converterSupplierIndexerExtension = builder.converterSupplierIndexerExtension;
     }
 
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
@@ -117,7 +139,7 @@ public class ServerEndpointIndexer
             ParameterExtractor res = i.handleCustomParameter(paramType, anns, field, methodContext);
             if (res != null) {
                 builder.setType(ParameterType.CUSTOM);
-                builder.setCustomerParameterExtractor(res);
+                builder.setCustomParameterExtractor(res);
                 return true;
             }
         }
@@ -145,6 +167,12 @@ public class ServerEndpointIndexer
         InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
                 actualEndpointInfo,
                 existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
+        if (injectableBean.getFieldExtractorsCount() == 0) {
+            throw new DeploymentException(String.format("No annotations found on fields at '%s'. "
+                    + "Annotations like `@QueryParam` should be used in fields, not in methods.",
+                    beanParamClassInfo.name()));
+        }
+
         return injectableBean.isFormParamRequired();
     }
 
@@ -204,6 +232,9 @@ public class ServerEndpointIndexer
         currentInjectableBean = new BeanParamInfo();
         injectableBeans.put(currentTypeName, currentInjectableBean);
 
+        // validate methods
+        validateMethodsForInjectableBean(currentClassInfo);
+
         // LinkedHashMap the TCK expects that fields annotated with @BeanParam are handled last
         Map<FieldInfo, ServerIndexedParameter> fieldExtractors = new LinkedHashMap<>();
         Map<FieldInfo, ServerIndexedParameter> beanParamFields = new LinkedHashMap<>();
@@ -212,7 +243,7 @@ public class ServerEndpointIndexer
             for (AnnotationInstance i : field.annotations()) {
                 annotations.put(i.name(), i);
             }
-            ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, existingConverters,
+            ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
                     additionalReaders,
                     annotations, field.type(), field.toString(), true, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
@@ -220,9 +251,6 @@ public class ServerEndpointIndexer
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
                 //BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, result);
-            }
-            if (result.getConverter() != null) {
-                handleConverter(currentTypeName, field);
             }
             if (result.getType() == ParameterType.BEAN) {
                 beanParamFields.put(field, result);
@@ -258,18 +286,13 @@ public class ServerEndpointIndexer
             }
         }
 
-        if (!fieldExtractors.isEmpty()) {
-            handleFieldExtractors(currentTypeName, fieldExtractors, superTypeIsInjectable);
+        currentInjectableBean.setFieldExtractorsCount(fieldExtractors.size());
+
+        if (!fieldExtractors.isEmpty() && fieldInjectionHandler != null) {
+            fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable);
         }
         currentInjectableBean.setInjectionRequired(!fieldExtractors.isEmpty() || superTypeIsInjectable);
         return currentInjectableBean;
-    }
-
-    protected void handleFieldExtractors(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
-            boolean superTypeIsInjectable) {
-    }
-
-    protected void handleConverter(String currentTypeName, FieldInfo field) {
     }
 
     protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo, boolean encoded,
@@ -281,7 +304,7 @@ public class ServerEndpointIndexer
                 elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomerParameterExtractor());
+                parameterResult.getCustomParameterExtractor());
     }
 
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
@@ -291,7 +314,7 @@ public class ServerEndpointIndexer
                     existingConverters, errorLocation, hasRuntimeConverters));
         } catch (Throwable throwable) {
             throw new RuntimeException("Could not create converter for " + elementType + " for " + builder.getErrorLocation()
-                    + " of type " + builder.getType());
+                    + " of type " + builder.getType(), throwable);
         }
     }
 
@@ -327,22 +350,118 @@ public class ServerEndpointIndexer
         builder.setConverter(new PathSegmentParamConverter.Supplier());
     }
 
-    protected void handleLocalDateParam(ServerIndexedParameter builder) {
-        builder.setConverter(new LocalDateParamConverter.Supplier());
+    protected void handleTemporalParam(ServerIndexedParameter builder, DotName paramType,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            MethodInfo currentMethodInfo) {
+        String format = null;
+        String dateTimeFormatterProviderClassName = null;
+
+        AnnotationInstance dateFormatInstance = parameterAnnotations.get(DATE_FORMAT);
+
+        if (dateFormatInstance != null) {
+            AnnotationValue formatValue = dateFormatInstance.value("pattern");
+            if (formatValue != null) {
+                format = formatValue.asString();
+            }
+
+            AnnotationValue dateTimeFormatterProviderValue = dateFormatInstance.value("dateTimeFormatterProvider");
+            if (dateTimeFormatterProviderValue != null) {
+                dateTimeFormatterProviderClassName = dateTimeFormatterProviderValue.asClass().name().toString();
+            }
+        }
+
+        if ((format != null) && (dateTimeFormatterProviderClassName != null)) {
+            throw new RuntimeException(contextualizeErrorMessage(
+                    "Using both 'format' and 'dateTimeFormatterProvider' is not allowed when using '@DateFormat'",
+                    currentMethodInfo));
+        } else if ((format == null) && (dateTimeFormatterProviderClassName == null) && (dateFormatInstance != null)) {
+            throw new RuntimeException(contextualizeErrorMessage(
+                    "One of 'format' or 'dateTimeFormatterProvider' must be set when using '@DateFormat'", currentMethodInfo));
+        }
+
+        if (LOCAL_DATE.equals(paramType)) {
+            builder.setConverter(new LocalDateParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (LOCAL_DATE_TIME.equals(paramType)) {
+            builder.setConverter(new LocalDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (LOCAL_TIME.equals(paramType)) {
+            builder.setConverter(new LocalTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (OFFSET_DATE_TIME.equals(paramType)) {
+            builder.setConverter(new OffsetDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (OFFSET_TIME.equals(paramType)) {
+            builder.setConverter(new OffsetTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        } else if (ZONED_DATE_TIME.equals(paramType)) {
+            builder.setConverter(new ZonedDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName));
+            return;
+        }
+
+        throw new RuntimeException(
+                contextualizeErrorMessage("Unable to handle temporal type '" + paramType + "'", currentMethodInfo));
     }
 
-    protected ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
+    private void validateMethodsForInjectableBean(ClassInfo currentClassInfo) {
+        for (MethodInfo method : currentClassInfo.methods()) {
+            for (AnnotationInstance annotation : method.annotations()) {
+                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                    for (DotName annotationForField : JAX_RS_ANNOTATIONS_FOR_FIELDS) {
+                        if (annotation.name().equals(annotationForField)) {
+                            throw new DeploymentException(String.format(
+                                    "Method '%s' of class '%s' is annotated with @%s annotation which is prohibited. "
+                                            + "Classes uses as @BeanParam parameters must have a JAX-RS parameter annotation on "
+                                            + "fields only.",
+                                    method.name(), currentClassInfo.name().toString(),
+                                    annotation.name().withoutPackagePrefix()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String contextualizeErrorMessage(String errorMessage, MethodInfo currentMethodInfo) {
+        errorMessage += ". Offending method if '" + currentMethodInfo.name() + "' of class '"
+                + currentMethodInfo.declaringClass().name() + "'";
+        return errorMessage;
+    }
+
+    private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
             Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
-        return null;
+        if (elementType.equals(String.class.getName())) {
+            if (hasRuntimeConverters)
+                return new RuntimeResolvedConverter.Supplier().setDelegate(new NoopParameterConverter.Supplier());
+            // String needs no conversion
+            return null;
+        } else if (existingConverters.containsKey(elementType)) {
+            String className = existingConverters.get(elementType);
+            ParameterConverterSupplier delegate;
+            if (className == null)
+                delegate = null;
+            else
+                delegate = new LoadedParameterConverter().setClassName(className);
+            if (hasRuntimeConverters)
+                return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
+            if (delegate == null)
+                throw new RuntimeException("Failed to find converter for " + elementType);
+            return delegate;
+        } else if (elementType.equals(PathSegment.class.getName())) {
+            return new PathSegmentParamConverter.Supplier();
+        }
+        return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters, errorLocation,
+                hasRuntimeConverters);
     }
 
     @SuppressWarnings("unchecked")
     public static class AbstractBuilder<B extends EndpointIndexer.Builder<ServerEndpointIndexer, B, ServerResourceMethod>>
             extends EndpointIndexer.Builder<ServerEndpointIndexer, B, ServerResourceMethod> {
 
-        private MethodCreator initConverters;
         private EndpointInvokerFactory endpointInvokerFactory = new ReflectionEndpointInvokerFactory();
         private List<MethodScanner> methodScanners = new ArrayList<>();
+        private FieldInjectionIndexerExtension fieldInjectionIndexerExtension;
+        private ConverterSupplierIndexerExtension converterSupplierIndexerExtension = new ReflectionConverterIndexerExtension();
 
         public EndpointInvokerFactory getEndpointInvokerFactory() {
             return endpointInvokerFactory;
@@ -353,22 +472,23 @@ public class ServerEndpointIndexer
             return (B) this;
         }
 
-        public MethodCreator getInitConverters() {
-            return initConverters;
-        }
-
-        public B setInitConverters(MethodCreator initConverters) {
-            this.initConverters = initConverters;
-            return (B) this;
-        }
-
         public B addMethodScanner(MethodScanner methodScanner) {
             this.methodScanners.add(methodScanner);
             return (B) this;
         }
 
+        public B setConverterSupplierIndexerExtension(ConverterSupplierIndexerExtension converterSupplierIndexerExtension) {
+            this.converterSupplierIndexerExtension = converterSupplierIndexerExtension;
+            return (B) this;
+        }
+
         public B addMethodScanners(Collection<MethodScanner> methodScanners) {
             this.methodScanners.addAll(methodScanners);
+            return (B) this;
+        }
+
+        public B setFieldInjectionIndexerExtension(FieldInjectionIndexerExtension fieldInjectionHandler) {
+            this.fieldInjectionIndexerExtension = fieldInjectionHandler;
             return (B) this;
         }
 
@@ -381,4 +501,16 @@ public class ServerEndpointIndexer
     public static class Builder extends AbstractBuilder<Builder> {
 
     }
+
+    public interface FieldInjectionIndexerExtension {
+
+        void handleFieldInjection(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
+                boolean superTypeIsInjectable);
+    }
+
+    public interface ConverterSupplierIndexerExtension {
+        ParameterConverterSupplier extractConverterImpl(String elementType, IndexView indexView,
+                Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters);
+    }
+
 }

@@ -26,7 +26,9 @@ public class OptionalConverter implements ParameterConverter {
 
     @Override
     public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
-        delegate.init(deployment, rawType, genericType, annotations);
+        if (delegate != null) {
+            delegate.init(deployment, rawType, genericType, annotations);
+        }
     }
 
     public static class OptionalSupplier implements DelegatingParameterConverterSupplier {

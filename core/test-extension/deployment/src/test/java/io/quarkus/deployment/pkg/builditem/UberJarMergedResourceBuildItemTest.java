@@ -11,8 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ class UberJarMergedResourceBuildItemTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest runner = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsManifestResource("application.properties", "microprofile-config.properties")
                     .addClass(UberJarMain.class))
             .setApplicationName("uber-jar-merged")

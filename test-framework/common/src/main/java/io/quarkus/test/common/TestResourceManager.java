@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -47,11 +48,13 @@ public class TestResourceManager implements Closeable {
 
     public TestResourceManager(Class<?> testClass, Class<?> profileClass, List<TestResourceClassEntry> additionalTestResources,
             boolean disableGlobalTestResources) {
-        this(testClass, profileClass, additionalTestResources, disableGlobalTestResources, Collections.emptyMap());
+        this(testClass, profileClass, additionalTestResources, disableGlobalTestResources, Collections.emptyMap(),
+                Optional.empty());
     }
 
     public TestResourceManager(Class<?> testClass, Class<?> profileClass, List<TestResourceClassEntry> additionalTestResources,
-            boolean disableGlobalTestResources, Map<String, String> devServicesProperties) {
+            boolean disableGlobalTestResources, Map<String, String> devServicesProperties,
+            Optional<String> containerNetworkId) {
         this.parallelTestResourceEntries = new ArrayList<>();
         this.sequentialTestResourceEntries = new ArrayList<>();
 
@@ -72,6 +75,11 @@ public class TestResourceManager implements Closeable {
             @Override
             public Map<String, String> devServicesProperties() {
                 return devServicesProperties;
+            }
+
+            @Override
+            public Optional<String> containerNetworkId() {
+                return containerNetworkId;
             }
         };
         for (var i : allTestResourceEntries) {
@@ -507,8 +515,7 @@ public class TestResourceManager implements Closeable {
                 }
                 c = c.getSuperclass();
             }
-            System.err.println("Unable to determine matching fields for injection of test instance '"
-                    + testInstance.getClass().getName() + "'");
+            // no need to warn here because it's perfectly valid to have tests that don't use the injected fields
         }
 
     }

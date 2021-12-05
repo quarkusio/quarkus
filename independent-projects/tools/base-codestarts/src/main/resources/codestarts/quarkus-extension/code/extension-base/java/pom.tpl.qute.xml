@@ -32,9 +32,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <maven.compiler.release>11</maven.compiler.release>
         {#if quarkus.version}<quarkus.version>{quarkus.version}</quarkus.version>{/if}
         {#if maven.compiler-plugin-version}<compiler-plugin.version>{maven.compiler-plugin-version}</compiler-plugin.version>{/if}
         {#if maven.surefire-plugin.version}
@@ -105,6 +103,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>$\{compiler-plugin.version}</version>
+                    <configuration>
+                        <compilerArgs>
+                            <arg>-parameters</arg>
+                        </compilerArgs>
+                    </configuration>
                 </plugin>
                 {/if}
             </plugins>

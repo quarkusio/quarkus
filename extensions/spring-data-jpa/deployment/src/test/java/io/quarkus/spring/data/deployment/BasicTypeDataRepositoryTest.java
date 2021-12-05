@@ -1,15 +1,18 @@
 package io.quarkus.spring.data.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.transaction.Transactional;
@@ -23,6 +26,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -32,7 +38,7 @@ public class BasicTypeDataRepositoryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(BasicTypeData.class, BasicTypeDataRepository.class))
+                    .addClasses(WithDoubleValue.class, BasicTypeData.class, BasicTypeDataRepository.class))
             .withConfigurationResource("application.properties");
 
     private static final UUID uuid = UUID.randomUUID();
@@ -73,6 +79,49 @@ public class BasicTypeDataRepositoryTest {
     public void testTimeZonesByLocale() {
         final Set<TimeZone> timeZones = repo.timeZonesByLocale(Locale.TRADITIONAL_CHINESE);
         assertThat(timeZones).isNotEmpty().contains(TimeZone.getTimeZone("CST"));
+    }
+
+    @Test
+    @Order(5)
+    @Transactional
+    public void testMapInterfacesUsingList() {
+        List<WithDoubleValue> list = repo.findAllDoubleValuesToList();
+        Set<Double> actual = list.stream().map(WithDoubleValue::getDoubleValue).collect(Collectors.toSet());
+        assertThat(actual).isNotEmpty().contains(Math.PI);
+    }
+
+    @Test
+    @Order(6)
+    @Transactional
+    public void testMapInterfacesUsingPage() {
+        // Only 1 element in db, so it should return 1 page of 1 size
+        Page<WithDoubleValue> page = repo.findAllDoubleValuesToPage(PageRequest.of(0, 1));
+        Set<Double> actual = page.stream().map(WithDoubleValue::getDoubleValue).collect(Collectors.toSet());
+        assertThat(actual).isNotEmpty().contains(Math.PI);
+        assertEquals(1, page.getNumberOfElements());
+        assertEquals(1, page.getTotalElements());
+        assertEquals(1, page.getTotalPages());
+
+        // next page should return zero elements
+        Page<WithDoubleValue> nextPage = repo.findAllDoubleValuesToPage(PageRequest.of(1, 1));
+        assertEquals(0, nextPage.getNumberOfElements());
+        assertEquals(1, nextPage.getTotalElements());
+        assertEquals(1, nextPage.getTotalPages());
+    }
+
+    @Test
+    @Order(7)
+    @Transactional
+    public void testMapInterfacesUsingSlice() {
+        // Only 1 element in db, so it should return 1 page of 1 size
+        Slice<WithDoubleValue> slice = repo.findAllDoubleValuesToSlice(PageRequest.of(0, 1));
+        Set<Double> actual = slice.stream().map(WithDoubleValue::getDoubleValue).collect(Collectors.toSet());
+        assertThat(actual).isNotEmpty().contains(Math.PI);
+        assertEquals(1, slice.getNumberOfElements());
+
+        // next page should return zero elements
+        Slice<WithDoubleValue> nextPage = repo.findAllDoubleValuesToSlice(PageRequest.of(1, 1));
+        assertEquals(0, nextPage.getNumberOfElements());
     }
 
     private BasicTypeData populateData(BasicTypeData basicTypeData) throws MalformedURLException {

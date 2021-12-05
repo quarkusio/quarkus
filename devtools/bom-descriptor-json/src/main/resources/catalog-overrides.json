@@ -40,7 +40,8 @@
           "io.quarkus:quarkus-smallrye-reactive-messaging",
           "io.quarkus:quarkus-smallrye-reactive-messaging-amqp",
           "io.quarkus:quarkus-smallrye-reactive-messaging-kafka",
-          "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt"
+          "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt",
+          "io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq"
         ]
       }
     },

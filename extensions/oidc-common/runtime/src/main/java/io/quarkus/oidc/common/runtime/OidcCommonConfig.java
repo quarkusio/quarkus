@@ -21,14 +21,13 @@ public class OidcCommonConfig {
 
     /**
      * Enables OIDC discovery.
-     * If the discovery is disabled then the 'token-path' property must be configured.
+     * If the discovery is disabled then the OIDC endpoint URLs must be configured individually.
      */
     @ConfigItem(defaultValue = "true")
     public boolean discoveryEnabled = true;
 
     /**
-     * Relative path of the OIDC token endpoint which issues access and refresh tokens
-     * using either 'client_credentials' or 'password' grants
+     * Relative path or absolute URL of the OIDC token endpoint which issues access and refresh tokens.
      */
     @ConfigItem
     public Optional<String> tokenPath = Optional.empty();
@@ -262,10 +261,24 @@ public class OidcCommonConfig {
             public String keyPassword;
 
             /**
+             * JWT audience ('aud') claim value.
+             * By default the audience is set to the address of the OpenId Connect Provider's token endpoint.
+             */
+            @ConfigItem
+            public Optional<String> audience = Optional.empty();
+
+            /**
              * Key identifier of the signing key added as a JWT 'kid' header
              */
             @ConfigItem
             public Optional<String> tokenKeyId = Optional.empty();
+
+            /**
+             * Signature algorithm.
+             * Supported values: RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, HS256, HS384, HS512.
+             */
+            @ConfigItem
+            public Optional<String> signatureAlgorithm = Optional.empty();
 
             /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
@@ -303,6 +316,22 @@ public class OidcCommonConfig {
 
             public void setSecretProvider(Provider secretProvider) {
                 this.secretProvider = secretProvider;
+            }
+
+            public Optional<String> getSignatureAlgorithm() {
+                return signatureAlgorithm;
+            }
+
+            public void setSignatureAlgorithm(String signatureAlgorithm) {
+                this.signatureAlgorithm = Optional.of(signatureAlgorithm);
+            }
+
+            public Optional<String> getAudience() {
+                return audience;
+            }
+
+            public void setAudience(String audience) {
+                this.audience = Optional.of(audience);
             }
 
         }

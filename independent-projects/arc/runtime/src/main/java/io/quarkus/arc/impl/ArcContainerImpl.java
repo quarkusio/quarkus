@@ -17,6 +17,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.RemovedBean;
 import io.quarkus.arc.ResourceReferenceProvider;
 import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
+import java.lang.StackWalker.StackFrame;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
@@ -181,10 +183,9 @@ public class ArcContainerImpl implements ArcContainer {
     public void init() {
         requireRunning();
         // Fire an event with qualifier @Initialized(ApplicationScoped.class)
-        Set<Annotation> qualifiers = new HashSet<>(4);
-        qualifiers.add(Initialized.Literal.APPLICATION);
-        qualifiers.add(Any.Literal.INSTANCE);
-        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false).notify(toString());
+        Set<Annotation> qualifiers = Set.of(Initialized.Literal.APPLICATION, Any.Literal.INSTANCE);
+        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false)
+                .notify("@Initialized(ApplicationScoped.class)");
         // Configure CDIProvider used for CDI.current()
         CDI.setCDIProvider(new ArcCDIProvider());
         LOGGER.debugf("ArC DI container initialized [beans=%s, observers=%s]", beans.size(), observers.size());
@@ -344,7 +345,7 @@ public class ArcContainerImpl implements ArcContainer {
     public String toString() {
         return "ArcContainerImpl [id=" + id + ", running=" + running + ", beans=" + beans.size() + ", observers="
                 + observers.size() + ", scopes="
-                + getScopes() + "]";
+                + contexts.size() + "]";
     }
 
     public synchronized void shutdown() {
@@ -457,7 +458,7 @@ public class ArcContainerImpl implements ArcContainer {
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         } else {
-            Qualifiers.verify(qualifiers);
+            Qualifiers.verify(qualifiers, qualifierNonbindingMembers.keySet());
         }
         Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(requiredType, qualifiers));
         return resolvedBeans.size() != 1 ? null : (InjectableBean<T>) resolvedBeans.iterator().next();
@@ -467,7 +468,7 @@ public class ArcContainerImpl implements ArcContainer {
         if (requiredType instanceof TypeVariable) {
             throw new IllegalArgumentException("The given type is a type variable: " + requiredType);
         }
-        Qualifiers.verify(qualifiers);
+        Qualifiers.verify(qualifiers, qualifierNonbindingMembers.keySet());
         // This method does not cache the results
         return Set.of(getMatchingBeans(new Resolvable(requiredType, qualifiers)).toArray(new Bean<?>[] {}));
     }
@@ -479,6 +480,10 @@ public class ArcContainerImpl implements ArcContainer {
 
     Map<Class<? extends Annotation>, Set<Annotation>> getTransitiveInterceptorBindings() {
         return transitiveInterceptorBindings;
+    }
+
+    Set<String> getCustomQualifiers() {
+        return qualifierNonbindingMembers.keySet();
     }
 
     boolean isScope(Class<? extends Annotation> annotationType) {
@@ -631,31 +636,45 @@ public class ArcContainerImpl implements ArcContainer {
                 String msg = "\n%1$s%1$s%1$s%1$s\n"
                         + "CDI: programmatic lookup problem detected\n"
                         + "-----------------------------------------\n"
-                        + "At least one bean matched the required type and qualifiers but was marked as unused and removed during build\n"
-                        + "Removed beans:\n\t- %2$s\n"
+                        + "At least one bean matched the required type and qualifiers but was marked as unused and removed during build\n\n"
+                        + "Stack frame: %5$s\n"
                         + "Required type: %3$s\n"
                         + "Required qualifiers: %4$s\n"
+                        + "Removed beans:\n\t- %2$s\n"
                         + "Solutions:\n"
                         + "\t- Application developers can eliminate false positives via the @Unremovable annotation\n"
                         + "\t- Extensions can eliminate false positives via build items, e.g. using the UnremovableBeanBuildItem\n"
                         + "\t- See also https://quarkus.io/guides/cdi-reference#remove_unused_beans\n"
-                        + "\t- Enable the DEBUG log level to see the full stack trace to identify the method that performed the lookup\n"
+                        + "\t- Enable the DEBUG log level to see the full stack trace\n"
                         + "%1$s%1$s%1$s%1$s\n";
+                StackWalker walker = StackWalker.getInstance();
+                StackFrame frame = walker.walk(this::findCaller);
                 LOGGER.warnf(msg, separator,
                         removedMatching.stream().map(Object::toString).collect(Collectors.joining("\n\t- ")),
-                        resolvable.requiredType, Arrays.toString(resolvable.qualifiers));
+                        resolvable.requiredType, Arrays.toString(resolvable.qualifiers), frame != null ? frame : "n/a");
                 if (LOGGER.isDebugEnabled()) {
-                    StringBuilder stack = new StringBuilder("\nCDI: programmatic lookup stack trace:\n");
-                    for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-                        stack.append("\t");
-                        stack.append(e.toString());
-                        stack.append("\n");
-                    }
-                    LOGGER.debug(stack);
+                    LOGGER.debug("\nCDI: programmatic lookup stack trace:\n" + walker.walk(this::collectStack));
                 }
             }
         }
         return matching;
+    }
+
+    private StackFrame findCaller(Stream<StackFrame> stream) {
+        return stream
+                .filter(this::isCallerFrame)
+                .findFirst().orElse(null);
+    }
+
+    private String collectStack(Stream<StackFrame> stream) {
+        return stream
+                .map(Object::toString)
+                .collect(Collectors.joining("\n\t"));
+    }
+
+    private boolean isCallerFrame(StackFrame frame) {
+        String className = frame.getClassName();
+        return !className.startsWith("io.quarkus.arc.impl");
     }
 
     List<InjectableBean<?>> getMatchingBeans(String name) {
@@ -683,7 +702,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     @SuppressWarnings("unchecked")
     <T> List<InjectableObserverMethod<? super T>> resolveObservers(Type eventType, Set<Annotation> eventQualifiers) {
-        Qualifiers.verify(eventQualifiers);
+        Qualifiers.verify(eventQualifiers, qualifierNonbindingMembers.keySet());
         if (observers.isEmpty()) {
             return Collections.emptyList();
         }
@@ -829,7 +848,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     private static final class Resolvable {
 
-        private static final Set<Type> BUILT_IN_TYPES = new HashSet<>(Arrays.asList(Event.class, Instance.class));
         private static final Annotation[] ANY_QUALIFIER = { Any.Literal.INSTANCE };
 
         final Type requiredType;
@@ -837,10 +855,10 @@ public class ArcContainerImpl implements ArcContainer {
         final Annotation[] qualifiers;
 
         Resolvable(Type requiredType, Annotation[] qualifiers) {
-            // if the type is any of BUILT_IN_TYPES, the resolution simplifies type to raw type and ignores qualifiers
+            // if the type is Event or Instance (the built-in types), the resolution simplifies type to raw type and ignores qualifiers
             // this is so that every injection point matches the bean we provide for that type
             Type rawType = Reflections.getRawType(requiredType);
-            if (BUILT_IN_TYPES.contains(rawType)) {
+            if (Event.class.equals(rawType) || Instance.class.equals(rawType)) {
                 this.requiredType = rawType;
                 this.qualifiers = ANY_QUALIFIER;
             } else {

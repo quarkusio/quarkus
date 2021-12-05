@@ -1,6 +1,7 @@
 package io.quarkus.datasource.deployment.spi;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -12,7 +13,7 @@ public interface DevServicesDatasourceProvider {
     RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
             Optional<String> datasourceName,
             Optional<String> imageName, Map<String, String> additionalProperties,
-            OptionalInt port, LaunchMode launchMode);
+            OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout);
 
     default boolean isDockerRequired() {
         return true;

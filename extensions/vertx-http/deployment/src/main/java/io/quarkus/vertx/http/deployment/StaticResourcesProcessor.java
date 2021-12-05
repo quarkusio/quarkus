@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -30,6 +29,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
 /**
@@ -94,23 +94,18 @@ public class StaticResourcesProcessor {
 
     @BuildStep
     void collectStaticResources(Capabilities capabilities, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<AdditionalStaticResourceBuildItem> additionalStaticResources,
             BuildProducer<StaticResourcesBuildItem> staticResources) throws Exception {
         if (capabilities.isPresent(Capability.SERVLET)) {
             // Servlet container handles static resources
             return;
         }
         Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources(applicationArchivesBuildItem);
+        for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
+            paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
+        }
         if (!paths.isEmpty()) {
             staticResources.produce(new StaticResourcesBuildItem(paths));
-        }
-    }
-
-    @BuildStep
-    @Record(STATIC_INIT)
-    public void staticInit(Optional<StaticResourcesBuildItem> staticResources,
-            StaticResourcesRecorder recorder) throws Exception {
-        if (staticResources.isPresent()) {
-            recorder.staticInit(staticResources.get().getPaths());
         }
     }
 
@@ -120,7 +115,7 @@ public class StaticResourcesProcessor {
             CoreVertxBuildItem vertx, BeanContainerBuildItem beanContainer, BuildProducer<DefaultRouteBuildItem> defaultRoutes)
             throws Exception {
         if (staticResources.isPresent()) {
-            defaultRoutes.produce(new DefaultRouteBuildItem(recorder.start()));
+            defaultRoutes.produce(new DefaultRouteBuildItem(recorder.start(staticResources.get().getPaths())));
         }
     }
 

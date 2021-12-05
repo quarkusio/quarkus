@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import com.google.cloud.tools.jib.api.Containerizer;
@@ -210,7 +211,16 @@ public class JibProcessor {
                     containerImageConfig.password);
             containerizer = Containerizer.to(registryImage);
         } else {
-            containerizer = Containerizer.to(DockerDaemonImage.named(imageReference));
+            DockerDaemonImage dockerDaemonImage = DockerDaemonImage.named(imageReference);
+            Optional<String> dockerConfigExecutableName = ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.docker.executable-name", String.class);
+            Optional<String> jibConfigExecutableName = jibConfig.dockerExecutableName;
+            if (jibConfigExecutableName.isPresent()) {
+                dockerDaemonImage.setDockerExecutable(Paths.get(jibConfigExecutableName.get()));
+            } else if (dockerConfigExecutableName.isPresent()) {
+                dockerDaemonImage.setDockerExecutable(Paths.get(dockerConfigExecutableName.get()));
+            }
+            containerizer = Containerizer.to(dockerDaemonImage);
         }
         containerizer.setToolName("Quarkus");
         containerizer.setToolVersion(Version.getVersion());

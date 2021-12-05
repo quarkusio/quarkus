@@ -6,9 +6,7 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ public class MessageBundleTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(AppMessages.class, OtherMessages.class, AlphaMessages.class, Item.class)
                     .addAsResource(new StringAsset(
                             "{msg:hello} {msg:hello_name('Jachym')} {msg:hello_with_if_section(3)} {alpha:hello-alpha} {alpha:hello_alpha} {alpha:hello-with-param('foo')}"),

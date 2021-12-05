@@ -42,6 +42,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
@@ -238,6 +239,22 @@ public class SecurityProcessor {
                         ? SecurityProviderUtils.BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME
                         : SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_CLASS_NAME;
                 additionalProviders.produce(new NativeImageSecurityProviderBuildItem(providerName));
+            }
+        }
+    }
+
+    // Work around https://github.com/quarkusio/quarkus/issues/21374
+    @BuildStep
+    void addBouncyCastleExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports,
+            List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
+            List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
+        Optional<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider = getOne(bouncyCastleJsseProviders);
+        if (bouncyCastleJsseProvider.isPresent() && bouncyCastleJsseProvider.get().isInFipsMode()) {
+            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
+        } else {
+            Optional<BouncyCastleProviderBuildItem> bouncyCastleProvider = getOne(bouncyCastleProviders);
+            if (bouncyCastleProvider.isPresent() && bouncyCastleProvider.get().isInFipsMode()) {
+                jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
             }
         }
     }

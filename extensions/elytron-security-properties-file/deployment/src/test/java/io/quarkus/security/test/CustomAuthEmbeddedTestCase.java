@@ -1,7 +1,5 @@
 package io.quarkus.security.test;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
@@ -16,7 +14,7 @@ public class CustomAuthEmbeddedTestCase extends CustomAuthEmbeddedBase {
     };
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addClasses(CustomAuth.class)
                     .addAsResource("application-custom-auth-embedded.properties",

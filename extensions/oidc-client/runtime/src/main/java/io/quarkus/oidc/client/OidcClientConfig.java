@@ -41,6 +41,13 @@ public class OidcClientConfig extends OidcCommonConfig {
     @ConfigItem
     public Optional<Duration> refreshTokenTimeSkew = Optional.empty();
 
+    /**
+     * If the access token 'expires_in' property should be checked as an absolute time value
+     * as opposed to a duration relative to the current time.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean absoluteExpiresIn;
+
     public Grant grant = new Grant();
 
     @ConfigGroup
@@ -106,10 +113,16 @@ public class OidcClientConfig extends OidcCommonConfig {
         public String refreshTokenProperty = OidcConstants.REFRESH_TOKEN_VALUE;
 
         /**
-         * Refresh token property name in a token grant response
+         * Access token expiry property name in a token grant response
          */
         @ConfigItem(defaultValue = OidcConstants.EXPIRES_IN)
         public String expiresInProperty = OidcConstants.EXPIRES_IN;
+
+        /**
+         * Refresh token expiry property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.REFRESH_EXPIRES_IN)
+        public String refreshExpiresInProperty = OidcConstants.REFRESH_EXPIRES_IN;
 
         public Type getType() {
             return type;
@@ -141,6 +154,14 @@ public class OidcClientConfig extends OidcCommonConfig {
 
         public void setExpiresInProperty(String expiresInProperty) {
             this.expiresInProperty = expiresInProperty;
+        }
+
+        public String getRefreshExpiresInProperty() {
+            return refreshExpiresInProperty;
+        }
+
+        public void setRefreshExpiresInProperty(String refreshExpiresInProperty) {
+            this.refreshExpiresInProperty = refreshExpiresInProperty;
         }
     }
 
@@ -211,5 +232,13 @@ public class OidcClientConfig extends OidcCommonConfig {
 
     public void setHeaders(Map<String, String> headers) {
         this.headers = headers;
+    }
+
+    public boolean isAbsoluteExpiresIn() {
+        return absoluteExpiresIn;
+    }
+
+    public void setAbsoluteExpiresIn(boolean absoluteExpiresIn) {
+        this.absoluteExpiresIn = absoluteExpiresIn;
     }
 }

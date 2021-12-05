@@ -20,12 +20,12 @@
         </dependency>
 
         <dependency>
-            <groupId>io.quarkus.gizmo</groupId>
-            <artifactId>gizmo</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
             <artifactId>resteasy-reactive</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.gizmo</groupId>
+            <artifactId>gizmo</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>

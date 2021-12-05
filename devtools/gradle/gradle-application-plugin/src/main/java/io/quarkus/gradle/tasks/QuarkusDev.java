@@ -24,6 +24,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Optional;
@@ -42,6 +43,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
+import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 
@@ -49,6 +51,7 @@ public class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
     private Set<File> filesIncludedInClasspath = new HashSet<>();
+    private Configuration quarkusDevConfiguration;
 
     private File buildDir;
 
@@ -73,6 +76,15 @@ public class QuarkusDev extends QuarkusTask {
 
     public QuarkusDev(String name) {
         super(name);
+    }
+
+    @CompileClasspath
+    public Configuration getQuarkusDevConfiguration() {
+        return this.quarkusDevConfiguration;
+    }
+
+    public void setQuarkusDevConfiguration(Configuration quarkusDevConfiguration) {
+        this.quarkusDevConfiguration = quarkusDevConfiguration;
     }
 
     @InputDirectory
@@ -290,12 +302,12 @@ public class QuarkusDev extends QuarkusTask {
 
         modifyDevModeContext(builder);
 
-        final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, this, false);
+        final Path serializedModel = ToolingUtils.serializeAppModel(appModel, this, false);
         serializedModel.toFile().deleteOnExit();
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + serializedModel.toAbsolutePath());
 
         final ApplicationModel testAppModel = extension().getApplicationModel(LaunchMode.TEST);
-        final Path serializedTestModel = QuarkusGradleUtils.serializeAppModel(testAppModel, this, true);
+        final Path serializedTestModel = ToolingUtils.serializeAppModel(testAppModel, this, true);
         serializedTestModel.toFile().deleteOnExit();
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestModel.toAbsolutePath());
 

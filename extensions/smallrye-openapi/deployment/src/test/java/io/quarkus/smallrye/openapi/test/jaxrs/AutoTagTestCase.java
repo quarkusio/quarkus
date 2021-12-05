@@ -1,8 +1,6 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -12,8 +10,8 @@ import io.restassured.RestAssured;
 public class AutoTagTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(OpenApiResourceWithNoTag.class));
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(OpenApiResourceWithNoTag.class, AutoTagResource.class, AbstractAutoTagResource.class));
 
     @Test
     public void testAutoSecurityRequirement() {
@@ -28,6 +26,15 @@ public class AutoTagTestCase {
                 .and()
                 .body("paths.'/resource/auto'.post.tags", Matchers.hasItem("Open Api Resource With No Tag"));
 
+    }
+
+    @Test
+    public void testTagInOpenApi() {
+        RestAssured.given().header("Accept", "application/json")
+                .when().get("/q/openapi")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("Auto Tag Resource"));
     }
 
 }

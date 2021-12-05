@@ -3,7 +3,6 @@ package io.quarkus.amazon.lambda.runtime;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
@@ -141,13 +140,17 @@ public abstract class AbstractLambdaPollLoop {
                                 log.error("Error running lambda (" + launchMode + ")", e);
                             Application app = Application.currentApplication();
                             if (app != null) {
-                                app.stop();
+                                try {
+                                    app.stop();
+                                } catch (Exception ignored) {
+
+                                }
                             }
                             return;
                         } finally {
                             try {
                                 requestConnection.getInputStream().close();
-                            } catch (IOException e) {
+                            } catch (IOException ignored) {
                             }
                         }
 
@@ -265,8 +268,8 @@ public abstract class AbstractLambdaPollLoop {
         // if we are running in test mode, or native mode outside of the lambda container, then don't output stack trace for socket errors
 
         boolean lambdaEnv = System.getenv("AWS_LAMBDA_RUNTIME_API") != null;
-        boolean testEnv = LaunchMode.current() == LaunchMode.TEST;
-        boolean graceful = ((ex instanceof SocketException || ex instanceof ConnectException) && testEnv)
+        boolean testOrDevEnv = LaunchMode.current() == LaunchMode.TEST || LaunchMode.current() == LaunchMode.DEVELOPMENT;
+        boolean graceful = ((ex instanceof SocketException) && testOrDevEnv)
                 || (ex instanceof UnknownHostException && !lambdaEnv);
 
         if (graceful)

@@ -154,6 +154,35 @@ public class QuarkusProdModeTest
         return this;
     }
 
+    /**
+     * Customize the application root.
+     *
+     * @param applicationRootConsumer
+     * @return self
+     */
+    public QuarkusProdModeTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
+        Objects.requireNonNull(applicationRootConsumer);
+        return setArchiveProducer(() -> {
+            JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+            applicationRootConsumer.accept(jar);
+            return jar;
+        });
+    }
+
+    /**
+     * Use an empty application for the test
+     *
+     * @return self
+     */
+    public QuarkusProdModeTest withEmptyApplication() {
+        return withApplicationRoot(new Consumer<JavaArchive>() {
+            @Override
+            public void accept(JavaArchive javaArchive) {
+
+            }
+        });
+    }
+
     public QuarkusProdModeTest addBuildChainCustomizerEntries(BuildChainCustomizerEntry entry) {
         Objects.requireNonNull(entry);
         this.buildChainCustomizerEntries.add(entry);

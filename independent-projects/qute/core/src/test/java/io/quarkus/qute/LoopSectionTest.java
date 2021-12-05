@@ -26,19 +26,17 @@ public class LoopSectionTest {
         items.add(item);
         items.add(new HashMap<>());
 
-        Engine engine = Engine.builder()
-                .addSectionHelper(new IfSectionHelper.Factory())
-                .addSectionHelper(new LoopSectionHelper.Factory()).addDefaultValueResolvers()
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
-        Template template = engine.parse("{#for item in this}{count}.{item.name ?: 'NOT_FOUND'}{#if hasNext}\n{/if}{/for}");
+        Template template = engine
+                .parse("{#for item in this}{item_count}.{item.name ?: 'NOT_FOUND'}{#if item_hasNext}\n{/if}{/for}");
         assertEquals("1.Lu\n2.NOT_FOUND", template.render(items));
 
-        template = engine.parse("{#each this}{count}.{it.name ?: 'NOT_FOUND'}{#if hasNext}\n{/if}{/each}");
+        template = engine.parse("{#each this}{it_count}.{it.name ?: 'NOT_FOUND'}{#if it_hasNext}\n{/if}{/each}");
         assertEquals("1.Lu\n2.NOT_FOUND",
                 template.render(items));
 
-        template = engine.parse("{#each this}{#if odd}odd{#else}even{/if}{/each}");
+        template = engine.parse("{#each this}{#if it_odd}odd{#else}even{/if}{/each}");
         assertEquals("oddeven",
                 template.render(items));
     }
@@ -95,8 +93,8 @@ public class LoopSectionTest {
                 .build();
 
         String template = "{#for name in list}"
-                + "{count}.{name}: {#for char in name.chars}"
-                + "{name} {global} char at {index} = {char}{#if hasNext},{/}"
+                + "{name_count}.{name}: {#for char in name.chars}"
+                + "{name} {global} char at {char_index} = {char}{#if char_hasNext},{/}"
                 + "{/}{/}";
 
         assertEquals(
@@ -177,6 +175,30 @@ public class LoopSectionTest {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("No items.",
                 engine.parse("{#for i in items}{item}{#else}No items.{/for}").data("items", Collections.emptyList()).render());
+    }
+
+    @Test
+    public void testIterationMetadata() {
+        String expected = "foo::0::1::false::true::true::odd::true::false";
+        assertEquals(expected,
+                Engine.builder().iterationMetadataPrefix(LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_NONE)
+                        .addDefaults().build().parse(
+                                "{#each items}{it}::{index}::{count}::{hasNext}::{isLast}::{isFirst}::{indexParity}::{odd}::{even}{/each}")
+                        .data("items", List.of("foo")).render());
+        assertEquals(expected,
+                Engine.builder().iterationMetadataPrefix(LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_QM)
+                        .addDefaults().build().parse(
+                                "{#each items}{it}::{it?index}::{it?count}::{it?hasNext}::{it?isLast}::{it?isFirst}::{it?indexParity}::{it?odd}::{it?even}{/each}")
+                        .data("items", List.of("foo")).render());
+        assertEquals(expected,
+                Engine.builder().addDefaults().build().parse(
+                        "{#each items}{it}::{it_index}::{it_count}::{it_hasNext}::{it_isLast}::{it_isFirst}::{it_indexParity}::{it_odd}::{it_even}{/each}")
+                        .data("items", List.of("foo")).render());
+        assertEquals(expected,
+                Engine.builder().iterationMetadataPrefix("meta_")
+                        .addDefaults().build().parse(
+                                "{#each items}{it}::{meta_index}::{meta_count}::{meta_hasNext}::{meta_isLast}::{meta_isFirst}::{meta_indexParity}::{meta_odd}::{meta_even}{/each}")
+                        .data("items", List.of("foo")).render());
     }
 
 }

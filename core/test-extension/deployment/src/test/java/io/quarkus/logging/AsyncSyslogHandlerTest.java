@@ -9,8 +9,6 @@ import java.util.logging.Level;
 
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class AsyncSyslogHandlerTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-async-syslog.properties")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
             .setLogFileName("AsyncSyslogHandlerTest.log");

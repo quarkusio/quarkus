@@ -32,6 +32,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
@@ -58,27 +59,24 @@ public class OidcCommonUtils {
 
     }
 
+    public static void verifyEndpointUrl(String endpointUrl) {
+        try {
+            // Verify that endpoint url is a valid URL
+            URI.create(endpointUrl).toURL();
+        } catch (Throwable ex) {
+            throw new ConfigurationException(
+                    String.format("'%s' is invalid", endpointUrl), ex);
+        }
+    }
+
     public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean clientIdOptional,
             boolean isServerConfig) {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
-        if (!oidcConfig.getAuthServerUrl().isPresent()) {
-            throw new ConfigurationException(
-                    String.format("'%sauth-server-url' property must be configured",
-                            configPrefix));
-        }
-
         if (!clientIdOptional && !oidcConfig.getClientId().isPresent()) {
             throw new ConfigurationException(
                     String.format("'%sclient-id' property must be configured", configPrefix));
         }
 
-        try {
-            // Verify that auth-server-url is a valid URL
-            URI.create(oidcConfig.getAuthServerUrl().get()).toURL();
-        } catch (Throwable ex) {
-            throw new ConfigurationException(
-                    String.format("'%sauth-server-url' is invalid", configPrefix), ex);
-        }
         Credentials creds = oidcConfig.getCredentials();
         if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
             throw new ConfigurationException(
@@ -157,22 +155,23 @@ public class OidcCommonUtils {
     }
 
     public static String getAuthServerUrl(OidcCommonConfig oidcConfig) {
-        String authServerUrl = oidcConfig.getAuthServerUrl().get();
-        if (authServerUrl.endsWith("/")) {
-            authServerUrl = authServerUrl.substring(0, authServerUrl.length() - 1);
-        }
-        return authServerUrl;
+        return removeLastPathSeparator(oidcConfig.getAuthServerUrl().get());
+    }
+
+    private static String removeLastPathSeparator(String value) {
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
     public static String getOidcEndpointUrl(String authServerUrl, Optional<String> endpointPath) {
-        if (endpointPath.isPresent()) {
-            if (endpointPath.get().startsWith(HTTP_SCHEME)) {
-                return endpointPath.get();
-            }
-            return authServerUrl + prependSlash(endpointPath.get());
+        if (endpointPath != null && endpointPath.isPresent()) {
+            return isAbsoluteUrl(endpointPath) ? endpointPath.get() : authServerUrl + prependSlash(endpointPath.get());
         } else {
             return null;
         }
+    }
+
+    public static boolean isAbsoluteUrl(Optional<String> endpointUrl) {
+        return endpointUrl.isPresent() && endpointUrl.get().startsWith(HTTP_SCHEME);
     }
 
     private static long getConnectionDelay(OidcCommonConfig oidcConfig) {
@@ -275,20 +274,27 @@ public class OidcCommonUtils {
         }
     }
 
-    public static String signJwt(OidcCommonConfig oidcConfig) {
-        return signJwtWithKey(oidcConfig, clientJwtKey(oidcConfig.credentials));
-    }
-
-    public static String signJwtWithKey(OidcCommonConfig oidcConfig, Key key) {
+    public static String signJwtWithKey(OidcCommonConfig oidcConfig, String tokenRequestUri, Key key) {
         // 'jti' and 'iat' claim is created by default, iat - is set to the current time
         JwtSignatureBuilder builder = Jwt
                 .issuer(oidcConfig.clientId.get())
                 .subject(oidcConfig.clientId.get())
-                .audience(getAuthServerUrl(oidcConfig))
+                .audience(oidcConfig.credentials.jwt.getAudience().isPresent()
+                        ? removeLastPathSeparator(oidcConfig.credentials.jwt.getAudience().get())
+                        : tokenRequestUri)
                 .expiresIn(oidcConfig.credentials.jwt.lifespan)
                 .jws();
         if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {
             builder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
+        }
+        if (oidcConfig.credentials.jwt.getSignatureAlgorithm().isPresent()) {
+            SignatureAlgorithm signatureAlgorithm;
+            try {
+                signatureAlgorithm = SignatureAlgorithm.fromAlgorithm(oidcConfig.credentials.jwt.getSignatureAlgorithm().get());
+            } catch (Exception ex) {
+                throw new ConfigurationException("Unsupported signature algorithm");
+            }
+            builder.algorithm(signatureAlgorithm);
         }
         if (key instanceof SecretKey) {
             return builder.sign((SecretKey) key);

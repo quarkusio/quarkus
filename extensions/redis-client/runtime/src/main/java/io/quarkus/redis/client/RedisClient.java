@@ -186,6 +186,8 @@ public interface RedisClient {
 
     Response lpop(String arg0);
 
+    Response lpop(List<String> args);
+
     Response lpush(List<String> args);
 
     Response lpushx(List<String> args);
@@ -244,6 +246,8 @@ public interface RedisClient {
 
     Response psync(String arg0, String arg1);
 
+    Response psync(List<String> args);
+
     Response pttl(String arg0);
 
     Response publish(String arg0, String arg1);
@@ -273,6 +277,8 @@ public interface RedisClient {
     Response role();
 
     Response rpop(String arg0);
+
+    Response rpop(List<String> args);
 
     Response rpoplpush(String arg0, String arg1);
 

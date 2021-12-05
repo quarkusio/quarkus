@@ -143,6 +143,30 @@ values:
 
 NOTE: if you use `redirect` or `disabled` and have not added a SSL certificate or keystore, your server will not start!
 
+== Additional HTTP Headers
+
+To enable HTTP headers to be sent on every response, add the following properties:
+
+[source, properties]
+----
+quarkus.http.header."X-Content-Type-Options".value=nosniff
+----
+
+This will include the `X-Content-Type-Options: nosniff` HTTP Header on responses for requests performed on any resource in the application.
+
+You can also specify a `path` pattern and the HTTP `methods` the header needs to be applied:
+
+[source, properties]
+----
+quarkus.http.header.Pragma.value=no-cache
+quarkus.http.header.Pragma.path=/headers/pragma
+quarkus.http.header.Pragma.methods=GET,HEAD
+----
+
+This will apply the `Pragma` header only when the `/headers/pragma` resource is called with a `GET` or a `HEAD` method
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-header-config.adoc[leveloffset=+1, opts=optional]
+
 == HTTP/2 Support
 
 HTTP/2 is enabled by default, and will be used by browsers if SSL is in use on JDK11 or higher. JDK8 does not support
@@ -186,24 +210,8 @@ quarkus.http.cors=true
 If the filter is enabled and an HTTP request is identified as cross-origin, the CORS policy and headers defined using the
 following properties will be applied before passing the request on to its actual target (servlet, JAX-RS resource, etc.):
 
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|quarkus.http.cors.origins|*|The comma-separated list of origins allowed for CORS. Values starting and ending with '/'' will be treated as regular expressions. The filter allows any origin if this is not set or set to '*'.
-|quarkus.http.cors.methods|*|The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
-not set or set to '*'.
-|quarkus.http.cors.headers|*|The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
-not set or set to '*'.
-|quarkus.http.cors.exposed-headers|*|The comma-separated list of HTTP headers exposed in CORS. The filter allows any headers to be exposed if this is
-not set or set to '*'.
-|quarkus.http.cors.access-control-max-age||The duration (see note below) indicating how long the results of a pre-flight request can be cached.
-This value will be returned in a `Access-Control-Max-Age` response header.
-|quarkus.http.cors.access-control-allow-credentials||Boolean value to tell the browsers to expose the response to front-end JavaScript code
-when the request’s credentials mode Request.credentials is “include”
-|===
 
-
-include::duration-format-note.adoc[]
+include::{generated-dir}/config/quarkus-vertx-http-config-group-cors-cors-config.adoc[leveloffset=+1, opts=optional]
 
 Here's what a full CORS filter configuration could look like, including a regular expression defining an allowed origin:
 

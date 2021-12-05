@@ -11,8 +11,6 @@ import javax.inject.Singleton;
 
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,7 +24,7 @@ public class ConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(HelloClientWithBaseUri.class, EchoResource.class))
             .withConfigurationResource("configuration-test-application.properties");
 
@@ -55,21 +53,20 @@ public class ConfigurationTest {
         assertThat(configRoot.disableSmartProduces.get()).isTrue();
         assertThat(configRoot.multipartPostEncoderMode).isPresent();
         assertThat(configRoot.multipartPostEncoderMode.get()).isEqualTo("HTML5");
-        assertThat(configRoot.configs.size()).isEqualTo(4);
 
-        RestClientConfig clientConfig = configRoot.configs.get("io.quarkus.rest.client.reactive.HelloClientWithBaseUri");
+        RestClientConfig clientConfig = RestClientConfig.load(io.quarkus.rest.client.reactive.HelloClientWithBaseUri.class);
         verifyClientConfig(clientConfig, true);
 
-        clientConfig = configRoot.configs.get("client-prefix");
+        clientConfig = RestClientConfig.load("client-prefix");
         verifyClientConfig(clientConfig, true);
         assertThat(clientConfig.proxyAddress.isPresent()).isTrue();
         assertThat(clientConfig.proxyAddress.get()).isEqualTo("localhost:8080");
 
-        clientConfig = configRoot.configs.get("quoted-client-prefix");
+        clientConfig = RestClientConfig.load("quoted-client-prefix");
         assertThat(clientConfig.url.isPresent()).isTrue();
         assertThat(clientConfig.url.get()).endsWith("/hello");
 
-        clientConfig = configRoot.configs.get("mp-client-prefix");
+        clientConfig = RestClientConfig.load("mp-client-prefix");
         verifyClientConfig(clientConfig, false);
         assertThat(clientConfig.maxRedirects.isPresent()).isTrue();
         assertThat(clientConfig.maxRedirects.get()).isEqualTo(4);

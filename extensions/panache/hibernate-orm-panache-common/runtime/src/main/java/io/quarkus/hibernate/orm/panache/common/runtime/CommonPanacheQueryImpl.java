@@ -99,12 +99,6 @@ public class CommonPanacheQueryImpl<Entity> {
                     throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
                 }
                 parameterName = name;
-            } else if (parameter.isAnnotationPresent(io.quarkus.hibernate.orm.panache.ProjectedFieldName.class)) {
-                final String name = parameter.getAnnotation(io.quarkus.hibernate.orm.panache.ProjectedFieldName.class).value();
-                if (name.isEmpty()) {
-                    throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
-                }
-                parameterName = name;
             } else if (!parameter.isNamePresent()) {
                 throw new PanacheQueryException(
                         "Your application must be built with parameter names, this should be the default if" +

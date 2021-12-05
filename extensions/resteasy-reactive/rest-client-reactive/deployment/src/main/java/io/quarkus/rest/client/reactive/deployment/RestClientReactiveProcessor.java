@@ -80,6 +80,7 @@ import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.restclient.config.RestClientConfigUtils;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
+import io.quarkus.runtime.LaunchMode;
 
 class RestClientReactiveProcessor {
 
@@ -324,22 +325,35 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            RestClientReactiveConfig clientConfig) {
+            RestClientReactiveConfig clientConfig,
+            RestClientRecorder recorder) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
         Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
+        Map<String, String> configKeys = new HashMap<>();
         for (AnnotationInstance registerRestClient : registerRestClientAnnos) {
             ClassInfo jaxrsInterface = registerRestClient.target().asClass();
             // for each interface annotated with @RegisterRestClient, generate a $$CDIWrapper CDI bean that can be injected
             if (Modifier.isAbstract(jaxrsInterface.flags())) {
-                List<MethodInfo> restMethods = new ArrayList<>();
+                List<MethodInfo> methodsToImplement = new ArrayList<>();
 
-                // search this class and its super interfaces for jaxrs methods
-                searchForJaxRsMethods(restMethods, jaxrsInterface, index);
-                if (restMethods.isEmpty()) {
+                // search this interface and its super interfaces for jaxrs methods
+                searchForJaxRsMethods(methodsToImplement, jaxrsInterface, index);
+                // search this interface for default methods
+                // we could search for default methods in super interfaces too,
+                // but emitting the correct invokespecial instruction would become convoluted
+                // (as invokespecial may only reference a method from a _direct_ super interface)
+                for (MethodInfo method : jaxrsInterface.methods()) {
+                    boolean isDefault = !Modifier.isAbstract(method.flags());
+                    if (isDefault) {
+                        methodsToImplement.add(method);
+                    }
+                }
+                if (methodsToImplement.isEmpty()) {
                     continue;
                 }
 
@@ -353,6 +367,10 @@ class RestClientReactiveProcessor {
 
                     // CLASS LEVEL
                     final Optional<String> configKey = getConfigKey(registerRestClient);
+
+                    configKey.ifPresent(
+                            key -> configKeys.put(jaxrsInterface.name().toString(), key));
+
                     final ScopeInfo scope = computeDefaultScope(capabilities, ConfigProvider.getConfig(), jaxrsInterface,
                             configKey, clientConfig);
                     // add a scope annotation, e.g. @Singleton
@@ -384,10 +402,15 @@ class RestClientReactiveProcessor {
                     constructor.returnValue(null);
 
                     // METHODS:
-                    for (MethodInfo method : restMethods) {
+                    for (MethodInfo method : methodsToImplement) {
                         // for each method that corresponds to making a rest call, create a method like:
                         // public JsonArray get() {
                         //      return ((InterfaceClass)this.getDelegate()).get();
+                        // }
+                        //
+                        // for each default method, create a method like:
+                        // public JsonArray get() {
+                        //     return InterfaceClass.super.get();
                         // }
                         MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
                         methodCreator.setSignature(AsmUtil.getSignatureIfRequired(method));
@@ -401,26 +424,32 @@ class RestClientReactiveProcessor {
                             }
                         }
 
-                        ResultHandle delegate = methodCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(RestClientReactiveCDIWrapperBase.class, "getDelegate",
-                                        Object.class),
-                                methodCreator.getThis());
+                        ResultHandle result;
 
                         int parameterCount = method.parameters().size();
-                        ResultHandle result;
-                        if (parameterCount == 0) {
-                            result = methodCreator.invokeInterfaceMethod(method, delegate);
-                        } else {
-                            ResultHandle[] params = new ResultHandle[parameterCount];
-                            for (int i = 0; i < parameterCount; i++) {
-                                params[i] = methodCreator.getMethodParam(i);
-                            }
-                            result = methodCreator.invokeInterfaceMethod(method, delegate, params);
+                        ResultHandle[] params = new ResultHandle[parameterCount];
+                        for (int i = 0; i < parameterCount; i++) {
+                            params[i] = methodCreator.getMethodParam(i);
                         }
+
+                        if (Modifier.isAbstract(method.flags())) { // RestClient method
+                            ResultHandle delegate = methodCreator.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(RestClientReactiveCDIWrapperBase.class, "getDelegate",
+                                            Object.class),
+                                    methodCreator.getThis());
+
+                            result = methodCreator.invokeInterfaceMethod(method, delegate, params);
+                        } else { // default method
+                            result = methodCreator.invokeSpecialInterfaceMethod(method, methodCreator.getThis(), params);
+                        }
+
                         methodCreator.returnValue(result);
                     }
                 }
             }
+        }
+        if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+            recorder.setConfigKeys(configKeys);
         }
     }
 

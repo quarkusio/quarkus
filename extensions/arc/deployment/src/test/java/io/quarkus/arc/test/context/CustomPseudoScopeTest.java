@@ -18,8 +18,6 @@ import javax.enterprise.context.spi.CreationalContext;
 import javax.inject.Inject;
 import javax.inject.Scope;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -36,7 +34,7 @@ public class CustomPseudoScopeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyPseudoScope.class, SimpleBean.class, MyPseudoContext.class))
             .addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {

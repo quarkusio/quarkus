@@ -2,10 +2,8 @@ package io.quarkus.arc.processor;
 
 import io.quarkus.arc.Arc;
 import java.lang.reflect.Modifier;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type.Kind;
 
 abstract class AbstractGenerator {
 
@@ -14,9 +12,15 @@ abstract class AbstractGenerator {
     static final String SYNTHETIC_SUFFIX = "Synthetic";
 
     protected final boolean generateSources;
+    protected final ReflectionRegistration reflectionRegistration;
+
+    public AbstractGenerator(boolean generateSources, ReflectionRegistration reflectionRegistration) {
+        this.generateSources = generateSources;
+        this.reflectionRegistration = reflectionRegistration;
+    }
 
     public AbstractGenerator(boolean generateSources) {
-        this.generateSources = generateSources;
+        this(generateSources, null);
     }
 
     /**
@@ -75,25 +79,6 @@ abstract class AbstractGenerator {
 
     protected boolean isPackagePrivate(int mod) {
         return !(Modifier.isPrivate(mod) || Modifier.isProtected(mod) || Modifier.isPublic(mod));
-    }
-
-    protected String getPackageName(BeanInfo bean) {
-        DotName providerTypeName;
-        if (bean.isProducerMethod() || bean.isProducerField()) {
-            providerTypeName = bean.getDeclaringBean().getProviderType().name();
-        } else {
-            if (bean.getProviderType().kind() == Kind.ARRAY || bean.getProviderType().kind() == Kind.PRIMITIVE) {
-                providerTypeName = bean.getImplClazz().name();
-            } else {
-                providerTypeName = bean.getProviderType().name();
-            }
-        }
-        String packageName = DotNames.packageName(providerTypeName);
-        if (packageName.startsWith("java.")) {
-            // It is not possible to place a class in a JDK package
-            packageName = DEFAULT_PACKAGE;
-        }
-        return packageName;
     }
 
 }

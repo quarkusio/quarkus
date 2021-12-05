@@ -22,12 +22,12 @@ import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
-import org.jboss.resteasy.reactive.server.core.startup.CustomServerRestHandlers;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.util.RuntimeResourceVisitor;
 import org.jboss.resteasy.reactive.server.util.ScoreSystem;
@@ -40,7 +40,6 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;
 import io.quarkus.resteasy.reactive.common.runtime.ArcThreadSetupAction;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
-import io.quarkus.resteasy.reactive.server.common.runtime.EndpointInvokerFactory;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -115,7 +114,6 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
-                new CustomServerRestHandlers(new BlockingInputHandlerSupplier()),
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
                 vertxConfig.rootPath);
         Deployment deployment = runtimeDeploymentManager.deploy();
@@ -181,7 +179,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     @SuppressWarnings("unchecked")
     public void registerExceptionMapper(ExceptionMapping exceptionMapping, String string,
             ResourceExceptionMapper<Throwable> mapper) {
-        exceptionMapping.addExceptionMapper(loadClass(string), mapper);
+        exceptionMapping.addExceptionMapper(string, mapper);
     }
 
     public void registerContextResolver(ContextResolvers contextResolvers, String string,
@@ -216,14 +214,6 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
     public ServerSerialisers createServerSerialisers() {
         return new ServerSerialisers();
-    }
-
-    private static class BlockingInputHandlerSupplier implements Supplier<ServerRestHandler> {
-
-        @Override
-        public ServerRestHandler get() {
-            return new BlockingInputHandler();
-        }
     }
 
 }

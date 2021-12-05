@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,7 +14,7 @@ import io.smallrye.mutiny.Uni;
 public class MutinyFaultToleranceTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MutinyHelloService.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MutinyHelloService.class));
 
     @Inject
     MutinyHelloService service;

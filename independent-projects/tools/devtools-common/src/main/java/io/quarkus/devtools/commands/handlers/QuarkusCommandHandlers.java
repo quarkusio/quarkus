@@ -13,7 +13,6 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.maven.ArtifactKey;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonExtension;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,9 +37,11 @@ final class QuarkusCommandHandlers {
         for (String query : extensionsQuery) {
             final int countColons = StringUtils.countMatches(query, ":");
             if (countColons > 1) {
-                final JsonExtension ext = new JsonExtension();
-                ext.setArtifact(ArtifactCoords.fromString(query));
-                ext.setName(ext.getArtifact().getArtifactId());
+                ArtifactCoords artifact = ArtifactCoords.fromString(query);
+                final Extension ext = Extension.builder()
+                        .setArtifact(artifact)
+                        .setName(artifact.getArtifactId())
+                        .build();
                 builder.add(ext);
                 continue;
             }

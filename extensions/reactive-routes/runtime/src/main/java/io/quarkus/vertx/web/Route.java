@@ -131,12 +131,26 @@ public @interface Route {
     int order() default 0;
 
     /**
-     * Used for content-based routing.
+     * Used for content-based routing and stream serialization.
      * <p>
-     * If no {@code Content-Type} header is set then try to use the most acceptable content type.
+     * If no {@code Content-Type} header is set then try to use the most acceptable content-type.
      *
      * If the request does not contain an 'Accept' header and no content type is explicitly set in the
      * handler then the content type will be set to the first content type in the array.
+     *
+     * When a route returns a {@link io.smallrye.mutiny.Multi}, this attribute is used to define how that stream is
+     * serialized. In this case, accepted values are:
+     * <ul>
+     * <li>{@link ReactiveRoutes#APPLICATION_JSON} - Encode the response into a JSON Array, where each item is sent one by
+     * one,</li>
+     * <li>{@link ReactiveRoutes#EVENT_STREAM} - Encode the response as a stream of server-sent-events,</li>
+     * <li>{@link ReactiveRoutes#ND_JSON} or {@link ReactiveRoutes#JSON_STREAM} - Encode the response as JSON stream,
+     * when each item is sent one by one with a `\n` as delimiter between them</li>
+     * </ul>
+     *
+     * When this attribute is not set, and the route returns a {@link io.smallrye.mutiny.Multi}, no special serialization is
+     * applied.
+     * The items are sent one-by-one without delimiters.
      * 
      * @see io.vertx.ext.web.Route#produces(String)
      * @see RoutingContext#getAcceptableContentType()

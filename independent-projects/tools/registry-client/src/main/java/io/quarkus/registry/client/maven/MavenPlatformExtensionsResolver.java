@@ -4,8 +4,6 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 import io.quarkus.registry.client.RegistryPlatformExtensionsResolver;
 import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.IOException;
@@ -29,7 +27,8 @@ public class MavenPlatformExtensionsResolver implements RegistryPlatformExtensio
     }
 
     @Override
-    public ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platformCoords) throws RegistryResolutionException {
+    public ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platformCoords)
+            throws RegistryResolutionException {
         final String version;
         if (platformCoords.getVersion() == null) {
             version = resolveLatestBomVersion(platformCoords, "[0-alpha,)");
@@ -74,7 +73,7 @@ public class MavenPlatformExtensionsResolver implements RegistryPlatformExtensio
             throw new RegistryResolutionException(buf.toString(), e);
         }
         try {
-            return JsonCatalogMapperHelper.deserialize(jsonPath, JsonExtensionCatalog.class);
+            return ExtensionCatalog.mutableFromFile(jsonPath);
         } catch (IOException e) {
             throw new RegistryResolutionException("Failed to parse Quarkus extension catalog " + jsonPath, e);
         }

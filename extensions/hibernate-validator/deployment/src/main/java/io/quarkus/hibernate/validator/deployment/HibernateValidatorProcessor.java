@@ -78,6 +78,7 @@ import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationExceptionMapper;
+import io.quarkus.hibernate.validator.runtime.jaxrs.ViolationReport;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
@@ -357,8 +358,8 @@ class HibernateValidatorProcessor {
         exceptionMapperProducer.produce(new ExceptionMapperBuildItem(ResteasyReactiveViolationExceptionMapper.class.getName(),
                 ValidationException.class.getName(), Priorities.USER + 1, true));
         reflectiveClassProducer.produce(
-                new ReflectiveClassBuildItem(true, true, ResteasyReactiveViolationExceptionMapper.ViolationReport.class,
-                        ResteasyReactiveViolationExceptionMapper.ViolationReport.Violation.class));
+                new ReflectiveClassBuildItem(true, true, ViolationReport.class,
+                        ViolationReport.Violation.class));
     }
 
     private static void contributeBuiltinConstraints(Set<String> builtinConstraints,

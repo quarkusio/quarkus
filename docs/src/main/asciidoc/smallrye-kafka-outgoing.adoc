@@ -39,7 +39,7 @@ Type: _string_ | false |
 
 | [.no-hyphens]#*cloud-events-insert-timestamp*#
 
-[.no-hyphens]#_(cloud-events-default-timestamp)_# | Whether or not the connector should insert automatically the `time` attribute` into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
+[.no-hyphens]#_(cloud-events-default-timestamp)_# | Whether or not the connector should insert automatically the `time` attribute into the outgoing Cloud Event. Requires `cloud-events` to be set to `true`. This value is used if the message does not configure the `time` attribute itself
 
 Type: _boolean_ | false | `true`
 
@@ -97,6 +97,10 @@ Type: _string_ | false |
 
 Type: _string_ | false |
 
+| [.no-hyphens]#*key-serialization-failure-handler*# | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.SerializationFailureHandler`. If set, serialization failure happening when serializing keys are delegated to this handler which may provide a fallback value.
+
+Type: _string_ | false |
+
 | [.no-hyphens]#*key.serializer*# | The serializer classname used to serialize the record's key
 
 Type: _string_ | false | `org.apache.kafka.common.serialization.StringSerializer`
@@ -128,6 +132,10 @@ Type: _string_ | false |
 | [.no-hyphens]#*tracing-enabled*# | Whether tracing is enabled (default) or disabled
 
 Type: _boolean_ | false | `true`
+
+| [.no-hyphens]#*value-serialization-failure-handler*# | The name set in `@Identifier` of a bean that implements `io.smallrye.reactive.messaging.kafka.SerializationFailureHandler`. If set, serialization failure happening when serializing values are delegated to this handler which may provide a fallback value.
+
+Type: _string_ | false |
 
 | [.no-hyphens]#*value.serializer*# | The serializer classname used to serialize the payload
 

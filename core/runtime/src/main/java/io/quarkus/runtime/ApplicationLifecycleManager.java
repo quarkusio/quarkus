@@ -100,10 +100,8 @@ public class ApplicationLifecycleManager {
         } finally {
             stateLock.unlock();
         }
-        boolean appStarted = false;
         try {
             application.start(args);
-            appStarted = true;
             //now we are started, we either run the main application or just wait to exit
             if (quarkusApplication != null) {
                 BeanManager beanManager = CDI.current().getBeanManager();
@@ -314,6 +312,10 @@ public class ApplicationLifecycleManager {
             handleSignal("HUP", exitHandler);
             handleSignal("QUIT", diagnosticsHandler);
         }
+    }
+
+    public static Application getCurrentApplication() {
+        return currentApplication;
     }
 
     /**

@@ -21,7 +21,7 @@ public class JibConfig {
     /**
      * The base image to be used when a container image is being produced for the native binary build
      */
-    @ConfigItem(defaultValue = "registry.access.redhat.com/ubi8/ubi-minimal")
+    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:1.0")
     public String baseNativeImage;
 
     /**
@@ -162,4 +162,11 @@ public class JibConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean offlineMode;
+
+    /**
+     * Name of binary used to execute the docker commands. This is only used by Jib
+     * when the container image is being built locally.
+     */
+    @ConfigItem
+    public Optional<String> dockerExecutableName;
 }

@@ -151,6 +151,16 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
     }
 
+    @Test
+    public void generateCodeBeforeTests() throws Exception {
+        createProject(SourceType.JAVA);
+
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "test", "--stacktrace");
+        assertThat(firstBuild.getOutput()).contains("Task :quarkusGenerateCode");
+        assertThat(firstBuild.getOutput()).contains("Task :quarkusGenerateCodeTests");
+        assertThat(firstBuild.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+    }
+
     private void createProject(SourceType sourceType) throws Exception {
         Map<String, Object> context = new HashMap<>();
         context.put("path", "/greeting");

@@ -147,16 +147,16 @@ $(document).ready(function(){
 
     <div class="card">
 
-        <div class="card-header" id="Heading{count}">
+        <div class="card-header" id="Heading{endpoint_count}">
             <button class="btn btn-block btn-lg collapsed" type="button" data-toggle="collapse"
-                    data-target="#Line{count}" aria-expanded="false"
-                    aria-controls="Line{count}">
+                    data-target="#Line{endpoint_count}" aria-expanded="false"
+                    aria-controls="Line{endpoint_count}">
               <code>{endpoint.httpMethod} {endpoint.fullPath}</code>
               <span class="styleBadge badge badge-{#if endpoint.score < 50}danger{#else if endpoint.score < 100}warning{#else}success{/if}">{endpoint.score}/100</span>
             </button>
         </div>
 
-        <div id="Line{count}" class="collapse" aria-labelledby="Heading{count}" data-parent="#endpointsAccordion">
+        <div id="Line{endpoint_count}" class="collapse" aria-labelledby="Heading{endpoint_count}" data-parent="#endpointsAccordion">
             <div class="card-body">
 
                 <div class="row">
@@ -208,11 +208,11 @@ $(document).ready(function(){
                         <div class="col-2 showfilters" style="text-align: right;" data-toggle="collapse" data-target="#filter{count}">
                             Filters:
                         </div>
-                        <div class="col-10 showfilters" data-toggle="collapse" data-target="#filter{count}">
+                        <div class="col-10 showfilters" data-toggle="collapse" data-target="#filter{endpoint_count}">
                             <span class="badge badge-pill badge-secondary">{endpoint.requestFilterEntries.size}</span>
                         </div>
                     
-                        <div id="filter{count}" class="col-10 offset-2 filterbox collapse">
+                        <div id="filter{endpoint_count}" class="col-10 offset-2 filterbox collapse">
                             <samp class="text-wrap">
                                 {#for requestFilters in endpoint.requestFilterEntries}
                                     {requestFilters.getName}<br/>

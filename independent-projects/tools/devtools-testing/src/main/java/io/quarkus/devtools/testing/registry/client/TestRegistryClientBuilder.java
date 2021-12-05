@@ -4,25 +4,19 @@ import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.Constants;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.Platform;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.catalog.PlatformRelease;
+import io.quarkus.registry.catalog.PlatformReleaseVersion;
 import io.quarkus.registry.catalog.PlatformStream;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtension;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonPlatform;
-import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
-import io.quarkus.registry.catalog.json.JsonPlatformRelease;
-import io.quarkus.registry.catalog.json.JsonPlatformReleaseVersion;
-import io.quarkus.registry.catalog.json.JsonPlatformStream;
-import io.quarkus.registry.config.json.JsonRegistriesConfig;
-import io.quarkus.registry.config.json.JsonRegistryConfig;
-import io.quarkus.registry.config.json.JsonRegistryDescriptorConfig;
-import io.quarkus.registry.config.json.JsonRegistryNonPlatformExtensionsConfig;
-import io.quarkus.registry.config.json.JsonRegistryPlatformsConfig;
-import io.quarkus.registry.config.json.JsonRegistryQuarkusVersionsConfig;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
+import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistryConfig;
+import io.quarkus.registry.config.RegistryDescriptorConfig;
+import io.quarkus.registry.config.RegistryNonPlatformExtensionsConfig;
+import io.quarkus.registry.config.RegistryPlatformsConfig;
+import io.quarkus.registry.config.RegistryQuarkusVersionsConfig;
 import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,8 +36,8 @@ import org.apache.maven.model.Model;
 public class TestRegistryClientBuilder {
 
     private Path baseDir;
-    private JsonRegistriesConfig config = new JsonRegistriesConfig();
-    private Map<String, TestRegistryBuilder> registries = new LinkedHashMap<>();
+    private final RegistriesConfig.Mutable config = RegistriesConfig.builder();
+    private final Map<String, TestRegistryBuilder> registries = new LinkedHashMap<>();
 
     public static TestRegistryClientBuilder newInstance() {
         return new TestRegistryClientBuilder();
@@ -86,7 +80,7 @@ public class TestRegistryClientBuilder {
 
         final Path configYaml = baseDir.resolve("config.yaml");
         try {
-            RegistriesConfigMapperHelper.serialize(config, configYaml);
+            config.persist(configYaml);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to serialize registry client configuration " + configYaml, e);
         }
@@ -101,12 +95,12 @@ public class TestRegistryClientBuilder {
 
         private final TestRegistryClientBuilder parent;
         private final String registryGroupId;
-        private JsonRegistryConfig config;
-        private JsonRegistryDescriptorConfig descrConfig = new JsonRegistryDescriptorConfig();
-        private JsonRegistryQuarkusVersionsConfig quarkusVersions;
+        private final RegistryConfig.Mutable config = RegistryConfig.builder();
+        private final RegistryDescriptorConfig.Mutable descrConfig = RegistryDescriptorConfig.builder();
+        private RegistryQuarkusVersionsConfig.Mutable quarkusVersions;
         private boolean external;
-        private PlatformCatalog platformCatalog;
-        private JsonPlatformCatalog archivedPlatformCatalog;
+        private PlatformCatalog.Mutable platformCatalog;
+        private PlatformCatalog.Mutable archivedPlatformCatalog;
 
         private List<TestPlatformCatalogMemberBuilder> memberCatalogs;
         private List<TestNonPlatformCatalogBuilder> nonPlatformCatalogs;
@@ -114,7 +108,6 @@ public class TestRegistryClientBuilder {
 
         private TestRegistryBuilder(TestRegistryClientBuilder parent, String id) {
             this.parent = parent;
-            this.config = new JsonRegistryConfig();
             config.setId(Objects.requireNonNull(id));
 
             registryGroupId = registryIdToGroupId(id);
@@ -137,24 +130,27 @@ public class TestRegistryClientBuilder {
             return this;
         }
 
-        public TestRegistryBuilder platformCatalog(PlatformCatalog platformCatalog) {
-            this.platformCatalog = platformCatalog;
+        public TestRegistryBuilder platformCatalog(PlatformCatalog newCatalog) {
+            this.platformCatalog = newCatalog instanceof PlatformCatalog.Mutable
+                    ? (PlatformCatalog.Mutable) newCatalog
+                    : newCatalog.mutable();
             return this;
         }
 
         public TestPlatformCatalogPlatformBuilder newPlatform(String platformKey) {
             if (platformCatalog == null) {
-                platformCatalog = new JsonPlatformCatalog();
+                platformCatalog = PlatformCatalog.builder();
             }
-            JsonPlatform platform = (JsonPlatform) platformCatalog.getPlatform(platformKey);
+
+            Platform.Mutable platform = (Platform.Mutable) platformCatalog.getPlatform(platformKey);
             if (platform == null) {
-                platform = new JsonPlatform();
-                platform.setPlatformKey(platformKey);
+                platform = Platform.builder()
+                        .setPlatformKey(platformKey);
+
+                platformCatalog.addPlatform(platform);
             }
-            ((JsonPlatformCatalog) platformCatalog).addPlatform(platform);
-            final TestPlatformCatalogPlatformBuilder platformBuilder = new TestPlatformCatalogPlatformBuilder(this,
-                    platform);
-            return platformBuilder;
+
+            return new TestPlatformCatalogPlatformBuilder(this, platform);
         }
 
         public TestNonPlatformCatalogBuilder newNonPlatformCatalog(String quarkusVersion) {
@@ -172,7 +168,7 @@ public class TestRegistryClientBuilder {
 
         public TestRegistryBuilder recognizedQuarkusVersions(String expr, boolean exclusiveProvider) {
             if (quarkusVersions == null) {
-                quarkusVersions = new JsonRegistryQuarkusVersionsConfig();
+                quarkusVersions = RegistryQuarkusVersionsConfig.builder();
             }
             quarkusVersions.setRecognizedVersionsExpression(expr);
             quarkusVersions.setExclusiveProvider(exclusiveProvider);
@@ -204,31 +200,31 @@ public class TestRegistryClientBuilder {
             }
 
             if (!external) {
-                config.setAny("client-factory-url",
+                config.setExtra("client-factory-url",
                         TestRegistryClient.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());
                 if (enableMavenResolver) {
-                    config.setAny("enable-maven-resolver", true);
+                    config.setExtra("enable-maven-resolver", true);
                 }
             }
 
-            final JsonRegistryConfig registryConfig = new JsonRegistryConfig();
+            final RegistryConfig.Mutable registryConfig = RegistryConfig.builder();
             registryConfig.setId(config.getId());
             registryConfig.setDescriptor(descrConfig);
             if (quarkusVersions != null) {
                 registryConfig.setQuarkusVersions(quarkusVersions);
             }
 
-            final JsonRegistryPlatformsConfig platformConfig = new JsonRegistryPlatformsConfig();
-            platformConfig
+            final RegistryPlatformsConfig.Mutable platformConfig = RegistryPlatformsConfig.builder()
                     .setArtifact(new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_PLATFORMS_CATALOG_ARTIFACT_ID,
                             null, "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION));
+
             if (platformCatalog == null && archivedPlatformCatalog == null) {
                 platformConfig.setDisabled(true);
             } else {
                 final Path platformsDir = getRegistryPlatformsDir(registryDir);
-                final Map<String, JsonPlatformCatalog> platformsByQuarkusVersion = new HashMap<>();
+                final Map<String, PlatformCatalog.Mutable> platformsByQuarkusVersion = new HashMap<>();
                 if (platformCatalog != null) {
-                    persistPlatformCatalog(platformCatalog, platformsDir);
+                    persistPlatformCatalog(platformCatalog.build(), platformsDir);
                     for (Platform p : platformCatalog.getPlatforms()) {
                         for (PlatformStream s : p.getStreams()) {
                             for (PlatformRelease r : s.getReleases()) {
@@ -237,19 +233,19 @@ public class TestRegistryClientBuilder {
                                             "Quarkus version has not be configured for platform release "
                                                     + p.getPlatformKey() + ":" + s.getId() + ":" + r.getVersion());
                                 }
-                                final JsonPlatformCatalog c = platformsByQuarkusVersion.computeIfAbsent(
+                                final PlatformCatalog.Mutable c = platformsByQuarkusVersion.computeIfAbsent(
                                         r.getQuarkusCoreVersion(),
-                                        v -> new JsonPlatformCatalog());
-                                JsonPlatform platform = (JsonPlatform) c.getPlatform(p.getPlatformKey());
+                                        v -> PlatformCatalog.builder());
+                                Platform.Mutable platform = (Platform.Mutable) c.getPlatform(p.getPlatformKey());
                                 if (platform == null) {
-                                    platform = new JsonPlatform();
-                                    platform.setPlatformKey(p.getPlatformKey());
+                                    platform = Platform.builder()
+                                            .setPlatformKey(p.getPlatformKey());
                                     c.addPlatform(platform);
                                 }
-                                JsonPlatformStream stream = (JsonPlatformStream) platform.getStream(s.getId());
+                                PlatformStream.Mutable stream = (PlatformStream.Mutable) platform.getStream(s.getId());
                                 if (stream == null) {
-                                    stream = new JsonPlatformStream();
-                                    stream.setId(s.getId());
+                                    stream = PlatformStream.builder()
+                                            .setId(s.getId());
                                     platform.addStream(stream);
                                 }
                                 stream.addRelease(r);
@@ -267,18 +263,18 @@ public class TestRegistryClientBuilder {
                                             "Quarkus version has not be configured for platform release "
                                                     + p.getPlatformKey() + ":" + s.getId() + ":" + r.getVersion());
                                 }
-                                final JsonPlatformCatalog c = platformsByQuarkusVersion.computeIfAbsent(
+                                final PlatformCatalog.Mutable c = platformsByQuarkusVersion.computeIfAbsent(
                                         r.getQuarkusCoreVersion(),
-                                        v -> new JsonPlatformCatalog());
-                                JsonPlatform platform = (JsonPlatform) c.getPlatform(p.getPlatformKey());
+                                        v -> PlatformCatalog.builder());
+                                Platform.Mutable platform = (Platform.Mutable) c.getPlatform(p.getPlatformKey());
                                 if (platform == null) {
-                                    platform = new JsonPlatform();
+                                    platform = Platform.builder();
                                     platform.setPlatformKey(p.getPlatformKey());
                                     c.addPlatform(platform);
                                 }
-                                JsonPlatformStream stream = (JsonPlatformStream) platform.getStream(s.getId());
+                                PlatformStream.Mutable stream = (PlatformStream.Mutable) platform.getStream(s.getId());
                                 if (stream == null) {
-                                    stream = new JsonPlatformStream();
+                                    stream = PlatformStream.builder();
                                     stream.setId(s.getId());
                                     platform.addStream(stream);
                                 }
@@ -288,8 +284,8 @@ public class TestRegistryClientBuilder {
                     }
                 }
 
-                for (Map.Entry<String, JsonPlatformCatalog> entry : platformsByQuarkusVersion.entrySet()) {
-                    persistPlatformCatalog(entry.getValue(), platformsDir.resolve(entry.getKey()));
+                for (Map.Entry<String, PlatformCatalog.Mutable> entry : platformsByQuarkusVersion.entrySet()) {
+                    persistPlatformCatalog(entry.getValue().build(), platformsDir.resolve(entry.getKey()));
                 }
 
                 if (memberCatalogs != null && !memberCatalogs.isEmpty()) {
@@ -298,7 +294,8 @@ public class TestRegistryClientBuilder {
             }
             registryConfig.setPlatforms(platformConfig);
 
-            final JsonRegistryNonPlatformExtensionsConfig nonPlatformConfig = new JsonRegistryNonPlatformExtensionsConfig();
+            final RegistryNonPlatformExtensionsConfig.Mutable nonPlatformConfig = RegistryNonPlatformExtensionsConfig.builder();
+
             nonPlatformConfig.setArtifact(getRegistryNonPlatformCatalogArtifact());
             if (nonPlatformCatalogs == null || nonPlatformCatalogs.isEmpty()) {
                 nonPlatformConfig.setDisabled(true);
@@ -324,7 +321,7 @@ public class TestRegistryClientBuilder {
 
             final Path descriptorJson = getRegistryDescriptorPath(registryDir);
             try {
-                RegistriesConfigMapperHelper.serialize(registryConfig, descriptorJson);
+                registryConfig.persist(descriptorJson);
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to persist registry descriptor " + descriptorJson, e);
             }
@@ -339,16 +336,17 @@ public class TestRegistryClientBuilder {
     public static class TestPlatformCatalogPlatformBuilder {
 
         private final TestRegistryBuilder registry;
-        private final JsonPlatform platform;
+        private final Platform.Mutable platform;
 
-        private TestPlatformCatalogPlatformBuilder(TestRegistryBuilder registry, JsonPlatform platform) {
+        private TestPlatformCatalogPlatformBuilder(TestRegistryBuilder registry, Platform.Mutable platform) {
             this.registry = registry;
             this.platform = platform;
         }
 
         public TestPlatformCatalogStreamBuilder newStream(String id) {
-            final JsonPlatformStream stream = new JsonPlatformStream();
-            stream.setId(id);
+            final PlatformStream.Mutable stream = PlatformStream.builder()
+                    .setId(id);
+
             platform.addStream(stream);
             return new TestPlatformCatalogStreamBuilder(this, stream);
         }
@@ -361,40 +359,42 @@ public class TestRegistryClientBuilder {
     public static class TestPlatformCatalogStreamBuilder {
 
         private final TestPlatformCatalogPlatformBuilder platform;
-        private final JsonPlatformStream stream;
+        private final PlatformStream.Mutable stream;
 
-        private TestPlatformCatalogStreamBuilder(TestPlatformCatalogPlatformBuilder platform, JsonPlatformStream stream) {
+        private TestPlatformCatalogStreamBuilder(TestPlatformCatalogPlatformBuilder platform, PlatformStream.Mutable stream) {
             this.platform = platform;
             this.stream = stream;
         }
 
         public TestPlatformCatalogReleaseBuilder newRelease(String version) {
-            final JsonPlatformRelease release = new JsonPlatformRelease();
-            release.setVersion(JsonPlatformReleaseVersion.fromString(version));
+            final PlatformRelease.Mutable release = PlatformRelease.builder()
+                    .setVersion(PlatformReleaseVersion.fromString(version));
+
             stream.addRelease(release);
             return new TestPlatformCatalogReleaseBuilder(this, release);
         }
 
         public TestPlatformCatalogReleaseBuilder newArchivedRelease(String version) {
-            final JsonPlatformRelease release = new JsonPlatformRelease();
-            release.setVersion(JsonPlatformReleaseVersion.fromString(version));
+            final PlatformRelease.Mutable release = PlatformRelease.builder()
+                    .setVersion(PlatformReleaseVersion.fromString(version));
 
             if (platform.registry.archivedPlatformCatalog == null) {
-                platform.registry.archivedPlatformCatalog = new JsonPlatformCatalog();
+                platform.registry.archivedPlatformCatalog = PlatformCatalog.builder();
             }
 
-            JsonPlatform archivedPlatform = (JsonPlatform) platform.registry.archivedPlatformCatalog
+            Platform.Mutable archivedPlatform = (Platform.Mutable) platform.registry.archivedPlatformCatalog
                     .getPlatform(platform.platform.getPlatformKey());
             if (archivedPlatform == null) {
-                archivedPlatform = new JsonPlatform();
-                archivedPlatform.setPlatformKey(platform.platform.getPlatformKey());
+                archivedPlatform = Platform.builder()
+                        .setPlatformKey(platform.platform.getPlatformKey());
                 platform.registry.archivedPlatformCatalog.addPlatform(archivedPlatform);
             }
 
-            JsonPlatformStream archivedStream = (JsonPlatformStream) archivedPlatform.getStream(stream.getId());
+            PlatformStream.Mutable archivedStream = (PlatformStream.Mutable) archivedPlatform
+                    .getStream(stream.getId());
             if (archivedStream == null) {
-                archivedStream = new JsonPlatformStream();
-                archivedStream.setId(stream.getId());
+                archivedStream = PlatformStream.builder()
+                        .setId(stream.getId());
                 archivedPlatform.addStream(archivedStream);
             }
 
@@ -410,9 +410,9 @@ public class TestRegistryClientBuilder {
     public static class TestPlatformCatalogReleaseBuilder {
 
         private final TestPlatformCatalogStreamBuilder stream;
-        private final JsonPlatformRelease release;
+        private final PlatformRelease.Mutable release;
 
-        private TestPlatformCatalogReleaseBuilder(TestPlatformCatalogStreamBuilder stream, JsonPlatformRelease release) {
+        private TestPlatformCatalogReleaseBuilder(TestPlatformCatalogStreamBuilder stream, PlatformRelease.Mutable release) {
             this.stream = stream;
             this.release = release;
         }
@@ -448,10 +448,6 @@ public class TestRegistryClientBuilder {
             final TestPlatformCatalogMemberBuilder quarkusBom = newMember("quarkus-bom");
             quarkusBom.addExtension("io.quarkus", "quarkus-core", release.getQuarkusCoreVersion());
             Map<String, Object> metadata = quarkusBom.extensions.getMetadata();
-            if (metadata.isEmpty()) {
-                metadata = new HashMap<>();
-                quarkusBom.extensions.setMetadata(metadata);
-            }
             metadata = (Map<String, Object>) metadata.computeIfAbsent("project", s -> new HashMap<>());
             metadata = (Map<String, Object>) metadata.computeIfAbsent("properties", s -> new HashMap<>());
             metadata.put("maven-plugin-groupId", quarkusBom.extensions.getBom().getGroupId());
@@ -471,24 +467,17 @@ public class TestRegistryClientBuilder {
         }
 
         private void addMemberBomInternal(ArtifactCoords bom) {
-            if (release.getMemberBoms().isEmpty()) {
-                release.setMemberBoms(new ArrayList<>());
-            }
             release.getMemberBoms().add(bom);
         }
 
         @SuppressWarnings("unchecked")
-        private void setReleaseInfo(JsonExtensionCatalog catalog) {
+        private void setReleaseInfo(ExtensionCatalog.Mutable catalog) {
             catalog.setQuarkusCoreVersion(release.getQuarkusCoreVersion());
             if (release.getUpstreamQuarkusCoreVersion() != null) {
                 catalog.setUpstreamQuarkusCoreVersion(release.getUpstreamQuarkusCoreVersion());
             }
 
             Map<String, Object> metadata = catalog.getMetadata();
-            if (metadata.isEmpty()) {
-                metadata = new HashMap<>();
-                catalog.setMetadata(metadata);
-            }
             metadata = (Map<String, Object>) metadata.computeIfAbsent("platform-release", k -> new HashMap<>());
             metadata.put("platform-key", stream.platform.platform.getPlatformKey());
             metadata.put("stream", stream.stream.getId());
@@ -505,7 +494,7 @@ public class TestRegistryClientBuilder {
     public static class TestPlatformCatalogMemberBuilder {
 
         private final TestPlatformCatalogReleaseBuilder release;
-        private final JsonExtensionCatalog extensions = new JsonExtensionCatalog();
+        private final ExtensionCatalog.Mutable extensions = ExtensionCatalog.builder();
         private final Model pom;
 
         private TestPlatformCatalogMemberBuilder(TestPlatformCatalogReleaseBuilder release, ArtifactCoords bom) {
@@ -529,11 +518,11 @@ public class TestRegistryClientBuilder {
         }
 
         public TestPlatformCatalogMemberBuilder addExtension(String groupId, String artifactId, String version) {
-            final JsonExtension e = new JsonExtension();
             final ArtifactCoords coords = new ArtifactCoords(groupId, artifactId, null, "jar", version);
-            e.setArtifact(coords);
-            e.setName(artifactId);
-            e.setOrigins(Collections.singletonList(extensions));
+            final Extension.Mutable e = Extension.builder()
+                    .setArtifact(coords)
+                    .setName(artifactId)
+                    .setOrigins(Collections.singletonList(extensions));
             extensions.addExtension(e);
 
             final Dependency d = new Dependency();
@@ -563,7 +552,7 @@ public class TestRegistryClientBuilder {
             final ArtifactCoords bom = extensions.getBom();
             final Path json = getMemberCatalogPath(memberDir, bom);
             try {
-                JsonCatalogMapperHelper.serialize(extensions, json);
+                extensions.persist(json);
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to persist extension catalog " + json, e);
             }
@@ -590,7 +579,7 @@ public class TestRegistryClientBuilder {
     public static class TestNonPlatformCatalogBuilder {
 
         private final TestRegistryBuilder registry;
-        private final JsonExtensionCatalog extensions = new JsonExtensionCatalog();
+        private final ExtensionCatalog.Mutable extensions = ExtensionCatalog.builder();
 
         private TestNonPlatformCatalogBuilder(TestRegistryBuilder registry, String quarkusVersion) {
             this.registry = registry;
@@ -603,10 +592,10 @@ public class TestRegistryClientBuilder {
         }
 
         public TestNonPlatformCatalogBuilder addExtension(String groupId, String artifactId, String version) {
-            final JsonExtension e = new JsonExtension();
-            e.setArtifact(new ArtifactCoords(groupId, artifactId, null, "jar", version));
-            e.setName(artifactId);
-            e.setOrigins(Collections.singletonList(extensions));
+            Extension e = Extension.builder()
+                    .setArtifact(new ArtifactCoords(groupId, artifactId, null, "jar", version))
+                    .setName(artifactId)
+                    .setOrigins(Collections.singletonList(extensions));
             extensions.addExtension(e);
             return this;
         }
@@ -618,7 +607,7 @@ public class TestRegistryClientBuilder {
         private void persist(Path nonPlatformDir) {
             final Path json = getNonPlatformCatalogPath(nonPlatformDir, extensions.getQuarkusCoreVersion());
             try {
-                JsonCatalogMapperHelper.serialize(extensions, json);
+                extensions.persist(json);
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to persist extension catalog " + json, e);
             }
@@ -629,7 +618,7 @@ public class TestRegistryClientBuilder {
         final Path platformsJson = dir.resolve("platforms.json");
         try {
             Files.createDirectories(dir);
-            RegistriesConfigMapperHelper.serialize(catalog, platformsJson);
+            catalog.persist(platformsJson);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to persist platform catalog " + platformsJson, e);
         }

@@ -3,8 +3,6 @@ package io.quarkus.reactive.mysql.client;
 import static io.restassured.RestAssured.given;
 
 import org.hamcrest.CoreMatchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class CredentialsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(CustomCredentialsProvider.class)
                     .addClass(CredentialsTestResource.class)
                     .addAsResource("application-credentials.properties", "application.properties"));

@@ -19,6 +19,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     /**
      * 
      * @return the list of default aliases used to match the helper
+     * @see #cacheFactoryConfig()
      */
     default List<String> getDefaultAliases() {
         return Collections.emptyList();
@@ -27,6 +28,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     /**
      * 
      * @return the info about the expected parameters
+     * @see #cacheFactoryConfig()
      */
     default ParametersInfo getParameters() {
         return ParametersInfo.EMPTY;
@@ -36,9 +38,21 @@ public interface SectionHelperFactory<T extends SectionHelper> {
      * A nested section tag that matches a name of a block will be added as a block to the current section.
      * 
      * @return the list of block labels
+     * @see #cacheFactoryConfig()
      */
     default List<String> getBlockLabels() {
         return Collections.emptyList();
+    }
+
+    /**
+     * If the return value is {@code true} then {@link #getDefaultAliases()}, {@link #getParameters()} and
+     * {@link #getBlockLabels()} methods are called exactly once and the results are cached when the factory is being
+     * registered.
+     * 
+     * @return {@code true} the config should be cached, {@code false} otherwise
+     */
+    default boolean cacheFactoryConfig() {
+        return true;
     }
 
     /**
@@ -191,13 +205,15 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         public static final ParametersInfo EMPTY = builder().build();
 
         private final Map<String, List<Parameter>> parameters;
+        private final boolean checkNumberOfParams;
 
-        private ParametersInfo(Map<String, List<Parameter>> parameters) {
+        private ParametersInfo(Map<String, List<Parameter>> parameters, boolean checkNumberOfParams) {
             this.parameters = new HashMap<>(parameters);
+            this.checkNumberOfParams = checkNumberOfParams;
         }
 
-        public List<Parameter> get(String sectionPart) {
-            return parameters.getOrDefault(sectionPart, Collections.emptyList());
+        public List<Parameter> get(String blockLabel) {
+            return parameters.getOrDefault(blockLabel, Collections.emptyList());
         }
 
         @Override
@@ -205,12 +221,18 @@ public interface SectionHelperFactory<T extends SectionHelper> {
             return parameters.values().iterator();
         }
 
+        public boolean isCheckNumberOfParams() {
+            return checkNumberOfParams;
+        }
+
         public static class Builder {
 
             private final Map<String, List<Parameter>> parameters;
+            private boolean checkNumberOfParams;
 
             Builder() {
                 this.parameters = new HashMap<>();
+                this.checkNumberOfParams = true;
             }
 
             public Builder addParameter(String name) {
@@ -234,8 +256,13 @@ public interface SectionHelperFactory<T extends SectionHelper> {
                 return this;
             }
 
+            public Builder checkNumberOfParams(boolean value) {
+                this.checkNumberOfParams = value;
+                return this;
+            }
+
             public ParametersInfo build() {
-                return new ParametersInfo(parameters);
+                return new ParametersInfo(parameters, checkNumberOfParams);
             }
         }
 

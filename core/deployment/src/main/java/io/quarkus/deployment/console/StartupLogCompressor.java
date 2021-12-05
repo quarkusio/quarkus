@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
@@ -24,10 +25,19 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
     final StatusLine sl;
     final List<String> toDump = new ArrayList<>();
     final AtomicInteger COUNTER = new AtomicInteger();
+    final Predicate<Thread> additionalThreadPredicate;
 
     public StartupLogCompressor(String name,
             @SuppressWarnings("unused") Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             @SuppressWarnings("unused") LoggingSetupBuildItem loggingSetupBuildItem) {
+        this(name, consoleInstalledBuildItem, loggingSetupBuildItem, (s) -> false);
+    }
+
+    public StartupLogCompressor(String name,
+            @SuppressWarnings("unused") Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            @SuppressWarnings("unused") LoggingSetupBuildItem loggingSetupBuildItem,
+            Predicate<Thread> additionalThreadPredicate) {
+        this.additionalThreadPredicate = additionalThreadPredicate;
         if (QuarkusConsole.INSTANCE.isAnsiSupported()) {
             QuarkusConsole.installRedirects();
             this.name = name;
@@ -68,7 +78,8 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
             //not installed
             return true;
         }
-        if (Thread.currentThread() == thread) {
+        Thread current = Thread.currentThread();
+        if (current == this.thread || additionalThreadPredicate.test(current)) {
             toDump.add(s);
             sl.setMessage(MessageFormat.BLUE + name + MessageFormat.RESET + " " + s.replace("\n", ""));
             return false;

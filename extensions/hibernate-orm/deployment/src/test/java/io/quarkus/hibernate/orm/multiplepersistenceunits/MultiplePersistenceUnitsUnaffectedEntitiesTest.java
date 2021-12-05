@@ -11,8 +11,6 @@ import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -28,7 +26,7 @@ public class MultiplePersistenceUnitsUnaffectedEntitiesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(DefaultEntity.class)
                     .addClass(User.class)
                     .addClass(Plane.class)

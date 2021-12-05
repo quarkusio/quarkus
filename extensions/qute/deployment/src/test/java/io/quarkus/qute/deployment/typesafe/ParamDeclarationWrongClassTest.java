@@ -2,9 +2,7 @@ package io.quarkus.qute.deployment.typesafe;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ public class ParamDeclarationWrongClassTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(Foo.class)
                     .addAsResource(new StringAsset("{@org.acme.Foo foo}"
                             + "{foo.name}"), "templates/foo.html"))

@@ -25,6 +25,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -72,8 +73,9 @@ public class NativeImageBuildStep {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
         Map<String, Object> graalVMInfoProps = new HashMap<>();
         graalVMInfoProps.put("graalvm.version.full", graalVMVersion.getFullVersion());
-        graalVMInfoProps.put("graalvm.version.major", "" + graalVMVersion.getMajor());
-        graalVMInfoProps.put("graalvm.version.minor", "" + graalVMVersion.getMinor());
+        graalVMInfoProps.put("graalvm.version.version", graalVMVersion.getVersion());
+        graalVMInfoProps.put("graalvm.version.javaVersion", "" + graalVMVersion.getJavaVersion());
+        graalVMInfoProps.put("graalvm.version.distribution", graalVMVersion.getDistribution());
         return new ArtifactResultBuildItem(image.getPath(), PackageConfig.NATIVE, graalVMInfoProps);
     }
 
@@ -85,7 +87,8 @@ public class NativeImageBuildStep {
             PackageConfig packageConfig,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             List<ExcludeConfigBuildItem> excludeConfigs,
-            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed) {
+            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
+            List<JPMSExportBuildItem> jpmsExportBuildItems) {
 
         Path outputDir;
         try {
@@ -106,6 +109,7 @@ public class NativeImageBuildStep {
                 .setNativeImageProperties(nativeImageProperties)
                 .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                 .setExcludeConfigs(excludeConfigs)
+                .setJPMSExportBuildItems(jpmsExportBuildItems)
                 .setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
                 // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
@@ -138,6 +142,7 @@ public class NativeImageBuildStep {
             List<ExcludeConfigBuildItem> excludeConfigs,
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
+            List<JPMSExportBuildItem> jpmsExportBuildItems,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
@@ -175,8 +180,9 @@ public class NativeImageBuildStep {
         if (nativeConfig.reuseExisting) {
             if (Files.exists(finalExecutablePath)) {
                 return new NativeImageBuildItem(finalExecutablePath,
-                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion, graalVMVersion.major,
-                                graalVMVersion.minor,
+                        new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
+                                graalVMVersion.version.toString(),
+                                graalVMVersion.javaVersion,
                                 graalVMVersion.distribution.name()));
             }
         }
@@ -197,6 +203,7 @@ public class NativeImageBuildStep {
                     .setExcludeConfigs(excludeConfigs)
                     .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
+                    .setJPMSExportBuildItems(jpmsExportBuildItems)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
                     .setNativeImageName(nativeImageName)
@@ -210,7 +217,7 @@ public class NativeImageBuildStep {
                     resultingExecutableName, outputDir,
                     nativeConfig.debug.enabled, processInheritIODisabled.isPresent());
             if (buildNativeResult.getExitCode() != 0) {
-                throw imageGenerationFailed(buildNativeResult.getExitCode(), nativeImageArgs);
+                throw imageGenerationFailed(buildNativeResult.getExitCode(), nativeConfig.isContainerBuild());
             }
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
@@ -226,8 +233,9 @@ public class NativeImageBuildStep {
             System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
 
             return new NativeImageBuildItem(finalExecutablePath,
-                    new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion, graalVMVersion.major,
-                            graalVMVersion.minor,
+                    new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
+                            graalVMVersion.version.toString(),
+                            graalVMVersion.javaVersion,
                             graalVMVersion.distribution.name()));
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
@@ -354,9 +362,9 @@ public class NativeImageBuildStep {
         }
     }
 
-    private RuntimeException imageGenerationFailed(int exitValue, List<String> command) {
+    private RuntimeException imageGenerationFailed(int exitValue, boolean isContainerBuild) {
         if (exitValue == OOM_ERROR_VALUE) {
-            if (command.contains("docker") && !SystemUtils.IS_OS_LINUX) {
+            if (isContainerBuild && !SystemUtils.IS_OS_LINUX) {
                 return new RuntimeException("Image generation failed. Exit code was " + exitValue
                         + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
                         + QUARKUS_XMX_PROPERTY + "\" property");
@@ -373,10 +381,9 @@ public class NativeImageBuildStep {
     private void checkGraalVMVersion(GraalVM.Version version) {
         log.info("Running Quarkus native-image plugin on " + version.getFullVersion());
         if (version.isObsolete()) {
-            final int major = GraalVM.Version.CURRENT.major;
-            final int minor = GraalVM.Version.CURRENT.minor;
             throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getFullVersion() + "."
-                    + " Quarkus currently supports " + major + "." + minor + ". Please upgrade GraalVM to this version.");
+                    + " Quarkus currently supports " + GraalVM.Version.CURRENT.version
+                    + ". Please upgrade GraalVM to this version.");
         }
     }
 
@@ -471,6 +478,7 @@ public class NativeImageBuildStep {
             private List<NativeImageSystemPropertyBuildItem> nativeImageProperties;
             private List<ExcludeConfigBuildItem> excludeConfigs;
             private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
+            private List<JPMSExportBuildItem> jpmsExports;
             private Path outputDir;
             private String runnerJarName;
             private String noPIE = "";
@@ -506,6 +514,11 @@ public class NativeImageBuildStep {
             public Builder setNativeImageSecurityProviders(
                     List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders) {
                 this.nativeImageSecurityProviders = nativeImageSecurityProviders;
+                return this;
+            }
+
+            public Builder setJPMSExportBuildItems(List<JPMSExportBuildItem> JPMSExportBuildItems) {
+                this.jpmsExports = JPMSExportBuildItems;
                 return this;
             }
 
@@ -578,7 +591,31 @@ public class NativeImageBuildStep {
                     enableHttpsUrlHandler = true;
                 }
 
+                /*
+                 * Instruct GraalVM / Mandrel parse compiler graphs twice, once for the static analysis and once again
+                 * for the AOT compilation.
+                 *
+                 * We do this because single parsing significantly increases memory usage at build time
+                 * see https://github.com/oracle/graal/issues/3435 and
+                 * https://github.com/graalvm/mandrel/issues/304#issuecomment-952070568 for more details.
+                 *
+                 * Note: This option must come before the invocation of
+                 * {@code handleAdditionalProperties(nativeImageArgs)} to ensure that devs and advanced users can
+                 * override it by passing -Dquarkus.native.additional-build-args=-H:+ParseOnce
+                 */
+                nativeImageArgs.add("-H:-ParseOnce");
+
+                /**
+                 * This makes sure the Kerberos integration module is made available in case any library
+                 * refers to it (e.g. the PostgreSQL JDBC requires it, seems plausible that many others will as well):
+                 * the module is not available by default on Java 17.
+                 * No flag was introduced as this merely exposes the visibility of the module, it doesn't
+                 * control its actual inclusion which will depend on the usual analysis.
+                 */
+                nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED");
+
                 handleAdditionalProperties(nativeImageArgs);
+
                 nativeImageArgs.add(
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");
@@ -697,10 +734,22 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
                 }
 
+                if (jpmsExports != null) {
+                    for (JPMSExportBuildItem jpmsExport : jpmsExports) {
+                        nativeImageArgs.add(
+                                "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage() + "=ALL-UNNAMED");
+                    }
+                }
+
                 for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
                     nativeImageArgs.add("--exclude-config");
                     nativeImageArgs.add(excludeConfig.getJarFile());
                     nativeImageArgs.add(excludeConfig.getResourceName());
+                }
+
+                // Work around https://github.com/quarkusio/quarkus/issues/21372
+                if (graalVMVersion.is(GraalVM.Version.VERSION_21_3_0) && graalVMVersion.isJava17()) {
+                    nativeImageArgs.add("-J--add-exports=java.management/sun.management=ALL-UNNAMED");
                 }
 
                 nativeImageArgs.add(nativeImageName);

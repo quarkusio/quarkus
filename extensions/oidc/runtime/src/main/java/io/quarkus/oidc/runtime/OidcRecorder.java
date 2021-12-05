@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -142,6 +143,7 @@ public class OidcRecorder {
         }
 
         try {
+            verifyAuthServerUrl(oidcConfig);
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, isServiceApp(oidcConfig), true);
         } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
@@ -150,8 +152,10 @@ public class OidcRecorder {
         if (!oidcConfig.discoveryEnabled) {
             if (!isServiceApp(oidcConfig)) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
-                    throw new OIDCException("'web-app' applications must have 'authorization-path' and 'token-path' properties "
-                            + "set when the discovery is disabled.");
+                    throw new ConfigurationException(
+                            "'web-app' applications must have 'authorization-path' and 'token-path' properties "
+                                    + "set when the discovery is disabled.",
+                            Set.of("quarkus.oidc.authorization-path", "quarkus.oidc.token-path"));
                 }
             }
             // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
@@ -159,8 +163,9 @@ public class OidcRecorder {
                 if (!oidcConfig.authentication.isIdTokenRequired() && oidcConfig.authentication.isUserInfoRequired()) {
                     LOG.debugf("tenant %s supports only UserInfo", oidcConfig.tenantId.get());
                 } else {
-                    throw new OIDCException(
-                            "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.");
+                    throw new ConfigurationException(
+                            "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.",
+                            Set.of("quarkus.oidc.jwks-path", "quarkus.oidc.introspection-path"));
                 }
             }
         }
@@ -253,6 +258,7 @@ public class OidcRecorder {
                     .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION, OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
                     .expireIn(connectionDelayInMillisecs)
                     .onFailure()
+                    .transform(t -> toOidcException(t, oidcConfig.authServerUrl.get()))
                     .invoke(client::close);
         } else {
             return client.getJsonWebKeySet();
@@ -316,6 +322,13 @@ public class OidcRecorder {
 
     private static boolean isServiceApp(OidcTenantConfig oidcConfig) {
         return ApplicationType.SERVICE.equals(oidcConfig.applicationType);
+    }
+
+    private static void verifyAuthServerUrl(OidcCommonConfig oidcConfig) {
+        if (!oidcConfig.getAuthServerUrl().isPresent()) {
+            throw new ConfigurationException("'quarkus.oidc.auth-server-url' property must be configured");
+        }
+        OidcCommonUtils.verifyEndpointUrl(oidcConfig.getAuthServerUrl().get());
     }
 
 }

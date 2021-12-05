@@ -32,8 +32,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 /**
  * This goal validates a given JSON descriptor.
@@ -109,9 +108,9 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to resolve platform descriptor " + artifact, e);
         }
 
-        JsonExtensionCatalog catalog;
+        ExtensionCatalog catalog;
         try {
-            catalog = JsonCatalogMapperHelper.deserialize(jsonPath, JsonExtensionCatalog.class);
+            catalog = ExtensionCatalog.fromFile(jsonPath);
         } catch (IOException e) {
             throw new MojoExecutionException("Failed to deserialize extension catalog " + jsonPath, e);
         }

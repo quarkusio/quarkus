@@ -22,9 +22,10 @@ public class ServiceConfig {
 
     /**
      * The name of the service.
+     * When this is empty the key of the service is meant to be used as name.
      */
     @ConfigItem
-    public String name;
+    public Optional<String> name;
 
     /**
      * The namespace of the service.

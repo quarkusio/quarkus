@@ -20,8 +20,6 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.specimpl.ResteasyUriInfo;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,7 +32,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ProviderClientRegistrationTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ProviderClientRegistrationTest.class, ClientBean.class, HelloFooProvider.class));
 
     static HttpServer server;

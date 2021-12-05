@@ -6,9 +6,11 @@ import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClass
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
@@ -28,7 +30,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
@@ -42,6 +43,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchBackendBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 class HibernateSearchElasticsearchProcessor {
 
@@ -143,10 +145,10 @@ class HibernateSearchElasticsearchProcessor {
     void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             List<HibernateSearchIntegrationRuntimeConfiguredBuildItem> integrationRuntimeConfigBuildItems,
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
-            String puName = puDescriptor.getPersistenceUnitName();
+        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
+            String puName = configuredPersistenceUnit.getPersistenceUnitName();
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners = new ArrayList<>();
             for (HibernateSearchIntegrationRuntimeConfiguredBuildItem item : integrationRuntimeConfigBuildItems) {
                 if (item.getPersistenceUnitName().equals(puName)) {
@@ -156,14 +158,14 @@ class HibernateSearchElasticsearchProcessor {
             runtimeConfigured.produce(
                     new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
                             .setInitListener(
-                                    recorder.createRuntimeInitListener(runtimeConfig, puDescriptor.getPersistenceUnitName(),
+                                    recorder.createRuntimeInitListener(runtimeConfig, puName,
                                             integrationRuntimeInitListeners)));
         }
     }
 
     private static void checkConfig(String persistenceUnitName,
             HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig, boolean defaultBackendIsUsed) {
-        List<String> propertyKeysWithNoVersion = new ArrayList<>();
+        Set<String> propertyKeysWithNoVersion = new LinkedHashSet<>();
         if (defaultBackendIsUsed) {
             // we validate that the version is present for the default backend
             if (buildTimeConfig == null || !buildTimeConfig.defaultBackend.version.isPresent()) {
@@ -182,9 +184,10 @@ class HibernateSearchElasticsearchProcessor {
             }
         }
         if (!propertyKeysWithNoVersion.isEmpty()) {
-            throw new ConfigurationError(
+            throw new ConfigurationException(
                     "The Elasticsearch version needs to be defined via properties: "
-                            + String.join(", ", propertyKeysWithNoVersion) + ".");
+                            + String.join(", ", propertyKeysWithNoVersion) + ".",
+                    propertyKeysWithNoVersion);
         }
     }
 

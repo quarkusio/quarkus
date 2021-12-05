@@ -46,7 +46,7 @@ public class InjectionEnricher implements TestEnricher {
     @Override
     public Object[] resolve(Method method) {
         //we need to resolve from inside the
-        if (method.getParameterTypes().length > 0) {
+        if (method.getParameterCount() > 0) {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 CreationContextHolder holder = getCreationalContext();
@@ -132,7 +132,7 @@ public class InjectionEnricher implements TestEnricher {
 
         @Override
         public Object[] apply(Method method, Object creationalContext) {
-            Object[] values = new Object[method.getParameterTypes().length];
+            Object[] values = new Object[method.getParameterCount()];
 
             // TestNG - we want to skip resolution if a non-arquillian dataProvider is used
             boolean hasNonArquillianDataProvider = false;
@@ -156,15 +156,15 @@ public class InjectionEnricher implements TestEnricher {
             if (beanManager == null) {
                 return values;
             }
+            Class<?>[] parameterTypes = method.getParameterTypes();
             try {
                 // obtain the same method definition but from the TCCL
                 method = getClass().getClassLoader()
                         .loadClass(method.getDeclaringClass().getName())
-                        .getMethod(method.getName(), convertToCL(method.getParameterTypes(), getClass().getClassLoader()));
+                        .getMethod(method.getName(), convertToCL(parameterTypes, getClass().getClassLoader()));
             } catch (Throwable t) {
                 throw new RuntimeException(t);
             }
-            Class<?>[] parameterTypes = method.getParameterTypes();
             for (int i = 0; i < parameterTypes.length; i++) {
                 try {
                     values[i] = getInstanceByType(beanManager, i, method, (CreationalContext<?>) creationalContext);

@@ -245,6 +245,12 @@ public class HttpConfiguration {
     @ConfigItem
     public Optional<PayloadHint> unhandledErrorContentTypeDefault;
 
+    /**
+     * Additional HTTP Headers always sent in the response
+     */
+    @ConfigItem
+    public Map<String, HeaderConfig> header;
+
     public ProxyConfig proxy;
 
     public int determinePort(LaunchMode launchMode) {

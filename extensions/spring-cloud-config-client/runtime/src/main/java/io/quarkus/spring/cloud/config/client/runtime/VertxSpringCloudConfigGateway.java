@@ -77,15 +77,16 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 }
             } else if (trustAll) {
                 skipVerify(webClientOptions);
-            } else if (springCloudConfig.keyStore.isPresent()) {
-                Path trustStorePath = springCloudConfig.keyStore.get();
-                String type = determineStoreType(trustStorePath);
-                KeyStoreOptionsBase storeOptions = storeOptions(trustStorePath, springCloudConfig.keyStorePassword,
+            }
+            if (springCloudConfig.keyStore.isPresent()) {
+                Path keyStorePath = springCloudConfig.keyStore.get();
+                String type = determineStoreType(keyStorePath);
+                KeyStoreOptionsBase storeOptions = storeOptions(keyStorePath, springCloudConfig.keyStorePassword,
                         createStoreOptions(type));
                 if (isPfx(type)) {
-                    webClientOptions.setPfxTrustOptions((PfxOptions) storeOptions);
+                    webClientOptions.setPfxKeyCertOptions((PfxOptions) storeOptions);
                 } else {
-                    webClientOptions.setTrustStoreOptions((JksOptions) storeOptions);
+                    webClientOptions.setKeyStoreOptions((JksOptions) storeOptions);
                 }
             }
         } catch (Exception e) {

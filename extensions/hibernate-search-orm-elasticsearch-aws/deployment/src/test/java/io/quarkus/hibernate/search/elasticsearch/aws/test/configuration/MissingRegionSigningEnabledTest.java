@@ -14,8 +14,9 @@ public class MissingRegionSigningEnabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class)
-                    .addAsResource("application-missing-region-signing-enabled.properties", "application.properties"))
+            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+            .withConfigurationResource("application.properties")
+            .overrideConfigKey("quarkus.hibernate-search-orm.elasticsearch.aws.signing.enabled", "true")
             .assertException(throwable -> assertThat(throwable)
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContainingAll(

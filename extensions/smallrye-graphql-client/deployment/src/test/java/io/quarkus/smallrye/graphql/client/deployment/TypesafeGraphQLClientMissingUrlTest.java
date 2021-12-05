@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +18,7 @@ public class TypesafeGraphQLClientMissingUrlTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

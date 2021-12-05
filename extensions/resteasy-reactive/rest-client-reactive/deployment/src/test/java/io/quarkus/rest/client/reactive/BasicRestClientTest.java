@@ -2,6 +2,7 @@ package io.quarkus.rest.client.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -10,8 +11,6 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,8 +20,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BasicRestClientTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloClient.class, HelloResource.class, TestBean.class, HelloClient2.class))
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(HelloClient.class, HelloResource.class, TestBean.class, HelloClient2.class,
+                            HelloNonSimpleClient.class))
             .withConfigurationResource("basic-test-application.properties");
 
     @Inject
@@ -49,5 +49,27 @@ public class BasicRestClientTest {
     @Test
     void shouldInvokeClientResponseOnSameContext() {
         assertThat(testBean.bug18977()).isEqualTo("Hello");
+    }
+
+    @Test
+    void shouldHelloBytes() {
+        assertThat(testBean.helloNonSimpleSyncBytes()).isEqualTo(new byte[] { 1, 2, 3 });
+    }
+
+    @Test
+    void shouldHelloInts() {
+        assertThat(testBean.helloNonSimpleSyncInts()).isEqualTo(new Integer[] { 1, 2, 3 });
+    }
+
+    @Test
+    void shouldMapQueryParamsWithSpecialCharacters() {
+        Map<String, String> map = testBean.helloQueryParamsToMap();
+        assertThat(map).size().isEqualTo(6);
+        assertThat(map.get("p1")).isEqualTo("1");
+        assertThat(map.get("p2")).isEqualTo("2");
+        assertThat(map.get("p3")).isEqualTo("3");
+        assertThat(map.get("p4")).isEqualTo("4");
+        assertThat(map.get("p5")).isEqualTo("5");
+        assertThat(map.get("p6")).isEqualTo("6");
     }
 }

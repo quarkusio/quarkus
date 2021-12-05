@@ -8,8 +8,6 @@ import java.util.List;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +18,7 @@ public class RestLinksInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(AbstractEntity.class, TestRecord.class, TestResource.class));
 
     @TestHTTPResource("records")

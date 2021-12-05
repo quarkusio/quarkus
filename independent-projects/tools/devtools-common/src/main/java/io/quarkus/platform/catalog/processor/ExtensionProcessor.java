@@ -134,6 +134,14 @@ public final class ExtensionProcessor {
         return extension;
     }
 
+    public Optional<ArtifactCoords> getBom() {
+        return ExtensionProcessor.getBom(extension);
+    }
+
+    public Optional<ArtifactCoords> getNonQuarkusBomOnly() {
+        return ExtensionProcessor.getNonQuarkusBomOnly(extension);
+    }
+
     public String getBuiltWithQuarkusCore() {
         return getBuiltWithQuarkusCore(extension);
     }

@@ -27,9 +27,9 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
 
-import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
@@ -214,13 +214,8 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     public ReactiveMongoCollection mongoCollection(Class<?> entityClass) {
-        MongoEntity legacyEntity = entityClass.getAnnotation(MongoEntity.class);
-        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
-                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
-        ReactiveMongoDatabase database = mongoDatabase(legacyEntity, mongoEntity);
-        if (legacyEntity != null && !legacyEntity.collection().isEmpty()) {
-            return database.getCollection(legacyEntity.collection(), entityClass);
-        }
+        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        ReactiveMongoDatabase database = mongoDatabase(mongoEntity);
         if (mongoEntity != null && !mongoEntity.collection().isEmpty()) {
             return database.getCollection(mongoEntity.collection(), entityClass);
         }
@@ -228,10 +223,8 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     public ReactiveMongoDatabase mongoDatabase(Class<?> entityClass) {
-        MongoEntity legacyEntity = entityClass.getAnnotation(MongoEntity.class);
-        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
-                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
-        return mongoDatabase(legacyEntity, mongoEntity);
+        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        return mongoDatabase(mongoEntity);
     }
 
     //
@@ -316,21 +309,17 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return mongoCollection(entityClass);
     }
 
-    private ReactiveMongoDatabase mongoDatabase(MongoEntity legacyEntity,
-            io.quarkus.mongodb.panache.common.MongoEntity mongoEntity) {
-        ReactiveMongoClient mongoClient = clientFromArc(legacyEntity, mongoEntity, ReactiveMongoClient.class, true);
-        if (legacyEntity != null && !legacyEntity.database().isEmpty()) {
-            return mongoClient.getDatabase(legacyEntity.database());
-        }
-        String databaseName = getDefaultDatabaseName(legacyEntity, mongoEntity);
+    private ReactiveMongoDatabase mongoDatabase(MongoEntity mongoEntity) {
+        ReactiveMongoClient mongoClient = clientFromArc(mongoEntity, ReactiveMongoClient.class, true);
+        String databaseName = getDefaultDatabaseName(mongoEntity);
         return mongoClient.getDatabase(databaseName);
     }
 
-    private String getDefaultDatabaseName(MongoEntity legacyEntity, io.quarkus.mongodb.panache.common.MongoEntity mongoEntity) {
-        return defaultDatabaseName.computeIfAbsent(beanName(legacyEntity, mongoEntity), new Function<String, String>() {
+    private String getDefaultDatabaseName(MongoEntity mongoEntity) {
+        return defaultDatabaseName.computeIfAbsent(beanName(mongoEntity), new Function<String, String>() {
             @Override
             public String apply(String beanName) {
-                return getDatabaseName(legacyEntity, mongoEntity, beanName);
+                return getDatabaseName(mongoEntity, beanName);
             }
         });
     }

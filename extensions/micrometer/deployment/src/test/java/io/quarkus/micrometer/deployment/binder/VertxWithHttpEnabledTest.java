@@ -7,8 +7,6 @@ import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,7 +28,7 @@ public class VertxWithHttpEnabledTest {
             .overrideConfigKey("quarkus.micrometer.binder.vertx.match-patterns", "/one=/two")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.ignore-patterns", "/two")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));
 
     @Inject

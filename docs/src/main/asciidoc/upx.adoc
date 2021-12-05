@@ -1,0 +1,72 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+
+= Compressing native executables using UPX
+
+include::./attributes.adoc[]
+
+https://upx.github.io/[Ultimate Packer for eXecutables (UPX)] is a compression tool reducing the size of executables.
+Quarkus can compress the produced native executable to reduce its size.
+Such compression is interesting when:
+
+* building CLI tools, and you want to reduce the disk footprint,
+* building small container images.
+
+Note that UPX compression:
+
+1. increases your build time, mainly if you use high-compression levels
+2. increases the startup RSS usage of the application
+
+== System vs. Container
+
+The UPX compression requires:
+
+* the `upx` command to be available in the system `PATH`;
+* or to have built the native executable using an in-container build.
+
+If you have the `upx` command available on your path, Quarkus uses it.
+Otherwise, if you built the native image using an in-container build (using `quarkus.native.container-build=true`) and if the builder image provides the `upx` command, Quarkus compresses the executable from inside the container.
+
+If you are not in one of these cases, the compression fails.
+
+[IMPORTANT]
+.upx is cross-platform.
+====
+`upx` can compress executables using a different architecture and OS than your host machine. For example, `upx` on a MacOS X machine can compress a Linux 64bits executables.
+====
+
+== Configuring the UPX compression
+
+Then, in your application configuration, enable the compression by configuring the _compression level_ you want:
+
+[source, properties]
+----
+quarkus.native.compression.level=5
+----
+
+If the compression level is not set, the compression is disabled.
+The compression will happen once the native executable is built and will replace the executable.
+
+== Compression level
+
+The compression level goes from 1 to 10:
+
+* `1`: faster compression
+* `9`: better compression
+* `10`: best compression (can be slow for big files)
+
+== Extra parameters
+
+You can pass extra parameter to upx, such as `--brute` or `--ultra-brute` using the `quarkus.native.compression.additional-args` parameter.
+The value is a comma-separated list of arguments:
+
+[source, properties]
+----
+quarkus.native.compression.level=3
+quarkus.native.compression.additional-args=--ultra-brute,-v
+----
+
+The exhaustive list of parameters can be found in https://github.com/upx/upx/blob/devel/doc/upx.pod[the UPX documentation].

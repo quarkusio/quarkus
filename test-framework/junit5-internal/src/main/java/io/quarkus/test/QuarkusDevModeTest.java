@@ -21,8 +21,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -34,6 +36,7 @@ import java.util.logging.LogRecord;
 import java.util.stream.Stream;
 
 import org.jboss.logmanager.Logger;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -135,9 +138,53 @@ public class QuarkusDevModeTest
         return this;
     }
 
+    /**
+     * Customize the application root.
+     *
+     * @param applicationRootConsumer
+     * @return self
+     */
+    public QuarkusDevModeTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
+        Objects.requireNonNull(applicationRootConsumer);
+        return setArchiveProducer(() -> {
+            JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+            applicationRootConsumer.accept(jar);
+            return jar;
+        });
+    }
+
+    /**
+     * Use an empty application for the test
+     *
+     * @return self
+     */
+    public QuarkusDevModeTest withEmptyApplication() {
+        return withApplicationRoot(new Consumer<JavaArchive>() {
+            @Override
+            public void accept(JavaArchive javaArchive) {
+
+            }
+        });
+    }
+
     public QuarkusDevModeTest setTestArchiveProducer(Supplier<JavaArchive> testArchiveProducer) {
         this.testArchiveProducer = testArchiveProducer;
         return this;
+    }
+
+    /**
+     * Customize the application root.
+     *
+     * @param applicationRootConsumer
+     * @return self
+     */
+    public QuarkusDevModeTest withTestArchive(Consumer<JavaArchive> testArchiveConsumer) {
+        Objects.requireNonNull(testArchiveConsumer);
+        return setTestArchiveProducer(() -> {
+            JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+            testArchiveConsumer.accept(jar);
+            return jar;
+        });
     }
 
     public QuarkusDevModeTest setCodeGenSources(String... codeGenSources) {

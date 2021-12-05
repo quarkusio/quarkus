@@ -333,20 +333,11 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private RestClientConfig clientConfigByConfigKey() {
-        if (configKey != null) {
-            return this.configRoot.configs.getOrDefault(configKey, RestClientConfig.EMPTY);
-        }
-        return RestClientConfig.EMPTY;
+        return this.configRoot.getClientConfig(configKey);
     }
 
     private RestClientConfig clientConfigByClassName() {
-        if (this.configRoot.configs.containsKey(jaxrsInterface.getName())) {
-            return this.configRoot.configs.get(jaxrsInterface.getName());
-        }
-        if (this.configRoot.configs.containsKey(jaxrsInterface.getSimpleName())) {
-            return this.configRoot.configs.get(jaxrsInterface.getSimpleName());
-        }
-        return RestClientConfig.EMPTY;
+        return this.configRoot.getClientConfig(jaxrsInterface);
     }
 
     private static <T> Optional<T> oneOf(Optional<T> o1, Optional<T> o2) {

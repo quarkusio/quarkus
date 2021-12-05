@@ -9,6 +9,11 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -174,6 +179,11 @@ public final class ResteasyReactiveDotNames {
     public static final DotName MULTI_VALUED_MAP = DotName.createSimple(MultivaluedMap.class.getName());
     public static final DotName PATH_SEGMENT = DotName.createSimple(PathSegment.class.getName());
     public static final DotName LOCAL_DATE = DotName.createSimple(LocalDate.class.getName());
+    public static final DotName LOCAL_DATE_TIME = DotName.createSimple(LocalDateTime.class.getName());
+    public static final DotName LOCAL_TIME = DotName.createSimple(LocalTime.class.getName());
+    public static final DotName OFFSET_DATE_TIME = DotName.createSimple(OffsetDateTime.class.getName());
+    public static final DotName OFFSET_TIME = DotName.createSimple(OffsetTime.class.getName());
+    public static final DotName ZONED_DATE_TIME = DotName.createSimple(ZonedDateTime.class.getName());
 
     public static final DotName UNI = DotName.createSimple(Uni.class.getName());
     public static final DotName MULTI = DotName.createSimple(Multi.class.getName());
@@ -216,8 +226,15 @@ public final class ResteasyReactiveDotNames {
     public static final DotName CONTAINER_REQUEST_CONTEXT = DotName.createSimple(ContainerRequestContext.class.getName());
     public static final DotName CONTAINER_RESPONSE_CONTEXT = DotName.createSimple(ContainerResponseContext.class.getName());
 
+    public static final DotName DATE_FORMAT = DotName.createSimple(org.jboss.resteasy.reactive.DateFormat.class.getName());
+
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(
             Arrays.asList(QUERY_PARAM, HEADER_PARAM, PATH_PARAM, MATRIX_PARAM, COOKIE_PARAM));
+
+    public static final Set<DotName> JAX_RS_ANNOTATIONS_FOR_FIELDS = new HashSet<>(
+            Arrays.asList(BEAN_PARAM, MULTI_PART_FORM_PARAM, PATH_PARAM, QUERY_PARAM, HEADER_PARAM, FORM_PARAM, MATRIX_PARAM,
+                    COOKIE_PARAM, REST_PATH_PARAM, REST_QUERY_PARAM, REST_HEADER_PARAM, REST_FORM_PARAM, REST_MATRIX_PARAM,
+                    REST_COOKIE_PARAM, CONTEXT, DEFAULT_VALUE, SUSPENDED));
 
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
@@ -227,9 +244,13 @@ public final class ResteasyReactiveDotNames {
             .createSimple("org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFilter");
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
+    public static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
+    public static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");
+
     // TODO: fix this hack by moving all the logic that handles this annotation to the server processor
     public static final DotName SERVER_EXCEPTION_MAPPER = DotName
             .createSimple("org.jboss.resteasy.reactive.server.ServerExceptionMapper");
+    public static final DotName OBJECT_NAME = DotName.createSimple(Object.class.getName());
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
             // javax.json

@@ -143,7 +143,8 @@ public final class OidcUtils {
 
     static QuarkusSecurityIdentity validateAndCreateIdentity(
             RoutingContext vertxContext, TokenCredential credential,
-            TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo) {
+            TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo,
+            TokenIntrospection introspectionResult) {
 
         OidcTenantConfig config = resolvedContext.oidcConfig;
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
@@ -153,7 +154,7 @@ public final class OidcUtils {
         if (codeTokens != null) {
             RefreshToken refreshTokenCredential = new RefreshToken(codeTokens.getRefreshToken());
             builder.addCredential(refreshTokenCredential);
-            builder.addCredential(new AccessTokenCredential(codeTokens.getAccessToken(), refreshTokenCredential, vertxContext));
+            builder.addCredential(new AccessTokenCredential(codeTokens.getAccessToken(), refreshTokenCredential));
         }
         JsonWebToken jwtPrincipal;
         try {
@@ -166,8 +167,10 @@ public final class OidcUtils {
         }
         builder.addAttribute(QUARKUS_IDENTITY_EXPIRE_TIME, jwtPrincipal.getExpirationTime());
         builder.setPrincipal(jwtPrincipal);
+        setRoutingContextAttribute(builder, vertxContext);
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);
+        setSecurityIdentityIntrospecton(builder, introspectionResult);
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
         setBlockinApiAttribute(builder, vertxContext);
         setTenantIdAttribute(builder, config);
@@ -193,6 +196,10 @@ public final class OidcUtils {
         builder.addAttribute(TENANT_ID_ATTRIBUTE, config.tenantId.orElse("Default"));
     }
 
+    public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext routingContext) {
+        builder.addAttribute(RoutingContext.class.getName(), routingContext);
+    }
+
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, UserInfo userInfo) {
         if (userInfo != null) {
             builder.addAttribute(USER_INFO_ATTRIBUTE, userInfo);
@@ -200,7 +207,9 @@ public final class OidcUtils {
     }
 
     public static void setSecurityIdentityIntrospecton(Builder builder, TokenIntrospection introspectionResult) {
-        builder.addAttribute(INTROSPECTION_ATTRIBUTE, introspectionResult);
+        if (introspectionResult != null) {
+            builder.addAttribute(INTROSPECTION_ATTRIBUTE, introspectionResult);
+        }
     }
 
     public static void setSecurityIdentityConfigMetadata(QuarkusSecurityIdentity.Builder builder,

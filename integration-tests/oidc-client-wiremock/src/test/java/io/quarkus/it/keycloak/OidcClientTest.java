@@ -30,12 +30,41 @@ public class OidcClientTest {
 
     @Test
     public void testEchoAndRefreshTokens() {
+        // access_token_1 and refresh_token_1 are acquired using a password grant request.
+        // access_token_1 expires in 4 seconds, refresh_token_1 has no lifespan limit as no `refresh_expires_in` property is returned.
+        // "Default OidcClient has acquired the tokens" record is added to the log
         RestAssured.when().get("/frontend/echoToken")
                 .then()
                 .statusCode(200)
                 .body(equalTo("access_token_1"));
 
-        // Wait until the access token has expired
+        // Wait until the access_token_1 has expired
+        waitUntillAccessTokenHasExpired();
+
+        // access_token_1 has expired, refresh_token_1 is assumed to be valid and used to acquire access_token_2 and refresh_token_2.
+        // access_token_2 expires in 4 seconds, but refresh_token_2 - in 1 sec - it will expire by the time access_token_2 has expired 
+        // "Default OidcClient has refreshed the tokens" record is added to the log
+        RestAssured.when().get("/frontend/echoToken")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_2"));
+
+        // Wait until the access_token_2 has expired
+        waitUntillAccessTokenHasExpired();
+
+        // Both access_token_2 and refresh_token_2 have now expired therefore a password grant request is repeated,
+        // as opposed to using a refresh token grant.
+        // access_token_1 is returned again - as the same token URL and grant properties are used and Wiremock stub returns access_token_1 
+        // 2nd "Default OidcClient has acquired the tokens" record is added to the log
+        RestAssured.when().get("/frontend/echoToken")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_1"));
+
+        checkLog();
+    }
+
+    private static void waitUntillAccessTokenHasExpired() {
         long expiredTokenTime = System.currentTimeMillis() + 5000;
         await().atMost(10, TimeUnit.SECONDS)
                 .pollInterval(Duration.ofSeconds(3))
@@ -45,12 +74,6 @@ public class OidcClientTest {
                         return System.currentTimeMillis() > expiredTokenTime;
                     }
                 });
-
-        RestAssured.when().get("/frontend/echoToken")
-                .then()
-                .statusCode(200)
-                .body(equalTo("access_token_2"));
-        checkLog();
     }
 
     @Test
@@ -109,8 +132,8 @@ public class OidcClientTest {
 
                             }
                         }
-                        assertEquals(1, tokenAcquisitionCount,
-                                "Log file must contain a single OidcClientImpl token acquisition confirmation");
+                        assertEquals(2, tokenAcquisitionCount,
+                                "Log file must contain two OidcClientImpl token acquisition confirmations");
                         assertEquals(1, tokenRefreshedCount,
                                 "Log file must contain a single OidcClientImpl token refresh confirmation");
                     }

@@ -10,8 +10,6 @@ import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class HeaderTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Resource.class));
 
     @TestHTTPResource
     URI baseUri;

@@ -11,7 +11,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class [=artifactIdBaseCamelCase]DevModeTest {
     @RegisterExtension
     static final QuarkusDevModeTest devModeTest = new QuarkusDevModeTest() // Start hot reload (DevMode) test with your extension loaded
-        .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+        .withEmptyApplication();
 
     @Test
     public void test() {

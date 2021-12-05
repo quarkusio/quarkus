@@ -78,7 +78,7 @@ public class CliProjectMavenTest {
                 "--no-wrapper", "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
-                "-x resteasy-reactive,micrometer",
+                "-x resteasy-reactive,micrometer-registry-prometheus",
                 "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);

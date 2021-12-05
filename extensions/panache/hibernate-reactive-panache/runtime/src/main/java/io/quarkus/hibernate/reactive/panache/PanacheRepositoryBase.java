@@ -13,6 +13,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
+import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -49,6 +50,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
+    @CheckReturnValue
     public default Uni<Entity> persist(Entity entity) {
         return INSTANCE.persist(entity).map(v -> entity);
     }
@@ -64,6 +66,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
+    @CheckReturnValue
     public default Uni<Entity> persistAndFlush(Entity entity) {
         return INSTANCE.persist(entity)
                 .flatMap(v -> INSTANCE.flush())
@@ -81,6 +84,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #delete(String, Parameters)
      * @see #deleteAll()
      */
+    @CheckReturnValue
     public default Uni<Void> delete(Entity entity) {
         return INSTANCE.delete(entity);
     }
@@ -102,6 +106,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * 
      * @return
      */
+    @CheckReturnValue
     public default Uni<Void> flush() {
         return INSTANCE.flush();
     }
@@ -114,6 +119,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param id the ID of the entity to find.
      * @return the entity found, or <code>null</code> if not found.
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Entity> findById(Id id) {
         throw INSTANCE.implementationInjectionMissing();
@@ -126,6 +132,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param lockModeType the locking strategy to be used when retrieving the entity.
      * @return the entity found, or <code>null</code> if not found.
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Entity> findById(Id id, LockModeType lockModeType) {
         throw INSTANCE.implementationInjectionMissing();
@@ -276,6 +283,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Object...)
      * @see #stream(String, Object...)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> list(String query, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -295,6 +303,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Sort, Object...)
      * @see #stream(String, Sort, Object...)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> list(String query, Sort sort, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -313,6 +322,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Map)
      * @see #stream(String, Map)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> list(String query, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -332,6 +342,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Sort, Map)
      * @see #stream(String, Sort, Map)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> list(String query, Sort sort, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -350,6 +361,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Parameters)
      * @see #stream(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> list(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -369,6 +381,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Sort, Parameters)
      * @see #stream(String, Sort, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> list(String query, Sort sort, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -383,6 +396,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #findAll()
      * @see #streamAll()
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> listAll() {
         throw INSTANCE.implementationInjectionMissing();
@@ -398,6 +412,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #findAll(Sort)
      * @see #streamAll(Sort)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<List<Entity>> listAll(Sort sort) {
         throw INSTANCE.implementationInjectionMissing();
@@ -418,6 +433,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Object...)
      * @see #list(String, Object...)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Multi<Entity> stream(String query, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -439,6 +455,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Sort, Object...)
      * @see #list(String, Sort, Object...)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Multi<Entity> stream(String query, Sort sort, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -459,6 +476,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Map)
      * @see #list(String, Map)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Multi<Entity> stream(String query, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -480,6 +498,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Sort, Map)
      * @see #list(String, Sort, Map)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Multi<Entity> stream(String query, Sort sort, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -500,6 +519,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Parameters)
      * @see #list(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Multi<Entity> stream(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -521,6 +541,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #find(String, Sort, Parameters)
      * @see #list(String, Sort, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Multi<Entity> stream(String query, Sort sort, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -537,6 +558,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #findAll()
      * @see #listAll()
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Multi<Entity> streamAll(Sort sort) {
         throw INSTANCE.implementationInjectionMissing();
@@ -553,6 +575,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #findAll(Sort)
      * @see #listAll(Sort)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Multi<Entity> streamAll() {
         throw INSTANCE.implementationInjectionMissing();
@@ -566,6 +589,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #count(String, Map)
      * @see #count(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> count() {
         throw INSTANCE.implementationInjectionMissing();
@@ -581,6 +605,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #count(String, Map)
      * @see #count(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> count(String query, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -596,6 +621,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #count(String, Object...)
      * @see #count(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> count(String query, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -611,6 +637,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #count(String, Object...)
      * @see #count(String, Map)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> count(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -627,6 +654,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #delete(String, Map)
      * @see #delete(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> deleteAll() {
         throw INSTANCE.implementationInjectionMissing();
@@ -638,6 +666,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @param id the ID of the entity to delete.
      * @return false if the entity was not deleted (not found).
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Boolean> deleteById(Id id) {
         throw INSTANCE.implementationInjectionMissing();
@@ -656,6 +685,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #delete(String, Map)
      * @see #delete(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> delete(String query, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -674,6 +704,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #delete(String, Object...)
      * @see #delete(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> delete(String query, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -692,6 +723,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Long> delete(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -706,6 +738,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Object,Object...)
      */
+    @CheckReturnValue
     public default Uni<Void> persist(Iterable<Entity> entities) {
         return INSTANCE.persist(entities);
     }
@@ -719,6 +752,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Iterable)
      * @see #persist(Object,Object...)
      */
+    @CheckReturnValue
     public default Uni<Void> persist(Stream<Entity> entities) {
         return INSTANCE.persist(entities);
     }
@@ -732,6 +766,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #persist(Stream)
      * @see #persist(Iterable)
      */
+    @CheckReturnValue
     public default Uni<Void> persist(Entity firstEntity, @SuppressWarnings("unchecked") Entity... entities) {
         return INSTANCE.persist(firstEntity, entities);
     }
@@ -745,6 +780,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #update(String, Map)
      * @see #update(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Integer> update(String query, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -759,6 +795,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Integer> update(String query, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
@@ -773,6 +810,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #update(String, Object...)
      * @see #update(String, Map)
      */
+    @CheckReturnValue
     @GenerateBridge
     public default Uni<Integer> update(String query, Parameters params) {
         throw INSTANCE.implementationInjectionMissing();

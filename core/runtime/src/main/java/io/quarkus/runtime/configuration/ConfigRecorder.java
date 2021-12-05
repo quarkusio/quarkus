@@ -18,7 +18,13 @@ public class ConfigRecorder {
 
     private static final Logger log = Logger.getLogger(ConfigRecorder.class);
 
-    public void handleConfigChange(ConfigurationRuntimeConfig configurationConfig, Map<String, String> buildTimeConfig) {
+    final ConfigurationRuntimeConfig configurationConfig;
+
+    public ConfigRecorder(ConfigurationRuntimeConfig configurationConfig) {
+        this.configurationConfig = configurationConfig;
+    }
+
+    public void handleConfigChange(Map<String, String> buildTimeConfig) {
         Config configProvider = ConfigProvider.getConfig();
         List<String> mismatches = null;
         for (Map.Entry<String, String> entry : buildTimeConfig.entrySet()) {

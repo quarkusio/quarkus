@@ -30,6 +30,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteCla
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -145,6 +146,7 @@ public class NativeImageBuildStep {
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
+            List<UnsupportedOSBuildItem> unsupportedOses,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
@@ -207,6 +209,7 @@ public class NativeImageBuildStep {
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                     .setJPMSExportBuildItems(jpmsExportBuildItems)
                     .setNativeMinimalJavaVersions(nativeMinimalJavaVersions)
+                    .setUnsupportedOSes(unsupportedOses)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
                     .setNativeImageName(nativeImageName)
@@ -483,6 +486,7 @@ public class NativeImageBuildStep {
             private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
             private List<JPMSExportBuildItem> jpmsExports;
             private List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions;
+            private List<UnsupportedOSBuildItem> unsupportedOSes;
             private Path outputDir;
             private String runnerJarName;
             private String noPIE = "";
@@ -529,6 +533,12 @@ public class NativeImageBuildStep {
             public Builder setNativeMinimalJavaVersions(
                     List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions) {
                 this.nativeMinimalJavaVersions = nativeMinimalJavaVersions;
+                return this;
+            }
+
+            public Builder setUnsupportedOSes(
+                    List<UnsupportedOSBuildItem> unsupportedOSes) {
+                this.unsupportedOSes = unsupportedOSes;
                 return this;
             }
 
@@ -766,6 +776,14 @@ public class NativeImageBuildStep {
                                 .forEach(a -> log.warnf("Expected: Java %d, update %d, Actual: Java %d, update %d. %s",
                                         a.minFeature, a.minUpdate, graalVMVersion.javaFeatureVersion,
                                         graalVMVersion.javaUpdateVersion, a.warning));
+                    }
+                }
+
+                if (unsupportedOSes != null && !unsupportedOSes.isEmpty()) {
+                    final String errs = unsupportedOSes.stream().filter(o -> o.os.active).map(o -> o.error)
+                            .collect(Collectors.joining(", "));
+                    if (!errs.isEmpty()) {
+                        throw new UnsupportedOperationException(errs);
                     }
                 }
 

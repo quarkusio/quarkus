@@ -1,5 +1,7 @@
 package io.quarkus.awt.deployment;
 
+import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.WINDOWS;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -7,18 +9,16 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.commons.lang3.SystemUtils;
-
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
@@ -31,20 +31,14 @@ class AwtProcessor {
         return new FeatureBuildItem(Feature.AWT);
     }
 
-    /**
-     * TODO: Is there a better way to disable an extension's native build on a particular platform?
-     */
     @BuildStep(onlyIf = NativeBuild.class)
-    @Produce(NativeImageResourceBuildItem.class)
-    public void osSupportCheck(NativeConfig nativeConfig) {
-        if (SystemUtils.IS_OS_WINDOWS && !nativeConfig.isContainerBuild()) {
-            throw new UnsupportedOperationException(
-                    "Windows AWT integration is not ready in native-image and would result in " +
-                            "java.lang.UnsatisfiedLinkError: no awt in java.library.path.");
-        }
+    UnsupportedOSBuildItem osSupportCheck() {
+        return new UnsupportedOSBuildItem(WINDOWS,
+                "Windows AWT integration is not ready in native-image and would result in " +
+                        "java.lang.UnsatisfiedLinkError: no awt in java.library.path.");
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = NativeBuild.class)
     NativeMinimalJavaVersionBuildItem nativeMinimalJavaVersionBuildItem() {
         return new NativeMinimalJavaVersionBuildItem(11, 13,
                 "AWT: Some MLib related operations, such as filter in awt.image.ConvolveOp will not work. " +
@@ -52,7 +46,7 @@ class AwtProcessor {
     }
 
     /**
-     * TODO
+     * TODO:
      *
      * The problem is that even if we bring I18N into the fold , e.g.
      * runtimeInit.accept(new RuntimeInitializedClassBuildItem("com.sun.imageio.plugins.common.I18N"));

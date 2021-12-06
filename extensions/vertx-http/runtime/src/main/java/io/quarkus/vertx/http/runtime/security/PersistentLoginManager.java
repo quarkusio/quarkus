@@ -122,7 +122,7 @@ public class PersistentLoginManager {
             message.put(iv);
             message.put(encrypted);
             String cookieValue = Base64.getEncoder().encodeToString(message.array());
-            context.addCookie(Cookie.cookie(cookieName, cookieValue).setPath("/").setSecure(secureCookie));
+            context.addCookie(Cookie.cookie(cookieName, cookieValue).setPath("/").setHttpOnly(true).setSecure(secureCookie));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

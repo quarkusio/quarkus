@@ -30,7 +30,9 @@ public class OidcConfig {
     public Map<String, OidcTenantConfig> namedTenants;
 
     /**
-     * Default TokenIntrospection and UserInfo Cache configuration which is used for all the tenants if it is enabled.
+     * Default TokenIntrospection and UserInfo Cache configuration which is used for all the tenants if it is enabled
+     * with the build-time 'quarkus.oidc.default-token-cache-enabled' property ('true' by default) and also activated,
+     * see its `max-size` property.
      */
     @ConfigItem
     public TokenCache tokenCache = new TokenCache();

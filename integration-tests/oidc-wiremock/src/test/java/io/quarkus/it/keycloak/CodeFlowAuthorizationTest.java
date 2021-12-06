@@ -42,7 +42,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice, cache size: 0", page.getBody().asText());
             assertNotNull(getSessionCookie(webClient, "code-flow"));
 
             page = webClient.getPage("http://localhost:8081/code-flow/logout");
@@ -66,7 +66,8 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice", page.getBody().asText());
+            assertEquals("alice:alice, cache size: 1", page.getBody().asText());
+
             assertNotNull(getSessionCookie(webClient, "code-flow-user-info-only"));
             webClient.getCookieManager().clearCookies();
         }

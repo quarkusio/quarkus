@@ -4,7 +4,6 @@
 triage:
   discussions:
     monitoredCategories: [ 33575230 ]
-    logCategories: true
   rules:
     - labels: [area/amazon-lambda]
       title: "lambda"

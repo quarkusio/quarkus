@@ -1,5 +1,6 @@
 package io.quarkus.platform.descriptor.loader.json;
 
+import io.quarkus.fs.util.ZipUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -7,7 +8,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -57,7 +57,7 @@ public final class ResourceLoaders {
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to create a URL for '" + file.substring(0, exclam) + "'", e);
             }
-            try (FileSystem jarFs = FileSystems.newFileSystem(jar, (ClassLoader) null)) {
+            try (FileSystem jarFs = ZipUtils.newFileSystem(jar)) {
                 Path localPath = jarFs.getPath("/");
                 if (exclam >= 0) {
                     localPath = localPath.resolve(file.substring(exclam + 1));

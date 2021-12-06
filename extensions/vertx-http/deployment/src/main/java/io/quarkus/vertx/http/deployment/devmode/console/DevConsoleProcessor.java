@@ -10,7 +10,6 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,6 +70,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
@@ -719,7 +719,7 @@ public class DevConsoleProcessor {
                         // on Windows this will be /C:/some/path, so turn it into C:\some\path
                         jarPath = jarPath.substring(1).replace('/', '\\');
                     }
-                    try (FileSystem fs = FileSystems
+                    try (FileSystem fs = ZipUtils
                             .newFileSystem(Paths.get(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name())), classLoader)) {
                         scanTemplates(fs, null, fs.getRootDirectories(), devTemplatePaths);
                     }

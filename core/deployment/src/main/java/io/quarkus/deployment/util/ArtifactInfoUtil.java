@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +14,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 public final class ArtifactInfoUtil {
@@ -74,7 +74,7 @@ public final class ArtifactInfoUtil {
 
             if (codeLocation.toString().endsWith(".jar")) {
                 // Search inside the jar for pom properties, needed for workspace artifacts
-                try (FileSystem fs = FileSystems.newFileSystem(Paths.get(codeLocation.toURI()),
+                try (FileSystem fs = ZipUtils.newFileSystem(Paths.get(codeLocation.toURI()),
                         Thread.currentThread().getContextClassLoader())) {
                     Entry<String, String> ret = groupIdAndArtifactId(fs);
                     if (ret == null) {

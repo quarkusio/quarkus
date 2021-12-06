@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -49,6 +48,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.workspace.DefaultProcessedSources;
 import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.ProcessedSources;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
@@ -475,7 +475,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (Files.isDirectory(artifactPath)) {
                 processQuarkusDir(artifactBuilder, artifactPath.resolve(BootstrapConstants.META_INF), modelBuilder);
             } else {
-                try (FileSystem artifactFs = FileSystems.newFileSystem(artifactPath, (ClassLoader) null)) {
+                try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactPath)) {
                     processQuarkusDir(artifactBuilder, artifactFs.getPath(BootstrapConstants.META_INF), modelBuilder);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to process " + artifactPath, e);

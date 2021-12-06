@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -35,6 +34,7 @@ import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.GACT;
 
 /**
@@ -272,7 +272,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
                 if (Files.isDirectory(p) && isExtension(p)) {
                     extensions.add(resolvedArtifact);
                 } else {
-                    try (FileSystem fs = FileSystems.newFileSystem(p, null)) {
+                    try (FileSystem fs = ZipUtils.newFileSystem(p)) {
                         if (isExtension(fs.getPath(""))) {
                             extensions.add(resolvedArtifact);
                         }

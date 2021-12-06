@@ -51,7 +51,7 @@ public class SyncValidationTest {
                 .statusCode(400)
                 .body("title", containsString("Constraint Violation"))
                 .body("status", is(400))
-                .body("details", containsString("validation constraint violations"))
+                .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
 
@@ -71,7 +71,7 @@ public class SyncValidationTest {
                 .statusCode(500)
                 .body("title", containsString("Constraint Violation"))
                 .body("status", is(500))
-                .body("details", containsString("validation constraint violations"))
+                .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
 
@@ -81,7 +81,7 @@ public class SyncValidationTest {
                 .get("/invalid2").then().statusCode(500)
                 .body("title", containsString("Constraint Violation"))
                 .body("status", is(500))
-                .body("details", containsString("validation constraint violations"))
+                .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", anyOf(containsString("name"), containsString("welcome")))
                 .body("violations[0].message", is(not(emptyString())))
                 .body("violations[1].field", anyOf(containsString("name"), containsString("welcome")))
@@ -96,7 +96,7 @@ public class SyncValidationTest {
                 .then().statusCode(400)
                 .body("title", containsString("Constraint Violation"))
                 .body("status", is(400))
-                .body("details", containsString("validation constraint violations"))
+                .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
 
@@ -108,7 +108,7 @@ public class SyncValidationTest {
                 .then().statusCode(400)
                 .body("title", containsString("Constraint Violation"))
                 .body("status", is(400))
-                .body("details", containsString("validation constraint violations"));
+                .body("detail", containsString("validation constraint violations"));
     }
 
     @ApplicationScoped

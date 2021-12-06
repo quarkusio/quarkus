@@ -34,6 +34,7 @@ updates:
       # Quarkus
       - dependency-name: io.quarkus.gizmo:gizmo
       - dependency-name: io.quarkus.http:*
+      - dependency-name: io.quarkus:quarkus-fs-util
       # Elytron
       - dependency-name: org.wildfly.security:wildfly-elytron
       - dependency-name: org.wildfly.security:wildfly-elytron-*

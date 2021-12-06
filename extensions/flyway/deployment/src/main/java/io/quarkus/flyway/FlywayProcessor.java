@@ -8,7 +8,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,6 +60,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
+import io.quarkus.fs.util.ZipUtils;
 
 class FlywayProcessor {
 
@@ -281,9 +281,7 @@ class FlywayProcessor {
     }
 
     private FileSystem initFileSystem(final URI uri) throws IOException {
-        final Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-        return FileSystems.newFileSystem(uri, env);
+        return ZipUtils.newZip(Path.of(uri));
     }
 
     /**

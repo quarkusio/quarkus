@@ -8,13 +8,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import io.quarkus.fs.util.ZipUtils;
 
 public class ClassPathUtils {
 
@@ -126,7 +127,7 @@ public class ClassPathUtils {
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to create a URL for '" + file.substring(0, exclam) + "'", e);
             }
-            try (FileSystem jarFs = FileSystems.newFileSystem(jar, (ClassLoader) null)) {
+            try (FileSystem jarFs = ZipUtils.newFileSystem(jar, null)) {
                 Path localPath = jarFs.getPath("/");
                 if (exclam >= 0) {
                     localPath = localPath.resolve(file.substring(exclam + 1));
@@ -193,7 +194,7 @@ public class ClassPathUtils {
                 // We are loading "installed" FS providers that are loaded from from the system classloader anyway
                 // To avoid potential ClassCastExceptions we are setting the context classloader to the system one
                 Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
-                try (FileSystem jarFs = FileSystems.newFileSystem(jar, (ClassLoader) null)) {
+                try (FileSystem jarFs = ZipUtils.newFileSystem(jar)) {
                     try (InputStream is = Files.newInputStream(jarFs.getPath(file.substring(fileExclam + 1)))) {
                         return function.apply(is);
                     }

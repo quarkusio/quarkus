@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
@@ -38,6 +37,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
@@ -191,7 +191,7 @@ public class ApplicationArchiveBuildStep {
         Path rootDir = dep;
         boolean isDirectory = Files.isDirectory(dep);
         if (!isDirectory) {
-            final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(dep, classLoader));
+            final FileSystem fs = buildCloseables.add(ZipUtils.newFileSystem(dep, classLoader));
             rootDir = fs.getRootDirectories().iterator().next();
         }
         final IndexView index = indexPath(indexCache, dep, removedResources.get(artifactKey), isDirectory);
@@ -227,7 +227,7 @@ public class ApplicationArchiveBuildStep {
                 } else {
                     boolean close = true;
                     try {
-                        fs = FileSystems.newFileSystem(p, classLoader);
+                        fs = ZipUtils.newFileSystem(p, classLoader);
                         if (containsMarker = containsMarker(fs.getPath("/"), applicationArchiveFiles)) {
                             close = false;
                             break;
@@ -254,7 +254,7 @@ public class ApplicationArchiveBuildStep {
                         rootDirs.add(p);
                     } else {
                         if (fs == null) {
-                            fs = FileSystems.newFileSystem(p, classLoader);
+                            fs = ZipUtils.newFileSystem(p, classLoader);
                         }
                         buildCloseables.add(fs);
                         fs.getRootDirectories().forEach(rootDirs::add);

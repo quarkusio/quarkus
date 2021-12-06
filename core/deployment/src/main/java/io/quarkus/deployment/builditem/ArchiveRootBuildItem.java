@@ -2,7 +2,6 @@ package io.quarkus.deployment.builditem;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,6 +12,7 @@ import java.util.List;
 
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.fs.util.ZipUtils;
 
 public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
@@ -89,7 +89,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
                 if (Files.isDirectory(root)) {
                     rootDirs.add(root);
                 } else {
-                    final FileSystem fs = buildCloseables.add(FileSystems.newFileSystem(root, (ClassLoader) null));
+                    final FileSystem fs = buildCloseables.add(ZipUtils.newFileSystem(root));
                     fs.getRootDirectories().forEach(rootDirs::add);
                 }
             }

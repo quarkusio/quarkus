@@ -1,4 +1,4 @@
-package io.quarkus.rest.client.reactive;
+package io.quarkus.rest.client.reactive.multipart;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,9 +30,7 @@ public class MultipartFilenameTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Resource.class, FormData.class, Client.class, ClientForm.class))
-            .withConfigurationResource("mp-global-scope-test-application.properties");
+            .withApplicationRoot(jar -> jar.addClasses(Resource.class, FormData.class, Client.class, ClientForm.class));
 
     @Test
     void shouldPassOriginalFileName() throws IOException {

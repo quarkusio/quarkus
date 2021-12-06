@@ -9,7 +9,6 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
 import io.netty.handler.codec.http.multipart.FileUpload;
-import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 import io.netty.handler.codec.http.multipart.MemoryFileUpload;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -21,16 +20,17 @@ import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * based on {@link io.vertx.ext.web.client.impl.MultipartFormUpload}
  */
-public class QuarkusMultipartFormUpload implements ReadStream<Buffer> {
+public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable {
 
     private static final UnpooledByteBufAllocator ALLOC = new UnpooledByteBufAllocator(false);
 
     private DefaultFullHttpRequest request;
-    private HttpPostRequestEncoder encoder;
+    private PausableHttpPostRequestEncoder encoder;
     private Handler<Throwable> exceptionHandler;
     private Handler<Buffer> dataHandler;
     private Handler<Void> endHandler;
@@ -41,7 +41,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer> {
     public QuarkusMultipartFormUpload(Context context,
             QuarkusMultipartForm parts,
             boolean multipart,
-            HttpPostRequestEncoder.EncoderMode encoderMode) throws Exception {
+            PausableHttpPostRequestEncoder.EncoderMode encoderMode) throws Exception {
         this.context = context;
         this.pending = new InboundBuffer<>(context)
                 .handler(this::handleChunk)
@@ -51,22 +51,18 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer> {
                 io.netty.handler.codec.http.HttpMethod.POST,
                 "/");
         Charset charset = parts.getCharset() != null ? parts.getCharset() : HttpConstants.DEFAULT_CHARSET;
-        this.encoder = new HttpPostRequestEncoder(
-                new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE, charset) {
-                    @Override
-                    public FileUpload createFileUpload(HttpRequest request, String name, String filename, String contentType,
-                            String contentTransferEncoding, Charset _charset, long size) {
-                        if (_charset == null) {
-                            _charset = charset;
-                        }
-                        return super.createFileUpload(request, name, filename, contentType, contentTransferEncoding, _charset,
-                                size);
-                    }
-                },
-                request,
-                multipart,
-                charset,
-                encoderMode);
+        DefaultHttpDataFactory httpDataFactory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE, charset) {
+            @Override
+            public FileUpload createFileUpload(HttpRequest request, String name, String filename, String contentType,
+                    String contentTransferEncoding, Charset _charset, long size) {
+                if (_charset == null) {
+                    _charset = charset;
+                }
+                return super.createFileUpload(request, name, filename, contentType, contentTransferEncoding, _charset,
+                        size);
+            }
+        };
+        this.encoder = new PausableHttpPostRequestEncoder(httpDataFactory, request, multipart, charset, encoderMode);
         for (QuarkusMultipartFormDataPart formDataPart : parts) {
             if (formDataPart.isAttribute()) {
                 encoder.addBodyAttribute(formDataPart.name(), formDataPart.value());
@@ -75,6 +71,30 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer> {
                         formDataPart.isText() ? null : "binary", null, formDataPart.content().length());
                 data.setContent(formDataPart.content().getByteBuf());
                 encoder.addBodyHttpData(data);
+            } else if (formDataPart.multiByteContent() != null) {
+                String contentTransferEncoding = null;
+                String contentType = formDataPart.mediaType();
+                if (contentType == null) {
+                    if (formDataPart.isText()) {
+                        contentType = "text/plain";
+                    } else {
+                        contentType = "application/octet-stream";
+                    }
+                }
+                if (!formDataPart.isText()) {
+                    contentTransferEncoding = "binary";
+                }
+
+                encoder.addBodyHttpData(new MultiByteHttpData(
+                        formDataPart.name(),
+                        formDataPart.filename(),
+                        contentType,
+                        contentTransferEncoding,
+                        Charset.defaultCharset(),
+                        formDataPart.multiByteContent(),
+                        this::handleError,
+                        context,
+                        this));
             } else {
                 String pathname = formDataPart.pathname();
                 if (pathname != null) {
@@ -121,16 +141,23 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer> {
         handler.handle(item);
     }
 
+    @Override
     public void run() {
         if (Vertx.currentContext() != context) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Wrong Vert.x context used for multipart upload. Expected: " + context +
+                    ", actual: " + Vertx.currentContext());
         }
+        AtomicInteger counter = new AtomicInteger();
         while (!ended) {
             if (encoder.isChunked()) {
                 try {
                     HttpContent chunk = encoder.readChunk(ALLOC);
+                    if (chunk == PausableHttpPostRequestEncoder.WAIT_MARKER) {
+                        return; // resumption will be scheduled by encoder
+                    }
                     ByteBuf content = chunk.content();
                     Buffer buff = Buffer.buffer(content);
+                    counter.incrementAndGet();
                     boolean writable = pending.write(buff);
                     if (encoder.isEndOfInput()) {
                         ended = true;
@@ -141,10 +168,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer> {
                         break;
                     }
                 } catch (Exception e) {
-                    ended = true;
-                    request = null;
-                    encoder = null;
-                    pending.write(e);
+                    handleError(e);
                     break;
                 }
             } else {
@@ -157,6 +181,13 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer> {
                 pending.write(InboundBuffer.END_SENTINEL);
             }
         }
+    }
+
+    private void handleError(Throwable e) {
+        ended = true;
+        request = null;
+        encoder = null;
+        pending.write(e);
     }
 
     public MultiMap headers() {
@@ -188,6 +219,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer> {
     }
 
     @Override
+    @Deprecated
     public synchronized QuarkusMultipartFormUpload resume() {
         pending.resume();
         return this;

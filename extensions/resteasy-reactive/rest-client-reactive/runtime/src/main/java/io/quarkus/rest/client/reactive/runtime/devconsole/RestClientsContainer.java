@@ -68,7 +68,7 @@ public class RestClientsContainer {
 
         public RestClientData(List<RestClientInfo> clients, List<PossibleRestClientInfo> possibleClients) {
             this.clients = clients;
-            this.possibleClients = possibleClients;
+            this.possibleClients = possibleClients; // TODO: present this info
         }
     }
 

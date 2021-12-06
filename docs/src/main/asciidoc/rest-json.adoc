@@ -68,7 +68,7 @@ and in particular adds the following dependency:
 To improve user experience, Quarkus registers the three Jackson https://github.com/FasterXML/jackson-modules-java8[Java 8 modules] so you don't need to do it manually.
 ====
 
-Quarkus also supports http://json-b.net/[JSON-B] so, if you prefer JSON-B over Jackson, you can create a project relying on the RESTEasy JSON-B extension instead:
+Quarkus also supports https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] so, if you prefer JSON-B over Jackson, you can create a project relying on the RESTEasy JSON-B extension instead:
 
 [source,bash,subs=attributes+]
 ----
@@ -81,7 +81,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
 cd rest-json-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS and http://json-b.net/[JSON-B] extensions,
+This command generates a Maven structure importing the RESTEasy/JAX-RS and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
 and in particular adds the following dependency:
 
 [source,xml]
@@ -165,7 +165,7 @@ public class FruitResource {
 
 The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations.
 
-The `Fruit` objects will be automatically serialized/deserialized by http://json-b.net/[JSON-B] or https://github.com/FasterXML/jackson[Jackson],
+The `Fruit` objects will be automatically serialized/deserialized by https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] or https://github.com/FasterXML/jackson[Jackson],
 depending on the extension you chose when initializing the project.
 
 [NOTE]

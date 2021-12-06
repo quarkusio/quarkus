@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
@@ -68,8 +69,8 @@ public abstract class BasePanacheMongoResourceProcessor {
     public static final DotName BSON_IGNORE = createSimple(BsonIgnore.class.getName());
     public static final DotName BSON_PROPERTY = createSimple(BsonProperty.class.getName());
     public static final DotName MONGO_ENTITY = createSimple(io.quarkus.mongodb.panache.common.MongoEntity.class.getName());
-    public static final DotName OBJECT_ID = createSimple(ObjectId.class.getName());
     public static final DotName PROJECTION_FOR = createSimple(io.quarkus.mongodb.panache.common.ProjectionFor.class.getName());
+    public static final String BSON_PACKAGE = "org.bson.";
 
     @BuildStep
     public void buildImperative(CombinedIndexBuildItem index,
@@ -381,8 +382,8 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     @BuildStep
-    ReflectiveClassBuildItem registerForReflection() {
-        return new ReflectiveClassBuildItem(true, true, OBJECT_ID.toString());
+    ReflectiveHierarchyIgnoreWarningBuildItem ignoreBsonTypes() {
+        return new ReflectiveHierarchyIgnoreWarningBuildItem(dotname -> dotname.toString().startsWith(BSON_PACKAGE));
     }
 
     @BuildStep

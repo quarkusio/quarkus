@@ -164,7 +164,7 @@ There are two things to notice about this function.  One, it has no output.  You
 required to return output.  Second, there is an additional `event` parameter to the function.
 
 If you want to know additional information about the incoming Cloud Event, you can inject the
-`CloudEvent` interface using the Funqy `@Context` annotation.  The `CloudEvent` interface exposes information
+`io.quarkus.funqy.knative.events.CloudEvent` interface using the Funqy `@Context` annotation.  The `CloudEvent` interface exposes information
 about the triggering event.
 
 [source, java]

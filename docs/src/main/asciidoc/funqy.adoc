@@ -9,8 +9,8 @@ include::./attributes.adoc[]
 :extension-status: preview
 
 Quarkus Funqy is part of Quarkus's serverless strategy and aims to provide a portable Java API to write functions
-deployable to various FaaS environments like AWS Lambda, Azure Functions, Knative, and Knative Events (Cloud Events).  It is also
-usable as a standalone service.
+deployable to various FaaS environments like AWS Lambda, Azure Functions, Google Cloud Functions, Knative, and Knative Events (Cloud Events).
+It is also usable as a standalone service.
 
 Because Funqy is an abstraction that spans multiple different cloud/function providers
 and protocols it has to be a very simple API and thus, might not have all the features you are used
@@ -145,13 +145,14 @@ contextual information that is specific to the environment you are deploying in.
 NOTE: We do not recommend injecting contextual information specific to a runtime.  Keep your functions portable.
 
 Contextual information is injected via the `@Context` annotation which can be used on a function parameter
-or a class field.  A good example is the `CloudEvent` interface that comes with our Funqy
+or a class field.  A good example is the `io.quarkus.funqy.knative.events.CloudEvent` interface that comes with our Funqy
 Knative Cloud Events integration:
 
 [source, java]
 ----
 import io.quarkus.funqy.Funq;
 import io.quarkus.funqy.Context;
+import io.quarkus.funqy.knative.events.CloudEvent;
 
 public class GreetingFunction {
 

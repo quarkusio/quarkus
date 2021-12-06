@@ -31,8 +31,13 @@ public class VaultCredentialsProvider implements CredentialsProvider {
     @Override
     public Map<String, String> getCredentials(String credentialsProviderName) {
 
-        CredentialsProviderConfig config = getConfig().credentialsProvider.get(credentialsProviderName);
+        VaultBootstrapConfig vaultConfig = getConfig();
+        if (vaultConfig == null) {
+            throw new VaultException(
+                    "missing vault configuration required for credentials providers with name " + credentialsProviderName);
+        }
 
+        CredentialsProviderConfig config = vaultConfig.credentialsProvider.get(credentialsProviderName);
         if (config == null) {
             throw new VaultException("unknown credentials provider with name " + credentialsProviderName);
         }

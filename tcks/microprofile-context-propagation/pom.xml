@@ -13,6 +13,10 @@
     <artifactId>quarkus-tck-microprofile-context-propagation</artifactId>
     <name>Quarkus - TCK - MicroProfile Context Propagation</name>
 
+    <properties>
+        <microprofile-context-propagation-tck.version>1.2</microprofile-context-propagation-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -74,7 +78,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.context-propagation</groupId>
             <artifactId>microprofile-context-propagation-tck</artifactId>
-            <version>${microprofile-context-propagation.version}</version>
+            <version>${microprofile-context-propagation-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.enterprise</groupId>

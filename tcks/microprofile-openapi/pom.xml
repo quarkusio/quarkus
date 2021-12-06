@@ -13,6 +13,10 @@
     <artifactId>quarkus-tck-microprofile-openapi</artifactId>
     <name>Quarkus - TCK - MicroProfile OpenAPI</name>
 
+    <properties>
+        <microprofile-openapi-tck.version>2.0.1-RC1</microprofile-openapi-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -53,7 +57,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.openapi</groupId>
             <artifactId>microprofile-openapi-tck</artifactId>
-            <version>${microprofile-open-api.version}</version>
+            <version>${microprofile-openapi-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>

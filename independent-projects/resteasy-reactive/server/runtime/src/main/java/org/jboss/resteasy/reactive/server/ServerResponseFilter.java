@@ -8,6 +8,7 @@ import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.UriInfo;
 
 /**
  * When used on a method, then an implementation of {@link javax.ws.rs.container.ContainerResponseContext} is generated
@@ -41,6 +42,7 @@ import javax.ws.rs.container.ResourceInfo;
  * <li>{@link ContainerRequestContext}
  * <li>{@link ContainerResponseContext}
  * <li>{@link ResourceInfo}
+ * <li>{@link UriInfo}
  * <li>{@link SimpleResourceInfo}
  * <li>{@link Throwable} - The thrown exception - or {@code null} if no exception was thrown
  * </ul>

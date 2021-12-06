@@ -45,4 +45,9 @@ public class BasicRestClientTest {
         Bean<?> resolvedBean = beanManager.resolve(beans);
         assertThat(resolvedBean.getScope()).isEqualTo(ApplicationScoped.class);
     }
+
+    @Test
+    void shouldInvokeClientResponseOnSameContext() {
+        assertThat(testBean.bug18977()).isEqualTo("Hello");
+    }
 }

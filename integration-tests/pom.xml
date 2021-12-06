@@ -179,6 +179,7 @@
         <module>opentelemetry</module>
         <module>logging-json</module>
         <module>jaxp</module>
+        <module>jaxb</module>
         <module>mailer</module>
         <module>native-config-profile</module>
         <module>logging-min-level-unset</module>

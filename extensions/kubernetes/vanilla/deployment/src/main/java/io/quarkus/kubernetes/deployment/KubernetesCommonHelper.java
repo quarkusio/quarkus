@@ -186,10 +186,15 @@ public class KubernetesCommonHelper {
             result.add(new DecoratorBuildItem(new ApplyServiceAccountNamedDecorator()));
             result.add(new DecoratorBuildItem(new AddServiceAccountResourceDecorator()));
             roles.forEach(r -> result.add(new DecoratorBuildItem(new AddRoleResourceDecorator(r))));
-            roleBindings.forEach(rb -> result.add(new DecoratorBuildItem(
-                    new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(), rb.isClusterWide()
-                            ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
-                            : AddRoleBindingResourceDecorator.RoleKind.Role))));
+            roleBindings.forEach(rb -> {
+                result.add(new DecoratorBuildItem(new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(),
+                        rb.isClusterWide() ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
+                                : AddRoleBindingResourceDecorator.RoleKind.Role)));
+                labels.forEach(l -> {
+                    result.add(new DecoratorBuildItem(
+                            new AddLabelDecorator(rb.getName(), l.getKey(), l.getValue(), "RoleBinding")));
+                });
+            });
         }
 
         return result;

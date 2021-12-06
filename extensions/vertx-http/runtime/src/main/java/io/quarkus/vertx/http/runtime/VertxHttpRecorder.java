@@ -244,7 +244,7 @@ public class VertxHttpRecorder {
         if (startVirtual) {
             initializeVirtual(vertx.get());
         }
-        if (startSocket) {
+        if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled)) {
             // Start the server
             if (closeTask == null) {
                 doServerStart(vertx.get(), httpBuildTimeConfig, httpConfiguration, launchMode, ioThreads,

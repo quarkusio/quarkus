@@ -5,6 +5,7 @@ import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,9 @@ import java.util.function.Function;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class DefaultJarLauncher implements JarArtifactLauncher {
+
+    private static final String JAVA_HOME_SYS = "java.home";
+    private static final String JAVA_HOME_ENV = "JAVA_HOME";
 
     private int httpPort;
     private int httpsPort;
@@ -45,7 +49,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         System.setProperty("test.url", TestHTTPResourceManager.getUri());
 
         List<String> args = new ArrayList<>();
-        args.add("java");
+        args.add(determineJavaPath());
         if (!argLine.isEmpty()) {
             args.addAll(argLine);
         }
@@ -84,6 +88,26 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
             isSsl = result.isSsl();
         }
 
+    }
+
+    private String determineJavaPath() {
+        // try system property first - it will be the JAVA_HOME used by the current JVM
+        String home = System.getProperty(JAVA_HOME_SYS);
+        if (home == null) {
+            // No luck, somewhat a odd JVM not enforcing this property
+            // try with the JAVA_HOME environment variable
+            home = System.getenv(JAVA_HOME_ENV);
+        }
+        if (home != null) {
+            File javaHome = new File(home);
+            File file = new File(javaHome, "bin/java");
+            if (file.exists()) {
+                return file.getAbsolutePath();
+            }
+        }
+
+        // just assume 'java' is on the system path
+        return "java";
     }
 
     @Override

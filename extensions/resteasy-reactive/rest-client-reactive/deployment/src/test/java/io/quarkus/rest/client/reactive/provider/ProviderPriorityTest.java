@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.HelloClient2;
 import io.quarkus.rest.client.reactive.HelloResource;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -23,12 +24,14 @@ public class ProviderPriorityTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(HelloResource.class,
                             HelloClient.class,
+                            HelloClient2.class,
                             HelloClientWithFilter.class,
                             ResponseFilterLowestPrio.class,
                             GlobalResponseFilter.class,
                             GlobalResponseFilterLowPrio.class)
                     .addAsResource(
                             new StringAsset(setUrlForClass(HelloClient.class)
+                                    + setUrlForClass(HelloClient2.class)
                                     + setUrlForClass(HelloClientWithFilter.class)),
                             "application.properties"));
 

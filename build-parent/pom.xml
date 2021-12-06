@@ -36,8 +36,8 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>21.2.0</graal-sdk.version-for-documentation>
-        <mandrel.version-for-documentation>21.2</mandrel.version-for-documentation>
+        <graal-sdk.version-for-documentation>21.3.0</graal-sdk.version-for-documentation>
+        <mandrel.version-for-documentation>21.3</mandrel.version-for-documentation>
 
         <htmlunit.version>2.40.0</htmlunit.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
@@ -60,6 +60,8 @@
         <proposed-maven-version>3.8.1</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
         <gradle-wrapper.version>6.9</gradle-wrapper.version>
+        <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
+        <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
 
         <!-- MicroProfile TCK versions -->
         <microprofile-health-api.version>3.1</microprofile-health-api.version>
@@ -84,7 +86,8 @@
 
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
-        <jsoup.version>1.12.1</jsoup.version>
+        <jsoup.version>1.14.2</jsoup.version>
+        <junit4.version>4.13.2</junit4.version>
         <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
 
         <!-- The image to use for tests that run Keycloak -->
@@ -132,7 +135,7 @@
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
-        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.2-java11</platform.quarkus.native.builder-image>
+        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.3-java11</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>

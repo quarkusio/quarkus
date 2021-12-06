@@ -43,14 +43,14 @@
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
-        <smallrye-config.version>2.4.4</smallrye-config.version>
+        <smallrye-config.version>2.5.1</smallrye-config.version>
         <smallrye-health.version>3.1.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.1</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.10</smallrye-open-api.version>
         <smallrye-graphql.version>1.3.2</smallrye-graphql.version>
         <smallrye-opentracing.version>2.0.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.2.1</smallrye-fault-tolerance.version>
-        <smallrye-jwt.version>3.2.1</smallrye-jwt.version>
+        <smallrye-jwt.version>3.3.0</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.2.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
@@ -58,7 +58,7 @@
         <smallrye-reactive-messaging.version>3.9.1</smallrye-reactive-messaging.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
-        <jakarta.el-impl.version>3.0.3</jakarta.el-impl.version>
+        <jakarta.el-impl.version>3.0.4</jakarta.el-impl.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
         <jakarta.interceptor-api.version>1.2.5</jakarta.interceptor-api.version>
@@ -73,8 +73,6 @@
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
         <jakarta.xml.bind-api.version>2.3.3</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>2.3.3-b02</jaxb-runtime.version>
-        <!-- just for test dependency convergence -->
-        <jaxb-api.version>2.3.1</jaxb-api.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <asm.version>9.1</asm.version>
@@ -84,7 +82,7 @@
         <plexus-utils.version>3.2.1</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
-        <graal-sdk.version>21.2.0</graal-sdk.version>
+        <graal-sdk.version>21.3.0</graal-sdk.version>
         <gizmo.version>1.0.9.Final</gizmo.version>
         <jackson.version>2.12.4</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
@@ -114,12 +112,12 @@
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
-        <cronutils.version>9.1.5</cronutils.version>
+        <cronutils.version>9.1.6</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.2.23</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.7.4</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.26</mysql-jdbc.version>
+        <mysql-jdbc.version>8.0.27</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <oracle-jdbc.version>21.3.0.0</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
@@ -132,11 +130,11 @@
         <infinispan.version>12.1.7.Final</infinispan.version>
         <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
         <caffeine.version>2.9.2</caffeine.version>
-        <netty.version>4.1.67.Final</netty.version>
+        <netty.version>4.1.68.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>
         <mutiny.version>1.0.0</mutiny.version>
-        <kafka2.version>2.8.0</kafka2.version>
+        <kafka2.version>2.8.1</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.12.13</scala.version>
@@ -163,7 +161,7 @@
         <snakeyaml.version>1.29</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <neo4j-java-driver.version>4.3.4</neo4j-java-driver.version>
-        <mongo-client.version>4.3.1</mongo-client.version>
+        <mongo-client.version>4.3.2</mongo-client.version>
         <mongo-crypt.version>1.2.1</mongo-crypt.version>
         <artemis.version>2.17.0</artemis.version>
         <proton-j.version>0.33.8</proton-j.version>
@@ -3087,11 +3085,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>javax.xml.bind</groupId>
-                <artifactId>jaxb-api</artifactId>
-                <version>${jaxb-api.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.rest-assured</groupId>
                 <artifactId>json-schema-validator</artifactId>
                 <version>${rest-assured.version}</version>
@@ -5403,6 +5396,11 @@
                         <goals>
                             <goal>flatten-platform-bom</goal>
                         </goals>
+                        <configuration>
+                            <excludeArtifactKeys>
+                                <key>junit:junit</key> <!-- comes from the jackson-bom -->
+                            </excludeArtifactKeys>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

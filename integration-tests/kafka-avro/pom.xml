@@ -280,19 +280,6 @@
                 </plugins>
             </build>
         </profile>
-
-        <profile>
-            <id>native-image</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <!-- add some custom config, the rest comes from parent -->
-            <properties>
-                <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
-            </properties>
-        </profile>
     </profiles>
 
 </project>

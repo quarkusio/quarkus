@@ -58,6 +58,12 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
         }
     }
 
+    public static void clearData() {
+        INSTANCE.persistenceUnits.clear();
+        INSTANCE.createDDLs.clear();
+        INSTANCE.dropDDLs.clear();
+    }
+
     private static String generateDDL(SchemaExport.Action action, Metadata metadata, ServiceRegistry serviceRegistry,
             String importFiles) {
         SchemaExport schemaExport = new SchemaExport();

@@ -12,6 +12,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.util.ProcessUtil;
@@ -75,12 +76,10 @@ public abstract class NativeImageBuildRunner {
                     // Strip debug symbols regardless, because the underlying JDK might contain them
                     objcopy("--strip-debug", resultingExecutableName);
                 }
-            } else {
-                if (!debugSymbolsEnabled) {
-                    log.warn(
-                            "objcopy executable not found in PATH. Debug symbols will therefore not be separated from the executable.");
-                    log.warn("That also means that resulting native executable is larger as it embeds the debug symbols.");
-                }
+            } else if (SystemUtils.IS_OS_LINUX) {
+                log.warn(
+                        "objcopy executable not found in PATH. Debug symbols will therefore not be separated from the executable.");
+                log.warn("That also means that resulting native executable is larger as it embeds the debug symbols.");
             }
             return new Result(0, objcopyExists);
         } finally {

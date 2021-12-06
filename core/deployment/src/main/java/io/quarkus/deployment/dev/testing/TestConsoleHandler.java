@@ -270,7 +270,8 @@ public class TestConsoleHandler implements TestListener {
             public void testStarted(TestIdentifier testIdentifier, String className) {
                 String status = "Running " + (methodCount.get() + 1) + "/" + totalNoTests
                         + (failureCount.get() == 0 ? "."
-                                : ". " + failureCount + " " + pluralize("failure", "failures", failureCount) + " so far.")
+                                : ". " + RED + failureCount + " " + pluralize("failure", "failures", failureCount) + " so far."
+                                        + RESET)
                         + " Running: "
                         + className + "#" + testIdentifier.getDisplayName();
                 if (TestSupport.instance().get().isDisplayTestOutput() &&

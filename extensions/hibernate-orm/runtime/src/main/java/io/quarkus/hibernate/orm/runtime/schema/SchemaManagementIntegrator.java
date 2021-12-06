@@ -47,8 +47,10 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
     @Override
     public void disintegrate(SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
-        metadataMap.remove(nameCache.get(sessionFactory));
-        nameCache.remove(sessionFactory);
+        final String name = nameCache.remove(sessionFactory);
+        if (name != null) {
+            metadataMap.remove(name);
+        }
     }
 
     public static void clearDsMap() {

@@ -209,12 +209,12 @@ public class HibernateValidatorFunctionalityTest {
 
     @Test
     public void testRestEndPointValidationGroups_parameters() {
-        // PUT: input id must be null
+        // POST: input id must be null
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body("{\"id\": 1, \"name\": \"b\"}")
                 .when()
-                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
                 .then()
                 .statusCode(400)
                 .body(containsString("must be null"));
@@ -222,17 +222,17 @@ public class HibernateValidatorFunctionalityTest {
                 .contentType(ContentType.JSON)
                 .body("{\"name\": \"b\"}")
                 .when()
-                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
                 .then()
                 .statusCode(200)
                 .body(containsString("passed"));
 
-        // POST: input id must not be null
+        // PUT: input id must not be null
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .body("{\"name\": \"b\"}")
                 .when()
-                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
                 .then()
                 .statusCode(400)
                 .body(containsString("must not be null"));
@@ -240,7 +240,7 @@ public class HibernateValidatorFunctionalityTest {
                 .contentType(ContentType.JSON)
                 .body("{\"id\": 1, \"name\": \"b\"}")
                 .when()
-                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
                 .then()
                 .statusCode(200)
                 .body(containsString("passed"));
@@ -250,7 +250,7 @@ public class HibernateValidatorFunctionalityTest {
                 .contentType(ContentType.JSON)
                 .body("{}")
                 .when()
-                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
                 .then()
                 .statusCode(400)
                 .body(containsString("must not be null"));
@@ -258,7 +258,7 @@ public class HibernateValidatorFunctionalityTest {
                 .contentType(ContentType.JSON)
                 .body("{\"id\":1}")
                 .when()
-                .post("/hibernate-validator/test/rest-end-point-validation-groups/")
+                .put("/hibernate-validator/test/rest-end-point-validation-groups/")
                 .then()
                 .statusCode(400)
                 .body(containsString("must not be null"));

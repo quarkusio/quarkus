@@ -1,6 +1,7 @@
 package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
+import java.util.Iterator;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.util.TypeLiteral;
@@ -32,5 +33,20 @@ public interface InjectableInstance<T> extends Instance<T> {
      * @see WithCaching
      */
     void clearCache();
+
+    /**
+     * This method attempts to resolve ambiguities.
+     * <p>
+     * In general, if multiple beans are eligible then the container eliminates all beans that are:
+     * <ul>
+     * <li>not alternatives, except for producer methods and fields of beans that are alternatives,</li>
+     * <li>default beans.</li>
+     * </ul>
+     * 
+     * @return an iterator over the contextual references of the disambiguated beans
+     * @see DefaultBean
+     */
+    @Override
+    Iterator<T> iterator();
 
 }

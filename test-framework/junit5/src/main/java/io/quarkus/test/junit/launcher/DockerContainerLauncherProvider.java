@@ -2,13 +2,11 @@ package io.quarkus.test.junit.launcher;
 
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
-import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_WAIT_TIME_SECONDS;
 
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.ServiceLoader;
 
 import org.eclipse.microprofile.config.Config;
@@ -43,8 +41,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             launcher.init(new DefaultDockerInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    Duration.ofSeconds(config.getValue("quarkus.test.jar-wait-time", OptionalLong.class)
-                            .orElse(DEFAULT_WAIT_TIME_SECONDS)),
+                    ConfigUtil.waitTimeValue(config),
                     config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
                     ConfigUtil.argLineValue(config),
                     context.devServicesLaunchResult(),

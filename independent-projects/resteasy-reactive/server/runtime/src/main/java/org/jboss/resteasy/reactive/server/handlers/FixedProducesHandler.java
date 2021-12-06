@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
+import java.util.Locale;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -40,8 +41,15 @@ public class FixedProducesHandler implements ServerRestHandler {
                 requestContext.setResponseContentType(mediaType);
                 requestContext.setEntityWriter(writer);
             } else {
-                throw new WebApplicationException(
-                        Response.notAcceptable(Variant.mediaTypes(mediaType.getMediaType()).build()).build());
+                // some clients might be sending the header with incorrect casing...
+                String lowercaseAccept = accept.toLowerCase(Locale.ROOT);
+                if (lowercaseAccept.contains(mediaTypeString) || lowercaseAccept.contains(mediaTypeSubstring)) {
+                    requestContext.setResponseContentType(mediaType);
+                    requestContext.setEntityWriter(writer);
+                } else {
+                    throw new WebApplicationException(
+                            Response.notAcceptable(Variant.mediaTypes(mediaType.getMediaType()).build()).build());
+                }
             }
         }
     }

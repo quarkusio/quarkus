@@ -401,6 +401,23 @@ public class JarResultBuildStep {
             copyCommonContent(runnerZipFs, concatenatedEntries, applicationArchivesBuildItem, transformedClasses,
                     generatedClasses,
                     generatedResources, seen, finalIgnoredEntries);
+            // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
+            // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
+            // directory where N is an integer greater than 8, but we don't do that level of checks here but that
+            // should be OK.
+            if (Files.isDirectory(runnerZipFs.getPath("META-INF", "versions"))) {
+                log.debug("uber jar will be marked as multi-release jar");
+                final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
+                final Manifest manifest = new Manifest();
+                // read the existing one
+                try (final InputStream is = Files.newInputStream(manifestPath)) {
+                    manifest.read(is);
+                }
+                manifest.getMainAttributes().put(Attributes.Name.MULTI_RELEASE, "true");
+                try (final OutputStream os = Files.newOutputStream(manifestPath)) {
+                    manifest.write(os);
+                }
+            }
         }
 
         runnerJar.toFile().setReadable(true, false);

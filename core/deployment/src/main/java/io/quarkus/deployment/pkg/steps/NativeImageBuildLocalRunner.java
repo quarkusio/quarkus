@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.SystemUtils;
+
 public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
 
     private final String nativeImageExecutable;
@@ -34,6 +36,10 @@ public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
 
     @Override
     protected boolean objcopyExists() {
+        if (!SystemUtils.IS_OS_LINUX) {
+            return false;
+        }
+
         // System path
         String systemPath = System.getenv("PATH");
         if (systemPath != null) {

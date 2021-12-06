@@ -1,6 +1,5 @@
 package io.quarkus.it.main;
 
-import static io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan.GraalVMVersion.GRAALVM_21_0;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
@@ -177,7 +175,6 @@ public class RestClientTestCase {
     }
 
     @Test
-    @DisableIfBuiltWithGraalVMOlderThan(GRAALVM_21_0)
     public void testFaultTolerance() {
         RestAssured.when().get("/client/fault-tolerance").then()
                 .body(is("Hello fallback!"));

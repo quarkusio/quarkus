@@ -13,3 +13,9 @@ metadata:
   categories:
   - "cloud"
   status: "stable"
+  codestart:
+    name: "smallrye-health"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"  

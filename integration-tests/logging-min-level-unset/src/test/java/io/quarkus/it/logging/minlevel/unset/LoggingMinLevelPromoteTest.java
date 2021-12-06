@@ -16,7 +16,7 @@ import io.quarkus.test.junit.QuarkusTest;
  * it will be automatically promoted to DEBUG.
  */
 @QuarkusTest
-@QuarkusTestResource(SetRuntimeLogLevels.class)
+@QuarkusTestResource(SetCategoryRuntimeLogLevels.class)
 public class LoggingMinLevelPromoteTest {
 
     @Test

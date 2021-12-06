@@ -703,7 +703,7 @@ Depending on what the final desired output of the CI/CD pipeline is, the generat
 
 Starting with Oracle GraalVM 20.2 or Mandrel 20.1,
 debug symbols for native executables can be generated for Linux environments
-(Windows support is still under development).
+(Windows support is still under development, macOS is not supported).
 These symbols can be used to debug native executables with tools such as `gdb`.
 
 To generate debug symbols,
@@ -713,7 +713,7 @@ You will find the debug symbols for the native executable in a `.debug` file nex
 [NOTE]
 ====
 The generation of the `.debug` file depends on `objcopy`.
-On common Linux distributions and macOS you will need to install the `binutils` package:
+On common Linux distributions you will need to install the `binutils` package:
 
 [source,bash]
 ----
@@ -721,9 +721,6 @@ On common Linux distributions and macOS you will need to install the `binutils` 
 sudo dnf install binutils
 # Debian-based distributions
 sudo apt-get install binutils
-# macOS
-brew install binutils
-export PATH=/usr/local/opt/binutils/bin:$PATH
 ----
 
 When `objcopy` is not available debug symbols are embedded in the executable.

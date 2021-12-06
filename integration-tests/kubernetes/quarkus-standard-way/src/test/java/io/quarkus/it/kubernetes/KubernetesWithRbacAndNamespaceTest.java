@@ -2,6 +2,7 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -50,6 +51,7 @@ public class KubernetesWithRbacAndNamespaceTest {
 
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
+                assertThat(m.getLabels()).contains(entry("foo", "bar"));
                 assertThat(m.getName()).isEqualTo("kubernetes-with-rbac-and-namespace");
             });
 

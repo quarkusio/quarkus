@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
@@ -124,7 +125,13 @@ public class PackageIT extends MojoTestBase {
         List<File> jars = getFilesEndingWith(targetDir, ".jar");
         assertThat(jars).hasSize(1);
         assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
-
+        try (JarFile jarFile = new JarFile(jars.get(0))) {
+            // we expect this uber jar to be a multi-release jar since one of its
+            // dependencies (smallrye-classloader artifact), from which we composed this uber-jar,
+            // is a multi-release jar
+            Assertions.assertTrue(jarFile.isMultiRelease(), "uber-jar " + jars.get(0)
+                    + " was expected to be a multi-release jar but wasn't");
+        }
         ensureManifestOfJarIsReadableByJarInputStream(jars.get(0));
     }
 

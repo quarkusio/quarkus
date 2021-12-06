@@ -90,6 +90,19 @@ public class SpringDataJPAProcessor {
     }
 
     @BuildStep
+    void registerReflection(BuildProducer<ReflectiveClassBuildItem> producer) {
+        producer.produce(new ReflectiveClassBuildItem(true, false,
+                "org.springframework.data.domain.Page",
+                "org.springframework.data.domain.Slice",
+                "org.springframework.data.domain.PageImpl",
+                "org.springframework.data.domain.SliceImpl",
+                "org.springframework.data.domain.Sort",
+                "org.springframework.data.domain.Chunk",
+                "org.springframework.data.domain.PageRequest",
+                "org.springframework.data.domain.AbstractPageRequest"));
+    }
+
+    @BuildStep
     void build(CombinedIndexBuildItem index,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,

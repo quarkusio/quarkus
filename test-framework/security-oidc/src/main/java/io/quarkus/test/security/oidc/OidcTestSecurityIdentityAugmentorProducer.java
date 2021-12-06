@@ -1,10 +1,13 @@
 package io.quarkus.test.security.oidc;
 
 import java.lang.annotation.Annotation;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
@@ -36,6 +39,17 @@ public class OidcTestSecurityIdentityAugmentorProducer {
     @Inject
     @ConfigProperty(name = "quarkus.oidc.token.issuer")
     Optional<String> issuer;
+
+    PrivateKey privateKey;
+
+    @PostConstruct
+    public void init() {
+        try {
+            privateKey = KeyUtils.generateKeyPair(2048).getPrivate();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
 
     @Produces
     @Unremovable
@@ -115,7 +129,7 @@ public class OidcTestSecurityIdentityAugmentorProducer {
 
         private String generateToken(JwtClaims claims) {
             try {
-                return Jwt.claims(claims.getClaimsMap()).sign(KeyUtils.generateKeyPair(2048).getPrivate());
+                return Jwt.claims(claims.getClaimsMap()).sign(privateKey);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }

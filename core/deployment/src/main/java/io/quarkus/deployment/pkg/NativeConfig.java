@@ -35,14 +35,17 @@ public class NativeConfig {
 
     /**
      * If all security services should be added to the native image
+     *
+     * @deprecated {@code --enable-all-security-services} was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
      */
     @ConfigItem
+    @Deprecated
     public boolean enableAllSecurityServices;
 
     /**
      * If {@code -H:+InlineBeforeAnalysis} flag will be added to the native-image run
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "true")
     public boolean inlineBeforeAnalysis;
 
     /**

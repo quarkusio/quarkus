@@ -223,17 +223,7 @@ public class NativeImageBuildStep {
                     Path finalSymbolsPath = outputTargetBuildItem.getOutputDirectory().resolve(symbolsName);
                     IoUtils.copy(generatedSymbols, finalSymbolsPath);
                     Files.delete(generatedSymbols);
-                    final String sources = "sources";
-                    final Path generatedSources = outputDir.resolve(sources);
-                    final Path finalSources = outputTargetBuildItem.getOutputDirectory().resolve(sources);
-                    IoUtils.copy(generatedSources, finalSources);
-                    IoUtils.recursiveDelete(generatedSources);
-                } else {
-                    log.warn(
-                            "objcopy executable not found in PATH. Debug symbols therefore cannot be placed into the dedicated directory.");
-                    log.warn("That also means that resulting native executable is larger as it embeds the debug symbols.");
                 }
-
             }
             System.setProperty("native.image.path", finalExecutablePath.toAbsolutePath().toString());
 
@@ -561,7 +551,6 @@ public class NativeImageBuildStep {
             public NativeImageInvokerInfo build() {
                 List<String> nativeImageArgs = new ArrayList<>();
                 boolean enableSslNative = false;
-                boolean enableAllSecurityServices = nativeConfig.enableAllSecurityServices;
                 boolean inlineBeforeAnalysis = nativeConfig.inlineBeforeAnalysis;
                 boolean addAllCharsets = nativeConfig.addAllCharsets;
                 boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler;
@@ -574,11 +563,14 @@ public class NativeImageBuildStep {
                                 + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
                                 + " will be removed in a future Quarkus version.");
                     } else if (prop.getKey().equals("quarkus.native.enable-all-security-services") && prop.getValue() != null) {
-                        enableAllSecurityServices |= Boolean.parseBoolean(prop.getValue());
+                        log.warn(
+                                "Your application is setting the deprecated 'quarkus.native.enable-all-security-services' configuration key."
+                                        + " Please consider removing this configuration key as it is ignored and it"
+                                        + " will be removed in a future Quarkus version.");
                     } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
                     } else if (prop.getKey().equals("quarkus.native.inline-before-analysis") && prop.getValue() != null) {
-                        inlineBeforeAnalysis |= Boolean.parseBoolean(prop.getValue());
+                        inlineBeforeAnalysis = Boolean.parseBoolean(prop.getValue());
                     } else {
                         // todo maybe just -D is better than -J-D in this case
                         if (prop.getValue() == null) {
@@ -598,10 +590,24 @@ public class NativeImageBuildStep {
 
                 if (enableSslNative) {
                     enableHttpsUrlHandler = true;
-                    enableAllSecurityServices = true;
                 }
 
+                /*
+                 * Instruct GraalVM / Mandrel parse compiler graphs twice, once for the static analysis and once again
+                 * for the AOT compilation.
+                 *
+                 * We do this because single parsing significantly increases memory usage at build time
+                 * see https://github.com/oracle/graal/issues/3435 and
+                 * https://github.com/graalvm/mandrel/issues/304#issuecomment-952070568 for more details.
+                 *
+                 * Note: This option must come before the invocation of
+                 * {@code handleAdditionalProperties(nativeImageArgs)} to ensure that devs and advanced users can
+                 * override it by passing -Dquarkus.native.additional-build-args=-H:+ParseOnce
+                 */
+                nativeImageArgs.add("-H:-ParseOnce");
+
                 handleAdditionalProperties(nativeConfig, nativeImageArgs, isContainerBuild, outputDir);
+
                 nativeImageArgs.add(
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");
@@ -630,8 +636,15 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:DebugInfoSourceSearchPath=" + APP_SOURCES);
                 }
                 if (nativeConfig.debugBuildProcess) {
+                    String debugBuildProcessHost;
+                    if (isContainerBuild) {
+                        debugBuildProcessHost = "0.0.0.0";
+                    } else {
+                        debugBuildProcessHost = "localhost";
+                    }
                     nativeImageArgs
-                            .add("-J-Xrunjdwp:transport=dt_socket,address=" + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
+                            .add("-J-Xrunjdwp:transport=dt_socket,address=" + debugBuildProcessHost + ":"
+                                    + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
                 }
                 if (nativeConfig.enableReports) {
                     nativeImageArgs.add("-H:+PrintAnalysisCallTree");
@@ -657,19 +670,13 @@ public class NativeImageBuildStep {
                 if (!protocols.isEmpty()) {
                     nativeImageArgs.add("-H:EnableURLProtocols=" + String.join(",", protocols));
                 }
-                if (enableAllSecurityServices && graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_1)) {
-                    // This option was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
-                    nativeImageArgs.add("--enable-all-security-services");
-                }
                 if (inlineBeforeAnalysis) {
-                    if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_3)) {
+                    if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3)) {
+                        // Enabled by default in GraalVM >= 21.3
                         nativeImageArgs.add("-H:+InlineBeforeAnalysis");
-                    } else {
-                        log.warn(
-                                "The InlineBeforeAnalysis feature is not supported in GraalVM versions prior to 21.0.0."
-                                        + " InlineBeforeAnalysis will thus not be enabled, please consider using a newer"
-                                        + " GraalVM version if your application relies on this feature.");
                     }
+                } else {
+                    nativeImageArgs.add("-H:-InlineBeforeAnalysis");
                 }
                 if (!noPIE.isEmpty()) {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + noPIE);
@@ -712,25 +719,17 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:+DashboardAll");
                 }
 
-                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_21_1)) {
+                if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
+                    String additionalSecurityProviders = nativeImageSecurityProviders.stream()
+                            .map(p -> p.getSecurityProvider())
+                            .collect(Collectors.joining(","));
+                    nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
+                }
 
-                    // Disable single parsing of compiler graphs till https://github.com/oracle/graal/issues/3435 gets fixed
-                    nativeImageArgs.add("-H:-ParseOnce");
-
-                    // AdditionalSecurityProviders
-                    if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
-                        String additionalSecurityProviders = nativeImageSecurityProviders.stream()
-                                .map(p -> p.getSecurityProvider())
-                                .collect(Collectors.joining(","));
-                        nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
-                    }
-
-                    // --exclude-config options
-                    for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
-                        nativeImageArgs.add("--exclude-config");
-                        nativeImageArgs.add(excludeConfig.getJarFile());
-                        nativeImageArgs.add(excludeConfig.getResourceName());
-                    }
+                for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
+                    nativeImageArgs.add("--exclude-config");
+                    nativeImageArgs.add(excludeConfig.getJarFile());
+                    nativeImageArgs.add(excludeConfig.getResourceName());
                 }
 
                 nativeImageArgs.add(nativeImageName);

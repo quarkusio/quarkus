@@ -21,7 +21,7 @@ import io.quarkus.vault.runtime.Base64StringSerializer;
 import io.quarkus.vault.runtime.VaultAuthManager;
 import io.quarkus.vault.runtime.VaultConfigHolder;
 import io.quarkus.vault.runtime.VaultCredentialsProvider;
-import io.quarkus.vault.runtime.VaultDbManager;
+import io.quarkus.vault.runtime.VaultDynamicCredentialsManager;
 import io.quarkus.vault.runtime.VaultKubernetesAuthManager;
 import io.quarkus.vault.runtime.VaultKvManager;
 import io.quarkus.vault.runtime.VaultPKIManager;
@@ -37,7 +37,7 @@ import io.quarkus.vault.runtime.client.authmethod.VaultInternalTokenAuthMethod;
 import io.quarkus.vault.runtime.client.authmethod.VaultInternalUserpassAuthMethod;
 import io.quarkus.vault.runtime.client.backend.VaultInternalSystemBackend;
 import io.quarkus.vault.runtime.client.dto.VaultModel;
-import io.quarkus.vault.runtime.client.secretengine.VaultInternalDatabaseSecretEngine;
+import io.quarkus.vault.runtime.client.secretengine.VaultInternalDynamicCredentialsSecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV1SecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalKvV2SecretEngine;
 import io.quarkus.vault.runtime.client.secretengine.VaultInternalPKISecretEngine;
@@ -87,7 +87,7 @@ public class VaultProcessor {
                 .addBeanClass(VaultSystemBackendManager.class)
                 .addBeanClass(VaultKubernetesAuthManager.class)
                 .addBeanClass(VaultAuthManager.class)
-                .addBeanClass(VaultDbManager.class)
+                .addBeanClass(VaultDynamicCredentialsManager.class)
                 .addBeanClass(VertxVaultClient.class)
                 .addBeanClass(VaultConfigHolder.class)
                 .addBeanClass(VaultPKIManager.class)
@@ -101,7 +101,7 @@ public class VaultProcessor {
                 .addBeanClass(VaultInternalKubernetesAuthMethod.class)
                 .addBeanClass(VaultInternalTokenAuthMethod.class)
                 .addBeanClass(VaultInternalUserpassAuthMethod.class)
-                .addBeanClass(VaultInternalDatabaseSecretEngine.class)
+                .addBeanClass(VaultInternalDynamicCredentialsSecretEngine.class)
                 .addBeanClass(VaultInternalPKISecretEngine.class)
                 .build();
     }

@@ -278,11 +278,12 @@ path "database/creds/mydbrole" {
 EOF
 ----
 
-Now that Vault knows how to create users in PostgreSQL, we juste need to change the `mydatabase` credentials
-provider to use a `database-credentials-role`.
+Now that Vault knows how to create users in PostgreSQL, we just need to change the `mydatabase` credentials
+provider to use  `credentials-role` & `credentials-mount`.
 [source, properties]
 ----
-quarkus.vault.credentials-provider.mydatabase.database-credentials-role=mydbrole
+quarkus.vault.credentials-provider.mydatabase.credentials-role=mydbrole
+quarkus.vault.credentials-provider.mydatabase.credentials-mount=database
 ----
 
 [NOTE]

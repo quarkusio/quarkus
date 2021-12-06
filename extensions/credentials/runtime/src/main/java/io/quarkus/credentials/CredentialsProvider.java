@@ -9,6 +9,7 @@ public interface CredentialsProvider {
 
     String USER_PROPERTY_NAME = "user";
     String PASSWORD_PROPERTY_NAME = "password";
+    String EXPIRATION_TIMESTAMP_PROPERTY_NAME = "expires-at";
 
     /**
      * Returns the credentials for a given credentials provider

@@ -86,7 +86,7 @@ public class GlobalAndServiceInterceptorsTest {
 
         assertThat(GlobalInterceptor.invoked).isTrue();
         assertThat(ServiceBInterceptor.invoked).isTrue();
-        assertThat(FarewellInterceptor.invoked).isFalse();
+        assertThat(FarewellInterceptor.invoked).isTrue();
     }
 
     @Test
@@ -111,6 +111,7 @@ public class GlobalAndServiceInterceptorsTest {
 
     @GrpcService
     @RegisterInterceptor(ServiceBInterceptor.class)
+    @RegisterInterceptor(FarewellInterceptor.class)
     public static class ServiceB implements Greeter3 {
         @Override
         public Uni<HelloReply3> sayHello(HelloRequest3 request) {

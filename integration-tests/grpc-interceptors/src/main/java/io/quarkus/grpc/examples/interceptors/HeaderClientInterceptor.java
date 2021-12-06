@@ -12,10 +12,12 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import io.quarkus.grpc.GlobalInterceptor;
 
 /**
  * A interceptor to handle client header.
  */
+@GlobalInterceptor
 @ApplicationScoped
 public class HeaderClientInterceptor implements ClientInterceptor {
 

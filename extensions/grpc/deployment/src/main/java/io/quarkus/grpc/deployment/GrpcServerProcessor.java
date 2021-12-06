@@ -2,16 +2,12 @@ package io.quarkus.grpc.deployment;
 
 import static io.quarkus.deployment.Feature.GRPC_SERVER;
 import static io.quarkus.grpc.deployment.GrpcDotNames.BLOCKING;
-import static io.quarkus.grpc.deployment.GrpcDotNames.GLOBAL_INTERCEPTOR;
 import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
-import static io.quarkus.grpc.deployment.GrpcDotNames.REGISTER_INTERCEPTOR;
-import static io.quarkus.grpc.deployment.GrpcDotNames.REGISTER_INTERCEPTORS;
 import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
 import static java.util.Arrays.asList;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,7 +18,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -39,10 +34,10 @@ import org.jboss.logging.Logger;
 import io.grpc.internal.ServerImpl;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanArchivePredicateBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -67,9 +62,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.auth.DefaultAuthExceptionHandlerProvider;
 import io.quarkus.grpc.auth.GrpcSecurityInterceptor;
@@ -77,7 +70,7 @@ import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
-import io.quarkus.grpc.runtime.InterceptorStorage;
+import io.quarkus.grpc.runtime.ServerInterceptorStorage;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
@@ -368,12 +361,15 @@ public class GrpcServerProcessor {
         }
     }
 
+    @SuppressWarnings("deprecation")
+    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void gatherGrpcInterceptors(CombinedIndexBuildItem indexBuildItem,
+    void gatherGrpcInterceptors(BeanArchiveIndexBuildItem indexBuildItem,
             List<AdditionalGlobalInterceptorBuildItem> additionalGlobalInterceptors,
             List<DelegatingGrpcBeanBuildItem> delegatingGrpcBeans,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            RecorderContext recorderContext,
+            GrpcServerRecorder recorder) {
 
         Map<String, String> delegateMap = new HashMap<>();
         for (DelegatingGrpcBeanBuildItem delegatingGrpcBean : delegatingGrpcBeans) {
@@ -383,96 +379,68 @@ public class GrpcServerProcessor {
 
         IndexView index = indexBuildItem.getIndex();
 
-        GrpcInterceptors interceptors = gatherInterceptors(index);
+        GrpcInterceptors interceptors = GrpcInterceptors.gatherInterceptors(index, GrpcDotNames.SERVER_INTERCEPTOR);
 
         // let's gather all the non-abstract, non-global interceptors, from these we'll filter out ones used per-service ones
         // the rest, if anything stays, should be logged as problematic
         Set<String> superfluousInterceptors = new HashSet<>(interceptors.nonGlobalInterceptors);
 
-        Map<String, List<AnnotationInstance>> annotationsByClassName = new HashMap<>();
+        List<AnnotationInstance> found = new ArrayList<>(index.getAnnotations(GrpcDotNames.REGISTER_INTERCEPTOR));
+        for (AnnotationInstance annotation : index.getAnnotations(GrpcDotNames.REGISTER_INTERCEPTORS)) {
+            for (AnnotationInstance nested : annotation.value().asNestedArray()) {
+                found.add(AnnotationInstance.create(nested.name(), annotation.target(), nested.values()));
+            }
+        }
 
-        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_INTERCEPTOR)) {
+        Map<String, Set<String>> registeredInterceptors = new HashMap<>();
+        for (AnnotationInstance annotation : found) {
+            String interceptorClass = annotation.value().asString();
+            if (annotation.target().kind() != Kind.CLASS) {
+                throw new IllegalStateException("Invalid target for the @RegisterInterceptor: " + annotation.target());
+            }
             String targetClass = annotation.target().asClass().name().toString();
-            annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>())
-                    .add(annotation);
+
+            // if the user bean is invoked by a generated bean
+            // the interceptors defined on the user bean have to be applied to the generated bean:
+            targetClass = delegateMap.getOrDefault(targetClass, targetClass);
+
+            Set<String> registered = registeredInterceptors.get(targetClass);
+            if (registered == null) {
+                registered = new HashSet<>();
+                registeredInterceptors.put(targetClass, registered);
+            }
+            registered.add(interceptorClass);
+            superfluousInterceptors.remove(interceptorClass);
         }
 
-        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_INTERCEPTORS)) {
-            String targetClass = annotation.target().asClass().name().toString();
-            annotationsByClassName.computeIfAbsent(targetClass, key -> new ArrayList<>())
-                    .addAll(Arrays.asList(annotation.value().asNestedArray()));
+        Set<Class<?>> globalInterceptors = new HashSet<>();
+        for (String interceptor : interceptors.globalInterceptors) {
+            globalInterceptors.add(recorderContext.classProxy(interceptor));
+        }
+        for (AdditionalGlobalInterceptorBuildItem globalInterceptorBuildItem : additionalGlobalInterceptors) {
+            globalInterceptors.add(recorderContext.classProxy(globalInterceptorBuildItem.interceptorClass()));
         }
 
-        String perServiceInterceptorsImpl = InterceptorStorage.class.getName() + "Impl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(perServiceInterceptorsImpl)
-                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
-                .superClass(InterceptorStorage.class)
-                .build()) {
-
-            classCreator.addAnnotation(Singleton.class.getName());
-            MethodCreator constructor = classCreator
-                    .getMethodCreator(MethodDescriptor.ofConstructor(perServiceInterceptorsImpl));
-            constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(InterceptorStorage.class),
-                    constructor.getThis());
-
-            for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
-                for (AnnotationInstance value : annotationsForClass.getValue()) {
-                    String className = annotationsForClass.getKey();
-
-                    // if the user bean is invoked by a generated bean
-                    // the interceptors defined on the user bean have to be applied to the generated bean:
-                    className = delegateMap.getOrDefault(className, className);
-
-                    String interceptorClassName = value.value().asString();
-                    superfluousInterceptors.remove(interceptorClassName);
-
-                    constructor.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(InterceptorStorage.class, "addInterceptor", void.class,
-                                    String.class, Class.class),
-                            constructor.getThis(), constructor.load(className), constructor.loadClass(interceptorClassName));
-                }
+        Map<String, Set<Class<?>>> perClientInterceptors = new HashMap<>();
+        for (Entry<String, Set<String>> entry : registeredInterceptors.entrySet()) {
+            Set<Class<?>> interceptorClasses = new HashSet<>();
+            for (String interceptorClass : entry.getValue()) {
+                interceptorClasses.add(recorderContext.classProxy(interceptorClass));
             }
-
-            for (String globalInterceptor : interceptors.globalInterceptors) {
-                constructor.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(InterceptorStorage.class, "addGlobalInterceptor", void.class, Class.class),
-                        constructor.getThis(), constructor.loadClass(globalInterceptor));
-            }
-
-            for (AdditionalGlobalInterceptorBuildItem globalInterceptorBuildItem : additionalGlobalInterceptors) {
-                constructor.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(InterceptorStorage.class, "addGlobalInterceptor", void.class, Class.class),
-                        constructor.getThis(), constructor.loadClass(globalInterceptorBuildItem.interceptorClass()));
-            }
-
-            constructor.returnValue(null);
+            perClientInterceptors.put(entry.getKey(), interceptorClasses);
         }
+
+        syntheticBeans.produce(
+                SyntheticBeanBuildItem.configure(ServerInterceptorStorage.class)
+                        .unremovable()
+                        .runtimeValue(recorder.initServerInterceptorStorage(perClientInterceptors, globalInterceptors))
+                        .setRuntimeInit()
+                        .done());
 
         if (!superfluousInterceptors.isEmpty()) {
             log.warnf("At least one unused gRPC interceptor found: %s. If there are meant to be used globally, " +
                     "annotate them with @GlobalInterceptor.", String.join(", ", superfluousInterceptors));
         }
-
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(perServiceInterceptorsImpl));
-    }
-
-    private GrpcInterceptors gatherInterceptors(IndexView index) {
-        Set<String> globalInterceptors = new HashSet<>();
-        Set<String> nonGlobalInterceptors = new HashSet<>();
-
-        Collection<ClassInfo> interceptorImplClasses = index.getAllKnownImplementors(GrpcDotNames.SERVER_INTERCEPTOR);
-        for (ClassInfo interceptorImplClass : interceptorImplClasses) {
-            if (!Modifier.isAbstract(interceptorImplClass.flags())
-                    && !Modifier.isInterface(interceptorImplClass.flags())) {
-                if (interceptorImplClass.classAnnotation(GLOBAL_INTERCEPTOR) == null) {
-                    nonGlobalInterceptors.add(interceptorImplClass.name().toString());
-                } else {
-                    globalInterceptors.add(interceptorImplClass.name().toString());
-                }
-            }
-        }
-        return new GrpcInterceptors(globalInterceptors, nonGlobalInterceptors);
     }
 
     @BuildStep
@@ -563,14 +531,9 @@ public class GrpcServerProcessor {
         });
     }
 
-    private static class GrpcInterceptors {
-        final Set<String> globalInterceptors;
-        final Set<String> nonGlobalInterceptors;
-
-        GrpcInterceptors(Set<String> globalInterceptors, Set<String> nonGlobalInterceptors) {
-            this.globalInterceptors = globalInterceptors;
-            this.nonGlobalInterceptors = nonGlobalInterceptors;
-        }
+    @BuildStep
+    UnremovableBeanBuildItem unremovableServerInterceptors() {
+        return UnremovableBeanBuildItem.beanTypes(GrpcDotNames.SERVER_INTERCEPTOR);
     }
 
 }

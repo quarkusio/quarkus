@@ -1237,15 +1237,9 @@ NOTE: With JSON serialization correctly configured, you can also use `Publisher<
 [[jackson-serialization]]
 === Serializing via Jackson
 
-First, you need to include the `quarkus-jackson` extension.
-
-[source, xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jackson</artifactId>
-</dependency>
-----
+Quarkus has built-in support for JSON serialization and deserialization based on Jackson.
+It will also <<serialization-generation, generate>> the serializer and deserializer for you, so you do not have to configure anything.
+When generation is disabled, you can use the provided `ObjectMapperSerializer` and `ObjectMapperDeserializer` as explained below.
 
 There is an existing `ObjectMapperSerializer` that can be used to serialize all data objects via Jackson.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
@@ -1275,12 +1269,10 @@ Finally, configure your channels to use the Jackson serializer and deserializer.
 [source,properties]
 ----
 # Configure the Kafka source (we read from it)
-mp.messaging.incoming.fruit-in.connector=smallrye-kafka
 mp.messaging.incoming.fruit-in.topic=fruit-in
 mp.messaging.incoming.fruit-in.value.deserializer=com.acme.fruit.jackson.FruitDeserializer
 
 # Configure the Kafka sink (we write to it)
-mp.messaging.outgoing.fruit-out.connector=smallrye-kafka
 mp.messaging.outgoing.fruit-out.topic=fruit-out
 mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
 ----
@@ -1452,6 +1444,25 @@ If a serializer/deserializer is set by configuration, it won't be replaced by th
 
 In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
+
+[[serialization-generation]]
+== JSON Serializer/deserializer generation
+Quarkus automatically generates serializers and deserializers for channels where:
+
+1. the serializer/deserializer is not configured
+2. the auto-detection did not find a matching serializer/deserializer
+
+It uses Jackson underneath.
+
+This generation can be disabled using:
+
+[source, properties]
+----
+quarkus.reactive-messaging.kafka.serializer-generation.enabled=false
+----
+
+IMPORTANT: Generation does not support collections such as `List<Fruit>`.
+Refer to <<jackson-serialization>> to write your own serializer/deserializer for this case.
 
 == Using Schema Registry
 

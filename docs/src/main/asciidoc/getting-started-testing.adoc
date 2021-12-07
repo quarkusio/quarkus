@@ -1221,9 +1221,59 @@ As is the case with `@NativeImageTest`, this is a black box test that supports t
 
 [NOTE]
 ====
-As a test annotated with `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e. via the `maven-failsafe-plugin` if using Maven or the `quarkusIntTest` task if using Gradle.
+As a test annotated with `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e. by setting `-DskipITs=false` if using Maven or the `quarkusIntTest` task if using Gradle.
 These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
 ====
+
+The `pom.xml` file contains:
+
+[source, xml]
+----
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-failsafe-plugin</artifactId>
+    <version>${surefire-plugin.version}</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+            </goals>
+            <configuration>
+                <systemPropertyVariables>
+                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                    <maven.home>${maven.home}</maven.home>
+                </systemPropertyVariables>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+----
+
+This instructs the failsafe-maven-plugin to run integration-test.
+
+Then, open the `src/test/java/org/acme/quickstart/GreetingResourceIT.java`. It contains:
+
+[source,java]
+----
+package org.acme.quickstart;
+
+
+import io.quarkus.test.junit.QuarkusIntegrationTest;
+
+@QuarkusIntegrationTest // <1>
+public class GreetingResourceIT extends GreetingResourceTest { // <2>
+
+    // Run the same tests
+
+}
+----
+<1> Use another test runner that starts the application from the native file before the tests.
+The executable is retrieved by the _Failsafe Maven Plugin_.
+<2> We extend our previous tests as a convenience, but you can also implement your tests.
+
+More information can be found in the link:building-native-image#testing-the-native-executable[Testing the native executable Guide].
 
 === Launching containers
 

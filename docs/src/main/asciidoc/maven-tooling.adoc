@@ -448,9 +448,13 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 
 [source,xml,subs=attributes+]
 ----
+<properties>
+    <skipITs>true</skipITs> <1>
+</properties>
+
 <dependencyManagement>
     <dependencies>
-        <dependency> <1>
+        <dependency> <2>
             <groupId>${quarkus.platform.group-id}</groupId>
             <artifactId>quarkus-bom</artifactId>
             <version>${quarkus.platform.version}</version>
@@ -462,11 +466,11 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 
 <build>
     <plugins>
-        <plugin> <2>
+        <plugin> <3>
             <groupId>${quarkus.platform.group-id}</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
             <version>${quarkus.platform.version}</version>
-            <extensions>true</extensions> <3>
+            <extensions>true</extensions> <4>
             <executions>
                 <execution>
                     <goals>
@@ -477,7 +481,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
                 </execution>
             </executions>
         </plugin>
-        <plugin> <4>
+        <plugin> <5>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <version>${surefire-plugin.version}</version>
@@ -488,51 +492,53 @@ If you have not used <<project-creation,project scaffolding>>, add the following
                 </systemPropertyVariables>
             </configuration>
         </plugin>
+        <plugin> <6>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>${surefire-plugin.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>integration-test</goal>
+                        <goal>verify</goal>
+                    </goals>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                            <maven.home>${maven.home}</maven.home>
+                        </systemPropertyVariables>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
     </plugins>
 </build>
 
 <profiles>
-    <profile> <5>
+    <profile> <7>
         <id>native</id>
-        <properties> <6>
+        <properties> <8>
             <quarkus.package.type>native</quarkus.package.type>
+            <skipITs>false</skipITs> <9>
         </properties>
-        <build>
-            <plugins>
-                <plugin> <7>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${surefire-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>integration-test</goal>
-                                <goal>verify</goal>
-                            </goals>
-                            <configuration>
-                                <systemPropertyVariables>
-                                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                    <maven.home>${maven.home}</maven.home>
-                                </systemPropertyVariables>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </build>
     </profile>
 </profiles>
 ----
 
-<1> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
-<2> Use the Quarkus Maven plugin that will hook into the build process.
-<3> Enabling Maven plugin extensions will register a Quarkus `MavenLifecycleParticipant` which will make sure the Quarkus classloaders used during the build are properly closed. During the `generate-code` and `generate-code-tests` goals the Quarkus application bootstrap is initialized and re-used in the `build` goal (which actually builds and packages a production application). The Quarkus classloaders will be properly closed in the `build` goal of the `quarkus-maven-plugin`. However, if the build fails in between the `generate-code` or `generate-code-tests` and `build` then the Quarkus augmentation classloader won't be properly closed, which may lead to locking of JAR files that happened to be on the classpath on Windows OS.
-<4> Add system properties to `maven-surefire-plugin`. +
+<1> Disable running of integration tests (test names `*IT` and annotated with `@QuarkusIntegrationTest`) on all builds. To run these tests all the time, either remove this property, set its value to `false`, or set `-DskipITs=false` on the command line when you run the build. +
+As mentioned below, this is overridden in the `native` profile.
+<2> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
+<3> Use the Quarkus Maven plugin that will hook into the build process.
+<4> Enabling Maven plugin extensions will register a Quarkus `MavenLifecycleParticipant` which will make sure the Quarkus classloaders used during the build are properly closed. During the `generate-code` and `generate-code-tests` goals the Quarkus application bootstrap is initialized and re-used in the `build` goal (which actually builds and packages a production application). The Quarkus classloaders will be properly closed in the `build` goal of the `quarkus-maven-plugin`. However, if the build fails in between the `generate-code` or `generate-code-tests` and `build` then the Quarkus augmentation classloader won't be properly closed, which may lead to locking of JAR files that happened to be on the classpath on Windows OS.
+<5> Add system properties to `maven-surefire-plugin`. +
 `maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
-<5> Use a specific `native` profile for native executable building.
-<6> Enable the `native` package type. The build will therefore produce a native executable.
-<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` or `@QuarkusIntegrationTest` will be run against the native executable. See the xref:building-native-image.adoc[Native executable guide] for more info.
+<6> If you want to test the artifact produced by your build with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated with `@QuarkusIntegrationTest` will be run against the artifact produced by the build (JAR file, container image, etc). See the xref:getting-started-testing.adoc#quarkus-integration-test[Integration Testing guide] for more info. +
+`maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
+<7> Use a specific `native` profile for native executable building.
+<8> Enable the `native` package type. The build will therefore produce a native executable.
+<9> Always run integration tests when building a native image (test names `*IT` and annotated with `@QuarkusIntegrationTest` or `@NativeImageTest`). +
+If you do not wish to run integration tests when building a native image, simply remove this property altogether or set its value to `true`.
 
 [[fast-jar]]
 === Using fast-jar

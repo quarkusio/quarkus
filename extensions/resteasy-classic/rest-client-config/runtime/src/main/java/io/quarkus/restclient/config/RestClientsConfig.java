@@ -23,9 +23,13 @@ public class RestClientsConfig {
     // This variable is only here to avoid warnings about unrecognized configuration keys. The map is otherwise ignored,
     // and the RestClientConfig instances are loaded via `RestClientConfig#load()` methods instead.
     @ConfigItem(name = ConfigItem.PARENT)
-    Map<String, RestClientConfig> preloadedConfigs;
+    Map<String, RestClientConfig> configKey;
 
-    final Map<String, RestClientConfig> configs = new HashMap<>();
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    // The @Deprecated annotation prevents this field from being included in generated docs. We only want the `configKey` field
+    // above to be included.
+    @Deprecated
+    private final Map<String, RestClientConfig> configs = new HashMap<>();
 
     /**
      * By default, REST Client Reactive uses text/plain content type for String values

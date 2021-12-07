@@ -77,8 +77,8 @@ import io.quarkus.rest.client.reactive.runtime.HeaderContainer;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
-import io.quarkus.restclient.config.RestClientConfigUtils;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.runtime.LaunchMode;
 

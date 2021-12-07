@@ -4,11 +4,11 @@ import java.util.Collections;
 import java.util.Map;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaContainer;
 
 public class KafkaTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private static final StrimziKafkaContainer kafka = new StrimziKafkaContainer();
+    private static final StrimziKafkaContainer kafka = new StrimziKafkaContainer().withBrokerId(1);
 
     public static String getBootstrapServers() {
         return kafka.getBootstrapServers();

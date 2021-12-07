@@ -1,19 +1,23 @@
 package io.quarkus.it.kafka;
 
+import static io.strimzi.test.container.StrimziKafkaContainer.KAFKA_PORT;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.containers.BindMode;
+import org.testcontainers.utility.MountableFile;
 
-import io.quarkus.it.kafka.containers.KafkaContainer;
 import io.quarkus.it.kafka.containers.KerberosContainer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.strimzi.test.container.StrimziKafkaContainer;
 
 public class KafkaSaslTestResource implements QuarkusTestResourceLifecycleManager {
 
     private final Logger log = Logger.getLogger(KafkaSaslTestResource.class);
 
-    private KafkaContainer kafka;
+    private StrimziKafkaContainer kafka;
     private KerberosContainer kerberos;
 
     @Override
@@ -30,7 +34,14 @@ public class KafkaSaslTestResource implements QuarkusTestResourceLifecycleManage
         properties.put("java.security.krb5.conf", "src/test/resources/krb5.conf");
 
         //Start kafka container
-        kafka = new KafkaContainer();
+        kafka = new StrimziKafkaContainer()
+                .withBootstrapServers(
+                        c -> String.format("SASL_PLAINTEXT://%s:%s", c.getContainerIpAddress(), c.getMappedPort(KAFKA_PORT)))
+                .withPort(KAFKA_PORT)
+                .withServerProperties(MountableFile.forClasspathResource("kafkaServer.properties"))
+                .withCopyFileToContainer(MountableFile.forClasspathResource("krb5KafkaBroker.conf"), "/etc/krb5.conf")
+                .withFileSystemBind("src/test/resources/kafkabroker.keytab", "/opt/kafka/config/kafkabroker.keytab",
+                        BindMode.READ_ONLY);
         kafka.start();
         log.info(kafka.getLogs());
         properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());

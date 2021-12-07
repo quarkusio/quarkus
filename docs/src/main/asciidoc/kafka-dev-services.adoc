@@ -48,15 +48,17 @@ Note that the Kafka advertised address is automatically configured with the chos
 
 == Configuring the image
 
-Dev Services for Kafka uses: `vectorized/redpanda` images.
-You can select any version from https://hub.docker.com/r/vectorized/redpanda:
+Dev Services for Kafka only support Redpanda and Strimzi (in https://github.com/apache/kafka/blob/trunk/config/kraft/README.md[Kraft] mode).
+
+It defaults to `vectorized/redpanda` images.
+You can select any version from https://hub.docker.com/r/vectorized/redpanda.
+
+For Strimzi, you need to set the image name property, with a Kafka version which has Kraft support (2.8.1 and higher):
 
 [source, properties]
 ----
-quarkus.kafka.devservices.image-name=vectorized/redpanda:latest
+quarkus.kafka.devservices.image-name=quay.io/strimzi-test-container/test-container:0.100.0-kafka-3.1.0
 ----
-
-IMPORTANT: Dev Services for Kafka only support Redpanda.
 
 == Configuring Kafka topics
 

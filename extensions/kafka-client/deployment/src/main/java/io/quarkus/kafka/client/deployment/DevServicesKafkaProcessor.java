@@ -1,9 +1,7 @@
 package io.quarkus.kafka.client.deployment;
 
 import java.io.Closeable;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -25,12 +24,7 @@ import org.apache.kafka.clients.admin.TopicDescription;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
-
-import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
@@ -49,6 +43,7 @@ import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.strimzi.test.container.StrimziKafkaContainer;
 
 /**
  * Starts a Kafka broker as dev service if needed.
@@ -56,14 +51,17 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 public class DevServicesKafkaProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesKafkaProcessor.class);
-    private static final int KAFKA_PORT = 9092;
     private static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
+
+    private static final Pattern STRIMZI_IMAGE_NAME_PATTERN = Pattern
+            .compile("(^.*test-container):(\\d+\\.\\d+\\.\\d+|latest)-kafka-(.*)$");
 
     /**
      * Label to add to shared Dev Service for Kafka running in containers.
      * This allows other applications to discover the running service and use it instead of starting a new instance.
      */
-    private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kafka";
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kafka";
+    static final int KAFKA_PORT = 9092;
 
     private static final ContainerLocator kafkaContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, KAFKA_PORT);
 
@@ -231,17 +229,36 @@ public class DevServicesKafkaProcessor {
 
         // Starting the broker
         final Supplier<KafkaBroker> defaultKafkaBrokerSupplier = () -> {
-            RedPandaKafkaContainer container = new RedPandaKafkaContainer(
-                    DockerImageName.parse(config.imageName),
-                    config.fixedExposedPort,
-                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
-                    useSharedNetwork, config.redpanda);
-            timeout.ifPresent(container::withStartupTimeout);
-            container.start();
+            if (config.imageName.contains("strimzi")) {
+                StrimziKafkaContainer container = new StrimziKafkaContainer(config.imageName)
+                        .withBrokerId(1)
+                        .withKraft();
+                ConfigureUtil.configureSharedNetwork(container, "kafka");
+                if (config.serviceName != null) {
+                    container.withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, config.serviceName);
+                }
+                if (config.fixedExposedPort != 0) {
+                    container.withPort(config.fixedExposedPort);
+                }
+                timeout.ifPresent(container::withStartupTimeout);
 
-            return new KafkaBroker(
-                    container.getBootstrapServers(),
-                    container::close);
+                container.start();
+                return new KafkaBroker(
+                        container.getBootstrapServers(),
+                        container::close);
+            } else {
+                RedPandaKafkaContainer container = new RedPandaKafkaContainer(
+                        DockerImageName.parse(config.imageName),
+                        config.fixedExposedPort,
+                        launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
+                        useSharedNetwork, config.redpanda);
+                timeout.ifPresent(container::withStartupTimeout);
+                container.start();
+
+                return new KafkaBroker(
+                        container.getBootstrapServers(),
+                        container::close);
+            }
         };
 
         return maybeContainerAddress.map(containerAddress -> new KafkaBroker(containerAddress.getUrl(), null))
@@ -335,101 +352,4 @@ public class DevServicesKafkaProcessor {
         }
     }
 
-    /**
-     * Container configuring and starting the Redpanda broker.
-     * See https://vectorized.io/docs/quick-start-docker/
-     */
-    private static final class RedPandaKafkaContainer extends GenericContainer<RedPandaKafkaContainer> {
-
-        private final Integer fixedExposedPort;
-        private final boolean useSharedNetwork;
-        private final RedPandaBuildTimeConfig redpandaConfig;
-
-        private String hostName = null;
-
-        private static final String STARTER_SCRIPT = "/var/lib/redpanda/redpanda.sh";
-
-        private RedPandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-                boolean useSharedNetwork, RedPandaBuildTimeConfig redpandaConfig) {
-            super(dockerImageName);
-            this.fixedExposedPort = fixedExposedPort;
-            this.useSharedNetwork = useSharedNetwork;
-            this.redpandaConfig = redpandaConfig;
-
-            if (serviceName != null) { // Only adds the label in dev mode.
-                withLabel(DEV_SERVICE_LABEL, serviceName);
-            }
-
-            // For redpanda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/
-            if (dockerImageName.getRepository().equals("vectorized/redpanda")) {
-                withCreateContainerCmdModifier(cmd -> {
-                    cmd.withEntrypoint("sh");
-                });
-                withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
-                waitingFor(Wait.forLogMessage(".*Started Kafka API server.*", 1));
-            } else {
-                throw new IllegalArgumentException("Only vectorized/redpanda images are supported");
-            }
-        }
-
-        @Override
-        protected void containerIsStarting(InspectContainerResponse containerInfo, boolean reused) {
-            super.containerIsStarting(containerInfo, reused);
-
-            // Start and configure the advertised address
-            String command = "#!/bin/bash\n";
-            command += "/usr/bin/rpk redpanda start --check=false --node-id 0 --smp 1 ";
-            command += "--memory 1G --overprovisioned --reserve-memory 0M ";
-            command += String.format("--kafka-addr %s ", getKafkaAddresses());
-            command += String.format("--advertise-kafka-addr %s ", getKafkaAdvertisedAddresses());
-            if (redpandaConfig.transactionEnabled) {
-                command += "--set redpanda.enable_idempotence=true ";
-                command += "--set redpanda.enable_transactions=true ";
-            }
-
-            //noinspection OctalInteger
-            copyFileToContainer(
-                    Transferable.of(command.getBytes(StandardCharsets.UTF_8), 0777),
-                    STARTER_SCRIPT);
-        }
-
-        private String getKafkaAddresses() {
-            List<String> addresses = new ArrayList<>();
-            if (useSharedNetwork) {
-                addresses.add("PLAINTEXT://0.0.0.0:29092");
-            }
-            // See https://github.com/quarkusio/quarkus/issues/21819
-            // Kafka is always available on the Docker host network
-            addresses.add("OUTSIDE://0.0.0.0:9092");
-            return String.join(",", addresses);
-        }
-
-        private String getKafkaAdvertisedAddresses() {
-            List<String> addresses = new ArrayList<>();
-            if (useSharedNetwork) {
-                addresses.add(String.format("PLAINTEXT://%s:29092", hostName));
-            }
-            // See https://github.com/quarkusio/quarkus/issues/21819
-            // Kafka is always exposed to the Docker host network
-            addresses.add(String.format("OUTSIDE://%s:%d", getHost(), getMappedPort(KAFKA_PORT)));
-            return String.join(",", addresses);
-        }
-
-        @Override
-        protected void configure() {
-            super.configure();
-
-            addExposedPort(KAFKA_PORT);
-            hostName = ConfigureUtil.configureSharedNetwork(this, "kafka");
-
-            if (fixedExposedPort != null) {
-                addFixedExposedPort(fixedExposedPort, KAFKA_PORT);
-            }
-        }
-
-        public String getBootstrapServers() {
-            return getKafkaAdvertisedAddresses();
-        }
-
-    }
 }

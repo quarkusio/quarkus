@@ -102,8 +102,6 @@ public class DevServicesKafkaProcessor {
 
             kafkaBroker = startKafka(configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
-                    devServicesSharedNetworkBuildItem.stream()
-                            .anyMatch(DevServicesSharedNetworkBuildItem::isExposedOnDockerHost),
                     devServicesConfig.timeout);
             bootstrapServers = null;
             if (kafkaBroker != null) {
@@ -202,7 +200,7 @@ public class DevServicesKafkaProcessor {
     }
 
     private KafkaBroker startKafka(KafkaDevServiceCfg config,
-            LaunchModeBuildItem launchMode, boolean useSharedNetwork, boolean exposeOnDockerHost, Optional<Duration> timeout) {
+            LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting dev services for Kafka, as it has been disabled in the config.");
@@ -237,8 +235,7 @@ public class DevServicesKafkaProcessor {
                     DockerImageName.parse(config.imageName),
                     config.fixedExposedPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
-                    useSharedNetwork,
-                    exposeOnDockerHost);
+                    useSharedNetwork);
             timeout.ifPresent(container::withStartupTimeout);
             container.start();
 
@@ -343,18 +340,16 @@ public class DevServicesKafkaProcessor {
 
         private final Integer fixedExposedPort;
         private final boolean useSharedNetwork;
-        private final boolean exposeOnDockerHost;
 
         private String hostName = null;
 
         private static final String STARTER_SCRIPT = "/var/lib/redpanda/redpanda.sh";
 
         private RedPandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-                boolean useSharedNetwork, boolean exposeOnDockerHost) {
+                boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
-            this.exposeOnDockerHost = exposeOnDockerHost;
 
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
@@ -394,9 +389,9 @@ public class DevServicesKafkaProcessor {
             if (useSharedNetwork) {
                 addresses.add("PLAINTEXT://0.0.0.0:29092");
             }
-            if (exposeOnDockerHost || !useSharedNetwork) {
-                addresses.add("OUTSIDE://0.0.0.0:9092");
-            }
+            // See https://github.com/quarkusio/quarkus/issues/21819
+            // Kafka is always available on the Docker host network
+            addresses.add("OUTSIDE://0.0.0.0:9092");
             return String.join(",", addresses);
         }
 
@@ -405,9 +400,9 @@ public class DevServicesKafkaProcessor {
             if (useSharedNetwork) {
                 addresses.add(String.format("PLAINTEXT://%s:29092", hostName));
             }
-            if (exposeOnDockerHost || !useSharedNetwork) {
-                addresses.add(String.format("OUTSIDE://%s:%d", getHost(), getMappedPort(KAFKA_PORT)));
-            }
+            // See https://github.com/quarkusio/quarkus/issues/21819
+            // Kafka is always exposed to the Docker host network
+            addresses.add(String.format("OUTSIDE://%s:%d", getHost(), getMappedPort(KAFKA_PORT)));
             return String.join(",", addresses);
         }
 

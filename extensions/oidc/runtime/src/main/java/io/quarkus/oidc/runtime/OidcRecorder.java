@@ -259,6 +259,7 @@ public class OidcRecorder {
                     .expireIn(connectionDelayInMillisecs)
                     .onFailure()
                     .transform(t -> toOidcException(t, oidcConfig.authServerUrl.get()))
+                    .onFailure()
                     .invoke(client::close);
         } else {
             return client.getJsonWebKeySet();

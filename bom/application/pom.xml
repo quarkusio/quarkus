@@ -94,7 +94,7 @@
         <hibernate-reactive.version>1.1.0.Final</hibernate-reactive.version>
         <hibernate-validator.version>6.2.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.0.7.Final</hibernate-search.version>
-        <narayana.version>5.12.0.Final</narayana.version>
+        <narayana.version>5.12.4.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.13</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
@@ -3843,6 +3843,14 @@
                     <exclusion>
                         <groupId>commons-logging</groupId>
                         <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.resteasy</groupId>
+                        <artifactId>resteasy-client</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.resteasy</groupId>
+                        <artifactId>resteasy-jackson2-provider</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

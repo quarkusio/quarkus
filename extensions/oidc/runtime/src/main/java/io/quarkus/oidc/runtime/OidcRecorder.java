@@ -279,21 +279,13 @@ public class OidcRecorder {
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled) {
-            String tokenUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath);
-            String introspectionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
-                    oidcConfig.introspectionPath);
-            String authorizationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
-                    oidcConfig.authorizationPath);
-            String jwksUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.jwksPath);
-            String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.userInfoPath);
-            String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.endSessionPath);
-            metadataUni = Uni.createFrom().item(new OidcConfigurationMetadata(tokenUri,
-                    introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
-                    oidcConfig.token.issuer.orElse(null)));
+            metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
             metadataUni = OidcCommonUtils.discoverMetadata(client, authServerUriString, connectionDelayInMillisecs)
-                    .onItem().transform(json -> new OidcConfigurationMetadata(json));
+                    .onItem()
+                    .transform(
+                            json -> new OidcConfigurationMetadata(json, createLocalMetadata(oidcConfig, authServerUriString)));
         }
         return metadataUni.onItemOrFailure()
                 .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClient>>() {
@@ -319,6 +311,20 @@ public class OidcRecorder {
                         return Uni.createFrom().item(new OidcProviderClient(client, metadata, oidcConfig));
                     }
                 });
+    }
+
+    private static OidcConfigurationMetadata createLocalMetadata(OidcTenantConfig oidcConfig, String authServerUriString) {
+        String tokenUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath);
+        String introspectionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
+                oidcConfig.introspectionPath);
+        String authorizationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
+                oidcConfig.authorizationPath);
+        String jwksUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.jwksPath);
+        String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.userInfoPath);
+        String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.endSessionPath);
+        return new OidcConfigurationMetadata(tokenUri,
+                introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
+                oidcConfig.token.issuer.orElse(null));
     }
 
     private static boolean isServiceApp(OidcTenantConfig oidcConfig) {

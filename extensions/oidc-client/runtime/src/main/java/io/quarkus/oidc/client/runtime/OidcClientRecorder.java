@@ -1,7 +1,6 @@
 package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -34,7 +33,6 @@ public class OidcClientRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcClientRecorder.class);
     private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
-    private static final Duration CONNECTION_BACKOFF_DURATION = Duration.ofSeconds(2);
 
     public OidcClients setup(OidcClientsConfig oidcClientsConfig, TlsConfig tlsConfig, Supplier<Vertx> vertx) {
 

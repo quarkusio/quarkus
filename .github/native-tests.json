@@ -147,8 +147,8 @@
         {
             "category": "AWT, ImageIO and Java2D",
             "timeout": 20,
-            "test-modules": "awt",
+            "test-modules": "awt, no-awt",
             "os-name": "ubuntu-latest"
-        }	
+        }
     ]
 }

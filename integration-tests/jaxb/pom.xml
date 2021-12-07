@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxb</artifactId>
+            <artifactId>quarkus-resteasy-jaxb</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -31,6 +31,11 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -50,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxb-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jaxb-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

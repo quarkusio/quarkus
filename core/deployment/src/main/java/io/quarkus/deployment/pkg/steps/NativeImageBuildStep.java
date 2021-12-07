@@ -29,6 +29,8 @@ import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -143,6 +145,8 @@ public class NativeImageBuildStep {
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             List<JPMSExportBuildItem> jpmsExportBuildItems,
+            List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
+            List<UnsupportedOSBuildItem> unsupportedOses,
             Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
@@ -182,7 +186,7 @@ public class NativeImageBuildStep {
                 return new NativeImageBuildItem(finalExecutablePath,
                         new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
                                 graalVMVersion.version.toString(),
-                                graalVMVersion.javaVersion,
+                                graalVMVersion.javaFeatureVersion,
                                 graalVMVersion.distribution.name()));
             }
         }
@@ -204,6 +208,8 @@ public class NativeImageBuildStep {
                     .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                     .setJPMSExportBuildItems(jpmsExportBuildItems)
+                    .setNativeMinimalJavaVersions(nativeMinimalJavaVersions)
+                    .setUnsupportedOSes(unsupportedOses)
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
                     .setNativeImageName(nativeImageName)
@@ -235,7 +241,7 @@ public class NativeImageBuildStep {
             return new NativeImageBuildItem(finalExecutablePath,
                     new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
                             graalVMVersion.version.toString(),
-                            graalVMVersion.javaVersion,
+                            graalVMVersion.javaFeatureVersion,
                             graalVMVersion.distribution.name()));
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
@@ -401,7 +407,7 @@ public class NativeImageBuildStep {
             // try system property first - it will be the JAVA_HOME used by the current JVM
             String home = System.getProperty(JAVA_HOME_SYS);
             if (home == null) {
-                // No luck, somewhat a odd JVM not enforcing this property
+                // No luck, somewhat an odd JVM not enforcing this property
                 // try with the JAVA_HOME environment variable
                 home = System.getenv(JAVA_HOME_ENV);
             }
@@ -479,6 +485,8 @@ public class NativeImageBuildStep {
             private List<ExcludeConfigBuildItem> excludeConfigs;
             private List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders;
             private List<JPMSExportBuildItem> jpmsExports;
+            private List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions;
+            private List<UnsupportedOSBuildItem> unsupportedOSes;
             private Path outputDir;
             private String runnerJarName;
             private String noPIE = "";
@@ -519,6 +527,18 @@ public class NativeImageBuildStep {
 
             public Builder setJPMSExportBuildItems(List<JPMSExportBuildItem> JPMSExportBuildItems) {
                 this.jpmsExports = JPMSExportBuildItems;
+                return this;
+            }
+
+            public Builder setNativeMinimalJavaVersions(
+                    List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions) {
+                this.nativeMinimalJavaVersions = nativeMinimalJavaVersions;
+                return this;
+            }
+
+            public Builder setUnsupportedOSes(
+                    List<UnsupportedOSBuildItem> unsupportedOSes) {
+                this.unsupportedOSes = unsupportedOSes;
                 return this;
             }
 
@@ -620,6 +640,10 @@ public class NativeImageBuildStep {
                         "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
                 nativeImageArgs.add("-H:+JNI");
                 nativeImageArgs.add("-H:+AllowFoldMethods");
+
+                if (nativeConfig.headless) {
+                    nativeImageArgs.add("-J-Djava.awt.headless=true");
+                }
 
                 if (nativeConfig.enableFallbackImages) {
                     nativeImageArgs.add("-H:FallbackThreshold=5");
@@ -738,6 +762,28 @@ public class NativeImageBuildStep {
                     for (JPMSExportBuildItem jpmsExport : jpmsExports) {
                         nativeImageArgs.add(
                                 "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage() + "=ALL-UNNAMED");
+                    }
+                }
+
+                if (nativeMinimalJavaVersions != null && !nativeMinimalJavaVersions.isEmpty()) {
+                    if (graalVMVersion.javaUpdateVersion == GraalVM.Version.UNDEFINED) {
+                        log.warnf(
+                                "Unable to parse used Java version from native-image version string `%s'. Java version checks will be skipped.",
+                                graalVMVersion.fullVersion);
+                    } else {
+                        nativeMinimalJavaVersions.stream()
+                                .filter(a -> !graalVMVersion.jdkVersionGreaterOrEqualTo(a.minFeature, a.minUpdate))
+                                .forEach(a -> log.warnf("Expected: Java %d, update %d, Actual: Java %d, update %d. %s",
+                                        a.minFeature, a.minUpdate, graalVMVersion.javaFeatureVersion,
+                                        graalVMVersion.javaUpdateVersion, a.warning));
+                    }
+                }
+
+                if (unsupportedOSes != null && !unsupportedOSes.isEmpty()) {
+                    final String errs = unsupportedOSes.stream().filter(o -> o.os.active).map(o -> o.error)
+                            .collect(Collectors.joining(", "));
+                    if (!errs.isEmpty()) {
+                        throw new UnsupportedOperationException(errs);
                     }
                 }
 

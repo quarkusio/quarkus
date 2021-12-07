@@ -7,8 +7,18 @@ import java.util.stream.Stream;
 
 final class GraalVM {
     static final class Version implements Comparable<Version> {
+
+        /**
+         * JDK version used with native-image tool:
+         * e.g. JDK 17.0.1 is Feature version 17, Update version 1.
+         * * Feature: e.g. 11 as in JDK 11, JDK 17, JDK 18 etc.
+         * * Interim: 0 so far for the JDK versions we care about, not used here
+         * * Update: quarterly updates, e.g. 13 as in JDK 11.0.13.
+         * * Patch: emergency release, critical patch, not used here
+         */
         private static final Pattern PATTERN = Pattern.compile(
-                "(GraalVM|native-image)( Version)? (?<version>[1-9][0-9]*(\\.[0-9]+)+(-dev\\p{XDigit}*)?)(?<distro>.*?)?(\\(Java Version (?<javaVersion>[^)]+)\\))?$");
+                "(GraalVM|native-image)( Version)? (?<version>[1-9][0-9]*(\\.[0-9]+)+(-dev\\p{XDigit}*)?)(?<distro>.*?)?" +
+                        "(\\(Java Version (?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)?$");
 
         static final Version UNVERSIONED = new Version("Undefined", "snapshot", Distribution.ORACLE);
         static final Version VERSION_21_2 = new Version("GraalVM 21.2", "21.2", Distribution.ORACLE);
@@ -17,20 +27,23 @@ final class GraalVM {
 
         static final Version MINIMUM = VERSION_21_2;
         static final Version CURRENT = VERSION_21_3;
+        public static final int UNDEFINED = -1;
 
         final String fullVersion;
         final org.graalvm.home.Version version;
-        final int javaVersion;
+        public final int javaFeatureVersion;
+        public final int javaUpdateVersion;
         final Distribution distribution;
 
         Version(String fullVersion, String version, Distribution distro) {
-            this(fullVersion, version, 11, distro);
+            this(fullVersion, version, 11, UNDEFINED, distro);
         }
 
-        Version(String fullVersion, String version, int javaVersion, Distribution distro) {
+        Version(String fullVersion, String version, int javaFeatureVersion, int javaUpdateVersion, Distribution distro) {
             this.fullVersion = fullVersion;
             this.version = org.graalvm.home.Version.parse(version);
-            this.javaVersion = javaVersion;
+            this.javaFeatureVersion = javaFeatureVersion;
+            this.javaUpdateVersion = javaUpdateVersion;
             this.distribution = distro;
         }
 
@@ -58,6 +71,14 @@ final class GraalVM {
             return this.compareTo(version) < 0;
         }
 
+        /**
+         * e.g. JDK 11.0.13 > 11.0.12, 17.0.1 > 11.0.13,
+         */
+        public boolean jdkVersionGreaterOrEqualTo(int feature, int update) {
+            return this.javaFeatureVersion > feature
+                    || (this.javaFeatureVersion == feature && this.javaUpdateVersion >= update);
+        }
+
         boolean is(Version version) {
             return this.compareTo(version) == 0;
         }
@@ -73,15 +94,23 @@ final class GraalVM {
                 final String line = it.next();
                 final Matcher matcher = PATTERN.matcher(line);
                 if (matcher.find()) {
+                    // GraalVM/Mandrel:
                     final String version = matcher.group("version");
                     final String distro = matcher.group("distro");
-                    String javaVersionMatch = matcher.group("javaVersion");
-                    final int javaVersion = javaVersionMatch == null ? // Old GraalVM versions, like 19, didn't report the Java version
-                            11 : Integer.parseInt(javaVersionMatch.split("\\.")[0]);
+                    // JDK:
+                    // e.g. JDK 17.0.1, feature: 17, interim: 0 (not used here), update: 1
+                    final String jFeatureMatch = matcher.group("jfeature");
+                    final int jFeature = jFeatureMatch == null ? // Old GraalVM versions, like 19, didn't report the Java version.
+                            11 : Integer.parseInt(jFeatureMatch);
+                    final String jUpdateMatch = matcher.group("jupdate");
+                    final int jUpdate = jUpdateMatch == null ? // Some JDK dev builds don't report full version string.
+                            UNDEFINED : Integer.parseInt(jUpdateMatch);
+
                     return new Version(
                             line,
                             version,
-                            javaVersion,
+                            jFeature,
+                            jUpdate,
                             isMandrel(distro) ? Distribution.MANDREL : Distribution.ORACLE);
                 }
             }
@@ -90,10 +119,7 @@ final class GraalVM {
         }
 
         private static boolean isMandrel(String s) {
-            if (s == null) {
-                return false;
-            }
-            return s.contains("Mandrel Distribution");
+            return s != null && s.contains("Mandrel Distribution");
         }
 
         @Override
@@ -102,12 +128,13 @@ final class GraalVM {
                     "version=" + version +
                     ", fullVersion=" + fullVersion +
                     ", distribution=" + distribution +
-                    ", javaVersion=" + javaVersion +
+                    ", javaFeatureVersion=" + javaFeatureVersion +
+                    ", javaUpdateVersion=" + javaUpdateVersion +
                     '}';
         }
 
         public boolean isJava17() {
-            return javaVersion == 17;
+            return javaFeatureVersion == 17;
         }
     }
 

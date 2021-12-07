@@ -327,18 +327,8 @@ This could be useful to access data for which the key is overridden:
 If an expression does not specify a namespace the _current context object_ is derived from the position of the tag.
 By default, the current context object represents the data passed to the template instance.
 However, sections may change the current context object.
-A typical example is the `with` section that could be used to set the current context object in order to simplify the template structure:
+A typical example is the <<let_section,`let`>> section that can be used to define named local variables:
 
-[source,html]
-----
-{#with item}
-  <h1>{name}</h1>  <1>
-  <p>{description}</p>
-{/with}
-----
-<1> `name` is resolved against the `item`.
-
-Another built-in section that modifies the current context object is `let`/`set`:
 [source,html]
 ----
 {#let myParent=order.item.parent myPrice=order.price} <1>
@@ -737,7 +727,7 @@ You can also add any number of `else` blocks:
 ----
 
 [[when_section]]
-==== When/Switch Section
+==== When Section
 
 This section is similar to Java's `switch` or Kotlin's `when` constructs.
 It matches a _tested value_ against all blocks sequentially until a condition is satisfied.
@@ -826,6 +816,30 @@ The following operators are supported in `is`/`case` block conditions:
 
 |===
 
+[[let_section]]
+==== Let Section
+
+This section allows you to define named local variables:
+[source,html]
+----
+{#let myParent=order.item.parent isActive=false age=10} <1>
+  <h1>{myParent.name}</h1>
+  Is active: {isActive}
+  Age: {age}
+{/let} <2>
+----
+<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
+<2> Keep in mind that the variable is not available outside the `let` section that defines it.
+
+The section tag is also registered under the `set` alias:
+
+[source,html]
+----
+{#set myParent=item.parent price=item.price}
+  <h1>{myParent.name}</h1>
+  <p>Price: {price}
+{/set}
+----
 
 [[with_section]]
 ==== With Section
@@ -843,6 +857,21 @@ This could be useful to simplify the template structure:
 <1> The `name` will be resolved against the `item.parent`.
 <2> The `description` will be also resolved against the `item.parent`.
 
+[IMPORTANT]
+====
+Note that the `with` section should not be used in <<typesafe_templates>> or templates that define <<typesafe_expressions>>.
+The reason is that it prevents Qute from validating the nested expressions.
+If possible it should be replaced with the `{#let}` section which declares an explicit binding:
+
+[source,html]
+----
+{#let it=item.parent}
+  <h1>{it.name}</h1>
+  <p>{it.description}</p>
+{/let}
+----
+====
+
 This section might also come in handy when we'd like to avoid multiple expensive invocations:
 
 [source,html]
@@ -856,30 +885,6 @@ This section might also come in handy when we'd like to avoid multiple expensive
 {/with}
 ----
 <1> `this` is the result of `item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)`. The method is only invoked once even though the result may be used in multiple expressions.
-
-==== Let/Set Section
-
-This section allows you to define named local variables:
-[source,html]
-----
-{#let myParent=order.item.parent isActive=false age=10} <1>
-  <h1>{myParent.name}</h1>
-  Is active: {isActive}
-  Age: {age}
-{/let}
-----
-<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
-
-The section tag is also registered under the `set` alias:
-
-[source,html]
-----
-{#set myParent=item.parent price=item.price}
-  <h1>{myParent.name}</h1>
-  <p>Price: {price}
-{/set}
-----
-
 
 [[include_helper]]
 ==== Include Section

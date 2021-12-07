@@ -7,9 +7,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +34,7 @@ class EngineImpl implements Engine {
     final boolean removeStandaloneLines;
 
     EngineImpl(EngineBuilder builder) {
-        this.sectionHelperFactories = Collections.unmodifiableMap(new HashMap<>(builder.sectionHelperFactories));
+        this.sectionHelperFactories = Map.copyOf(builder.sectionHelperFactories);
         this.valueResolvers = sort(builder.valueResolvers);
         this.namespaceResolvers = ImmutableList.<NamespaceResolver> builder()
                 .addAll(builder.namespaceResolvers).add(new TemplateImpl.DataNamespaceResolver()).build();

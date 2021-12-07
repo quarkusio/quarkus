@@ -3,6 +3,8 @@ package io.quarkus.deployment.pkg.steps;
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,15 +17,8 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
 
     public NativeImageBuildLocalContainerRunner(NativeConfig nativeConfig, Path outputDir) {
         super(nativeConfig, outputDir);
-    }
-
-    @Override
-    protected List<String> getContainerRuntimeBuildArgs() {
-        List<String> containerRuntimeArgs = super.getContainerRuntimeBuildArgs();
-        String volumeOutputPath = outputPath;
-        if (SystemUtils.IS_OS_WINDOWS) {
-            volumeOutputPath = FileUtil.translateToVolumePath(volumeOutputPath);
-        } else if (SystemUtils.IS_OS_LINUX) {
+        if (SystemUtils.IS_OS_LINUX) {
+            ArrayList<String> containerRuntimeArgs = new ArrayList<>(Arrays.asList(baseContainerRuntimeArgs));
             String uid = getLinuxID("-ur");
             String gid = getLinuxID("-gr");
             if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
@@ -33,6 +28,16 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
                     containerRuntimeArgs.add("--userns=keep-id");
                 }
             }
+            baseContainerRuntimeArgs = containerRuntimeArgs.toArray(baseContainerRuntimeArgs);
+        }
+    }
+
+    @Override
+    protected List<String> getContainerRuntimeBuildArgs() {
+        List<String> containerRuntimeArgs = super.getContainerRuntimeBuildArgs();
+        String volumeOutputPath = outputPath;
+        if (SystemUtils.IS_OS_WINDOWS) {
+            volumeOutputPath = FileUtil.translateToVolumePath(volumeOutputPath);
         }
 
         Collections.addAll(containerRuntimeArgs, "-v",

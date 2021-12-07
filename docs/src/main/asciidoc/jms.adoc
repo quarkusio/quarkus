@@ -373,7 +373,7 @@ This creates a Maven project, with its pom.xml importing the quarkus-artemis-jms
 [source,xml]
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
+  <groupId>io.quarkiverse.artemis</groupId>
   <artifactId>quarkus-artemis-jms</artifactId>
 </dependency>
 ----
@@ -399,4 +399,5 @@ With the Artemis properties configured, you can resume the steps above from <<ge
 
 === Configuration Reference
 
-include::{generated-dir}/config/quarkus-artemis-core.adoc[opts=optional, leveloffset=+1]
+To know more about how to configure the Artemis JMS client, have a look at https://quarkiverse.github.io/quarkiverse-docs/quarkus-artemis/dev/index.html[the documentation of the extension].
+

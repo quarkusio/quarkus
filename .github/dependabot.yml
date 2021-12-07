@@ -17,7 +17,6 @@ updates:
       - dependency-name: org.liquibase:liquibase-core
       - dependency-name: org.liquibase.ext:liquibase-mongodb
       - dependency-name: org.freemarker:freemarker
-      - dependency-name: org.eclipse.jgit:*
       - dependency-name: io.fabric8:kubernetes-client-bom
       - dependency-name: org.apache.httpcomponents:*
       - dependency-name: org.quartz-scheduler:quartz
@@ -26,7 +25,6 @@ updates:
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
       - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
-      - dependency-name: com.jcraft:jzlib
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
       - dependency-name: org.ow2.asm:*
@@ -65,8 +63,6 @@ updates:
       - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
       # Swagger-UI
       - dependency-name: org.webjars:swagger-ui
-      # Tika
-      - dependency-name: org.apache.tika:tika-parsers
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Test dependencies
@@ -107,8 +103,6 @@ updates:
       # Yasson
       - dependency-name: org.eclipse:yasson
       # AWS
-      - dependency-name: software.amazon.awssdk:*
-      - dependency-name: com.amazon.alexa:*
       - dependency-name: com.amazonaws:*
       - dependency-name: com.amazonaws.serverless:*
       # Azure
@@ -123,7 +117,6 @@ updates:
       - dependency-name: org.bouncycastle:*
       # Logstash
       - dependency-name: biz.paluch.logging:logstash-gelf
-      - dependency-name: io.sentry:*
       # MongoDB
       - dependency-name: org.mongodb:*
       # Avro

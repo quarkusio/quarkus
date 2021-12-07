@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.runtime;
 import java.util.function.Supplier;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.OpenTelemetrySdkBuilder;
@@ -20,7 +21,8 @@ public class OpenTelemetryRecorder {
     }
 
     /* STATIC INIT */
-    public void createOpenTelemetry(RuntimeValue<SdkTracerProvider> tracerProvider, OpenTelemetryConfig openTelemetryConfig) {
+    public RuntimeValue<OpenTelemetry> createOpenTelemetry(RuntimeValue<SdkTracerProvider> tracerProvider,
+            OpenTelemetryConfig openTelemetryConfig) {
         OpenTelemetrySdkBuilder builder = OpenTelemetrySdk.builder();
 
         // Set tracer provider if present
@@ -30,7 +32,8 @@ public class OpenTelemetryRecorder {
 
         builder.setPropagators(OpenTelemetryUtil.mapPropagators(openTelemetryConfig.propagators));
 
-        builder.buildAndRegisterGlobal();
+        OpenTelemetry openTelemetry = builder.buildAndRegisterGlobal();
+        return new RuntimeValue<>(openTelemetry);
     }
 
     /* STATIC INIT */

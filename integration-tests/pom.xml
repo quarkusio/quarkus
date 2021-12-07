@@ -292,6 +292,7 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>opentelemetry</module>
+                <module>opentelemetry-vertx</module>
                 <module>logging-json</module>
                 <module>jaxb</module>
                 <module>jaxp</module>

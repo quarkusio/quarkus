@@ -48,7 +48,7 @@ public class OpenTelemetryTestCase {
     }
 
     private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<List<Map<String, Object>>>() {
+        return get("/export").body().as(new TypeRef<>() {
         });
     }
 

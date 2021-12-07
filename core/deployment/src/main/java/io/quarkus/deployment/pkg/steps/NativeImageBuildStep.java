@@ -603,6 +603,9 @@ public class NativeImageBuildStep {
                  */
                 nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED");
 
+                //address https://github.com/quarkusio/quarkus-quickstarts/issues/993
+                nativeImageArgs.add("-J--add-opens=java.base/java.text=ALL-UNNAMED");
+
                 handleAdditionalProperties(nativeImageArgs);
 
                 nativeImageArgs.add(

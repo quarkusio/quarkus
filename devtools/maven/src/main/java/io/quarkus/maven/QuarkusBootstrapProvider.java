@@ -14,10 +14,13 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.eventspy.AbstractEventSpy;
+import org.apache.maven.eventspy.internal.EventSpyDispatcher;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 
@@ -41,13 +44,16 @@ import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.expression.Expression;
 
 @Component(role = QuarkusBootstrapProvider.class, instantiationStrategy = "singleton")
-public class QuarkusBootstrapProvider implements Closeable {
+public class QuarkusBootstrapProvider extends AbstractEventSpy implements Closeable, Initializable {
 
     @Requirement(role = RepositorySystem.class, optional = false)
     protected RepositorySystem repoSystem;
 
     @Requirement(role = RemoteRepositoryManager.class, optional = false)
     protected RemoteRepositoryManager remoteRepoManager;
+
+    @Requirement(role = EventSpyDispatcher.class, optional = false)
+    protected EventSpyDispatcher eventSpyDispatcher;
 
     private final Cache<String, QuarkusAppBootstrapProvider> appBootstrapProviders = CacheBuilder.newBuilder()
             .concurrencyLevel(4).softValues().initialCapacity(10).build();
@@ -306,5 +312,15 @@ public class QuarkusBootstrapProvider implements Closeable {
                 testApp = null;
             }
         }
+    }
+
+    @Override
+    public void initialize() {
+        /*
+         * Maven would be able to register QuarkusBootstrapProvider as an EventSpy if the mojo is declared
+         * as a Maven extension in end users' pom.xml. However we do not want to bother end users with that and
+         * therefore we register QuarkusBootstrapProvider as an EventSpy manually
+         */
+        eventSpyDispatcher.getEventSpies().add(this);
     }
 }

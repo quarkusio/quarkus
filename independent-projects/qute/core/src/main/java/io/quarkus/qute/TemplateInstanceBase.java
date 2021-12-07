@@ -51,7 +51,7 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
             return data;
         }
         if (dataMap != null) {
-            return dataMap;
+            return Mapper.wrap(dataMap);
         }
         return EMPTY_DATA_MAP;
     }

@@ -159,7 +159,7 @@ public final class Results {
             if (name != null) {
                 Object base = getBase().orElse(null);
                 List<Expression> params = getParams();
-                boolean isDataMap = (base instanceof Map) && ((Map<?, ?>) base).containsKey(TemplateInstanceBase.DATA_MAP_KEY);
+                boolean isDataMap = isDataMap(base);
                 // Entry "foo" not found in the data map
                 // Property "foo" not found on base object "org.acme.Bar"
                 // Method "getDiscount(value)" not found on base object "org.acme.Item"
@@ -188,6 +188,15 @@ public final class Results {
             } else {
                 return "NOT_FOUND";
             }
+        }
+
+        private boolean isDataMap(Object base) {
+            if (base instanceof Map) {
+                return ((Map<?, ?>) base).containsKey(TemplateInstanceBase.DATA_MAP_KEY);
+            } else if (base instanceof Mapper) {
+                return ((Mapper) base).get(TemplateInstanceBase.DATA_MAP_KEY) != null;
+            }
+            return false;
         }
 
         @Override

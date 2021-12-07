@@ -170,7 +170,7 @@ public class LoopSectionHelper implements SectionHelper {
             return ParametersInfo.builder()
                     .addParameter(ALIAS, EMPTY)
                     .addParameter(IN, EMPTY)
-                    .addParameter(new Parameter(ITERABLE, null, true))
+                    .addParameter(Parameter.builder(ITERABLE).optional())
                     .build();
         }
 

@@ -102,6 +102,10 @@ final class PropertyUtils {
             return propertyType;
         }
 
+        public Class<?> getDeclaringClass() {
+            return readMethod != null ? readMethod.getDeclaringClass() : writeMethod.getDeclaringClass();
+        }
+
         public Object read(Object target) {
             try {
                 return readMethod.invoke(target);

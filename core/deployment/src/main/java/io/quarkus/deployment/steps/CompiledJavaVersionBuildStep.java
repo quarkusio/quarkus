@@ -12,7 +12,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 
 public class CompiledJavaVersionBuildStep {
@@ -22,36 +22,30 @@ public class CompiledJavaVersionBuildStep {
      * application .class file that is found
      */
     @BuildStep
-    public CompiledJavaVersionBuildItem compiledJavaVersion(ApplicationArchivesBuildItem applicationArchivesBuildItem) {
-        var rootDirectories = applicationArchivesBuildItem.getRootArchive().getRootDirectories();
+    public CompiledJavaVersionBuildItem compiledJavaVersion(BuildSystemTargetBuildItem buildSystemTarget) {
         AtomicReference<Integer> majorVersion = new AtomicReference<>(null);
-        for (Path path : rootDirectories) {
-            try {
-                Files.walkFileTree(path, new SimpleFileVisitor<>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                        if (file.getFileName().endsWith(".class")) {
-                            try (InputStream in = new FileInputStream(file.toFile())) {
-                                DataInputStream data = new DataInputStream(in);
-                                if (0xCAFEBABE == data.readInt()) {
-                                    data.readUnsignedShort(); // minor version -> we don't care about it
-                                    majorVersion.set(data.readUnsignedShort());
-                                    return FileVisitResult.TERMINATE;
-                                }
-                            } catch (IOException ignored) {
-
+        try {
+            Files.walkFileTree(buildSystemTarget.getOutputDirectory(), new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (file.getFileName().toString().endsWith(".class")) {
+                        try (InputStream in = new FileInputStream(file.toFile())) {
+                            DataInputStream data = new DataInputStream(in);
+                            if (0xCAFEBABE == data.readInt()) {
+                                data.readUnsignedShort(); // minor version -> we don't care about it
+                                majorVersion.set(data.readUnsignedShort());
+                                return FileVisitResult.TERMINATE;
                             }
-                        }
-                        // if this was not .class file or there was an error parsing its contents, we continue on to the next file
-                        return FileVisitResult.CONTINUE;
-                    }
-                });
-            } catch (IOException ignored) {
+                        } catch (IOException ignored) {
 
-            }
-            if (majorVersion.get() != null) {
-                break;
-            }
+                        }
+                    }
+                    // if this was not .class file or there was an error parsing its contents, we continue on to the next file
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException ignored) {
+
         }
         if (majorVersion.get() == null) {
             return CompiledJavaVersionBuildItem.unknown();

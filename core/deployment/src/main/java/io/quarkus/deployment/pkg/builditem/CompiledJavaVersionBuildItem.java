@@ -2,7 +2,7 @@ package io.quarkus.deployment.pkg.builditem;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-public class CompiledJavaVersionBuildItem extends SimpleBuildItem {
+public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
     private final JavaVersion javaVersion;
 
@@ -28,13 +28,13 @@ public class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
         Status isJava17OrHigher();
 
-        public enum Status {
+        enum Status {
             TRUE,
             FALSE,
             UNKNOWN
         }
 
-        static final class Unknown implements JavaVersion {
+        final class Unknown implements JavaVersion {
 
             Unknown() {
             }
@@ -50,10 +50,10 @@ public class CompiledJavaVersionBuildItem extends SimpleBuildItem {
             }
         }
 
-        static final class Known implements JavaVersion {
+        final class Known implements JavaVersion {
 
-            private static int JAVA_11_MAJOR = 55;
-            private static int JAVA_17_MAJOR = 62;
+            private static final int JAVA_11_MAJOR = 55;
+            private static final int JAVA_17_MAJOR = 61;
 
             private final int determinedMajor;
 

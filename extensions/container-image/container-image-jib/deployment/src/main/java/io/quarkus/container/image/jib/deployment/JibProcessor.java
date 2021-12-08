@@ -60,6 +60,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -77,6 +78,9 @@ public class JibProcessor {
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
+    private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.10";
+    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10";
+
     @BuildStep
     public AvailableContainerImageExtensionBuildItem availability() {
         return new AvailableContainerImageExtensionBuildItem(JIB);
@@ -86,14 +90,27 @@ public class JibProcessor {
     // we want the AppCDS generation process to use the same JVM as the base image
     // in order to make the AppCDS usable by the runtime JVM
     @BuildStep(onlyIf = JibBuild.class)
-    public void appCDS(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+    public void appCDS(ContainerImageConfig containerImageConfig, CompiledJavaVersionBuildItem compiledJavaVersion,
+            JibConfig jibConfig,
             BuildProducer<AppCDSContainerImageBuildItem> producer) {
 
         if (!containerImageConfig.build && !containerImageConfig.push) {
             return;
         }
 
-        producer.produce(new AppCDSContainerImageBuildItem(jibConfig.baseJvmImage));
+        producer.produce(new AppCDSContainerImageBuildItem(determineBaseJvmImage(jibConfig, compiledJavaVersion)));
+    }
+
+    private String determineBaseJvmImage(JibConfig jibConfig, CompiledJavaVersionBuildItem compiledJavaVersion) {
+        if (jibConfig.baseJvmImage.isPresent()) {
+            return jibConfig.baseJvmImage.get();
+        }
+
+        var javaVersion = compiledJavaVersion.getJavaVersion();
+        if (javaVersion.isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
+            return JAVA_17_BASE_IMAGE;
+        }
+        return JAVA_11_BASE_IMAGE;
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
@@ -104,6 +121,7 @@ public class JibProcessor {
             MainClassBuildItem mainClass,
             OutputTargetBuildItem outputTarget,
             CurateOutcomeBuildItem curateOutcome,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
@@ -119,10 +137,12 @@ public class JibProcessor {
         JibContainerBuilder jibContainerBuilder;
         String packageType = packageConfig.type;
         if (packageConfig.isLegacyJar() || packageType.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
-            jibContainerBuilder = createContainerBuilderFromLegacyJar(jibConfig, containerImageConfig,
+            jibContainerBuilder = createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
+                    jibConfig, containerImageConfig,
                     sourceJar, outputTarget, mainClass, containerImageLabels);
         } else if (packageConfig.isFastJar()) {
-            jibContainerBuilder = createContainerBuilderFromFastJar(jibConfig, containerImageConfig, sourceJar, curateOutcome,
+            jibContainerBuilder = createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
+                    jibConfig, containerImageConfig, sourceJar, curateOutcome,
                     containerImageLabels,
                     appCDSResult);
         } else {
@@ -289,7 +309,7 @@ public class JibProcessor {
      * <li>app</li>
      * </ul>
      */
-    private JibContainerBuilder createContainerBuilderFromFastJar(JibConfig jibConfig,
+    private JibContainerBuilder createContainerBuilderFromFastJar(String baseJvmImage, JibConfig jibConfig,
             ContainerImageConfig containerImageConfig,
             JarBuildItem sourceJarBuildItem,
             CurateOutcomeBuildItem curateOutcome, List<ContainerImageLabelBuildItem> containerImageLabels,
@@ -368,7 +388,7 @@ public class JibProcessor {
         try {
 
             JibContainerBuilder jibContainerBuilder = Jib
-                    .from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), jibConfig.baseRegistryUsername,
+                    .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername,
                             jibConfig.baseRegistryPassword));
             if (fastChangingLibPaths.isEmpty()) {
                 // just create a layer with the entire lib structure intact
@@ -477,7 +497,7 @@ public class JibProcessor {
         jibConfig.platforms.map(PlatformHelper::parse).ifPresent(jibContainerBuilder::setPlatforms);
     }
 
-    private JibContainerBuilder createContainerBuilderFromLegacyJar(JibConfig jibConfig,
+    private JibContainerBuilder createContainerBuilderFromLegacyJar(String baseJvmImage, JibConfig jibConfig,
             ContainerImageConfig containerImageConfig,
             JarBuildItem sourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
@@ -488,7 +508,7 @@ public class JibProcessor {
             Path classesDir = outputTargetBuildItem.getOutputDirectory().resolve("jib");
             ZipUtils.unzip(sourceJarBuildItem.getPath(), classesDir);
             JavaContainerBuilder javaContainerBuilder = JavaContainerBuilder
-                    .from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), jibConfig.baseRegistryUsername,
+                    .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername,
                             jibConfig.baseRegistryPassword))
                     .addResources(classesDir, IS_CLASS_PREDICATE.negate())
                     .addClasses(classesDir, IS_CLASS_PREDICATE);

@@ -100,13 +100,13 @@ var port = {config:property('quarkus.http.port')};
 
     function signInToOidcProviderAndGetTokens() {
       {#if info:oidcGrantType is 'implicit'}
-        window.location.href = '{info:authorizationUrl}'
+        window.location.href = '{info:authorizationUrl??}'
           + "?client_id=" + '{info:clientId}'
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=token id_token&response_mode=query&prompt=login"
           + "&nonce=" + makeid();
       {#else}
-        window.location.href = '{info:authorizationUrl}'
+        window.location.href = '{info:authorizationUrl??}'
           + "?client_id=" + '{info:clientId}'
           + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
           + "&scope=openid&response_type=code&response_mode=query&prompt=login"
@@ -193,7 +193,7 @@ var port = {config:property('quarkus.http.port')};
     function exchangeCodeForTokens(code){
         $.post("exchangeCodeForTokens",
             {
-              tokenUrl: '{info:tokenUrl}',
+              tokenUrl: '{info:tokenUrl??}',
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               authorizationCode: code,
@@ -258,7 +258,7 @@ var port = {config:property('quarkus.http.port')};
     function testServiceWithPassword(userName, password, servicePath){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl}',
+              tokenUrl: '{info:tokenUrl??}',
               serviceUrl: "http://localhost:" + port + servicePath,
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
@@ -274,7 +274,7 @@ var port = {config:property('quarkus.http.port')};
     function testServiceWithPasswordInSwaggerUi(userName, password){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl}',
+              tokenUrl: '{info:tokenUrl??}',
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               user: userName,
@@ -289,7 +289,7 @@ var port = {config:property('quarkus.http.port')};
     function testServiceWithPasswordInGraphQLUi(userName){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl}',
+              tokenUrl: '{info:tokenUrl??}',
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               user: userName,
@@ -305,7 +305,7 @@ var port = {config:property('quarkus.http.port')};
     function testServiceWithClientCredentials(servicePath) {
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl}',
+              tokenUrl: '{info:tokenUrl??}',
               serviceUrl: "http://localhost:" + port + servicePath,
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
@@ -318,7 +318,7 @@ var port = {config:property('quarkus.http.port')};
     function testServiceWithClientCredentialsInSwaggerUi(){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl}',
+              tokenUrl: '{info:tokenUrl??}',
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               grant: '{info:oidcGrantType}'
@@ -331,7 +331,7 @@ var port = {config:property('quarkus.http.port')};
     function testServiceWithClientCredentialsInGraphQLUi(){
         $.post("testService",
             {
-              tokenUrl: '{info:tokenUrl}',
+              tokenUrl: '{info:tokenUrl??}',
               client: '{info:clientId}',
               clientSecret: '{info:clientSecret}',
               grant: '{info:oidcGrantType}'
@@ -350,8 +350,8 @@ function navigateToSwaggerUiWithToken(token){
         "SecurityScheme":{
             "schema":{
                 "flow":"implicit",
-                "authorizationUrl":"{info:authorizationUrl}",
-                "tokenUrl":"{info:tokenUrl}",
+                "authorizationUrl":"{info:authorizationUrl??}",
+                "tokenUrl":"{info:tokenUrl??}",
                 "type":"oauth2",
                 "description":"Authentication"
             },

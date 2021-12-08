@@ -40,6 +40,7 @@ import org.jboss.logmanager.handlers.SyslogHandler;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
+import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -128,6 +129,24 @@ public class LoggingSetupRecorder {
                     possibleFormatters, possibleBannerSupplier, launchMode);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
+        }
+        if (launchMode.isDevOrTest()) {
+            handlers.add(new Handler() {
+                @Override
+                public void publish(LogRecord record) {
+                    if (record.getThrown() != null) {
+                        ExceptionReporting.notifyException(record.getThrown());
+                    }
+                }
+
+                @Override
+                public void flush() {
+                }
+
+                @Override
+                public void close() throws SecurityException {
+                }
+            });
         }
 
         if (config.file.enable) {
@@ -425,6 +444,7 @@ public class LoggingSetupRecorder {
 
         Handler handler = config.async.enable ? createAsyncHandler(config.async, config.level, consoleHandler)
                 : consoleHandler;
+
         if (color && launchMode.isDevOrTest() && !config.async.enable) {
             final Handler delegate = handler;
             handler = new Handler() {

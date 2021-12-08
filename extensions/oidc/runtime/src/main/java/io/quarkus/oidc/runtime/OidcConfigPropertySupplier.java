@@ -37,21 +37,21 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
         if (defaultValue != null || END_SESSION_PATH_KEY.equals(oidcConfigProperty)) {
             Optional<String> value = ConfigProvider.getConfig().getOptionalValue(oidcConfigProperty, String.class);
             if (value.isPresent()) {
-                return checkUrlProperty(value.get());
+                return checkUrlProperty(value);
             }
             return defaultValue;
         } else {
-            return checkUrlProperty(ConfigProvider.getConfig().getValue(oidcConfigProperty, String.class));
+            return checkUrlProperty(ConfigProvider.getConfig().getOptionalValue(oidcConfigProperty, String.class));
         }
     }
 
-    private String checkUrlProperty(String value) {
-        if (urlProperty && !value.startsWith("http:")) {
-            String authServerUrl = ConfigProvider.getConfig().getValue(AUTH_SERVER_URL_CONFIG_KEY, String.class);
-            return OidcCommonUtils.getOidcEndpointUrl(authServerUrl, Optional.of(value));
-        } else {
-            return value;
+    private String checkUrlProperty(Optional<String> value) {
+        if (urlProperty && value.isPresent() && !value.get().startsWith("http:")) {
+            Optional<String> authServerUrl = ConfigProvider.getConfig().getOptionalValue(AUTH_SERVER_URL_CONFIG_KEY,
+                    String.class);
+            return authServerUrl.isPresent() ? OidcCommonUtils.getOidcEndpointUrl(authServerUrl.get(), value) : null;
         }
+        return value.orElse(null);
     }
 
     public String getOidcConfigProperty() {

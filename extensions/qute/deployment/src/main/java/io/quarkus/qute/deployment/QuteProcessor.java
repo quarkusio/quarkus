@@ -1072,7 +1072,8 @@ public class QuteProcessor {
             TemplatesAnalysisBuildItem templatesAnalysis,
             BuildProducer<GeneratedValueResolverBuildItem> generatedResolvers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<PanacheEntityClassesBuildItem> panacheEntityClasses) {
+            List<PanacheEntityClassesBuildItem> panacheEntityClasses,
+            List<TemplateDataBuildItem> templateData) {
 
         IndexView index = beanArchiveIndex.getIndex();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
@@ -1117,13 +1118,8 @@ public class QuteProcessor {
 
         Set<DotName> controlled = new HashSet<>();
         Map<DotName, AnnotationInstance> uncontrolled = new HashMap<>();
-        for (AnnotationInstance templateData : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA)) {
-            processsTemplateData(index, templateData, templateData.target(), controlled, uncontrolled, builder);
-        }
-        for (AnnotationInstance containerInstance : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA_CONTAINER)) {
-            for (AnnotationInstance templateData : containerInstance.value().asNestedArray()) {
-                processsTemplateData(index, templateData, containerInstance.target(), controlled, uncontrolled, builder);
-            }
+        for (TemplateDataBuildItem data : templateData) {
+            processsTemplateData(data, controlled, uncontrolled, builder);
         }
 
         for (ImplicitValueResolverBuildItem implicit : implicitClasses) {
@@ -1961,35 +1957,17 @@ public class QuteProcessor {
         return matches;
     }
 
-    private void processsTemplateData(IndexView index, AnnotationInstance templateData, AnnotationTarget annotationTarget,
+    private void processsTemplateData(TemplateDataBuildItem templateData,
             Set<DotName> controlled, Map<DotName, AnnotationInstance> uncontrolled, ValueResolverGenerator.Builder builder) {
-        AnnotationValue targetValue = templateData.value(ValueResolverGenerator.TARGET);
-        if (targetValue == null || targetValue.asClass().name().equals(ValueResolverGenerator.TEMPLATE_DATA)) {
-            ClassInfo annotationTargetClass = annotationTarget.asClass();
-            controlled.add(annotationTargetClass.name());
-            builder.addClass(annotationTargetClass, templateData);
+        if (templateData.isTargetAnnotatedType()) {
+            controlled.add(templateData.getTargetClass().name());
+            builder.addClass(templateData.getTargetClass(), templateData.getAnnotationInstance());
         } else {
-            ClassInfo uncontrolledClass = index.getClassByName(targetValue.asClass().name());
-            if (uncontrolledClass != null) {
-                uncontrolled.compute(uncontrolledClass.name(), (c, v) -> {
-                    if (v == null) {
-                        builder.addClass(uncontrolledClass, templateData);
-                        return templateData;
-                    }
-                    if (!Objects.equals(v.value(ValueResolverGenerator.IGNORE),
-                            templateData.value(ValueResolverGenerator.IGNORE))
-                            || !Objects.equals(v.value(ValueResolverGenerator.PROPERTIES),
-                                    templateData.value(ValueResolverGenerator.PROPERTIES))
-                            || !Objects.equals(v.value(ValueResolverGenerator.IGNORE_SUPERCLASSES),
-                                    templateData.value(ValueResolverGenerator.IGNORE_SUPERCLASSES))) {
-                        throw new IllegalStateException(
-                                "Multiple unequal @TemplateData declared for " + c + ": " + v + " and " + templateData);
-                    }
-                    return v;
-                });
-            } else {
-                LOGGER.warnf("@TemplateData#target() not available: %s", annotationTarget.asClass().name());
-            }
+            // At this point we can be sure that multiple unequal @TemplateData do not exist for a specific target
+            uncontrolled.computeIfAbsent(templateData.getTargetClass().name(), name -> {
+                builder.addClass(templateData.getTargetClass(), templateData.getAnnotationInstance());
+                return templateData.getAnnotationInstance();
+            });
         }
     }
 
@@ -2007,36 +1985,85 @@ public class QuteProcessor {
             }
         }
 
+        Map<DotName, AnnotationInstance> uncontrolled = new HashMap<>();
+
         for (AnnotationInstance templateData : annotationInstances) {
             AnnotationValue targetValue = templateData.value(ValueResolverGenerator.TARGET);
-            AnnotationValue ignoreValue = templateData.value(ValueResolverGenerator.IGNORE);
-            AnnotationValue propertiesValue = templateData.value(ValueResolverGenerator.PROPERTIES);
-            AnnotationValue namespaceValue = templateData.value(ValueResolverGenerator.NAMESPACE);
-            AnnotationValue ignoreSuperclassesValue = templateData.value(ValueResolverGenerator.IGNORE_SUPERCLASSES);
-
             ClassInfo targetClass = null;
             if (targetValue == null || targetValue.asClass().name().equals(ValueResolverGenerator.TEMPLATE_DATA)) {
                 targetClass = templateData.target().asClass();
             } else {
                 targetClass = index.getClassByName(targetValue.asClass().name());
             }
-
-            if (targetClass != null) {
-                String namespace = namespaceValue != null ? namespaceValue.asString() : TemplateData.UNDERSCORED_FQCN;
-                if (namespace.equals(TemplateData.UNDERSCORED_FQCN)) {
-                    namespace = ValueResolverGenerator
-                            .underscoredFullyQualifiedName(targetClass.name().toString());
-                } else if (namespace.equals(TemplateData.SIMPLENAME)) {
-                    namespace = ValueResolverGenerator.simpleName(targetClass);
-                }
-                templateDataAnnotations.produce(new TemplateDataBuildItem(targetClass,
-                        namespace,
-                        ignoreValue != null ? ignoreValue.asStringArray() : new String[] {},
-                        ignoreSuperclassesValue != null ? ignoreSuperclassesValue.asBoolean() : false,
-                        propertiesValue != null ? propertiesValue.asBoolean() : false));
+            if (targetClass == null) {
+                LOGGER.warnf("@TemplateData declared on %s is ignored: target %s it is not available in the index",
+                        templateData.target(), targetClass);
+                continue;
             }
+            uncontrolled.compute(targetClass.name(), (c, v) -> {
+                if (v == null) {
+                    return templateData;
+                }
+                if (!Objects.equals(v.value(ValueResolverGenerator.IGNORE),
+                        templateData.value(ValueResolverGenerator.IGNORE))
+                        || !Objects.equals(v.value(ValueResolverGenerator.PROPERTIES),
+                                templateData.value(ValueResolverGenerator.PROPERTIES))
+                        || !Objects.equals(v.value(ValueResolverGenerator.IGNORE_SUPERCLASSES),
+                                templateData.value(ValueResolverGenerator.IGNORE_SUPERCLASSES))
+                        || !Objects.equals(v.value(ValueResolverGenerator.NAMESPACE),
+                                templateData.value(ValueResolverGenerator.NAMESPACE))) {
+                    throw new IllegalStateException(
+                            "Multiple unequal @TemplateData declared for " + c + ": " + v + " and " + templateData);
+                }
+                return v;
+            });
+            templateDataAnnotations.produce(new TemplateDataBuildItem(templateData, targetClass));
         }
 
+        // Add synthetic @TemplateData for template enums
+        for (AnnotationInstance templateEnum : index.getAnnotations(Names.TEMPLATE_ENUM)) {
+            ClassInfo targetEnum = templateEnum.target().asClass();
+            if (!targetEnum.isEnum()) {
+                LOGGER.warnf("@TemplateEnum declared on %s is ignored: the target of this annotation must be an enum type",
+                        targetEnum);
+                continue;
+            }
+            if (targetEnum.classAnnotation(ValueResolverGenerator.TEMPLATE_DATA) != null) {
+                LOGGER.debugf("@TemplateEnum declared on %s is ignored: enum is annotated with @TemplateData", targetEnum);
+                continue;
+            }
+            AnnotationInstance uncontrolledDeclaration = uncontrolled.get(targetEnum.name());
+            if (uncontrolledDeclaration != null) {
+                LOGGER.debugf("@TemplateEnum declared on %s is ignored: %s declared on %s", targetEnum, uncontrolledDeclaration,
+                        uncontrolledDeclaration.target());
+                continue;
+            }
+            templateDataAnnotations.produce(new TemplateDataBuildItem(
+                    new TemplateDataBuilder().annotationTarget(templateEnum.target()).namespace(TemplateData.SIMPLENAME)
+                            .build(),
+                    targetEnum));
+        }
+
+    }
+
+    @BuildStep
+    void validateTemplateDataNamespaces(List<TemplateDataBuildItem> templateData,
+            BuildProducer<ServiceStartBuildItem> serviceStart) {
+
+        Map<String, List<TemplateDataBuildItem>> namespaceToData = templateData.stream()
+                .filter(TemplateDataBuildItem::hasNamespace)
+                .collect(Collectors.groupingBy(TemplateDataBuildItem::getNamespace));
+        for (Map.Entry<String, List<TemplateDataBuildItem>> e : namespaceToData.entrySet()) {
+            if (e.getValue().size() > 1) {
+                throw new TemplateException(
+                        String.format(
+                                "The namespace [%s] is defined by multiple @TemplateData and/or @TemplateEnum annotations; make sure the annotation declared on the following classes do not collide:\n\t- %s",
+                                e.getKey(), e.getValue()
+                                        .stream().map(TemplateDataBuildItem::getAnnotationInstance)
+                                        .map(AnnotationInstance::target).map(Object::toString)
+                                        .collect(Collectors.joining("\n\t- "))));
+            }
+        }
     }
 
     static Map<TemplateAnalysis, Set<Expression>> collectNamespaceExpressions(TemplatesAnalysisBuildItem analysis,

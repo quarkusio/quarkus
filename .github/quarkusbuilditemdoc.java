@@ -33,6 +33,7 @@ import org.jboss.forge.roaster.model.source.JavaClassSource;
 import org.yaml.snakeyaml.Yaml;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import java.nio.charset.StandardCharsets;
 
 @Command(name = "builditemdoc", mixinStandardHelpOptions = true, version = "builditemdoc 0.1",
         description = "builditemdoc made with jbang")
@@ -45,6 +46,9 @@ class quarkusbuilditemdoc implements Callable<Integer> {
     public List<Path> paths;
 
     private PrintStream out = System.out;
+
+    private static final List<String> KEYWORDS = List.of("extends BuildItem {", "extends SimpleBuildItem {",
+            "extends MultiBuildItem {", "extends EmptyBuildItem {");
 
     public static void main(String... args) {
         int exitCode = new CommandLine(new quarkusbuilditemdoc()).execute(args);
@@ -92,9 +96,11 @@ class quarkusbuilditemdoc implements Callable<Integer> {
         for (Path path : paths) {
             Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (file.toString().endsWith("BuildItem.java")) {
-                        process(multimap, file);
+                public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+                    String fileContent = Files.readString(path, StandardCharsets.ISO_8859_1);
+                    boolean match = KEYWORDS.stream().anyMatch(fileContent::contains);
+                    if (path.toString().endsWith("BuildItem.java") || match) {
+                        process(multimap, path, fileContent);
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -103,8 +109,8 @@ class quarkusbuilditemdoc implements Callable<Integer> {
         return multimap;
     }
 
-    private void process(MutableMultimap<String, Pair<Path, JavaClassSource>> multimap, Path path) throws IOException {
-        JavaClassSource source = Roaster.parse(JavaClassSource.class, path.toFile());
+    private void process(MutableMultimap<String, Pair<Path, JavaClassSource>> multimap, Path path, String fileContent) throws IOException {
+        JavaClassSource source = Roaster.parse(JavaClassSource.class, fileContent);
         // Ignore deprecated annotations and non-public classes
         if (!source.hasAnnotation(Deprecated.class) && source.isPublic()) {
             String name;

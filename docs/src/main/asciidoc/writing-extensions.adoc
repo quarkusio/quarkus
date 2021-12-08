@@ -3116,3 +3116,23 @@ In order to make it easy for extension authors to test their extensions daily ag
 the notion of Ecosystem CI. The Ecosystem CI link:https://github.com/quarkusio/quarkus-ecosystem-ci/blob/main/README.adoc[README]
 has all the details on how to set up a GitHub Actions job to take advantage of this capability, while this link:https://www.youtube.com/watch?v=VpbRA1n0hHQ[video] provides an overview
 of what the process looks like.
+
+== Publish your extension in registry.quarkus.io
+
+Before publishing your extension to the link:https://quarkus.io/guides/tooling[Quarkus tooling], make sure that the following requirements are met:
+
+* The `quarkus-extension.yaml` file (in the extension's `runtime/` module) has the minimum metadata set:
+** `name`
+** `description` (unless you have it already set in the `runtime/pom.xml`'s `<description>` element, which is the recommended approach)
+
+* Your extension is published in Maven Central
+
+Then you must create a pull request adding a `your-extension.yaml` file in the `extensions/` directory in the link:https://github.com/quarkusio/quarkus-extension-catalog[Quarkus Extension Catalog]. The YAML must have the following structure:
+
+```yaml
+group-id: <YOUR_EXTENSION_RUNTIME_GROUP_ID>
+artifact-id: <YOUR_EXTENSION_RUNTIME_ARTIFACT_ID>
+```
+
+That's all. Once the pull request is merged, a scheduled job will check Maven Central for new versions and update the link:extension-registry-user.adoc[Quarkus Extension Registry].
+

@@ -4,4 +4,4 @@ import io.quarkus.mongodb.panache.kotlin.PanacheMongoRepository
 import javax.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
-class BookRepository : PanacheMongoRepository<Book>
+class BookRepository(private val dummyService: DummyService) : PanacheMongoRepository<Book>

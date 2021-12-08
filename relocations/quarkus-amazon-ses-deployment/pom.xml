@@ -15,7 +15,7 @@
         <relocation>
             <groupId>io.quarkiverse.amazonservices</groupId>
             <artifactId>quarkus-amazon-ses-deployment</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <message>${project.groupId}:${project.artifactId} was relocated to io.quarkiverse.amazonservices:${project.artifactId} and is now managed by the io.quarkus.platform:quarkus-amazon-services-bom:${project.version}. Please, update its groupId in the dependency declaration and import io.quarkus.platform:quarkus-amazon-services-bom:${project.version} in your project configuration. For more information about this change, please, refer to https://github.com/quarkusio/quarkus/wiki/Migration-Guide-2.6</message>
         </relocation>
     </distributionManagement>

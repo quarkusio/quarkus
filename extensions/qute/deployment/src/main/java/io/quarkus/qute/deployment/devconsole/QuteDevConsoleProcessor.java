@@ -3,11 +3,7 @@ package io.quarkus.qute.deployment.devconsole;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.io.IOException;
 import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -124,18 +120,9 @@ public class QuteDevConsoleProcessor {
     private Map<String, String> processVariants(List<TemplatePathBuildItem> templatePaths, List<String> variants) {
         Map<String, String> variantsMap = new HashMap<>();
         for (String variant : variants) {
-            String source = "";
-            Path sourcePath = templatePaths.stream().filter(p -> p.getPath().equals(variant))
-                    .map(TemplatePathBuildItem::getFullPath).findFirst()
+            String source = templatePaths.stream().filter(p -> p.getPath().equals(variant))
+                    .map(TemplatePathBuildItem::getContent).findFirst()
                     .orElse(null);
-            if (sourcePath != null) {
-                try {
-                    byte[] content = Files.readAllBytes(sourcePath);
-                    source = new String(content, StandardCharsets.UTF_8);
-                } catch (IOException e) {
-                    LOG.warn("Unable to read the template from path: " + sourcePath, e);
-                }
-            }
             source = source.replace("\n", "\\n");
             variantsMap.put(variant, source);
         }

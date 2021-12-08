@@ -13,10 +13,12 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
 
     private final String path;
     private final Path fullPath;
+    private final String content;
 
-    public TemplatePathBuildItem(String path, Path fullPath) {
+    public TemplatePathBuildItem(String path, Path fullPath, String content) {
         this.path = path;
         this.fullPath = fullPath;
+        this.content = content;
     }
 
     /**
@@ -47,6 +49,10 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
 
     public boolean isRegular() {
         return !isTag();
+    }
+
+    public String getContent() {
+        return content;
     }
 
 }

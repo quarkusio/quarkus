@@ -9,8 +9,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -80,6 +81,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -383,22 +385,17 @@ public class QuteProcessor {
             public Optional<TemplateLocation> locate(String id) {
                 TemplatePathBuildItem found = templatePaths.stream().filter(p -> p.getPath().equals(id)).findAny().orElse(null);
                 if (found != null) {
-                    try {
-                        byte[] content = Files.readAllBytes(found.getFullPath());
-                        return Optional.of(new TemplateLocation() {
-                            @Override
-                            public Reader read() {
-                                return new StringReader(new String(content, StandardCharsets.UTF_8));
-                            }
+                    return Optional.of(new TemplateLocation() {
+                        @Override
+                        public Reader read() {
+                            return new StringReader(found.getContent());
+                        }
 
-                            @Override
-                            public Optional<Variant> getVariant() {
-                                return Optional.empty();
-                            }
-                        });
-                    } catch (IOException e) {
-                        LOGGER.warn("Unable to read the template from path: " + found.getFullPath(), e);
-                    }
+                        @Override
+                        public Optional<Variant> getVariant() {
+                            return Optional.empty();
+                        }
+                    });
                 }
                 return Optional.empty();
             }
@@ -1234,14 +1231,26 @@ public class QuteProcessor {
                 // Skip extension archives that are also application archives
                 continue;
             }
-            for (Path p : artifact.getResolvedPaths()) {
-                if (Files.isDirectory(p)) {
+            for (Path path : artifact.getResolvedPaths()) {
+                if (Files.isDirectory(path)) {
                     // Try to find the templates in the root dir
-                    Path basePath = Files.list(p).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                    Path basePath = Files.list(path).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
                     if (basePath != null) {
-                        LOGGER.debugf("Found extension templates dir: %s", p);
-                        basePaths.add(basePath);
+                        LOGGER.debugf("Found extension templates dir: %s", path);
+                        scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
+                                config.templatePathExclude);
                         break;
+                    }
+                } else {
+                    try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
+                        Path basePath = artifactFs.getPath(BASE_PATH);
+                        if (Files.exists(basePath)) {
+                            LOGGER.debugf("Found extension templates in: %s", path);
+                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
+                                    config.templatePathExclude);
+                        }
+                    } catch (IOException e) {
+                        LOGGER.warnf(e, "Unable to create the file system from the path: %s", path);
                     }
                 }
             }
@@ -1254,13 +1263,11 @@ public class QuteProcessor {
                 if (basePath != null) {
                     LOGGER.debugf("Found templates dir: %s", basePath);
                     basePaths.add(basePath);
+                    scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
+                            config.templatePathExclude);
                     break;
                 }
             }
-        }
-        for (Path base : basePaths) {
-            scan(base, base, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                    config.templatePathExclude);
         }
     }
 
@@ -2114,7 +2121,7 @@ public class QuteProcessor {
         // NOTE: we cannot just drop the template because a template param can be added 
         watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, true));
         nativeImageResources.produce(new NativeImageResourceBuildItem(fullPath));
-        templatePaths.produce(new TemplatePathBuildItem(filePath, originalPath));
+        templatePaths.produce(new TemplatePathBuildItem(filePath, originalPath, readTemplateContent(originalPath)));
     }
 
     private void scan(Path root, Path directory, String basePath, BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
@@ -2189,6 +2196,14 @@ public class QuteProcessor {
             }
         }
         return false;
+    }
+
+    static String readTemplateContent(Path path) {
+        try {
+            return Files.readString(path);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to read the template content from path: " + path, e);
+        }
     }
 
     /**

@@ -136,7 +136,7 @@ The result should be: `{"message": "hello"}`.
 
 == Run the application as a native executable
 
-You can of course create a native image using the instructions of the link:building-native-image[Building a native executable guide].
+You can of course create a native image using the instructions of the xref:building-native-image.adoc[Building a native executable guide].
 
 == Going further with an endpoint returning JSON
 
@@ -273,7 +273,7 @@ components:
           type: string
 ----
 
-Also see link:openapi-swaggerui[the OpenAPI Guide]
+Also see xref:openapi-swaggerui.adoc[the OpenAPI Guide]
 
 === Adding MicroProfile OpenAPI Annotations
 
@@ -375,7 +375,7 @@ components:
 === Using Swagger UI
 
 Swagger UI is included by default when running in `Dev` or `Test` mode, and can optionally added to `Prod` mode.
-See link:openapi-swaggerui#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
+See xref:openapi-swaggerui.adoc#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
 
 Navigate to link:http://localhost:8080/q/swagger-ui/[localhost:8080/q/swagger-ui/] and you will see the Swagger UI screen:
 
@@ -521,11 +521,11 @@ The following table shows how Spring Web annotations can be converted to JAX-RS 
 
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-di[Quarkus - Extension for Spring DI]
-* link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
-* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
-* link:spring-security[Quarkus - Extension for Spring Security]
-* link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
-* link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
-* link:spring-cache[Quarkus - Extension for Spring Cache]
-* link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
+* xref:spring-di.adoc[Quarkus - Extension for Spring DI]
+* xref:spring-data-jpa.adoc[Quarkus - Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]
+* xref:spring-security.adoc[Quarkus - Extension for Spring Security]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
+* xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]

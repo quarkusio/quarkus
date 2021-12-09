@@ -113,7 +113,7 @@ public class Fruit {
 Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer.
 
 Now create a `org.acme.elasticsearch.FruitService` that will be the business layer of our application and store/load the fruits from the Elasticsearch instance.
-Here we use the low level client, if you want to use the high level client instead follow the instructions in the link:#using-the-high-level-rest-client[Using the High Level REST Client] paragraph instead.
+Here we use the low level client, if you want to use the high level client instead follow the instructions in the <<using-the-high-level-rest-client,Using the High Level REST Client>> paragraph instead.
 
 [source,java]
 ----
@@ -435,7 +435,7 @@ Quarkus supports Hibernate Search with Elasticsearch via the `hibernate-search-o
 
 Hibernate Search Elasticsearch allows to synchronize your JPA entities to an Elasticsearch cluster and offers a way to query your Elasticsearch cluster using the Hibernate Search API.
 
-If you're interested in it, you can read the link:hibernate-search-orm-elasticsearch[Hibernate Search with Elasticsearch guide].
+If you're interested in it, you can read the xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search with Elasticsearch guide].
 
 == Cluster Health Check
 

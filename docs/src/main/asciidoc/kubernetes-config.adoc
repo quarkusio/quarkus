@@ -33,7 +33,7 @@ This will add the following to your `pom.xml`:
 
 == Usage
 
-The extension works by reading ConfigMaps and Secrets directly from the Kubernetes API server using the link:kubernetes-client[Kubernetes Client].
+The extension works by reading ConfigMaps and Secrets directly from the Kubernetes API server using the xref:kubernetes-client.adoc[Kubernetes Client].
 
 The extension understands the following types of ConfigMaps and Secrets as input sources:
 
@@ -58,11 +58,11 @@ Finally, when both ConfigMaps and Secrets are used, the latter always a higher p
 Since reading ConfigMaps involves interacting with the Kubernetes API Server, when https://kubernetes.io/docs/reference/access-authn-authz/rbac/[RBAC] is enabled on the cluster, the https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[ServiceAccount]
 that is used to run the application needs to have the proper permissions for such access.
 
-Thankfully, when using the `kubernetes-config` extension along with the link:deploying-to-kubernetes[Kubernetes] extension, all the necessary Kubernetes resources to make that happen are automatically generated.
+Thankfully, when using the `kubernetes-config` extension along with the xref:deploying-to-kubernetes.adoc[Kubernetes] extension, all the necessary Kubernetes resources to make that happen are automatically generated.
 
 ==== Secrets
 
-By default, the link:deploying-to-kubernetes[Kubernetes] extension doesn't generate the necessary resources to allow accessing secrets.
+By default, the xref:deploying-to-kubernetes.adoc[Kubernetes] extension doesn't generate the necessary resources to allow accessing secrets.
 Set `quarkus.kubernetes-config.secrets.enabled=true` to generate the necessary role and corresponding role binding.
 
 == Example configuration

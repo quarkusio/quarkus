@@ -27,7 +27,7 @@ To complete this guide, you need:
 * an IDE
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
-* The completed greeter application from the link:getting-started[Getting Started Guide]
+* The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
 
 == Introduction
 
@@ -37,7 +37,7 @@ only run the relevant tests when code is changed.
 
 == Solution
 
-Start the link:getting-started[Getting Started] application (or any other application) using `mvn quarkus:dev`. Quarkus
+Start the xref:getting-started.adoc[Getting Started] application (or any other application) using `mvn quarkus:dev`. Quarkus
 will start in development mode as normal, but down the bottom of the screen you should see the following:
 
 [source]

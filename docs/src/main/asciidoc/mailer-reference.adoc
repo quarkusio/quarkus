@@ -153,7 +153,7 @@ When you want to reference your attachment, for instance in the `src` attribute,
 [[templates]]
 == Message Body Based on Qute Templates
 
-It's possible to inject a mail template, where the message body is created automatically using link:qute[Qute templates].
+It's possible to inject a mail template, where the message body is created automatically using xref:qute.adoc[Qute templates].
 
 [source, java]
 ----
@@ -278,7 +278,7 @@ Three API flavors are exposed:
 * the Mutiny client (`io.vertx.mutiny.ext.mail.MailClient`)
 * the bare client (`io.vertx.ext.mail.MailClient`)
 
-Check the link:vertx[Using Vert.x guide] for further details about these different APIs and how to select the most suitable for you.
+Check the xref:vertx.adoc[Using Vert.x guide] for further details about these different APIs and how to select the most suitable for you.
 
 The retrieved `MailClient` is configured using the configuration key presented above.
 You can also create your own instance, and pass your own configuration.
@@ -330,7 +330,7 @@ By default both the mailer and Gmail default to `XOAUTH2` which requires registe
 == Using SSL with native executables
 
 Note that if you enable SSL for the mailer and you want to build a native executable, you will need to enable the SSL support.
-Please refer to the link:native-and-ssl[Using SSL With Native Executables] guide for more information.
+Please refer to the xref:native-and-ssl.adoc[Using SSL With Native Executables] guide for more information.
 
 == Configuring the SMTP credentials
 

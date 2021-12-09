@@ -18,7 +18,7 @@ The extension will expose a customizable HTTP endpoint which simply greets the v
 [NOTE]
 .Disclaimer
 To be sure it's extra clear you don't need an extension to add a Servlet to your application.
-This guide is a simplified example to explain the concepts of extensions development, see the link:writing-extensions[full documentation] if you need more information.
+This guide is a simplified example to explain the concepts of extensions development, see the xref:writing-extensions.adoc[full documentation] if you need more information.
 Keep in mind it's not representative of the power of moving things to build time or simplifying the build of native images.
 
 == Prerequisites
@@ -559,7 +559,7 @@ Thanks to basic concepts, you will describe the items to produce/consume and the
 
 The `io.quarkus.builder.item.BuildItem` concept represents object instances you will produce or consume (and at some point convert into bytecode) thanks to methods annotated with `@io.quarkus.deployment.annotations.BuildStep` which describe your extension's deployment tasks.
 
-NOTE:: See link:all-builditems[the complete list of BuildItem implementations in core] for more information
+NOTE:: See xref:all-builditems.adoc[the complete list of BuildItem implementations in core] for more information
 
 
 Go back to the generated `org.acme.greeting.extension.deployment.GreetingExtensionProcessor` class.
@@ -928,5 +928,5 @@ As usual, along the path Quarkus simplifies things under the hood (Maven Mojo, b
 
 == Further reading
 
-- link:writing-extensions[Writing your own extension] for the full documentation.
-- link:dev-console[Quarkus DEV Console] to learn how to support the DEV Console in your extension
+- xref:writing-extensions.adoc[Writing your own extension] for the full documentation.
+- xref:dev-ui.adoc[Quarkus Dev UI] to learn how to support the Dev UI in your extension

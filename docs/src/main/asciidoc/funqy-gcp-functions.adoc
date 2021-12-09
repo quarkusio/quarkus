@@ -277,4 +277,4 @@ This will call your PubSub background function with a Cloud Storage event `{"nam
 
 == What's next?
 
-If you are looking for JAX-RS, Servlet or Vert.x support for Google Cloud Functions, we have it thanks to our link:gcp-functions-http[Google Cloud Functions HTTP binding].
+If you are looking for JAX-RS, Servlet or Vert.x support for Google Cloud Functions, we have it thanks to our xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding].

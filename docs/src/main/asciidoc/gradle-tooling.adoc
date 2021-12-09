@@ -86,7 +86,7 @@ Instructions to build the image and run the container are written in those Docke
 
 By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
 configuration profiles, everything you need to know is explained in the
-link:config#configuration-profiles[Configuration Profiles Documentation].
+xref:config.adoc#configuration-profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Gradle build configuration shown below.
 This can be useful if you need for example to run some tests using a specific database which is not your default testing
@@ -163,7 +163,7 @@ You can install all extensions which match a globbing pattern:
 [[dev-mode]]
 == Development mode
 
-Quarkus comes with a built-in development mode. The best way to run this is via the link:cli-tooling[Quarkus CLI]
+Quarkus comes with a built-in development mode. The best way to run this is via the xref:cli-tooling.adoc[Quarkus CLI]
 Run your application with:
 
 [source,bash]
@@ -505,7 +505,7 @@ unless it is the main application module already configured with the quarkus-mav
 
 Alternatively, there is some unofficial link:https://plugins.gradle.org/search?term=jandex[Gradle Jandex plugins] that can be used instead of the `META-INF/beans.xml` file.
 
-More information on this topic can be found on the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
+More information on this topic can be found on the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
 
 == Building with `./gradlew build`
 

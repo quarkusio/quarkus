@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 With Quarkus you can deploy your favorite Java HTTP frameworks as Amazon Lambda's using either the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html[AWS Gateway HTTP API]
 or https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html[AWS Gateway REST API].  This means that you can deploy your microservices written with RESTEasy (JAX-RS),
-Undertow (servlet), Reactive Routes, link:funqy-http[Funqy HTTP] or any other Quarkus HTTP framework as an AWS Lambda.
+Undertow (servlet), Reactive Routes, xref:funqy-http.adoc[Funqy HTTP] or any other Quarkus HTTP framework as an AWS Lambda.
 
 You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image and deploy that for a smaller
 memory footprint and startup time.  Our integration also generates SAM deployment files that can be consumed by https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
@@ -89,7 +89,7 @@ to the build
 
 NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing quarkus to use a Docker build as Amazon
 Lambda requires Linux binaries.  You can do this by passing `-Dquarkus.native.container-build=true` to your Maven build
-(or link:gradle-tooling#building-a-native-executable[for Gradle]).
+(or xref:gradle-tooling.adoc#building-a-native-executable[for Gradle]).
 This requires you to have Docker installed locally, however.
 
 [source,bash,subs=attributes+]

@@ -174,6 +174,63 @@ NOTE: `codestart.yml` is the only required file.
 * `./base` contains all the files that will be processed independently of the specified language
 * `./[java/kotlin/scala]` contains all the files that will be processed only if the specified language has been selected (overriding base)
 
+=== Dynamic Config Keys in Codestart
+
+[source,bash]
+----
+gen-info.time: time of generation (in millis)
+
+input.selected-extensions[].name|description|guide: list of selected extensions with info
+
+input.selected-extensions-ga: Set of String with the list of extensions groupId:artifactId, usefull for dynamic codestarts depending on selected extensions
+
+input.provided-code[].name|tags|title|description|related-guide: list of selected codestarts with info
+
+----
+
+=== Static Config Keys in Codestart
+
+[source,bash]
+----
+BOM_GROUP_ID("quarkus.platform.group-id"),
+
+BOM_ARTIFACT_ID("quarkus.platform.artifact-id"),
+
+BOM_VERSION("quarkus.platform.version"),
+
+PROJECT_GROUP_ID("project.group-id"),
+
+PROJECT_ARTIFACT_ID("project.artifact-id"),
+
+PROJECT_VERSION("project.version"),
+
+PROJECT_PACKAGE_NAME("project.package-name"),
+
+QUARKUS_MAVEN_PLUGIN_GROUP_ID("quarkus.maven-plugin.group-id"),
+
+QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID("quarkus.maven-plugin.artifact-id"),
+
+QUARKUS_MAVEN_PLUGIN_VERSION("quarkus.maven-plugin.version"),
+
+QUARKUS_GRADLE_PLUGIN_ID("quarkus.gradle-plugin.id"),
+
+QUARKUS_GRADLE_PLUGIN_VERSION("quarkus.gradle-plugin.version"),
+
+QUARKUS_VERSION("quarkus.version"),
+
+JAVA_VERSION("java.version"),
+
+KOTLIN_VERSION("kotlin.version"),
+
+SCALA_VERSION("scala.version"),
+
+SCALA_MAVEN_PLUGIN_VERSION("scala-maven-plugin.version"),
+
+MAVEN_COMPILER_PLUGIN_VERSION("maven-compiler-plugin.version"),
+
+MAVEN_SUREFIRE_PLUGIN_VERSION("maven-surefire-plugin.version"),
+----
+
 === Naming Convention for files
 
 * `.tpl.qute` will be processed with Qute and can use data (`.tpl.qute` will be removed from the output file name).

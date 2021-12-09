@@ -215,7 +215,7 @@ public class OidcCommonUtils {
     public static boolean isClientSecretBasicAuthRequired(Credentials creds) {
         return creds.secret.isPresent() ||
                 ((creds.clientSecret.value.isPresent() || creds.clientSecret.provider.key.isPresent())
-                        && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC);
+                        && clientSecretMethod(creds) == Secret.Method.BASIC);
     }
 
     public static boolean isClientJwtAuthRequired(Credentials creds) {
@@ -225,11 +225,19 @@ public class OidcCommonUtils {
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
         return (creds.clientSecret.value.isPresent() || creds.clientSecret.provider.key.isPresent())
-                && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.POST;
+                && clientSecretMethod(creds) == Secret.Method.POST;
+    }
+
+    public static boolean isClientSecretPostJwtAuthRequired(Credentials creds) {
+        return clientSecretMethod(creds) == Secret.Method.POST_JWT && isClientJwtAuthRequired(creds);
     }
 
     public static String clientSecret(Credentials creds) {
         return creds.secret.orElse(creds.clientSecret.value.orElseGet(fromCredentialsProvider(creds.clientSecret.provider)));
+    }
+
+    public static Secret.Method clientSecretMethod(Credentials creds) {
+        return creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC);
     }
 
     private static Supplier<? extends String> fromCredentialsProvider(Provider provider) {
@@ -256,8 +264,9 @@ public class OidcCommonUtils {
         } else {
             Key key = null;
             try {
-                if (creds.jwt.keyFile.isPresent()) {
-                    key = KeyUtils.readSigningKey(creds.jwt.keyFile.get(), creds.jwt.keyId.orElse(null));
+                if (creds.jwt.getKeyFile().isPresent()) {
+                    key = KeyUtils.readSigningKey(creds.jwt.getKeyFile().get(), creds.jwt.keyId.orElse(null),
+                            getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
                 } else if (creds.jwt.keyStoreFile.isPresent()) {
                     KeyStore ks = KeyStore.getInstance("JKS");
                     InputStream is = ResourceUtils.getResourceStream(creds.jwt.keyStoreFile.get());
@@ -275,10 +284,10 @@ public class OidcCommonUtils {
     }
 
     public static String signJwtWithKey(OidcCommonConfig oidcConfig, String tokenRequestUri, Key key) {
-        // 'jti' and 'iat' claim is created by default, iat - is set to the current time
+        // 'jti' and 'iat' claims are created by default, 'iat' - is set to the current time
         JwtSignatureBuilder builder = Jwt
-                .issuer(oidcConfig.clientId.get())
-                .subject(oidcConfig.clientId.get())
+                .issuer(oidcConfig.credentials.jwt.issuer.orElse(oidcConfig.clientId.get()))
+                .subject(oidcConfig.credentials.jwt.subject.orElse(oidcConfig.clientId.get()))
                 .audience(oidcConfig.credentials.jwt.getAudience().isPresent()
                         ? removeLastPathSeparator(oidcConfig.credentials.jwt.getAudience().get())
                         : tokenRequestUri)
@@ -287,19 +296,27 @@ public class OidcCommonUtils {
         if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {
             builder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
         }
-        if (oidcConfig.credentials.jwt.getSignatureAlgorithm().isPresent()) {
-            SignatureAlgorithm signatureAlgorithm;
-            try {
-                signatureAlgorithm = SignatureAlgorithm.fromAlgorithm(oidcConfig.credentials.jwt.getSignatureAlgorithm().get());
-            } catch (Exception ex) {
-                throw new ConfigurationException("Unsupported signature algorithm");
-            }
+        SignatureAlgorithm signatureAlgorithm = getSignatureAlgorithm(oidcConfig.credentials, null);
+        if (signatureAlgorithm != null) {
             builder.algorithm(signatureAlgorithm);
         }
+
         if (key instanceof SecretKey) {
             return builder.sign((SecretKey) key);
         } else {
             return builder.sign((PrivateKey) key);
+        }
+    }
+
+    private static SignatureAlgorithm getSignatureAlgorithm(Credentials credentials, SignatureAlgorithm defaultAlgorithm) {
+        if (credentials.jwt.getSignatureAlgorithm().isPresent()) {
+            try {
+                return SignatureAlgorithm.fromAlgorithm(credentials.jwt.getSignatureAlgorithm().get());
+            } catch (Exception ex) {
+                throw new ConfigurationException("Unsupported signature algorithm");
+            }
+        } else {
+            return defaultAlgorithm;
         }
     }
 

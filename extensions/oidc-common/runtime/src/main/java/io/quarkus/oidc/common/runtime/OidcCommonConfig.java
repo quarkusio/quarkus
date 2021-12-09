@@ -162,7 +162,14 @@ public class OidcCommonConfig {
                  * client_secret_post: client id and secret are submitted as the 'client_id' and 'client_secret' form
                  * parameters.
                  */
-                POST
+                POST,
+
+                /**
+                 * client_secret_jwt: client id and generated JWT secret are submitted as the 'client_id' and 'client_secret'
+                 * form
+                 * parameters.
+                 */
+                POST_JWT
             }
 
             /**
@@ -231,7 +238,8 @@ public class OidcCommonConfig {
             public Provider secretProvider = new Provider();
 
             /**
-             * If provided, indicates that JWT is signed using a private key in PEM or JWK format
+             * If provided, indicates that JWT is signed using a private key in PEM or JWK format. You can use the
+             * {@link #signatureAlgorithm} property to specify the key algorithm.
              */
             @ConfigItem
             public Optional<String> keyFile = Optional.empty();
@@ -274,7 +282,19 @@ public class OidcCommonConfig {
             public Optional<String> tokenKeyId = Optional.empty();
 
             /**
-             * Signature algorithm.
+             * Issuer of the signing key added as a JWT 'iss' claim (default: client id)
+             */
+            @ConfigItem
+            public Optional<String> issuer = Optional.empty();
+
+            /**
+             * Subject of the signing key added as a JWT 'sub' claim (default: client id)
+             */
+            @ConfigItem
+            public Optional<String> subject = Optional.empty();
+
+            /**
+             * Signature algorithm, also used for the {@link #keyFile} property.
              * Supported values: RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, HS256, HS384, HS512.
              */
             @ConfigItem
@@ -332,6 +352,14 @@ public class OidcCommonConfig {
 
             public void setAudience(String audience) {
                 this.audience = Optional.of(audience);
+            }
+
+            public Optional<String> getKeyFile() {
+                return keyFile;
+            }
+
+            public void setKeyFile(String keyFile) {
+                this.keyFile = Optional.of(keyFile);
             }
 
         }

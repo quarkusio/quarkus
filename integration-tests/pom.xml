@@ -210,6 +210,7 @@
                 <module>oidc-token-propagation</module>
                 <module>smallrye-jwt-token-propagation</module>
                 <module>oidc-code-flow</module>
+                <module>oidc-code-tokens-persistence</module>
                 <module>oidc-tenancy</module>
                 <module>oidc-wiremock</module>
                 <module>keycloak-authorization</module>

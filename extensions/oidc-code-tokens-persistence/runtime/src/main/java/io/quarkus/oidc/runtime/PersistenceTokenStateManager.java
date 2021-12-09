@@ -4,6 +4,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Alternative;
 
 import io.quarkus.arc.Priority;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -12,6 +13,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
+
+import java.util.Optional;
 
 @ApplicationScoped
 @Alternative
@@ -62,12 +65,25 @@ public class PersistenceTokenStateManager implements TokenStateManager {
                 }
             }
         }
+        TokenState state = new TokenState();
+        state.tokenState = sb.toString();
+        state.accessToken = tokens.getAccessToken();
+        state.idToken = tokens.getIdToken();
+        state.refreshToken = tokens.getRefreshToken();
+        state.persist();
+
         return Uni.createFrom().item(sb.toString());
     }
 
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<AuthorizationCodeTokens> requestContext) {
+        Optional<TokenState> optional = TokenState.findByIdOptional(tokenState);
+        if (optional.isPresent()) {
+            TokenState state = optional.get();
+            return Uni.createFrom().item(new AuthorizationCodeTokens(state.idToken, state.accessToken, state.refreshToken));
+        }
+
         String[] tokens = CodeAuthenticationMechanism.COOKIE_PATTERN.split(tokenState);
         String idToken = tokens[0];
 
@@ -104,6 +120,7 @@ public class PersistenceTokenStateManager implements TokenStateManager {
     @Override
     public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<Void> requestContext) {
+        TokenState.deleteById(tokenState);
         if (oidcConfig.tokenStateManager.splitTokens) {
             CodeAuthenticationMechanism.removeCookie(routingContext, getAccessTokenCookie(routingContext, oidcConfig),
                     oidcConfig);

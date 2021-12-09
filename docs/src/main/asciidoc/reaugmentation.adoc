@@ -17,7 +17,7 @@ Quarkus application configuration may include two types of configuration options
 The augmentation is a phase of an application build process during which the byte code of the application is optimized according to the application build time configuration.
 Initialization steps that used to happen when an EAR file was deployed on a Jakarta EE server such as parsing static configuration, creating proxy instances, etc. now happen at augmentation time.
 CDI beans added after augmentation won't work (because of the missing proxy classes) as well as build time properties (e.g. `quarkus.datasource.db-kind`) changed after augmentation will be ignored.
-Build time properties are marked with a lock icon (icon:lock[]) in the link:all-config[list of all configuration options].
+Build time properties are marked with a lock icon (icon:lock[]) in the xref:all-config.adoc[list of all configuration options].
 It doesn't matter if you use profiles or any other way to override the properties.
 The build time properties that were active during augmentation are baked into the build.
 
@@ -26,7 +26,7 @@ The build time properties that were active during augmentation are baked into th
 == When is re-augmentation useful?
 
 Re-augmentation is useful in case the users of your application want to be able to change some of its build time properties.
-For instance changing the database driver or switching features on or off (e.g. link:opentracing[opentracing] or link:consul-config[consul-config]).
+For instance changing the database driver or switching features on or off (e.g. xref:opentracing.adoc[OpenTracing] or link:{config-consul-guide}[Config Consul]).
 If there are only two or three build time properties that depend on the user environment, you may consider providing alternative builds of the application. However, in case there are more such properties you may prefer shipping a mutable jar instead and let your users re-augment the application for their environment.
 Please notice that you won't be able to use native images with the package type `mutable-jar`.
 Think of the consequences and what other options you have!

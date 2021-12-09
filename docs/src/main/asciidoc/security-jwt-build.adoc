@@ -235,7 +235,7 @@ smallrye.jwt.sign.key=privateKey.pem
 smallrye.jwt.encrypt.key=publicKey.pem
 ----
 
-You can also use MicroProfile `ConfigSource` to fetch the keys from the external services such as link:vault[HashiCorp Vault] or other secret managers and use `smallrye.jwt.sign.key` and `smallrye.jwt.encrypt.key` properties instead:
+You can also use MicroProfile `ConfigSource` to fetch the keys from the external services such as link:{vault-guide}[HashiCorp Vault] or other secret managers and use `smallrye.jwt.sign.key` and `smallrye.jwt.encrypt.key` properties instead:
 
 [source,properties]
 ----
@@ -330,6 +330,6 @@ SmallRye JWT supports the following properties which can be used to customize th
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
 * link:https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J]
-* link:security-openid-connect[Using OpenID Connect to Protect Service Applications]
-* link:security-jwt[Using Smallrye JWT to Protect Service Applications]
-* link:security[Quarkus Security]
+* xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications]
+* xref:security-jwt.adoc[Using Smallrye JWT to Protect Service Applications]
+* xref:security.adoc[Quarkus Security]

@@ -12,9 +12,9 @@ This document describes how to test Quarkus Security.
 [[configuring-user-information]]
 == Configuring User Information
 
-You can use link:security-properties[quarkus-elytron-security-properties-file] for testing security. This supports both embedding user info in `application.properties` and standalone properties files.
+You can use xref:security-properties.adoc[quarkus-elytron-security-properties-file] for testing security. This supports both embedding user info in `application.properties` and standalone properties files.
 
-For example, the following configuration will allow for configuring the users in both the production where OAuth2 is required and development modes using link:config#configuration-profiles[Configuration Profiles].
+For example, the following configuration will allow for configuring the users in both the production where OAuth2 is required and development modes using xref:config.adoc#configuration-profiles[Configuration Profiles].
 
 [source,properties]
 ----
@@ -82,7 +82,7 @@ This will run the test with an identity with the given username and roles. Note 
 disable authorization while also providing an identity to run the test under, which can be useful if the endpoint expects an
 identity to be present.
 
-See link:security-openid-connect#integration-testing-security-annotation[OpenId Connect Bearer Token Integration testing], link:security-openid-connect-web-authentication#integration-testing-security-annotation[OpenId Connect Authorization Code Flow Integration testing] and link:security-jwt#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
+See xref:security-openid-connect.adoc#integration-testing-security-annotation[OpenId Connect Bearer Token Integration testing], xref:security-openid-connect-web-authentication.adoc#integration-testing-security-annotation[OpenId Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
 
 [WARNING]
 ====
@@ -98,8 +98,8 @@ for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.aut
 == Use Wiremock for Integration Testing
 
 You can also use Wiremock to mock the authorization OAuth2 and OIDC services: 
-See link:security-oauth2#integration-testing[OAuth2 Integration testing], link:security-openid-connect#integration-testing-wiremock[OpenId Connect Bearer Token Integration testing], link:security-openid-connect-web-authentication#integration-testing-wiremock[OpenId Connect Authorization Code Flow Integration testing] and link:security-jwt#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
+See xref:security-oauth2#integration-testing.adoc[OAuth2 Integration testing], xref:security-openid-connect.adoc#integration-testing-wiremock[OpenId Connect Bearer Token Integration testing], xref:security-openid-connect-web-authentication.adoc#integration-testing-wiremock[OpenId Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
 
 == References
 
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]

@@ -9,13 +9,13 @@ include::./attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can authorize a bearer token access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].
 
-The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak and currently can only be used with the Quarkus link:security-openid-connect[OIDC service applications].
+The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak and currently can only be used with the Quarkus xref:security-openid-connect.adoc[OIDC service applications].
 It provides a flexible and dynamic authorization capability based on Resource-Based Access Control.
 In other words, instead of explicitly enforcing access based on some specific access control mechanism (e.g.: RBAC), you just check whether or not a request is allowed to access a resource based on its name, identifier or URI.
 
 By externalizing authorization from your application, you are allowed to protect your applications using different access control mechanisms as well as avoid re-deploying your application every time your security requirements change, where Keycloak will be acting as a centralized authorization service from where your protected resources and their associated permissions are managed.
 
-See the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information about `Bearer Token` authentication mechanism. It is important to realize that it is the `Bearer Token` authentication mechanism which does the authentication and creates a security identity - while the `quarkus-keycloak-authorization` extension is responsible for applying a Keycloak Authorization Policy to this identity based on the current request path and other policy settings.
+See the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide for more information about `Bearer Token` authentication mechanism. It is important to realize that it is the `Bearer Token` authentication mechanism which does the authentication and creates a security identity - while the `quarkus-keycloak-authorization` extension is responsible for applying a Keycloak Authorization Policy to this identity based on the current request path and other policy settings.
 
 If you are already familiar with Keycloak, you’ll notice that the extension is basically another adapter implementation but specific for Quarkus applications.
 Otherwise, you can find more information in the Keycloak https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[documentation].
@@ -225,9 +225,9 @@ It explains why the endpoint has no `@RolesAllowed` annotations - the resource a
 [[keycloak-dev-mode]]
 == Running the Application in Dev mode
 
-To run the application in dev mode, use `./mvnw clean compile quarkus:dev`. link:security-openid-connect-dev-services[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
+To run the application in dev mode, use `./mvnw clean compile quarkus:dev`. xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
-Open a link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenId Connect` `Dev UI` card.
+Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenId Connect` `Dev UI` card.
 
 You will be asked to login into a `Single Page Application` provided by `OpenId Connect Dev UI`:
 
@@ -390,11 +390,11 @@ Note that, depending on how many resources you have in Keycloak the time taken t
 
 In the default configuration, Keycloak is responsible for managing the roles and deciding who can access which routes. 
 
-To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the link:security-openid-connect[Using OpenID Connect Adapter to Protect JAX-RS Applications] and link:security-authorization[Security Authorization] guides. For more details, check the link:security[Security guide].
+To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-openid-connect.adoc[Using OpenID Connect Adapter to Protect JAX-RS Applications] and xref:security-authorization.adoc[Security Authorization] guides. For more details, check the xref:security.adoc[Security guide].
 
 == Access to Public Resources
 
-If you'd like to access a public resource without `quarkus-keycloak-authorization` trying to apply its policies to it then you need to create a `permit` HTTP Policy configuration in `application.properties` as documented in the link:security-authorization[Security Authorization] guide.
+If you'd like to access a public resource without `quarkus-keycloak-authorization` trying to apply its policies to it then you need to create a `permit` HTTP Policy configuration in `application.properties` as documented in the xref:security-authorization.adoc[Security Authorization] guide.
 
 Disabling a policy check using a Keycloak Authorization Policy such as:
 
@@ -418,7 +418,7 @@ Note only the default tenant configuration applies when controlling an anonymous
 
 == Multi-Tenancy
 
-It is possible to configure multiple policy enforcer configurations, one per each tenant, similarly to how it can be done for link:security-openid-connect-multitenancy[Multi-Tenant OpenId Connect Service Applications].
+It is possible to configure multiple policy enforcer configurations, one per each tenant, similarly to how it can be done for xref:security-openid-connect-multitenancy.adoc[Multi-Tenant OpenId Connect Service Applications].
 
 For example:
 
@@ -474,4 +474,4 @@ include::{generated-dir}/config/quarkus-keycloak-keycloak-policy-enforcer-config
 * https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]

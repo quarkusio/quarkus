@@ -312,4 +312,4 @@ include::{generated-dir}/config/quarkus-elytron-security-jdbc.adoc[opts=optional
 
 == References
 
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]

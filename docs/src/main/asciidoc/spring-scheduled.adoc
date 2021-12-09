@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-While users are encouraged to use link:scheduler#standard-scheduling[regular Quarkus scheduler], Quarkus provides a compatibility layer for Spring Scheduled in the form of the `spring-scheduled` extension.
+While users are encouraged to use xref:scheduler.adoc#standard-scheduling[regular Quarkus scheduler], Quarkus provides a compatibility layer for Spring Scheduled in the form of the `spring-scheduled` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Scheduled annotation to configure and schedule tasks.
 
@@ -230,11 +230,11 @@ classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for e
 
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-di[Quarkus - Extension for Spring DI]
-* link:spring-web[Quarkus - Extension for Spring Web]
-* link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
-* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
-* link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
-* link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
-* link:spring-cache[Quarkus - Extension for Spring Cache]
-* link:spring-security[Quarkus - Extension for Spring Security]
+* xref:spring-di.adoc[Quarkus - Extension for Spring DI]
+* xref:spring-web.adoc[Quarkus - Extension for Spring Web]
+* xref:spring-data-jpa.adoc[Quarkus - Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
+* xref:spring-security.adoc[Quarkus - Extension for Spring Security]

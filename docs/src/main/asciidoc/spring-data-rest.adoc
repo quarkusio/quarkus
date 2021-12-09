@@ -293,7 +293,7 @@ The application can be started in dev mode as usual using:
 
 == Run the application as a native binary
 
-You can of course create a native executable following the instructions of the link:building-native-image[Building native executables] guide.
+You can of course create a native executable following the instructions of the xref:building-native-image.adoc[Building native executables] guide.
 
 == Supported Spring Data REST functionalities
 
@@ -433,11 +433,11 @@ Spring classes and annotations are only used for reading metadata and / or are u
 
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
-* link:spring-di[Quarkus - Extension for Spring DI]
-* link:spring-web[Quarkus - Extension for Spring Web]
-* link:spring-security[Quarkus - Extension for Spring Security]
-* link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
-* link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
-* link:spring-cache[Quarkus - Extension for Spring Cache]
-* link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
+* xref:spring-data-jpa.adoc[Quarkus - Extension for Spring Data JPA]
+* xref:spring-di.adoc[Quarkus - Extension for Spring DI]
+* xref:spring-web.adoc[Quarkus - Extension for Spring Web]
+* xref:spring-security.adoc[Quarkus - Extension for Spring Security]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
+* xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]

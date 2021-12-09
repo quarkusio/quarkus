@@ -49,7 +49,7 @@ public class ExampleResource {
 }
 ----
 
-NOTE: If you use JBoss Logging but one of your libraries uses a different logging API, you may need to configure a link:#logging-adapters[Logging Adapter].
+NOTE: If you use JBoss Logging but one of your libraries uses a different logging API, you may need to configure a <<logging-adapters,Logging Adapter>>.
 
 === Logging with Panache
 
@@ -372,7 +372,7 @@ quarkus.log.category."io.quarkus.category".handlers=STRUCTURED_LOGGING,STRUCTURE
 
 == Centralized Log Management
 
-If you want to send your logs to a centralized tool like Graylog, Logstash or Fluentd, you can follow the link:centralized-log-management[Centralized log management guide].
+If you want to send your logs to a centralized tool like Graylog, Logstash or Fluentd, you can follow the xref:centralized-log-management.adoc[Centralized log management guide].
 
 == How to Configure Logging for `@QuarkusTest`
 

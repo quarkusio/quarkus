@@ -105,7 +105,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 }
 ----
 
-Here is another example showing how to use the client certificate available in the current link:security-built-in-authentication#mutual-tls[Mutual TLS] request to add more roles:
+Here is another example showing how to use the client certificate available in the current xref:security-built-in-authentication.adoc#mutual-tls[Mutual TLS] request to add more roles:
 
 [source,java]
 ----
@@ -236,7 +236,7 @@ public class DisabledAuthController extends AuthorizationController {
 }
 ----
 
-Please also see link:security-testing#testing-security[TestingSecurity Annotation] section on how to disable the security checks using `TestSecurity` annotation.
+Please also see xref:security-testing.adoc#testing-security[TestingSecurity Annotation] section on how to disable the security checks using `TestSecurity` annotation.
 
 == Registering Security Providers
 
@@ -400,8 +400,8 @@ If you are going to use security in a reactive environment, you will likely need
 This will allow you to propagate the identity throughout the reactive callbacks. You also need to make sure you
 are using an executor that is capable of propagating the identity (e.g. no `CompletableFuture.supplyAsync`),
 to make sure that Quarkus can propagate it. For more information see the
-link:context-propagation[Context Propagation Guide].
+xref:context-propagation.adoc[Context Propagation Guide].
 
 == References
 
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]

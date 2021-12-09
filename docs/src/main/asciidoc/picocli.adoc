@@ -14,7 +14,7 @@ Quarkus provides support for using Picocli. This guide contains examples of `pic
 
 include::./status-include.adoc[]
 
-IMPORTANT: If you are not familiar with the Quarkus Command Mode, consider reading the link:command-mode-reference[Command Mode reference guide] first.
+IMPORTANT: If you are not familiar with the Quarkus Command Mode, consider reading the xref:command-mode-reference.adoc[Command Mode reference guide] first.
 
 == Configuration
 
@@ -239,7 +239,7 @@ class DatasourceConfiguration {
 
 == Providing own QuarkusMain
 
-You can also provide your own application entry point annotated with `QuarkusMain` (as described in link:command-mode-reference[Command Mode reference guide]).
+You can also provide your own application entry point annotated with `QuarkusMain` (as described in xref:command-mode-reference.adoc[Command Mode reference guide]).
 
 [source,java]
 ----

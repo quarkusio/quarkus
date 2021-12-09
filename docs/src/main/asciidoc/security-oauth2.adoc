@@ -16,8 +16,8 @@ It can be used to implement an application authentication mechanism based on tok
 
 This extension provides a light-weight support for using the opaque Bearer Tokens and validating them by calling an introspection endpoint.
 
-If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either link:security-openid-connect[OpenId Connect] or link:security-jwt[SmallRye JWT] extensions instead.
-OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide for more information.
+If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either xref:security-openid-connect.adoc[OpenId Connect] or xref:security-jwt.adoc[SmallRye JWT] extensions instead.
+OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide for more information.
 
 include::./status-include.adoc[]
 
@@ -84,7 +84,7 @@ public class TokenSecuredResource {
 
 This is a basic REST endpoint that does not have any of the {extension-name} specific features, so let's add some.
 
-We will use the JSR 250 common security annotations, they are described in the link:security[Using Security] guide. 
+We will use the JSR 250 common security annotations, they are described in the xref:security.adoc[Using Security] guide. 
 
 [source,java]
 ----
@@ -138,7 +138,7 @@ quarkus.oauth2.introspection-url=http://oauth-server/introspect
 You need to specify the introspection URL of your authentication server and the `client-id` / `client-secret` that your application will use to authenticate itself to the authentication server. +
 The extension will then use this information to validate the token and recover the information associate with it.
 
-For all configuration properties, see the link:#config-reference[Configuration reference] section at the end of this guide.
+For all configuration properties, see the <<config-reference,Configuration reference>> section at the end of this guide.
 
 == Run the application
 
@@ -323,7 +323,7 @@ $ ./target/security-oauth2-quickstart-runner
 == Integration testing
 
 If you don't want to use a real OAuth2 authorization server for your integration tests, you can use the
-link:security-properties[Properties based security] extension for your test, or mock an authorization server using Wiremock.
+xref:security-properties.adoc[Properties based security] extension for your test, or mock an authorization server using Wiremock.
 
 First of all, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
 
@@ -345,7 +345,7 @@ values that Quarkus will use.
 
 [NOTE]
 ====
-For more details about `@QuarkusTestResource` refer to  link:getting-started-testing#quarkus-test-resource[this part of the documentation].
+For more details about `@QuarkusTestResource` refer to  xref:getting-started-testing.adoc#quarkus-test-resource[this part of the documentation].
 ====
 
 Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `MockAuthorizationServerTestResource` like so:
@@ -443,7 +443,7 @@ class TokenSecuredResourceTest {
 == References
 
 * https://tools.ietf.org/html/rfc6749[OAuth2]
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]
 
 [[config-reference]]
 == Configuration Reference

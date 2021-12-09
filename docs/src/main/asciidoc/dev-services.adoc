@@ -28,7 +28,7 @@ If you don't have Docker installed you will need to configure your services norm
 
 The AMQP Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-amqp` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found at the
-link:amqp-dev-services[AMQP Dev Services Guide].
+xref:amqp-dev-services.adoc[AMQP Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp-config-group-amqp-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
@@ -36,7 +36,7 @@ include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp-config-g
 
 The Apicurio Dev Service will be enabled when the `quarkus-apicurio-registry-avro` extension is present in your application, and it's
 address has not been explicitly configured. More information can be found at the
-link:apicurio-registry-dev-services[Apicurio Registry Dev Services Guide].
+xref:apicurio-registry-dev-services.adoc[Apicurio Registry Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-apicurio-registry-devservices-apicurio-registry-avro-apicurio-registry-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
@@ -44,7 +44,7 @@ include::{generated-dir}/config/quarkus-apicurio-registry-devservices-apicurio-r
 
 The database Dev Services will be enabled when a reactive or JDBC datasource extension is present in the application,
 and the database URL has not been configured. More information can be found at the
-link:datasource#dev-services[Datasource Guide].
+xref:datasource.adoc#dev-services[Datasource Guide].
 
 Quarkus provides Dev Services for all databases it supports except Oracle. Most of these are run in a container, with the
 exception of H2 and Derby which are run in process. Dev Services are supported for both JDBC and reactive drivers.
@@ -55,7 +55,7 @@ include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-bui
 
 The Kafka Dev Service will be enabled when the `quarkus-kafka-client` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found at the
-link:kafka-dev-services[Kafka Dev Services Guide].
+xref:kafka-dev-services.adoc[Kafka Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-kafka-client-config-group-kafka-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
@@ -63,14 +63,14 @@ include::{generated-dir}/config/quarkus-kafka-client-config-group-kafka-dev-serv
 
 The Keycloak Dev Service will be enabled when the `quarkus-oidc` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found at the
-link:security-openid-connect-dev-services[OIDC Dev Services Guide].
+xref:security-openid-connect-dev-services.adoc[OIDC Dev Services Guide].
 
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-keycloak-devservices-keycloak-keycloak-build-time-config.adoc[opts=optional, leveloffset=+1]
 
 == Kogito
 
-The Kogito Dev Service will be enabled when either `kogito-quarkus` or `kogito-quarkus-processes` extension is present in your application. More information can be found at the link:kogito-dev-services[Kogito Dev Services Guide].
+The Kogito Dev Service will be enabled when either `kogito-quarkus` or `kogito-quarkus-processes` extension is present in your application. More information can be found at the xref:kogito-dev-services.adoc[Kogito Dev Services Guide].
 
 include::kogito-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
@@ -78,7 +78,7 @@ include::kogito-dev-services-build-time-config.adoc[opts=optional, leveloffset=+
 
 The MongoDB Dev Service will be enabled when the `quarkus-mongodb-client` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found at the
-link:mongodb#dev-services[MongoDB Guide].
+xref:mongodb.adoc#dev-services[MongoDB Guide].
 
 include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
@@ -86,7 +86,7 @@ include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-
 
 The RabbitMQ Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-rabbitmq` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found at the
-link:rabbitmq-dev-services[RabbitMQ Dev Services Guide].
+xref:rabbitmq-dev-services.adoc[RabbitMQ Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq-config-group-rabbit-mq-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
@@ -94,7 +94,7 @@ include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq-conf
 
 The Redis Dev Service will be enabled when the `quarkus-redis-client` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found at the
-link:redis-dev-services[Redis Dev Services Guide].
+xref:redis-dev-services.adoc[Redis Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
 
@@ -102,24 +102,18 @@ include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-c
 
 The Vault Dev Service will be enabled when the `quarkus-vault` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found at the
-link:vault#dev-services[Vault Guide].
-
-include::{generated-dir}/config/quarkus-vault-config-group-config-dev-services-config.adoc[opts=optional, leveloffset=+1]
-
+link:{vault-guide}#dev-services[Vault Guide].
 
 == Neo4j
 
 The Neo4j Dev Service will be enabled when the `quarkus-neo4j` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found at the
-link:neo4j#dev-services[Neo4j Guide].
-
-include::{generated-dir}/config/quarkus-neo4j-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
-
+link:{neo4j-guide}#dev-services[Neo4j Guide].
 
 == Infinispan
 
 The Infinispan Dev Service will be enabled when the `quarkus-infinispan-client` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found at the
-link:infinispan-client#dev-services[Infinispan Guide].
+xref:infinispan-client.adoc#dev-services[Infinispan Guide].
 
 include::{generated-dir}/config/quarkus-infinispan-client-infinispan-client-dev-service-build-time-config.adoc[opts=optional, leveloffset=+1]

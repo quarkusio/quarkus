@@ -43,15 +43,15 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
             + "{#if realLines.get(0) > 1}<span style=\"color:silver;\">...</span><br>{/if}\n"
             + "{#for line in sourceLines}\n"
             // highlight the error line - start
-            + "{#if lineNumber is realLines.get(index)}<div style=\"background-color:#555753;\">{/if}\n"
+            + "{#if lineNumber is realLines.get(line_index)}<div style=\"background-color:#555753;\">{/if}\n"
             // line number
-            + "<span style=\"color:silver;\">{realLines.get(index).pad}</span>\n"
+            + "<span style=\"color:silver;\">{realLines.get(line_index).pad}</span>\n"
             // line content
             + " {line}\n"
             // highlight the error line - end 
-            + "{#if lineNumber is realLines.get(index)}</div>{#else}<br>{/if}\n"
+            + "{#if lineNumber is realLines.get(line_index)}</div>{#else}<br>{/if}\n"
             // point to error
-            + "{#if lineNumber is realLines.get(index)}{space.pad}<span style=\"color:red;\">{#for i in lineCharacterStart}={/for}^</span><br>{/if}\n"
+            + "{#if lineNumber is realLines.get(line_index)}{space.pad}<span style=\"color:red;\">{#for i in lineCharacterStart}={/for}^</span><br>{/if}\n"
             + "{/for}\n"
             + "{#if endLinesSkipped}<span style=\"color:silver;\">...</span>{/if}\n"
             + "</div>";

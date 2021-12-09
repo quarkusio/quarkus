@@ -358,6 +358,20 @@ public class ParserTest {
                 "Parser error on line 1: invalid bracket notation expression in {foo.baz[}", 1);
     }
 
+    @Test
+    public void testInvalidParamDeclaration() {
+        assertParserError("{@com.foo }",
+                "Parser error on line 1: invalid parameter declaration {@com.foo }", 1);
+        assertParserError("{@ com.foo }",
+                "Parser error on line 1: invalid parameter declaration {@ com.foo }", 1);
+        assertParserError("{@com.foo.Bar bar baz}",
+                "Parser error on line 1: invalid parameter declaration {@com.foo.Bar bar baz}", 1);
+        assertParserError("{@}",
+                "Parser error on line 1: invalid parameter declaration {@}", 1);
+        assertParserError("{@\n}",
+                "Parser error on line 1: invalid parameter declaration {@\n}", 1);
+    }
+
     public static class Foo {
 
         public List<Item> getItems() {

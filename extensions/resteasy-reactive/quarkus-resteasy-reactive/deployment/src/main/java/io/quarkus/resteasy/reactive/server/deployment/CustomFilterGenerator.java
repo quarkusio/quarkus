@@ -495,6 +495,11 @@ final class CustomFilterGenerator {
                 ResultHandle routingContextHandle = GeneratorUtils.routingContextHandler(filterMethod, rrReqCtxHandle);
                 targetMethodParamHandles[i] = filterMethod.invokeInterfaceMethod(
                         ofMethod(RoutingContext.class, "response", HttpServerResponse.class), routingContextHandle);
+            } else if (URI_INFO.equals(paramDotName)) {
+                GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles,
+                        i,
+                        "getUriInfo",
+                        URI_INFO);
             } else if (RESOURCE_INFO.equals(paramDotName)) {
                 targetMethodParamHandles[i] = getResourceInfoHandle(filterMethod, rrReqCtxHandle);
             } else if (SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {

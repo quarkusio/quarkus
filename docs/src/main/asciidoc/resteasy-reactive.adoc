@@ -913,7 +913,7 @@ Instead of importing `io.quarkus:quarkus-resteasy-reactive`, you can import eith
 |https://github.com/FasterXML/jackson[Jackson support]
 
 |`io.quarkus:quarkus-resteasy-reactive-jsonb`
-|http://json-b.net/[JSONB support]
+|https://eclipse-ee4j.github.io/jsonb-api/[JSONB support]
 
 |===
 

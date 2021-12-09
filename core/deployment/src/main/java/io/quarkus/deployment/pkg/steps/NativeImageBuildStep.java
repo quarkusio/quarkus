@@ -40,6 +40,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
@@ -150,7 +151,8 @@ public class NativeImageBuildStep {
             List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
             List<UnsupportedOSBuildItem> unsupportedOses,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled) {
+            Optional<ProcessInheritIODisabled> processInheritIODisabled,
+            Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
             copySourcesToSourceCache(outputTargetBuildItem);
@@ -176,7 +178,7 @@ public class NativeImageBuildStep {
 
         NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir,
                 nativeImageName, resultingExecutableName);
-        buildRunner.setup(processInheritIODisabled.isPresent());
+        buildRunner.setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
         final GraalVM.Version graalVMVersion = buildRunner.getGraalVMVersion();
 
         if (graalVMVersion.isDetected()) {
@@ -224,7 +226,8 @@ public class NativeImageBuildStep {
 
             NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs, nativeImageName,
                     resultingExecutableName, outputDir,
-                    nativeConfig.debug.enabled, processInheritIODisabled.isPresent());
+                    nativeConfig.debug.enabled,
+                    processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
             if (buildNativeResult.getExitCode() != 0) {
                 throw imageGenerationFailed(buildNativeResult.getExitCode(), nativeConfig.isContainerBuild());
             }

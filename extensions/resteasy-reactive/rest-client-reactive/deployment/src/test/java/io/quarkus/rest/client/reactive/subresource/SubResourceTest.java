@@ -29,7 +29,7 @@ public class SubResourceTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(RootClient.class, SubClient.class, Resource.class));
+                    .addClasses(RootClient.class, SubClient.class, SubSubClient.class, Resource.class));
 
     @TestHTTPResource
     URI baseUri;
@@ -68,6 +68,16 @@ public class SubResourceTest {
         // check that a second usage of the sub stub works
         result = sub.postWithQueryParam("prm", "ent1t1");
         assertThat(result.readEntity(String.class)).isEqualTo("rt/mthd:ent1t1:prm");
+
+        // check subsub resource
+        SubSubClient subsub = sub.sub("second", "metdho");
+        Response result1 = subsub.postWithQueryParam("prm1", "ent1t2");
+        assertThat(result1.readEntity(String.class)).isEqualTo("rt/mthd:ent1t1:prm");
+        MultivaluedMap<String, Object> headers1 = result1.getHeaders();
+        assertThat(headers1.get("fromRoot").get(0)).isEqualTo("headerValue");
+        assertThat(headers1.get("overridable").get(0)).isEqualTo("SubClient");
+        assertThat(headers1.get("fromRootMethod").get(0)).isEqualTo("RootClientComputed");
+        assertThat(headers1.get("fromSubMethod").get(0)).isEqualTo("SubClientComputed");
     }
 
     @Path("/path/{rootParam}")
@@ -100,8 +110,30 @@ public class SubResourceTest {
         @ClientHeaderParam(name = "fromSubMethod", value = "{fillingMethod}")
         Response postWithQueryParam(@QueryParam("queryParam") String param, String entity);
 
+        @Path("/{methodParam}")
+        @ClientHeaderParam(name = "fromRootMethod", value = "{fillingMethod}")
+        @ClientHeaderParam(name = "overridable", value = "RootClient#subSub")
+        SubSubClient sub(@PathParam("rootParam") String rootParam, @PathParam("methodParam") String methodParam);
+
         default String fillingMethod() {
             return "SubClientComputed";
+        }
+    }
+
+    @Consumes("text/plain")
+    @Produces("text/plain")
+    interface SubSubClient {
+        @GET
+        @Path("/simple")
+        String simpleGet();
+
+        @POST
+        @ClientHeaderParam(name = "overridable", value = "SubSubClient")
+        @ClientHeaderParam(name = "fromSubMethod", value = "{fillingMethod}")
+        Response postWithQueryParam(@QueryParam("queryParam") String param, String entity);
+
+        default String fillingMethod() {
+            return "SubSubClientComputed";
         }
     }
 }

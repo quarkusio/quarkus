@@ -291,6 +291,7 @@
                 <module>logging-min-level-set</module>
                 <module>logging-panache</module>
                 <module>redis-devservices</module>
+                <module>mutual-tls</module>
 
                 <!-- gRPC tests -->
                 <module>grpc-tls</module>

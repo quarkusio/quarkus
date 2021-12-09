@@ -119,4 +119,16 @@ public class CertificateConfig {
      */
     @ConfigItem
     public Optional<String> trustStoreCertAlias;
+
+    /**
+     * Name of configured mTLS provider.
+     */
+    @ConfigItem
+    public Optional<String> mtlsProviderName;
+
+    /**
+     * Optional name of custom mTLS provider bean, only used when mtlsProviderName is specified.
+     */
+    @ConfigItem
+    public Optional<String> mtlsProviderBeanName;
 }

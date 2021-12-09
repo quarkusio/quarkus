@@ -41,6 +41,7 @@
         <module>jacoco</module>
         <module>mongodb</module>
         <module>infinispan-client</module>
+        <module>mutual-tls</module>
     </modules>
 
 </project>

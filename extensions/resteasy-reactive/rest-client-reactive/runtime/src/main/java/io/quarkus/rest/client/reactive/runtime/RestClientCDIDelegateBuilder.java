@@ -1,5 +1,8 @@
 package io.quarkus.rest.client.reactive.runtime;
 
+import static io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl.MTLS_PROVIDER_BEAN_NAME;
+import static io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl.MTLS_PROVIDER_NAME;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -143,6 +146,14 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private void configureSsl(RestClientBuilder builder) {
 
+        Optional<String> maybeMutualTLSProviderName = oneOf(clientConfigByClassName().mtlsProviderName,
+                clientConfigByConfigKey().mtlsProviderName);
+        if (maybeMutualTLSProviderName.isPresent()) {
+            Optional<String> mutualTLSProviderBeanName = oneOf(clientConfigByClassName().mtlsProviderBeanName,
+                    clientConfigByConfigKey().mtlsProviderBeanName);
+            registerMutualTLSProvider(maybeMutualTLSProviderName.get(), mutualTLSProviderBeanName, builder);
+        }
+
         Optional<String> maybeTrustStore = oneOf(clientConfigByClassName().trustStore,
                 clientConfigByConfigKey().trustStore);
         if (maybeTrustStore.isPresent()) {
@@ -206,6 +217,12 @@ public class RestClientCDIDelegateBuilder<T> {
         } catch (KeyStoreException e) {
             throw new IllegalArgumentException("Failed to initialize trust store from " + keyStorePath, e);
         }
+    }
+
+    private void registerMutualTLSProvider(String mutualTLSProviderName, Optional<String> mutualTLSProviderBeanName,
+            RestClientBuilder builder) {
+        builder.property(MTLS_PROVIDER_NAME, mutualTLSProviderName);
+        builder.property(MTLS_PROVIDER_BEAN_NAME, mutualTLSProviderBeanName.orElse(null));
     }
 
     private void registerTrustStore(String trustStorePath, RestClientBuilder builder) {

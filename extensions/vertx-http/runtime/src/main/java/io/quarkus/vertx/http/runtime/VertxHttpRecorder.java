@@ -32,6 +32,8 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import javax.enterprise.event.Event;
+import javax.net.ssl.X509KeyManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
@@ -45,6 +47,10 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
+import io.quarkus.mtls.MutualTLSProvider;
+import io.quarkus.mtls.runtime.MutualTLSProviderFinder;
+import io.quarkus.mtls.utils.DynamicMutualTLSKeyManager;
+import io.quarkus.mtls.utils.DynamicMutualTLSTrustManager;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
@@ -79,6 +85,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpConnection;
@@ -92,9 +99,11 @@ import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.JdkSSLEngineOptions;
+import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.SocketAddress;
+import io.vertx.core.net.TrustOptions;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.core.net.impl.VertxHandler;
 import io.vertx.ext.web.Route;
@@ -658,6 +667,8 @@ public class VertxHttpRecorder {
         final String keystorePassword = sslConfig.certificate.keyStorePassword;
         final Optional<Path> trustStoreFile = sslConfig.certificate.trustStoreFile;
         final Optional<String> trustStorePassword = sslConfig.certificate.trustStorePassword;
+        final Optional<String> mtlsProviderName = sslConfig.certificate.mtlsProviderName;
+        final Optional<String> mtlsProviderBeanName = sslConfig.certificate.mtlsProviderBeanName;
         final HttpServerOptions serverOptions = new HttpServerOptions();
 
         //ssl
@@ -683,6 +694,14 @@ public class VertxHttpRecorder {
                     sslConfig.certificate.keyStoreKeyAlias,
                     sslConfig.certificate.keyStoreKeyPassword);
             serverOptions.setKeyCertOptions(options);
+        } else if (mtlsProviderName.isPresent()) {
+            MutualTLSProvider mtlsProvider = MutualTLSProviderFinder.find(mtlsProviderBeanName.orElse(null));
+
+            X509KeyManager keyManager = new DynamicMutualTLSKeyManager(mtlsProvider, mtlsProviderName.get());
+            serverOptions.setKeyCertOptions(KeyCertOptions.wrap(keyManager));
+
+            X509TrustManager trustManager = new DynamicMutualTLSTrustManager(mtlsProvider, mtlsProviderName.get());
+            serverOptions.setTrustOptions(TrustOptions.wrap(trustManager));
         } else {
             return null;
         }
@@ -716,7 +735,7 @@ public class VertxHttpRecorder {
         int sslPort = httpConfiguration.determineSslPort(launchMode);
         // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
         serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
-        serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
+        serverOptions.setClientAuth(mtlsProviderName.isPresent() ? ClientAuth.REQUIRED : buildTimeConfig.tlsClientAuth);
         serverOptions.setReusePort(httpConfiguration.soReusePort);
         serverOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
         serverOptions.setTcpCork(httpConfiguration.tcpCork);

@@ -131,6 +131,7 @@
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
         <module>credentials</module>
+        <module>mutual-tls</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>

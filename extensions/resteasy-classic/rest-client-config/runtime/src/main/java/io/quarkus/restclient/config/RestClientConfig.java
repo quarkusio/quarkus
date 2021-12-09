@@ -35,6 +35,8 @@ public class RestClientConfig {
         EMPTY.connectionTTL = Optional.empty();
         EMPTY.connectionPoolSize = Optional.empty();
         EMPTY.maxRedirects = Optional.empty();
+        EMPTY.mtlsProviderName = Optional.empty();
+        EMPTY.mtlsProviderBeanName = Optional.empty();
     }
 
     /**
@@ -161,6 +163,18 @@ public class RestClientConfig {
     @ConfigItem
     public Optional<Integer> maxRedirects;
 
+    /**
+     * Name of a configured mTLS provider.
+     */
+    @ConfigItem
+    public Optional<String> mtlsProviderName;
+
+    /**
+     * Name of a mTLS provider bean.
+     */
+    @ConfigItem
+    public Optional<String> mtlsProviderBeanName;
+
     public static RestClientConfig load(String configKey) {
         final RestClientConfig instance = new RestClientConfig();
 
@@ -183,6 +197,8 @@ public class RestClientConfig {
         instance.connectionTTL = getConfigValue(configKey, "connection-ttl", Integer.class);
         instance.connectionPoolSize = getConfigValue(configKey, "connection-pool-size", Integer.class);
         instance.maxRedirects = getConfigValue(configKey, "max-redirects", Integer.class);
+        instance.mtlsProviderName = getConfigValue(configKey, "mtls-provider-name", String.class);
+        instance.mtlsProviderBeanName = getConfigValue(configKey, "mtls-provider-bean-name", String.class);
 
         return instance;
     }
@@ -209,6 +225,8 @@ public class RestClientConfig {
         instance.connectionTTL = getConfigValue(interfaceClass, "connection-ttl", Integer.class);
         instance.connectionPoolSize = getConfigValue(interfaceClass, "connection-pool-size", Integer.class);
         instance.maxRedirects = getConfigValue(interfaceClass, "max-redirects", Integer.class);
+        instance.mtlsProviderName = getConfigValue(interfaceClass, "mtls-provider-name", String.class);
+        instance.mtlsProviderBeanName = getConfigValue(interfaceClass, "mtls-provider-bean-name", String.class);
 
         return instance;
     }

@@ -6,7 +6,9 @@ import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.core.net.TrustOptions;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.KeyStore;
@@ -41,6 +43,8 @@ public class ClientBuilderImpl extends ClientBuilder {
     private char[] keystorePassword;
     private SSLContext sslContext;
     private KeyStore trustStore;
+    private KeyCertOptions keyCertOptions;
+    private TrustOptions trustOptions;
 
     private String proxyHost;
     private int proxyPort;
@@ -155,6 +159,12 @@ public class ClientBuilderImpl extends ClientBuilder {
             options.setVerifyHost(false);
         }
 
+        if (keyCertOptions != null || trustOptions != null) {
+            options = options.setSsl(true);
+            options.setKeyCertOptions(keyCertOptions);
+            options.setTrustOptions(trustOptions);
+        }
+
         if (keyStore != null || trustStore != null) {
             options = options.setSsl(true);
             if (keyStore != null) {
@@ -266,6 +276,16 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilderImpl trustAll(boolean trustAll) {
         this.trustAll = trustAll;
+        return this;
+    }
+
+    public ClientBuilder keyCertOptions(KeyCertOptions keyCertOptions) {
+        this.keyCertOptions = keyCertOptions;
+        return this;
+    }
+
+    public ClientBuilder trustOptions(TrustOptions trustOptions) {
+        this.trustOptions = trustOptions;
         return this;
     }
 }

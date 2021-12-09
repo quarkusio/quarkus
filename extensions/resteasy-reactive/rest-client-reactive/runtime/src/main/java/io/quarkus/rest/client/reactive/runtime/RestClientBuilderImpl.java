@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.X509KeyManager;
+import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Configuration;
 
@@ -32,14 +34,22 @@ import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.mtls.MutualTLSProvider;
+import io.quarkus.mtls.runtime.MutualTLSProviderFinder;
+import io.quarkus.mtls.utils.DynamicMutualTLSKeyManager;
+import io.quarkus.mtls.utils.DynamicMutualTLSTrustManager;
 import io.quarkus.restclient.config.RestClientLoggingConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.TrustOptions;
 
 /**
  * Builder implementation for MicroProfile Rest Client
  */
 public class RestClientBuilderImpl implements RestClientBuilder {
 
+    public static final String MTLS_PROVIDER_NAME = "quarkus.mtls.provider-name";
+    public static final String MTLS_PROVIDER_BEAN_NAME = "quarkus.mtls.provider-bean-name";
     private static final String DEFAULT_MAPPER_DISABLED = "microprofile.rest.client.disable.default.mapper";
     private static final String TLS_TRUST_ALL = "quarkus.tls.trust-all";
 
@@ -284,6 +294,22 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                 .orElse(false);
 
         clientBuilder.trustAll(trustAll);
+
+        Object mtlsProviderNameProp = getConfiguration().getProperty(MTLS_PROVIDER_NAME);
+        if (mtlsProviderNameProp != null) {
+
+            String mtlsProviderName = mtlsProviderNameProp.toString();
+            Object mtlsProviderBeanName = getConfiguration().getProperty(MTLS_PROVIDER_BEAN_NAME);
+
+            MutualTLSProvider mtlsProvider = MutualTLSProviderFinder
+                    .find(mtlsProviderBeanName != null ? mtlsProviderBeanName.toString() : null);
+
+            X509KeyManager keyManager = new DynamicMutualTLSKeyManager(mtlsProvider, mtlsProviderName);
+            clientBuilder.keyCertOptions(KeyCertOptions.wrap(keyManager));
+
+            X509TrustManager trustManager = new DynamicMutualTLSTrustManager(mtlsProvider, mtlsProviderName);
+            clientBuilder.trustOptions(TrustOptions.wrap(trustManager));
+        }
 
         ClientImpl client = clientBuilder.build();
         WebTargetImpl target = (WebTargetImpl) client.target(uri);

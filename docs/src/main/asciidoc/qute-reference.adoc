@@ -1632,7 +1632,7 @@ class Item {
 
 ==== Accessing Static Fields and Methods
 
-If `@TemplateData#namespace()` is set to a non-empty value then a namespace resolver is automatically generated to access static fields and methods of the target class.
+If `@TemplateData#namespace()` is set to a non-empty value then a namespace resolver is automatically generated to access the public static fields and methods of the target class.
 By default, the namespace is the FQCN of the target class where dots and dollar signs are replaced by underscores.
 For example, the namespace for a class with name `org.acme.Foo` is `org_acme_Foo`.
 The static field `Foo.AGE` can be accessed via `{org_acme_Foo:AGE}`.
@@ -1640,26 +1640,56 @@ The static method `Foo.computeValue(int number)` can be accessed via `{org_acme_
  
 NOTE: A namespace can only consist of alphanumeric characters and underscores.
 
-.Enum Annotated With `@TemplateData`
+.Class Annotated With `@TemplateData`
 [source,java]
 ----
 package model;
 
 @TemplateData <1>
-public enum Status {
-    ON,
-    OFF
+public class Statuses {
+    public static final String ON = "on";
+    public static final String OFF = "off";
 }
 ----
 <1> A name resolver with the namespace `model_Status` is generated automatically.
 
-.Template Accessing Enum Constants
+.Template Accessing Class Constants
 [source,html]
 ----
 {#if machine.status == model_Status:ON}
   The machine is ON!
 {/if}
 ----
+
+==== Convenient Annotation For Enums
+
+There's also a convenient annotation to access enum constants: `@io.quarkus.qute.TemplateEnum`.
+This annotation is functionally equivalent to `@TemplateData(namespace = TemplateData.SIMPLENAME)`, i.e. a namespace resolver is automatically generated for the target enum and the simple name of the target enum is used as the namespace.
+
+.Enum Annotated With `@TemplateEnum`
+[source,java]
+----
+package model;
+
+@TemplateEnum <1>
+public enum Status {
+    ON,
+    OFF
+}
+----
+<1> A name resolver with the namespace `Status` is generated automatically.
+
+NOTE: `@TemplateEnum` declared on a non-enum class is ignored. Also if an enum also declares the `@TemplateData` annotation then the `@TemplateEnum` annotation is ignored.
+
+.Template Accessing Enum Constants
+[source,html]
+----
+{#if machine.status == Status:ON}
+  The machine is ON!
+{/if}
+----
+
+TIP: Quarkus detects possible namespace collisions and fails the build if a specific namespace is defined by multiple `@TemplateData` and/or `@TemplateEnum` annotations.
 
 [[native_executables]]
 === Native Executables

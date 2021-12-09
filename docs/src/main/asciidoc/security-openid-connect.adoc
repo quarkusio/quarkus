@@ -12,11 +12,11 @@ This guide demonstrates how to use Quarkus OpenID Connect (OIDC) Extension to pr
 
 Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token which provides valuable information to determine the subject of the call as well as whether or not an HTTP resource can be accessed.
 
-Please read the link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize the users using OpenId Connect Authorization Code Flow.
+Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize the users using OpenId Connect Authorization Code Flow.
 
-If you use Keycloak and Bearer tokens then also see the link:security-keycloak-authorization[Using Keycloak to Centralize Authorization] guide.
+If you use Keycloak and Bearer tokens then also see the xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization] guide.
 
-Please read the link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
+Please read the xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
 
 == Quickstart
 
@@ -206,9 +206,9 @@ NOTE: If you want to use the Keycloak Admin Client to configure your server from
 [[keycloak-dev-mode]]
 === Running the Application in Dev mode
 
-To run the application in a dev mode, use `./mvnw clean compile quarkus:dev`. link:security-openid-connect-dev-services[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
+To run the application in a dev mode, use `./mvnw clean compile quarkus:dev`. xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
-Open a link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenId Connect` `Dev UI` card.
+Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenId Connect` `Dev UI` card.
 
 You will be asked to login into a `Single Page Application` provided by `OpenId Connect Dev UI`:
 
@@ -350,7 +350,7 @@ public class AdminResource {
 }
 ----
 
-Injection of `JsonWebToken` is supported in `@ApplicationScoped`, `@Singleton` and `@RequestScoped` scopes however the use of `@RequestScoped` is required if the individual claims are injected as simple types, please see link:security-jwt#supported-injection-scopes[Support Injection Scopes for JsonWebToken and Claims] for more details.
+Injection of `JsonWebToken` is supported in `@ApplicationScoped`, `@Singleton` and `@RequestScoped` scopes however the use of `@RequestScoped` is required if the individual claims are injected as simple types, please see xref:security-jwt.adoc#supported-injection-scopes[Support Injection Scopes for JsonWebToken and Claims] for more details.
 
 [[user-info]]
 === User Info
@@ -380,7 +380,7 @@ If the token is opaque (binary) then a `scope` property from the remote token in
 
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
-Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
+Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security.adoc#security-identity-customization[here].
 
 [[token-verification-introspection]]
 === Token Verification And Introspection 
@@ -546,7 +546,7 @@ For example, here is how you can use `keycloak.js` to authenticate the users and
 
 === Cross Origin Resource Sharing
 
-If you plan to consume your OpenId Connect `service` application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference#cors-filter[HTTP CORS documentation] for more details.
+If you plan to consume your OpenId Connect `service` application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:http-reference.adoc#cors-filter[HTTP CORS documentation] for more details.
 
 === Provider Endpoint configuration
 
@@ -572,12 +572,12 @@ quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 
 === Token Propagation
 
-Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+Please see xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
 [[oidc-provider-authentication]]
 === Oidc Provider Client Authentication
 
-`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenId Connect Provider has to be done. If the bearer token has to be introspected then `OidcProviderClient` has to authenticate to the OpenId Connect Provider. Please see link:security-openid-connect-web-authentication#oidc-provider-client-authentication[OidcProviderClient Authentication] for more information about all the supported authentication options.
+`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenId Connect Provider has to be done. If the bearer token has to be introspected then `OidcProviderClient` has to authenticate to the OpenId Connect Provider. Please see xref:security-openid-connect-web-authentication.adoc#oidc-provider-client-authentication[OidcProviderClient Authentication] for more information about all the supported authentication options.
 
 [[integration-testing]]
 === Testing
@@ -715,7 +715,7 @@ public class CustomOidcWireMockStubTest {
 [[integration-testing-keycloak-devservices]]
 ==== Dev Services for Keycloak
 
-Using link:security-openid-connect-dev-services[Dev Services for Keycloak] is recommended for the integration testing against Keycloak.
+Using xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] is recommended for the integration testing against Keycloak.
 `Dev Services for Keycloak` will launch and initialize a test container: it will create a `quarkus` realm, a `quarkus-app` client (`secret` secret) and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
 
 First you need to add the following dependency:
@@ -795,7 +795,7 @@ public class NativeBearerTokenAuthenticationIT extends BearerTokenAuthentication
 }
 ----
 
-Please see link:security-openid-connect-dev-services[Dev Services for Keycloak] for more information about the way it is initialized and configured.
+Please see xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] for more information about the way it is initialized and configured.
 
 [[integration-testing-keycloak]]
 ==== KeycloakTestResourceLifecycleManager
@@ -1115,8 +1115,8 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
-* link:security-openid-connect-client[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
-* link:security-openid-connect-dev-services[Dev Services for Keycloak]
-* link:security-jwt-build[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* link:security#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
-* link:security[Quarkus Security]
+* xref:security-openid-connect-client.adoc[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
+* xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
+* xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
+* xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
+* xref:security.adoc[Quarkus Security]

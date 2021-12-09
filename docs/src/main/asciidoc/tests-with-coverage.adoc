@@ -36,7 +36,7 @@ To complete this guide, you need:
 * an IDE
 * JDK 11+ installed with JAVA_HOME configured appropriately
 * Apache Maven {maven-version}
-* Having completed the link:getting-started-testing[Testing your application guide]
+* Having completed the xref:getting-started-testing.adoc[Testing your application guide]
 
 == Architecture
 

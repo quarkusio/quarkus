@@ -13,11 +13,11 @@ This document describes the Quarkus built-in authentication mechanisms for HTTP 
 == Basic Authentication
 
 To enable basic authentication set `quarkus.http.auth.basic=true`. You must also have at least one extension installed
-that provides a username/password based `IdentityProvider`, such as link:security-jdbc[Elytron JDBC].
+that provides a username/password based `IdentityProvider`, such as xref:security-jdbc.adoc[Elytron JDBC].
 
-Please see link:security#identity-providers[Security Identity Providers] for more information.
+Please see xref:security.adoc#identity-providers[Security Identity Providers] for more information.
 
-Please also see link:security-testing#configuring-user-information[Configuring User Information in application.properties] section.
+Please also see xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties] section.
 
 [[form-auth]]
 == Form Based Authentication
@@ -42,7 +42,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-form-auth-config
 
 Quarkus provides mTLS authentication so that you can authenticate users based on their X.509 certificates.
 
-To use this authentication method, you should first enable SSL for your application. For more details, check the link:http-reference#ssl[Supporting secure connections with SSL] guide.
+To use this authentication method, you should first enable SSL for your application. For more details, check the xref:http-reference.adoc#ssl[Supporting secure connections with SSL] guide.
 
 Once your application is accepting secure connections, the next step is to configure a `quarkus.http.ssl.certificate.trust-store-file`
 holding all the certificates that your application should trust as well as how your application should ask for certificates when
@@ -99,7 +99,7 @@ X509Certificate certificate = credential.getCertificate();
 === Authorization
 
 The information from the client certificate can be used to enhance Quarkus `SecurityIdentity`. For example, one can add new roles after checking a client certificate subject name, etc.
-Please see the link:security-customization#security-identity-customization[SecurityIdentity Customization] section for more information about customizing Quarkus `SecurityIdentity`.
+Please see the xref:security-customization.adoc#security-identity-customization[SecurityIdentity Customization] section for more information about customizing Quarkus `SecurityIdentity`.
 
 [[proactive-authentication]]
 == Proactive Authentication
@@ -155,4 +155,4 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
 
 == References
 
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]

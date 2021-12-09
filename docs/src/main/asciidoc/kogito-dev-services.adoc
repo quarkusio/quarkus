@@ -12,7 +12,7 @@ So, you don't have to start it manually or have any other service set-up manuall
 The application is configured automatically, meaning that will replicate any
 Kogito messaging events related to Process Instances and User Tasks into the provisioned Data Index instance.
 
-Additionally, link:dev-ui[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to Query Data Index via its GraphiQL UI.
+Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to Query Data Index via its GraphiQL UI.
 
 image::dev-ui-kogito-data-index-card.png[alt=Dev UI Kogito,role="center"]
 
@@ -60,6 +60,6 @@ quarkus.kogito.devservices.image-name=quay.io/kiegroup/kogito-data-index-ephemer
 
 == References
 
-* link:dev-ui[Dev UI]
+* xref:dev-ui.adoc[Dev UI]
 * https://docs.kogito.kie.org/latest/html_single/[Kogito Documentation]
-* link:kogito.adoc[Quarkus - Kogito]
+* xref:kogito.adoc[Quarkus - Kogito]

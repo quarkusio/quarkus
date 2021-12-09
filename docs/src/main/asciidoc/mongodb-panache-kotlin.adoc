@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 MongoDB is a well known NoSQL Database that is widely used. MongoDB with Panache offers a
 new layer atop this familiar framework.  This guide will not dive in to the specifics of either as those are already
-covered in the link:mongodb-panache[MongoDB with Panache guide].  In this guide, we'll cover the Kotlin specific changes
+covered in the xref:mongodb-panache.adoc[MongoDB with Panache guide].  In this guide, we'll cover the Kotlin specific changes
 needed to use MongoDB with Panache in your Kotlin-based Quarkus applications.
 
 == First: an example
@@ -169,7 +169,7 @@ val namesButEmmanuels = persons
     .filter { it != "emmanuel" }
 ----
 
-For more examples, please consult the link:mongodb-panache[Java version] for complete details.  Both APIs
+For more examples, please consult the xref:mongodb-panache.adoc[Java version] for complete details.  Both APIs
 are the same and work identically except for some Kotlin-specific tweaks to make things feel more natural to
 Kotlin developers.  These tweaks include things like better use of nullability and the lack of `Optional` on API
 methods.

@@ -103,7 +103,7 @@ public class AppConfiguration {
     }
 }
 ----
-As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs link:cdi-reference#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
+As a Spring developer, you might be tempted to add the `@ComponentScan` annotation in order to define specific packages to scan for additional beans. Do note that `@ComponentScan` is entirely unnecessary since Quarkus performs xref:cdi-reference.adoc#bean_discovery[bean discovery] only in `annotated` mode with no visibility boundaries. Moreover, note that the bean discovery in Quarkus happens at build time.
 In the same vein, Quarkus does not support the Spring `@Import` annotation.
 
 Now we define another bean that will implement `StringFunction` using Spring's stereotype annotation style.
@@ -267,7 +267,7 @@ The result should be: `HELLO WORLD!`.
 
 == Run the application as a native
 
-You can of course create a native image using instructions similar to link:building-native-image[this] guide.
+You can of course create a native image using instructions similar to xref:building-native-image.adoc[this] guide.
 
 == Important Technical Note
 
@@ -275,8 +275,8 @@ Please note that the Spring support in Quarkus does not start a Spring Applicati
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `org.springframework.context.ApplicationContext` for example) will not be executed.
-Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the link:cdi[Quarkus introduction to CDI] and the link:cdi-reference#arc-configuration-reference[CDI reference guide]
-The various Spring Boot test features are not supported by Quarkus. For testing purposes, please, check the link:getting-started-testing[Quarkus testing guide].
+Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it we recommend you to read the xref:cdi.adoc[Quarkus introduction to CDI] and the xref:cdi-reference.adoc#arc-configuration-reference[CDI reference guide]
+The various Spring Boot test features are not supported by Quarkus. For testing purposes, please, check the xref:getting-started-testing.adoc[Quarkus testing guide].
 
 == Conversion Table
 
@@ -334,11 +334,11 @@ The following table shows how Spring DI annotations can be converted to CDI and 
 
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-web[Quarkus - Extension for Spring Web]
-* link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
-* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
-* link:spring-security[Quarkus - Extension for Spring Security]
-* link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
-* link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
-* link:spring-cache[Quarkus - Extension for Spring Cache]
-* link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
+* xref:spring-web.adoc[Quarkus - Extension for Spring Web]
+* xref:spring-data-jpa.adoc[Quarkus - Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]
+* xref:spring-security.adoc[Quarkus - Extension for Spring Security]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
+* xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]

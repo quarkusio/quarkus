@@ -318,7 +318,7 @@ Please note that if you would like to use Elliptic Curve keys with Kubernetes Cl
 
 Note that internally an `org.bouncycastle.jce.provider.BouncyCastleProvider` provider will be registered if it has not already been registered.
 
-You can have this provider registered as described in the link:security-customization#bouncy-castle[BouncyCastle] or link:security-customization#bouncy-castle-fips[BouncyCastle FIPS] sections.
+You can have this provider registered as described in the xref:security-customization.adoc#bouncy-castle[BouncyCastle] or xref:security-customization.adoc#bouncy-castle-fips[BouncyCastle FIPS] sections.
 
 == Access to the Kubernetes API
 

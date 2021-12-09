@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can use a database to store your user identities with 
-link:hibernate-orm[Hibernate ORM] or link:hibernate-orm-panache[Hibernate ORM with Panache].
+xref:hibernate-orm.adoc[Hibernate ORM] or xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache].
 
 
 == Prerequisites
@@ -417,4 +417,4 @@ it in production.
 
 == References
 
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]

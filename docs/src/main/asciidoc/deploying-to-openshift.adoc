@@ -38,7 +38,7 @@ cd openshift-quickstart
 ----
 
 Quarkus offers the ability to automatically generate OpenShift resources based on sane defaults and user supplied configuration.
-The OpenShift extension is actually a wrapper extension that brings together the link:deploying-to-kubernetes[kubernetes] and link:container-image#s2i[container-image-s2i]
+The OpenShift extension is actually a wrapper extension that brings together the xref:deploying-to-kubernetes.adoc[kubernetes] and xref:container-image.adoc#s2i[container-image-s2i]
 extensions with sensible defaults so that it's easier for the user to get started with Quarkus on OpenShift.
 
 When we added the OpenShift extension to the command line invocation above, the following dependency was added to the `pom.xml`
@@ -171,10 +171,10 @@ In other words, you don't need to repeat the above steps.
 
 === Non-S2I Builds
 
-Out of the box the OpenShift extension is configured to use link:container-image#s2i[container-image-s2i]. However, it's still possible to use other container image extensions like:
+Out of the box the OpenShift extension is configured to use xref:container-image.adoc#s2i[container-image-s2i]. However, it's still possible to use other container image extensions like:
 
-- link:container-image#docker[container-image-docker]
-- link:container-image#jib[container-image-jib]
+- xref:container-image.adoc#docker[container-image-docker]
+- xref:container-image.adoc#jib[container-image-jib]
 
 When a non-s2i container image extension is used, an `ImageStream` is created that is pointing to an external `dockerImageRepository`. The image is built and pushed to the registry and the `ImageStream` populates the tags that are available in the `dockerImageRepository`. 
 
@@ -194,7 +194,7 @@ quarkus.container-image.builder=jib
 
 == Customizing
 
-All available customization options are available in the link:deploying-to-kubernetes#openshift[OpenShift configuration options].
+All available customization options are available in the xref:deploying-to-kubernetes.adoc#openshift[OpenShift configuration options].
 
 Some examples are provided in the sections below:
 

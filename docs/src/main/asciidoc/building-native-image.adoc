@@ -13,7 +13,7 @@ This guide covers:
 * Packaging the native executable in a container
 * Debugging native executable
 
-This guide takes as input the application developed in the link:getting-started[Getting Started Guide].
+This guide takes as input the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
 == GraalVM
 
@@ -65,7 +65,7 @@ To complete this guide using Mandrel, you need:
 * an IDE
 * JDK 11 installed with `JAVA_HOME` configured appropriately
 * A working container runtime (Docker, podman)
-* The code of the application developed in the link:getting-started[Getting Started Guide].
+* The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
 Skip to <<#container-runtime,this section>> to continue with the guide for Mandrel,
 and follow the Mandrel-specific instructions in that section.
@@ -80,7 +80,7 @@ To complete this guide, you need:
 * A xref:configuring-c-development[working C development environment]
 * GraalVM version {graalvm-version} (be sure to install the Java 11 support) installed and xref:configuring-graalvm[configured appropriately]
 * A working container runtime (Docker, podman)
-* The code of the application developed in the link:getting-started[Getting Started Guide].
+* The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
 .Supporting native compilation in C
 [[configuring-c-development]]
@@ -332,7 +332,7 @@ to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.wait-time=300`.
 [WARNING]
 ====
 In the future, `@NativeImageTest` will be deprecated in favor of `@QuarkusIntegrationTest` which provides a superset of the testing
-capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationTest` can be found in the link:getting-started-testing#quarkus-integration-test[Testing Guide].
+capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationTest` can be found in the xref:getting-started-testing.adoc#quarkus-integration-test[Testing Guide].
 ====
 
 By default, native tests runs using the `prod` profile.
@@ -439,7 +439,7 @@ If one of those extensions is present, then creating a container image for the n
 * `quarkus.native.container-build=true` allows for creating a Linux executable without GraalVM being installed (and is only necessary if you don't have GraalVM installed locally or your local operating system is not Linux)
 * `quarkus.container-image.build=true` instructs Quarkus to create a container-image using the final application artifact (which is the native executable in this case)
 
-See the link:container-image[Container Image guide] for more details.
+See the xref:container-image.adoc[Container Image guide] for more details.
 
 === Manually
 
@@ -596,7 +596,7 @@ docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ====
 If you need SSL support in your native executable, you can easily include the necessary libraries in your Docker image.
 
-Please see link:native-and-ssl#working-with-containers[our Using SSL With Native Executables guide] for more information.
+Please see xref:native-and-ssl.adoc#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
 
 NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel:$TAG AS build`.
@@ -792,4 +792,4 @@ This guide covered the creation of a native (binary) executable for your applica
 It provides an application exhibiting a swift startup time and consuming less memory.
 However, there is much more.
 
-We recommend continuing the journey with the link:deploying-to-kubernetes[deployment to Kubernetes and OpenShift].
+We recommend continuing the journey with the xref:deploying-to-kubernetes.adoc[deployment to Kubernetes and OpenShift].

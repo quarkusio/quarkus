@@ -191,7 +191,7 @@ the HTTP link:{httpspec}#section-3.1.1.5[`Content-Type`] header, which in turn c
 link:{httpspec}#section-3.1.1.1[MIME (Media Type)] values, such as the following:
 
 - `text/plain` which is the default for any endpoint returning a `String`.
-- `text/html` for HTML (such as with link:qute[Qute templating])
+- `text/html` for HTML (such as with xref:qute.adoc[Qute templating])
 - `application/json` for a <<json,JSON REST endpoint>>
 - `text/*` which is a sub-type wildcard for any text media type
 - `\*/*` which is a wildcard for any media type
@@ -668,7 +668,7 @@ If you want to stream your response element by element, you can make your endpoi
 link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] type (from https://smallrye.io/smallrye-mutiny/[Mutiny]).
 This is especially useful for streaming text or binary data.
 
-This example, using link:reactive-messaging-http[Reactive Messaging] shows how to stream
+This example, using xref:reactive-messaging-http.adoc[Reactive Messaging HTTP] shows how to stream
 text data:
 
 [source,java]
@@ -988,7 +988,7 @@ public class Person {
 }
 ----
 
-Assuming security has been set up for the application (see our link:security[guide] for more details), when a user with the `admin` role
+Assuming security has been set up for the application (see our xref:security.adoc[guide] for more details), when a user with the `admin` role
 performs an HTTP GET on `/person/1` they will receive:
 
 [source,json]
@@ -2109,4 +2109,4 @@ In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile 
 
 Please note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
 
-See link:rest-client-reactive[REST Client Reactive Guide] for more information about the reactive client.
+See xref:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive client.

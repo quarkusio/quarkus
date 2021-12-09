@@ -478,4 +478,4 @@ Once the dependency is added to the project, decision tables in `xls` or `xlsx` 
 
 * https://kogito.kie.org[Kogito Website]
 * https://docs.jboss.org/kogito/release/latest/html_single[Kogito Documentation]
-* link:kogito-dev-services.adoc[Kogito Dev Services]
+* xref:kogito-dev-services.adoc[Kogito Dev Services]

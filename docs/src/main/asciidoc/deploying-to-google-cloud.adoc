@@ -26,7 +26,7 @@ For this guide you need:
 * https://cloud.google.com/[A Google Cloud Account].  Free accounts work.
 * https://cloud.google.com/sdk[Cloud SDK CLI Installed]
 
-This guide will take as input an application developed in the link:getting-started[Getting Started guide].
+This guide will take as input an application developed in the xref:getting-started.adoc[Getting Started guide].
 
 Make sure you have the getting-started application at hand, or clone the Git repository: `git clone {quickstarts-clone-url}`,
 or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.
@@ -44,10 +44,10 @@ gcloud auth login
 
 Quarkus supports deploying your application to Google Cloud Functions via the following extensions:
 
-- link:gcp-functions[Google Cloud Functions]: Build functions using the Google Cloud Functions API.
-- link:gcp-functions-http[Google Cloud Functions HTTP binding]: Build functions using Quarkus HTTP APIs: RESTEasy (JAX-RS),
-Undertow (Servlet), Vert.x Web, or link:funqy-http[Funqy HTTP].
-- link:funqy-gcp-functions[Funky Google Cloud Functions]: Build functions using Funqy.
+- xref:gcp-functions.adoc[Google Cloud Functions]: Build functions using the Google Cloud Functions API.
+- xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding]: Build functions using Quarkus HTTP APIs: RESTEasy (JAX-RS),
+Undertow (Servlet), Vert.x Web, or xref:funqy-http.adoc[Funqy HTTP].
+- xref:funqy-gcp-functions.adoc[Funky Google Cloud Functions]: Build functions using Funqy.
 
 Each extension supports a specific kind of application development,
 follow the specific guides for more information on how to develop, package and deploy your applications using them.
@@ -163,7 +163,7 @@ It uses Cloud Build to build your Docker image and deploy it to Google Container
 When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
 NOTE: App Engine Flexible custom runtimes support link:https://cloud.google.com/appengine/docs/flexible/custom-runtimes/configuring-your-app-with-app-yaml#updated_health_checks[health checks],
-it is strongly advised to provide them thanks to Quarkus link:microprofile-health[Microprofile Health] support.
+it is strongly advised to provide them thanks to Quarkus xref:microprofile-health.adoc[Microprofile Health] support.
 
 == Deploying to Google Cloud Run
 

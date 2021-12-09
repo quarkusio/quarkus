@@ -183,7 +183,7 @@ Optional<String> maybeDatabaseName = ConfigProvider.getConfig().getOptionalValue
 
 Quarkus itself is configured via the same mechanism as your application. Quarkus reserves the `quarkus.` namespace
 for its own configuration. For example to configure the HTTP server port you can set `quarkus.http.port` in
-`application.properties`. All the Quarkus configuration properties are link:all-config[documented and searchable].
+`application.properties`. All the Quarkus configuration properties are xref:all-config.adoc[documented and searchable].
 
 [IMPORTANT]
 ====
@@ -197,7 +197,7 @@ Some Quarkus configurations only take effect during build time, meaning is not p
 configurations are still available at runtime but as read-only and have no effect in Quarkus behaviour. A change to any
 of these configurations requires a rebuild of the application itself to reflect changes of such properties.
 
-TIP: The properties fixed at build time are marked with a lock icon (icon:lock[]) in the link:all-config[list of all configuration options].
+TIP: The properties fixed at build time are marked with a lock icon (icon:lock[]) in the xref:all-config.adoc[list of all configuration options].
 
 However, some extensions do define properties _overridable at runtime_. A simple example is the database URL, username
 and password which is only known specifically in your target environment, so they can be set and influence the

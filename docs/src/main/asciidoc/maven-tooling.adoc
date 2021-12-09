@@ -432,7 +432,7 @@ The list of the available Docker images can be found on https://quay.io/reposito
 Be aware that a given Quarkus version might not be compatible with all the images available.
 ====
 
-You can follow the link:building-native-image[Build a native executable guide] as well as link:deploying-to-kubernetes[Deploying Application to Kubernetes and OpenShift] for more information.
+You can follow the xref:building-native-image.adoc[Build a native executable guide] as well as xref:deploying-to-kubernetes.adoc[Deploying Application to Kubernetes and OpenShift] for more information.
 
 [[build-tool-maven]]
 == Maven configuration
@@ -525,7 +525,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 `maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
 <5> Use a specific `native` profile for native executable building.
 <6> Enable the `native` package type. The build will therefore produce a native executable.
-<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
+<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the xref:building-native-image.adoc[Native executable guide] for more info.
 
 [[fast-jar]]
 === Using fast-jar
@@ -585,7 +585,7 @@ unless it is the main application module already configured with the quarkus-mav
 </build>
 ----
 
-More information on this topic can be found on the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
+More information on this topic can be found on the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
 
 [[maven-configuration-profile]]
 === Building with a specific configuration profile
@@ -804,7 +804,7 @@ include::{generated-dir}/config/quarkus-package-pkg-package-config.adoc[opts=opt
 
 By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
 configuration profiles, everything you need to know is explained in the
-link:config#configuration-profiles[Configuration Profiles Documentation].
+xref:config.adoc#configuration-profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Maven Surefire and Maven Failsafe
 configurations shown below. This can be useful if you need for example to run some tests using a specific database which is not

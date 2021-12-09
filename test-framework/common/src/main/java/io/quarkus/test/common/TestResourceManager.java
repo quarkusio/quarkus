@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -164,7 +165,7 @@ public class TestResourceManager implements Closeable {
     }
 
     private Set<TestResourceClassEntry> initParallelTestResources(Set<TestResourceClassEntry> uniqueEntries) {
-        Set<TestResourceClassEntry> remainingUniqueEntries = new HashSet<>(uniqueEntries);
+        Set<TestResourceClassEntry> remainingUniqueEntries = new LinkedHashSet<>(uniqueEntries);
         for (TestResourceClassEntry entry : uniqueEntries) {
             if (entry.isParallel()) {
                 TestResourceEntry testResourceEntry = buildTestResourceEntry(entry);
@@ -186,7 +187,7 @@ public class TestResourceManager implements Closeable {
     }
 
     private Set<TestResourceClassEntry> initSequentialTestResources(Set<TestResourceClassEntry> uniqueEntries) {
-        Set<TestResourceClassEntry> remainingUniqueEntries = new HashSet<>(uniqueEntries);
+        Set<TestResourceClassEntry> remainingUniqueEntries = new LinkedHashSet<>(uniqueEntries);
         for (TestResourceClassEntry entry : uniqueEntries) {
             if (!entry.isParallel()) {
                 TestResourceEntry testResourceEntry = buildTestResourceEntry(entry);
@@ -232,7 +233,7 @@ public class TestResourceManager implements Closeable {
     private Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass, Class<?> profileClass,
             List<TestResourceClassEntry> additionalTestResources) {
         IndexView index = TestClassIndexer.readIndex(testClass);
-        Set<TestResourceClassEntry> uniqueEntries = new HashSet<>();
+        Set<TestResourceClassEntry> uniqueEntries = new LinkedHashSet<>();
         // reload the test and profile classes in the right CL
         Class<?> testClassFromTCCL;
         Class<?> profileClassFromTCCL;
@@ -350,7 +351,7 @@ public class TestResourceManager implements Closeable {
             testClasses.add(testClass.getName());
             testClass = testClass.getSuperclass();
         }
-        Set<AnnotationInstance> testResourceAnnotations = new HashSet<>();
+        Set<AnnotationInstance> testResourceAnnotations = new LinkedHashSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(DotName.createSimple(QuarkusTestResource.class.getName()))) {
             if (keepTestResourceAnnotation(annotation, annotation.target().asClass(), testClasses)) {
                 testResourceAnnotations.add(annotation);

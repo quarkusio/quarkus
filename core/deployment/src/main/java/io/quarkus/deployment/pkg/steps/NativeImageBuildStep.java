@@ -85,7 +85,8 @@ public class NativeImageBuildStep {
             PackageConfig packageConfig,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             List<ExcludeConfigBuildItem> excludeConfigs,
-            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed) {
+            NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
+            List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders) {
 
         Path outputDir;
         try {
@@ -104,13 +105,14 @@ public class NativeImageBuildStep {
                 .setNativeConfig(nativeConfig)
                 .setOutputTargetBuildItem(outputTargetBuildItem)
                 .setNativeImageProperties(nativeImageProperties)
-                .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                 .setExcludeConfigs(excludeConfigs)
+                .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
+                .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                 .setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
                 // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
                 .setNativeImageName(nativeImageName)
-                .setContainerBuild(nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild)
+                .setGraalVMVersion(GraalVM.Version.CURRENT)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
         try (FileOutputStream commandFOS = new FileOutputStream(outputDir.resolve("native-image.args").toFile())) {

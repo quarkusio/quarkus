@@ -9,7 +9,6 @@ import java.util.function.Function;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildStepBuilder;
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 
 /**
  * A marker build item that, if any instances are provided during the build, the containers started by DevServices
@@ -21,7 +20,7 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
 
     /**
      * Generates a {@code List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step
-     * producing the {@link ProcessInheritIODisabled} build item
+     * producing the {@link DevServicesSharedNetworkBuildItem} build item
      */
     public static final class Factory implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
 

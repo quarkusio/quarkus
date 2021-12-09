@@ -17,14 +17,12 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * made available
  *
  * @see io.quarkus.deployment.util.ProcessUtil
- * @deprecated use {@link ProcessInheritIODisabledBuildItem} instead
  */
-@Deprecated
-public final class ProcessInheritIODisabled extends SimpleBuildItem {
+public final class ProcessInheritIODisabledBuildItem extends SimpleBuildItem {
 
     /**
      * Generates a {@link List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step
-     * producing the {@link ProcessInheritIODisabled} build item
+     * producing the {@link ProcessInheritIODisabledBuildItem} build item
      */
     public static final class Factory implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
 
@@ -32,9 +30,9 @@ public final class ProcessInheritIODisabled extends SimpleBuildItem {
         public List<Consumer<BuildChainBuilder>> apply(final Map<String, Object> props) {
             return Collections.singletonList((builder) -> {
                 final BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
-                    ctx.produce(new ProcessInheritIODisabled());
+                    ctx.produce(new ProcessInheritIODisabledBuildItem());
                 });
-                stepBuilder.produces(ProcessInheritIODisabled.class).build();
+                stepBuilder.produces(ProcessInheritIODisabledBuildItem.class).build();
             });
         }
     }

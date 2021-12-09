@@ -29,7 +29,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 
@@ -76,9 +76,9 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             @Override
             public void accept(BuildChainBuilder builder) {
                 final BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
-                    ctx.produce(new ProcessInheritIODisabled());
+                    ctx.produce(new ProcessInheritIODisabledBuildItem());
                 });
-                stepBuilder.produces(ProcessInheritIODisabled.class).build();
+                stepBuilder.produces(ProcessInheritIODisabledBuildItem.class).build();
             }
         });
         builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());

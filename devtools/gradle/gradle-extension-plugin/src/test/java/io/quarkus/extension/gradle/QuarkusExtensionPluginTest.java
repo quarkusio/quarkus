@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Properties;
 
 import org.assertj.core.api.Assertions;
@@ -36,7 +37,7 @@ public class QuarkusExtensionPluginTest {
 
     @Test
     public void jarShouldContainsExtensionPropertiesFile() throws IOException {
-        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent());
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList()));
 
         BuildResult jarResult = GradleRunner.create()
                 .withPluginClasspath()
@@ -65,7 +66,7 @@ public class QuarkusExtensionPluginTest {
 
     @Test
     public void pluginShouldAddAnnotationProcessor() throws IOException {
-        TestUtils.createExtensionProject(testProjectDir);
+        TestUtils.createExtensionProject(testProjectDir, false, Collections.emptyList(), Collections.emptyList());
         BuildResult dependencies = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)
@@ -77,7 +78,7 @@ public class QuarkusExtensionPluginTest {
 
     @Test
     public void pluginShouldAddAnnotationProcessorToDeploymentModule() throws IOException {
-        TestUtils.createExtensionProject(testProjectDir);
+        TestUtils.createExtensionProject(testProjectDir, false, Collections.emptyList(), Collections.emptyList());
         BuildResult dependencies = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir)

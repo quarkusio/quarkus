@@ -20,7 +20,7 @@ import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
 
     /**
-     * Generates a {@link List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step
+     * Generates a {@code List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step
      * producing the {@link ProcessInheritIODisabled} build item
      */
     public static final class Factory implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {

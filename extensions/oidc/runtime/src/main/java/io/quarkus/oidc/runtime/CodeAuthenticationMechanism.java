@@ -364,7 +364,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String generateInternalIdToken(OidcTenantConfig oidcConfig) {
-        return Jwt.claims().sign(KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get()));
+        String tenant = oidcConfig.tenantId.orElse("default");
+        return Jwt.claims().issuer(tenant).sign(KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get()));
     }
 
     private Uni<Void> processSuccessfulAuthentication(RoutingContext context,

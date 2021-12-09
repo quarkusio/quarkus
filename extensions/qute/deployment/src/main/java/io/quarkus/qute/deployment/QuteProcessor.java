@@ -1,6 +1,7 @@
 package io.quarkus.qute.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.qute.runtime.EngineProducer.CDI_NAMESPACE;
 import static io.quarkus.qute.runtime.EngineProducer.INJECT_NAMESPACE;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
@@ -631,7 +632,7 @@ public class QuteProcessor {
         List<TemplateExtensionMethodBuildItem> extensionMethods = null;
 
         if (namespace != null) {
-            if (namespace.equals(INJECT_NAMESPACE)) {
+            if (namespace.equals(INJECT_NAMESPACE) || namespace.equals(CDI_NAMESPACE)) {
                 BeanInfo bean = findBean(expression, index, incorrectExpressions, namedBeans);
                 if (bean != null) {
                     rootClazz = bean.getImplClazz();

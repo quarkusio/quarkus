@@ -13,10 +13,14 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class JibConfig {
 
     /**
-     * The base image to be used when a container image is being produced for the jar build
+     * The base image to be used when a container image is being produced for the jar build.
+     *
+     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.10}
+     * is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10} is used as the default.
      */
-    @ConfigItem(defaultValue = "fabric8/java-alpine-openjdk11-jre")
-    public String baseJvmImage;
+    @ConfigItem
+    public Optional<String> baseJvmImage;
 
     /**
      * The base image to be used when a container image is being produced for the native binary build

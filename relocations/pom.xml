@@ -59,6 +59,8 @@
         <module>quarkus-neo4j-deployment</module>
         <module>quarkus-vault</module>
         <module>quarkus-vault-deployment</module>
+        <module>quarkus-reactive-messaging-http</module>
+        <module>quarkus-reactive-messaging-http-deployment</module>
         <module>quarkus-test-vault</module>
     </modules>
 

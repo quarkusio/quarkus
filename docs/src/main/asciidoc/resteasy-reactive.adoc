@@ -668,7 +668,7 @@ If you want to stream your response element by element, you can make your endpoi
 link:{mutinyapi}/io/smallrye/mutiny/Multi.html[`Multi`] type (from https://smallrye.io/smallrye-mutiny/[Mutiny]).
 This is especially useful for streaming text or binary data.
 
-This example, using xref:reactive-messaging-http.adoc[Reactive Messaging HTTP] shows how to stream
+This example, using https://github.com/quarkiverse/quarkus-reactive-messaging-http[Reactive Messaging HTTP] shows how to stream
 text data:
 
 [source,java]

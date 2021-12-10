@@ -14,8 +14,6 @@ In this guide, we will see how you can get your REST services to use an Elastics
 Quarkus provides two ways of accessing Elasticsearch: via the lower level `RestClient` or via the `RestHighLevelClient` we will call them
 the low level and the high level clients.
 
-include::./status-include.adoc[]
-
 == Prerequisites
 
 To complete this guide, you need:
@@ -344,6 +342,8 @@ Quarkus provides support for the Elasticsearch High Level REST Client but keep i
 
 - It drags a lot of dependencies - especially Lucene -, which doesn't fit well with Quarkus philosophy. The Elasticsearch team is aware of this issue and it might improve sometime in the future.
 - It is tied to a certain version of the Elasticsearch server: you cannot use a High Level REST Client version 7 to access a server version 6.
+
+include::./status-include.adoc[]
 
 Here is a version of the `FruitService` using the high level client instead of the low level one:
 

@@ -52,7 +52,7 @@ public class ConsoleStateManager {
         public void accept(int[] ints) {
             for (int i : ints) {
                 if (readLineBuilder != null) {
-                    if (i == '\n') {
+                    if (i == '\n' || i == '\r') {
                         readLineConsumer.accept(readLineBuilder.toString());
                         readLineBuilder = null;
                         readLineConsumer = null;

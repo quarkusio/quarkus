@@ -218,7 +218,7 @@ For more details, see the Keycloak documentation about how to https://www.keyclo
 
 After importing the realm you can see the resource permissions:
 
-image::keycloak-authorization-permissions.png[alt=Keycloak Authorization Permissions,role="center"].
+image::keycloak-authorization-permissions.png[alt=Keycloak Authorization Permissions,role="center"]
 
 It explains why the endpoint has no `@RolesAllowed` annotations - the resource access permissions are set directly in Keycloak.
 

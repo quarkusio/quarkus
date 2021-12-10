@@ -14,10 +14,12 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Validates a bearer token according to the MP-JWT rules
@@ -49,6 +51,13 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
+        RoutingContext vertxContext = HttpSecurityUtils.getRoutingContextAttribute(request);
+        if (vertxContext != null) {
+            Object identityProviderClass = vertxContext.get(IdentityProvider.class.getName());
+            // give up if we weren't the one handling the token
+            if (identityProviderClass != MpJwtValidator.class)
+                return Uni.createFrom().nullItem();
+        }
         if (!blockingAuthentication) {
             return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
                 @Override

@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
+import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
@@ -42,6 +43,8 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
             IdentityProviderManager identityProviderManager) {
         String jwtToken = new VertxBearerTokenExtractor(authContextInfo, context).getBearerToken();
         if (jwtToken != null) {
+            // make sure we know we're in charge here
+            context.put(IdentityProvider.class.getName(), MpJwtValidator.class);
             return identityProviderManager
                     .authenticate(new TokenAuthenticationRequest(new JsonWebTokenCredential(jwtToken)));
         }

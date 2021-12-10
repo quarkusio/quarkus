@@ -25,6 +25,7 @@
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>
                         <quarkus.rest-client-reactive.disable-smart-produces>true</quarkus.rest-client-reactive.disable-smart-produces>
+                        <quarkus.rest-client.disable-contextual-error-messages>true</quarkus.rest-client.disable-contextual-error-messages>
                         <vertx.disableTCCL>true</vertx.disableTCCL>
                         <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
                     </systemPropertyVariables>

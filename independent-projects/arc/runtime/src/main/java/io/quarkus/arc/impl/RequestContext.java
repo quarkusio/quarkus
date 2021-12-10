@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
@@ -232,6 +234,16 @@ class RequestContext implements ManagedContext {
         public Map<InjectableBean<?>, Object> getContextualInstances() {
             return value.values().stream()
                     .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+        }
+
+        @Override
+        public void onEachBean(Consumer<InjectableBean<?>> action) {
+            value.forEach( new BiConsumer<Contextual<?>, ContextInstanceHandle<?>>() {
+                @Override
+                public void accept(Contextual<?> key, ContextInstanceHandle<?> value) {
+                    action.accept( value.getBean() );
+                }
+            } );
         }
 
     }

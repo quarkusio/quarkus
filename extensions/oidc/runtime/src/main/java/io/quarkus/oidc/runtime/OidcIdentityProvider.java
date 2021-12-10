@@ -67,6 +67,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(TenantConfigContext tenantConfigContext) {
+                        // make sure we don't authenticate if this tenant is disabled
+                        if (!tenantConfigContext.oidcConfig.tenantEnabled)
+                            return Uni.createFrom().nullItem();
                         return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> get() {

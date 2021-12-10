@@ -748,3 +748,37 @@ When the call to the remote throws an exception, the cache does not store the re
 so that a subsequent call to `callRemote()` with the same parameter value will not be
 answered out of the cache.
 It will instead result in another attempt to call the remote.
+
+== Going native
+
+The Cache extension supports building native executables.
+
+However, to optimize runtime speed, Caffeine embarks many cache implementation classes that are selected depending on the cache configuration.
+We are not registering all of them for reflection
+(and the ones not registered are not included into the native executables) as registering all of them would be very costly.
+
+We are registering the most common implementations but, depending on your cache configuration, you might encounter errors like:
+
+[source]
+----
+2021-12-08 02:32:02,108 ERROR [io.qua.run.Application] (main) Failed to start application (with profile prod): java.lang.ClassNotFoundException: com.github.benmanes.caffeine.cache.PSAMS <1>
+        at java.lang.Class.forName(DynamicHub.java:1433)
+        at java.lang.Class.forName(DynamicHub.java:1408)
+        at com.github.benmanes.caffeine.cache.NodeFactory.newFactory(NodeFactory.java:111)
+        at com.github.benmanes.caffeine.cache.BoundedLocalCache.<init>(BoundedLocalCache.java:240)
+        at com.github.benmanes.caffeine.cache.SS.<init>(SS.java:31)
+        at com.github.benmanes.caffeine.cache.SSMS.<init>(SSMS.java:64)
+        at com.github.benmanes.caffeine.cache.SSMSA.<init>(SSMSA.java:43)
+----
+<1> `PSAMS` is one of the many cache implementation classes of Caffeine so this part may vary.
+
+When you encounter this error, you can easily fix it by adding the following annotation to any of your application classes
+(or you can create a new class such as `Reflections` just to host this annotation if you prefer):
+
+[source,java]
+----
+@RegisterForReflection(targets = { com.github.benmanes.caffeine.cache.PSAMS.class }) <1>
+----
+<1> It is an array so you can register several cache implementations in one go if your configuration requires several of them.
+
+This annotation will register the cache implementation classes for reflection and this will include the classes into the native executable.

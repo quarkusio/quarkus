@@ -28,6 +28,7 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
+import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -301,6 +302,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(NEW_AUTHENTICATION, Boolean.TRUE);
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), tokens);
+                        // make sure JWT doesn't try to validate our token, since we handle it and it will throw
+                        context.put(IdentityProvider.class.getName(), OidcIdentityProvider.class);
 
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(tokens.getIdToken(), internalIdToken))

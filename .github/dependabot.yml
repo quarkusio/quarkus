@@ -27,6 +27,7 @@ updates:
       - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
+      - dependency-name: org.apache.logging.log4j:log4j-api
       - dependency-name: org.ow2.asm:*
       - dependency-name: org.glassfish:jakarta-el
       - dependency-name: com.google.cloud.tools:jib-core

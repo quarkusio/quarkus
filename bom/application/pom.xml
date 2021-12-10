@@ -4566,16 +4566,6 @@
                 <artifactId>smallrye-connector-attribute-processor</artifactId>
                 <version>${smallrye-reactive-messaging.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-reactive-messaging-http</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-reactive-messaging-http-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
             <dependency>
                 <groupId>org.infinispan</groupId>
@@ -5480,6 +5470,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-neo4j-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-reactive-messaging-http</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-reactive-messaging-http-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -322,7 +322,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public ManagedContext requestContext() {
-        requireRunning();
         return requestContext;
     }
 

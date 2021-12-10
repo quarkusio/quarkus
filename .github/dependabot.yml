@@ -27,6 +27,7 @@ updates:
       - dependency-name: com.jcraft:jzlib
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
+      - dependency-name: org.apache.logging.log4j:log4j-api
       - dependency-name: org.glassfish:jakarta-el
       # Quarkus
       - dependency-name: io.quarkus.gizmo:gizmo

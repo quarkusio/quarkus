@@ -433,6 +433,7 @@ public class KeycloakDevServicesProcessor {
                         Path filePath = Paths.get(realmPath.get());
                         if (Files.exists(filePath)) {
                             realmFileExists = true;
+                            withFileSystemBind(realmPath.get(), KEYCLOAK_DOCKER_REALM_PATH, BindMode.READ_ONLY);
                             realmNameToUse = configuredRealmName.isPresent() ? null
                                     : getRealmNameFromRealmFile(filePath.toUri(), realmPath.get());
                         } else {

@@ -20,6 +20,7 @@ import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.mutiny.Uni;
@@ -43,10 +44,13 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
             IdentityProviderManager identityProviderManager) {
         String jwtToken = new VertxBearerTokenExtractor(authContextInfo, context).getBearerToken();
         if (jwtToken != null) {
+            TokenAuthenticationRequest tokenAuthenticationRequest = new TokenAuthenticationRequest(
+                    new JsonWebTokenCredential(jwtToken));
+            HttpSecurityUtils.setRoutingContextAttribute(tokenAuthenticationRequest, context);
             // make sure we know we're in charge here
             context.put(IdentityProvider.class.getName(), MpJwtValidator.class);
             return identityProviderManager
-                    .authenticate(new TokenAuthenticationRequest(new JsonWebTokenCredential(jwtToken)));
+                    .authenticate(tokenAuthenticationRequest);
         }
         return Uni.createFrom().optional(Optional.empty());
     }

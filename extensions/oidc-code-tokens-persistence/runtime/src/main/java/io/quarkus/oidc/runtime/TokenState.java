@@ -1,9 +1,9 @@
 package io.quarkus.oidc.runtime;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-
 import javax.persistence.Entity;
 import javax.persistence.Id;
+
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 @Entity
 public class TokenState extends PanacheEntityBase {

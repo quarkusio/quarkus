@@ -1,10 +1,11 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.Optional;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Alternative;
 
 import io.quarkus.arc.Priority;
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -13,8 +14,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.ext.web.RoutingContext;
-
-import java.util.Optional;
 
 @ApplicationScoped
 @Alternative

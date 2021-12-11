@@ -477,9 +477,12 @@ class Parser implements Function<String, Expression>, ParserHelper {
             // Parameter declaration
             // {@org.acme.Foo foo}
             Scope currentScope = scopeStack.peek();
-            int spaceIdx = content.indexOf(" ");
-            String key = content.substring(spaceIdx + 1, content.length());
-            String value = content.substring(1, spaceIdx);
+            String[] parts = content.substring(1).trim().split("[ ]{1,}");
+            if (parts.length != 2) {
+                throw parserError("invalid parameter declaration " + START_DELIMITER + buffer.toString() + END_DELIMITER);
+            }
+            String value = parts[0];
+            String key = parts[1];
             currentScope.putBinding(key, Expressions.typeInfoFrom(value));
             sectionStack.peek().currentBlock().addNode(new ParameterDeclarationNode(content, origin(0)));
         } else {
@@ -507,7 +510,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     private void processParams(String tag, String label, Iterator<String> iter, SectionBlock.Builder block) {
         Map<String, String> params = new LinkedHashMap<>();
-        List<Parameter> factoryParams = paramsStack.peek().get(label);
+        ParametersInfo factoryParamsInfo = paramsStack.peek();
+        List<Parameter> factoryParams = factoryParamsInfo.get(label);
         List<String> paramValues = new ArrayList<>();
 
         while (iter.hasNext()) {
@@ -519,8 +523,17 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
 
         int actualSize = paramValues.size();
-        if (actualSize > factoryParams.size()) {
-            LOGGER.debugf("Too many params [label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams);
+        if (factoryParamsInfo.isCheckNumberOfParams()
+                && actualSize > factoryParams.size()
+                && LOGGER.isDebugEnabled()) {
+            StringBuilder builder = new StringBuilder("Too many section params for ").append(tag);
+            Origin origin = origin(0);
+            if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
+                builder.append(" in template [").append(origin.getTemplateId()).append("]");
+            }
+            builder.append(" on line ").append(origin.getLine());
+            builder.append(String.format("[label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams));
+            LOGGER.debugf(builder.toString());
         }
 
         // Process named params first
@@ -627,6 +640,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
         boolean stringLiteral = false;
         short composite = 0;
+        byte brackets = 0;
         boolean space = false;
         List<String> parts = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
@@ -635,7 +649,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             char c = content.charAt(i);
             if (c == ' ') {
                 if (!space) {
-                    if (!stringLiteral && composite == 0) {
+                    if (!stringLiteral && composite == 0 && brackets == 0) {
                         if (buffer.length() > 0) {
                             parts.add(buffer.toString());
                             buffer = new StringBuilder();
@@ -656,6 +670,12 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 } else if (!stringLiteral
                         && isCompositeEnd(c) && composite > 0) {
                     composite--;
+                } else if (!stringLiteral
+                        && Parser.isLeftBracket(c)) {
+                    brackets++;
+                } else if (!stringLiteral
+                        && Parser.isRightBracket(c) && brackets > 0) {
+                    brackets--;
                 }
                 space = false;
                 buffer.append(c);

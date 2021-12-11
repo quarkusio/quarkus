@@ -73,7 +73,7 @@ public class BasicConsole extends QuarkusConsole {
                             if (readingLine) {
                                 //when doing a read line we want to discard the first \n
                                 //as this was the one that was needed to activate this mode
-                                if (val == '\n') {
+                                if (val == '\n' || val == '\r') {
                                     readingLine = false;
                                     continue;
                                 }

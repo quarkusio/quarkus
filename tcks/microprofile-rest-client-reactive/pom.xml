@@ -13,6 +13,11 @@
     <artifactId>quarkus-tck-microprofile-rest-client-reactive</artifactId>
     <name>Quarkus - TCK - MicroProfile REST Client - RESTEasy Reactive</name>
 
+    <properties>
+        <wiremock.server.port>8766</wiremock.server.port>
+        <microprofile-rest-client-tck.version>2.0</microprofile-rest-client-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -25,6 +30,7 @@
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>
                         <quarkus.rest-client-reactive.disable-smart-produces>true</quarkus.rest-client-reactive.disable-smart-produces>
+                        <quarkus.rest-client.disable-contextual-error-messages>true</quarkus.rest-client.disable-contextual-error-messages>
                         <vertx.disableTCCL>true</vertx.disableTCCL>
                         <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
                     </systemPropertyVariables>
@@ -121,7 +127,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>
             <artifactId>microprofile-rest-client-tck</artifactId>
-            <version>${microprofile-rest-client-api.version}</version>
+            <version>${microprofile-rest-client-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.eclipse.jetty</groupId>
@@ -154,7 +160,4 @@
             <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
     </dependencies>
-    <properties>
-        <wiremock.server.port>8766</wiremock.server.port>
-    </properties>
 </project>

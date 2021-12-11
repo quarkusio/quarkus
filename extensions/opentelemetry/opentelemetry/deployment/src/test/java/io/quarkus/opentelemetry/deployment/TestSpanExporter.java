@@ -1,8 +1,14 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static java.util.Comparator.comparingLong;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -17,9 +23,23 @@ public class TestSpanExporter implements SpanExporter {
     private final List<SpanData> finishedSpanItems = new ArrayList<>();
     private boolean isStopped = false;
 
-    public List<SpanData> getFinishedSpanItems() {
+    /**
+     * Careful when retrieving the list of finished spans. There is a chance when the response is already sent to the
+     * client and Vert.x still writing the end of the spans. This means that a response is available to assert from the
+     * test side but not all spans may be available yet. For this reason, this method requires the number of expected
+     * spans.
+     */
+    public List<SpanData> getFinishedSpanItems(int spanCount) {
         synchronized (this) {
-            return List.copyOf(finishedSpanItems);
+            assertSpanCount(spanCount);
+            return finishedSpanItems.stream().sorted(comparingLong(SpanData::getStartEpochNanos).reversed())
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public void assertSpanCount(int spanCount) {
+        synchronized (this) {
+            await().atMost(30, SECONDS).untilAsserted(() -> assertEquals(spanCount, finishedSpanItems.size()));
         }
     }
 

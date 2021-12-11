@@ -3,13 +3,17 @@ package io.quarkus.qute.deployment;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.qute.TemplateData;
+import io.quarkus.qute.generator.ValueResolverGenerator;
 
 final class TemplateDataBuildItem extends MultiBuildItem {
 
@@ -19,14 +23,26 @@ final class TemplateDataBuildItem extends MultiBuildItem {
     private final Pattern[] ignorePatterns;
     private final boolean ignoreSuperclasses;
     private final boolean properties;
+    private final AnnotationInstance annotationInstance;
 
-    public TemplateDataBuildItem(ClassInfo targetClass, String namespace, String[] ignore, boolean ignoreSuperclasses,
-            boolean properties) {
+    TemplateDataBuildItem(AnnotationInstance annotationInstance, ClassInfo targetClass) {
+        this.annotationInstance = annotationInstance;
+
+        AnnotationValue ignoreValue = annotationInstance.value(ValueResolverGenerator.IGNORE);
+        AnnotationValue propertiesValue = annotationInstance.value(ValueResolverGenerator.PROPERTIES);
+        AnnotationValue namespaceValue = annotationInstance.value(ValueResolverGenerator.NAMESPACE);
+        AnnotationValue ignoreSuperclassesValue = annotationInstance.value(ValueResolverGenerator.IGNORE_SUPERCLASSES);
+
         this.targetClass = targetClass;
+        String namespace = namespaceValue != null ? namespaceValue.asString() : TemplateData.UNDERSCORED_FQCN;
+        if (namespace.equals(TemplateData.UNDERSCORED_FQCN)) {
+            namespace = ValueResolverGenerator
+                    .underscoredFullyQualifiedName(targetClass.name().toString());
+        } else if (namespace.equals(TemplateData.SIMPLENAME)) {
+            namespace = ValueResolverGenerator.simpleName(targetClass);
+        }
         this.namespace = namespace;
-        this.ignore = ignore;
-        this.ignoreSuperclasses = ignoreSuperclasses;
-        this.properties = properties;
+        this.ignore = ignoreValue != null ? ignoreValue.asStringArray() : new String[] {};
         if (ignore.length > 0) {
             ignorePatterns = new Pattern[ignore.length];
             for (int i = 0; i < ignore.length; i++) {
@@ -35,30 +51,40 @@ final class TemplateDataBuildItem extends MultiBuildItem {
         } else {
             ignorePatterns = null;
         }
+        this.ignoreSuperclasses = ignoreSuperclassesValue != null ? ignoreSuperclassesValue.asBoolean() : false;
+        this.properties = propertiesValue != null ? propertiesValue.asBoolean() : false;
     }
 
-    public ClassInfo getTargetClass() {
+    boolean isTargetAnnotatedType() {
+        return targetClass.asClass().name().equals(ValueResolverGenerator.TEMPLATE_DATA);
+    }
+
+    ClassInfo getTargetClass() {
         return targetClass;
     }
 
-    public boolean hasNamespace() {
+    boolean hasNamespace() {
         return namespace != null;
     }
 
-    public String getNamespace() {
+    String getNamespace() {
         return namespace;
     }
 
-    public String[] getIgnore() {
+    String[] getIgnore() {
         return ignore;
     }
 
-    public boolean isIgnoreSuperclasses() {
+    boolean isIgnoreSuperclasses() {
         return ignoreSuperclasses;
     }
 
-    public boolean isProperties() {
+    boolean isProperties() {
         return properties;
+    }
+
+    AnnotationInstance getAnnotationInstance() {
+        return annotationInstance;
     }
 
     boolean filter(AnnotationTarget target) {

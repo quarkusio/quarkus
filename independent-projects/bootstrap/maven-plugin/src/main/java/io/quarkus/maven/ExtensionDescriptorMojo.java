@@ -20,6 +20,7 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.capabilities.CapabilityConfig;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -27,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -542,7 +542,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                             }
                             p = workspaceJar;
                         }
-                        try (FileSystem fs = FileSystems.newFileSystem(p, (ClassLoader) null)) {
+                        try (FileSystem fs = ZipUtils.newFileSystem(p)) {
                             isExtension = getExtensionDescriptorOrNull(fs.getPath("")) != null;
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to read " + p, e);
@@ -853,7 +853,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 final Path p = getExtensionDescriptorOrNull(f.toPath());
                 return p == null ? null : readExtensionDescriptor(p);
             } else {
-                try (FileSystem fs = FileSystems.newFileSystem(f.toPath(), (ClassLoader) null)) {
+                try (FileSystem fs = ZipUtils.newFileSystem(f.toPath())) {
                     final Path p = getExtensionDescriptorOrNull(fs.getPath(""));
                     return p == null ? null : readExtensionDescriptor(p);
                 }

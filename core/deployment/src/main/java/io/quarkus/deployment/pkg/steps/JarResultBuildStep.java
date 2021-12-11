@@ -1,6 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.bootstrap.util.ZipUtils.wrapForJDK8232879;
+import static io.quarkus.fs.util.ZipUtils.wrapForJDK8232879;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -56,7 +56,6 @@ import io.quarkus.bootstrap.model.MutableJarApplicationModel;
 import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
 import io.quarkus.bootstrap.runner.SerializedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -81,6 +80,7 @@ import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.GACT;

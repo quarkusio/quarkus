@@ -6,7 +6,6 @@ import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +16,6 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
-import org.testcontainers.utility.Base58;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.IsDockerWorking.IsDockerRunningSilent;
@@ -33,6 +30,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.client.runtime.RedisClientUtil;
@@ -63,7 +61,7 @@ public class DevServicesRedisProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
     public void startRedisContainers(LaunchModeBuildItem launchMode,
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devConfigProducer, RedisBuildTimeConfig config,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
@@ -102,7 +100,7 @@ public class DevServicesRedisProcessor {
                 String connectionName = entry.getKey();
                 StartResult startResult = startContainer(connectionName, entry.getValue().devservices,
                         launchMode.getLaunchMode(),
-                        devServicesSharedNetworkBuildItem.isPresent(), devServicesConfig.timeout);
+                        !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
                 if (startResult == null) {
                     continue;
                 }
@@ -217,6 +215,7 @@ public class DevServicesRedisProcessor {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+
             if (serviceName != null) {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
             }
@@ -227,12 +226,7 @@ public class DevServicesRedisProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                // When a shared network is requested for the launched containers, we need to configure
-                // the container to use it. We also need to create a hostname that will be applied to the returned
-                // Redis URL
-                setNetwork(Network.SHARED);
-                hostName = "redis-" + Base58.randomString(5);
-                setNetworkAliases(Collections.singletonList(hostName));
+                hostName = ConfigureUtil.configureSharedNetwork(this, "redis");
                 return;
             }
 

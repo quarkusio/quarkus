@@ -26,6 +26,7 @@ public class OidcResource {
     private volatile int jwkEndpointCallCount;
     private volatile int introspectionEndpointCallCount;
     private volatile int userInfoEndpointCallCount;
+    private volatile boolean enableDiscovery = true;
 
     @PostConstruct
     public void init() throws Exception {
@@ -39,13 +40,17 @@ public class OidcResource {
     @Produces("application/json")
     @Path(".well-known/openid-configuration")
     public String discovery() {
-        final String baseUri = ui.getBaseUriBuilder().path("oidc").build().toString();
-        return "{" +
-                "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
-                "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
-                "   \"userinfo_endpoint\":" + "\"" + baseUri + "/userinfo\"," +
-                "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
-                "  }";
+        if (enableDiscovery) {
+            final String baseUri = ui.getBaseUriBuilder().path("oidc").build().toString();
+            return "{" +
+                    "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
+                    "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
+                    "   \"userinfo_endpoint\":" + "\"" + baseUri + "/userinfo\"," +
+                    "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
+                    "  }";
+        } else {
+            return "{}";
+        }
     }
 
     @GET
@@ -159,6 +164,20 @@ public class OidcResource {
     public boolean disableIntrospection() {
         introspection = false;
         return introspection;
+    }
+
+    @POST
+    @Path("enable-discovery")
+    public boolean setDiscovery() {
+        enableDiscovery = true;
+        return enableDiscovery;
+    }
+
+    @POST
+    @Path("disable-discovery")
+    public boolean disableDiscovery() {
+        enableDiscovery = false;
+        return enableDiscovery;
     }
 
     @POST

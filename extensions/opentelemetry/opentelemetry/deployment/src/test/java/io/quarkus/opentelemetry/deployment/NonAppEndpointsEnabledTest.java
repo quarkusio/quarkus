@@ -3,15 +3,11 @@ package io.quarkus.opentelemetry.deployment;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import java.util.List;
-
 import javax.inject.Inject;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -44,8 +40,6 @@ public class NonAppEndpointsEnabledTest {
                 .statusCode(200)
                 .body(is("Hello Tracer!"));
 
-        List<SpanData> spans = testSpanExporter.getFinishedSpanItems();
-
-        Assertions.assertEquals(5, spans.size());
+        testSpanExporter.assertSpanCount(5);
     }
 }

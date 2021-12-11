@@ -188,6 +188,8 @@ public class ParserTest {
                 "false");
         assertParams("(item.name == 'foo') and (item.name is false)", "(item.name == 'foo')", "and", "(item.name is false)");
         assertParams("(item.name != 'foo') || (item.name == false)", "(item.name != 'foo')", "||", "(item.name == false)");
+        assertParams("foo.codePointCount(0, foo.length) baz=bar", "foo.codePointCount(0, foo.length)", "baz=bar");
+        assertParams("foo.codePointCount( 0 , foo.length( 1)) baz=bar", "foo.codePointCount( 0 , foo.length( 1))", "baz=bar");
     }
 
     @Test
@@ -356,6 +358,29 @@ public class ParserTest {
     public void testInvalidBracket() {
         assertParserError("{foo.baz[}",
                 "Parser error on line 1: invalid bracket notation expression in {foo.baz[}", 1);
+    }
+
+    @Test
+    public void testInvalidParamDeclaration() {
+        assertParserError("{@com.foo }",
+                "Parser error on line 1: invalid parameter declaration {@com.foo }", 1);
+        assertParserError("{@ com.foo }",
+                "Parser error on line 1: invalid parameter declaration {@ com.foo }", 1);
+        assertParserError("{@com.foo.Bar bar baz}",
+                "Parser error on line 1: invalid parameter declaration {@com.foo.Bar bar baz}", 1);
+        assertParserError("{@}",
+                "Parser error on line 1: invalid parameter declaration {@}", 1);
+        assertParserError("{@\n}",
+                "Parser error on line 1: invalid parameter declaration {@\n}", 1);
+    }
+
+    @Test
+    public void testUserTagVirtualMethodParam() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
+                .addSectionHelper(new UserTagSectionHelper.Factory("form", "form-template")).build();
+        engine.putTemplate("form-template", engine.parse("{it}"));
+        Template foo = engine.parse("{#form foo.codePointCount(0, foo.length) /}");
+        assertEquals("3", foo.data("foo", "foo").render());
     }
 
     public static class Foo {

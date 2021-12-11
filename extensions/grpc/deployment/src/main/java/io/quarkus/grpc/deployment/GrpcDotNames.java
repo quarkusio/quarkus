@@ -1,5 +1,6 @@
 package io.quarkus.grpc.deployment;
 
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -7,6 +8,7 @@ import org.jboss.jandex.DotName;
 
 import io.grpc.BindableService;
 import io.grpc.Channel;
+import io.grpc.ClientInterceptor;
 import io.grpc.ServerInterceptor;
 import io.grpc.stub.AbstractBlockingStub;
 import io.grpc.stub.AbstractStub;
@@ -14,6 +16,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.RegisterInterceptor;
 import io.quarkus.grpc.RegisterInterceptors;
 import io.quarkus.grpc.runtime.MutinyBean;
@@ -48,11 +51,15 @@ public class GrpcDotNames {
     public static final DotName REGISTER_INTERCEPTOR = DotName.createSimple(RegisterInterceptor.class.getName());
     public static final DotName REGISTER_INTERCEPTORS = DotName.createSimple(RegisterInterceptors.class.getName());
     public static final DotName SERVER_INTERCEPTOR = DotName.createSimple(ServerInterceptor.class.getName());
+    public static final DotName REGISTER_CLIENT_INTERCEPTOR = DotName.createSimple(RegisterClientInterceptor.class.getName());
+    public static final DotName REGISTER_CLIENT_INTERCEPTOR_LIST = DotName
+            .createSimple(RegisterClientInterceptor.List.class.getName());
+    public static final DotName CLIENT_INTERCEPTOR = DotName.createSimple(ClientInterceptor.class.getName());
 
     static final MethodDescriptor CREATE_CHANNEL_METHOD = MethodDescriptor.ofMethod(Channels.class, "createChannel",
-            Channel.class, String.class);
+            Channel.class, String.class, Set.class);
     static final MethodDescriptor RETRIEVE_CHANNEL_METHOD = MethodDescriptor.ofMethod(Channels.class, "retrieveChannel",
-            Channel.class, String.class);
+            Channel.class, String.class, Set.class);
 
     static final MethodDescriptor CONFIGURE_STUB = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
             "configureStub", AbstractStub.class, String.class, AbstractStub.class);

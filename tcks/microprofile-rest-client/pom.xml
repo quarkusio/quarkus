@@ -13,6 +13,10 @@
     <artifactId>quarkus-tck-microprofile-rest-client</artifactId>
     <name>Quarkus - TCK - MicroProfile REST Client</name>
 
+    <properties>
+        <microprofile-rest-client-tck.version>2.0</microprofile-rest-client-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -90,7 +94,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>
             <artifactId>microprofile-rest-client-tck</artifactId>
-            <version>${microprofile-rest-client-api.version}</version>
+            <version>${microprofile-rest-client-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.eclipse.jetty</groupId>

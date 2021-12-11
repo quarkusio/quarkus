@@ -13,6 +13,9 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -35,6 +38,8 @@ import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildIte
 import io.quarkus.panache.common.deployment.PanacheJpaEntityOperationsEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public final class PanacheHibernateResourceProcessor {
 
@@ -49,6 +54,8 @@ public final class PanacheHibernateResourceProcessor {
     protected static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
 
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
+    private static final DotName DOTNAME_UNI = DotName.createSimple(Uni.class.getName());
+    private static final DotName DOTNAME_MULTI = DotName.createSimple(Multi.class.getName());
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
@@ -136,5 +143,21 @@ public final class PanacheHibernateResourceProcessor {
             }
         }
         return null;
+    }
+
+    private static final String CHECK_RETURN_VALUE_BINARY_NAME = "io/smallrye/common/annotation/CheckReturnValue";
+    private static final String CHECK_RETURN_VALUE_SIGNATURE = "L" + CHECK_RETURN_VALUE_BINARY_NAME + ";";
+
+    @BuildStep
+    PanacheMethodCustomizerBuildItem mutinyReturnTypes() {
+        return new PanacheMethodCustomizerBuildItem(new PanacheMethodCustomizer() {
+            @Override
+            public void customize(Type entityClassSignature, MethodInfo method, MethodVisitor mv) {
+                DotName returnType = method.returnType().name();
+                if (returnType.equals(DOTNAME_UNI) || returnType.equals(DOTNAME_MULTI)) {
+                    mv.visitAnnotation(CHECK_RETURN_VALUE_SIGNATURE, true);
+                }
+            }
+        });
     }
 }

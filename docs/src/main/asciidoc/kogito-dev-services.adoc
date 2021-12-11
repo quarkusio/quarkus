@@ -1,0 +1,65 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Kogito
+
+include::./attributes.adoc[]
+
+If any Kogito process-related extension is present (e.g. `kogito-quarkus` or `kogito-quarkus-processes`), Dev Services for Kogito automatically starts a Data Index in dev mode.
+So, you don't have to start it manually or have any other service set-up manually.
+The application is configured automatically, meaning that will replicate any
+Kogito messaging events related to Process Instances and User Tasks into the provisioned Data Index instance.
+
+Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to Query Data Index via its GraphiQL UI.
+
+image::dev-ui-kogito-data-index-card.png[alt=Dev UI Kogito,role="center"]
+
+image::dev-ui-kogito-data-index.png[alt=Dev UI Kogito Data Index GraphiQL,role="center"]
+
+For more details about how to query data about processes and user tasks, please visit https://docs.kogito.kie.org/latest/html_single/#ref-data-index-service-queries_kogito-configuring[Kogito Data Index documentation].
+
+== Enabling / Disabling Dev Services for Kogito
+
+Dev Services for Kogito is automatically enabled unless:
+
+- `quarkus.kogito.devservices.enabled` is set to `false`
+
+Dev Services for Kogito relies on Docker to start the broker.
+If your environment does not support Docker, you will need to start the broker manually, or connect to an already running Data Index.
+
+== Shared Data Index
+
+In case you would like to share the Data Index instance between applications.
+Dev Services for Kogito implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single instance.
+
+NOTE: Dev Services for Kogito starts the container with the `kogito-dev-service-data-index` label which is used to identify the container.
+
+If you need multiple (shared) Data Index instances, you can configure the `quarkus.kogito.devservices.service-name` attribute and indicate the instance name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `kogito-data-index`.
+
+Sharing is enabled by default in dev mode.
+You can disable the sharing with `quarkus.kogito.devservices.shared=false`.
+
+== Setting the port
+
+By default, Dev Services for Kogito starts a Data Index using port 8180.
+You can set the port by configuring the `quarkus.kogito.devservices.port` property.
+
+== Configuring the image
+
+Dev Services for Kogito uses: `kiegroup/kogito-data-index-ephemeral` images.
+You can select any version from https://quay.io/repository/kiegroup/kogito-data-index-ephemeral?tab=tags.
+
+[source, properties]
+----
+quarkus.kogito.devservices.image-name=quay.io/kiegroup/kogito-data-index-ephemeral
+----
+
+== References
+
+* xref:dev-ui.adoc[Dev UI]
+* https://docs.kogito.kie.org/latest/html_single/[Kogito Documentation]
+* xref:kogito.adoc[Quarkus - Kogito]

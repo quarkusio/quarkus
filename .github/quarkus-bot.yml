@@ -2,6 +2,8 @@
 # The format of this file is documented here:
 # https://github.com/quarkusio/quarkus-bot#triage-issues
 triage:
+  discussions:
+    monitoredCategories: [33575230]
   rules:
     - labels: [area/amazon-lambda]
       title: "lambda"

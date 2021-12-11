@@ -9,6 +9,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -22,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionException;
@@ -73,6 +75,7 @@ import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
@@ -759,8 +762,25 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             invocation.proceed();
             return;
         }
-        runExtensionMethod(invocationContext, extensionContext, true);
-        invocation.skip();
+
+        //as a convenience to the user we attach any exceptions from the server itself
+        //as supressed exceptions from the failure
+        //this makes it easy to see why your request has failed in the test output itself
+        //instead of needed to look in the log output
+        List<Throwable> serverExceptions = new CopyOnWriteArrayList<>();
+        ExceptionReporting.setListener(serverExceptions::add);
+        try {
+            runExtensionMethod(invocationContext, extensionContext, true);
+            invocation.skip();
+        } catch (Throwable t) {
+            for (var i : serverExceptions) {
+                t.addSuppressed(i);
+            }
+            throw t;
+        } finally {
+            ExceptionReporting.setListener(null);
+        }
+
     }
 
     @Override
@@ -869,11 +889,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             //TODO: make this more pluggable
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();
+            Parameter[] parameters = invocationContext.getExecutable().getParameters();
             for (int i = 0; i < originalArguments.size(); i++) {
                 Object arg = originalArguments.get(i);
                 boolean cloneRequired = false;
                 Object replacement = null;
-                Class<?> argClass = invocationContext.getExecutable().getParameters()[i].getType();
+                Class<?> argClass = parameters[i].getType();
                 if (arg != null) {
                     Class<?> theclass = argClass;
                     while (theclass.isArray()) {

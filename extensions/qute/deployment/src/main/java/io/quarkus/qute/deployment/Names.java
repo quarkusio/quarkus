@@ -11,6 +11,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateEnum;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
@@ -36,6 +37,7 @@ final class Names {
     static final DotName UNI = DotName.createSimple(Uni.class.getName());
     static final DotName LOCATION = DotName.createSimple(Location.class.getName());
     static final DotName CHECKED_TEMPLATE = DotName.createSimple(io.quarkus.qute.CheckedTemplate.class.getName());
+    static final DotName TEMPLATE_ENUM = DotName.createSimple(TemplateEnum.class.getName());
 
     private Names() {
     }

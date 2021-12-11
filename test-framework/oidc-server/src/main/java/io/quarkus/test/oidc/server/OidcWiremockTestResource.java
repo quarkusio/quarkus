@@ -70,7 +70,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "    \"token_endpoint\": \"" + server.baseUrl() + "/auth/realms/quarkus/token\"," +
                                         "    \"issuer\" : \"" + TOKEN_ISSUER + "\"," +
                                         "    \"introspection_endpoint\": \"" + server.baseUrl()
-                                        + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\""
+                                        + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\","
+                                        + "    \"end_session_endpoint\": \"" + server.baseUrl()
+                                        + "/auth/realms/quarkus/protocol/openid-connect/end-session\""
                                         +
                                         "}")));
 

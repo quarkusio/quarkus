@@ -99,7 +99,7 @@ public class BeanProcessor {
         this.beanDeployment = new BeanDeployment(buildContext, builder);
 
         // Make it configurable if we find that the set of annotations needs to grow
-        this.injectionPointAnnotationsPredicate = annotationName -> !annotationName.equals(DotNames.DEPRECATED);
+        this.injectionPointAnnotationsPredicate = Predicate.not(DotNames.DEPRECATED::equals);
     }
 
     public ContextRegistrar.RegistrationContext registerCustomContexts() {
@@ -263,6 +263,10 @@ public class BeanProcessor {
         processValidationErrors(validationContext);
         generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, true);
         return beanDeployment;
+    }
+
+    public Predicate<DotName> getInjectionPointAnnotationsPredicate() {
+        return injectionPointAnnotationsPredicate;
     }
 
     public static class Builder {

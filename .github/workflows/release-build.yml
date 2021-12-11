@@ -35,6 +35,7 @@ jobs:
             -DskipTests -DskipITs \
             -Ddokka \
             -Dmaven.repo.local=$HOME/release/repository \
+            -Dgpg.skip \
             clean install
       - name: Report
         if: always()

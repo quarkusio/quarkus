@@ -124,20 +124,16 @@ public class OidcClientImpl implements OidcClient {
         if (resp.statusCode() == 200) {
             LOG.debugf("%s OidcClient has %s the tokens", oidcConfig.getId().get(), (refresh ? "refreshed" : "acquired"));
             JsonObject json = resp.bodyAsJsonObject();
+            // access token
             final String accessToken = json.getString(oidcConfig.grant.accessTokenProperty);
+            final Long accessTokenExpiresAt = getExpiresAtValue(accessToken, json.getValue(oidcConfig.grant.expiresInProperty));
+
             final String refreshToken = json.getString(oidcConfig.grant.refreshTokenProperty);
-            final Object expiresInValue = json.getValue(oidcConfig.grant.expiresInProperty);
-            Long accessTokenExpiresAt;
-            if (expiresInValue != null) {
-                long accessTokenExpiresIn = expiresInValue instanceof Number ? ((Number) expiresInValue).longValue()
-                        : Long.parseLong(expiresInValue.toString());
-                accessTokenExpiresAt = oidcConfig.absoluteExpiresIn ? accessTokenExpiresIn
-                        : Instant.now().getEpochSecond() + accessTokenExpiresIn;
-            } else {
-                accessTokenExpiresAt = getExpiresJwtClaim(accessToken);
-            }
+            final Long refreshTokenExpiresAt = getExpiresAtValue(refreshToken,
+                    json.getValue(oidcConfig.grant.refreshExpiresInProperty));
+
             return new Tokens(accessToken, accessTokenExpiresAt, oidcConfig.refreshTokenTimeSkew.orElse(null), refreshToken,
-                    json);
+                    refreshTokenExpiresAt, json);
         } else {
             String errorMessage = resp.bodyAsString();
             LOG.debugf("%s OidcClient has failed to complete the %s grant request:  status: %d, error message: %s",
@@ -147,8 +143,19 @@ public class OidcClientImpl implements OidcClient {
         }
     }
 
-    private static Long getExpiresJwtClaim(String accessToken) {
-        JsonObject claims = decodeJwtToken(accessToken);
+    private Long getExpiresAtValue(String token, Object expiresInValue) {
+        if (expiresInValue != null) {
+            long tokenExpiresIn = expiresInValue instanceof Number ? ((Number) expiresInValue).longValue()
+                    : Long.parseLong(expiresInValue.toString());
+            return oidcConfig.absoluteExpiresIn ? tokenExpiresIn
+                    : Instant.now().getEpochSecond() + tokenExpiresIn;
+        } else {
+            return token != null ? getExpiresJwtClaim(token) : null;
+        }
+    }
+
+    private static Long getExpiresJwtClaim(String token) {
+        JsonObject claims = decodeJwtToken(token);
         if (claims != null) {
             try {
                 return claims.getLong(Claims.exp.name());

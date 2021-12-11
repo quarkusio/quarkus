@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -151,8 +152,10 @@ public class OidcRecorder {
         if (!oidcConfig.discoveryEnabled) {
             if (!isServiceApp(oidcConfig)) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
-                    throw new OIDCException("'web-app' applications must have 'authorization-path' and 'token-path' properties "
-                            + "set when the discovery is disabled.");
+                    throw new ConfigurationException(
+                            "'web-app' applications must have 'authorization-path' and 'token-path' properties "
+                                    + "set when the discovery is disabled.",
+                            Set.of("quarkus.oidc.authorization-path", "quarkus.oidc.token-path"));
                 }
             }
             // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
@@ -160,8 +163,9 @@ public class OidcRecorder {
                 if (!oidcConfig.authentication.isIdTokenRequired() && oidcConfig.authentication.isUserInfoRequired()) {
                     LOG.debugf("tenant %s supports only UserInfo", oidcConfig.tenantId.get());
                 } else {
-                    throw new OIDCException(
-                            "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.");
+                    throw new ConfigurationException(
+                            "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.",
+                            Set.of("quarkus.oidc.jwks-path", "quarkus.oidc.introspection-path"));
                 }
             }
         }
@@ -254,6 +258,8 @@ public class OidcRecorder {
                     .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION, OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
                     .expireIn(connectionDelayInMillisecs)
                     .onFailure()
+                    .transform(t -> toOidcException(t, oidcConfig.authServerUrl.get()))
+                    .onFailure()
                     .invoke(client::close);
         } else {
             return client.getJsonWebKeySet();
@@ -273,21 +279,13 @@ public class OidcRecorder {
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled) {
-            String tokenUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath);
-            String introspectionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
-                    oidcConfig.introspectionPath);
-            String authorizationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
-                    oidcConfig.authorizationPath);
-            String jwksUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.jwksPath);
-            String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.userInfoPath);
-            String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.endSessionPath);
-            metadataUni = Uni.createFrom().item(new OidcConfigurationMetadata(tokenUri,
-                    introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
-                    oidcConfig.token.issuer.orElse(null)));
+            metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
             metadataUni = OidcCommonUtils.discoverMetadata(client, authServerUriString, connectionDelayInMillisecs)
-                    .onItem().transform(json -> new OidcConfigurationMetadata(json));
+                    .onItem()
+                    .transform(
+                            json -> new OidcConfigurationMetadata(json, createLocalMetadata(oidcConfig, authServerUriString)));
         }
         return metadataUni.onItemOrFailure()
                 .transformToUni(new BiFunction<OidcConfigurationMetadata, Throwable, Uni<? extends OidcProviderClient>>() {
@@ -313,6 +311,20 @@ public class OidcRecorder {
                         return Uni.createFrom().item(new OidcProviderClient(client, metadata, oidcConfig));
                     }
                 });
+    }
+
+    private static OidcConfigurationMetadata createLocalMetadata(OidcTenantConfig oidcConfig, String authServerUriString) {
+        String tokenUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath);
+        String introspectionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
+                oidcConfig.introspectionPath);
+        String authorizationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString,
+                oidcConfig.authorizationPath);
+        String jwksUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.jwksPath);
+        String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.userInfoPath);
+        String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.endSessionPath);
+        return new OidcConfigurationMetadata(tokenUri,
+                introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
+                oidcConfig.token.issuer.orElse(null));
     }
 
     private static boolean isServiceApp(OidcTenantConfig oidcConfig) {

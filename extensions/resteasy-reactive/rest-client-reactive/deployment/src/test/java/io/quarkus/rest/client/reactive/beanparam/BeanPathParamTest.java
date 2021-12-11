@@ -35,6 +35,13 @@ public class BeanPathParamTest {
         assertThat(client.getWithBeanParam("foo", new MyBeanParam("123"))).isEqualTo("it works with method too!");
     }
 
+    @Test
+    void shouldResolvePathParamsWhenBeanParamClassExtendsAnother() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        assertThat(client.getWithBeanParamInheritance(new MyChildBeanParam("child", "123"))).isEqualTo(
+                "it works with inheritance too!");
+    }
+
     @Path("/my/{id}/resource")
     public interface Client {
         @GET
@@ -43,6 +50,10 @@ public class BeanPathParamTest {
         @GET
         @Path("/{name}")
         String getWithBeanParam(@PathParam("name") String name, @BeanParam MyBeanParam beanParam);
+
+        @GET
+        @Path("/item/{base}")
+        String getWithBeanParamInheritance(@BeanParam MyChildBeanParam beanParam);
     }
 
     public static class MyBeanParam {
@@ -58,6 +69,40 @@ public class BeanPathParamTest {
         }
     }
 
+    public static class MyChildBeanParam extends MyBeanParam {
+        private final String base;
+
+        public MyChildBeanParam(String base, String id) {
+            super(id);
+            this.base = base;
+        }
+
+        @PathParam("base")
+        public String getBase() {
+            return base;
+        }
+    }
+
+    public static class TestMyChildBeanParam {
+        private final String id;
+        private final String base;
+
+        public TestMyChildBeanParam(String base, String id) {
+            this.id = id;
+            this.base = base;
+        }
+
+        @PathParam("id")
+        public String getId() {
+            return id;
+        }
+
+        @PathParam("base")
+        public String getBase() {
+            return base;
+        }
+    }
+
     @Path("/my/123/resource")
     public static class Resource {
         @GET
@@ -69,6 +114,12 @@ public class BeanPathParamTest {
         @GET
         public String getWithLongerPath() {
             return "it works with method too!";
+        }
+
+        @Path("/item/child")
+        @GET
+        public String getWithInheritance() {
+            return "it works with inheritance too!";
         }
     }
 }

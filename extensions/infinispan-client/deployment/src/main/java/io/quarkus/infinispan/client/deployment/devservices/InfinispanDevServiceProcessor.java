@@ -5,7 +5,6 @@ import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -14,8 +13,6 @@ import java.util.function.Supplier;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.server.test.core.InfinispanContainer;
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.Network;
-import org.testcontainers.utility.Base58;
 
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
@@ -29,6 +26,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.infinispan.client.deployment.InfinispanClientDevServiceBuildTimeConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -56,7 +54,7 @@ public class InfinispanDevServiceProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
     public void startInfinispanContainers(LaunchModeBuildItem launchMode,
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             BuildProducer<DevServicesConfigResultBuildItem> devConfigProducer, InfinispanClientDevServiceBuildTimeConfig config,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
@@ -89,7 +87,7 @@ public class InfinispanDevServiceProcessor {
         try {
             StartResult startResult = startContainer(config.devService.devservices,
                     launchMode.getLaunchMode(),
-                    devServicesSharedNetworkBuildItem.isPresent(), devServicesConfig.timeout);
+                    !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
             if (startResult == null) {
                 compressor.close();
                 return;
@@ -217,12 +215,7 @@ public class InfinispanDevServiceProcessor {
             super.configure();
 
             if (useSharedNetwork) {
-                // When a shared network is requested for the launched containers, we need to configure
-                // the container to use it. We also need to create a hostname that will be applied to the returned
-                // Infinispan URL
-                setNetwork(Network.SHARED);
-                hostName = "infinispan-" + Base58.randomString(5);
-                setNetworkAliases(Collections.singletonList(hostName));
+                hostName = ConfigureUtil.configureSharedNetwork(this, "infinispan");
                 return;
             }
 

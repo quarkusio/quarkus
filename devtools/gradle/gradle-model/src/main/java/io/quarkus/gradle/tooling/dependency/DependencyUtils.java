@@ -29,7 +29,7 @@ import org.gradle.api.tasks.SourceSet;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.util.BootstrapUtils;
-import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 
@@ -89,11 +89,13 @@ public class DependencyUtils {
                     ((ProjectComponentIdentifier) artifact.getId().getComponentIdentifier()).getProjectPath());
             final JavaPluginConvention javaExtension = projectDep == null ? null
                     : projectDep.getConvention().findPlugin(JavaPluginConvention.class);
-            SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-            File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
-            Path descriptorPath = resourcesDir.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
-            if (Files.exists(descriptorPath)) {
-                return loadExtensionInfo(project, descriptorPath, artifactId, projectDep);
+            if (javaExtension != null) {
+                SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
+                Path descriptorPath = resourcesDir.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
+                if (Files.exists(descriptorPath)) {
+                    return loadExtensionInfo(project, descriptorPath, artifactId, projectDep);
+                }
             }
         }
 

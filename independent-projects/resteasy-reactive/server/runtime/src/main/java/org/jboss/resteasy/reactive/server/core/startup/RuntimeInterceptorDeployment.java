@@ -266,19 +266,15 @@ public class RuntimeInterceptorDeployment {
             return responseFilterHandlers;
         }
 
-        public List<ServerRestHandler> setupInterceptorHandler() {
+        public ServerRestHandler setupInterceptorHandler() {
             List<ServerRestHandler> handlers = new ArrayList<>();
             if (method.getNameBindingNames().isEmpty() && methodSpecificReaderInterceptorsMap.isEmpty()
                     && methodSpecificWriterInterceptorsMap.isEmpty()) {
-                if (globalInterceptorHandler != null) {
-                    handlers.add(globalInterceptorHandler);
-                }
+                return globalInterceptorHandler;
             } else if (nameReaderInterceptorsMap.isEmpty() && nameWriterInterceptorsMap.isEmpty()
                     && methodSpecificReaderInterceptorsMap.isEmpty() && methodSpecificWriterInterceptorsMap.isEmpty()) {
                 // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-                if (globalInterceptorHandler != null) {
-                    handlers.add(globalInterceptorHandler);
-                }
+                return globalInterceptorHandler;
             } else {
                 TreeMap<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> readerInterceptorsToUse = buildInterceptorMap(
                         globalReaderInterceptorsMap, nameReaderInterceptorsMap, methodSpecificReaderInterceptorsMap, method,
@@ -302,9 +298,8 @@ public class RuntimeInterceptorDeployment {
                         writers[idx++] = i;
                     }
                 }
-                handlers.add(new InterceptorHandler(writers, readers));
+                return new InterceptorHandler(writers, readers);
             }
-            return handlers;
         }
 
         public List<ResourceRequestFilterHandler> setupRequestFilterHandler() {

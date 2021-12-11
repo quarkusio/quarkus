@@ -17,10 +17,18 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 
 public class BeanParamParser {
+
     public static List<Item> parse(ClassInfo beanParamClass, IndexView index) {
         List<Item> resultList = new ArrayList<>();
+
+        // Parse class tree recursively
+        if (!JandexUtil.DOTNAME_OBJECT.equals(beanParamClass.superName())) {
+            resultList.addAll(parse(index.getClassByName(beanParamClass.superName()), index));
+        }
+
         Map<DotName, List<AnnotationInstance>> annotations = beanParamClass.annotations();
         List<AnnotationInstance> queryParams = annotations.get(QUERY_PARAM);
         if (queryParams != null) {

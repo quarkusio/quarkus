@@ -161,7 +161,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
                                         userInfo);
                                 SecurityIdentity securityIdentity = validateAndCreateIdentity(vertxContext, tokenCred,
-                                        resolvedContext, tokenJson, rolesJson, userInfo);
+                                        resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult);
                                 if (tokenAutoRefreshPrepared(tokenJson, vertxContext, resolvedContext.oidcConfig)) {
                                     return Uni.createFrom().failure(new TokenAutoRefreshException(securityIdentity));
                                 } else {
@@ -339,7 +339,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken());
             return Uni.createFrom()
                     .item(validateAndCreateIdentity(null, request.getToken(), resolvedContext,
-                            result.localVerificationResult, result.localVerificationResult, null));
+                            result.localVerificationResult, result.localVerificationResult, null, null));
         } catch (Throwable t) {
             return Uni.createFrom().failure(new AuthenticationFailedException(t));
         }

@@ -3,6 +3,7 @@ package io.quarkus.devservices.db2.deployment;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -30,14 +31,14 @@ public class DB2DevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupDB2(
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.DB2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusDb2Container container = new QuarkusDb2Container(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
@@ -85,6 +86,8 @@ public class DB2DevServicesProcessor {
 
             if (fixedExposedPort.isPresent()) {
                 addFixedExposedPort(fixedExposedPort.getAsInt(), DB2_PORT);
+            } else {
+                addExposedPorts(DB2_PORT);
             }
         }
 

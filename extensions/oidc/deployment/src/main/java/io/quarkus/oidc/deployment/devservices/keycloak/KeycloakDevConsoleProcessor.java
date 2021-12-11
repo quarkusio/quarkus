@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
@@ -18,13 +19,8 @@ import io.quarkus.oidc.deployment.devservices.AbstractDevConsoleProcessor;
 import io.quarkus.oidc.deployment.devservices.OidcAuthorizationCodePostHandler;
 import io.quarkus.oidc.deployment.devservices.OidcPasswordClientCredHandler;
 import io.quarkus.oidc.deployment.devservices.OidcTestServiceHandler;
-import io.quarkus.oidc.runtime.OidcConfigPropertySupplier;
 
 public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
-
-    private static final String CONFIG_PREFIX = "quarkus.oidc.";
-    private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
-    private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
 
     KeycloakBuildTimeConfig keycloakConfig;
     OidcBuildTimeConfig oidcConfig;
@@ -34,7 +30,7 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
     public void setConfigProperties(BuildProducer<DevConsoleTemplateInfoBuildItem> devConsoleInfo,
             BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeInfo,
             Optional<KeycloakDevServicesConfigBuildItem> configProps,
-            Capabilities capabilities) {
+            Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (configProps.isPresent() && configProps.get().getProperties().containsKey("keycloak.url")) {
             String keycloakUrl = (String) configProps.get().getProperties().get("keycloak.url");
             String realmUrl = keycloakUrl + "/realms/" + configProps.get().getProperties().get("keycloak.realm");
@@ -45,6 +41,8 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
             produceDevConsoleTemplateItems(capabilities,
                     devConsoleInfo,
+                    devConsoleRuntimeInfo,
+                    curateOutcomeBuildItem,
                     "Keycloak",
                     (String) configProps.get().getProperties().get("quarkus.oidc.application-type"),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType()
@@ -53,13 +51,6 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     realmUrl + "/protocol/openid-connect/token",
                     realmUrl + "/protocol/openid-connect/logout",
                     true);
-            devConsoleRuntimeInfo.produce(
-                    new DevConsoleRuntimeTemplateInfoBuildItem("clientId",
-                            new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY)));
-            devConsoleRuntimeInfo.produce(
-                    new DevConsoleRuntimeTemplateInfoBuildItem("clientSecret",
-                            new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, "")));
-
         }
     }
 

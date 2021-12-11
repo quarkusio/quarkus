@@ -63,7 +63,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.opentracing</groupId>
             <artifactId>microprofile-opentracing-tck</artifactId>
-            <version>${microprofile-opentracing-api.version}</version>
+            <version>${microprofile-opentracing-tck.version}</version>
         </dependency>
         <!-- For Dependency Converge - TCK users Arq 1.6.0 and Quarkus 1.5.0 -->
         <dependency>

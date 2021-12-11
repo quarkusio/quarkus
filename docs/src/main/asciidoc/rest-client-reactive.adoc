@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
 REST Client Reactive is a non-blocking counterpart of the RESTEasy REST Client.
 
-If your application uses a client and exposes REST endpoints, please use link:resteasy-reactive[RESTEasy Reactive]
+If your application uses a client and exposes REST endpoints, please use xref:resteasy-reactive.adoc[RESTEasy Reactive]
 for the server part.
 
 == Prerequisites
@@ -515,7 +515,7 @@ More details about this can be found in https://smallrye.io/smallrye-mutiny/#_un
 
 There are a few ways in which you can specify custom headers for your REST calls:
 
-- by registering a `ClientHeadersFactory` with the `@RegisterClientHeaders` annotation
+- by registering a `ClientHeadersFactory` or a `ReactiveClientHeadersFactory` with the `@RegisterClientHeaders` annotation
 - by specifying the value of the header with `@ClientHeaderParam`
 - by specifying the value of the header by `@HeaderParam`
 
@@ -589,6 +589,37 @@ To specify a value for `${header.value}`, simply put the following in your `appl
 [source,properties]
 ----
 header.value=value of the header
+----
+
+Also, there is a reactive flavor of `ClientHeadersFactory` that allows doing blocking operations. For example:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+import java.util.UUID;
+
+@ApplicationScoped
+public class GetTokenReactiveClientHeadersFactory extends ReactiveClientHeadersFactory {
+
+    @Inject
+    Service service;
+
+    @Override
+    public Uni<MultivaluedMap<String, String>> getHeaders(MultivaluedMap<String, String> incomingHeaders) {
+        return Uni.createFrom().item(() -> {
+            MultivaluedHashMap<String, String> newHeaders = new MultivaluedHashMap<>();
+            // perform blocking call
+            newHeaders.add(HEADER_NAME, service.getToken());
+            return newHeaders;
+        });
+    }
+}
 ----
 
 === Default header factory
@@ -674,7 +705,7 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 == Using a Mock HTTP Server for tests
 
 For tests, you can easily mock the HTTP server with Wiremock.
-The link:rest-client#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
+The xref:rest-client.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
 describes how to set it up in detail.
 
 == Known limitations

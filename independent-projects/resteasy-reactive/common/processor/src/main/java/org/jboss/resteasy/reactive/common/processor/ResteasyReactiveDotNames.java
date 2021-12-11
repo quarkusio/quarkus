@@ -231,6 +231,11 @@ public final class ResteasyReactiveDotNames {
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(
             Arrays.asList(QUERY_PARAM, HEADER_PARAM, PATH_PARAM, MATRIX_PARAM, COOKIE_PARAM));
 
+    public static final Set<DotName> JAX_RS_ANNOTATIONS_FOR_FIELDS = new HashSet<>(
+            Arrays.asList(BEAN_PARAM, MULTI_PART_FORM_PARAM, PATH_PARAM, QUERY_PARAM, HEADER_PARAM, FORM_PARAM, MATRIX_PARAM,
+                    COOKIE_PARAM, REST_PATH_PARAM, REST_QUERY_PARAM, REST_HEADER_PARAM, REST_FORM_PARAM, REST_MATRIX_PARAM,
+                    REST_COOKIE_PARAM, CONTEXT, DEFAULT_VALUE, SUSPENDED));
+
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
     public static final DotName QUARKUS_REST_CONTAINER_RESPONSE_FILTER = DotName

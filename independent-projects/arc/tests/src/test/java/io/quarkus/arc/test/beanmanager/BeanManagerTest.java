@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
@@ -22,6 +23,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,15 +53,24 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
 import javax.interceptor.InvocationContext;
+import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BeanManagerTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(Legacy.class, AlternativeLegacy.class, Fool.class,
-            DummyInterceptor.class, DummyBinding.class, LowPriorityInterceptor.class, WithInjectionPointMetadata.class,
-            High.class, Observers.class);
+    public ArcTestContainer container = new ArcTestContainer.Builder()
+            .beanClasses(Legacy.class, AlternativeLegacy.class, Fool.class, DummyInterceptor.class, DummyBinding.class,
+                    LowPriorityInterceptor.class, WithInjectionPointMetadata.class, High.class, Low.class, Observers.class,
+                    BeanWithCustomQualifier.class)
+            .qualifierRegistrars(new QualifierRegistrar() {
+                @Override
+                public Map<DotName, Set<String>> getAdditionalQualifiers() {
+                    return Map.of(DotName.createSimple(Low.class.getName()), Set.of());
+                }
+            })
+            .build();
 
     @Test
     public void testGetBeans() {
@@ -172,6 +183,7 @@ public class BeanManagerTest {
         BeanManager beanManager = Arc.container().beanManager();
         assertTrue(beanManager.isQualifier(Default.class));
         assertTrue(beanManager.isQualifier(High.class));
+        assertTrue(beanManager.isQualifier(Low.class));
         assertFalse(beanManager.isQualifier(ApplicationScoped.class));
     }
 
@@ -200,6 +212,13 @@ public class BeanManagerTest {
         assertEquals(Number.class, observers.iterator().next().getObservedType());
     }
 
+    @Test
+    public void testGetBeanWithCustomQualifier() {
+        BeanManager beanManager = Arc.container().beanManager();
+        Set<Bean<?>> beans = beanManager.getBeans(BeanWithCustomQualifier.class, Low.Literal.INSTANCE);
+        assertEquals(1, beans.size());
+    }
+
     @ApplicationScoped
     static class Observers {
 
@@ -207,12 +226,25 @@ public class BeanManagerTest {
         }
     }
 
+    @ApplicationScoped
+    @Low
+    static class BeanWithCustomQualifier {
+    }
+
     @Target({ TYPE, METHOD, PARAMETER, FIELD })
     @Retention(RUNTIME)
     @Documented
     @Qualifier
     public @interface High {
+    }
 
+    @Target({ TYPE, METHOD, PARAMETER, FIELD })
+    @Retention(RUNTIME)
+    @Documented
+    public @interface Low {
+        class Literal extends AnnotationLiteral<Low> implements Low {
+            public static final Literal INSTANCE = new Literal();
+        }
     }
 
     @Dependent

@@ -33,7 +33,7 @@ This guide will explain how to:
 
 This guide is mainly about datasource configuration.
 If you want more details about how to consume and make use of a reactive datasource,
-please refer to the link:reactive-sql-clients[Reactive SQL clients guide].
+please refer to the xref:reactive-sql-clients.adoc[Reactive SQL clients guide].
 
 == TL;DR
 
@@ -165,7 +165,7 @@ quarkus.datasource.username=<your username>
 quarkus.datasource.password=<your password>
 ----
 
-You can also retrieve the password from Vault by link:vault-datasource[using a credential provider] for your datasource.
+You can also retrieve the password from Vault by link:{vault-datasource-guide}[using a credential provider] for your datasource.
 
 Once you have defined the database kind and the credentials, you are ready to configure either a JDBC datasource, a reactive one, or both.
 
@@ -396,7 +396,7 @@ So it is not currently possible to create multiple reactive datasources.
 
 [NOTE]
 ====
-The Hibernate ORM extension link:hibernate-orm#multiple-persistence-units[supports defining several persistence units using configuration properties].
+The Hibernate ORM extension xref:hibernate-orm.adoc#multiple-persistence-units[supports defining several persistence units using configuration properties].
 For each persistence unit, you can point to the datasource of your choice.
 ====
 

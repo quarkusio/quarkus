@@ -266,6 +266,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().post("/oidc/disable-discovery").then().body(equalTo("false"));
         // Quarkus OIDC is initialized with JWK set with kid '1' as part of the discovery process
         // Now enable the rotation
         RestAssured.when().post("/oidc/enable-rotate").then().body(equalTo("true"));
@@ -307,6 +308,7 @@ public class BearerTokenAuthorizationTest {
         // both requests with kid `3` and with the opaque token required the remote introspection
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("3"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().post("/oidc/enable-discovery").then().body(equalTo("true"));
         RestAssured.when().post("/oidc/disable-rotate").then().body(equalTo("false"));
     }
 
@@ -360,7 +362,7 @@ public class BearerTokenAuthorizationTest {
                     .when().get("/tenant/tenant-oidc-introspection-only/api/user")
                     .then()
                     .statusCode(200)
-                    .body(equalTo("tenant-oidc-introspection-only:alice:0"));
+                    .body(equalTo("tenant-oidc-introspection-only:alice,active:true,cache-size:0"));
         }
 
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
@@ -404,7 +406,7 @@ public class BearerTokenAuthorizationTest {
                     .when().get("/tenant/tenant-oidc-introspection-only-cache/api/user")
                     .then()
                     .statusCode(200)
-                    .body(equalTo("tenant-oidc-introspection-only-cache:alice:" + expectedCacheSize));
+                    .body(equalTo("tenant-oidc-introspection-only-cache:alice,active:true,cache-size:" + expectedCacheSize));
         }
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));
         RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));

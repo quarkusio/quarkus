@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.deployment.tracing;
 
+import static io.quarkus.opentelemetry.deployment.OpenTelemetryProcessor.isClassPresent;
 import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
 import java.util.Collection;
@@ -33,8 +34,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
@@ -49,12 +48,6 @@ public class TracerProcessor {
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
 
-    private static final String REST_CLIENT_LISTENER_CLASS_NAME = "org.eclipse.microprofile.rest.client.spi.RestClientListener";
-    private static final boolean REST_CLIENT_LISTENER_CLASS_FOUND = TracerRecorder
-            .isClassPresent(REST_CLIENT_LISTENER_CLASS_NAME);
-
-    private static final String REST_CLIENT_TRACING_LISTENER = "io.quarkus.opentelemetry.runtime.tracing.restclient.QuarkusRestClientListener";
-
     public static class TracerEnabled implements BooleanSupplier {
         OpenTelemetryConfig otelConfig;
 
@@ -64,19 +57,14 @@ public class TracerProcessor {
         }
     }
 
-    static class RestClientPresent implements BooleanSupplier {
-        public boolean getAsBoolean() {
-            return REST_CLIENT_LISTENER_CLASS_FOUND;
-        }
-    }
+    static class MetricsExtensionAvailable implements BooleanSupplier {
+        private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresent(
+                "io.quarkus.micrometer.runtime.binder.vertx.VertxHttpServerMetrics");
 
-    @BuildStep(onlyIf = { TracerEnabled.class, RestClientPresent.class })
-    void registerRestClientListener(BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        resource.produce(new NativeImageResourceBuildItem(
-                "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
-        reflectiveClass
-                .produce(new ReflectiveClassBuildItem(true, true, REST_CLIENT_TRACING_LISTENER));
+        @Override
+        public boolean getAsBoolean() {
+            return IS_MICROMETER_EXTENSION_AVAILABLE;
+        }
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)
@@ -146,7 +134,13 @@ public class TracerProcessor {
     @BuildStep(onlyIf = TracerEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem vertxTracingOptions(TracerRecorder recorder) {
-        return new VertxOptionsConsumerBuildItem(recorder.setVertxTracingOptions(), LIBRARY_AFTER);
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
+    }
+
+    @BuildStep(onlyIf = TracerEnabled.class, onlyIfNot = MetricsExtensionAvailable.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    VertxOptionsConsumerBuildItem vertxTracingMetricsOptions(TracerRecorder recorder) {
+        return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingMetricsOptions(), LIBRARY_AFTER);
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)
@@ -168,6 +162,5 @@ public class TracerProcessor {
             TracerRecorder recorder) {
         recorder.setupResources(runtimeConfig);
         recorder.setupSampler(runtimeConfig);
-        recorder.setupVertxTracer();
     }
 }

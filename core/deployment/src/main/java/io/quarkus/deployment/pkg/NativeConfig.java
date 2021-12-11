@@ -57,6 +57,13 @@ public class NativeConfig {
     public boolean enableJni;
 
     /**
+     * The default value for java.awt.headless JVM option.
+     * Switching this option affects linking of awt libraries.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean headless;
+
+    /**
      * Defines the user language used for building the native executable.
      * <p>
      * Defaults to the system one.

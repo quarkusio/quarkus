@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.processor;
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_NUMBER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_OBJECT;
@@ -28,9 +29,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
+import javax.enterprise.inject.spi.DeploymentException;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -164,6 +167,12 @@ public class ServerEndpointIndexer
         InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
                 actualEndpointInfo,
                 existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
+        if (injectableBean.getFieldExtractorsCount() == 0) {
+            throw new DeploymentException(String.format("No annotations found on fields at '%s'. "
+                    + "Annotations like `@QueryParam` should be used in fields, not in methods.",
+                    beanParamClassInfo.name()));
+        }
+
         return injectableBean.isFormParamRequired();
     }
 
@@ -223,6 +232,9 @@ public class ServerEndpointIndexer
         currentInjectableBean = new BeanParamInfo();
         injectableBeans.put(currentTypeName, currentInjectableBean);
 
+        // validate methods
+        validateMethodsForInjectableBean(currentClassInfo);
+
         // LinkedHashMap the TCK expects that fields annotated with @BeanParam are handled last
         Map<FieldInfo, ServerIndexedParameter> fieldExtractors = new LinkedHashMap<>();
         Map<FieldInfo, ServerIndexedParameter> beanParamFields = new LinkedHashMap<>();
@@ -273,6 +285,8 @@ public class ServerEndpointIndexer
                 }
             }
         }
+
+        currentInjectableBean.setFieldExtractorsCount(fieldExtractors.size());
 
         if (!fieldExtractors.isEmpty() && fieldInjectionHandler != null) {
             fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable);
@@ -387,6 +401,25 @@ public class ServerEndpointIndexer
 
         throw new RuntimeException(
                 contextualizeErrorMessage("Unable to handle temporal type '" + paramType + "'", currentMethodInfo));
+    }
+
+    private void validateMethodsForInjectableBean(ClassInfo currentClassInfo) {
+        for (MethodInfo method : currentClassInfo.methods()) {
+            for (AnnotationInstance annotation : method.annotations()) {
+                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                    for (DotName annotationForField : JAX_RS_ANNOTATIONS_FOR_FIELDS) {
+                        if (annotation.name().equals(annotationForField)) {
+                            throw new DeploymentException(String.format(
+                                    "Method '%s' of class '%s' is annotated with @%s annotation which is prohibited. "
+                                            + "Classes uses as @BeanParam parameters must have a JAX-RS parameter annotation on "
+                                            + "fields only.",
+                                    method.name(), currentClassInfo.name().toString(),
+                                    annotation.name().withoutPackagePrefix()));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private String contextualizeErrorMessage(String errorMessage, MethodInfo currentMethodInfo) {

@@ -202,7 +202,7 @@ public class AeshConsole extends QuarkusConsole {
                 }
                 if (doingReadline) {
                     for (var k : keys) {
-                        if (k == '\n') {
+                        if (k == '\n' || k == '\r') {
                             doingReadline = false;
                             connection.enterRawMode();
                         }

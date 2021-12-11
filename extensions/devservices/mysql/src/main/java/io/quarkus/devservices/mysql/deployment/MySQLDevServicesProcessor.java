@@ -3,6 +3,7 @@ package io.quarkus.devservices.mysql.deployment;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -27,14 +28,14 @@ public class MySQLDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMysql(
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MYSQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusMySQLContainer container = new QuarkusMySQLContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
@@ -82,6 +83,8 @@ public class MySQLDevServicesProcessor {
 
             if (fixedExposedPort.isPresent()) {
                 addFixedExposedPort(fixedExposedPort.getAsInt(), MySQLContainer.MYSQL_PORT);
+            } else {
+                addExposedPort(MYSQL_PORT);
             }
         }
 

@@ -54,4 +54,5 @@ public class DevServicesBuildTimeConfig {
      */
     @ConfigItem
     public OptionalInt port;
+
 }

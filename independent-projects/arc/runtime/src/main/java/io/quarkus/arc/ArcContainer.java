@@ -138,7 +138,7 @@ public interface ArcContainer {
      * Returns true if Arc container is running.
      * This can be used as a quick check to determine CDI availability in Quarkus.
      *
-     * @return true is {@link ArcContainer} is running, false otherwise
+     * @return true if {@link ArcContainer} is running, false otherwise
      */
     boolean isRunning();
 

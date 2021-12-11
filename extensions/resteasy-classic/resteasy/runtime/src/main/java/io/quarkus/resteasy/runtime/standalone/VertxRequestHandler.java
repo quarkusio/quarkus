@@ -3,6 +3,7 @@ package io.quarkus.resteasy.runtime.standalone;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.MalformedInputException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -98,6 +99,21 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     private void dispatch(RoutingContext routingContext, InputStream is, VertxOutput output) {
+        ResteasyUriInfo uriInfo;
+        try {
+            uriInfo = VertxUtil.extractUriInfo(routingContext.request(), rootPath);
+        } catch (Exception e) {
+            if (e.getCause() instanceof MalformedInputException) {
+                log.debug(e.getCause());
+                routingContext.response().setStatusCode(400);
+            } else {
+                log.debug(e);
+                routingContext.response().setStatusCode(500);
+            }
+            routingContext.response().end();
+            return;
+        }
+
         ManagedContext requestContext = Arc.container().requestContext();
         requestContext.activate();
         routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
@@ -114,7 +130,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         try {
             Context ctx = vertx.getOrCreateContext();
             HttpServerRequest request = routingContext.request();
-            ResteasyUriInfo uriInfo = VertxUtil.extractUriInfo(request, rootPath);
+
             ResteasyHttpHeaders headers = VertxUtil.extractHttpHeaders(request);
             HttpServerResponse response = request.response();
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),

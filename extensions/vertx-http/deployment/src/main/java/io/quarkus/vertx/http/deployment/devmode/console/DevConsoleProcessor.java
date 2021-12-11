@@ -10,7 +10,6 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,6 +70,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
@@ -223,7 +223,7 @@ public class DevConsoleProcessor {
     /**
      * Boots the Vert.x instance used by the DevConsole,
      * applying some minimal tuning and customizations.
-     * 
+     *
      * @return the initialized Vert.x instance
      */
     private static Vertx initializeDevConsoleVertx() {
@@ -465,24 +465,28 @@ public class DevConsoleProcessor {
         if (context == null) {
             context = ConsoleStateManager.INSTANCE.createContext("HTTP");
         }
+        Config c = ConfigProvider.getConfig();
+        String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
+        String port = c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
         context.reset(
-                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/")),
-                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev")));
+                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/", host, port)),
+                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev", host, port)));
     }
 
-    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String s) {
-        if (s.startsWith("/q")) {
-            s = np.resolvePath(s.substring(3));
+    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
+            String port) {
+        if (path.startsWith("/q")) {
+            path = np.resolvePath(path.substring(3));
         } else {
-            s = rp.resolvePath(s.substring(1));
+            path = rp.resolvePath(path.substring(1));
         }
 
         StringBuilder sb = new StringBuilder("http://");
         Config c = ConfigProvider.getConfig();
-        sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
+        sb.append(host);
         sb.append(":");
-        sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
-        sb.append(s);
+        sb.append(port);
+        sb.append(path);
         String url = sb.toString();
 
         Runtime rt = Runtime.getRuntime();
@@ -715,7 +719,7 @@ public class DevConsoleProcessor {
                         // on Windows this will be /C:/some/path, so turn it into C:\some\path
                         jarPath = jarPath.substring(1).replace('/', '\\');
                     }
-                    try (FileSystem fs = FileSystems
+                    try (FileSystem fs = ZipUtils
                             .newFileSystem(Paths.get(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name())), classLoader)) {
                         scanTemplates(fs, null, fs.getRootDirectories(), devTemplatePaths);
                     }
@@ -850,14 +854,12 @@ public class DevConsoleProcessor {
         private static final String[] SUPPORTED_LANGS = { "java", "kotlin" };
 
         private final Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem;
-        private final Path srcMainPath;
         private final boolean disable;
 
         public IdeInfoContextFunction(BuildSystemTargetBuildItem buildSystemTargetBuildItem,
                 Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
                 LaunchModeBuildItem launchModeBuildItem) {
             this.effectiveIdeBuildItem = effectiveIdeBuildItem;
-            srcMainPath = buildSystemTargetBuildItem.getOutputDirectory().getParent().resolve("src").resolve("main");
             disable = launchModeBuildItem.getDevModeType().orElse(DevModeType.LOCAL) != DevModeType.LOCAL;
         }
 
@@ -865,29 +867,41 @@ public class DevConsoleProcessor {
         public Object apply(EvalContext ctx) {
             String ctxName = ctx.getName();
 
+            List<Path> sourcesDir = DevConsoleManager.getHotReplacementContext().getSourcesDir();
             if (ctxName.equals("sourcePackages")) {
                 if (disable) {
                     return Collections.emptyList(); // we need this here because the result needs to be iterable
                 }
                 Map<String, List<String>> sourcePackagesByLang = new HashMap<>();
 
-                for (String lang : SUPPORTED_LANGS) {
-                    List<String> packages = sourcePackagesForLang(srcMainPath, lang);
+                for (Path sourcePaths : sourcesDir) {
+                    String lang = sourcePaths.getFileName().toString();
+                    List<String> packages = sourcePackagesForRoot(sourcePaths);
                     if (!packages.isEmpty()) {
                         sourcePackagesByLang.put(lang, packages);
                     }
                 }
                 return sourcePackagesByLang;
             }
+            if (ctxName.equals("locationPackages")) {
+                if (disable) {
+                    return Collections.emptyList(); // we need this here because the result needs to be iterable
+                }
+                Map<String, List<String>> sourcePackagesByDir = new HashMap<>();
 
+                for (Path sourcePaths : sourcesDir) {
+                    List<String> packages = sourcePackagesForRoot(sourcePaths);
+                    if (!packages.isEmpty()) {
+                        sourcePackagesByDir.put(sourcePaths.toAbsolutePath().toString(), packages);
+                    }
+                }
+                return sourcePackagesByDir;
+            }
             if (disable) { // all the other values are Strings
                 return EMPTY;
             }
 
             switch (ctxName) {
-                case "srcMainPath": {
-                    return srcMainPath.toAbsolutePath().toString().replace("\\", "/");
-                }
                 case "ideLinkType":
                     if (!effectiveIdeBuildItem.isPresent()) {
                         return "none";
@@ -916,8 +930,7 @@ public class DevConsoleProcessor {
          * <p>
          * TODO: this likely covers almost all typical use cases, but probably needs some tweaks for extreme corner cases
          */
-        private List<String> sourcePackagesForLang(Path srcMainPath, String lang) {
-            Path langPath = srcMainPath.resolve(lang);
+        private List<String> sourcePackagesForRoot(Path langPath) {
             if (!Files.exists(langPath)) {
                 return Collections.emptyList();
             }

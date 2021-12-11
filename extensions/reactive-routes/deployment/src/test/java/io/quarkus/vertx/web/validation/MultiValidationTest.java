@@ -44,7 +44,7 @@ public class MultiValidationTest {
                 .then().statusCode(400)
                 .body("title", containsString("Constraint Violation"))
                 .body("status", is(400))
-                .body("details", containsString("validation constraint violations"))
+                .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
     }

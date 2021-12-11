@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.smallrye.graphql.client.GraphQLClientsConfiguration;
+import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
 
 @Recorder

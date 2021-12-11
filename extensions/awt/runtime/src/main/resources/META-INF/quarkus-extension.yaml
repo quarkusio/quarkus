@@ -6,7 +6,8 @@ metadata:
     - java2d
     - image
     - imageio
-#  guide: ...
+    - graphics
+#  guide: TODO Make a guide of a quickstart at https://github.com/Karm/quarkus-quickstarts/tree/quarkus-awt/awt-graphics-rest-quickstart/src
   categories:
     - "miscellaneous"
   status: "preview"

@@ -7,6 +7,7 @@ import static io.grpc.netty.NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.spi.CreationalContext;
@@ -33,6 +35,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.RegisterClientInterceptor;
+import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
@@ -49,7 +53,7 @@ public class Channels {
         // Avoid direct instantiation
     }
 
-    public static Channel createChannel(String name) throws SSLException {
+    public static Channel createChannel(String name, Set<String> perClientInterceptors) throws SSLException {
         InstanceHandle<GrpcClientConfigProvider> instance = Arc.container().instance(GrpcClientConfigProvider.class);
 
         if (!instance.isAvailable()) {
@@ -175,11 +179,10 @@ public class Channels {
         }
 
         // Client-side interceptors
-        InstanceHandle<GrpcClientInterceptorContainer> interceptors = Arc.container()
-                .instance(GrpcClientInterceptorContainer.class);
-        for (ClientInterceptor clientInterceptor : interceptors.get().getSortedInterceptors()) {
-            builder.intercept(clientInterceptor);
-        }
+        GrpcClientInterceptorContainer interceptorContainer = Arc.container()
+                .instance(GrpcClientInterceptorContainer.class).get();
+        interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors).forEach(builder::intercept);
+        interceptorContainer.getSortedGlobalInterceptors().forEach(builder::intercept);
 
         return builder.build();
     }
@@ -232,12 +235,20 @@ public class Channels {
         }
     }
 
-    public static Channel retrieveChannel(String name) {
-        InstanceHandle<Channel> instance = Arc.container().instance(Channel.class, GrpcClient.Literal.of(name));
+    @SuppressWarnings("unchecked")
+    public static Channel retrieveChannel(String name, Set<String> perClientInterceptors) {
+        ClientInterceptorStorage clientInterceptorStorage = Arc.container().instance(ClientInterceptorStorage.class).get();
+        Annotation[] qualifiers = new Annotation[perClientInterceptors.size() + 1];
+        int idx = 0;
+        qualifiers[idx++] = GrpcClient.Literal.of(name);
+        for (String interceptor : perClientInterceptors) {
+            qualifiers[idx++] = RegisterClientInterceptor.Literal
+                    .of((Class<? extends ClientInterceptor>) clientInterceptorStorage.getPerClientInterceptor(interceptor));
+        }
+        InstanceHandle<Channel> instance = Arc.container().instance(Channel.class, qualifiers);
         if (!instance.isAvailable()) {
             throw new IllegalStateException("Unable to retrieve the gRPC Channel " + name);
         }
-
         return instance.get();
     }
 

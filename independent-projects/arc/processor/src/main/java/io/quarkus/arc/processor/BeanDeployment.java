@@ -139,9 +139,11 @@ public class BeanDeployment {
                 DotName dotName = entry.getKey();
                 ClassInfo classInfo = getClassByName(this.beanArchiveIndex, dotName);
                 if (classInfo != null) {
-                    if (entry.getValue() != null) {
-                        qualifierNonbindingMembers.put(dotName, entry.getValue());
+                    Set<String> nonbindingMembers = entry.getValue();
+                    if (nonbindingMembers == null) {
+                        nonbindingMembers = Collections.emptySet();
                     }
+                    qualifierNonbindingMembers.put(dotName, nonbindingMembers);
                     this.qualifiers.put(dotName, classInfo);
                 }
             }

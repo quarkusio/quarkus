@@ -65,22 +65,11 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.4</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>7.3</gradle-wrapper.version>
+        <gradle-wrapper.version>7.3.1</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
 
-        <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>3.1</microprofile-health-api.version>
-        <microprofile-config-api.version>2.0</microprofile-config-api.version>
-        <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
-        <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
-        <microprofile-reactive-messaging-api.version>2.0</microprofile-reactive-messaging-api.version>
-        <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
-        <microprofile-open-api.version>2.0.1-RC1</microprofile-open-api.version>
-        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
-        <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
-        <microprofile-jwt-api.version>1.2</microprofile-jwt-api.version>
-        <microprofile-graphql-api.version>1.1.0</microprofile-graphql-api.version>
+        <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.9.2</antlr.version>
@@ -91,7 +80,6 @@
         <elasticsearch.protocol>http</elasticsearch.protocol>
 
         <!-- Align various dependencies that are not really part of the bom-->
-        <findbugs.version>3.0.2</findbugs.version>
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
@@ -103,6 +91,9 @@
         <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.0.0</wiremock-maven-plugin.version>
 
+        <!-- Artemis test dependencies -->
+        <artemis.version>2.19.0</artemis.version>
+
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
         <!-- Note: this version is also set in quarkus-bom but BOMs don't contribute to pluginManagement or properties -->
@@ -111,15 +102,11 @@
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.38.0</docker-maven-plugin.version>
-        <formatter-maven-plugin.version>2.17.0</formatter-maven-plugin.version>
+        <formatter-maven-plugin.version>2.17.1</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.6.2</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
-
-        <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
-        <protoc.version>3.19.1</protoc.version> <!--keep in sync with the BOM-->
-        <grpc.version>1.42.1</grpc.version> <!--keep in sync with the BOM -->
 
         <!-- Webjars -->
         <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
@@ -174,23 +161,12 @@
             <!-- Dev tools -->
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-testing</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devmode-test-utils</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-utilities</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -232,11 +208,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-legacy-launcher</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
-                <version>${findbugs.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.unboundid</groupId>
@@ -351,6 +322,60 @@
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Artemis test dependencies -->
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-server</artifactId>
+                <version>${artemis.version}</version>
+                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.geronimo.specs</groupId>
+                        <artifactId>geronimo-json_1.0_spec</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.johnzon</groupId>
+                        <artifactId>johnzon-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.logmanager</groupId>
+                        <artifactId>jboss-logmanager</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <!-- Excluding the API jar as the impl jar also contains the API -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-amqp-protocol</artifactId>
+                <version>${artemis.version}</version>
+                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                       <groupId>org.apache.activemq</groupId>
+                       <artifactId>artemis-server</artifactId>
+                    </exclusion>
+                    <!-- Excluding the API jar as the impl jar also contains the API -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>

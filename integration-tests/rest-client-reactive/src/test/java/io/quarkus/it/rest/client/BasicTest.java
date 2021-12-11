@@ -85,6 +85,14 @@ public class BasicTest {
     }
 
     @Test
+    void shouldInterceptDefaultMethod() {
+        RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Hello fallback!"));
+    }
+
+    @Test
     void shouldCreateClientSpans() {
         // Reset captured traces
         RestAssured.given().when().get("/export-clear").then().statusCode(200);
@@ -153,11 +161,11 @@ public class BasicTest {
 
                 clientSpanId = (String) spanData.get("spanId");
             } else if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("hello?count=2")) {
+                    && spanData.get("name").equals("hello")) {
                 clientServerFound = true;
                 // Server span of client
 
-                Assertions.assertEquals("hello?count=2", spanData.get("name"));
+                Assertions.assertEquals("hello", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -172,7 +180,7 @@ public class BasicTest {
 
                 Assertions.assertEquals("POST", spanData.get("attr_http.method"));
                 Assertions.assertEquals("1.1", spanData.get("attr_http.flavor"));
-                Assertions.assertEquals("/hello", spanData.get("attr_http.target"));
+                Assertions.assertEquals("/hello?count=2", spanData.get("attr_http.target"));
                 Assertions.assertEquals("http", spanData.get("attr_http.scheme"));
                 Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
                 Assertions.assertNotNull(spanData.get("attr_http.client_ip"));

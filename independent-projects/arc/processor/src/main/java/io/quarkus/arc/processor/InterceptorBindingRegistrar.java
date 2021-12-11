@@ -1,12 +1,8 @@
 package io.quarkus.arc.processor;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 import javax.enterprise.util.Nonbinding;
@@ -15,29 +11,10 @@ import org.jboss.jandex.DotName;
 public interface InterceptorBindingRegistrar extends BuildExtension {
 
     /**
-     * Annotations in a form of {@link DotName} to be considered interceptor bindings.
-     * Optionally, mapped to a {@link Collection} of non-binding fields
-     * 
-     * @deprecated Use {@link #getAdditionalBindings()} instead.
-     */
-    @Deprecated(forRemoval = true)
-    default Map<DotName, Set<String>> registerAdditionalBindings() {
-        return Collections.emptyMap();
-    }
-
-    /**
      * @return the list of additional interceptor bindings
      */
     default List<InterceptorBinding> getAdditionalBindings() {
-        Map<DotName, Set<String>> map = registerAdditionalBindings();
-        if (map.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<InterceptorBinding> bindings = new ArrayList<>();
-        for (Entry<DotName, Set<String>> e : map.entrySet()) {
-            bindings.add(InterceptorBinding.of(e.getKey(), e.getValue()));
-        }
-        return bindings;
+        return Collections.emptyList();
     }
 
     /**

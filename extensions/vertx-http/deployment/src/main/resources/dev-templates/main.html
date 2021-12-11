@@ -143,8 +143,13 @@
                             {/for}
                                     sourceMap["{sourcePackageEntry.key}"] = {sourcePackageEntry.key}Packages;
                             {/for}
-
-                                    var srcMainPath = "{ideInfo:srcMainPath}";
+                            var sourceLocationMap = \{\};
+                            {#for sourcePackageEntry in ideInfo:locationPackages}
+                            sourceLocationMap["{sourcePackageEntry.key}"] = [];
+                            {#for rootPackage in sourcePackageEntry.value}
+                            sourceLocationMap["{sourcePackageEntry.key}"].push("{rootPackage}")
+                            {/for}
+                            {/for}
                             var ideLinkType = "{ideInfo:ideLinkType}";
                             var ideClientLinkFormat = "{ideInfo:ideClientLinkFormat}";
                             var ideServerLinkEndpoint = "{ideInfo:ideServerLinkEndpoint}";
@@ -171,7 +176,28 @@
                             return null;
                             }
 
+                            // if the class is an application class, return the source language it was written in
+                            // or null if the class is not an application class
+                            function appClassLocation(className) {
+                            for (var key in sourceLocationMap){
+                            if (sourceLocationMap.hasOwnProperty(key)) {
+                            var packages = sourceLocationMap[key];
+                            for (var i = 0; i < packages.length; i++) {
+                            if (className.startsWith(packages[i] + ".")) {
+                            return key;
+                            }
+                            }
+                            }
+                            }
+                            return null;
+                            }
+
                             function openInIDE(className, line) {
+                            var location = appClassLocation(className);
+                            if (location == null) {
+                            console.error("Unable to determine file name of class: '" + className + "'");
+                            return;
+                            }
                             var lang = appClassLang(className);
                             if (lang == null) {
                             console.error("Unable to determine file name of class: '" + className + "'");
@@ -184,7 +210,7 @@
                             }
                             var fileName = effectiveClassName.replaceAll(".", "/") + "." + langToExt[lang];
                             if (ideLinkType == "client") {
-                            var location = ideClientLinkFormat.replace("{0}", srcMainPath + "/" + lang + "/" + fileName);
+                            var location = ideClientLinkFormat.replace("{0}", location + "/" + fileName);
                             if (line) {
                             location = location.replace("{1}", line);
                             } else {
@@ -197,7 +223,6 @@
                             var fd = new FormData();
                             fd.append('className', className);
                             fd.append('lang', lang);
-                            fd.append('srcMainPath', srcMainPath);
                             if (line) {
                             fd.append('line', line);
                             }

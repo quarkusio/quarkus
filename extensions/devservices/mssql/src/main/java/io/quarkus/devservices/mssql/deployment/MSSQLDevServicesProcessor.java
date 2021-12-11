@@ -3,6 +3,7 @@ package io.quarkus.devservices.mssql.deployment;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -30,14 +31,14 @@ public class MSSQLDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("Quarkuspassword1"));
                 additionalProperties.forEach(container::withUrlParam);
@@ -84,6 +85,8 @@ public class MSSQLDevServicesProcessor {
 
             if (fixedExposedPort.isPresent()) {
                 addFixedExposedPort(fixedExposedPort.getAsInt(), MSSQLServerContainer.MS_SQL_SERVER_PORT);
+            } else {
+                addExposedPort(MS_SQL_SERVER_PORT);
             }
         }
 

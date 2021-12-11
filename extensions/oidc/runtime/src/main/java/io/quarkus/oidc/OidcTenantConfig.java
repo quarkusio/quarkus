@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -149,6 +150,18 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<String> postLogoutPath = Optional.empty();
 
+        /**
+         * Name of the post logout URI parameter which will be added as a query parameter to the logout redirect URI.
+         */
+        @ConfigItem(defaultValue = OidcConstants.POST_LOGOUT_REDIRECT_URI)
+        public String postLogoutUriParam;
+
+        /**
+         * Additional properties which will be added as the query parameters to the logout redirect URI.
+         */
+        @ConfigItem
+        public Map<String, String> extraParams;
+
         public void setPath(Optional<String> path) {
             this.path = path;
         }
@@ -163,6 +176,22 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public Optional<String> getPostLogoutPath() {
             return postLogoutPath;
+        }
+
+        public Map<String, String> getExtraParams() {
+            return extraParams;
+        }
+
+        public void setExtraParams(Map<String, String> extraParams) {
+            this.extraParams = extraParams;
+        }
+
+        public String getPostLogoutUriParam() {
+            return postLogoutUriParam;
+        }
+
+        public void setPostLogoutUriParam(String postLogoutUriParam) {
+            this.postLogoutUriParam = postLogoutUriParam;
         }
     }
 
@@ -476,6 +505,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean cookieForceSecure;
 
         /**
+         * Cookie name suffix.
+         * For example, a session cookie name for the default OIDC tenant is 'q_session' but can be changed to 'q_session_test'
+         * if this property is set to 'test'.
+         */
+        @ConfigItem
+        public Optional<String> cookieSuffix = Optional.empty();
+
+        /**
          * Cookie path parameter value which, if set, will be used to set a path parameter for the session, state and post
          * logout cookies.
          * The `cookie-path-header` property, if set, will be checked first.
@@ -651,6 +688,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setIdTokenRequired(boolean idTokenRequired) {
             this.idTokenRequired = idTokenRequired;
+        }
+
+        public Optional<String> getCookieSuffix() {
+            return cookieSuffix;
+        }
+
+        public void setCookieSuffix(String cookieSuffix) {
+            this.cookieSuffix = Optional.of(cookieSuffix);
         }
 
     }

@@ -28,7 +28,7 @@
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.4</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>7.3</gradle-wrapper.version>
+        <gradle-wrapper.version>7.3.1</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
@@ -43,7 +43,7 @@
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
-        <junit.version>5.8.1</junit.version>
+        <junit.version>5.8.2</junit.version>
         <commons-compress.version>1.20</commons-compress.version>
         <jboss-logging.version>3.4.2.Final</jboss-logging.version>
         <maven-core.version>3.8.4</maven-core.version>
@@ -328,7 +328,7 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.17.0</version>
+                <version>2.17.1</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>

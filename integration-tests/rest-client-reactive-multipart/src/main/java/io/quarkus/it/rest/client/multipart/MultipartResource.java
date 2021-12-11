@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -32,9 +34,11 @@ import io.quarkus.it.rest.client.multipart.MultipartClient.WithByteArrayAsBinary
 import io.quarkus.it.rest.client.multipart.MultipartClient.WithByteArrayAsTextFile;
 import io.quarkus.it.rest.client.multipart.MultipartClient.WithFileAsBinaryFile;
 import io.quarkus.it.rest.client.multipart.MultipartClient.WithFileAsTextFile;
+import io.quarkus.it.rest.client.multipart.MultipartClient.WithMultiByteAsBinaryFile;
 import io.quarkus.it.rest.client.multipart.MultipartClient.WithPathAsBinaryFile;
 import io.quarkus.it.rest.client.multipart.MultipartClient.WithPathAsTextFile;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
 
 @Path("")
@@ -83,6 +87,25 @@ public class MultipartResource {
         }
         data.fileName = GREETING_TXT;
         return client.sendByteArrayAsBinaryFile(data);
+    }
+
+    @GET
+    @Path("/client/multi-byte-as-binary-file")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Blocking
+    public String sendMultiByte(@QueryParam("nullFile") @DefaultValue("false") boolean nullFile) {
+        WithMultiByteAsBinaryFile data = new WithMultiByteAsBinaryFile();
+        if (!nullFile) {
+            List<Byte> bytes = new ArrayList<>();
+            for (byte b : HELLO_WORLD.getBytes(UTF_8)) {
+                bytes.add(b);
+            }
+
+            data.file = Multi.createFrom().iterable(bytes);
+        }
+        data.fileName = GREETING_TXT;
+        return client.sendMultiByteAsBinaryFile(data);
     }
 
     @GET

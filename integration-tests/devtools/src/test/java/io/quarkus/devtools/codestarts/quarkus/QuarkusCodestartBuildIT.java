@@ -36,8 +36,11 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     private static final Path testDirPath = Paths.get("target/quarkus-codestart-build-test");
 
-    private static final Set<String> EXCLUDED = Sets.newHashSet("spring-web-codestart", "picocli-codestart",
-            "hibernate-orm-codestart");
+    private static final Set<String> EXCLUDED = Sets.newHashSet(
+            "spring-web-codestart",
+            "picocli-codestart",
+            "hibernate-orm-codestart",
+            "reactive-messaging-codestart");
 
     @BeforeAll
     static void setUp() throws IOException {
@@ -135,7 +138,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
         if (codestarts.isEmpty()) {
             name += "-default";
         } else if (codestarts.size() > 2) {
-            name += "-" + UUID.randomUUID().toString();
+            name += "-" + UUID.randomUUID();
         } else {
             name += "-" + String.join("-", codestarts);
         }

@@ -52,10 +52,11 @@ public class AmazonLambdaRecorder {
         beanContainer = container;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
         Method handlerMethod = discoverHandlerMethod(handlerClass);
-        if (handlerMethod.getParameterTypes()[0].equals(S3Event.class)) {
+        Class<?> parameterType = handlerMethod.getParameterTypes()[0];
+        if (parameterType.equals(S3Event.class)) {
             objectReader = new S3EventInputReader(objectMapper);
         } else {
-            objectReader = new JacksonInputReader(objectMapper.readerFor(handlerMethod.getParameterTypes()[0]));
+            objectReader = new JacksonInputReader(objectMapper.readerFor(parameterType));
         }
         objectWriter = new JacksonOutputWriter(objectMapper.writerFor(handlerMethod.getReturnType()));
     }
@@ -85,9 +86,11 @@ public class AmazonLambdaRecorder {
         Method method = null;
         for (int i = 0; i < methods.length && method == null; i++) {
             if (methods[i].getName().equals("handleRequest")) {
-                final Class<?>[] types = methods[i].getParameterTypes();
-                if (types.length == 2 && !types[0].equals(Object.class)) {
-                    method = methods[i];
+                if (methods[i].getParameterCount() == 2) {
+                    final Class<?>[] types = methods[i].getParameterTypes();
+                    if (!types[0].equals(Object.class)) {
+                        method = methods[i];
+                    }
                 }
             }
         }

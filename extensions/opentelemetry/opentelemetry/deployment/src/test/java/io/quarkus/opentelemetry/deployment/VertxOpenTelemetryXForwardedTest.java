@@ -32,7 +32,7 @@ public class VertxOpenTelemetryXForwardedTest {
                 .statusCode(200)
                 .body(is("Hello Tracer!"));
 
-        List<SpanData> spans = testSpanExporter.getFinishedSpanItems();
+        List<SpanData> spans = testSpanExporter.getFinishedSpanItems(2);
 
         assertEquals("203.0.113.195", spans.get(1).getAttributes().get(HTTP_CLIENT_IP));
     }

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.LongAdder;
 import org.junit.jupiter.api.Test;
 
 public class SimpleTest {
@@ -242,5 +243,46 @@ public class SimpleTest {
         assertEquals("foos::baz",
                 engine.parse("{foo}:{bar}:{baz.get()}")
                         .data("foo", Optional.of("foos"), "bar", Optional.empty(), "baz", Optional.of("baz")).render());
+    }
+
+    @Test
+    public void testSectionHelpFactoryConfigCaching() {
+        LongAdder invocations = new LongAdder();
+        IfSectionHelper.Factory customIfFactory = new IfSectionHelper.Factory() {
+            @Override
+            public ParametersInfo getParameters() {
+                invocations.increment();
+                return super.getParameters();
+            }
+        };
+        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapResolver())
+                .build();
+        assertEquals(":1:1",
+                engine.parse("{#if foo}:1{/if}{#if bar}:0{/if}{#if foo}:1{/if}")
+                        .data("foo", true, "bar", false).render());
+        assertEquals(1, invocations.longValue());
+    }
+
+    @Test
+    public void testSectionHelpFactoryConfigCachingDisabled() {
+        LongAdder invocations = new LongAdder();
+        IfSectionHelper.Factory customIfFactory = new IfSectionHelper.Factory() {
+            @Override
+            public ParametersInfo getParameters() {
+                invocations.increment();
+                return super.getParameters();
+            }
+
+            @Override
+            public boolean cacheFactoryConfig() {
+                return false;
+            }
+        };
+        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapResolver())
+                .build();
+        assertEquals(":1:1",
+                engine.parse("{#if foo}:1{/if}{#if bar}:0{/if}{#if foo}:1{/if}")
+                        .data("foo", true, "bar", false).render());
+        assertEquals(3, invocations.longValue());
     }
 }

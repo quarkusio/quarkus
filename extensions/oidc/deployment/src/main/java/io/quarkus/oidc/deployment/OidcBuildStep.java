@@ -25,6 +25,8 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.SecurityEvent;
+import io.quarkus.oidc.TokenIntrospectionCache;
+import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
@@ -95,7 +97,7 @@ public class OidcBuildStep {
             OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem) {
         return SyntheticBeanBuildItem.configure(DefaultTokenIntrospectionUserInfoCache.class).unremovable()
-                .types(DefaultTokenIntrospectionUserInfoCache.class)
+                .types(DefaultTokenIntrospectionUserInfoCache.class, TokenIntrospectionCache.class, UserInfoCache.class)
                 .supplier(recorder.setupTokenCache(config, vertxBuildItem.getVertx()))
                 .scope(Singleton.class)
                 .setRuntimeInit()

@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.db2.runtime.DB2AgroalConnectionConfigurer;
@@ -76,5 +77,13 @@ public class JDBCDB2Processor {
                             DB2ServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
+    }
+
+    @BuildStep
+    void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports) {
+        // com.ibm.db2:jcc:11.5.6.0 accesses sun.security.action.GetPropertyAction
+        // which is strongly encapsulated in Java 17 requiring
+        // --add-exports=java.base/sun.security.action=ALL-UNNAMED
+        jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.action"));
     }
 }

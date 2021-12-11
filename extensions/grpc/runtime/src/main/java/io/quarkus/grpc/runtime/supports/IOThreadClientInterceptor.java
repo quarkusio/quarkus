@@ -12,12 +12,14 @@ import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
+import io.quarkus.grpc.GlobalInterceptor;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 /**
  * gRPC Client emissions should be on the event loop if the subscription is executed on the event loop
  */
+@GlobalInterceptor
 @ApplicationScoped
 public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized {
 

@@ -13,8 +13,8 @@ This guide explains how your Quarkus application can utilize https://github.com/
 to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`
 and provide secured access to the Quarkus HTTP endpoints using Bearer Token Authorization and https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
 
-NOTE: Quarkus OpenId Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information.
-OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide for more information.
+NOTE: Quarkus OpenId Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide for more information.
+OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide for more information.
 
 == Quickstart
 
@@ -341,7 +341,7 @@ nQIDAQAB
 
 === Generating a JWT
 
-Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see link:smallrye-jwt-build[Generate JWT tokens with SmallRye JWT] for more information).
+Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] for more information).
 
 Take the code from the following listing and place into `security-jwt-quickstart/src/main/java/org/acme/security/jwt/GenerateToken.java`:
 
@@ -378,7 +378,7 @@ in order for the token to be accepted as valid.
 <2> The `upn` claim is defined by the {mp-jwt} spec as preferred claim to use for the
 `Principal` seen via the container security APIs.
 <3> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
-<4> The `birthday` claim. It can be considered to be a sensitive claim so you may want to consider encrypting the claims, see link:smallrye-jwt-build[Generate JWT tokens with SmallRye JWT].
+<4> The `birthday` claim. It can be considered to be a sensitive claim so you may want to consider encrypting the claims, see xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT].
 
 Note for this code to work we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`:
 
@@ -762,7 +762,7 @@ If this is the only key property which is set then the incoming token is expecte
 If either `mp.jwt.verify.publickey` or `mp.jwt.verify.publickey.location` verification properties are also set then the incoming token is expected to contain
 the encrypted inner-signed token.
 
-See link:smallrye-jwt-build[Generate JWT tokens with SmallRye JWT] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
+See xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] and learn how to generate the encrypted or inner-signed and then encrypted tokens fast.
 
 === Custom Factories
 
@@ -806,7 +806,7 @@ public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
 
 === Token Propagation
 
-Please see link:security-openid-connect-client#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+Please see xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
 [[integration-testing]]
 === Testing
@@ -814,7 +814,7 @@ Please see link:security-openid-connect-client#token-propagation[Token Propagati
 [[integration-testing-wiremock]]
 ==== Wiremock
 
-If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing[OpenId Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -826,7 +826,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 [[integration-testing-keycloak]]
 ==== Keycloak
 
-If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the link:security-openid-connect#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -838,7 +838,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 [[integration-testing-public-key]]
 ==== Local Public Key
 
-You can use the same approach as described in the link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
+You can use the same approach as described in the xref:security-openid-connect#integration-testing.adoc[OpenId Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -941,7 +941,7 @@ quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-l
 
 === Proactive Authentication
 
-If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the link:security-built-in-authentication#proactive-authentication[proactive authentication].
+If you'd like to skip the token verification when the public endpoint methods are invoked then please disable the xref:security-built-in-authentication.adoc#proactive-authentication[proactive authentication].
 
 Note that you can't access the injected `JsonWebToken` in the public methods if the token verification has not been done.
 
@@ -981,7 +981,7 @@ include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, levelof
 |===
 |Property Name|Default|Description
 |mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
-|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see link:native-and-ssl[Using SSL With Native Executables] for more details.
+|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see xref:native-and-ssl.adoc[Using SSL With Native Executables] for more details.
 |mp.jwt.verify.publickey.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.
 |mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer) claim of the JWT that the server will accept as valid.
@@ -1033,6 +1033,6 @@ SmallRye JWT provides more properties which can be used to customize the token p
 * link:https://tools.ietf.org/html/rfc7515[JSON Web Signature]
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
-* link:security-jwt-build[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* link:security#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
-* link:security[Quarkus Security]
+* xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
+* xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]
+* xref:security.adoc[Quarkus Security]

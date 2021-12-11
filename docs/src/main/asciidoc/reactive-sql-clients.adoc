@@ -20,7 +20,7 @@ In this guide, you will learn how to implement a simple CRUD application exposin
 
 NOTE: Extension and connection pool class names for each client can be found at the bottom of this document.
 
-IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the link:vertx[Using Eclipse Vert.x] guide first.
+IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the xref:vertx.adoc[Using Eclipse Vert.x] guide first.
 
 The application shall manage fruit entities:
 
@@ -159,7 +159,7 @@ public class FruitResource {
 Before we implement the REST endpoint and data management code, we need to setup the database schema.
 It would also be convenient to have some data inserted upfront.
 
-For production we would recommend to use something like the link:flyway[Flyway database migration tool].
+For production we would recommend to use something like the xref:flyway.adoc[Flyway database migration tool].
 But for development we can simply drop and create the tables on startup, and then insert a few fruits.
 
 [source,java]
@@ -641,7 +641,7 @@ MySQLPool additional2Client;
 
 The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
 
-First make sure that link:vertx-reference.adoc#native-transport[native transport support] is enabled.
+First make sure that xref:vertx-reference.adoc#native-transport[native transport support] is enabled.
 
 Then configure the database connection url.
 This step depends on the database type.

@@ -72,6 +72,8 @@ public final class ReactiveMessagingDotNames {
     static final DotName ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER = DotName
             .createSimple("io.quarkus.smallrye.reactivemessaging.runtime.kotlin.AbstractSubscribingCoroutineInvoker");
 
+    static final DotName TRANSACTIONAL = DotName.createSimple("javax.transaction.Transactional");
+
     private ReactiveMessagingDotNames() {
     }
 

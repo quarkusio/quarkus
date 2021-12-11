@@ -50,6 +50,21 @@ mp.messaging.incoming.[channel-name].connector=smallrye-amqp
 mp.messaging.outgoing.[channel-name].connector=smallrye-amqp
 ----
 
+[TIP]
+.Connector auto-attachment
+====
+If you have a single connector on your classpath, you can omit the `connector` attribute configuration.
+Quarkus automatically associates _orphan_ channels to the (unique) connector found on the classpath.
+_Orphans_ channels are outgoing channels without a downstream consumer or incoming channels without an upstream producer.
+
+This auto-attachment can be disabled using:
+
+[source, properties]
+----
+quarkus.reactive-messaging.auto-connector-attachment=false
+----
+====
+
 == Configuring the AMQP Broker access
 
 The AMQP connector connects to AMQP 1.0 brokers such as Apache ActiveMQ or Artemis.
@@ -70,7 +85,7 @@ mp.messaging.incoming.prices.connector=smallrye-amqp # <5>
 4. Configures the broker/router password if required. You can do it per channel (using the `password` attribute) or globally using `amqp-password`.
 5. Instructs the prices channel to be managed by the AMQP connector
 
-In dev mode and when running tests, link:amqp-dev-services.adoc[Dev Services for AMQP] automatically starts an AMQP broker.
+In dev mode and when running tests, xref:amqp-dev-services.adoc[Dev Services for AMQP] automatically starts an AMQP broker.
 
 == Receiving AMQP messages
 
@@ -369,7 +384,6 @@ import javax.transaction.Transactional;
 public class PriceStorage {
 
     @Incoming("prices")
-    @Blocking
     @Transactional
     public void store(int priceInUsd) {
         Price price = new Price();
@@ -391,6 +405,12 @@ They have the same effect.
 Thus, you can use both.
 The first one provides more fine-grained tuning such as the worker pool to use and whether it preserves the order.
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
+====
+
+[TIP]
+.@Transactional
+====
+If your method is annotated with `@Transactional`, it will be considered _blocking_ automatically, even if the method is not annotated with `@Blocking`.
 ====
 
 == Customizing the underlying AMQP client

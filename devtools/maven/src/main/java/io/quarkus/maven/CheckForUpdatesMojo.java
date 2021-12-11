@@ -4,7 +4,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,6 +41,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
@@ -399,7 +399,7 @@ public class CheckForUpdatesMojo extends AbstractMojo {
         if (Files.isDirectory(p)) {
             return Files.exists(p.resolve(BootstrapConstants.DESCRIPTOR_PATH));
         } else {
-            try (FileSystem fs = FileSystems.newFileSystem(p, (ClassLoader) null)) {
+            try (FileSystem fs = ZipUtils.newFileSystem(p)) {
                 return Files.exists(fs.getPath(BootstrapConstants.DESCRIPTOR_PATH));
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to read archive " + p, e);

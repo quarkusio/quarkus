@@ -15,8 +15,8 @@ updates:
       - dependency-name: org.apache.activemq:*
       - dependency-name: org.flywaydb:flyway-core
       - dependency-name: org.liquibase:liquibase-core
+      - dependency-name: org.liquibase.ext:liquibase-mongodb
       - dependency-name: org.freemarker:freemarker
-      - dependency-name: org.eclipse.jgit:*
       - dependency-name: io.fabric8:kubernetes-client-bom
       - dependency-name: org.apache.httpcomponents:*
       - dependency-name: org.quartz-scheduler:quartz
@@ -25,15 +25,16 @@ updates:
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
       - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
-      - dependency-name: com.jcraft:jzlib
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
+      - dependency-name: org.apache.logging.log4j:log4j-api
       - dependency-name: org.ow2.asm:*
       - dependency-name: org.glassfish:jakarta-el
       - dependency-name: com.google.cloud.tools:jib-core
       # Quarkus
       - dependency-name: io.quarkus.gizmo:gizmo
       - dependency-name: io.quarkus.http:*
+      - dependency-name: io.quarkus:quarkus-fs-util
       # Elytron
       - dependency-name: org.wildfly.security:wildfly-elytron
       - dependency-name: org.wildfly.security:wildfly-elytron-*
@@ -63,8 +64,6 @@ updates:
       - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
       # Swagger-UI
       - dependency-name: org.webjars:swagger-ui
-      # Tika
-      - dependency-name: org.apache.tika:tika-parsers
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Test dependencies
@@ -102,9 +101,9 @@ updates:
       # Jackson
       - dependency-name: com.fasterxml.jackson:jackson-bom
       - dependency-name: com.fasterxml:classmate
+      # Yasson
+      - dependency-name: org.eclipse:yasson
       # AWS
-      - dependency-name: software.amazon.awssdk:*
-      - dependency-name: com.amazon.alexa:*
       - dependency-name: com.amazonaws:*
       - dependency-name: com.amazonaws.serverless:*
       # Azure
@@ -119,7 +118,6 @@ updates:
       - dependency-name: org.bouncycastle:*
       # Logstash
       - dependency-name: biz.paluch.logging:logstash-gelf
-      - dependency-name: io.sentry:*
       # MongoDB
       - dependency-name: org.mongodb:*
       # Avro
@@ -132,8 +130,44 @@ updates:
       - dependency-name: org.jetbrains.kotlin:*
       - dependency-name: org.jetbrains.kotlinx:*
       - dependency-name: org.jetbrains.dokka:*
+      # TCKs
+      - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
+      - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck
+      - dependency-name: org.eclipse.microprofile.fault-tolerance:microprofile-fault-tolerance-tck
+      - dependency-name: org.eclipse.microprofile.graphql:microprofile-graphql-tck
+      - dependency-name: org.eclipse.microprofile.health:microprofile-health-tck
+      - dependency-name: org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck
+      - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
+      - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
+      - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
+      - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
+      - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
     ignore:
+      - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.fault-tolerance:microprofile-fault-tolerance-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.graphql:microprofile-graphql-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.health:microprofile-health-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.jwt:microprofile-jwt-auth-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.metrics:microprofile-metrics-*-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.glassfish:jakarta-el
+        update-types: ["version-update:semver-major"]
+      - dependency-name: org.eclipse:yasson
         update-types: ["version-update:semver-major"]
     rebase-strategy: disabled
   - package-ecosystem: gradle

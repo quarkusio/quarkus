@@ -70,7 +70,11 @@ public class ExpressionTest {
 
     @Test
     public void testNestedVirtualMethods() {
-        Expression exp = ExpressionImpl.from("movie.findServices(movie.name,movie.toNumber(movie.getName))");
+        assertNestedVirtualMethod(ExpressionImpl.from("movie.findServices(movie.name,movie.toNumber(movie.getName))"));
+        assertNestedVirtualMethod(ExpressionImpl.from("movie.findServices(movie.name, movie.toNumber(movie.getName) )"));
+    }
+
+    private void assertNestedVirtualMethod(Expression exp) {
         assertNull(exp.getNamespace());
         List<Expression.Part> parts = exp.getParts();
         assertEquals(2, parts.size());

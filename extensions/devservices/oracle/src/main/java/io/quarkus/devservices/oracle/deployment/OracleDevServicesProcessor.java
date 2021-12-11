@@ -3,6 +3,7 @@ package io.quarkus.devservices.oracle.deployment;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -24,7 +25,7 @@ public class OracleDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(OracleDevServicesProcessor.class);
 
     public static final String IMAGE = "gvenzl/oracle-xe";
-    public static final String TAG = "18.4.0-slim";
+    public static final String TAG = "21.3.0-slim";
     public static final String DEFAULT_DATABASE_USER = "quarkus";
     public static final String DEFAULT_DATABASE_PASSWORD = "quarkus";
     public static final String DEFAULT_DATABASE_NAME = "quarkusdb";
@@ -32,14 +33,14 @@ public class OracleDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupOracle(
-            Optional<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.ORACLE, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusOracleServerContainer container = new QuarkusOracleServerContainer(imageName, fixedExposedPort,
-                        devServicesSharedNetworkBuildItem.isPresent());
+                        !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withUsername(username.orElse(DEFAULT_DATABASE_USER))
                         .withPassword(password.orElse(DEFAULT_DATABASE_PASSWORD))
@@ -88,7 +89,9 @@ public class OracleDevServicesProcessor {
             }
 
             if (fixedExposedPort.isPresent()) {
-                addFixedExposedPort(fixedExposedPort.getAsInt(), OracleDevServicesProcessor.PORT);
+                addFixedExposedPort(fixedExposedPort.getAsInt(), PORT);
+            } else {
+                addExposedPort(PORT);
             }
         }
 

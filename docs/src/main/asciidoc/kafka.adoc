@@ -54,6 +54,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[NOTE]
+====
+The extension includes `kafka-clients` version 3.0.0 as a transitive dependency and is compatible with Kafka brokers version 2.x.
+====
+
 == Configuring Smallrye Kafka Connector
 
 Because Smallrye Reactive Messaging framework supports different messaging backends like Apache Kafka, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
@@ -69,13 +74,27 @@ A minimal configuration for the Kafka connector with an incoming channel looks l
 %prod.kafka.bootstrap.servers=kafka:9092 <1>
 mp.messaging.incoming.prices.connector=smallrye-kafka <2>
 ----
-
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.incoming.$channel.bootstrap.servers` property.
-In dev mode and when running tests, link:kafka-dev-services[Dev Services for Kafka] automatically starts a Kafka broker.
+In dev mode and when running tests, xref:kafka-dev-services.adoc[Dev Services for Kafka] automatically starts a Kafka broker.
 When not provided this property defaults to `localhost:9092`.
 <2> Configure the connector to manage the prices channel. By default the topic name is same as the channel name. You can configure the topic attribute to override it.
 
 NOTE: The `%prod` prefix indicates that the property is only used when the application runs in prod mode (so not in dev or test). Refer to the xref:config-reference.adoc#profiles[Profile documentation] for further details.
+
+[TIP]
+.Connector auto-attachment
+====
+If you have a single connector on your classpath, you can omit the `connector` attribute configuration.
+Quarkus automatically associates _orphan_ channels to the (unique) connector found on the classpath.
+_Orphans_ channels are outgoing channels without a downstream consumer or incoming channels without an upstream producer.
+
+This auto-attachment can be disabled using:
+
+[source, properties]
+----
+quarkus.reactive-messaging.auto-connector-attachment=false
+----
+====
 
 == Receiving messages from Kafka
 
@@ -235,7 +254,6 @@ import javax.transaction.Transactional;
 public class PriceStorage {
 
     @Incoming("prices")
-    @Blocking
     @Transactional
     public void store(int priceInUsd) {
         Price price = new Price();
@@ -261,6 +279,12 @@ The first one provides more fine-grained tuning such as the worker pool to use a
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
 
 Detailed information on the usage of `@Blocking` annotation can be found in https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/advanced/blocking.html[SmallRye Reactive Messaging – Handling blocking execution].
+====
+
+[TIP]
+.@Transactional
+====
+If your method is annotated with `@Transactional`, it will be considered _blocking_ automatically, even if the method is not annotated with `@Blocking`.
 ====
 
 === Acknowledgment Strategies
@@ -656,7 +680,7 @@ mp.messaging.outgoing.prices-out.topic=prices <3>
 ----
 
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.outgoing.$channel.bootstrap.servers` property.
-In dev mode and when running tests, link:kafka-dev-services[Dev Services for Kafka] automatically starts a Kafka broker.
+In dev mode and when running tests, xref:kafka-dev-services.adoc[Dev Services for Kafka] automatically starts a Kafka broker.
 When not provided, this property defaults to `localhost:9092`.
 <2> Configure the connector to manage the `prices-out` channel.
 <3> By default, the topic name is same as the channel name. You can configure the topic attribute to override it.
@@ -1213,15 +1237,9 @@ NOTE: With JSON serialization correctly configured, you can also use `Publisher<
 [[jackson-serialization]]
 === Serializing via Jackson
 
-First, you need to include the `quarkus-jackson` extension.
-
-[source, xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jackson</artifactId>
-</dependency>
-----
+Quarkus has built-in support for JSON serialization and deserialization based on Jackson.
+It will also <<serialization-generation, generate>> the serializer and deserializer for you, so you do not have to configure anything.
+When generation is disabled, you can use the provided `ObjectMapperSerializer` and `ObjectMapperDeserializer` as explained below.
 
 There is an existing `ObjectMapperSerializer` that can be used to serialize all data objects via Jackson.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
@@ -1251,12 +1269,10 @@ Finally, configure your channels to use the Jackson serializer and deserializer.
 [source,properties]
 ----
 # Configure the Kafka source (we read from it)
-mp.messaging.incoming.fruit-in.connector=smallrye-kafka
 mp.messaging.incoming.fruit-in.topic=fruit-in
 mp.messaging.incoming.fruit-in.value.deserializer=com.acme.fruit.jackson.FruitDeserializer
 
 # Configure the Kafka sink (we write to it)
-mp.messaging.outgoing.fruit-out.connector=smallrye-kafka
 mp.messaging.outgoing.fruit-out.topic=fruit-out
 mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
 ----
@@ -1359,7 +1375,7 @@ that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding se
 
 == Avro Serialization
 
-This is described in a dedicated guide: link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
 
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
@@ -1418,7 +1434,7 @@ The full set of types supported by the serializer/deserializer autodetection is:
 * `io.vertx.core.json.JsonObject`
 * `io.vertx.core.json.JsonArray`
 * classes generated from Avro schemas, as well as Avro `GenericRecord`, if Confluent or Apicurio Registry _serde_ is present
-** see link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio Registry libraries
+** see xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio Registry libraries
 * classes for which a subclass of `ObjectMapperSerializer` / `ObjectMapperDeserializer` is present, as described in <<jackson-serialization>>
 ** it is technically not needed to subclass `ObjectMapperSerializer`, but in such case, autodetection isn't possible
 * classes for which a subclass of `JsonbSerializer` / `JsonbDeserializer` is present, as described in <<jsonb-serialization>>
@@ -1429,9 +1445,28 @@ If a serializer/deserializer is set by configuration, it won't be replaced by th
 In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
+[[serialization-generation]]
+== JSON Serializer/deserializer generation
+Quarkus automatically generates serializers and deserializers for channels where:
+
+1. the serializer/deserializer is not configured
+2. the auto-detection did not find a matching serializer/deserializer
+
+It uses Jackson underneath.
+
+This generation can be disabled using:
+
+[source, properties]
+----
+quarkus.reactive-messaging.kafka.serializer-generation.enabled=false
+----
+
+IMPORTANT: Generation does not support collections such as `List<Fruit>`.
+Refer to <<jackson-serialization>> to write your own serializer/deserializer for this case.
+
 == Using Schema Registry
 
-This is described in a dedicated guide: link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
 
 [[kafka-health-check]]
 == Health Checks
@@ -1485,7 +1520,7 @@ You can adjust the timeout for topic verification calls to the broker using the 
 
 == Kafka Streams
 
-This is described in a dedicated guide: link:kafka-streams[Using Apache Kafka Streams].
+This is described in a dedicated guide: xref:kafka-streams.adoc[Using Apache Kafka Streams].
 
 == Using Snappy for message compression
 
@@ -1684,7 +1719,7 @@ include::kafka-dev-services.adoc[leveloffset=+1]
 == Kubernetes Service Bindings
 
 Quarkus Kafka extension supports
-link:deploying-to-kubernetes[Service Binding Specification for Kubernetes].
+xref:deploying-to-kubernetes.adoc[Service Binding Specification for Kubernetes].
 You can enable this by adding the `quarkus-kubernetes-service-binding` extension to your application.
 
 When running in appropriately configured Kubernetes clusters, Kafka extension will pull its Kafka broker connection configuration from the service binding available inside the cluster, without the need for user configuration.
@@ -1935,17 +1970,16 @@ public class FruitConsumer {
 
     @Incoming("fruits")                                     // <1>
     @Transactional                                          // <2>
-    @Blocking                                               // <3>
-    public void persistFruits(Fruit fruit) {                // <4>
-        fruit.persist();                                    // <5>
+    public void persistFruits(Fruit fruit) {                // <3>
+        fruit.persist();                                    // <4>
     }
 }
 ----
 <1> Configuring the incoming channel. This channel reads from Kafka.
 <2> As we are writing in a database, we must be in a transaction. This annotation starts a new transaction and commits it when the method returns.
-<3> Writing to a database using classic Hibernate is blocking. So, you must tell to Quarkus that the method must be called on a worker thread you can block (and not an I/O thread).
-<4> The method receives each Fruit. Note that you would need a deserializer to reconstruct the Fruit instances from the Kafka records.
-<5> Persist the received `fruit` object.
+Quarkus automatically considers the method as _blocking_. Indeed, writing to a database using classic Hibernate is blocking. So, Quarkus calls the method on a worker thread you can block (and not an I/O thread).
+<3> The method receives each Fruit. Note that you would need a deserializer to reconstruct the Fruit instances from the Kafka records.
+<4> Persist the received `fruit` object.
 
 As mentioned in <4>, you need a deserializer that can create a `Fruit` from the record.
 This can be done using a Jackson deserializer:

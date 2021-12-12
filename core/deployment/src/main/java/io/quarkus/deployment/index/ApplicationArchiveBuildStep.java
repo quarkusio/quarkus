@@ -2,13 +2,14 @@ package io.quarkus.deployment.index;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.ProviderNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -106,7 +107,6 @@ public class ApplicationArchiveBuildStep {
         }
 
         List<ApplicationArchive> applicationArchives = scanForOtherIndexes(buildCloseables,
-                Thread.currentThread().getContextClassLoader(),
                 markerFiles, root, additionalApplicationArchiveBuildItem, indexDependencyBuildItems, indexCache,
                 curateOutcomeBuildItem, removedResources);
         return new ApplicationArchivesBuildItem(
@@ -116,7 +116,7 @@ public class ApplicationArchiveBuildStep {
     }
 
     private List<ApplicationArchive> scanForOtherIndexes(QuarkusBuildCloseablesBuildItem buildCloseables,
-            ClassLoader classLoader, Set<String> applicationArchiveFiles,
+            Set<String> applicationArchiveFiles,
             ArchiveRootBuildItem root, List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives,
             List<IndexDependencyBuildItem> indexDependencyBuildItem, IndexCache indexCache,
             CurateOutcomeBuildItem curateOutcomeBuildItem, Map<ArtifactKey, Set<String>> removedResources)
@@ -128,17 +128,17 @@ public class ApplicationArchiveBuildStep {
         //get paths that are included via marker files
         Set<String> markers = new HashSet<>(applicationArchiveFiles);
         markers.add(IndexingUtil.JANDEX_INDEX);
-        addMarkerFilePaths(markers, root, curateOutcomeBuildItem, indexedPaths, appArchives, buildCloseables, classLoader,
+        addMarkerFilePaths(markers, root, curateOutcomeBuildItem, indexedPaths, appArchives, buildCloseables,
                 indexCache, removedResources);
 
         //get paths that are included via index-dependencies
-        addIndexDependencyPaths(indexDependencyBuildItem, classLoader, root, indexedPaths, appArchives, buildCloseables,
+        addIndexDependencyPaths(indexDependencyBuildItem, root, indexedPaths, appArchives, buildCloseables,
                 indexCache, curateOutcomeBuildItem, removedResources);
 
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
             for (Path apPath : i.getResolvedPaths()) {
                 if (!root.getPaths().contains(apPath) && indexedPaths.add(apPath)) {
-                    appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, apPath, null,
+                    appArchives.add(createApplicationArchive(buildCloseables, indexCache, apPath, null,
                             removedResources));
                 }
             }
@@ -147,8 +147,8 @@ public class ApplicationArchiveBuildStep {
         return appArchives;
     }
 
-    private void addIndexDependencyPaths(List<IndexDependencyBuildItem> indexDependencyBuildItems,
-            ClassLoader classLoader, ArchiveRootBuildItem root, Set<Path> indexedDeps, List<ApplicationArchive> appArchives,
+    private void addIndexDependencyPaths(List<IndexDependencyBuildItem> indexDependencyBuildItems, ArchiveRootBuildItem root,
+            Set<Path> indexedDeps, List<ApplicationArchive> appArchives,
             QuarkusBuildCloseablesBuildItem buildCloseables, IndexCache indexCache,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             Map<ArtifactKey, Set<String>> removedResources) {
@@ -174,7 +174,7 @@ public class ApplicationArchiveBuildStep {
                 }
                 for (Path path : artifact.getResolvedPaths()) {
                     if (!root.isExcludedFromIndexing(path) && !root.getPaths().contains(path) && indexedDeps.add(path)) {
-                        appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, path, key,
+                        appArchives.add(createApplicationArchive(buildCloseables, indexCache, path, key,
                                 removedResources));
                     }
                 }
@@ -185,13 +185,12 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static ApplicationArchive createApplicationArchive(QuarkusBuildCloseablesBuildItem buildCloseables,
-            ClassLoader classLoader,
             IndexCache indexCache, Path dep, ArtifactKey artifactKey, Map<ArtifactKey, Set<String>> removedResources)
             throws IOException {
         Path rootDir = dep;
         boolean isDirectory = Files.isDirectory(dep);
         if (!isDirectory) {
-            final FileSystem fs = buildCloseables.add(ZipUtils.newFileSystem(dep, classLoader));
+            final FileSystem fs = buildCloseables.add(ZipUtils.newFileSystem(dep));
             rootDir = fs.getRootDirectories().iterator().next();
         }
         final IndexView index = indexPath(indexCache, dep, removedResources.get(artifactKey), isDirectory);
@@ -204,78 +203,70 @@ public class ApplicationArchiveBuildStep {
         return isWorkspaceModule ? handleFilePath(dep, removed) : handleJarPath(dep, indexCache, removed);
     }
 
-    private static void addMarkerFilePaths(Set<String> applicationArchiveFiles,
+    private static void addMarkerFilePaths(Set<String> applicationArchiveMarkers,
             ArchiveRootBuildItem root, CurateOutcomeBuildItem curateOutcomeBuildItem, Set<Path> indexedPaths,
-            List<ApplicationArchive> appArchives, QuarkusBuildCloseablesBuildItem buildCloseables, ClassLoader classLoader,
+            List<ApplicationArchive> appArchives, QuarkusBuildCloseablesBuildItem buildCloseables,
             IndexCache indexCache, Map<ArtifactKey, Set<String>> removed)
             throws IOException {
+
+        Set<URI> markedUris = new HashSet<>();
+        for (String marker : applicationArchiveMarkers) {
+            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(marker);
+
+            while (resources.hasMoreElements()) {
+                URL resource = resources.nextElement();
+                String s = resource.toString();
+                if ("jar".equals(resource.getProtocol())) {
+                    // Path is in the format  jar:file:/path/to/jarfile.jar!/META-INF/jandex.idx. Only the path to jar
+                    // is needed, for comparisons and opening fs. Remove the protocol an path inside jar here.
+                    // Results in file:/path/to/jarfile.jar
+                    s = s.substring(4, s.lastIndexOf("!"));
+                } else if ("file".equals(resource.getProtocol())) {
+                    s = s.substring(0, s.length() - marker.length());
+                }
+                markedUris.add(URI.create(s));
+            }
+        }
+
+        List<ResolvedDependency> applicationArchives = new ArrayList<>();
         for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
             if (!ArtifactCoords.TYPE_JAR.equals(dep.getType())) {
                 continue;
             }
+
             final PathCollection artifactPaths = dep.getResolvedPaths();
-            boolean containsMarker = false;
-            FileSystem fs = null;
             for (Path p : artifactPaths) {
                 if (root.isExcludedFromIndexing(p)) {
                     continue;
                 }
-                if (Files.isDirectory(p)) {
-                    if (containsMarker = containsMarker(p, applicationArchiveFiles)) {
-                        break;
-                    }
+
+                if (markedUris.contains(p.toUri())) {
+                    applicationArchives.add(dep);
+                    break;
+                }
+            }
+        }
+
+        for (ResolvedDependency dep : applicationArchives) {
+            final PathList.Builder rootDirs = PathList.builder();
+            final PathCollection artifactPaths = dep.getResolvedPaths();
+            final List<IndexView> indexes = new ArrayList<>(artifactPaths.size());
+            for (Path p : artifactPaths) {
+                boolean isDirectory = Files.isDirectory(p);
+                if (isDirectory) {
+                    rootDirs.add(p);
                 } else {
-                    boolean close = true;
-                    try {
-                        fs = ZipUtils.newFileSystem(p, classLoader);
-                        if (containsMarker = containsMarker(fs.getPath("/"), applicationArchiveFiles)) {
-                            close = false;
-                            break;
-                        }
-                    } catch (ProviderNotFoundException | FileSystemNotFoundException e) {
-                        // that is pretty much an exceptional case
-                        // it's not a dir and not a jar, it could be anything (e.g. a pom file that
-                        // ended up in some project deps)
-                        // not necessarily a wrong state
-                    } finally {
-                        if (close && fs != null) {
-                            fs.close();
-                        }
-                    }
+                    FileSystem fs = ZipUtils.newFileSystem(p);
+                    buildCloseables.add(fs);
+                    fs.getRootDirectories().forEach(rootDirs::add);
                 }
+                indexes.add(indexPath(indexCache, p, removed.get(dep.getKey()), isDirectory));
+                indexedPaths.add(p);
             }
-
-            if (containsMarker) {
-                final PathList.Builder rootDirs = PathList.builder();
-                final List<IndexView> indexes = new ArrayList<>(artifactPaths.size());
-                for (Path p : artifactPaths) {
-                    boolean isDirectory = Files.isDirectory(p);
-                    if (isDirectory) {
-                        rootDirs.add(p);
-                    } else {
-                        if (fs == null) {
-                            fs = ZipUtils.newFileSystem(p, classLoader);
-                        }
-                        buildCloseables.add(fs);
-                        fs.getRootDirectories().forEach(rootDirs::add);
-                    }
-                    indexes.add(indexPath(indexCache, p, removed.get(dep.getKey()), isDirectory));
-                    indexedPaths.add(p);
-                }
-                appArchives
-                        .add(new ApplicationArchiveImpl(indexes.size() == 1 ? indexes.get(0) : CompositeIndex.create(indexes),
-                                rootDirs.build(), artifactPaths, dep.getKey()));
-            }
+            appArchives
+                    .add(new ApplicationArchiveImpl(indexes.size() == 1 ? indexes.get(0) : CompositeIndex.create(indexes),
+                            rootDirs.build(), artifactPaths, dep.getKey()));
         }
-    }
-
-    private static boolean containsMarker(Path dir, Set<String> applicationArchiveFiles) {
-        for (String file : applicationArchiveFiles) {
-            if (Files.exists(dir.resolve(file))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static Index handleFilePath(Path path, Set<String> removed) throws IOException {

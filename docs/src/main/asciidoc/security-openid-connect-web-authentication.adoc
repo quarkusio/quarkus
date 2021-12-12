@@ -474,6 +474,34 @@ quarkus.oidc.logout.post-logout-uri-param=returnTo
 quarkus.oidc.logout.extra-params.client_id=${quarkus.oidc.client-id}
 ----
 
+[[local-logout]]
+==== Local Logout
+
+If you work with a social provider such as Google and are concerned that the users can be logged out from all their Google applications with the <<user-initiated-logout,User-Initiated Logout>> which redirects the users to the provider's logout endpoint then you can support a local logout with the help of the <<oidc-session,OidcSession>> which only clears the local session cookie, for example:
+
+[source,java]
+----
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import io.quarkus.oidc.OidcSession;
+
+@Path("/service")
+public class ServiceResource {
+
+    @Inject
+    OidcSession oidcSession;
+
+    @GET
+    @Path("logout")
+    public String logout() {
+        oidcSession.logout().await().indefinitely();
+        return "You are logged out".
+    }
+----
+
+
 [[session-management]]
 === Session Management
 
@@ -494,6 +522,11 @@ You can also complement refreshing the expired ID tokens by proactively refreshi
 You can have this process further optimized by having a simple JavaScript function periodically emulating the user activity by pinging your Quarkus endpoint thus minimizing the window during which the user may have to be re-authenticated.
 
 Note this user session can not be extended forever - the returning user with the expired ID token will have to re-authenticate at the OIDC provider endpoint once the refresh token has expired.
+
+[[oidc-session]]
+==== OidcSession
+
+`io.quarkus.oidc.OidcSession` is a wrapper around the current `IdToken`. It can help to perform a <<local-logout, Local Logout>>, retrieve the current session's tenant identifier and check when the session will expire. More useful methods will be added to it over time.
 
 ==== TokenStateManager
 

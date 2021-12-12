@@ -35,7 +35,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
-    private static final String DEFAULT_TENANT_ID = "Default";
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
 
@@ -46,7 +45,7 @@ public class OidcRecorder {
     public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
         final Vertx vertxValue = vertx.get();
 
-        String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
+        String defaultTenantId = config.defaultTenant.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
         TenantConfigContext defaultTenantContext = createStaticTenantContext(vertxValue, config.defaultTenant, tlsConfig,
                 defaultTenantId);
 

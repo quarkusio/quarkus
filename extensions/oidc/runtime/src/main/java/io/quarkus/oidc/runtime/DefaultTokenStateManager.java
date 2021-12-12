@@ -14,8 +14,8 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class DefaultTokenStateManager implements TokenStateManager {
 
-    private static final String SESSION_AT_COOKIE_NAME = CodeAuthenticationMechanism.SESSION_COOKIE_NAME + "_at";
-    private static final String SESSION_RT_COOKIE_NAME = CodeAuthenticationMechanism.SESSION_COOKIE_NAME + "_rt";
+    private static final String SESSION_AT_COOKIE_NAME = OidcUtils.SESSION_COOKIE_NAME + "_at";
+    private static final String SESSION_RT_COOKIE_NAME = OidcUtils.SESSION_COOKIE_NAME + "_rt";
 
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
@@ -101,9 +101,9 @@ public class DefaultTokenStateManager implements TokenStateManager {
     public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<Void> requestContext) {
         if (oidcConfig.tokenStateManager.splitTokens) {
-            CodeAuthenticationMechanism.removeCookie(routingContext, getAccessTokenCookie(routingContext, oidcConfig),
+            OidcUtils.removeCookie(routingContext, getAccessTokenCookie(routingContext, oidcConfig),
                     oidcConfig);
-            CodeAuthenticationMechanism.removeCookie(routingContext, getRefreshTokenCookie(routingContext, oidcConfig),
+            OidcUtils.removeCookie(routingContext, getRefreshTokenCookie(routingContext, oidcConfig),
                     oidcConfig);
         }
         return CodeAuthenticationMechanism.VOID_UNI;

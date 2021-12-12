@@ -14,6 +14,8 @@ import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -27,8 +29,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
 import io.quarkus.oidc.runtime.OidcUtils;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -36,6 +36,7 @@ import io.restassured.RestAssured;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusTest
+@QuarkusTestResource(H2DatabaseTestResource.class)
 public class CodeFlowTest {
 
     @Test

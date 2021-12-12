@@ -1,10 +1,13 @@
 package io.quarkus.oidc.persistence.deployment;
 
+import java.util.List;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.oidc.runtime.PersistenceTokenStateManager;
+import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 
 class OidcPersistenceProcessor {
 
@@ -16,7 +19,8 @@ class OidcPersistenceProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem persistenceTokenStateManager(Capabilities capabilities) {
+    AdditionalBeanBuildItem persistenceTokenStateManager(Capabilities capabilities,
+            List<PanacheEntityClassesBuildItem> panacheEntityClasses) {
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
 

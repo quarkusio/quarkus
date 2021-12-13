@@ -163,7 +163,7 @@ public class OidcClientResource {
     volatile Tokens currentTokens;
 
     @PostConstruct
-    public init() {
+    public void init() {
         currentTokens = client.getTokens().await().indefinitely();
     }
 

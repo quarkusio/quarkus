@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <bouncycastle.version>1.69</bouncycastle.version>
+        <bouncycastle.version>1.70</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.1</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.12.2</bouncycastle.tls.fips.version>
         <findbugs.version>3.0.2</findbugs.version>

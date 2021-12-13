@@ -31,6 +31,9 @@ The `/api/public` endpoint can be accessed anonymously.
 The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `adminRole` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
 The `/api/users/me` endpoint is also protected with RBAC (Role-Based Access Control) where only users granted with the `standardRole` role can access. As a response, it returns a JSON document with details about the user.
 
+WARNING: By default Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to log4shell. Because LDAP based auth requires JNDI
+this protection will be automatically disabled.
+
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.

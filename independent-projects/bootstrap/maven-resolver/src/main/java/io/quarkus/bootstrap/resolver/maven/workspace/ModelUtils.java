@@ -239,6 +239,11 @@ public class ModelUtils {
             if (resolved == null) {
                 return null;
             }
+            if (resolved.contains("${")) {
+                throw new IllegalArgumentException("Illegal placeholder in Maven CI friendly version property \""
+                        + matcher.group(1) + "\": " + resolved
+                        + "\n\tPlease consult https://maven.apache.org/maven-ci-friendly.html#single-project-setup");
+            }
             matcher.appendReplacement(sb, resolved);
         }
         matcher.appendTail(sb);

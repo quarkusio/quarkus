@@ -1,11 +1,16 @@
 package io.quarkus.spring.data.deployment.generate;
 
+import static io.quarkus.spring.data.deployment.DotNames.JPA_NAMED_QUERIES;
+import static io.quarkus.spring.data.deployment.DotNames.JPA_NAMED_QUERY;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -67,6 +72,53 @@ public final class GenerationUtil {
         }
         return MethodDescriptor.ofMethod(generatedClassName, methodInfo.name(), methodInfo.returnType().name().toString(),
                 parameterTypesStr.toArray(new String[0]));
+    }
+
+    static AnnotationInstance getNamedQueryForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {
+        // try @NamedQuery
+        AnnotationInstance namedQueryAnnotation = getNamedQueryAnnotationForMethod(methodInfo, entityClassInfo);
+        if (namedQueryAnnotation != null) {
+            return namedQueryAnnotation;
+        }
+
+        // try @NamedQueries
+        return getNamedQueriesAnnotationForMethod(methodInfo, entityClassInfo);
+    }
+
+    private static AnnotationInstance getNamedQueryAnnotationForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {
+        String methodName = methodInfo.name();
+        AnnotationInstance namedQueryAnnotation = entityClassInfo.classAnnotation(JPA_NAMED_QUERY);
+        if (namedQueryAnnotation != null && isMethodDeclaredInNamedQuery(entityClassInfo, methodName, namedQueryAnnotation)) {
+            return namedQueryAnnotation;
+        }
+
+        return null;
+    }
+
+    private static AnnotationInstance getNamedQueriesAnnotationForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {
+        String methodName = methodInfo.name();
+        AnnotationInstance namedQueriesAnnotation = entityClassInfo.classAnnotation(JPA_NAMED_QUERIES);
+        if (namedQueriesAnnotation != null) {
+            for (AnnotationValue annotationInstanceValues : namedQueriesAnnotation.values()) {
+                for (AnnotationInstance annotationInstance : annotationInstanceValues.asNestedArray()) {
+                    if (isMethodDeclaredInNamedQuery(entityClassInfo, methodName, annotationInstance)) {
+                        return annotationInstance;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean isMethodDeclaredInNamedQuery(ClassInfo entityClassInfo, String methodName,
+            AnnotationInstance namedQuery) {
+        AnnotationValue namedQueryName = namedQuery.value("name");
+        if (namedQueryName == null) {
+            return false;
+        }
+
+        return String.format("%s.%s", entityClassInfo.name().withoutPackagePrefix(), methodName).equals(namedQueryName.value());
     }
 
 }

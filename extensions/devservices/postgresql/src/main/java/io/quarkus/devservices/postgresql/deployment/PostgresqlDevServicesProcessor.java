@@ -26,7 +26,7 @@ public class PostgresqlDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(PostgresqlDevServicesProcessor.class);
 
-    public static final String TAG = "13.2";
+    public static final String TAG = "14.1";
 
     @BuildStep
     ConsoleCommandBuildItem psqlCommand(DevServicesLauncherConfigResultBuildItem devServices) {

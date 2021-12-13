@@ -5,7 +5,7 @@
     "metadata": {
       "labels": {
         "app.kubernetes.io/name": "postgres",
-        "app.kubernetes.io/version" : "10.6"
+        "app.kubernetes.io/version" : "14.1"
       },
       "name": "postgres"
     },

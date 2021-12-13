@@ -416,13 +416,13 @@ final class Methods {
         }
     }
 
-    static void addDelegateTypeMethods(IndexView index, ClassInfo delegateTypeClass, List<MethodInfo> methods) {
+    static void addDelegateTypeMethods(IndexView index, ClassInfo delegateTypeClass, Set<MethodKey> methods) {
         if (delegateTypeClass != null) {
             for (MethodInfo method : delegateTypeClass.methods()) {
                 if (skipForDelegateSubclass(method)) {
                     continue;
                 }
-                methods.add(method);
+                methods.add(new MethodKey(method));
             }
             // Interfaces
             for (Type interfaceType : delegateTypeClass.interfaceTypes()) {

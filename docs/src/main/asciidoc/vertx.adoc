@@ -141,11 +141,11 @@ Then, in the `VertxResource` file add the following method:
 
 [source, java]
 ----
-@GET                                                                    // <1>
+@GET                                                                                   // <1>
 @Path("/lorem")
-public Uni<String> readShortFile() {                                    // <2>
-    return vertx.fileSystem().readFile("lorem.txt")                     // <3>
-            .onItem().transform(content -> content.toString("UTF-8"));  // <4>
+public Uni<String> readShortFile() {                                                   // <2>
+    return vertx.fileSystem().readFile("lorem.txt")                                    // <3>
+            .onItem().transform(content -> content.toString(StandardCharsets.UTF_8));  // <4>
 }
 ----
 1. This endpoint handles HTTP `GET` request on path `/lorem` (so the full path will be `vertx/lorem`)
@@ -211,13 +211,13 @@ Add the following method to the `VertxResource` class:
 ----
 @GET
 @Path("/book")
-public Multi<String> readLargeFile() {                              // <1>
-    return vertx.fileSystem().open("book.txt",                      // <2>
+public Multi<String> readLargeFile() {                                               // <1>
+    return vertx.fileSystem().open("book.txt",                                       // <2>
                     new OpenOptions().setRead(true)
             )
-            .onItem().transformToMulti(file -> file.toMulti())       // <3>
-            .onItem().transform(content -> content.toString("UTF-8") // <4>
-                    + "\n------------\n");                           // <5>
+            .onItem().transformToMulti(file -> file.toMulti())                       // <3>
+            .onItem().transform(content -> content.toString(StandardCharsets.UTF_8)) // <4>
+                    + "\n------------\n");                                           // <5>
 }
 ----
 1. This time, we return a Multi as we want to stream the chunks

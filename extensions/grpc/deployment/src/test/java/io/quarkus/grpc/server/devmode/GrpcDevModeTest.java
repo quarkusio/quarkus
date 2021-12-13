@@ -30,7 +30,6 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.subscription.Subscribers;
 
 public class GrpcDevModeTest {
     @RegisterExtension
@@ -135,14 +134,14 @@ public class GrpcDevModeTest {
                 .map(StreamsOuterClass.Item.Builder::build);
         Multi<StreamsOuterClass.Item> echo = MutinyStreamsGrpc.newMutinyStub(channel)
                 .echo(request);
-        echo.subscribe().withSubscriber(Subscribers.from(
+        echo.subscribe().with(
+                s -> s.request(Long.MAX_VALUE),
                 item -> output.add(item.getName()),
                 error -> {
                     error.printStackTrace();
                     result.completeExceptionally(error);
                 },
-                () -> result.complete(true),
-                s -> s.request(Long.MAX_VALUE)));
+                () -> result.complete(true));
         return result;
     }
 

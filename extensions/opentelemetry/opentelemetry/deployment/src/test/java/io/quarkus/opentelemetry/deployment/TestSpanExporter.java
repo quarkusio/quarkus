@@ -5,14 +5,21 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import org.junit.jupiter.api.Assertions;
+
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.Unremovable;
@@ -39,7 +46,10 @@ public class TestSpanExporter implements SpanExporter {
 
     public void assertSpanCount(int spanCount) {
         synchronized (this) {
-            await().atMost(30, SECONDS).untilAsserted(() -> assertEquals(spanCount, finishedSpanItems.size()));
+            await().atMost(30, SECONDS).untilAsserted(() -> {
+                flushAll();
+                assertEquals(spanCount, finishedSpanItems.size());
+            });
         }
     }
 
@@ -72,5 +82,20 @@ public class TestSpanExporter implements SpanExporter {
             isStopped = true;
         }
         return CompletableResultCode.ofSuccess();
+    }
+
+    private static void flushAll() {
+        try {
+            TracerProvider tracerProvider = GlobalOpenTelemetry.get().getTracerProvider();
+            Method unobfuscate = tracerProvider.getClass().getMethod("unobfuscate");
+            unobfuscate.setAccessible(true);
+            SdkTracerProvider sdkTracerProvider = (SdkTracerProvider) unobfuscate.invoke(tracerProvider);
+            CompletableResultCode resultCode = sdkTracerProvider.forceFlush();
+            while (!resultCode.isDone()) {
+                resultCode.join(10, TimeUnit.MILLISECONDS);
+            }
+        } catch (Exception e) {
+            Assertions.fail("Could not flush spans", e);
+        }
     }
 }

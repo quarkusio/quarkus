@@ -14,6 +14,8 @@ import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -133,6 +135,7 @@ public class ImageDecodersTest {
     "test_jpeg.tiff         |NOK|.*test_jpeg.tiff.*Unsupported Image Type.*", // JPEG compression TIFF by GIMP*/
     "weird_230.bmp          |NOK|.*weird_230.bmp.*New BMP version not implemented yet.*" // Currently, fails, no iio-plugin.properties.
     })
+    @DisabledOnJre(JRE.JAVA_18)
     // @formatter:on
     public void testComplexImages(String testData) throws IOException {
         final String[] imgExpectations = testData.split("\\|");

@@ -777,7 +777,7 @@ When you encounter this error, you can easily fix it by adding the following ann
 
 [source,java]
 ----
-@RegisterForReflection(targets = { com.github.benmanes.caffeine.cache.PSAMS.class }) <1>
+@RegisterForReflection(classNames = { "com.github.benmanes.caffeine.cache.PSAMS" }) <1>
 ----
 <1> It is an array so you can register several cache implementations in one go if your configuration requires several of them.
 

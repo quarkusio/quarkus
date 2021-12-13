@@ -8,7 +8,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import org.aesh.command.Command;
+import org.aesh.command.CommandDefinition;
+import org.aesh.command.CommandException;
+import org.aesh.command.CommandResult;
+import org.aesh.command.invocation.CommandInvocation;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -17,7 +23,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.dev.ExceptionNotificationBuildItem;
 import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestConfig;
@@ -155,4 +163,25 @@ public class ConsoleProcessor {
         }, "Launch in IDE Action").start();
     }
 
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    void installCliCommands(List<ConsoleCommandBuildItem> commands) {
+        ConsoleCliManager
+                .setCommands(commands.stream().map(ConsoleCommandBuildItem::getConsoleCommand).collect(Collectors.toList()));
+    }
+
+    @BuildStep
+    ConsoleCommandBuildItem quitCommand() {
+        return new ConsoleCommandBuildItem(new QuitCommand());
+    }
+
+    @CommandDefinition(name = "quit", description = "Quits the console", aliases = { "q" })
+    public static class QuitCommand implements Command {
+
+        @Override
+        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+            QuarkusConsole.INSTANCE.exitCliMode();
+            return CommandResult.SUCCESS;
+        }
+    }
 }

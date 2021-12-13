@@ -111,6 +111,10 @@ public abstract class QuarkusConsole {
 
     public abstract void write(boolean errorStream, byte[] buf, int off, int len);
 
+    public void exitCliMode() {
+        //noop for the non-aesh console
+    }
+
     protected String stripAnsiCodes(String s) {
         if (s == null) {
             return null;
@@ -145,4 +149,5 @@ public abstract class QuarkusConsole {
     public boolean isAnsiSupported() {
         return false;
     }
+
 }

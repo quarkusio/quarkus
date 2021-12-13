@@ -3,10 +3,12 @@ package io.quarkus.deployment.logging;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -16,11 +18,22 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
+import org.aesh.command.Command;
+import org.aesh.command.CommandDefinition;
+import org.aesh.command.CommandException;
+import org.aesh.command.CommandResult;
+import org.aesh.command.GroupCommand;
+import org.aesh.command.GroupCommandDefinition;
+import org.aesh.command.completer.CompleterInvocation;
+import org.aesh.command.completer.OptionCompleter;
+import org.aesh.command.invocation.CommandInvocation;
+import org.aesh.command.option.Option;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.logmanager.LogManager;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -35,6 +48,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -50,6 +64,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.SetCompleter;
 import io.quarkus.deployment.dev.ExceptionNotificationBuildItem;
 import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
@@ -499,5 +514,89 @@ public final class LoggingResourceProcessor {
         method.addAnnotation("com.oracle.svm.core.annotate.Substitute");
         method.addAnnotation("org.graalvm.compiler.api.replacements.Fold");
         method.returnValue(method.load(false));
+    }
+
+    @BuildStep
+    ConsoleCommandBuildItem logConsoleCommand() {
+        return new ConsoleCommandBuildItem(new LogCommand());
+    }
+
+    @GroupCommandDefinition(name = "log", description = "Logging Commands")
+    public static class LogCommand implements GroupCommand {
+
+        @Override
+        public List<Command> getCommands() {
+            return List.of(new SetLogLevelCommand());
+        }
+
+        @Override
+        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+            return CommandResult.SUCCESS;
+        }
+    }
+
+    @CommandDefinition(name = "set-level", description = "Sets the log level for a logger")
+    public static class SetLogLevelCommand implements Command {
+
+        @Option(required = true, completer = LoggerCompleter.class)
+        private String logger;
+
+        @Option(required = true, completer = LevelCompleter.class)
+        private String level;
+
+        @Override
+        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+            java.util.logging.Logger logger = LogManager.getLogManager().getLogger(this.logger);
+            Level level = org.jboss.logmanager.Level.parse(this.level);
+            logger.setLevel(level);
+            //we also update the handler level
+            //so that this works as expected
+            for (Handler i : logger.getHandlers()) {
+                if (i.getLevel().intValue() > level.intValue()) {
+                    i.setLevel(level);
+                }
+            }
+            return CommandResult.SUCCESS;
+        }
+    }
+
+    public static class LoggerCompleter implements OptionCompleter<CompleterInvocation> {
+
+        @Override
+        public void complete(CompleterInvocation completerInvocation) {
+            String soFar = completerInvocation.getGivenCompleteValue();
+            var loggers = LogManager.getLogManager().getLoggerNames();
+            Set<String> possible = new HashSet<>();
+            while (loggers.hasMoreElements()) {
+                String name = loggers.nextElement();
+
+                if (name.equals(soFar)) {
+                    possible.add(name);
+                } else if (name.startsWith(soFar)) {
+                    //we just want to complete the next segment
+                    int pos = name.indexOf('.', soFar.length() + 1);
+                    if (pos == -1) {
+                        possible.add(name);
+                    } else {
+                        possible.add(name.substring(0, pos) + ".");
+                        completerInvocation.setAppendSpace(false);
+                    }
+                }
+            }
+            completerInvocation.setCompleterValues(possible);
+        }
+    }
+
+    public static class LevelCompleter extends SetCompleter {
+
+        @Override
+        protected Set<String> allOptions(String soFar) {
+            return Set.of(Logger.Level.TRACE.name(),
+                    Logger.Level.DEBUG.name(),
+                    Logger.Level.INFO.name(),
+                    Logger.Level.WARN.name(),
+                    Logger.Level.ERROR.name(),
+                    Logger.Level.FATAL.name());
+        }
     }
 }

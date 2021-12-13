@@ -81,4 +81,10 @@ public class KafkaDevServicesBuildTimeConfig {
     @ConfigItem(defaultValue = "2S")
     public Duration topicPartitionsTimeout;
 
+    /**
+     * Allows configuring the Red Panda broker.
+     */
+    @ConfigItem
+    public RedPandaBuildTimeConfig redpanda;
+
 }

@@ -1,7 +1,9 @@
 package io.quarkus.oidc.deployment;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 
@@ -38,6 +40,7 @@ import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.oidc.runtime.providers.KnownOIDCProvidersRecorder;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
@@ -115,9 +118,13 @@ public class OidcBuildStep {
             OidcConfig config,
             OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem,
-            TlsConfig tlsConfig) {
+            TlsConfig tlsConfig,
+            List<KnownProviderSupplierBuildItem> knownProviders) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
-                .supplier(recorder.setup(config, vertxBuildItem.getVertx(), tlsConfig))
+                .supplier(recorder.setup(config, vertxBuildItem.getVertx(), tlsConfig,
+                        knownProviders.stream()
+                                .collect(Collectors.toMap(KnownProviderSupplierBuildItem::getName,
+                                        KnownProviderSupplierBuildItem::getSupplier))))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
@@ -150,5 +157,29 @@ public class OidcBuildStep {
         public boolean getAsBoolean() {
             return config.enabled && config.defaultTokenCacheEnabled;
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    KnownProviderSupplierBuildItem github(KnownOIDCProvidersRecorder recorder) {
+        return new KnownProviderSupplierBuildItem("github", recorder.github());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    KnownProviderSupplierBuildItem facebook(KnownOIDCProvidersRecorder recorder) {
+        return new KnownProviderSupplierBuildItem("facebook", recorder.facebook());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    KnownProviderSupplierBuildItem google(KnownOIDCProvidersRecorder recorder) {
+        return new KnownProviderSupplierBuildItem("google", recorder.google());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    KnownProviderSupplierBuildItem microsoft(KnownOIDCProvidersRecorder recorder) {
+        return new KnownProviderSupplierBuildItem("microsoft", recorder.microsoft());
     }
 }

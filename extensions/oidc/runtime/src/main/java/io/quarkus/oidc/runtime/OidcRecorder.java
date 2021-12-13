@@ -43,7 +43,8 @@ public class OidcRecorder {
         return () -> new DefaultTokenIntrospectionUserInfoCache(config, vertx.get());
     }
 
-    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
+    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig,
+            Map<String, Supplier<Optional<OidcTenantConfig>>> knownProviders) {
         final Vertx vertxValue = vertx.get();
 
         String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
@@ -51,7 +52,15 @@ public class OidcRecorder {
                 defaultTenantId);
 
         Map<String, TenantConfigContext> staticTenantsConfig = new HashMap<>();
-        for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {
+        Map<String, OidcTenantConfig> tenants = new HashMap<>(config.namedTenants);
+        for (var e : knownProviders.entrySet()) {
+            var provider = e.getValue().get();
+            if (provider.isPresent()) {
+                tenants.put(e.getKey(), provider.get());
+            }
+        }
+
+        for (Map.Entry<String, OidcTenantConfig> tenant : tenants.entrySet()) {
             OidcCommonUtils.verifyConfigurationId(defaultTenantId, tenant.getKey(), tenant.getValue().getTenantId());
             staticTenantsConfig.put(tenant.getKey(),
                     createStaticTenantContext(vertxValue, tenant.getValue(), tlsConfig, tenant.getKey()));

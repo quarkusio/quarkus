@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.runtime.providers.ProvidersConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -36,6 +37,12 @@ public class OidcConfig {
      */
     @ConfigItem
     public TokenCache tokenCache = new TokenCache();
+
+    /**
+     * Config for well known OIDC providers
+     */
+    @ConfigItem
+    public ProvidersConfig provider;
 
     /**
      * Default TokenIntrospection and UserInfo cache configuration.

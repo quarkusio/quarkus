@@ -17,6 +17,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.enterprise.inject.spi.DeploymentException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -253,15 +254,23 @@ final class Methods {
             }
 
             if (Modifier.isPrivate(method.flags())
+                    && !Annotations.contains(methodAnnotations, DotNames.PRODUCES)
                     && !Annotations.contains(methodAnnotations, DotNames.OBSERVES)
                     && !Annotations.contains(methodAnnotations, DotNames.OBSERVES_ASYNC)) {
+                String message;
                 if (methodLevelBindings.size() == 1) {
-                    LOGGER.warnf("%s will have no effect on method %s.%s() because the method is private",
+                    message = String.format("%s will have no effect on method %s.%s() because the method is private",
                             methodLevelBindings.iterator().next(), classInfo.name(), method.name());
                 } else {
-                    LOGGER.warnf("Annotations %s will have no effect on method %s.%s() because the method is private",
+                    message = String.format(
+                            "Annotations %s will have no effect on method %s.%s() because the method is private",
                             methodLevelBindings.stream().map(AnnotationInstance::toString).collect(Collectors.joining(",")),
                             classInfo.name(), method.name());
+                }
+                if (beanDeployment.failOnInterceptedPrivateMethod) {
+                    throw new DeploymentException(message);
+                } else {
+                    LOGGER.warn(message);
                 }
             }
         }

@@ -145,7 +145,7 @@
         <aws-lambda-serverless-java-container.version>1.6</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.10.0</aws-xray.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
-        <kotlin.version>1.6.0</kotlin.version>
+        <kotlin.version>1.6.10</kotlin.version>
         <kotlin.coroutine.version>1.5.2</kotlin.coroutine.version>
         <dekorate.version>2.6.0</dekorate.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>

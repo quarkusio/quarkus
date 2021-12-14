@@ -482,11 +482,27 @@ To get around this Quarkus supports the idea of a test profile. If a test has a 
 run test then Quarkus will be shut down and started with the new profile before running the tests. This is obviously
 a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a great deal of flexibility.
 
-NOTE: To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
+To reduce the amount of times Quarkus needs to restart, `io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer`
 is registered as a global `ClassOrderer` as described in the
 link:https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes[JUnit 5 User Guide].
 The behavior of this orderer is configurable via `junit-platform.properties` (see the source code or javadoc for more details).
-It can also be disabled entirely by setting another orderer that is provided by JUnit 5 or even your own custom one.
+It can also be disabled entirely by setting another orderer that is provided by JUnit 5 or even your own custom one. +
+Please note that as of JUnit 5.8.2 link:https://github.com/junit-team/junit5/issues/2794[only a single `junit-platform.properties` is picked up and a warning is logged if more than one is found].
+If you encounter such warnings, you can can get rid of them by removing the Quarkus-supplied `junit-platform.properties` from the classpath via an exclusion:
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5</artifactId>
+    <scope>test</scope>
+    <exclusions>
+        <exclusion>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-properties</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+----
 
 === Writing a Profile
 

@@ -41,13 +41,28 @@ public class ModelUtilsTest {
     }
 
     @Test
-    void resolveVersion_illegalPlaceholder() {
+    // better error message than "named capturing group is missing trailing '}'"
+    void resolveVersion_illegalPlaceholder_missingTrailing() {
         var model = new Model();
         model.getProperties().put("revision", "${main.project.version}");
         model.getProperties().put("main.project.version", "1.6.0-SNAPSHOT");
 
         assertThatThrownBy(() -> ModelUtils.resolveVersion("${revision}", model))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll("revision", "main.project.version");
+                .hasMessageContainingAll("revision", "${main.project.version}");
+    }
+
+    @Test
+    // better error message than "No group with name {version}"
+    // see also https://github.com/quarkusio/quarkus/issues/22171
+    void resolveVersion_illegalPlaceholder_noGroup() {
+        var model = new Model();
+        model.getProperties().put("revision", "${version}.${build}");
+        model.getProperties().put("version", "1.0.0");
+        model.getProperties().put("build", "0-SNAPSHOT");
+
+        assertThatThrownBy(() -> ModelUtils.resolveVersion("${revision}", model))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll("revision", "${version}");
     }
 }

@@ -73,6 +73,12 @@ public class IfSectionTest {
     public void testCompositeParameters() {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("OK", engine.parse("{#if (true || false) && true}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if (true || false) && true && !false}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if  true && true && !(true || false)}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && true  && !(true && false)}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && !true && (true || false)}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && (true  && ( true && false))}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && (!false || false || (true || false))}OK{#else}NOK{/if}").render());
         assertEquals("OK", engine.parse("{#if (foo.or(false) || false || true) && (true)}OK{/if}").render());
         assertEquals("NOK", engine.parse("{#if foo.or(false) || false}OK{#else}NOK{/if}").render());
         assertEquals("OK", engine.parse("{#if false || (foo.or(false) || (false || true))}OK{#else}NOK{/if}").render());
@@ -220,6 +226,38 @@ public class IfSectionTest {
         assertEquals("OK", engine.parse("{#if val.is.not.there??}NOK{#else}OK{/if}").render());
         assertEquals("OK", engine.parse("{#if hero??}NOK{#else}OK{/if}").render());
         assertEquals("OK", engine.parse("{#if hero??}OK{#else}NOK{/if}").data("hero", true).render());
+    }
+
+    @Test
+    public void testFromageCondition() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
+                .addNamespaceResolver(NamespaceResolver.builder("ContentStatus").resolve(ec -> ContentStatus.NEW).build())
+                .build();
+        assertEquals("OK",
+                engine.parse("{#if user && target.status == ContentStatus:NEW && !target.voted(user)}NOK{#else}OK{/if}")
+                        .data("user", "Stef", "target", new Target(ContentStatus.ACCEPTED)).render());
+        assertEquals("OK",
+                engine.parse("{#if user && target.status == ContentStatus:NEW && !target.voted(user)}OK{#else}NOK{/if}")
+                        .data("user", "Stef", "target", new Target(ContentStatus.NEW)).render());
+    }
+
+    public static class Target {
+
+        public ContentStatus status;
+
+        public Target(ContentStatus status) {
+            this.status = status;
+        }
+
+        public boolean voted(String user) {
+            return false;
+        }
+
+    }
+
+    public enum ContentStatus {
+        NEW,
+        ACCEPTED
     }
 
     private void assertParserError(String template, String message, int line) {

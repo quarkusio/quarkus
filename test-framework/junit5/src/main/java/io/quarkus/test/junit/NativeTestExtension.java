@@ -126,7 +126,9 @@ public class NativeTestExtension
                     getAdditionalTestResources(testProfileAndProperties.testProfile, currentJUnitTestClass.getClassLoader()),
                     testProfileAndProperties.testProfile != null
                             && testProfileAndProperties.testProfile.disableGlobalTestResources());
-            testResourceManager.init();
+            testResourceManager.init(
+                    testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
+                            : null);
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);

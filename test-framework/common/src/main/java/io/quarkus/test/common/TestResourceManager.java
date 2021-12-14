@@ -88,10 +88,16 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    public void init() {
+    public void init(String testProfileName) {
         for (TestResourceEntry entry : allTestResourceEntries) {
             try {
                 QuarkusTestResourceLifecycleManager testResource = entry.getTestResource();
+                testResource.setContext(new QuarkusTestResourceLifecycleManager.Context() {
+                    @Override
+                    public String testProfile() {
+                        return testProfileName;
+                    }
+                });
                 if (testResource instanceof QuarkusTestResourceConfigurableLifecycleManager
                         && entry.getConfigAnnotation() != null) {
                     ((QuarkusTestResourceConfigurableLifecycleManager<Annotation>) testResource)

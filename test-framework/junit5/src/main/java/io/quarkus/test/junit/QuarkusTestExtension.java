@@ -230,7 +230,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                             getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
                             profileInstance != null && profileInstance.disableGlobalTestResources(),
                             startupAction.getDevServicesProperties(), Optional.empty());
-            testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
+            testResourceManager.getClass().getMethod("init", String.class).invoke(testResourceManager,
+                    profile != null ? profile.getName() : null);
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
                     .invoke(testResourceManager);
             startupAction.overrideConfig(properties);

@@ -3,7 +3,7 @@
 # https://github.com/quarkusio/quarkus-bot#triage-issues
 triage:
   discussions:
-    logCategories: true
+    monitoredCategories: [33575230]
   rules:
     - labels: [area/amazon-lambda]
       title: "lambda"

@@ -44,14 +44,29 @@ public class OidcConfigurationMetadata {
     }
 
     public OidcConfigurationMetadata(JsonObject wellKnownConfig) {
-        this.tokenUri = wellKnownConfig.getString(TOKEN_ENDPOINT);
-        this.introspectionUri = wellKnownConfig.getString(INTROSPECTION_ENDPOINT);
-        this.authorizationUri = wellKnownConfig.getString(AUTHORIZATION_ENDPOINT);
-        this.jsonWebKeySetUri = wellKnownConfig.getString(JWKS_ENDPOINT);
-        this.userInfoUri = wellKnownConfig.getString(USERINFO_ENDPOINT);
-        this.endSessionUri = wellKnownConfig.getString(END_SESSION_ENDPOINT);
-        this.issuer = wellKnownConfig.getString(ISSUER);
+        this(wellKnownConfig, null);
+    }
+
+    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata fallbackConfig) {
+        this.tokenUri = getMetadataValue(wellKnownConfig, TOKEN_ENDPOINT,
+                fallbackConfig == null ? null : fallbackConfig.tokenUri);
+        this.introspectionUri = getMetadataValue(wellKnownConfig, INTROSPECTION_ENDPOINT,
+                fallbackConfig == null ? null : fallbackConfig.introspectionUri);
+        this.authorizationUri = getMetadataValue(wellKnownConfig, AUTHORIZATION_ENDPOINT,
+                fallbackConfig == null ? null : fallbackConfig.authorizationUri);
+        this.jsonWebKeySetUri = getMetadataValue(wellKnownConfig, JWKS_ENDPOINT,
+                fallbackConfig == null ? null : fallbackConfig.jsonWebKeySetUri);
+        this.userInfoUri = getMetadataValue(wellKnownConfig, USERINFO_ENDPOINT,
+                fallbackConfig == null ? null : fallbackConfig.userInfoUri);
+        this.endSessionUri = getMetadataValue(wellKnownConfig, END_SESSION_ENDPOINT,
+                fallbackConfig == null ? null : fallbackConfig.endSessionUri);
+        this.issuer = getMetadataValue(wellKnownConfig, ISSUER, fallbackConfig == null ? null : fallbackConfig.issuer);
         this.json = wellKnownConfig;
+    }
+
+    private static String getMetadataValue(JsonObject wellKnownConfig, String propertyName, String fallbackValue) {
+        String value = wellKnownConfig.getString(propertyName);
+        return value != null ? value : fallbackValue;
     }
 
     public String getTokenUri() {

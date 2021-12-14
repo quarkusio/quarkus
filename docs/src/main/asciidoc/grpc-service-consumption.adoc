@@ -295,10 +295,19 @@ public class MyService {
 
 == Client Interceptors
 
-You can implement a gRPC client interceptor by implementing an `@ApplicationScoped` bean implementing `io.grpc.ClientInterceptor`:
+A gRPC client interceptor can be implemented by a CDI bean that also implements the `io.grpc.ClientInterceptor` interface.
+You can annotate an injected client with `@io.quarkus.grpc.RegisterClientInterceptor` to register the specified interceptor for the particular client instance.
+The `@RegisterClientInterceptor` annotation is repeatable.
+Alternatively, if you want to apply the interceptor to any injected client then annotate the interceptor bean with `@io.quarkus.grpc.GlobalInterceptor`.
 
+.Global Client Interceptor Example
 [source, java]
 ----
+import io.quarkus.grpc.GlobalInterceptor;
+
+import io.grpc.ClientInterceptor;
+
+@GlobalInterceptor <1>
 @ApplicationScoped
 public class MyInterceptor implements ClientInterceptor {
 
@@ -309,8 +318,27 @@ public class MyInterceptor implements ClientInterceptor {
     }
 }
 ----
+<1> This interceptor is applied to all injected gRPC clients.
 
 TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientInterceptor.html[ClientInterceptor JavaDoc] to properly implement your interceptor.
+
+.`@RegisterClientInterceptor` Example
+[source, java]
+----
+import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.RegisterClientInterceptor;
+
+import hello.Greeter;
+
+@ApplicationScoped
+class MyBean {
+
+    @RegisterClientInterceptor(MySpecialInterceptor.class) <1>
+    @GrpcClient("helloService")
+    Greeter greeter;
+}
+----
+<1> Registers the `MySpecialInterceptor` for this particular client.
 
 When you have multiple client interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
 

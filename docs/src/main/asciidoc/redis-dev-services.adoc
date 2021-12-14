@@ -13,6 +13,7 @@ What that means practically, is that if you have docker running and have not con
 Quarkus will automatically start a Redis container when running tests or dev-mode, and automatically configure the connection.
 
 Available properties to customize the Redis DevService.
+
 include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
 
 When running the production version of the application, the Redis connection need to be configured as normal,

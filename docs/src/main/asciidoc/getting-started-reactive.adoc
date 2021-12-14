@@ -297,10 +297,10 @@ For example, you can use Docker to run your database:
 
 [source, bash]
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 \
+docker run -it --rm=true \
     --name postgres-quarkus -e POSTGRES_USER=quarkus \
     -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=fruits \
-    -p 5432:5432 postgres:13.1
+    -p 5432:5432 postgres:14.1
 ----
 
 Then, launch the application using:
@@ -326,7 +326,7 @@ Or, if you packaged your application as native executable, use:
 ----
 
 The parameters passed to the application are described in the datasource guide.
-There are other ways to configure the application - please check the link:config-reference#configuration_sources[configuration guide] to have an overview of the possibilities (such as env variable, .env files and so on).
+There are other ways to configure the application - please check the xref:config-reference.adoc#configuration_sources[configuration guide] to have an overview of the possibilities (such as env variable, .env files and so on).
 
 == Going further
 

@@ -11,9 +11,9 @@ include::./attributes.adoc[]
 
 MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:{mongodb-doc-root-url}/bson/documents/#document[`Document`].
 
-MongoDB with Panache provides active record style entities (and repositories) like you have in link:hibernate-orm-panache[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
+MongoDB with Panache provides active record style entities (and repositories) like you have in xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
-It is built on top of the link:mongodb[MongoDB Client] extension.
+It is built on top of the xref:mongodb.adoc[MongoDB Client] extension.
 
 == First: an example
 
@@ -109,11 +109,11 @@ The `quarkus.mongodb.database` property will be used by MongoDB with Panache to 
 
 The `@MongoEntity` annotation allows configuring:
 
-* the name of the client for multi-tenant application, see link:mongodb#multiple-mongodb-clients[Multiple MongoDB Clients]. Otherwise, the default client will be used.
+* the name of the client for multi-tenant application, see xref:mongodb.adoc#multiple-mongodb-clients[Multiple MongoDB Clients]. Otherwise, the default client will be used.
 * the name of the database, otherwise, the `quarkus.mongodb.database` property will be used.
 * the name of the collection, otherwise the simple name of the class will be used.
 
-For advanced configuration of the MongoDB client, you can follow the link:mongodb#configuring-the-mongodb-database[Configuring the MongoDB database guide].
+For advanced configuration of the MongoDB client, you can follow the xref:mongodb.adoc#configuring-the-mongodb-database[Configuring the MongoDB database guide].
 
 == Solution 1: using the active record pattern
 
@@ -726,7 +726,7 @@ You can use `@BsonIgnore` to make a field, or a getter/setter, ignored by the co
 If your class doesn't obey these rules (for example by including a method that starts with `get` but is not a setter),
 you could provide a custom codec for it.
 Your custom codec will be automatically discovered and registered inside the codec registry.
-See link:mongodb#simplifying-mongodb-client-usage-using-bson-codec[Using BSON codec].
+See xref:mongodb.adoc#simplifying-mongodb-client-usage-using-bson-codec[Using BSON codec].
 
 == Transactions
 
@@ -809,7 +809,7 @@ __On the JVM, if the generated class needs to have a parameterless constructor, 
 If for whatever reason, the aforementioned solution is deemed unacceptable, there are alternatives.
 
 First, you can create a BSON Codec which will be automatically registered by Quarkus and will be used instead of the `PojoCodecProvider`.
-See this part of the documentation: link:mongodb#simplifying-mongodb-client-usage-using-bson-codec[Using BSON codec].
+See this part of the documentation: xref:mongodb.adoc#simplifying-mongodb-client-usage-using-bson-codec[Using BSON codec].
 
 Another option is to use the `@BsonCreator` annotation to tell the `PojoCodecProvider` to use the Kotlin data class default constructor,
 in this case all constructor parameters have to be annotated with `@BsonProperty`: see link:{mongodb-doc-root-url}/bson/pojos/#supporting-pojos-without-no-args-constructors[Supporting pojos without no args constructor].

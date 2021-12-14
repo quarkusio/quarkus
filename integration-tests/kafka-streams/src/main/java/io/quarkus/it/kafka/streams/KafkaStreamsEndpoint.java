@@ -8,6 +8,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.errors.InvalidStateStoreException;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
@@ -27,7 +28,7 @@ public class KafkaStreamsEndpoint {
     private ReadOnlyKeyValueStore<Integer, Long> getCountstore() {
         while (true) {
             try {
-                return streams.store("countstore", QueryableStoreTypes.keyValueStore());
+                return streams.store(StoreQueryParameters.fromNameAndType("countstore", QueryableStoreTypes.keyValueStore()));
             } catch (InvalidStateStoreException e) {
                 // ignore, store not ready yet
             }

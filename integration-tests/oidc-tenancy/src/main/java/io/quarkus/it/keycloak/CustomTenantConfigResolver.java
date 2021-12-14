@@ -43,12 +43,19 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     OidcTenantConfig config = new OidcTenantConfig();
                     config.setTenantId("tenant-oidc");
                     String uri = context.request().absoluteURI();
+                    // authServerUri points to the JAX-RS `OidcResource`, root path is `/oidc`
                     String authServerUri = path.contains("tenant-opaque")
                             ? uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc")
                             : uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
                     config.setAuthServerUrl(authServerUri);
                     config.setClientId("client");
                     config.setAllowTokenIntrospectionCache(false);
+                    // auto-discovery in Quarkus is enabled but the OIDC server returns an empty document, set the required endpoints in the config
+                    // try the path relative to the authServerUri 
+                    config.setJwksPath("jwks");
+                    // try the absolute URI
+                    config.setIntrospectionPath(authServerUri + "/introspect");
+
                     return config;
                 } else if ("tenant-oidc-no-discovery".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();

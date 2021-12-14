@@ -49,7 +49,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.metrics</groupId>
             <artifactId>microprofile-metrics-rest-tck</artifactId>
-            <version>${microprofile-metrics-api.version}</version>
+            <version>${microprofile-metrics-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jboss.shrinkwrap.resolver</groupId>

@@ -327,18 +327,8 @@ This could be useful to access data for which the key is overridden:
 If an expression does not specify a namespace the _current context object_ is derived from the position of the tag.
 By default, the current context object represents the data passed to the template instance.
 However, sections may change the current context object.
-A typical example is the `with` section that could be used to set the current context object in order to simplify the template structure:
+A typical example is the <<let_section,`let`>> section that can be used to define named local variables:
 
-[source,html]
-----
-{#with item}
-  <h1>{name}</h1>  <1>
-  <p>{description}</p>
-{/with}
-----
-<1> `name` is resolved against the `item`.
-
-Another built-in section that modifies the current context object is `let`/`set`:
 [source,html]
 ----
 {#let myParent=order.item.parent myPrice=order.price} <1>
@@ -737,7 +727,7 @@ You can also add any number of `else` blocks:
 ----
 
 [[when_section]]
-==== When/Switch Section
+==== When Section
 
 This section is similar to Java's `switch` or Kotlin's `when` constructs.
 It matches a _tested value_ against all blocks sequentially until a condition is satisfied.
@@ -826,6 +816,30 @@ The following operators are supported in `is`/`case` block conditions:
 
 |===
 
+[[let_section]]
+==== Let Section
+
+This section allows you to define named local variables:
+[source,html]
+----
+{#let myParent=order.item.parent isActive=false age=10} <1>
+  <h1>{myParent.name}</h1>
+  Is active: {isActive}
+  Age: {age}
+{/let} <2>
+----
+<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
+<2> Keep in mind that the variable is not available outside the `let` section that defines it.
+
+The section tag is also registered under the `set` alias:
+
+[source,html]
+----
+{#set myParent=item.parent price=item.price}
+  <h1>{myParent.name}</h1>
+  <p>Price: {price}
+{/set}
+----
 
 [[with_section]]
 ==== With Section
@@ -843,6 +857,21 @@ This could be useful to simplify the template structure:
 <1> The `name` will be resolved against the `item.parent`.
 <2> The `description` will be also resolved against the `item.parent`.
 
+[IMPORTANT]
+====
+Note that the `with` section should not be used in <<typesafe_templates>> or templates that define <<typesafe_expressions>>.
+The reason is that it prevents Qute from validating the nested expressions.
+If possible it should be replaced with the `{#let}` section which declares an explicit binding:
+
+[source,html]
+----
+{#let it=item.parent}
+  <h1>{it.name}</h1>
+  <p>{it.description}</p>
+{/let}
+----
+====
+
 This section might also come in handy when we'd like to avoid multiple expensive invocations:
 
 [source,html]
@@ -856,30 +885,6 @@ This section might also come in handy when we'd like to avoid multiple expensive
 {/with}
 ----
 <1> `this` is the result of `item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)`. The method is only invoked once even though the result may be used in multiple expressions.
-
-==== Let/Set Section
-
-This section allows you to define named local variables:
-[source,html]
-----
-{#let myParent=order.item.parent isActive=false age=10} <1>
-  <h1>{myParent.name}</h1>
-  Is active: {isActive}
-  Age: {age}
-{/let}
-----
-<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
-
-The section tag is also registered under the `set` alias:
-
-[source,html]
-----
-{#set myParent=item.parent price=item.price}
-  <h1>{myParent.name}</h1>
-  <p>Price: {price}
-{/set}
-----
-
 
 [[include_helper]]
 ==== Include Section
@@ -1186,20 +1191,23 @@ NOTE: When using `quarkus-resteasy-qute` the content negotiation is performed au
 
 === Injecting Beans Directly In Templates
 
-A CDI bean annotated with `@Named` can be referenced in any template through the `inject` namespace:
+A CDI bean annotated with `@Named` can be referenced in any template through `cdi` and/or `inject` namespaces:
 
 [source,html]
 ----
-{inject:foo.price} <1>
+{cdi:personService.findPerson(10).name} <1>
+{inject:foo.price} <2>
 ----
-<1> First, a bean with name `foo` is found and then used as the base object.
+<1> First, a bean with name `personService` is found and then used as the base object.
+<2> First, a bean with name `foo` is found and then used as the base object.
 
-All expressions using the `inject` namespace are validated during build.
-For the expression `inject:foo.price` the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist. 
+All expressions with `cdi` and `inject` namespaces are validated during build.
+For the expression `cdi:personService.findPerson(10).name` the implementation class of the injected bean must either declare the `findPerson` method or a matching <<template_extension_methods,template extension method>> must exist.
+For the expression `inject:foo.price` the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist.
 
 NOTE: A `ValueResolver` is also generated for all beans annotated with `@Named` so that it's possible to access its properties without reflection.
 
-TIP: If your application serves link:http-reference[HTTP requests] you can also inject the current `io.vertx.core.http.HttpServerRequest` via the `inject` namespace, e.g. `{inject:vertxRequest.getParam('foo')}`. 
+TIP: If your application serves xref:http-reference.adoc[HTTP requests] you can also inject the current `io.vertx.core.http.HttpServerRequest` via the `inject` namespace, e.g. `{inject:vertxRequest.getParam('foo')}`. 
 
 [[typesafe_expressions]]
 === Type-safe Expressions
@@ -1627,7 +1635,7 @@ class Item {
 
 ==== Accessing Static Fields and Methods
 
-If `@TemplateData#namespace()` is set to a non-empty value then a namespace resolver is automatically generated to access static fields and methods of the target class.
+If `@TemplateData#namespace()` is set to a non-empty value then a namespace resolver is automatically generated to access the public static fields and methods of the target class.
 By default, the namespace is the FQCN of the target class where dots and dollar signs are replaced by underscores.
 For example, the namespace for a class with name `org.acme.Foo` is `org_acme_Foo`.
 The static field `Foo.AGE` can be accessed via `{org_acme_Foo:AGE}`.
@@ -1635,26 +1643,56 @@ The static method `Foo.computeValue(int number)` can be accessed via `{org_acme_
  
 NOTE: A namespace can only consist of alphanumeric characters and underscores.
 
-.Enum Annotated With `@TemplateData`
+.Class Annotated With `@TemplateData`
 [source,java]
 ----
 package model;
 
 @TemplateData <1>
-public enum Status {
-    ON,
-    OFF
+public class Statuses {
+    public static final String ON = "on";
+    public static final String OFF = "off";
 }
 ----
 <1> A name resolver with the namespace `model_Status` is generated automatically.
 
-.Template Accessing Enum Constants
+.Template Accessing Class Constants
 [source,html]
 ----
 {#if machine.status == model_Status:ON}
   The machine is ON!
 {/if}
 ----
+
+==== Convenient Annotation For Enums
+
+There's also a convenient annotation to access enum constants: `@io.quarkus.qute.TemplateEnum`.
+This annotation is functionally equivalent to `@TemplateData(namespace = TemplateData.SIMPLENAME)`, i.e. a namespace resolver is automatically generated for the target enum and the simple name of the target enum is used as the namespace.
+
+.Enum Annotated With `@TemplateEnum`
+[source,java]
+----
+package model;
+
+@TemplateEnum <1>
+public enum Status {
+    ON,
+    OFF
+}
+----
+<1> A name resolver with the namespace `Status` is generated automatically.
+
+NOTE: `@TemplateEnum` declared on a non-enum class is ignored. Also if an enum also declares the `@TemplateData` annotation then the `@TemplateEnum` annotation is ignored.
+
+.Template Accessing Enum Constants
+[source,html]
+----
+{#if machine.status == Status:ON}
+  The machine is ON!
+{/if}
+----
+
+TIP: Quarkus detects possible namespace collisions and fails the build if a specific namespace is defined by multiple `@TemplateData` and/or `@TemplateEnum` annotations.
 
 [[native_executables]]
 === Native Executables

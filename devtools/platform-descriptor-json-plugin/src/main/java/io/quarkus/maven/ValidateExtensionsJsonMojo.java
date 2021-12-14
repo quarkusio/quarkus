@@ -3,7 +3,6 @@ package io.quarkus.maven;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -31,6 +30,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
@@ -206,7 +206,7 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
             processExtensionDescriptor(artifact, file.toPath().resolve(BootstrapConstants.META_INF)
                     .resolve(descriptorName), extensions);
         } else {
-            try (FileSystem fs = FileSystems.newFileSystem(file.toPath(), null)) {
+            try (FileSystem fs = ZipUtils.newFileSystem(file.toPath())) {
                 processExtensionDescriptor(artifact,
                         fs.getPath("/", BootstrapConstants.META_INF, descriptorName),
                         extensions);

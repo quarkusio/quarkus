@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 This guide demonstrates how your Quarkus application can use the GraphQL client library.
 The client is implemented by the https://github.com/smallrye/smallrye-graphql/[SmallRye GraphQL] project.
 This guide is specifically geared towards the client side, so if you need an introduction to GraphQL in
-general, first refer to the link:smallrye-graphql[SmallRye GraphQL guide], which provides an introduction
+general, first refer to the xref:smallrye-graphql.adoc[SmallRye GraphQL guide], which provides an introduction
 to the GraphQL query language, general concepts and server-side development.
 
 

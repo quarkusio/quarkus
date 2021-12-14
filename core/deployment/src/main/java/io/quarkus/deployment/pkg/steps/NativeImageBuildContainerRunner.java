@@ -24,7 +24,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     final NativeConfig nativeConfig;
     protected final NativeConfig.ContainerRuntime containerRuntime;
-    private final String[] baseContainerRuntimeArgs;
+    String[] baseContainerRuntimeArgs;
     protected final String outputPath;
     private final String containerName;
 
@@ -148,7 +148,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
         } else if (podmanAvailable) {
             return NativeConfig.ContainerRuntime.PODMAN;
         } else {
-            throw new IllegalStateException("No container runtime was found to run the native image builder");
+            throw new IllegalStateException("No container runtime was found to run the native image builder. "
+                    + "Make sure you have Docker or Podman installed in your environment.");
         }
     }
 

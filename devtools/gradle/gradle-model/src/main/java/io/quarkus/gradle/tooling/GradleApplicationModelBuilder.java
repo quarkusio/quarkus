@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskCollection;
 import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.language.jvm.tasks.ProcessResources;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
@@ -49,6 +47,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.workspace.DefaultProcessedSources;
 import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.ProcessedSources;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
@@ -475,7 +474,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (Files.isDirectory(artifactPath)) {
                 processQuarkusDir(artifactBuilder, artifactPath.resolve(BootstrapConstants.META_INF), modelBuilder);
             } else {
-                try (FileSystem artifactFs = FileSystems.newFileSystem(artifactPath, (ClassLoader) null)) {
+                try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactPath)) {
                     processQuarkusDir(artifactBuilder, artifactFs.getPath(BootstrapConstants.META_INF), modelBuilder);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to process " + artifactPath, e);
@@ -495,9 +494,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final FileCollection allClassesDirs = sourceSet.getOutput().getClassesDirs();
         // some plugins do not add source directories to source sets and they may be missing from sourceSet.getAllJava()
         // see https://github.com/quarkusio/quarkus/issues/20755
-        final TaskCollection<AbstractCompile> compileTasks = project.getTasks().withType(AbstractCompile.class);
 
-        compileTasks.forEach(t -> {
+        project.getTasks().withType(AbstractCompile.class, t -> {
             if (!t.getEnabled()) {
                 return;
             }
@@ -528,8 +526,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         });
 
         final File resourcesOutputDir = sourceSet.getOutput().getResourcesDir();
-        final TaskCollection<ProcessResources> resources = project.getTasks().withType(ProcessResources.class);
-        resources.forEach(t -> {
+
+        project.getTasks().withType(ProcessResources.class, t -> {
             if (!t.getEnabled()) {
                 return;
             }

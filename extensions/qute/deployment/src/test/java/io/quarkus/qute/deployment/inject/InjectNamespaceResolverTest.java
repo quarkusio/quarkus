@@ -2,8 +2,12 @@ package io.quarkus.qute.deployment.inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.concurrent.atomic.LongAdder;
+
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -17,23 +21,36 @@ public class InjectNamespaceResolverTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
+            .withApplicationRoot(root -> root
                     .addClasses(SimpleBean.class, Hello.class)
-                    .addAsResource(new StringAsset("{inject:hello.ping}"), "templates/foo.html"));
+                    .addAsResource(
+                            new StringAsset(
+                                    "{inject:hello.ping} != {inject:simple.ping} and {cdi:hello.ping} != {cdi:simple.ping}"),
+                            "templates/foo.html"));
 
     @Inject
-    SimpleBean simpleBean;
+    Template foo;
 
     @Test
     public void testInjection() {
-        assertEquals("pong", simpleBean.foo.render());
+        assertEquals("pong != simple and pong != simple", foo.render());
+        assertEquals(2, SimpleBean.DESTROYS.longValue());
     }
 
+    @Named("simple")
     @Dependent
     public static class SimpleBean {
 
-        @Inject
-        Template foo;
+        static final LongAdder DESTROYS = new LongAdder();
+
+        public String ping() {
+            return "simple";
+        }
+
+        @PreDestroy
+        void destroy() {
+            DESTROYS.increment();
+        }
 
     }
 

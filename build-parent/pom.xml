@@ -69,18 +69,7 @@
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
 
-        <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>3.1</microprofile-health-api.version>
-        <microprofile-config-api.version>2.0</microprofile-config-api.version>
-        <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
-        <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
-        <microprofile-reactive-messaging-api.version>2.0</microprofile-reactive-messaging-api.version>
-        <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
-        <microprofile-open-api.version>2.0.1-RC1</microprofile-open-api.version>
-        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
-        <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
-        <microprofile-jwt-api.version>1.2</microprofile-jwt-api.version>
-        <microprofile-graphql-api.version>1.1.0</microprofile-graphql-api.version>
+        <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.9.2</antlr.version>
@@ -101,6 +90,9 @@
 
         <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.0.0</wiremock-maven-plugin.version>
+
+        <!-- Artemis test dependencies -->
+        <artemis.version>2.19.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -330,6 +322,60 @@
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Artemis test dependencies -->
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-server</artifactId>
+                <version>${artemis.version}</version>
+                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.geronimo.specs</groupId>
+                        <artifactId>geronimo-json_1.0_spec</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.johnzon</groupId>
+                        <artifactId>johnzon-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.logmanager</groupId>
+                        <artifactId>jboss-logmanager</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <!-- Excluding the API jar as the impl jar also contains the API -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-amqp-protocol</artifactId>
+                <version>${artemis.version}</version>
+                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                       <groupId>org.apache.activemq</groupId>
+                       <artifactId>artemis-server</artifactId>
+                    </exclusion>
+                    <!-- Excluding the API jar as the impl jar also contains the API -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>

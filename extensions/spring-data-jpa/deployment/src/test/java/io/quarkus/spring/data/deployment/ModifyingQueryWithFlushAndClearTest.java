@@ -88,6 +88,20 @@ public class ModifyingQueryWithFlushAndClearTest {
         assertThat(allProcessed).describedAs("all LoginEvents are marked as processed").isTrue();
     }
 
+    @Test
+    @Transactional
+    public void testNamedQueryOnEntities() {
+        User user = repo.getUserByFullNameUsingNamedQuery("John Doe");
+        assertThat(user).isNotNull();
+    }
+
+    @Test
+    @Transactional
+    public void testNamedQueriesOnEntities() {
+        User user = repo.getUserByFullNameUsingNamedQueries("John Doe");
+        assertThat(user).isNotNull();
+    }
+
     private LoginEvent createLoginEvent(User user) {
         final LoginEvent loginEvent = new LoginEvent();
         loginEvent.setUser(user);

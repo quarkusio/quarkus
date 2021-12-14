@@ -86,7 +86,11 @@ public class NotFoundExceptionMapper {
         if ((classMappers == null) || classMappers.isEmpty()) {
             return respond(headers);
         }
-        return respond(ResourceDescription.fromClassMappers(classMappers), headers);
+        return respond(getResourceDescriptions(), headers);
+    }
+
+    private List<ResourceDescription> getResourceDescriptions() {
+        return ResourceDescription.fromClassMappers(classMappers);
     }
 
     private Response respond(HttpHeaders headers) {

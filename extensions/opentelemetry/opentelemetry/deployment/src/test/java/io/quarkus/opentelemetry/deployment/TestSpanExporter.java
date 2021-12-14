@@ -1,8 +1,14 @@
 package io.quarkus.opentelemetry.deployment;
 
-import java.util.ArrayList;
+import static java.util.Comparator.comparingLong;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -14,29 +20,35 @@ import io.quarkus.arc.Unremovable;
 @Unremovable
 @ApplicationScoped
 public class TestSpanExporter implements SpanExporter {
-    private final List<SpanData> finishedSpanItems = new ArrayList<>();
-    private boolean isStopped = false;
+    private final List<SpanData> finishedSpanItems = new CopyOnWriteArrayList<>();
+    private volatile boolean isStopped = false;
 
-    public List<SpanData> getFinishedSpanItems() {
-        synchronized (this) {
-            return List.copyOf(finishedSpanItems);
-        }
+    /**
+     * Careful when retrieving the list of finished spans. There is a chance when the response is already sent to the
+     * client and Vert.x still writing the end of the spans. This means that a response is available to assert from the
+     * test side but not all spans may be available yet. For this reason, this method requires the number of expected
+     * spans.
+     */
+    public List<SpanData> getFinishedSpanItems(int spanCount) {
+        assertSpanCount(spanCount);
+        return finishedSpanItems.stream().sorted(comparingLong(SpanData::getStartEpochNanos).reversed())
+                .collect(Collectors.toList());
+    }
+
+    public void assertSpanCount(int spanCount) {
+        await().atMost(30, SECONDS).untilAsserted(() -> assertEquals(spanCount, finishedSpanItems.size()));
     }
 
     public void reset() {
-        synchronized (this) {
-            finishedSpanItems.clear();
-        }
+        finishedSpanItems.clear();
     }
 
     @Override
     public CompletableResultCode export(Collection<SpanData> spans) {
-        synchronized (this) {
-            if (isStopped) {
-                return CompletableResultCode.ofFailure();
-            }
-            finishedSpanItems.addAll(spans);
+        if (isStopped) {
+            return CompletableResultCode.ofFailure();
         }
+        finishedSpanItems.addAll(spans);
         return CompletableResultCode.ofSuccess();
     }
 
@@ -47,10 +59,8 @@ public class TestSpanExporter implements SpanExporter {
 
     @Override
     public CompletableResultCode shutdown() {
-        synchronized (this) {
-            finishedSpanItems.clear();
-            isStopped = true;
-        }
+        finishedSpanItems.clear();
+        isStopped = true;
         return CompletableResultCode.ofSuccess();
     }
 }

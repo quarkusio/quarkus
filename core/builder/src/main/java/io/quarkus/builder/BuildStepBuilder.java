@@ -15,6 +15,8 @@ import io.quarkus.builder.item.EmptyBuildItem;
  * a destructor for items it produces, which will be run (in indeterminate order) at the end of processing.
  */
 public final class BuildStepBuilder {
+    private static final StackTraceElement[] EMPTY_STACK_TRACE = new StackTraceElement[0];
+
     private final BuildChainBuilder buildChainBuilder;
     private final Map<ItemId, Consume> consumes = new HashMap<>();
     private final Map<ItemId, Produce> produces = new HashMap<>();
@@ -192,7 +194,11 @@ public final class BuildStepBuilder {
      */
     public BuildChainBuilder build() {
         final BuildChainBuilder chainBuilder = this.buildChainBuilder;
-        chainBuilder.addStep(this, new Exception().getStackTrace());
+        if (BuildChainBuilder.LOG_CONFLICT_CAUSING) {
+            chainBuilder.addStep(this, new Exception().getStackTrace());
+        } else {
+            chainBuilder.addStep(this, EMPTY_STACK_TRACE);
+        }
         return chainBuilder;
     }
 

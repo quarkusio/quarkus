@@ -25,16 +25,6 @@ public class KafkaRecorder {
         String snappyNativeLibraryName = System.mapLibraryName("snappyjava");
         String snappyNativeLibraryPath = "/org/xerial/snappy/native/" + OSInfo.getNativeLibFolderPathForCurrentOS();
         boolean hasNativeLib = hasResource(snappyNativeLibraryPath + "/" + snappyNativeLibraryName);
-        if (!hasNativeLib) {
-            if (OSInfo.getOSName().equals("Mac")) {
-                // Fix for openjdk7 for Mac
-                String altName = "libsnappyjava.jnilib";
-                if (hasResource(snappyNativeLibraryPath + "/" + altName)) {
-                    snappyNativeLibraryName = altName;
-                    hasNativeLib = true;
-                }
-            }
-        }
 
         if (!hasNativeLib) {
             String errorMessage = String.format("no native library is found for os.name=%s and os.arch=%s", OSInfo.getOSName(),

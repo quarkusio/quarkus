@@ -239,4 +239,4 @@ public class SubjectExposingResource {
 
 == References
 
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]

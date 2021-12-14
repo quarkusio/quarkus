@@ -181,7 +181,6 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     public void init() {
-        requireRunning();
         // Fire an event with qualifier @Initialized(ApplicationScoped.class)
         Set<Annotation> qualifiers = Set.of(Initialized.Literal.APPLICATION, Any.Literal.INSTANCE);
         EventImpl.createNotifier(Object.class, Object.class, qualifiers, this, false)
@@ -193,7 +192,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public InjectableContext getActiveContext(Class<? extends Annotation> scopeType) {
-        requireRunning();
         // Application/Singleton context is always active
         if (ApplicationScoped.class.equals(scopeType)) {
             return applicationContext;
@@ -218,7 +216,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public List<InjectableContext> getContexts(Class<? extends Annotation> scopeType) {
-        requireRunning();
         return contexts.getOrDefault(scopeType, Collections.emptyList());
     }
 
@@ -229,27 +226,22 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public <T> InstanceHandle<T> instance(Class<T> type, Annotation... qualifiers) {
-        requireRunning();
         return instanceHandle(type, qualifiers);
     }
 
     @Override
     public <T> InstanceHandle<T> instance(TypeLiteral<T> type, Annotation... qualifiers) {
-        requireRunning();
         return instanceHandle(type.getType(), qualifiers);
     }
 
     @Override
     public <X> InstanceHandle<X> instance(Type type, Annotation... qualifiers) {
-        requireRunning();
         return instanceHandle(type, qualifiers);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers) {
-        requireRunning();
-
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }
@@ -282,7 +274,6 @@ public class ArcContainerImpl implements ArcContainer {
     @Override
     public <T> InstanceHandle<T> instance(InjectableBean<T> bean) {
         Objects.requireNonNull(bean);
-        requireRunning();
         return beanInstanceHandle(bean, null);
     }
 
@@ -305,7 +296,6 @@ public class ArcContainerImpl implements ArcContainer {
     @Override
     public <T> InjectableBean<T> bean(String beanIdentifier) {
         Objects.requireNonNull(beanIdentifier);
-        requireRunning();
         return (InjectableBean<T>) beansById.getValue(beanIdentifier);
     }
 
@@ -313,7 +303,6 @@ public class ArcContainerImpl implements ArcContainer {
     @Override
     public <T> InstanceHandle<T> instance(String name) {
         Objects.requireNonNull(name);
-        requireRunning();
         Set<InjectableBean<?>> resolvedBeans = beansByName.getValue(name);
         return resolvedBeans.size() != 1 ? EagerInstanceHandle.unavailable()
                 : (InstanceHandle<T>) beanInstanceHandle(resolvedBeans.iterator()
@@ -322,7 +311,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public ManagedContext requestContext() {
-        requireRunning();
         return requestContext;
     }
 
@@ -838,12 +826,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     public static ArcContainerImpl instance() {
         return unwrap(Arc.container());
-    }
-
-    private void requireRunning() {
-        if (!running.get()) {
-            throw new IllegalStateException("Container not running: " + this);
-        }
     }
 
     private static final class Resolvable {

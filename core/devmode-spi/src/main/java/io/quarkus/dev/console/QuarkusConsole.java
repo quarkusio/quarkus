@@ -16,6 +16,8 @@ public abstract class QuarkusConsole {
     public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+    public static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
+    public static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux");
 
     /**
      * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
@@ -109,6 +111,10 @@ public abstract class QuarkusConsole {
 
     public abstract void write(boolean errorStream, byte[] buf, int off, int len);
 
+    public void exitCliMode() {
+        //noop for the non-aesh console
+    }
+
     protected String stripAnsiCodes(String s) {
         if (s == null) {
             return null;
@@ -143,4 +149,5 @@ public abstract class QuarkusConsole {
     public boolean isAnsiSupported() {
         return false;
     }
+
 }

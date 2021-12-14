@@ -488,6 +488,11 @@ final class CustomFilterGenerator {
                 targetMethodParamHandles[i] = filterMethod.getMethodParam(1);
             } else if (unwrappableTypes.contains(paramDotName)) {
                 targetMethodParamHandles[i] = GeneratorUtils.unwrapObject(filterMethod, rrReqCtxHandle, paramDotName);
+            } else if (URI_INFO.equals(paramDotName)) {
+                GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles,
+                        i,
+                        "getUriInfo",
+                        URI_INFO);
             } else if (RESOURCE_INFO.equals(paramDotName)) {
                 targetMethodParamHandles[i] = getResourceInfoHandle(filterMethod, rrReqCtxHandle);
             } else if (ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {

@@ -477,9 +477,12 @@ class Parser implements Function<String, Expression>, ParserHelper {
             // Parameter declaration
             // {@org.acme.Foo foo}
             Scope currentScope = scopeStack.peek();
-            int spaceIdx = content.indexOf(" ");
-            String key = content.substring(spaceIdx + 1, content.length());
-            String value = content.substring(1, spaceIdx);
+            String[] parts = content.substring(1).trim().split("[ ]{1,}");
+            if (parts.length != 2) {
+                throw parserError("invalid parameter declaration " + START_DELIMITER + buffer.toString() + END_DELIMITER);
+            }
+            String value = parts[0];
+            String key = parts[1];
             currentScope.putBinding(key, Expressions.typeInfoFrom(value));
             sectionStack.peek().currentBlock().addNode(new ParameterDeclarationNode(content, origin(0)));
         } else {
@@ -637,6 +640,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
         boolean stringLiteral = false;
         short composite = 0;
+        byte brackets = 0;
         boolean space = false;
         List<String> parts = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
@@ -645,7 +649,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             char c = content.charAt(i);
             if (c == ' ') {
                 if (!space) {
-                    if (!stringLiteral && composite == 0) {
+                    if (!stringLiteral && composite == 0 && brackets == 0) {
                         if (buffer.length() > 0) {
                             parts.add(buffer.toString());
                             buffer = new StringBuilder();
@@ -666,6 +670,12 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 } else if (!stringLiteral
                         && isCompositeEnd(c) && composite > 0) {
                     composite--;
+                } else if (!stringLiteral
+                        && Parser.isLeftBracket(c)) {
+                    brackets++;
+                } else if (!stringLiteral
+                        && Parser.isRightBracket(c) && brackets > 0) {
+                    brackets--;
                 }
                 space = false;
                 buffer.append(c);

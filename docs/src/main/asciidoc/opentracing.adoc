@@ -242,7 +242,7 @@ The https://github.com/opentracing-contrib/java-kafka-client[Kafka instrumentati
 
 It contains OpenTracing interceptors that must be registered on Kafka producers and consumers.
 
-If you followed the link:kafka[Kafka guide], the interceptors can be added on the `generated-price` and the `prices` channels as follows:
+If you followed the xref:kafka.adoc[Kafka guide], the interceptors can be added on the `generated-price` and the `prices` channels as follows:
 
 [source, properties]
 ----
@@ -274,7 +274,7 @@ The https://github.com/opentracing-contrib/java-mongo-driver[Mongo Driver instru
 ----
 
 It contains the OpenTracing CommandListener that will be registered on the configuration of the mongo client.
-Following the link:mongodb[MongoDB guide], the command listener will be registered defining the config property as follows:
+Following the xref:mongodb.adoc[MongoDB guide], the command listener will be registered defining the config property as follows:
 
 [source, properties]
 ----

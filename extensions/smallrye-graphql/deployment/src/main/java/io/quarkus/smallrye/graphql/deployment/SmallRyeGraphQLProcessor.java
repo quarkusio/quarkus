@@ -61,6 +61,7 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
@@ -198,11 +199,20 @@ public class SmallRyeGraphQLProcessor {
         Map<String, byte[]> modifiedClases = graphQLIndexBuildItem.getModifiedClases();
 
         for (Map.Entry<String, byte[]> kv : modifiedClases.entrySet()) {
-            try (ByteArrayInputStream bais = new ByteArrayInputStream(kv.getValue())) {
-                indexer.index(bais);
-            } catch (IOException ex) {
-                LOG.warn("Could not index [" + kv.getKey() + "] - " + ex.getMessage());
+            if (kv.getKey() != null && kv.getValue() != null) {
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(kv.getValue())) {
+                    indexer.index(bais);
+                } catch (IOException ex) {
+                    LOG.warn("Could not index [" + kv.getKey() + "] - " + ex.getMessage());
+                }
             }
+        }
+
+        try {
+            indexer.indexClass(Map.class);
+            indexer.indexClass(Entry.class);
+        } catch (IOException ex) {
+            LOG.warn("Failure while creating index", ex);
         }
 
         OverridableIndex overridableIndex = OverridableIndex.create(combinedIndex.getIndex(), indexer.complete());

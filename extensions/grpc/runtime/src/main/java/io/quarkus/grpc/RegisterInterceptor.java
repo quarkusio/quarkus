@@ -1,10 +1,9 @@
 package io.quarkus.grpc;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -15,7 +14,8 @@ import io.grpc.ServerInterceptor;
  *
  * @see GlobalInterceptor
  */
-@Target({ FIELD, PARAMETER, TYPE })
+@Repeatable(RegisterInterceptors.class)
+@Target(TYPE)
 @Retention(RUNTIME)
 public @interface RegisterInterceptor {
     Class<? extends ServerInterceptor> value();

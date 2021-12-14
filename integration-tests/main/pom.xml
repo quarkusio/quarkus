@@ -139,12 +139,6 @@
             <artifactId>quarkus-smallrye-context-propagation</artifactId>
         </dependency>
 
-        <!-- Tika -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-tika</artifactId>
-        </dependency>
-
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -485,19 +479,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-tika-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
 
     <build>
@@ -611,7 +592,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>postgres:13.1</name>
+                                    <name>postgres:14.1</name>
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>

@@ -2,6 +2,7 @@ package io.quarkus.arc;
 
 import java.util.Map;
 import java.util.function.Function;
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.NormalScope;
 import javax.enterprise.context.spi.AlterableContext;
 import javax.enterprise.context.spi.Contextual;
@@ -21,8 +22,18 @@ public interface InjectableContext extends AlterableContext {
 
     /**
      * @return the current state
+     * @throws ContextNotActiveException
      */
     ContextState getState();
+
+    /**
+     * If the context is active then return the current state.
+     * 
+     * @return the current state or {@code null} if the context is not active
+     */
+    default ContextState getStateIfActive() {
+        return isActive() ? getState() : null;
+    }
 
     /**
      * If the context is active then return an existing instance of certain contextual type or create a new instance, otherwise
@@ -80,9 +91,7 @@ public interface InjectableContext extends AlterableContext {
     interface ContextState {
 
         /**
-         * The changes to the map are not reflected in the underlying context.
-         * 
-         * @return a map of contextual instances
+         * @return an immutable map of contextual instances
          */
         Map<InjectableBean<?>, Object> getContextualInstances();
 

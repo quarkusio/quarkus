@@ -272,6 +272,9 @@ public class MediaTypeHelper {
      * that uses the suffix as the subtype
      */
     public static MediaType withSuffixAsSubtype(MediaType mediaType) {
+        if (mediaType == null) {
+            return null;
+        }
         int plusIndex = mediaType.getSubtype().indexOf('+');
         if ((plusIndex > -1) && (plusIndex < mediaType.getSubtype().length() - 1)) {
             mediaType = new MediaType(mediaType.getType(),

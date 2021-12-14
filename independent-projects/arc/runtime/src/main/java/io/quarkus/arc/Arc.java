@@ -2,31 +2,33 @@ package io.quarkus.arc;
 
 import io.quarkus.arc.impl.ArcContainerImpl;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- *
- * @author Martin Kouba
+ * Provides access to the ArC container.
  */
 public final class Arc {
 
     private static final AtomicReference<ArcContainerImpl> INSTANCE = new AtomicReference<>();
-    private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
 
+    /**
+     * 
+     * @return the initialized container
+     */
     public static ArcContainer initialize() {
-        if (INITIALIZED.compareAndSet(false, true)) {
-            try {
-                ArcContainerImpl container = new ArcContainerImpl();
-                INSTANCE.set(container);
-                container.init();
-                return container;
-            } catch (Throwable t) {
-                INITIALIZED.set(false);
-                throw new RuntimeException("Failed to initialize Arc", t);
+        ArcContainerImpl container = INSTANCE.get();
+        if (container == null) {
+            synchronized (INSTANCE) {
+                container = INSTANCE.get();
+                if (container == null) {
+                    container = new ArcContainerImpl();
+                    // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init() 
+                    INSTANCE.set(container);
+                    container.init();
+                }
             }
         }
-        return container();
+        return container;
     }
 
     public static void setExecutor(ExecutorService executor) {
@@ -42,13 +44,13 @@ public final class Arc {
     }
 
     public static void shutdown() {
-        if (INSTANCE.get() != null) {
+        ArcContainerImpl container = INSTANCE.get();
+        if (container != null) {
             synchronized (INSTANCE) {
-                ArcContainerImpl container = INSTANCE.get();
+                container = INSTANCE.get();
                 if (container != null) {
                     container.shutdown();
                     INSTANCE.set(null);
-                    INITIALIZED.set(false);
                 }
             }
         }

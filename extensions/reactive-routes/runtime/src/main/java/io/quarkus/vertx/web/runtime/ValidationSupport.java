@@ -20,7 +20,7 @@ public class ValidationSupport {
     public static final String APPLICATION_JSON = "application/json";
     public static final String ACCEPT_HEADER = "Accept";
     public static final String PROBLEM_TITLE = "title";
-    public static final String PROBLEM_DETAIL = "details";
+    public static final String PROBLEM_DETAIL = "detail";
     public static final String PROBLEM_FIELD = "field";
     public static final String PROBLEM_MESSAGE = "message";
     public static final String PROBLEM_STATUS = "status";

@@ -4,17 +4,11 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractCollection;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -61,6 +55,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
+import io.quarkus.runtime.util.ClassPathUtils;
 
 class FlywayProcessor {
 
@@ -210,7 +205,7 @@ class FlywayProcessor {
     }
 
     private Collection<String> discoverApplicationMigrations(Collection<String> locations)
-            throws IOException, URISyntaxException {
+            throws IOException {
         LinkedHashSet<String> applicationMigrationResources = new LinkedHashSet<>();
         // Locations can be a comma separated list
         for (String location : locations) {
@@ -220,28 +215,19 @@ class FlywayProcessor {
                 continue;
             }
 
-            Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);
-            while (migrations.hasMoreElements()) {
-                URL path = migrations.nextElement();
-                LOGGER.infov("Adding application migrations in path ''{0}'' using protocol ''{1}''", path.getPath(),
-                        path.getProtocol());
-                final Set<String> applicationMigrations;
-                if (JAR_APPLICATION_MIGRATIONS_PROTOCOL.equals(path.getProtocol())) {
-                    try (final FileSystem fileSystem = initFileSystem(path.toURI())) {
-                        applicationMigrations = getApplicationMigrationsFromPath(location, path);
-                    }
-                } else if (FILE_APPLICATION_MIGRATIONS_PROTOCOL.equals(path.getProtocol())) {
-                    applicationMigrations = getApplicationMigrationsFromPath(location, path);
-                } else {
-                    LOGGER.warnv(
-                            "Unsupported URL protocol ''{0}'' for path ''{1}''. Migration files will not be discovered.",
-                            path.getProtocol(), path.getPath());
-                    applicationMigrations = null;
+            String finalLocation = location;
+            ClassPathUtils.consumeAsPaths(Thread.currentThread().getContextClassLoader(), location, path -> {
+                Set<String> applicationMigrations = null;
+                try {
+                    applicationMigrations = FlywayProcessor.this.getApplicationMigrationsFromPath(finalLocation, path);
+                } catch (IOException e) {
+                    LOGGER.warnv(e,
+                            "Can't process files in path %s", path);
                 }
                 if (applicationMigrations != null) {
                     applicationMigrationResources.addAll(applicationMigrations);
                 }
-            }
+            });
         }
         return applicationMigrationResources;
     }
@@ -266,9 +252,8 @@ class FlywayProcessor {
         return location;
     }
 
-    private Set<String> getApplicationMigrationsFromPath(final String location, final URL path)
-            throws IOException, URISyntaxException {
-        Path rootPath = Paths.get(path.toURI());
+    private Set<String> getApplicationMigrationsFromPath(final String location, final Path rootPath)
+            throws IOException {
 
         try (final Stream<Path> pathStream = Files.walk(rootPath)) {
             return pathStream.filter(Files::isRegularFile)
@@ -278,12 +263,6 @@ class FlywayProcessor {
                     .peek(it -> LOGGER.debugf("Discovered path: %s", it))
                     .collect(Collectors.toSet());
         }
-    }
-
-    private FileSystem initFileSystem(final URI uri) throws IOException {
-        final Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-        return FileSystems.newFileSystem(uri, env);
     }
 
     /**

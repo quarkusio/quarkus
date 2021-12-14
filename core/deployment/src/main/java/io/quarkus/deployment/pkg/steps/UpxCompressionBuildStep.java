@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.deployment.util.ProcessUtil;
 
@@ -33,6 +34,7 @@ public class UpxCompressionBuildStep {
 
     @BuildStep(onlyIf = NativeBuild.class)
     public void compress(NativeConfig nativeConfig, NativeImageBuildItem image,
+            BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
         if (nativeConfig.compression.level.isEmpty()) {
             log.debug("UPX compression disabled");
@@ -56,6 +58,7 @@ public class UpxCompressionBuildStep {
             throw new IllegalStateException("Unable to compress the native executable: `upx` not available");
         }
         log.infof("Native executable compressed: %s", image.getPath().toFile().getAbsolutePath());
+        upxCompressedProducer.produce(new UpxCompressedBuildItem());
     }
 
     private boolean runUpxFromHost(File upx, File executable, NativeConfig nativeConfig) {

@@ -8,6 +8,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -22,6 +23,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ReflectionValueResolver;
@@ -41,6 +43,7 @@ import io.quarkus.runtime.Startup;
 public class EngineProducer {
 
     public static final String INJECT_NAMESPACE = "inject";
+    public static final String CDI_NAMESPACE = "cdi";
 
     private static final String TAGS = "tags/";
 
@@ -132,10 +135,17 @@ public class EngineProducer {
         builderReady.fire(builder);
 
         // Resolve @Named beans
-        builder.addNamespaceResolver(NamespaceResolver.builder(INJECT_NAMESPACE).resolve(ctx -> {
-            InstanceHandle<Object> bean = Arc.container().instance(ctx.getName());
-            return bean.isAvailable() ? bean.get() : Results.NotFound.from(ctx);
-        }).build());
+        Function<EvalContext, Object> cdiFun = new Function<EvalContext, Object>() {
+
+            @Override
+            public Object apply(EvalContext ctx) {
+                try (InstanceHandle<Object> bean = Arc.container().instance(ctx.getName())) {
+                    return bean.isAvailable() ? bean.get() : Results.NotFound.from(ctx);
+                }
+            }
+        };
+        builder.addNamespaceResolver(NamespaceResolver.builder(INJECT_NAMESPACE).resolve(cdiFun).build());
+        builder.addNamespaceResolver(NamespaceResolver.builder(CDI_NAMESPACE).resolve(cdiFun).build());
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {

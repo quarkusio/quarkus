@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
-import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.ServiceInstance;
 import io.smallrye.stork.Stork;
@@ -36,6 +35,7 @@ import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
@@ -285,13 +285,12 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         multipartForm.preparePojos(state);
 
         Object property = state.getConfiguration().getProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE);
-        HttpPostRequestEncoder.EncoderMode mode = HttpPostRequestEncoder.EncoderMode.RFC1738;
+        PausableHttpPostRequestEncoder.EncoderMode mode = PausableHttpPostRequestEncoder.EncoderMode.RFC1738;
         if (property != null) {
-            mode = (HttpPostRequestEncoder.EncoderMode) property;
+            mode = (PausableHttpPostRequestEncoder.EncoderMode) property;
         }
         QuarkusMultipartFormUpload multipartFormUpload = new QuarkusMultipartFormUpload(Vertx.currentContext(), multipartForm,
-                true,
-                mode);
+                true, mode);
         setEntityRelatedHeaders(headerMap, state.getEntity());
 
         // multipart has its own headers:

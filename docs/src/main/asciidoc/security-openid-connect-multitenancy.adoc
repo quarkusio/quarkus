@@ -12,9 +12,9 @@ This guide demonstrates how your OpenID Connect (OIDC) application can support m
 
 When serving multiple customers from the same application (e.g.: SaaS), each customer is a tenant. By enabling multi-tenancy support to your applications you are allowed to also support distinct authentication policies for each tenant even though if that means authenticating against different OpenID Providers, such as Keycloak and Google.
 
-Please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide if you need to authorize a tenant using Bearer Token Authorization.
+Please read the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide if you need to authorize a tenant using Bearer Token Authorization.
 
-Please read the link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize a tenant using OpenId Connect Authorization Code Flow.
+Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize a tenant using OpenId Connect Authorization Code Flow.
 
 == Prerequisites
 
@@ -154,7 +154,7 @@ From the implementation above, tenants are resolved from the request path so tha
 
 [NOTE]
 ===
-If you also use link:hibernate-orm#multitenancy[Hibernate ORM multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same and must be extracted from the Vert.x `RoutingContext` then you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver as a `RoutingContext` attribute, for example:
+If you also use xref:hibernate-orm.adoc#multitenancy[Hibernate ORM multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same and must be extracted from the Vert.x `RoutingContext` then you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver as a `RoutingContext` attribute, for example:
 
 [source,java]
 ----
@@ -437,4 +437,4 @@ include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * https://developers.google.com/identity/protocols/OpenIDConnect[Google OpenID Connect]
-* link:security[Quarkus Security]
+* xref:security.adoc[Quarkus Security]

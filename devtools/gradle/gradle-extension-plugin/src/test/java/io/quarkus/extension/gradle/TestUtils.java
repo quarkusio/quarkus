@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Properties;
 
 import org.gradle.testkit.runner.BuildResult;
@@ -24,7 +25,12 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class TestUtils {
 
-    public static String getDefaultGradleBuildFileContent() throws IOException {
+    public static String getDefaultGradleBuildFileContent(boolean disableValidation, List<String> implementationDependencies)
+            throws IOException {
+        StringBuilder implementationBuilder = new StringBuilder();
+        for (String implementationDependency : implementationDependencies) {
+            implementationBuilder.append("implementation(\"").append(implementationDependency).append("\")\n");
+        }
         return "plugins {\n" +
                 "id 'java'\n" +
                 "id 'io.quarkus.extension'\n" +
@@ -35,13 +41,24 @@ public class TestUtils {
                 "mavenCentral()\n" +
                 "mavenLocal()\n" +
                 "}\n" +
+                QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { \n" +
+                "disableValidation = " + disableValidation + "\n" +
+
+                "}\n" +
                 "dependencies { \n" +
                 "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n" +
                 "implementation \"io.quarkus:quarkus-arc\" \n" +
+                implementationBuilder +
                 "}\n";
     }
 
-    public static String getDefaultDeploymentBuildFileContent() throws IOException {
+    public static String getDefaultDeploymentBuildFileContent(List<String> implementationDependencies) throws IOException {
+
+        StringBuilder implementationBuilder = new StringBuilder();
+        for (String implementationDependency : implementationDependencies) {
+            implementationBuilder.append("implementation(\"").append(implementationDependency).append("\")\n");
+        }
+
         return "plugins {\n" +
                 "id 'java'\n" +
                 "}\n" +
@@ -53,8 +70,9 @@ public class TestUtils {
                 "}\n" +
                 "dependencies {\n" +
                 "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n" +
-                "implementation \"io.quarkus:quarkus-arc\" \n" +
-                "implementation project(\":runtime\")" +
+                "implementation \"io.quarkus:quarkus-arc-deployment\" \n" +
+                "implementation project(\":runtime\") \n" +
+                implementationBuilder +
                 "}\n";
     }
 
@@ -70,17 +88,19 @@ public class TestUtils {
         return extensionDescriptorResult;
     }
 
-    public static void createExtensionProject(File testProjectDir) throws IOException {
+    public static void createExtensionProject(File testProjectDir, boolean disableValidation, List<String> runtimeDependencies,
+            List<String> deploymentDependencies) throws IOException {
         File runtimeModule = new File(testProjectDir, "runtime");
         runtimeModule.mkdir();
-        writeFile(new File(runtimeModule, "build.gradle"), getDefaultGradleBuildFileContent());
+        writeFile(new File(runtimeModule, "build.gradle"),
+                getDefaultGradleBuildFileContent(disableValidation, runtimeDependencies));
         File runtimeTestFile = new File(runtimeModule, "src/main/java/runtime/Test.java");
         runtimeTestFile.getParentFile().mkdirs();
         writeFile(runtimeTestFile, "package runtime; public class Test {}");
 
         File deploymentModule = new File(testProjectDir, "deployment");
         deploymentModule.mkdir();
-        writeFile(new File(deploymentModule, "build.gradle"), getDefaultDeploymentBuildFileContent());
+        writeFile(new File(deploymentModule, "build.gradle"), getDefaultDeploymentBuildFileContent(deploymentDependencies));
         File deploymentTestFile = new File(deploymentModule, "src/main/java/deployment/Test.java");
         deploymentTestFile.getParentFile().mkdirs();
         writeFile(deploymentTestFile, "package deployment; public class Test {}");

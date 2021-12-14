@@ -138,6 +138,14 @@ class RequestContext implements ManagedContext {
         return new RequestContextState(ctx);
     }
 
+    public ContextState getStateIfActive() {
+        ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
+        if (ctx == null) {
+            return null;
+        }
+        return new RequestContextState(ctx);
+    }
+
     @Override
     public void deactivate() {
         currentContext.remove();
@@ -223,7 +231,7 @@ class RequestContext implements ManagedContext {
         @Override
         public Map<InjectableBean<?>, Object> getContextualInstances() {
             return value.values().stream()
-                    .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+                    .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
         }
 
     }

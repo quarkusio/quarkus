@@ -9,9 +9,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy (JAX-RS),
-Undertow (Servlet), Reactive Routes, or link:funqy-http[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.
+Undertow (Servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.
 
-One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Reactive Routes, or link:funqy-http[Funqy HTTP] endpoints.
+One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
 
 include::./status-include.adoc[]
 
@@ -28,7 +28,7 @@ To complete this guide, you need:
 == Solution
 
 This guide walks you through generating a sample project followed by creating three HTTP endpoints
-written with JAX-RS APIs, Servlet APIs, Reactive Routes, or link:funqy-http[Funqy HTTP] APIs. Once built, you will be able to deploy
+written with JAX-RS APIs, Servlet APIs, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] APIs. Once built, you will be able to deploy
 the project to Google Cloud.
 
 If you don't want to follow all these steps, you can go right to the completed example.
@@ -64,7 +64,7 @@ gcloud auth login
 == Creating the endpoints
 
 For this example project, we will create four endpoints, one for RESTEasy (JAX-RS), one for Undertow (Servlet),
-one for Reactive routes and one for link:funqy-http[Funqy HTTP].
+one for Reactive routes and one for xref:funqy-http.adoc[Funqy HTTP].
 
 If you don't need endpoints of each type, you can remove the corresponding extensions from your `pom.xml`.
 
@@ -222,5 +222,5 @@ Your endpoints will be available on http://localhost:8080.
 
 == What's next?
 
-You can use our link:funqy-gcp-functions[Google Cloud Functions Funqy binding] to use Funqy,
+You can use our xref:funqy-gcp-functions.adoc[Google Cloud Functions Funqy binding] to use Funqy,
 a provider agnostic function as a service framework, that allow to deploy HTTP function or Background function to Google Cloud.

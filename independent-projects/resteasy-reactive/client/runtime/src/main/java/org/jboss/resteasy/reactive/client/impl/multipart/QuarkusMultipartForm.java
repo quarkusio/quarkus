@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -72,6 +73,18 @@ public class QuarkusMultipartForm implements Iterable<QuarkusMultipartFormDataPa
     @SuppressWarnings("unused")
     public QuarkusMultipartForm binaryFileUpload(String name, String filename, Buffer content, String mediaType) {
         parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, false));
+        return this;
+    }
+
+    @SuppressWarnings("unused")
+    public QuarkusMultipartForm multiAsBinaryFileUpload(String name, String filename, Multi<Byte> content, String mediaType) {
+        parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, false));
+        return this;
+    }
+
+    @SuppressWarnings("unused")
+    public QuarkusMultipartForm multiAsTextFileUpload(String name, String filename, Multi<Byte> content, String mediaType) {
+        parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, true));
         return this;
     }
 

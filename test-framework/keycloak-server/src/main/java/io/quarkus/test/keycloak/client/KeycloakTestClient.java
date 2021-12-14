@@ -16,7 +16,8 @@ import io.restassured.specification.RequestSpecification;
 
 public class KeycloakTestClient implements DevServicesContext.ContextAware {
 
-    private final static String AUTH_SERVER_URL_PROP = "quarkus.oidc.auth-server-url";
+    private final static String CLIENT_AUTH_SERVER_URL_PROP = "client.quarkus.oidc.auth-server-url";
+    private final static String AUTH_SERVER_URL_PROP = "client.quarkus.oidc.auth-server-url";
     private final static String CLIENT_ID_PROP = "quarkus.oidc.client-id";
     private final static String CLIENT_SECRET_PROP = "quarkus.oidc.credentials.secret";
 
@@ -110,9 +111,14 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      * For example: 'http://localhost:8081/auth/realms/quarkus'.
      */
     public String getAuthServerUrl() {
-        String authServerUrl = getPropertyValue(AUTH_SERVER_URL_PROP, null);
+        String authServerUrl = getPropertyValue(CLIENT_AUTH_SERVER_URL_PROP, null);
         if (authServerUrl == null) {
-            throw new ConfigurationException(AUTH_SERVER_URL_PROP + " is not configured");
+            getPropertyValue(AUTH_SERVER_URL_PROP, null);
+        }
+        if (authServerUrl == null) {
+            throw new ConfigurationException(
+                    String.format("Unable to obtain the Auth Server URL as neither '%s' or '%s' is set",
+                            CLIENT_AUTH_SERVER_URL_PROP, AUTH_SERVER_URL_PROP));
         }
         return authServerUrl;
     }

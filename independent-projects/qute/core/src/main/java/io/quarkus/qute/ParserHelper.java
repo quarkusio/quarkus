@@ -2,6 +2,10 @@ package io.quarkus.qute;
 
 import java.util.function.Function;
 
+/**
+ *
+ * @see ParserHook
+ */
 public interface ParserHelper {
 
     /**

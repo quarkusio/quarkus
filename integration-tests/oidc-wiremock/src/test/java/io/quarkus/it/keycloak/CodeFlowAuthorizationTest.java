@@ -1,6 +1,9 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,6 +35,7 @@ public class CodeFlowAuthorizationTest {
 
     @Test
     public void testCodeFlow() throws IOException {
+        defineCodeFlowLogoutStub();
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/code-flow");
@@ -42,7 +46,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice, cache size: 0", page.getBody().asText());
             assertNotNull(getSessionCookie(webClient, "code-flow"));
 
             page = webClient.getPage("http://localhost:8081/code-flow/logout");
@@ -66,7 +70,8 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice", page.getBody().asText());
+            assertEquals("alice:alice, cache size: 1", page.getBody().asText());
+
             assertNotNull(getSessionCookie(webClient, "code-flow-user-info-only"));
             webClient.getCookieManager().clearCookies();
         }
@@ -87,6 +92,16 @@ public class CodeFlowAuthorizationTest {
                                 "  \"access_token\": \""
                                 + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\""
                                 + "}")));
+    }
+
+    private void defineCodeFlowLogoutStub() {
+        wireMockServer.stubFor(
+                get(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/end-session"))
+                        .willReturn(aResponse()
+                                .withHeader("Location",
+                                        "{{request.query.returnTo}}?clientId={{request.query.client_id}}")
+                                .withStatus(302)
+                                .withTransformers("response-template")));
     }
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {

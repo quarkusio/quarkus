@@ -1,7 +1,7 @@
 package io.quarkus.bootstrap.resolver;
 
 import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.fs.util.ZipUtils;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;

@@ -10,6 +10,7 @@ import io.vertx.core.http.HttpClientResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -46,6 +47,8 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
  */
 public class RestClientRequestContext extends AbstractResteasyReactiveContext<RestClientRequestContext, ClientRestHandler> {
 
+    private static final String MP_INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
+
     private final HttpClient httpClient;
     // Changeable by the request filter
     String httpMethod;
@@ -64,6 +67,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private final boolean checkSuccessfulFamily;
     private final CompletableFuture<ResponseImpl> result;
     private final ClientRestHandler[] abortHandlerChainWithoutResponseFilters;
+
+    private final boolean disableContextualErrorMessages;
     /**
      * Only initialised if we have request or response filters
      */
@@ -129,6 +134,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         this.result = new CompletableFuture<>();
         // each invocation gets a new set of properties based on the JAX-RS invoker
         this.properties = new HashMap<>(properties);
+
+        // this isn't a real configuration option because it's only really used to pass the TCKs
+        disableContextualErrorMessages = Boolean
+                .parseBoolean(System.getProperty("quarkus.rest-client.disable-contextual-error-messages", "false"));
     }
 
     public void abort() {
@@ -140,8 +149,16 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     protected Throwable unwrapException(Throwable t) {
         var res = super.unwrapException(t);
         if (res instanceof WebApplicationException) {
-            WebApplicationException webApplicationException = (WebApplicationException) res;
-            return new ClientWebApplicationException(webApplicationException.getMessage(), webApplicationException,
+            var webApplicationException = (WebApplicationException) res;
+            var message = webApplicationException.getMessage();
+            var invokedMethodObject = properties.get(MP_INVOKED_METHOD_PROP);
+            if ((invokedMethodObject instanceof Method) && !disableContextualErrorMessages) {
+                var invokedMethod = (Method) invokedMethodObject;
+                message = "Received: '" + message + "' when invoking: Rest Client method: '"
+                        + invokedMethod.getDeclaringClass().getName() + "#"
+                        + invokedMethod.getName() + "'";
+            }
+            return new ClientWebApplicationException(message, webApplicationException,
                     webApplicationException.getResponse());
         }
         return res;

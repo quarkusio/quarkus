@@ -39,7 +39,7 @@
         <maven-resolver.version>1.6.3</maven-resolver.version>
         <maven-shared-utils.version>3.3.4</maven-shared-utils.version> <!-- changed from the original version due to https://snyk.io/vuln/maven:org.apache.maven.shared:maven-shared-utils@3.2.1 -->
         <maven-wagon.version>3.4.3</maven-wagon.version>
-        <httpcore.version>4.4.14</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.4.3 brings in 4.4.13 and 4.4.14) -->
+        <httpcore.version>4.4.15</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.4.3 brings in 4.4.13 and 4.4.14) -->
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jackson.version>2.12.5</jackson.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
@@ -55,6 +55,7 @@
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <smallrye-common.version>1.8.0</smallrye-common.version>
         <gradle-tooling.version>7.3.1</gradle-tooling.version>
+        <quarkus-fs-util.version>0.0.3</quarkus-fs-util.version>
     </properties>
     <modules>
         <module>bom</module>

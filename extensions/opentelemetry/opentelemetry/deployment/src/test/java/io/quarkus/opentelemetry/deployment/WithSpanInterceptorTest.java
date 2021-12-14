@@ -40,8 +40,7 @@ public class WithSpanInterceptorTest {
     @Test
     void span() {
         spanBean.span();
-        List<SpanData> spanItems = spanExporter.getFinishedSpanItems();
-        assertEquals(1, spanItems.size());
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
         assertEquals("SpanBean.span", spanItems.get(0).getName());
         assertEquals(INTERNAL, spanItems.get(0).getKind());
     }
@@ -49,8 +48,7 @@ public class WithSpanInterceptorTest {
     @Test
     void spanName() {
         spanBean.spanName();
-        List<SpanData> spanItems = spanExporter.getFinishedSpanItems();
-        assertEquals(1, spanItems.size());
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
         assertEquals("name", spanItems.get(0).getName());
         assertEquals(INTERNAL, spanItems.get(0).getKind());
     }
@@ -58,8 +56,7 @@ public class WithSpanInterceptorTest {
     @Test
     void spanKind() {
         spanBean.spanKind();
-        List<SpanData> spanItems = spanExporter.getFinishedSpanItems();
-        assertEquals(1, spanItems.size());
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
         assertEquals("SpanBean.spanKind", spanItems.get(0).getName());
         assertEquals(SERVER, spanItems.get(0).getKind());
     }
@@ -67,8 +64,7 @@ public class WithSpanInterceptorTest {
     @Test
     void spanArgs() {
         spanBean.spanArgs("argument");
-        List<SpanData> spanItems = spanExporter.getFinishedSpanItems();
-        assertEquals(1, spanItems.size());
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
         assertEquals("SpanBean.spanArgs", spanItems.get(0).getName());
         assertEquals(INTERNAL, spanItems.get(0).getKind());
         assertEquals("argument", spanItems.get(0).getAttributes().get(AttributeKey.stringKey("arg")));
@@ -77,9 +73,7 @@ public class WithSpanInterceptorTest {
     @Test
     void spanChild() {
         spanBean.spanChild();
-        List<SpanData> spanItems = spanExporter.getFinishedSpanItems();
-        assertEquals(2, spanItems.size());
-
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(2);
         assertEquals("SpanChildBean.spanChild", spanItems.get(0).getName());
         assertEquals("SpanBean.spanChild", spanItems.get(1).getName());
         assertEquals(spanItems.get(0).getParentSpanId(), spanItems.get(1).getSpanId());

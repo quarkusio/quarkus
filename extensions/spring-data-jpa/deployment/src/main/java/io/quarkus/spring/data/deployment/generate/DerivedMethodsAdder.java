@@ -1,6 +1,7 @@
 package io.quarkus.spring.data.deployment.generate;
 
 import static io.quarkus.gizmo.FieldDescriptor.of;
+import static io.quarkus.spring.data.deployment.generate.GenerationUtil.getNamedQueryForMethod;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -70,6 +71,11 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
         }
         for (MethodInfo method : repoMethods) {
             if (method.annotation(DotNames.SPRING_DATA_QUERY) != null) { // handled by CustomQueryMethodsAdder
+                continue;
+            }
+
+            // If method is a named query placed in the entity, we skip it to be handled by CustomQueryMethodsAdder
+            if (getNamedQueryForMethod(method, entityClassInfo) != null) {
                 continue;
             }
 

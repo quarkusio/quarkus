@@ -75,7 +75,7 @@ mp.messaging.incoming.prices.connector=smallrye-rabbitmq # <5>
 4. Configures the broker password if required. You can do it per channel (using the `password` attribute) or globally using `rabbitmq-password`.
 5. Instructs the prices channel to be managed by the RabbitMQ connector
 
-In dev mode and when running tests, link:rabbitmq-dev-services.adoc[Dev Services for RabbitMQ] automatically starts a RabbitMQ broker.
+In dev mode and when running tests, xref:rabbitmq-dev-services.adoc[Dev Services for RabbitMQ] automatically starts a RabbitMQ broker.
 
 == Receiving RabbitMQ messages
 
@@ -392,6 +392,67 @@ On the outbound side (sending records to RabbitMQ), the check verifies that the 
 Note that a message processing failures nacks the message, which is then handled by the `failure-strategy`.
 It's the responsibility of the `failure-strategy` to report the failure and influence the outcome of the checks.
 The `fail` failure strategy reports the failure, and so the check will report the fault.
+
+[[dynamic-credentials]]
+== Dynamic Credentials
+
+Quarkus and the RabbitMQ connector support https://www.vaultproject.io/docs/secrets/rabbitmq[Vault's RabbitMQ secrets engine]
+for generating short-lived dynamic credentials. This allows Vault to create and retire RabbitMQ credentials on a regular basis.
+
+First we need to enable Vault's `rabbitmq` secret engine, configure it with RabbitMQ's connection and authentication
+information, and create a Vault role `my-role` (replace `10.0.0.3` by the actual host that is running the
+RabbitMQ container):
+[source,bash, subs=attributes+]
+----
+vault secrets enable rabbitmq
+
+vault write rabbitmq/config/connection \
+    connection_uri=http://10.0.0.3:15672 \
+    username=guest \
+    password=guest
+
+vault write rabbitmq/roles/my-role \
+    vhosts='{"/":{"write": ".*", "read": ".*"}}'
+----
+
+[NOTE]
+====
+For this use case, user `guest` configured above needs to be a RabbitMQ admin user with the capability to create
+credentials.
+====
+
+Then we need to give a read capability to the Quarkus application on path `rabbitmq/creds/my-role`.
+[source,bash]
+----
+cat <<EOF | vault policy write vault-rabbitmq-policy -
+path "secret/data/myapps/vault-rabbitmq-test/*" {
+  capabilities = ["read"]
+}
+path "rabbitmq/creds/my-role" {
+  capabilities = [ "read" ]
+}
+EOF
+----
+
+Now that Vault knows how to create users in RabbitMQ, we need to configure Quarkus to use a credentials-provider
+for RabbitMQ.
+
+First we tell Quarkus to request dynamic credentials using a credentials-provider named `rabbitmq`.
+----
+quarkus.rabbitmq.credentials-provider = rabbitmq
+----
+
+Next we configure the `rabbitmq` credentials provider. The `credentials-role` option must be set to the name of the
+role we created in Vault, in our case `my-role`. The `credentials-mount` option must be set to `rabbitmq`.
+[source, properties]
+----
+quarkus.vault.credentials-provider.rabbitmq.credentials-role = my-role
+quarkus.vault.credentials-provider.rabbitmq.credentials-mount = rabbitmq
+----
+
+NOTE: The `credentials-mount` is used directly as the mount of the secret engine in Vault. Here we are using
+the default mount path of `rabbitmq`. If the RabbitMQ secret engine was mounted at a custom path, the
+`credentials-mount` option must be set to that path instead.
 
 [[configuration-reference]]
 == RabbitMQ Connector Configuration Reference

@@ -11,7 +11,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class FormAuthTestCase extends AbstractFormAuthTestCase {
+public class LazyFormAuthTestCase extends AbstractFormAuthTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
@@ -20,7 +20,8 @@ public class FormAuthTestCase extends AbstractFormAuthTestCase {
             return ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class,
                             PathHandler.class)
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties");
+                    .addAsResource(new StringAsset(APP_PROPS + "\nquarkus.http.auth.proactive=false\n"),
+                            "application.properties");
         }
     });
 

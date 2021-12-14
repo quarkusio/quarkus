@@ -69,7 +69,6 @@ public class Neo4jDevModeTests {
         }
     }
 
-    @Testcontainers(disabledWithoutDocker = true)
     static class WithLocallyDisabledDevServicesTest {
 
         @RegisterExtension
@@ -80,6 +79,25 @@ public class Neo4jDevModeTests {
                 .overrideConfigKey("quarkus.neo4j.devservices.enabled", "false")
                 .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage)
                         .contains("Not starting Dev Services for Neo4j, as it has been disabled in the config."));
+
+        @Inject
+        Driver driver;
+
+        @Test
+        public void shouldNotBeAbleToConnect() {
+
+            assertThatExceptionOfType(ServiceUnavailableException.class).isThrownBy(() -> driver.verifyConnectivity());
+        }
+    }
+
+    static class WithGloballyDisabledDevServicesTest {
+
+        @RegisterExtension
+        static QuarkusUnitTest test = new QuarkusUnitTest()
+                .withEmptyApplication()
+                .setLogRecordPredicate(record -> true)
+                .withConfigurationResource("application.properties")
+                .overrideConfigKey("quarkus.devservices.enabled", "false");
 
         @Inject
         Driver driver;

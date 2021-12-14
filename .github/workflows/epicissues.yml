@@ -3,6 +3,10 @@ on:
     issues:
       types: [opened, edited, labeled]
 
+concurrency:
+    group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, issue = ${{ github.event.issue.id }}"
+    cancel-in-progress: ${{ github.event_name == 'issues' || github.repository != 'quarkusio/quarkus' }}
+
 jobs:
     autolabel:
       if: github.repository == 'quarkusio/quarkus'

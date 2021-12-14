@@ -2958,18 +2958,6 @@
     "artifact" : "io.quarkus:quarkus-resteasy-mutiny-common::jar:999-SNAPSHOT",
     "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
   }, {
-    "name" : "Reactive HTTP and WebSocket Connector",
-    "description" : "Connect to HTTP or Web Socket and expose HTTP or Web Socket endpoints for Reactive Messaging",
-    "metadata" : {
-      "keywords" : [ "http-connector", "http", "websockets" ],
-      "categories" : [ "web", "reactive", "messaging" ],
-      "status" : "experimental",
-      "built-with-quarkus-core" : "999-SNAPSHOT",
-      "extension-dependencies" : [ "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-reactive-routes", "io.quarkus:quarkus-vertx-http" ]
-    },
-    "artifact" : "io.quarkus:quarkus-reactive-messaging-http::jar:999-SNAPSHOT",
-    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
-  }, {
     "name" : "Eclipse Vert.x GraphQL",
     "description" : "Query the API using GraphQL",
     "metadata" : {

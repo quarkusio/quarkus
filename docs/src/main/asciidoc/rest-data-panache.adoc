@@ -51,7 +51,7 @@ include::./status-include.adoc[]
 </dependencies>
 ----
 
-* Implement the Panache entities and/or repositories as explained in the link:hibernate-orm-panache[Hibernate ORM with Panache guide].
+* Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache guide].
 * Define the interfaces for generation as explained in the resource generation section.
 
 === MongoDB
@@ -90,7 +90,7 @@ include::./status-include.adoc[]
 </dependencies>
 ----
 
-* Implement the Panache entities and/or repositories as explained in the link:mongodb-panache[MongoDB with Panache guide].
+* Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache guide].
 * Define the interfaces for generation as explained in the resource generation section.
 
 == Generating resources

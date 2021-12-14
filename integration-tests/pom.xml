@@ -261,8 +261,8 @@
                 <module>injectmock</module>
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>
-                <module>reactive-messaging-http</module>
                 <module>reactive-messaging-rabbitmq</module>
+                <module>reactive-messaging-rabbitmq-dyn</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>

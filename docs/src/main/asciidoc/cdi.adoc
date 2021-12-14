@@ -477,5 +477,5 @@ Quarkus only implements a subset of the CDI features - see also <<cdi-reference.
 On the other hand, there are quite a few <<cdi-reference#nonstandard_features,non-standard features>> and <<cdi-reference.adoc#build_time_apis,Quarkus-specific APIs>>.
 We believe that our efforts will drive the innovation of the CDI specification towards the build-time oriented developer stacks in the future.
 
-TIP: If you wish to learn more about Quarkus-specific features and limitations there is a Quarkus link:cdi-reference[CDI Reference Guide].
+TIP: If you wish to learn more about Quarkus-specific features and limitations there is a Quarkus xref:cdi-reference.adoc[CDI Reference Guide].
 We also recommend you to read the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[CDI specification] and the https://docs.jboss.org/weld/reference/latest/en-US/html/[Weld documentation] (Weld is a CDI Reference Implementation) to get acquainted with more complex topics.

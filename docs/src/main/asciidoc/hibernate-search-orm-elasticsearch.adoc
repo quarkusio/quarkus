@@ -21,7 +21,7 @@ To complete this guide, you need:
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker
-* link:building-native-image[GraalVM installed if you want to run in native mode]
+* xref:building-native-image.adoc[GraalVM installed if you want to run in native mode]
 
 == Architecture
 
@@ -644,7 +644,7 @@ As you can see, all your updates are automatically synchronized to the Elasticse
 === Configuring multiple persistence units
 
 With the Hibernate ORM extension,
-link:hibernate-orm#multiple-persistence-units[you can set up multiple persistence units],
+xref:hibernate-orm.adoc#multiple-persistence-units[you can set up multiple persistence units],
 each with its own datasource and configuration.
 
 If you do declare multiple persistence units,
@@ -704,7 +704,7 @@ setting the Elasticsearch host for that persistence unit to `es2.mycompany.com:9
 
 For each persistence unit, Hibernate Search will only consider indexed entities that are attached to that persistence unit.
 Entities are attached to a persistence unit by
-link:hibernate-orm#multiple-persistence-units-attaching-model-classes[configuring the Hibernate ORM extension].
+xref:hibernate-orm.adoc#multiple-persistence-units-attaching-model-classes[configuring the Hibernate ORM extension].
 
 [[multiple-persistence-units-attaching-cdi]]
 == CDI integration
@@ -886,4 +886,4 @@ for more information.
 [[configuration-reference-aws]]
 === AWS Integration Configuration
 
-include::{generated-dir}/config/quarkus-hibernate-search-orm-elasticsearch-aws.adoc[leveloffset=+1, opts=optional]
+Please see link:{hibernate-search-orm-elasticsearch-aws-guide}#aws-configuration-reference[the documentation for the Hibernate Search ORM + Elasticsearch AWS extension].

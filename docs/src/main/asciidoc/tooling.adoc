@@ -11,15 +11,15 @@ Quarkus comes with a toolchain enabling developers from live reload all the way 
 
 In this guide, we will explore:
 
-* how to use link:maven-tooling[Maven] as a build tool
-* how to use link:gradle-tooling[Gradle] as a build tool
-* how to use the link:cli-tooling[CLI] for your toolchain
+* how to use xref:maven-tooling.adoc[Maven] as a build tool
+* how to use xref:gradle-tooling.adoc[Gradle] as a build tool
+* how to use the xref:cli-tooling.adoc[CLI] for your toolchain
 * how to create and scaffold a new project
 * how to deal with extensions
 * how to enable live reload
 * how to develop your application in your IDE
 * how to compile your application natively
-* how to setup Quarkus tools in link:ide-tooling[Visual Studio Code, Eclipse IDE, Eclipse Che and IntelliJ] 
+* how to setup Quarkus tools in xref:ide-tooling.adoc[Visual Studio Code, Eclipse IDE, Eclipse Che and IntelliJ] 
 
 [[build-tool]]
 == Choosing your build tool
@@ -28,7 +28,7 @@ Quarkus comes with a toolchain to help you at all development stages.
 You can use Maven or Gradle as build tool.
 And we offer a CLI that is convenient to use (coming soon).
 
-* link:maven-tooling[Maven]
-* link:gradle-tooling[Gradle]
-* link:cli-tooling[CLI]
-* link:ide-tooling[IDE]
+* xref:maven-tooling.adoc[Maven]
+* xref:gradle-tooling.adoc[Gradle]
+* xref:cli-tooling.adoc[CLI]
+* xref:ide-tooling.adoc[IDE]

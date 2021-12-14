@@ -7,9 +7,13 @@ import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 
 @Entity
+@NamedQuery(name = "User.getUserByFullNameUsingNamedQuery", query = "select u from User u where u.fullName=:name")
+@NamedQueries(@NamedQuery(name = "User.getUserByFullNameUsingNamedQueries", query = "select u from User u where u.fullName=:name"))
 public class User {
 
     @Id

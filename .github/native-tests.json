@@ -63,7 +63,7 @@
         {
             "category": "Messaging2",
             "timeout": 70,
-            "test-modules": "reactive-messaging-amqp, reactive-messaging-http, reactive-messaging-rabbitmq",
+            "test-modules": "reactive-messaging-amqp, reactive-messaging-rabbitmq, reactive-messaging-rabbitmq-dyn",
             "os-name": "ubuntu-latest"
         },
         {

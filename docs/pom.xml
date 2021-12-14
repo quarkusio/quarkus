@@ -1541,19 +1541,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-messaging-http-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-mssql-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -2673,6 +2660,13 @@
                         <quickstarts-blob-url>${quickstarts-base-url}/blob/main</quickstarts-blob-url>
                         <!-- Quickstart URL to main source tree root; used for referencing directories -->
                         <quickstarts-tree-url>${quickstarts-base-url}/tree/main</quickstarts-tree-url>
+
+                        <!-- Quarkiverse documentation links -->
+                        <config-consul-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-config-extensions/dev/consul.html</config-consul-guide>
+                        <hibernate-search-orm-elasticsearch-aws-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-hibernate-search-extras/dev/index.html</hibernate-search-orm-elasticsearch-aws-guide>
+                        <neo4j-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-neo4j/dev/index.html</neo4j-guide>
+                        <vault-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/index.html</vault-guide>
+                        <vault-datasource-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-vault/dev/vault-datasource.html</vault-datasource-guide>
                     </attributes>
                 </configuration>
                 <executions>

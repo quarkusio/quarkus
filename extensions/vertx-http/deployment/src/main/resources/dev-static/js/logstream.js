@@ -509,7 +509,7 @@ function getClassName(sourceClassNameFull, lineNumber, className) {
 }
 
 function isClickableClassName(className){
-    if (className !== undefined && appClassLang(className) && ideKnown()) {
+    if (className !== undefined && appClassLocation(className) && ideKnown()) {
         return true;
     }
     return false;

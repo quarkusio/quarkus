@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide covers the Quarkus Dev UI for link:building-my-first-extension[extension authors].
+This guide covers the Quarkus Dev UI for xref:building-my-first-extension.adoc[extension authors].
 
 Quarkus now ships with a new experimental Dev UI, which is available in dev mode (when you start
 quarkus with `mvn quarkus:dev`) at http://localhost:8080/q/dev[/q/dev] by default. It will show you something like
@@ -36,7 +36,7 @@ page, like this:
 image:dev-ui-embedded.png[alt=Dev UI embedded,role="center"]
 
 You have to add a file named `dev-templates/embedded.html` in your 
-link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`]
+xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deployment`]
 extension module's resources:
 
 image::dev-ui-embedded-file.png[alt=Dev UI embedded.html,align=center]
@@ -93,15 +93,15 @@ The `{devRootAppend}` variable can also be used in templates to construct URLs f
 <img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
 ----
 
-Refer to the link:all-config#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
+Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
 for details on how the non-application root path is configured.
 
 == Template and styling support
 
 Both the `embedded.html` files and any full page you add in `/dev-templates` will be interpreted by
-link:qute[the Qute template engine].
+xref:qute.adoc[the Qute template engine].
 
-This also means that you can link:qute-reference#user_tags[add custom Qute tags] in 
+This also means that you can xref:qute-reference.adoc#user_tags[add custom Qute tags] in 
 `/dev-templates/tags` for your templates to use.
 
 The style system currently in use is https://getbootstrap.com/docs/4.6/getting-started/introduction/[Bootstrap V4 (4.6.0)]
@@ -125,8 +125,8 @@ To add full pages for your Dev UI extension such as this one:
 image::dev-ui-page.png[alt=Dev UI custom page,align=center,width=90%]
 
 You need to place them in your extension's 
-link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module's 
-`/dev-templates` resource folder, like this page for the link:cache[`quarkus-cache` extension]:
+xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deployment`] module's 
+`/dev-templates` resource folder, like this page for the xref:cache.adoc[`quarkus-cache` extension]:
 
 [[action-example]]
 [source,java]
@@ -183,7 +183,7 @@ link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`
 <4> Don't forget to set your page title in the `title` template parameter
 <5> The `body` template parameter will contain your content
 <6> In order for your template to read custom information from your Quarkus extension, you can use
-    the `info` link:qute-reference#namespace_extension_methods[namespace].
+    the `info` xref:qute-reference.adoc#namespace_extension_methods[namespace].
 <7> This shows an <<advanced-usage-adding-actions,interactive page>>
 
 == Linking to your full-page templates
@@ -212,7 +212,7 @@ build time or at run time.
 
 In both cases we advise that you add support for the Dev UI in your `{pkg}.deployment.devconsole`
 package in a `DevConsoleProcessor` class (in your extension's 
-link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module).
+xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deployment`] module).
 
 === Passing run-time information
 
@@ -234,12 +234,12 @@ public class DevConsoleProcessor {
     }
 }
 ----
-<1> Don't forget to make this link:building-my-first-extension#deploying-the-greeting-feature[build step]
+<1> Don't forget to make this xref:building-my-first-extension.adoc#deploying-the-greeting-feature[build step]
     conditional on being in dev mode
 <2> Declare a run-time dev `info:cacheInfos` template value
 
 This will map the `info:cacheInfos` value to this supplier in your extension's 
-link:building-my-first-extension#description-of-a-quarkus-extension[`runtime module`]:
+xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`runtime module`]:
 
 [source,java]
 ----
@@ -315,9 +315,9 @@ You can also add actions to your Dev UI templates:
 
 image::dev-ui-interactive.png[alt=Dev UI interactive page,align=center,width=90%]
 
-This can be done by adding another link:building-my-first-extension#deploying-the-greeting-feature[build step] to
+This can be done by adding another xref:building-my-first-extension.adoc#deploying-the-greeting-feature[build step] to
 declare the action in your extension's
-link:building-my-first-extension#description-of-a-quarkus-extension[`deployment`] module:
+xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`deployment`] module:
 
 
 [source,java]
@@ -348,7 +348,7 @@ public class DevConsoleProcessor {
 Note: you can see <<action-example,how to invoke this action from your full page>>.
 
 Now all you have to do is implement the recorder in your extension's 
-link:building-my-first-extension#description-of-a-quarkus-extension[`runtime module`]:
+xref:building-my-first-extension.adoc#description-of-a-quarkus-extension[`runtime module`]:
 
 
 [source,java]

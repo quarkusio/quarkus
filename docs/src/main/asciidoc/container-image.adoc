@@ -152,7 +152,7 @@ makes available the `CI_REGISTRY_IMAGE` environment variable
 quarkus.container-image.image=${CI_REGISTRY_IMAGE}
 ----
 
-NOTE: See link:config.adoc#combine-property-env-var[this] for more information on how to combine properties with environment variables.
+NOTE: See xref:config.adoc#combine-property-env-var[this] for more information on how to combine properties with environment variables.
 
 === Jib Options
 

@@ -241,7 +241,7 @@ If you want to clear the caches to force resolution use `jbang cache clear`.
 == Using injection
 
 Dependency injection in Quarkus is based on ArC which is a CDI-based dependency injection solution tailored for Quarkus' architecture.
-You can learn more about it in the link:cdi-reference[Contexts and Dependency Injection guide].
+You can learn more about it in the xref:cdi-reference.adoc[Contexts and Dependency Injection guide].
 
 ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
 

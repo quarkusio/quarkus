@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 Traditional blocking code uses link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ThreadLocal.html[`ThreadLocal`]
  variables to store contextual objects in order to avoid
 passing them as parameters everywhere. Many Quarkus extensions require those contextual objects to operate
-properly: link:rest-json[RESTEasy], link:cdi-reference[ArC] and link:transaction[Transaction]
+properly: xref:rest-json.adoc[RESTEasy], xref:cdi-reference.adoc[ArC] and xref:transaction.adoc[Transaction]
 for example.
 
 If you write reactive/async code, you have to cut your work into a pipeline of code blocks that get executed
@@ -70,8 +70,8 @@ This section uses Mutiny reactive types.
 If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an intuitive reactive programming library].
 ====
 
-Let's write a REST endpoint that reads the next 3 items from a link:kafka[Kafka topic], stores them in a database using
-link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
+Let's write a REST endpoint that reads the next 3 items from a xref:kafka.adoc[Kafka topic], stores them in a database using
+xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] (all in the same transaction) before returning
 them to the client, you can do it like this:
 
 [source,java]
@@ -109,10 +109,10 @@ The 3 items are persisted using the same transaction and this transaction is com
 
 If you are using link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/CompletionStage.html[`CompletionStage`]
 you need manual context propagation. You can do that by injecting a `ThreadContext`
-or `ManagedExecutor` that will propagate every context. For example, here we use the link:vertx[Vert.x Web Client]
+or `ManagedExecutor` that will propagate every context. For example, here we use the xref:vertx.adoc[Vert.x Web Client]
 to get the list of Star Wars people, then store them in the database using
-link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
-them to the client as JSON using link:rest-json[Jackson or JSON-B]:
+xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] (all in the same transaction) before returning
+them to the client as JSON using xref:rest-json.adoc[Jackson or JSON-B]:
 
 [source,java]
 ----

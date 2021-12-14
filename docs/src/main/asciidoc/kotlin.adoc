@@ -23,7 +23,7 @@ To complete this guide, you need:
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 
-NB: For Gradle project setup please see below, and for further reference consult the guide in the link:gradle-tooling[Gradle setup page].
+NB: For Gradle project setup please see below, and for further reference consult the guide in the xref:gradle-tooling.adoc[Gradle setup page].
 
 == Creating the Maven project
 
@@ -337,7 +337,7 @@ As usual, the application can be packaged using `./mvnw clean package` and execu
 == Kotlin and Jackson
 
 If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or one of the `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` extensions) have been added to the project,
-then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see link:rest-json#jackson[this] guide for more details).
+then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see xref:rest-json.adoc#jackson[this] guide for more details).
 
 When using Kotlin data classes with `native-image` you may experience serialization errors that do not occur with the `JVM` version, despite the Kotlin Jackson Module being registered. This is especially so if you have a more complex JSON hierarchy, where an issue on a lower node causes a serialization failure. The error message displayed is a catch-all and typically displays an issue with the root object, which may not necessarily be the case.
 

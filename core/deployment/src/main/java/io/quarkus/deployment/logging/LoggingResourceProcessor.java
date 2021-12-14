@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.objectweb.asm.Opcodes;
 
@@ -26,14 +27,16 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
@@ -46,10 +49,14 @@ import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.dev.ExceptionNotificationBuildItem;
 import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
+import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 import io.quarkus.dev.spi.DevModeType;
@@ -85,6 +92,8 @@ public final class LoggingResourceProcessor {
     private static final MethodDescriptor IS_MIN_LEVEL_ENABLED = MethodDescriptor.ofMethod(MIN_LEVEL_COMPUTE_CLASS_NAME,
             "isMinLevelEnabled",
             boolean.class, int.class, String.class);
+
+    private static final Logger log = Logger.getLogger(LoggingResourceProcessor.class);
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
@@ -205,10 +214,14 @@ public final class LoggingResourceProcessor {
         return new LoggingSetupBuildItem();
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(TestSetupBuildItem.class)
     @Produce(LogConsoleFormatBuildItem.class)
-    void setupStackTraceFormatter(ApplicationArchivesBuildItem item) {
+    @Consume(ConsoleInstalledBuildItem.class)
+    void setupStackTraceFormatter(ApplicationArchivesBuildItem item, EffectiveIdeBuildItem ideSupport,
+            BuildSystemTargetBuildItem buildSystemTargetBuildItem,
+            List<ExceptionNotificationBuildItem> exceptionNotificationBuildItems,
+            CuratedApplicationShutdownBuildItem curatedApplicationShutdownBuildItem) {
         List<IndexView> indexList = new ArrayList<>();
         for (ApplicationArchive i : item.getAllApplicationArchives()) {
             if (i.getResolvedPaths().isSinglePath() && Files.isDirectory(i.getResolvedPaths().getSinglePath())) {
@@ -222,6 +235,7 @@ public final class LoggingResourceProcessor {
         CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = new BiConsumer<LogRecord, Consumer<LogRecord>>() {
             @Override
             public void accept(LogRecord logRecord, Consumer<LogRecord> logRecordConsumer) {
+                StackTraceElement lastUserCode = null;
                 Map<Throwable, StackTraceElement[]> restore = new HashMap<>();
                 Throwable c = logRecord.getThrown();
                 while (c != null) {
@@ -229,6 +243,7 @@ public final class LoggingResourceProcessor {
                     for (int i = 0; i < stackTrace.length; ++i) {
                         var elem = stackTrace[i];
                         if (index.getClassByName(DotName.createSimple(elem.getClassName())) != null) {
+                            lastUserCode = stackTrace[i];
                             stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
                                     elem.getModuleVersion(),
                                     MessageFormat.UNDERLINE + MessageFormat.BOLD + elem.getClassName()
@@ -247,14 +262,14 @@ public final class LoggingResourceProcessor {
                         entry.getKey().setStackTrace(entry.getValue());
                     }
                 }
+                if (logRecord.getThrown() != null) {
+                    for (ExceptionNotificationBuildItem i : exceptionNotificationBuildItems) {
+                        i.getExceptionHandler().accept(logRecord.getThrown(), lastUserCode);
+                    }
+                }
             }
         };
-        ((QuarkusClassLoader) getClass().getClassLoader()).addCloseTask(new Runnable() {
-            @Override
-            public void run() {
-                CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = null;
-            }
-        });
+        curatedApplicationShutdownBuildItem.addCloseTask(() -> CurrentAppExceptionHighlighter.THROWABLE_FORMATTER = null, true);
     }
 
     @BuildStep

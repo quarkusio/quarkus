@@ -1201,17 +1201,19 @@ public class BytecodeRecorderImpl implements RecorderContext {
         Set<String> handledProperties = new HashSet<>();
         Property[] desc = PropertyUtils.getPropertyDescriptors(param);
         for (Property i : desc) {
-            // check if the getter is ignored
-            if ((i.getReadMethod() != null) && (i.getReadMethod().getAnnotation(IgnoreProperty.class) != null)) {
-                continue;
-            }
-            // check if the matching field is ignored
-            try {
-                if (param.getClass().getDeclaredField(i.getName()).getAnnotation(IgnoreProperty.class) != null) {
+            if (!i.getDeclaringClass().getPackageName().startsWith("java.")) {
+                // check if the getter is ignored
+                if ((i.getReadMethod() != null) && (i.getReadMethod().getAnnotation(IgnoreProperty.class) != null)) {
                     continue;
                 }
-            } catch (NoSuchFieldException ignored) {
+                // check if the matching field is ignored
+                try {
+                    if (param.getClass().getDeclaredField(i.getName()).getAnnotation(IgnoreProperty.class) != null) {
+                        continue;
+                    }
+                } catch (NoSuchFieldException ignored) {
 
+                }
             }
             Integer ctorParamIndex = constructorParamNameMap.remove(i.name);
             if (i.getReadMethod() != null && i.getWriteMethod() == null && ctorParamIndex == null) {

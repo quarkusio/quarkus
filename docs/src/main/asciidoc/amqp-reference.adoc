@@ -85,7 +85,7 @@ mp.messaging.incoming.prices.connector=smallrye-amqp # <5>
 4. Configures the broker/router password if required. You can do it per channel (using the `password` attribute) or globally using `amqp-password`.
 5. Instructs the prices channel to be managed by the AMQP connector
 
-In dev mode and when running tests, link:amqp-dev-services.adoc[Dev Services for AMQP] automatically starts an AMQP broker.
+In dev mode and when running tests, xref:amqp-dev-services.adoc[Dev Services for AMQP] automatically starts an AMQP broker.
 
 == Receiving AMQP messages
 

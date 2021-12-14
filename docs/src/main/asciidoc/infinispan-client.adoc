@@ -486,7 +486,7 @@ The first step is to configure the `hotrod-client.properties` file to point to y
 and/or keystore. This is further detailed https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_encryption[here].
 
 The Infinispan Client extension enables SSL/TLS by default. You can read more about this
-at link:native-and-ssl[Using SSL With Native Executables].
+at xref:native-and-ssl.adoc[Using SSL With Native Executables].
 
 == Additional Features
 
@@ -537,7 +537,7 @@ To start a Infinispan Server for your unit tests, Quarkus provides one `QuarkusT
 
 To use them, you need to add the `io.quarkus:quarkus-test-infinispan-client` dependency to your pom.xml.
 
-For more information about the usage of a `QuarkusTestResourceLifecycleManager` please read link:getting-started-testing#quarkus-test-resource[Quarkus test resource].
+For more information about the usage of a `QuarkusTestResourceLifecycleManager` please read xref:getting-started-testing.adoc#quarkus-test-resource[Quarkus test resource].
 
 == Configuration Reference
 

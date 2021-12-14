@@ -33,14 +33,14 @@ To complete this guide, you need:
 * an IDE
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
-* The completed greeter application from the link:getting-started[Getting Started Guide]
+* The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
 
 == Architecture
 
 In this guide, we expand on the initial test that was created as part of the Getting Started Guide.
 We cover injection into tests and also how to test native executables.
 
-NOTE: Quarkus supports Continuous testing, but this is covered by the link:continuous-testing[Continuous Testing Guide].
+NOTE: Quarkus supports Continuous testing, but this is covered by the xref:continuous-testing.adoc[Continuous Testing Guide].
 
 == Solution
 
@@ -1040,11 +1040,11 @@ public class GreetingResourceTest {
 
 === Mocking with Panache
 
-If you are using the `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache` extensions, check out the link:hibernate-orm-panache#mocking[Hibernate ORM with Panache Mocking] and link:mongodb-panache#mocking[MongoDB with Panache Mocking] documentation for the easiest way to mock your data access.
+If you are using the `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache` extensions, check out the xref:hibernate-orm-panache.adoc#mocking[Hibernate ORM with Panache Mocking] and xref:mongodb-panache.adoc#mocking[MongoDB with Panache Mocking] documentation for the easiest way to mock your data access.
 
 == Testing Security
 
-If you are using Quarkus Security, check out the link:security-testing[Testing Security] section for information on how to easily test security features of the application.
+If you are using Quarkus Security, check out the xref:security-testing.adoc[Testing Security] section for information on how to easily test security features of the application.
 
 [#quarkus-test-resource]
 == Starting services before the Quarkus application starts
@@ -1190,7 +1190,7 @@ It is also possible to test native executables using `@NativeImageTest`. This su
 guide except injecting into tests (and the native executable runs in a separate non-JVM process this is not really possible).
 
 
-This is covered in the link:building-native-image[Native Executable Guide].
+This is covered in the xref:building-native-image.adoc[Native Executable Guide].
 
 [WARNING]
 ====
@@ -1218,7 +1218,7 @@ These tests will **not** work if run in the same phase as `@QuarkusTest` as Quar
 === Launching containers
 
 When `@QuarkusIntegrationTest` results in launching a container (because the application was built with `quarkus.container-image.build` set to `true`), the container is launched on a predictable container network. This facilitates writing integration tests that need to launch services to support the application.
-This means that `@QuarkusIntegrationTest` works out of the box with containers launched via link:dev-services[Dev Services], but it also means that it enables using <<quarkus-test-resource,QuarkusTestLifecycleManager>> resources that launch additional containers.
+This means that `@QuarkusIntegrationTest` works out of the box with containers launched via xref:dev-services.adoc[Dev Services], but it also means that it enables using <<quarkus-test-resource,QuarkusTestLifecycleManager>> resources that launch additional containers.
 This can be achieved by having your `QuarkusTestLifecycleManager` implement `io.quarkus.test.common.DevServicesContext.ContextAware`. A simple example could be the following:
 
 [source,java]
@@ -1324,9 +1324,9 @@ You can use this tag to isolate the `@QuarkusTest` test in a specific execution 
 
 Most IDEs offer the possibility to run a selected class as a JUnit test directly. For this you should set a few properties in the settings of your chosen IDE:
 
-* `java.util.logging.manager` (see link:logging[Logging Guide])
+* `java.util.logging.manager` (see xref:logging.adoc[Logging Guide])
 
-* `maven.home` (only if there are any custom settings in `${maven.home}/conf/settings.xml`, see link:maven-tooling[Maven Guide])
+* `maven.home` (only if there are any custom settings in `${maven.home}/conf/settings.xml`, see xref:maven-tooling.adoc[Maven Guide])
 
 * `maven.settings` (in case a custom version of `settings.xml` file should be used for the tests)
 
@@ -1361,7 +1361,7 @@ Nothing needed in IntelliJ because the IDE will pick the `systemPropertyVariable
 
 == Testing Dev Services
 
-By default tests should just work with link:dev-services[Dev Services], however from some use cases you may need access to
+By default tests should just work with xref:dev-services.adoc[Dev Services], however from some use cases you may need access to
 the automatically configured properties in your tests.
 
 You can do this with `io.quarkus.test.common.DevServicesContext`, which can be injected directly into any `@QuarkusTest`

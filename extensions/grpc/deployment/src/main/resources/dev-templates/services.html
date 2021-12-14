@@ -16,7 +16,7 @@
           }
           $(".class-candidate").each(function() {
             var className = $(this).text();
-            if (appClassLang(className)) {
+            if (appClassLocation(className)) {
               $(this).addClass("app-class");
             }
           });

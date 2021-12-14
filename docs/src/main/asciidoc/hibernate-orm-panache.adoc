@@ -64,7 +64,7 @@ To get started:
 * annotate your entities with `@Entity`
 * make your entities extend `PanacheEntity` (optional if you are using the repository pattern)
 
-Follow the link:hibernate-orm#setting-up-and-configuring-hibernate-orm[Hibernate set-up guide for all configuration].
+Follow the xref:hibernate-orm.adoc#setting-up-and-configuring-hibernate-orm[Hibernate set-up guide for all configuration].
 
 In your `pom.xml`, add the following dependencies:
 
@@ -748,7 +748,7 @@ PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 
 == Multiple Persistence Units
 
-The support for multiple persistence units is described in detail in link:hibernate-orm#multiple-persistence-units[the Hibernate ORM guide].
+The support for multiple persistence units is described in detail in xref:hibernate-orm.adoc#multiple-persistence-units[the Hibernate ORM guide].
 
 When using Panache, things are simple:
 

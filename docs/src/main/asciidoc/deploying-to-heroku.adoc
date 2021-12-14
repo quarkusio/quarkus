@@ -45,7 +45,7 @@ The guide assumes that you have the https://devcenter.heroku.com/articles/heroku
 
 == Common project setup
 
-This guide will take as input an application developed in the link:getting-started[Getting Started guide].
+This guide will take as input an application developed in the xref:getting-started.adoc[Getting Started guide].
 
 Make sure you have the getting-started application at hand, or clone the Git repository: `git clone {quickstarts-clone-url}`,
 or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.

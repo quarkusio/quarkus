@@ -11,7 +11,7 @@ JSON is now the _lingua franca_ between microservices.
 
 In this guide, we see how you can get your REST services to consume and produce JSON payloads.
 
-TIP: there is another guide if you need a link:rest-client[REST client] (including support for JSON).
+TIP: there is another guide if you need a xref:rest-client.adoc[REST client] (including support for JSON).
 
 == Prerequisites
 
@@ -577,7 +577,7 @@ link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin re
 allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
 was served.
 
-Quarkus comes with a CORS filter. Read the link:http-reference#cors-filter[HTTP Reference Documentation] to learn
+Quarkus comes with a CORS filter. Read the xref:http-reference.adoc#cors-filter[HTTP Reference Documentation] to learn
 how to use it.
 
 == GZip Support
@@ -624,7 +624,7 @@ to solve this problem.
 
 == RESTEasy and REST Client interactions
 
-In Quarkus, the RESTEasy extension and link:rest-client[the REST Client extension] share the same infrastructure.
+In Quarkus, the RESTEasy extension and xref:rest-client.adoc[the REST Client extension] share the same infrastructure.
 One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
 
 For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,

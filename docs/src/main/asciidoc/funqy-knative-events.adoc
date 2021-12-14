@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :extension-status: preview
 
-Quarkus Funqy link:https://knative.dev/docs/eventing[Knative Events] builds off of the link:funqy-http[Funqy HTTP] extension to allow you to
+Quarkus Funqy link:https://knative.dev/docs/eventing[Knative Events] builds off of the xref:funqy-http.adoc[Funqy HTTP] extension to allow you to
 route and process Knative Events within a Funqy function.
 
 The guide walks through quickstart code to show you how you can deploy and invoke on Funqy functions
@@ -19,7 +19,7 @@ with Knative Events.
 To complete this guide, you need:
 
 * 60+ minutes
-* Read about link:funqy[Funqy Basics].  This is a short read!
+* Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Have gone through the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[Knative Tutorial], specifically link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial-eventing/eventing-trigger-broker.html[Brokers and Triggers]
@@ -195,7 +195,7 @@ you'll see that it is a typical Quarkus pom that pulls in one funqy dependency
 
 Funqy Knative Events support dev mode and unit testing using RestAssured.  You can invoke on Funqy Knative Events functions
 using the same invocation model as
-link:funqy-http[Funqy HTTP] using normal HTTP requests, or Cloud Event Binary mode, or Structured Mode.  All
+xref:funqy-http.adoc[Funqy HTTP] using normal HTTP requests, or Cloud Event Binary mode, or Structured Mode.  All
 invocation modes are supported at the same time.
 
 So, if you open up the unit test code in {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/test/java/org/acme/funqy/FunqyTest.java[FunqyTest.java]

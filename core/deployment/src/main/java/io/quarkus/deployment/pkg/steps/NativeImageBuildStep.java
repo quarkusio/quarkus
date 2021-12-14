@@ -90,7 +90,8 @@ public class NativeImageBuildStep {
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             List<ExcludeConfigBuildItem> excludeConfigs,
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
-            List<JPMSExportBuildItem> jpmsExportBuildItems) {
+            List<JPMSExportBuildItem> jpmsExportBuildItems,
+            List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders) {
 
         Path outputDir;
         try {
@@ -109,13 +110,15 @@ public class NativeImageBuildStep {
                 .setNativeConfig(nativeConfig)
                 .setOutputTargetBuildItem(outputTargetBuildItem)
                 .setNativeImageProperties(nativeImageProperties)
-                .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                 .setExcludeConfigs(excludeConfigs)
                 .setJPMSExportBuildItems(jpmsExportBuildItems)
+                .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
+                .setNativeImageSecurityProviders(nativeImageSecurityProviders)
                 .setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
                 // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
                 .setNativeImageName(nativeImageName)
+                .setGraalVMVersion(GraalVM.Version.CURRENT)
                 .build();
         List<String> command = nativeImageArgs.getArgs();
         try (FileOutputStream commandFOS = new FileOutputStream(outputDir.resolve("native-image.args").toFile())) {
@@ -633,6 +636,9 @@ public class NativeImageBuildStep {
                  * control its actual inclusion which will depend on the usual analysis.
                  */
                 nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED");
+
+                //address https://github.com/quarkusio/quarkus-quickstarts/issues/993
+                nativeImageArgs.add("-J--add-opens=java.base/java.text=ALL-UNNAMED");
 
                 handleAdditionalProperties(nativeImageArgs);
 

@@ -386,6 +386,6 @@ If you want to know more, check the xref:vertx-reference.adoc[reference guide ab
 
 As we have seen, the event bus is the connecting tissue of Vert.x applications.
 Quarkus integrates it so different beans can interact with asynchronous messages.
-This part is covered in the link:reactive-event-bus[event bus documentation].
+This part is covered in the xref:reactive-event-bus.adoc[event bus documentation].
 
-Learn how to implement highly performant, low-overhead database applications on Quarkus with the link:reactive-sql-clients[Reactive SQL Clients].
+Learn how to implement highly performant, low-overhead database applications on Quarkus with the xref:reactive-sql-clients.adoc[Reactive SQL Clients].

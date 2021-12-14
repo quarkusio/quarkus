@@ -15,7 +15,7 @@ Quarkus DI solution (also called ArC) is based on the http://docs.jboss.org/cdi/
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
-TIP: If you're new to CDI then we recommend you to read the link:cdi[Introduction to CDI] first. 
+TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first. 
 
 NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
@@ -300,7 +300,7 @@ class MyBeanStarter {
 <1> The `AmazingService` is created during injection.
 <2> The `CoolService` is a normal scoped bean so we have to invoke a method upon the injected proxy to force the instantiation.
 
-* Annotate the bean with `@io.quarkus.runtime.Startup` as described in link:lifecycle#startup_annotation[Startup annotation]:
+* Annotate the bean with `@io.quarkus.runtime.Startup` as described in xref:lifecycle.adoc#startup_annotation[Startup annotation]:
 +
 [source,java]
 ----
@@ -318,7 +318,7 @@ public class EagerAppBean {
 1. For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
 2. The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
 
-NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the link:lifecycle[Application Initialization and Termination] guide.
+NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the xref:lifecycle.adoc[Application Initialization and Termination] guide.
 
 === Request Context Lifecycle
 
@@ -962,8 +962,8 @@ public class Processor {
 
 Quarkus incorporates build-time optimizations in order to provide instant startup and low memory footprint.
 The downside of this approach is that CDI Portable Extensions cannot be supported.
-Nevertheless, most of the functionality can be achieved using Quarkus link:writing-extensions[extensions].
-See the link:cdi-integration[integration guide] for more information.
+Nevertheless, most of the functionality can be achieved using Quarkus xref:writing-extensions.adoc[extensions].
+See the xref:cdi-integration.adoc[integration guide] for more information.
 
 == Development Mode
 

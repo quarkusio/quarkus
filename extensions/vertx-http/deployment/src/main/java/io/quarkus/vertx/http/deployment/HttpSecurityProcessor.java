@@ -57,7 +57,12 @@ public class HttpSecurityProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initFormAuth(
             HttpSecurityRecorder recorder,
-            HttpBuildTimeConfig buildTimeConfig) {
+            HttpBuildTimeConfig buildTimeConfig,
+            BuildProducer<RouteBuildItem> filterBuildItemBuildProducer) {
+        if (!buildTimeConfig.auth.proactive) {
+            filterBuildItemBuildProducer.produce(RouteBuildItem.builder().route(buildTimeConfig.auth.form.postLocation)
+                    .handler(recorder.formAuthPostHandler()).build());
+        }
         if (buildTimeConfig.auth.form.enabled) {
             return SyntheticBeanBuildItem.configure(FormAuthenticationMechanism.class)
                     .types(HttpAuthenticationMechanism.class)

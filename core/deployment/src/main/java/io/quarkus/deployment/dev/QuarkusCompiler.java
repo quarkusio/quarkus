@@ -5,9 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
@@ -52,18 +49,6 @@ public class QuarkusCompiler implements Closeable {
             throws IOException {
         this.compilationProviders = compilationProviders;
 
-        Set<URL> urls = new HashSet<>();
-        for (ResolvedDependency i : application.getApplicationModel().getRuntimeDependencies()) {
-            for (Path p : i.getResolvedPaths()) {
-                urls.add(p.toUri().toURL());
-            }
-        }
-
-        Set<String> parsedFiles = new HashSet<>();
-        Deque<String> toParse = new ArrayDeque<>();
-        for (URL url : urls) {
-            toParse.add(new File(URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8.name())).getAbsolutePath());
-        }
         Set<File> classPathElements = new HashSet<>();
         for (DevModeContext.ModuleInfo i : context.getAllModules()) {
             if (i.getMain().getClassesPath() != null) {
@@ -75,20 +60,31 @@ public class QuarkusCompiler implements Closeable {
                 }
             }
         }
+        Set<Path> paths = new HashSet<>();
+        for (ResolvedDependency i : application.getApplicationModel().getRuntimeDependencies()) {
+            for (Path p : i.getResolvedPaths()) {
+                paths.add(p);
+            }
+        }
+
+        Deque<Path> toParse = new ArrayDeque<>(paths);
+        Set<String> parsedFiles = new HashSet<>();
         final String devModeRunnerJarCanonicalPath = context.getDevModeRunnerJarFile() == null
                 ? null
                 : context.getDevModeRunnerJarFile().getCanonicalPath();
         while (!toParse.isEmpty()) {
-            String s = toParse.poll();
+            Path path = toParse.poll();
+            URI uri = path.toUri();
+            File file = path.toFile();
+            String s = file.getAbsolutePath();
             if (!parsedFiles.contains(s)) {
                 parsedFiles.add(s);
-                File file = new File(s);
                 if (!file.exists()) {
                     continue;
                 }
-                if (file.isDirectory()) {
+                if (uri.getScheme().equals("file")) {
                     classPathElements.add(file);
-                } else if (file.getName().endsWith(".jar")) {
+                } else if (uri.getScheme().equals("jar")) {
                     // skip adding the dev mode runner jar to the classpath to prevent
                     // hitting a bug in JDK - https://bugs.openjdk.java.net/browse/JDK-8232170
                     // which causes the programmatic java file compilation to fail.
@@ -106,36 +102,35 @@ public class QuarkusCompiler implements Closeable {
                     } else {
                         classPathElements.add(file);
                     }
-                    if (!file.isDirectory() && file.getName().endsWith(".jar")) {
-                        try (JarFile jar = new JarFile(file)) {
-                            Manifest mf = jar.getManifest();
-                            if (mf == null || mf.getMainAttributes() == null) {
-                                continue;
-                            }
-                            Object classPath = mf.getMainAttributes().get(Attributes.Name.CLASS_PATH);
-                            if (classPath != null) {
-                                for (String classPathEntry : WHITESPACE_PATTERN.split(classPath.toString())) {
-                                    final URI cpEntryURI = new URI(classPathEntry);
-                                    File f;
-                                    // if it's a "file" scheme URI, then use the path as a file system path
-                                    // without the need to resolve it
-                                    if (cpEntryURI.isAbsolute() && cpEntryURI.getScheme().equals("file")) {
-                                        f = new File(cpEntryURI.getPath());
-                                    } else {
-                                        try {
-                                            f = Paths.get(new URI("file", null, "/", null).resolve(cpEntryURI)).toFile();
-                                        } catch (URISyntaxException e) {
-                                            f = new File(file.getParentFile(), classPathEntry);
-                                        }
-                                    }
-                                    if (f.exists()) {
-                                        toParse.add(f.getAbsolutePath());
+
+                    try (JarFile jar = new JarFile(file)) {
+                        Manifest mf = jar.getManifest();
+                        if (mf == null || mf.getMainAttributes() == null) {
+                            continue;
+                        }
+                        Object classPath = mf.getMainAttributes().get(Attributes.Name.CLASS_PATH);
+                        if (classPath != null) {
+                            for (String classPathEntry : WHITESPACE_PATTERN.split(classPath.toString())) {
+                                final URI cpEntryURI = new URI(classPathEntry);
+                                File f;
+                                // if it's a "file" scheme URI, then use the path as a file system path
+                                // without the need to resolve it
+                                if (cpEntryURI.isAbsolute() && cpEntryURI.getScheme().equals("file")) {
+                                    f = new File(cpEntryURI.getPath());
+                                } else {
+                                    try {
+                                        f = Paths.get(new URI("file", null, "/", null).resolve(cpEntryURI)).toFile();
+                                    } catch (URISyntaxException e) {
+                                        f = new File(file.getParentFile(), classPathEntry);
                                     }
                                 }
+                                if (f.exists()) {
+                                    toParse.add(f.toPath());
+                                }
                             }
-                        } catch (Exception e) {
-                            throw new RuntimeException("Failed to open class path file " + file, e);
                         }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to open class path file " + file, e);
                     }
                 }
             }

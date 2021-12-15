@@ -33,7 +33,7 @@ public class OverrideZonedDateTimeSerializerTest {
     @Test
     public void test() throws JsonProcessingException {
         assertThat(new ArrayList<>(objectMapper.getRegisteredModuleIds())).asList()
-                .contains("com.fasterxml.jackson.datatype.jsr310.JavaTimeModule");
+                .contains("jackson-datatype-jsr310");
         assertThat(objectMapper.writeValueAsString(ZonedDateTime.now())).isEqualTo("\"dummy\"");
     }
 

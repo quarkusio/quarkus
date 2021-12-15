@@ -38,6 +38,16 @@ public interface QuarkusTestResourceLifecycleManager {
     void stop();
 
     /**
+     * Set the context in which this {@link QuarkusTestResourceLifecycleManager} is being used.
+     * This method is executed before the {@code init} method.
+     *
+     * The {@code context} is never null.
+     */
+    default void setContext(Context context) {
+
+    }
+
+    /**
      * Arguments passed to the lifecycle manager before it starts
      * These arguments are taken from {@code QuarkusTestResource#initArgs()}
      *
@@ -139,5 +149,16 @@ public interface QuarkusTestResourceLifecycleManager {
                 return field.getType().isAssignableFrom(expectedFieldType);
             }
         }
+    }
+
+    interface Context {
+
+        /**
+         * When a {@link QuarkusTestResourceLifecycleManager} is used with a type of test that supports test profiles,
+         * this method gives the name of the active test profile, or {@code null} if no test profile is active.
+         * In the case of {@code QuarkusTestProfile}, this method gives the name of the class that implements
+         * {@code QuarkusTestProfile}.
+         */
+        String testProfile();
     }
 }

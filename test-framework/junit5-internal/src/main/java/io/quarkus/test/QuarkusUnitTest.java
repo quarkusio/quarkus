@@ -464,7 +464,7 @@ public class QuarkusUnitTest
         TestResourceManager testResourceManager = (TestResourceManager) store.get(TestResourceManager.class.getName());
         if (testResourceManager == null) {
             testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            testResourceManager.init();
+            testResourceManager.init(null);
             testResourceManager.start();
             TestResourceManager tm = testResourceManager;
             store.put(TestResourceManager.class.getName(), testResourceManager);

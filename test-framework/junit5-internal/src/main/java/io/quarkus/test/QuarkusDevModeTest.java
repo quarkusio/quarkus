@@ -249,7 +249,7 @@ public class QuarkusDevModeTest
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            testResourceManager.init();
+            testResourceManager.init(null);
             Map<String, String> properties = testResourceManager.start();
             TestResourceManager tm = testResourceManager;
 

@@ -34,6 +34,7 @@ public class FilterGeneration {
             Integer priority = null;
             boolean preMatching = false;
             boolean nonBlockingRequired = false;
+            boolean readBody = false;
             Set<String> nameBindingNames = new HashSet<>();
 
             AnnotationValue priorityValue = instance.value("priority");
@@ -47,6 +48,16 @@ public class FilterGeneration {
             AnnotationValue nonBlockingRequiredValue = instance.value("nonBlocking");
             if (nonBlockingRequiredValue != null) {
                 nonBlockingRequired = nonBlockingRequiredValue.asBoolean();
+            }
+            AnnotationValue readBodyValue = instance.value("readBody");
+            if (readBodyValue != null) {
+                readBody = readBodyValue.asBoolean();
+            }
+
+            if (readBody && preMatching) {
+                throw new IllegalStateException(
+                        "Setting both 'readBody' and 'preMatching' to 'true' on '@ServerRequestFilter' is invalid. Offending method is '"
+                                + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
             }
 
             List<AnnotationInstance> annotations = methodInfo.annotations();
@@ -65,7 +76,7 @@ public class FilterGeneration {
             }
 
             ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    true, priority, preMatching, nonBlockingRequired, nameBindingNames));
+                    true, priority, preMatching, nonBlockingRequired, nameBindingNames, readBody));
         }
         for (AnnotationInstance instance : index
                 .getAnnotations(SERVER_RESPONSE_FILTER)) {
@@ -99,7 +110,7 @@ public class FilterGeneration {
             }
 
             ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    false, priority, false, false, nameBindingNames));
+                    false, priority, false, false, nameBindingNames, false));
 
         }
         return ret;
@@ -114,10 +125,12 @@ public class FilterGeneration {
         final boolean preMatching;
         final boolean nonBlocking;
         final Set<String> nameBindingNames;
+        final boolean readBody;
 
-        public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName, String declaringClassName,
+        public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName,
+                String declaringClassName,
                 boolean requestFilter, Integer priority, boolean preMatching, boolean nonBlocking,
-                Set<String> nameBindingNames) {
+                Set<String> nameBindingNames, boolean readBody) {
             this.generatedClasses = generatedClasses;
             this.generatedClassName = generatedClassName;
             this.declaringClassName = declaringClassName;
@@ -126,6 +139,7 @@ public class FilterGeneration {
             this.preMatching = preMatching;
             this.nonBlocking = nonBlocking;
             this.nameBindingNames = nameBindingNames;
+            this.readBody = readBody;
         }
 
         public String getGeneratedClassName() {
@@ -158,6 +172,10 @@ public class FilterGeneration {
 
         public Set<String> getNameBindingNames() {
             return nameBindingNames;
+        }
+
+        public boolean isReadBody() {
+            return readBody;
         }
     }
 

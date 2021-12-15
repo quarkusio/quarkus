@@ -95,6 +95,8 @@ public class RuntimeResourceDeployment {
     @SuppressWarnings("rawtypes")
     private static final MessageBodyWriter[] EMPTY_MESSAGE_BODY_WRITERS = new MessageBodyWriter[0];
 
+    private static final int HANDLERS_CAPACITY = 10;
+
     private static final Logger log = Logger.getLogger(RuntimeResourceDeployment.class);
 
     private final DeploymentInfo info;
@@ -182,7 +184,7 @@ public class RuntimeResourceDeployment {
         //we want interceptors in the abort handler chain
         List<ServerRestHandler> abortHandlingChain = new ArrayList<>(3 + (interceptorHandler != null ? 1 : 0));
 
-        List<ServerRestHandler> handlers = new ArrayList<>(10);
+        List<ServerRestHandler> handlers = new ArrayList<>(HANDLERS_CAPACITY);
         // we add null as the first item to make sure that subsequent items are added in the proper positions
         // and that the items don't need to shifted when at the end of the method we set the
         // first item
@@ -216,6 +218,7 @@ public class RuntimeResourceDeployment {
 
         //spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources (which makes sense)
         //so only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
+        boolean hasReadBodyRequestFilters = false;
         if (method.getHttpMethod() != null) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
                     .setupRequestFilterHandler();
@@ -229,6 +232,9 @@ public class RuntimeResourceDeployment {
                         handlers.add(initialIndex + i, handler);
                     } else {
                         handlers.add(handler);
+                    }
+                    if (handler.isReadBody()) {
+                        hasReadBodyRequestFilters = true;
                     }
                 }
             } else {
@@ -250,17 +256,35 @@ public class RuntimeResourceDeployment {
             }
         }
         // form params can be everywhere (field, beanparam, param)
+        boolean checkReadBodyRequestFilters = false;
         if (method.isFormParamRequired() || method.isMultipart()) {
             // read the body as multipart in one go
             handlers.add(new FormBodyHandler(bodyParameter != null, executorSupplier));
+            checkReadBodyRequestFilters = true;
         } else if (bodyParameter != null) {
             if (!defaultBlocking) {
                 if (!method.isBlocking()) {
                     // allow the body to be read by chunks
                     handlers.add(new InputHandler(quarkusRestConfig.getInputBufferSize(), executorSupplier));
+                    checkReadBodyRequestFilters = true;
                 }
             }
         }
+        if (checkReadBodyRequestFilters && hasReadBodyRequestFilters) {
+            // we need to remove the corresponding filters from the handlers list and add them to its end in the same order
+            List<ServerRestHandler> readBodyRequestFilters = new ArrayList<>(1);
+            for (int i = handlers.size() - 2; i >= 0; i--) {
+                var serverRestHandler = handlers.get(i);
+                if (serverRestHandler instanceof ResourceRequestFilterHandler) {
+                    ResourceRequestFilterHandler resourceRequestFilterHandler = (ResourceRequestFilterHandler) serverRestHandler;
+                    if (resourceRequestFilterHandler.isReadBody()) {
+                        readBodyRequestFilters.add(handlers.remove(i));
+                    }
+                }
+            }
+            handlers.addAll(readBodyRequestFilters);
+        }
+
         // if we need the body, let's deserialize it
         if (bodyParameter != null) {
             Class<Object> typeClass = loadClass(bodyParameter.declaredType);

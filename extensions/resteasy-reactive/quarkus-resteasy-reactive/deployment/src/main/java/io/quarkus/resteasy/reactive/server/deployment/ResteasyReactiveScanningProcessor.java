@@ -322,7 +322,8 @@ public class ResteasyReactiveScanningProcessor {
                                 .setRegisterAsBean(false) // it has already been made a bean
                                 .setPriority(generated.getPriority())
                                 .setPreMatching(generated.isPreMatching())
-                                .setNonBlockingRequired(generated.isNonBlocking());
+                                .setNonBlockingRequired(generated.isNonBlocking())
+                                .setReadBody(generated.isReadBody());
                 if (!generated.getNameBindingNames().isEmpty()) {
                     builder.setNameBindingNames(generated.getNameBindingNames());
                 }

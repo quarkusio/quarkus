@@ -44,18 +44,21 @@ public class CompilerFlags {
 
         flagList.addAll(effectiveDefaultFlags);
 
-        // Add --release and -source and -target flags.
+        // Prefer --release over -source and -target flags to make sure to not run into:
+        // "error: option --source cannot be used together with --release"
+        // This is *not* checking defaultFlags; it is not expected that defaultFlags ever contain --release etc.!
         if (releaseJavaVersion != null) {
             flagList.add("--release");
             flagList.add(releaseJavaVersion);
-        }
-        if (sourceJavaVersion != null) {
-            flagList.add("-source");
-            flagList.add(sourceJavaVersion);
-        }
-        if (targetJavaVersion != null) {
-            flagList.add("-target");
-            flagList.add(targetJavaVersion);
+        } else {
+            if (sourceJavaVersion != null) {
+                flagList.add("-source");
+                flagList.add(sourceJavaVersion);
+            }
+            if (targetJavaVersion != null) {
+                flagList.add("-target");
+                flagList.add(targetJavaVersion);
+            }
         }
 
         flagList.addAll(userFlags);

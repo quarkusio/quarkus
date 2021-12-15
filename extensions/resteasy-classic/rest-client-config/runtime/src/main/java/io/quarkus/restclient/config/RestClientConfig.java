@@ -1,5 +1,7 @@
 package io.quarkus.restclient.config;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
@@ -8,6 +10,7 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.SmallRyeConfig;
 
 @ConfigGroup
 public class RestClientConfig {
@@ -35,6 +38,7 @@ public class RestClientConfig {
         EMPTY.connectionTTL = Optional.empty();
         EMPTY.connectionPoolSize = Optional.empty();
         EMPTY.maxRedirects = Optional.empty();
+        EMPTY.headers = Collections.emptyMap();
     }
 
     /**
@@ -161,6 +165,12 @@ public class RestClientConfig {
     @ConfigItem
     public Optional<Integer> maxRedirects;
 
+    /**
+     * The HTTP headers that should be applied to all requests of the rest client.
+     */
+    @ConfigItem
+    public Map<String, String> headers;
+
     public static RestClientConfig load(String configKey) {
         final RestClientConfig instance = new RestClientConfig();
 
@@ -183,6 +193,7 @@ public class RestClientConfig {
         instance.connectionTTL = getConfigValue(configKey, "connection-ttl", Integer.class);
         instance.connectionPoolSize = getConfigValue(configKey, "connection-pool-size", Integer.class);
         instance.maxRedirects = getConfigValue(configKey, "max-redirects", Integer.class);
+        instance.headers = getConfigValues(configKey, "headers", String.class, String.class);
 
         return instance;
     }
@@ -209,6 +220,7 @@ public class RestClientConfig {
         instance.connectionTTL = getConfigValue(interfaceClass, "connection-ttl", Integer.class);
         instance.connectionPoolSize = getConfigValue(interfaceClass, "connection-pool-size", Integer.class);
         instance.maxRedirects = getConfigValue(interfaceClass, "max-redirects", Integer.class);
+        instance.headers = getConfigValues(interfaceClass, "headers", String.class, String.class);
 
         return instance;
     }
@@ -235,6 +247,33 @@ public class RestClientConfig {
                     type);
         }
         return optional;
+    }
+
+    private static <K, V> Map<K, V> getConfigValues(String configKey, String fieldName, Class<K> keyType, Class<V> valueType) {
+        final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        Optional<Map<K, V>> optional = config.getOptionalValues(composePropertyKey(configKey, fieldName), keyType, valueType);
+        if (optional.isEmpty()) { // try to find property with quoted configKey
+            optional = config.getOptionalValues(composePropertyKey('"' + configKey + '"', fieldName), keyType, valueType);
+        }
+        return optional.isPresent() ? optional.get() : Collections.emptyMap();
+    }
+
+    private static <K, V> Map<K, V> getConfigValues(Class<?> clientInterface, String fieldName, Class<K> keyType,
+            Class<V> valueType) {
+        final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        // first try interface full name
+        Optional<Map<K, V>> optional = config.getOptionalValues(
+                composePropertyKey('"' + clientInterface.getName() + '"', fieldName),
+                keyType, valueType);
+        if (optional.isEmpty()) { // then interface simple name
+            optional = config.getOptionalValues(composePropertyKey(clientInterface.getSimpleName(), fieldName), keyType,
+                    valueType);
+        }
+        if (optional.isEmpty()) { // lastly quoted interface simple name
+            optional = config.getOptionalValues(composePropertyKey('"' + clientInterface.getSimpleName() + '"', fieldName),
+                    keyType, valueType);
+        }
+        return optional.isPresent() ? optional.get() : Collections.emptyMap();
     }
 
     private static String composePropertyKey(String key, String fieldName) {

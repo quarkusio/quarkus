@@ -1,6 +1,7 @@
 package io.quarkus.rest.client.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.util.Set;
 
@@ -44,7 +45,7 @@ public class ConfigurationTest {
 
     @Test
     void clientShouldRespond() {
-        assertThat(client.echo("world!")).isEqualTo("hello, world!");
+        assertThat(client.echo("world")).isEqualTo("hi, world!");
     }
 
     @Test
@@ -61,10 +62,12 @@ public class ConfigurationTest {
         verifyClientConfig(clientConfig, true);
         assertThat(clientConfig.proxyAddress.isPresent()).isTrue();
         assertThat(clientConfig.proxyAddress.get()).isEqualTo("localhost:8080");
+        assertThat(clientConfig.headers).containsOnly(entry("user-agent", "MP REST Client"), entry("foo", "bar"));
 
         clientConfig = RestClientConfig.load("quoted-client-prefix");
         assertThat(clientConfig.url.isPresent()).isTrue();
         assertThat(clientConfig.url.get()).endsWith("/hello");
+        assertThat(clientConfig.headers).containsOnly(entry("foo", "bar"));
 
         clientConfig = RestClientConfig.load("mp-client-prefix");
         verifyClientConfig(clientConfig, false);

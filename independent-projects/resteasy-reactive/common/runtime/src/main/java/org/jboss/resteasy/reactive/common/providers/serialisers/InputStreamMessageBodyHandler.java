@@ -30,13 +30,19 @@ public class InputStreamMessageBodyHandler implements MessageBodyWriter<InputStr
     public void writeTo(InputStream inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         try {
+            byte[] buffer = new byte[8192];
             int c;
-            while ((c = inputStream.read()) != -1) {
-                entityStream.write(c);
+            while ((c = inputStream.read(buffer)) != -1) {
+                entityStream.write(buffer, 0, c);
             }
         } finally {
             try {
                 inputStream.close();
+            } catch (IOException e) {
+                // Drop the exception so we don't mask real IO errors
+            }
+            try {
+                entityStream.close();
             } catch (IOException e) {
                 // Drop the exception so we don't mask real IO errors
             }

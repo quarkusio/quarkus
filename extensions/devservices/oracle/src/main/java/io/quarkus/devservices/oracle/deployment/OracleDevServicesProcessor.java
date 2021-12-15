@@ -73,7 +73,8 @@ public class OracleDevServicesProcessor {
         public QuarkusOracleServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName.orElse(OracleDevServicesProcessor.IMAGE + ":" + OracleDevServicesProcessor.TAG))
+                    .parse(imageName
+                            .orElse("docker.io/" + OracleDevServicesProcessor.IMAGE + ":" + OracleDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(OracleDevServicesProcessor.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

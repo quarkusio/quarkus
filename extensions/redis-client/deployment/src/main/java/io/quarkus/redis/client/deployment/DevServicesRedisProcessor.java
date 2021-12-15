@@ -42,7 +42,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 
 public class DevServicesRedisProcessor {
     private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
-    private static final String REDIS_6_ALPINE = "redis:6-alpine";
+    private static final String REDIS_6_ALPINE = "docker.io/redis:6-alpine";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
 

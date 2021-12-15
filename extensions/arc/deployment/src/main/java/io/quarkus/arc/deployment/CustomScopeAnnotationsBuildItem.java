@@ -1,6 +1,7 @@
 package io.quarkus.arc.deployment;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -83,5 +84,22 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
      */
     public boolean isScopeIn(Collection<AnnotationInstance> annotations) {
         return !annotations.isEmpty() && (BuiltinScope.isIn(annotations) || isCustomScopeIn(annotations));
+    }
+
+    /**
+     * 
+     * @param annotations
+     * @return the scope or empty optional
+     */
+    public Optional<AnnotationInstance> getScope(Collection<AnnotationInstance> annotations) {
+        if (annotations.isEmpty()) {
+            return Optional.empty();
+        }
+        for (AnnotationInstance annotationInstance : annotations) {
+            if (BuiltinScope.from(annotationInstance.name()) != null || customScopeNames.contains(annotationInstance.name())) {
+                return Optional.of(annotationInstance);
+            }
+        }
+        return Optional.empty();
     }
 }

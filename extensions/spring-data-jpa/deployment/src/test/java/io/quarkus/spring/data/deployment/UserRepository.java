@@ -3,6 +3,7 @@ package io.quarkus.spring.data.deployment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, String> {
 
@@ -21,4 +22,8 @@ public interface UserRepository extends JpaRepository<User, String> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE LoginEvent e SET e.processed = true")
     void processLoginEventsPlainAutoClearAndFlush();
+
+    User getUserByFullNameUsingNamedQuery(@Param("name") String name);
+
+    User getUserByFullNameUsingNamedQueries(@Param("name") String name);
 }

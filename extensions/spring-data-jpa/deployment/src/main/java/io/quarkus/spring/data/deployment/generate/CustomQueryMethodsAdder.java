@@ -1,6 +1,7 @@
 package io.quarkus.spring.data.deployment.generate;
 
 import static io.quarkus.gizmo.FieldDescriptor.of;
+import static io.quarkus.spring.data.deployment.generate.GenerationUtil.getNamedQueryForMethod;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
     private static final String QUERY_VALUE_FIELD = "value";
     private static final String QUERY_COUNT_FIELD = "countQuery";
+    private static final String NAMED_QUERY_FIELD = "query";
 
     private static final Pattern SELECT_CLAUSE = Pattern.compile("select\\s+(.+)\\s+from", Pattern.CASE_INSENSITIVE);
     private static final Pattern FIELD_ALIAS = Pattern.compile(".*\\s+[as|AS]+\\s+([\\w\\.]+)");
@@ -75,14 +77,21 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
         for (MethodInfo method : repositoryClassInfo.methods()) {
 
             AnnotationInstance queryInstance = method.annotation(DotNames.SPRING_DATA_QUERY);
-            if (queryInstance == null) { // handled by DerivedMethodsAdder
-                continue;
-            }
+            AnnotationInstance namedQueryInstance = getNamedQueryForMethod(method, entityClassInfo);
 
             String methodName = method.name();
             String repositoryName = repositoryClassInfo.name().toString();
-            verifyQueryAnnotation(queryInstance, methodName, repositoryName);
-            String queryString = queryInstance.value(QUERY_VALUE_FIELD).asString().trim();
+            String queryString;
+            if (queryInstance != null) {
+                verifyQueryAnnotation(queryInstance, methodName, repositoryName);
+                queryString = queryInstance.value(QUERY_VALUE_FIELD).asString().trim();
+            } else if (namedQueryInstance != null) {
+                queryString = namedQueryInstance.value(NAMED_QUERY_FIELD).asString().trim();
+            } else {
+                // handled by DerivedMethodsAdder
+                continue;
+            }
+
             if (queryString.contains("#{")) {
                 throw new IllegalArgumentException("spEL expressions are not currently supported. " +
                         "Offending method is " + methodName + " of Repository " + repositoryName);
@@ -258,7 +267,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                 } else {
                     // by default just hope that adding select count(*) will do
                     String countQueryString = "SELECT COUNT(*) " + queryString;
-                    if (queryInstance.value(QUERY_COUNT_FIELD) != null) { // if a countQuery is specified, use it
+                    if (queryInstance != null && queryInstance.value(QUERY_COUNT_FIELD) != null) { // if a countQuery is specified, use it
                         countQueryString = queryInstance.value(QUERY_COUNT_FIELD).asString().trim();
                     } else {
                         // otherwise try and derive the select query from the method name and use that to construct the count query

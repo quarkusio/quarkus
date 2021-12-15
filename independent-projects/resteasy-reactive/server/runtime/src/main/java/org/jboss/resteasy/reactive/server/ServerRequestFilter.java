@@ -86,7 +86,9 @@ public @interface ServerRequestFilter {
     int priority() default Priorities.USER;
 
     /**
-     * Whether or not the filter is a pre-matching filter
+     * Whether the filter is a pre-matching filter
+     *
+     * Note that this setting and {@link ServerRequestFilter#readBody()} cannot be both set to true.
      */
     boolean preMatching() default false;
 
@@ -99,4 +101,15 @@ public @interface ServerRequestFilter {
      * For this to work, this filter must be run before any of the filters when non-blocking is not required.
      */
     boolean nonBlocking() default false;
+
+    /**
+     * If set to {@code true}, the filter will be run after the body has been fully read but before any deserialization takes
+     * place.
+     *
+     * Note that this change only affects Resource Methods that do result in reading the message body. For all other
+     * Resource Methods that the filter applies to, it will be executed in normal fashion.
+     *
+     * Also note that this setting and {@link ServerRequestFilter#preMatching()} cannot be both set to true.
+     */
+    boolean readBody() default false;
 }

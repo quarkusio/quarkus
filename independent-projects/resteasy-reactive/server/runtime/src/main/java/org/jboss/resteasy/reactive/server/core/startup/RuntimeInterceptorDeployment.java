@@ -95,7 +95,8 @@ public class RuntimeInterceptorDeployment {
         for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : globalRequestInterceptorsMap
                 .entrySet()) {
             globalRequestInterceptorHandlers
-                    .add(new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired()));
+                    .add(new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired(),
+                            entry.getKey().isReadBody()));
         }
 
         InterceptorHandler globalInterceptorHandler = null;
@@ -326,7 +327,8 @@ public class RuntimeInterceptorDeployment {
                 for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : interceptorsToUse
                         .entrySet()) {
                     handlers.add(
-                            new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired()));
+                            new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired(),
+                                    entry.getKey().isNonBlockingRequired()));
                 }
             }
             return handlers;

@@ -556,6 +556,12 @@ public interface ExtensionsService {
 <4> ... as well as a value from your application's configuration
 <5> ... or as a normal JAX-RS `@HeaderParam` annotated argument
 
+[NOTE]
+====
+When using Kotlin, if default methods are going to be leveraged, then the Kotlin compiler needs to be configured to use Java's default interface capabilities.
+See link:https://kotlinlang.org/docs/java-to-kotlin-interop.html#default-methods-in-interfaces[this] for more details.
+====
+
 A `ClientHeadersFactory` can look as follows:
 
 [source, java]

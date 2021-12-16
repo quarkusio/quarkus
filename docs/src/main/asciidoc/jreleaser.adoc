@@ -28,7 +28,7 @@ To complete this guide, you need:
 
 == Bootstrapping the project
 
-First, we need a project that defin a CLI application. We recommend using the xref:picocli.adoc[PicoCLI] extension.
+First, we need a project that defines a CLI application. We recommend using the xref:picocli.adoc[PicoCLI] extension.
 This can be done using the following command:
 
 [source,bash,subs=attributes+]

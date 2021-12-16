@@ -77,6 +77,8 @@ public class VertxOutputStream extends AsyncOutputStream {
         } catch (Exception e) {
             if (buffer != null && buffer.refCnt() > 0) {
                 buffer.release();
+                pooledBuffer = null;
+                closed = true;
             }
             throw new IOException(e);
         }

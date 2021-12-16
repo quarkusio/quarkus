@@ -197,6 +197,10 @@ public class DockerProcessor {
                 dockerArgs.add(String.join(",", cacheFrom));
             }
         }
+        if (dockerConfig.network.isPresent()) {
+            dockerArgs.add("--network");
+            dockerArgs.add(dockerConfig.network.get());
+        }
         dockerArgs.addAll(Arrays.asList("-t", image));
         dockerArgs.add(dockerfilePaths.getDockerExecutionPath().toAbsolutePath().toString());
         return dockerArgs.toArray(new String[0]);

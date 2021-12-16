@@ -409,6 +409,8 @@ public class IfSectionHelper implements SectionHelper {
                 decimal = new BigDecimal((Integer) value);
             } else if (value instanceof Double) {
                 decimal = new BigDecimal((Double) value);
+            } else if (value instanceof Float) {
+                decimal = new BigDecimal((Float) value);
             } else if (value instanceof String) {
                 decimal = new BigDecimal(value.toString());
             } else {

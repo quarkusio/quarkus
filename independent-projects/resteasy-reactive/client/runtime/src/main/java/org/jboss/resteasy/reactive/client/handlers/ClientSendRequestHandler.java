@@ -281,6 +281,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     "Multipart form upload expects an entity of type MultipartForm, got: " + state.getEntity().getEntity());
         }
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
+        updateRequestHeadersFromConfig(state, headerMap);
         QuarkusMultipartForm multipartForm = (QuarkusMultipartForm) state.getEntity().getEntity();
         multipartForm.preparePojos(state);
 
@@ -307,6 +308,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             RestClientRequestContext state)
             throws IOException {
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
+        updateRequestHeadersFromConfig(state, headerMap);
+
         Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
         Entity<?> entity = state.getEntity();
         if (entity != null) {
@@ -319,6 +322,15 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         // set the Vertx headers after we've run the interceptors because they can modify them
         setVertxHeaders(httpClientRequest, headerMap);
         return actualEntity;
+    }
+
+    private void updateRequestHeadersFromConfig(RestClientRequestContext state, MultivaluedMap<String, String> headerMap) {
+        Object staticHeaders = state.getConfiguration().getProperty(QuarkusRestClientProperties.STATIC_HEADERS);
+        if (staticHeaders instanceof Map) {
+            for (Map.Entry<String, String> entry : ((Map<String, String>) staticHeaders).entrySet()) {
+                headerMap.putSingle(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     private void setVertxHeaders(HttpClientRequest httpClientRequest, MultivaluedMap<String, String> headerMap) {

@@ -22,4 +22,6 @@ public class QuarkusRestClientProperties {
      * The size of the rest client connection pool.
      */
     public static final String CONNECTION_POOL_SIZE = "io.quarkus.rest.client.connection-pool-size";
+
+    public static final String STATIC_HEADERS = "io.quarkus.rest.client.static-headers";
 }

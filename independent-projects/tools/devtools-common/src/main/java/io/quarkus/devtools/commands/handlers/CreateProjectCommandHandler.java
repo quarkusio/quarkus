@@ -212,10 +212,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         }
         addOrigins(extOrigins, quarkusCore.get());
 
-        final OriginSelector os = new OriginSelector(extOrigins);
-        os.calculateCompatibleCombinations();
-
-        final OriginCombination recommendedCombination = os.getRecommendedCombination();
+        final OriginCombination recommendedCombination = OriginSelector.of(extOrigins).calculateRecommendedCombination();
         if (recommendedCombination == null) {
             final StringBuilder buf = new StringBuilder();
             buf.append("Failed to determine a compatible Quarkus version for the requested extensions: ");

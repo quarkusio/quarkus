@@ -36,6 +36,14 @@ public class PicocliTest {
     }
 
     @Test
+    public void testLogCapturing(QuarkusMainLauncher launcher) {
+        org.jboss.logging.Logger.getLogger("test").error("error");
+        LaunchResult result = launcher.launch("with-method-sub-command", "hello", "-n", "World!");
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.getOutput()).isEqualTo("Hello World!");
+    }
+
+    @Test
     @Launch({ "command-used-as-parent", "-p", "testValue", "child" })
     public void testParentCommand(LaunchResult result) {
         assertThat(result.getOutput()).isEqualTo("testValue");

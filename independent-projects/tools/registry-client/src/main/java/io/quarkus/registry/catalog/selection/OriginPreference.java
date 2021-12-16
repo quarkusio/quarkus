@@ -22,6 +22,18 @@ public class OriginPreference implements Comparable<OriginPreference> {
     public final int catalogPreference;
     public final int compatibilityCode;
 
+    public boolean canBeCombinedWith(OriginPreference other) {
+        // if the quarkus versions are not compatible
+        if (compatibilityCode != other.compatibilityCode
+                // if it's different releases of the same platform
+                || registryPreference == other.registryPreference
+                        && platformPreference == other.platformPreference
+                        && releasePreference != other.releasePreference) {
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public int compareTo(OriginPreference o) {
         int i = registryPreference - o.registryPreference;

@@ -187,6 +187,7 @@ public class RestClientFallbackConfigSourceInterceptorTest {
             return ConfigValue.builder()
                     .withName(name)
                     .withValue("")
+                    .withConfigSourceOrdinal(name.startsWith("quarkus.rest-client.") ? 100 : 200)
                     .build();
         }
 

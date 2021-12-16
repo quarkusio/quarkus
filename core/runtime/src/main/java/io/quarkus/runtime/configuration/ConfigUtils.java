@@ -142,7 +142,7 @@ public final class ConfigUtils {
 
             @Override
             public OptionalInt getPriority() {
-                return OptionalInt.of(Priorities.LIBRARY + 600 - 5);
+                return OptionalInt.of(Priorities.LIBRARY + 200 - 5);
             }
         });
 
@@ -157,7 +157,7 @@ public final class ConfigUtils {
 
             @Override
             public OptionalInt getPriority() {
-                return OptionalInt.of(Priorities.LIBRARY + 400 - 5);
+                return OptionalInt.of(Priorities.LIBRARY + 600 - 5);
             }
         });
 

@@ -27,7 +27,6 @@ public class UnknownConfigTest {
             .assertLogRecords(logRecords -> {
                 Set<String> properties = logRecords.stream().flatMap(
                         logRecord -> Stream.of(logRecord.getParameters())).map(Object::toString).collect(Collectors.toSet());
-                assertEquals(1, properties.size());
                 assertTrue(properties.contains("quarkus.unknown.prop"));
             });
 

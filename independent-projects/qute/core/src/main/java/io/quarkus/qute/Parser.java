@@ -757,14 +757,11 @@ class Parser implements Function<String, Expression>, ParserHelper {
             strParts = Expressions.splitParts(value.substring(namespaceIdx + 1, value.length()));
             namespace = value.substring(0, namespaceIdx);
         } else {
-            strParts = Expressions.splitParts(value);
-            if (strParts.size() == 1) {
-                String literal = strParts.get(0);
-                Object literalValue = LiteralSupport.getLiteralValue(literal);
-                if (!Results.isNotFound(literalValue)) {
-                    return ExpressionImpl.literal(idGenerator.get(), literal, literalValue, origin);
-                }
+            Object literalValue = LiteralSupport.getLiteralValue(value);
+            if (!Results.isNotFound(literalValue)) {
+                return ExpressionImpl.literal(idGenerator.get(), value, literalValue, origin);
             }
+            strParts = Expressions.splitParts(value);
         }
 
         if (strParts.isEmpty()) {

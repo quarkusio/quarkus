@@ -1,10 +1,8 @@
 package io.quarkus.restclient.config;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import org.wildfly.common.annotation.NotNull;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -25,7 +23,11 @@ public class RestClientsConfig {
     @ConfigItem(name = ConfigItem.PARENT)
     Map<String, RestClientConfig> preloadedConfigs;
 
-    final Map<String, RestClientConfig> configs = new HashMap<>();
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    // The @Deprecated annotation prevents this field from being included in generated docs. We only want the `configKey` field
+    // above to be included.
+    @Deprecated
+    final Map<String, RestClientConfig> configs = new ConcurrentHashMap<>();
 
     /**
      * By default, REST Client Reactive uses text/plain content type for String values
@@ -61,7 +63,7 @@ public class RestClientsConfig {
         return configs.computeIfAbsent(configKey, RestClientConfig::load);
     }
 
-    public RestClientConfig getClientConfig(@NotNull Class<?> clientInterface) {
+    public RestClientConfig getClientConfig(Class<?> clientInterface) {
         return configs.computeIfAbsent(clientInterface.getName(), name -> RestClientConfig.load(clientInterface));
     }
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.apache.avro.Conversions;
 import org.apache.avro.Schema;
 import org.apache.avro.compiler.specific.SpecificCompiler;
 
@@ -65,6 +66,7 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
         compiler.setCreateSetters(options.createSetters);
         compiler.setEnableDecimalLogicalType(options.enableDecimalLogicalType);
         compiler.setOutputCharacterEncoding("UTF-8");
+        compiler.addCustomConversion(Conversions.UUIDConversion.class);
         try {
             compiler.compileToDestination(file, outputDirectory.toFile());
         } catch (IOException e) {

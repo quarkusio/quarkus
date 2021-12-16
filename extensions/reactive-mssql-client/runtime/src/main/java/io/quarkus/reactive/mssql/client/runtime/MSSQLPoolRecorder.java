@@ -83,6 +83,13 @@ public class MSSQLPoolRecorder {
             poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
 
+        if (dataSourceReactiveRuntimeConfig.shared) {
+            poolOptions.setShared(true);
+            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            }
+        }
+
         return poolOptions;
     }
 

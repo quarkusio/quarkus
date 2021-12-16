@@ -635,15 +635,17 @@ jar tvf target/function.zip
 
 == Amazon Alexa Integration
 
-To use Alexa with Quarkus native, please add the following extension.
+To use Alexa with Quarkus native, you need to use the https://github.com/quarkiverse/quarkus-amazon-alexa[Quarkus Amazon Alexa extension hosted at the Quarkiverse Hub].
 
 [source,xml]
 ----
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-amazon-alexa</artifactId>
-        </dependency>
+<dependency>
+    <groupId>io.quarkiverse.alexa</groupId>
+    <artifactId>quarkus-amazon-alexa</artifactId>
+    <version>${quarkus-amazon-alexa.version}</version> <1>
+</dependency>
 ----
+<1> Define the latest version of the extension in your POM file.
 
 Create your Alexa handler, as normal, by sub-classing the abstract `com.amazon.ask.SkillStreamHandler`, and add your request handler implementation.
 

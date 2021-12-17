@@ -39,8 +39,7 @@ class KotlinSerializationMessageBodyWriter(@Inject var json: Json) : AllWriteabl
         if (o is String) { // YUK: done in order to avoid adding extra quotes...
             stream.write(o.toByteArray())
         } else {
-            val encodeToString = json.encodeToString(json.serializersModule.serializer(genericType), o)
-            stream.write(encodeToString.toByteArray())
+            json.encodeToStream(serializer(genericType), o, stream)
         }
         // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
         originalStream.close()

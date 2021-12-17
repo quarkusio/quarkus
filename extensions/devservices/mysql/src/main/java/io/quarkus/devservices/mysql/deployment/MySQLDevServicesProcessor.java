@@ -65,7 +65,8 @@ public class MySQLDevServicesProcessor {
         private String hostName = null;
 
         public QuarkusMySQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
-            super(DockerImageName.parse(imageName.orElse(MySQLContainer.IMAGE + ":" + MySQLDevServicesProcessor.TAG))
+            super(DockerImageName
+                    .parse(imageName.orElse("docker.io/" + MySQLContainer.IMAGE + ":" + MySQLDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

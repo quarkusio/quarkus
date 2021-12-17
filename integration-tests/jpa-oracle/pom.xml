@@ -30,6 +30,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-oracle</artifactId>
         </dependency>
+        <!-- Include the PostgreSQL driver as well: not actually used, but
+            we need to validate native-image compilation with multiple JDBC drivers, in particular to
+            test all weird native-image metadata being included in the Oracle JDBC driver -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+
         <!-- .. and some web endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -70,6 +78,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-oracle-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

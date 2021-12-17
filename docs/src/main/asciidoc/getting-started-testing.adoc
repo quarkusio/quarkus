@@ -1059,7 +1059,7 @@ remove duplicates. If you want to only enable a test resource on a single test c
 
 Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesServerTestResource` which starts a mock Kubernetes API server),
 but it is common to create custom implementations to address specific application needs.
-Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus-quickstarts/blob/main/security-keycloak-authorization-quickstart/src/test/java/org/acme/security/keycloak/authorization/KeycloakServer.java[here]),
+Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus/blob/main/test-framework/keycloak-server/src/main/java/io/quarkus/test/keycloak/server/KeycloakTestResourceLifecycleManager.java[here]),
 or starting a mock HTTP server using http://wiremock.org/[Wiremock] (an example of which can be found https://github.com/geoand/quarkus-test-demo/blob/main/src/test/java/org/acme/getting/started/country/WiremockCountries.java[here]).
 
 

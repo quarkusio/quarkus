@@ -66,7 +66,9 @@ public class PostgresqlDevServicesProcessor {
         private String hostName = null;
 
         public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
-            super(DockerImageName.parse(imageName.orElse(PostgreSQLContainer.IMAGE + ":" + PostgresqlDevServicesProcessor.TAG))
+            super(DockerImageName
+                    .parse(imageName
+                            .orElse("docker.io/" + PostgreSQLContainer.IMAGE + ":" + PostgresqlDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

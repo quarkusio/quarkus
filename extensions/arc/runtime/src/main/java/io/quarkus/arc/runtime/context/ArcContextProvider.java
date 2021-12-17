@@ -32,7 +32,7 @@ public class ArcContextProvider implements ThreadContextProvider {
     @Override
     public ThreadContextSnapshot currentContext(Map<String, String> map) {
         ArcContainer container = Arc.container();
-        if (container == null || !container.isRunning()) {
+        if (container == null) {
             //return null as per docs to state that propagation of this context is not supported
             return null;
         }
@@ -50,7 +50,7 @@ public class ArcContextProvider implements ThreadContextProvider {
     public ThreadContextSnapshot clearedContext(Map<String, String> map) {
         // note that by cleared we mean that we still activate context if need be, just leave the contents blank
         ArcContainer container = Arc.container();
-        if (container == null || !container.isRunning()) {
+        if (container == null) {
             //return null as per docs to state that propagation of this context is not supported
             return null;
         }
@@ -68,7 +68,7 @@ public class ArcContextProvider implements ThreadContextProvider {
         public ThreadContextController begin() {
             // can be called later on, we should retrieve the container again
             ArcContainer container = Arc.container();
-            if (container == null || !container.isRunning()) {
+            if (container == null) {
                 return NOOP_CONTROLLER;
             }
 
@@ -94,7 +94,7 @@ public class ArcContextProvider implements ThreadContextProvider {
         public ThreadContextController begin() {
             // can be called later on, we should retrieve the container again
             ArcContainer container = Arc.container();
-            if (container == null || !container.isRunning()) {
+            if (container == null) {
                 //this happens on shutdown, if we blow up here it can break shutdown, and stop
                 //resources from being cleaned up, causing tests to fail
                 return NOOP_CONTROLLER;
@@ -130,7 +130,7 @@ public class ArcContextProvider implements ThreadContextProvider {
         public ThreadContextController begin() {
             // can be called later on, we should retrieve the container again
             ArcContainer container = Arc.container();
-            if (container == null || !container.isRunning()) {
+            if (container == null) {
                 //this happens on shutdown, if we blow up here it can break shutdown, and stop
                 //resources from being cleaned up, causing tests to fail
                 return NOOP_CONTROLLER;

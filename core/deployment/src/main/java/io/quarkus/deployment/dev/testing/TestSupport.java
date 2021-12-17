@@ -162,10 +162,12 @@ public class TestSupport implements TestController {
 
                 try {
                     Set<Path> paths = new LinkedHashSet<>();
-                    paths.add(Paths.get(module.getTest().get().getClassesPath()));
-                    if (module.getTest().get().getResourcesOutputPath() != null) {
-                        paths.add(Paths.get(module.getTest().get().getResourcesOutputPath()));
-                    }
+                    module.getTest().ifPresent(test -> {
+                        paths.add(Paths.get(test.getClassesPath()));
+                        if (test.getResourcesOutputPath() != null) {
+                            paths.add(Paths.get(test.getResourcesOutputPath()));
+                        }
+                    });
                     if (mainModule) {
                         paths.addAll(curatedApplication.getQuarkusBootstrap().getApplicationRoot().toList());
                     } else {

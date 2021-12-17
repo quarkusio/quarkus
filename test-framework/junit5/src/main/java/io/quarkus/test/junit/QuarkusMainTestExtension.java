@@ -93,7 +93,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     private LaunchResult doLaunch(ExtensionContext context, Class<? extends QuarkusTestProfile> selectedProfile,
             String[] arguments) throws Exception {
         ensurePrepared(context, selectedProfile);
-        QuarkusConsole.installRedirects();
         LogCapturingOutputFilter filter = new LogCapturingOutputFilter(prepareResult.curatedApplication, false, false,
                 () -> true);
         QuarkusConsole.addOutputFilter(filter);
@@ -138,6 +137,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         try {
             StartupAction startupAction = prepareResult.augmentAction.createInitialRuntimeApplication();
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
+            QuarkusConsole.installRedirects();
 
             QuarkusTestProfile profileInstance = prepareResult.profileInstance;
 
@@ -169,6 +169,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             }
             throw e;
         } finally {
+            QuarkusConsole.uninstallRedirects();
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
@@ -227,8 +228,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
-        QuarkusConsole.installRedirects();
         currentTestClassStack.push(context.getRequiredTestClass());
-
     }
 }

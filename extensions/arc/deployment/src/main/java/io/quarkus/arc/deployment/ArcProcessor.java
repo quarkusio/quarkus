@@ -512,7 +512,8 @@ public class ArcProcessor {
             LiveReloadBuildItem liveReloadBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
-            List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses) throws Exception {
+            List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses,
+            Optional<CurrentContextFactoryBuildItem> currentContextFactory) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
             for (Throwable error : validationError.getValues()) {
@@ -593,7 +594,8 @@ public class ArcProcessor {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, binding.name().toString()));
         }
 
-        ArcContainer container = recorder.getContainer(shutdown);
+        ArcContainer container = recorder.initContainer(shutdown,
+                currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null);
         BeanContainer beanContainer = recorder.initBeanContainer(container,
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()));

@@ -85,9 +85,6 @@ public interface InjectableContext extends AlterableContext {
         return getScope().isAnnotationPresent(NormalScope.class);
     }
 
-    /**
-    *
-    */
     interface ContextState {
 
         /**

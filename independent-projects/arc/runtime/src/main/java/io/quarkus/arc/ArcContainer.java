@@ -179,4 +179,11 @@ public interface ArcContainer {
      * @return the default executor service
      */
     ExecutorService getExecutorService();
+
+    /**
+     *
+     * @return the factory
+     * @see CurrentContext
+     */
+    CurrentContextFactory getCurrentContextFactory();
 }

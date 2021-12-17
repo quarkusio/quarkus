@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -141,6 +143,14 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
          */
         final boolean optionalGettersForNullableFieldsOnly;
 
+        /**
+         * A list of custom converter classes to register on the avro compiler. <code>Conversions.UUIDConversion</code> is
+         * registered by default.
+         * <p>
+         * Passed as a comma-separated list.
+         */
+        final List<String> customConversions = new ArrayList<>();
+
         AvroOptions(Config config, String specificPropertyKey) {
             this.config = config;
             String imports = prop("avro.codegen." + specificPropertyKey + ".imports", "");
@@ -153,6 +163,12 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
             gettersReturnOptional = getBooleanProperty("avro.codegen.gettersReturnOptional", false);
             optionalGettersForNullableFieldsOnly = getBooleanProperty("avro.codegen.optionalGettersForNullableFieldsOnly",
                     false);
+            String conversions = prop("avro.codegen.customConversions", "");
+            if (!"".equals(conversions)) {
+                for (String conversion : conversions.split(",")) {
+                    customConversions.add(conversion.trim());
+                }
+            }
         }
 
         private String prop(String propName, String defaultValue) {

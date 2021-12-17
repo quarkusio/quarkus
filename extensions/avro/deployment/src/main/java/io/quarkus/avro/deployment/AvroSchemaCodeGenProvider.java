@@ -67,6 +67,18 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
         compiler.setEnableDecimalLogicalType(options.enableDecimalLogicalType);
         compiler.setOutputCharacterEncoding("UTF-8");
         compiler.addCustomConversion(Conversions.UUIDConversion.class);
+
+        for (String customConversion : options.customConversions) {
+            try {
+                Class<?> conversionClass = Class.forName(customConversion);
+                if (!conversionClass.isInstance(Conversions.UUIDConversion.class)) {
+                    compiler.addCustomConversion(conversionClass);
+                }
+            } catch (ClassNotFoundException e) {
+                throw new CodeGenException("Unable to find the following conversion class: " + customConversion, e);
+            }
+        }
+
         try {
             compiler.compileToDestination(file, outputDirectory.toFile());
         } catch (IOException e) {

@@ -95,7 +95,7 @@ public class JibProcessor {
             JibConfig jibConfig,
             BuildProducer<AppCDSContainerImageBuildItem> producer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push) {
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
             return;
         }
 
@@ -129,8 +129,10 @@ public class JibProcessor {
             Optional<AppCDSResultBuildItem> appCDSResult,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        Boolean buildContainerImage = containerImageConfig.build || buildRequest.isPresent();
-        Boolean pushContainerImage = containerImageConfig.push || pushRequest.isPresent();
+        Boolean buildContainerImage = containerImageConfig.isBuildExplicitlyEnabled()
+                || (buildRequest.isPresent() && !containerImageConfig.isBuildExplicitlyDisabled());
+        Boolean pushContainerImage = containerImageConfig.isPushExplicitlyEnabled()
+                || (pushRequest.isPresent() && !containerImageConfig.isPushExplicitlyDisabled());
         if (!buildContainerImage && !pushContainerImage) {
             return;
         }
@@ -173,8 +175,10 @@ public class JibProcessor {
             Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        Boolean buildContainerImage = containerImageConfig.build || buildRequest.isPresent();
-        Boolean pushContainerImage = containerImageConfig.push || pushRequest.isPresent();
+        Boolean buildContainerImage = containerImageConfig.isBuildExplicitlyEnabled()
+                || (buildRequest.isPresent() && !containerImageConfig.isBuildExplicitlyDisabled());
+        Boolean pushContainerImage = containerImageConfig.isPushExplicitlyEnabled()
+                || (pushRequest.isPresent() && !containerImageConfig.isPushExplicitlyDisabled());
         if (!buildContainerImage && !pushContainerImage) {
             return;
         }
@@ -209,7 +213,7 @@ public class JibProcessor {
             log.info("Starting container image build");
             JibContainer container = jibContainerBuilder.containerize(containerizer);
             log.infof("%s container image %s (%s)\n",
-                    containerImageConfig.push ? "Pushed" : "Created",
+                    containerImageConfig.isPushExplicitlyEnabled() ? "Pushed" : "Created",
                     container.getTargetImage(),
                     container.getDigest());
             return container;
@@ -225,7 +229,7 @@ public class JibProcessor {
         ImageReference imageReference = ImageReference.of(containerImage.getRegistry().orElse(null),
                 containerImage.getRepository(), containerImage.getTag());
 
-        if (pushRequested || containerImageConfig.push) {
+        if (pushRequested || containerImageConfig.isPushExplicitlyEnabled()) {
             if (!containerImageConfig.registry.isPresent()) {
                 log.info("No container image registry was set, so 'docker.io' will be used");
             }

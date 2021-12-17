@@ -71,8 +71,12 @@ public class DockerProcessor {
             @SuppressWarnings("unused") // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 
@@ -106,8 +110,12 @@ public class DockerProcessor {
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 
@@ -153,7 +161,7 @@ public class DockerProcessor {
             createAdditionalTags(containerImageInfo.getImage(), containerImageInfo.getAdditionalImageTags(), dockerConfig);
         }
 
-        if (pushRequested || containerImageConfig.push) {
+        if (pushRequested || containerImageConfig.isPushExplicitlyEnabled()) {
             String registry = "docker.io";
             if (!containerImageInfo.getRegistry().isPresent()) {
                 log.info("No container image registry was set, so 'docker.io' will be used");

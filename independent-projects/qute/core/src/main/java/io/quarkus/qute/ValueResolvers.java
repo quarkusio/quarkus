@@ -197,7 +197,7 @@ public final class ValueResolvers {
             @Override
             public int getPriority() {
                 // mapper is used in loops so we use a higher priority to jump the queue
-                return 5;
+                return 15;
             }
 
             @Override

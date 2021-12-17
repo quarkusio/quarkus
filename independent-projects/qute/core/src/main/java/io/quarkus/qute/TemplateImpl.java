@@ -98,7 +98,7 @@ class TemplateImpl implements Template {
         private CompletionStage<Void> renderData(Object data, Consumer<String> consumer) {
             CompletableFuture<Void> result = new CompletableFuture<>();
             ResolutionContext rootContext = new ResolutionContextImpl(data,
-                    engine.getEvaluator(), null, this);
+                    engine.getEvaluator(), null, this::getAttribute);
             setAttribute(DataNamespaceResolver.ROOT_CONTEXT, rootContext);
             // Async resolution
             root.resolve(rootContext).whenComplete((r, t) -> {

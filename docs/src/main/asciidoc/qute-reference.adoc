@@ -962,8 +962,8 @@ NOTE: The evaluated template is parsed and evaluated every time the section is e
 [[user_tags]]
 ==== User-defined Tags
 
-User-defined tags can be used to include a template and optionally pass some parameters.
-Let's suppose we have a template called `itemDetail.html`:
+User-defined tags can be used to include a tag template and optionally pass some parameters.
+Let's suppose we have a tag template called `itemDetail.html`:
 
 [source]
 ----
@@ -973,21 +973,21 @@ Let's suppose we have a template called `itemDetail.html`:
 {/if}
 ----
 <1> `showImage` is a named parameter.
-<2> `it` is a special key that is replaced with the first unnamed param of the tag.
+<2> `it` is a special key that is replaced with the first unnamed parameter of the tag.
 <3> (optional) `nested-content` is a special key that will be replaced by the content of the tag.
 
-Now if we register this template under the name `itemDetail.html` and if we add a `UserTagSectionHelper` to the engine:
+In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically.
+For Qute standalone, you need to put the parsed template under the name `itemDetail.html` and register a relevant `UserTagSectionHelper` to the engine:
 
 [source,java]
 ----
 Engine engine = Engine.builder()
                    .addSectionHelper(new UserTagSectionHelper.Factory("itemDetail","itemDetail.html"))
                    .build();
+engine.putTemplate("itemDetail.html", engine.parse("..."));
 ----
 
-NOTE: In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically!
-
-We can include the tag like this:
+Then, we can call the tag like this:
 
 [source,html]
 ----
@@ -1003,6 +1003,11 @@ We can include the tag like this:
 ----
 <1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
 <2> Tag content injected using the `nested-content` key in the tag template.
+
+By default, the tag template can reference data from the parent context.
+For example, the tag above could use the following expression `{items.size}`.
+However, sometimes it might be useful to disable this behavior and execute the tag as an _isolated_ template, i.e. without access to the context of the template that calls the tag.
+In this case, just add `_isolated` or `_isolated=true` argument to the call site, e.g. `{#itemDetail item showImage=true _isolated /}`.
 
 === Rendering Output
 

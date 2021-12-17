@@ -12,17 +12,19 @@ import java.util.function.Supplier;
 
 public class UserTagSectionHelper implements SectionHelper {
 
-    private static final String IT = "it";
     private static final String NESTED_CONTENT = "nested-content";
 
     private final Supplier<Template> templateSupplier;
     private final Map<String, Expression> parameters;
     private final boolean isEmpty;
+    private final boolean isIsolated;
 
-    UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, Expression> parameters, boolean isEmpty) {
+    UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, Expression> parameters, boolean isEmpty,
+            boolean isIsolated) {
         this.templateSupplier = templateSupplier;
         this.parameters = parameters;
         this.isEmpty = isEmpty;
+        this.isIsolated = isIsolated;
     }
 
     @Override
@@ -39,9 +41,16 @@ public class UserTagSectionHelper implements SectionHelper {
                                     context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null)));
                 }
                 try {
+                    ResolutionContext resolutionContext;
                     // Execute the template with the params as the root context object
+                    Object data = Mapper.wrap(evaluatedParams);
+                    if (isIsolated) {
+                        resolutionContext = context.newResolutionContext(data, null);
+                    } else {
+                        resolutionContext = context.resolutionContext().createChild(data, null);
+                    }
                     TemplateImpl tagTemplate = (TemplateImpl) templateSupplier.get();
-                    tagTemplate.root.resolve(context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null))
+                    tagTemplate.root.resolve(resolutionContext)
                             .whenComplete((resultNode, t2) -> {
                                 if (t2 != null) {
                                     result.completeExceptionally(t2);
@@ -58,6 +67,10 @@ public class UserTagSectionHelper implements SectionHelper {
     }
 
     public static class Factory implements SectionHelperFactory<UserTagSectionHelper> {
+
+        private static final String IT = "it";
+        private static final String ISOLATED = "_isolated";
+        private static final String ISOLATED_DEFAULT_VALUE = "false";
 
         private final String name;
         private final String templateId;
@@ -79,17 +92,31 @@ public class UserTagSectionHelper implements SectionHelper {
 
         @Override
         public ParametersInfo getParameters() {
-            return ParametersInfo.builder().addParameter(new Parameter(IT, IT, false)).build();
+            return ParametersInfo.builder()
+                    .addParameter(Parameter.builder(IT).defaultValue(IT))
+                    .addParameter(Parameter.builder(ISOLATED).defaultValue(ISOLATED_DEFAULT_VALUE).optional()
+                            .valuePredicate(v -> ISOLATED.equals(v)))
+                    .build();
         }
 
         @Override
         public Scope initializeBlock(Scope outerScope, BlockInfo block) {
             if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
                 for (Entry<String, String> entry : block.getParameters().entrySet()) {
-                    if (entry.getKey().equals(IT) && entry.getValue().equals(IT)) {
+                    String key = entry.getKey();
+                    String value = entry.getValue();
+                    // {#myTag _isolated=true /}
+                    if (key.equals(ISOLATED)
+                            // {#myTag _isolated /}
+                            || value.equals(ISOLATED)
+                            // IT with default value, e.g. {#myTag foo=bar /}
+                            || (key.equals(IT) && value.equals(IT))) {
                         continue;
+                    } else if (useDefaultedKey(key, value)) {
+                        // As "order" in {#myTag user order /}
+                        key = value;
                     }
-                    block.addExpression(entry.getKey(), entry.getValue());
+                    block.addExpression(key, value);
                 }
                 return outerScope;
             } else {
@@ -100,11 +127,26 @@ public class UserTagSectionHelper implements SectionHelper {
         @Override
         public UserTagSectionHelper initialize(SectionInitContext context) {
             Map<String, Expression> params = new HashMap<>();
+            boolean isolatedValue = false;
             for (Entry<String, String> entry : context.getParameters().entrySet()) {
-                if (entry.getKey().equals(IT) && entry.getValue().equals(IT)) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                if (value.equals(ISOLATED)) {
+                    isolatedValue = true;
                     continue;
+                } else if (key.equals(ISOLATED)) {
+                    continue;
+                } else if (key.equals(IT)) {
+                    if (value.equals(IT)) {
+                        continue;
+                    } else if (isSinglePart(value)) {
+                        // Also register the param with a defaulted key
+                        params.put(value, context.getExpression(key));
+                    }
+                } else if (useDefaultedKey(key, value)) {
+                    key = value;
                 }
-                params.put(entry.getKey(), context.getExpression(entry.getKey()));
+                params.put(key, context.getExpression(key));
             }
             boolean isEmpty = context.getBlocks().size() == 1 && context.getBlocks().get(0).isEmpty();
             final Engine engine = context.getEngine();
@@ -119,7 +161,21 @@ public class UserTagSectionHelper implements SectionHelper {
                     }
                     return template;
                 }
-            }, params, isEmpty);
+            }, params, isEmpty, isolatedValue ? true
+                    : Boolean.parseBoolean(context.getParameterOrDefault(ISOLATED, ISOLATED_DEFAULT_VALUE)));
+        }
+
+        private boolean useDefaultedKey(String key, String value) {
+            // Use the defaulted key if:
+            // 1. The key is a generated id
+            // 2. The value is a single identifier
+            // {#myTag user} should be equivalent to {#myTag user=user} 
+            return LiteralSupport.INTEGER_LITERAL_PATTERN.matcher(key).matches()
+                    && isSinglePart(value);
+        }
+
+        private boolean isSinglePart(String value) {
+            return Expressions.splitParts(value).size() == 1;
         }
 
     }

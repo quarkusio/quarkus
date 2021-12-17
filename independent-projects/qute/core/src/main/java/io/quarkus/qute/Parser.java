@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
@@ -548,28 +549,15 @@ class Parser implements Function<String, Expression>, ParserHelper {
             }
         }
 
+        Predicate<String> included = params::containsKey;
         // Then process positional params
         if (actualSize < factoryParams.size()) {
             // The number of actual params is less than factory params
             // We need to choose the best fit for positional params
             for (String param : paramValues) {
-                Parameter found = null;
-                for (Parameter factoryParam : factoryParams) {
-                    // Prefer params with no default value
-                    if (factoryParam.defaultValue == null && !params.containsKey(factoryParam.name)) {
-                        found = factoryParam;
-                        params.put(factoryParam.name, param);
-                        break;
-                    }
-                }
-                if (found == null) {
-                    for (Parameter factoryParam : factoryParams) {
-                        if (!params.containsKey(factoryParam.name)) {
-                            found = factoryParam;
-                            params.put(factoryParam.name, param);
-                            break;
-                        }
-                    }
+                Parameter found = findFactoryParameter(param, factoryParams, included, true);
+                if (found != null) {
+                    params.put(found.name, param);
                 }
             }
         } else {
@@ -577,15 +565,10 @@ class Parser implements Function<String, Expression>, ParserHelper {
             int generatedIdx = 0;
             for (String param : paramValues) {
                 // Positional param
-                Parameter found = null;
-                for (Parameter factoryParam : factoryParams) {
-                    if (!params.containsKey(factoryParam.name)) {
-                        found = factoryParam;
-                        params.put(factoryParam.name, param);
-                        break;
-                    }
-                }
-                if (found == null) {
+                Parameter found = findFactoryParameter(param, factoryParams, included, false);
+                if (found != null) {
+                    params.put(found.name, param);
+                } else {
                     params.put("" + generatedIdx++, param);
                 }
             }
@@ -593,7 +576,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
         // Use the default values if needed
         factoryParams.stream()
-                .filter(Parameter::hasDefatulValue)
+                .filter(Parameter::hasDefaultValue)
                 .forEach(p -> params.putIfAbsent(p.name, p.defaultValue));
 
         // Find undeclared mandatory params
@@ -607,6 +590,24 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
 
         params.forEach(block::addParameter);
+    }
+
+    private Parameter findFactoryParameter(String paramValue, List<Parameter> factoryParams, Predicate<String> included,
+            boolean noDefaultValueTakesPrecedence) {
+        if (noDefaultValueTakesPrecedence) {
+            for (Parameter param : factoryParams) {
+                // Params with no default value take precedence
+                if (param.accepts(paramValue) && !param.hasDefaultValue() && !included.test(param.name)) {
+                    return param;
+                }
+            }
+        }
+        for (Parameter param : factoryParams) {
+            if (param.accepts(paramValue) && !included.test(param.name)) {
+                return param;
+            }
+        }
+        return null;
     }
 
     /**

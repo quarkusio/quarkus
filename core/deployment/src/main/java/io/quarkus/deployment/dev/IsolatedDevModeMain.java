@@ -3,13 +3,18 @@ package io.quarkus.deployment.dev;
 import static io.quarkus.deployment.dev.testing.MessageFormat.BLUE;
 import static java.util.Collections.singleton;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UncheckedIOException;
 import java.net.BindException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -63,6 +68,7 @@ import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
+import io.quarkus.utilities.JavaBinFinder;
 
 public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<String, Object>>, Closeable {
 
@@ -145,6 +151,13 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 runner = start.runMainClass(context.getArgs());
                 RuntimeUpdatesProcessor.INSTANCE.setConfiguredInstrumentationEnabled(
                         runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false));
+
+                try {
+                    startArthasIfNecessary(runner);
+                } catch (IOException e) {
+                    log.warn("Unable to start Arthas diagnostics", e);
+                }
+
                 firstStartCompleted = true;
             } catch (Throwable t) {
                 Throwable rootCause = t;
@@ -208,6 +221,118 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     }));
         }
         fsWatchUtil.observe(watchers, 500);
+    }
+
+    private void startArthasIfNecessary(RunningQuarkusApplication runner) throws IOException {
+        var arthasEnabledOpt = runner.getConfigValue("quarkus.arthas.enabled", Boolean.class);
+        if (arthasEnabledOpt.isEmpty() || !arthasEnabledOpt.get()) {
+            return;
+        }
+
+        var parentDirOpt = runner.getConfigValue("quarkus.arthas.jar-directory", String.class);
+        if (parentDirOpt.isEmpty()) {
+            // should not happen
+            return;
+        }
+        var parentDir = Paths.get(parentDirOpt.get());
+        if (!Files.exists(parentDir)) {
+            Files.createDirectory(parentDir);
+        }
+
+        var arthasHttpPortOpt = runner.getConfigValue("quarkus.arthas.http-port", Integer.class);
+        if (arthasHttpPortOpt.isEmpty()) {
+            // should not happen
+            return;
+        }
+        var arthasHttpPort = arthasHttpPortOpt.get();
+
+        var arthasVersionOpt = runner.getConfigValue("quarkus.arthas.version", String.class);
+        if (arthasVersionOpt.isEmpty()) {
+            // should not happen
+            return;
+        }
+        var arthasVersion = arthasVersionOpt.get();
+        var arthasDir = parentDir.resolve(String.format("arthas-%s", arthasVersion));
+        if (!Files.exists(arthasDir)) {
+            Files.createDirectory(arthasDir);
+        }
+
+        Runnable r;
+        if (!Files.exists(toArthasJar(arthasDir))) {
+            r = () -> startArthas(downloadArthas(arthasDir, arthasVersion), arthasHttpPort);
+        } else {
+            r = () -> startArthas(toArthasJar(arthasDir), arthasHttpPort);
+        }
+        var arthasThread = new Thread(r);
+        arthasThread.setName("Arthas thread");
+        arthasThread.setDaemon(true);
+        arthasThread.start();
+    }
+
+    private Path downloadArthas(Path arthasDir, String version) {
+        var downloadURL = String.format(
+                "https://repo.maven.apache.org/maven2/com/taobao/arthas/arthas-boot/%s/arthas-boot-%s-jar-with-dependencies.jar",
+                version, version);
+        try {
+            log.debug("Attempting to download Arthas from " + downloadURL);
+            var arthasJar = toArthasJar(arthasDir).toFile();
+            try (BufferedInputStream in = new BufferedInputStream(new URL(downloadURL).openStream());
+                    FileOutputStream fileOutputStream = new FileOutputStream(arthasJar)) {
+                byte[] dataBuffer = new byte[10240];
+                int bytesRead;
+                while ((bytesRead = in.read(dataBuffer, 0, 10240)) != -1) {
+                    fileOutputStream.write(dataBuffer, 0, bytesRead);
+                }
+            }
+            log.debug("Arthas downloaded");
+            return toArthasJar(arthasDir);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private void startArthas(Path arthasJar, Integer httpPort) {
+        log.debug("Attempting to start Arthas");
+        ProcessBuilder processBuilder = new ProcessBuilder(JavaBinFinder.findBin(),
+                "-jar", arthasJar.toAbsolutePath().toString(),
+                "" + ProcessHandle.current().pid(),
+                "--http-port",
+                "" + httpPort,
+                "--target-ip",
+                "localhost")
+                        .directory(arthasJar.getParent().toFile());
+
+        if (log.isDebugEnabled()) {
+            processBuilder.inheritIO();
+        } else {
+            processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD.file())
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD.file());
+
+        }
+
+        try {
+            var arthasProcess = processBuilder.start();
+            try {
+                // attaching to the process takes a while
+                // TODO: we should probably tail the logs instead of waiting
+                Thread.sleep(5_000);
+            } catch (InterruptedException ignored) {
+
+            }
+            if (arthasProcess.isAlive()) {
+                log.infof("Arthas started and is accessible at http://localhost:%d", 8563);
+                // NOTE: we do not need to take care of killing the Arthas process when Quarkus stops, because the OS will reap it automatically
+                // as a child process of a dead process
+            } else {
+                log.warn("Arthas process did not start properly");
+            }
+        } catch (IOException e) {
+            log.warn("Unable to start Arthas", e);
+        }
+    }
+
+    private Path toArthasJar(Path arthasDir) {
+        return arthasDir.resolve("arthas-boot.jar");
     }
 
     public void restartCallback(Set<String> changedResources, ClassScanResult result) {

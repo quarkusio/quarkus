@@ -176,8 +176,12 @@ public class S2iProcessor {
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 
@@ -212,8 +216,12 @@ public class S2iProcessor {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             NativeImageBuildItem nativeImage) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 

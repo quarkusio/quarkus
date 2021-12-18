@@ -615,6 +615,8 @@ ReactiveRedisClient defaultReactiveRedisClient = ReactiveRedisClient.createClien
 ReactiveRedisClient namedReactiveRedisClient = ReactiveRedisClient.createClient("second");
 ----
 
+Please see also <<redis-reference.adoc#custom_redis_commands,How to use custom Redis Commands>>.
+
 [[config-reference]]
 == Configuration Reference
 

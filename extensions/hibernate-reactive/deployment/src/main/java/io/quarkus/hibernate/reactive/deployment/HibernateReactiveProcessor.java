@@ -249,12 +249,6 @@ public final class HibernateReactiveProcessor {
         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME,
                 persistenceUnitConfig.database.charset.name());
 
-        persistenceUnitConfig.database.defaultCatalog.ifPresent(
-                catalog -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
-
-        persistenceUnitConfig.database.defaultSchema.ifPresent(
-                schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
-
         if (persistenceUnitConfig.database.globallyQuotedIdentifiers) {
             desc.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");
         }

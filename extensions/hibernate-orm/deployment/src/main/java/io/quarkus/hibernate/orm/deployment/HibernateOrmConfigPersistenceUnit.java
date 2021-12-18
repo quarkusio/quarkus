@@ -316,18 +316,6 @@ public class HibernateOrmConfigPersistenceUnit {
         private static final String DEFAULT_CHARSET = "UTF-8";
 
         /**
-         * The default catalog to use for the database objects.
-         */
-        @ConfigItem
-        public Optional<String> defaultCatalog;
-
-        /**
-         * The default schema to use for the database objects.
-         */
-        @ConfigItem
-        public Optional<String> defaultSchema;
-
-        /**
          * The charset of the database.
          * <p>
          * Used for DDL generation and also for the SQL import scripts.
@@ -342,9 +330,7 @@ public class HibernateOrmConfigPersistenceUnit {
         public boolean globallyQuotedIdentifiers;
 
         public boolean isAnyPropertySet() {
-            return defaultCatalog.isPresent()
-                    || defaultSchema.isPresent()
-                    || !DEFAULT_CHARSET.equals(charset.name())
+            return !DEFAULT_CHARSET.equals(charset.name())
                     || globallyQuotedIdentifiers;
         }
     }

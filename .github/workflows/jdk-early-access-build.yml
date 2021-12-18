@@ -23,6 +23,7 @@ env:
   JDK_DIST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkDistribution || 'temurin' }}
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
+  MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
   JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test

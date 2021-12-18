@@ -118,4 +118,10 @@ public final class OracleMetadataOverrides {
                 Collections.singleton("oracle/nativeimage/Target_java_io_ObjectStreamClass.class"));
     }
 
+    @BuildStep
+    RemovedResourceBuildItem enhancedCharsetSubstitutions() {
+        return new RemovedResourceBuildItem(GACT.fromString("com.oracle.database.jdbc:ojdbc11"),
+                Collections.singleton("oracle/nativeimage/CharacterSetFeature.class"));
+    }
+
 }

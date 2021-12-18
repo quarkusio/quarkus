@@ -15,7 +15,7 @@
         <relocation>
             <groupId>io.quarkiverse.vault</groupId>
             <artifactId>quarkus-vault</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <message>${project.groupId}:${project.artifactId} was relocated to io.quarkiverse.vault:${project.artifactId}. Please, update its groupId in the dependency declaration in your project configuration. For more information about this change, please, refer to https://github.com/quarkusio/quarkus/wiki/Migration-Guide-2.6</message>
         </relocation>
     </distributionManagement>

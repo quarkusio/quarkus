@@ -14,7 +14,7 @@
     <description>The Apache Kafka Avro integration tests module</description>
 
     <properties>
-        <apicurio.version>1.2.2.Final</apicurio.version>
+        <apicurio.version>1.3.2.Final</apicurio.version>
     </properties>
 
     <dependencies>

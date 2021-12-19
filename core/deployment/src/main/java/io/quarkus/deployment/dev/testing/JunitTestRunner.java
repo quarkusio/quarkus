@@ -501,17 +501,19 @@ public class JunitTestRunner {
 
         //we also only run tests from the current module, which we can also revisit later
         Indexer indexer = new Indexer();
-        try (Stream<Path> files = Files.walk(Paths.get(moduleInfo.getTest().get().getClassesPath()))) {
-            files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
-                try (InputStream in = Files.newInputStream(s)) {
-                    indexer.index(in);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        moduleInfo.getTest().ifPresent(test -> {
+            try (Stream<Path> files = Files.walk(Paths.get(test.getClassesPath()))) {
+                files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
+                    try (InputStream in = Files.newInputStream(s)) {
+                        indexer.index(in);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         Index index = indexer.complete();
         //we now have all the classes by name

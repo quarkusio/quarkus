@@ -182,8 +182,8 @@ Please see xref:security-openid-connect.adoc#integration-testing-keycloak-devser
 [[keycloak-initialization]]
 === Keycloak Initialization
 
-The `quay.io/keycloak/keycloak:15.0.2` image which contains a `Keycloak` distribution powered by `WildFly` is currently used to start a container by default.
-`quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image name. For example, set it to `quay.io/keycloak/keycloak-x:15.0.2` to use a `Keycloak-X` distribution powered by `Quarkus`. `Dev Services for Keycloak` will use a Keycloak-X based image by default soon.
+The `quay.io/keycloak/keycloak-x:16.0.0` image which contains a `Keycloak-X` distribution powered by `Quarkus` is used to start a container by default.
+`quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image name. For example, set it to `quay.io/keycloak/keycloak:16.0.0` to use a `Keycloak` distribution powered by `WildFly`.
 
 `Dev Services for Keycloak` will initialize a launched Keycloak server next.
 
@@ -202,8 +202,6 @@ Also the Keycloak page offers an option to `Sign In To Keycloak To Configure Rea
 image::dev-ui-keycloak-admin.png[alt=Dev UI OpenId Connect Keycloak Page - Keycloak Admin,role="center"]
 
 Sign in to Keycloak as `admin:admin` in order to further customize the realm properties, create or import a new realm, export the realm.
-
-Note that at the moment, if you use a `Keycloak-X` image then auto-importing a custom realm file does not work - for now use a `Keycloak Admin` Dev UI option to import a custom realm if required. In this case you may also want to set `quarkus.keycloak.devservices.create-realm=false` for `Dev Services for Keycloak` to avoid creating a default realm.
 
 Note that even if you initialize Keycloak from a realm file, it is still needed to set `quarkus.keycloak.devservices.users` property if a `password` grant is used to acquire the tokens to test the OIDC `service` applications.
 

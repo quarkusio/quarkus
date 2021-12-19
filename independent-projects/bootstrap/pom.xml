@@ -55,7 +55,7 @@
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <smallrye-common.version>1.8.0</smallrye-common.version>
         <gradle-tooling.version>7.3.2</gradle-tooling.version>
-        <quarkus-fs-util.version>0.0.3</quarkus-fs-util.version>
+        <quarkus-fs-util.version>0.0.4</quarkus-fs-util.version>
     </properties>
     <modules>
         <module>bom</module>

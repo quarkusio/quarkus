@@ -105,7 +105,7 @@ import io.quarkus.runtime.LaunchMode;
  * <p>
  * You can use this dev mode in a remote container environment with {@code remote-dev}.
  */
-@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
 public class DevMojo extends AbstractMojo {
 
     private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";

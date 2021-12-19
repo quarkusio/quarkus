@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -33,8 +31,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public class QuteDevConsoleProcessor {
-
-    private static final Logger LOG = Logger.getLogger(QuteDevConsoleProcessor.class);
 
     @BuildStep
     @Record(value = STATIC_INIT, optional = true)
@@ -122,7 +118,7 @@ public class QuteDevConsoleProcessor {
         for (String variant : variants) {
             String source = templatePaths.stream().filter(p -> p.getPath().equals(variant))
                     .map(TemplatePathBuildItem::getContent).findFirst()
-                    .orElse(null);
+                    .orElse("");
             source = source.replace("\n", "\\n");
             variantsMap.put(variant, source);
         }

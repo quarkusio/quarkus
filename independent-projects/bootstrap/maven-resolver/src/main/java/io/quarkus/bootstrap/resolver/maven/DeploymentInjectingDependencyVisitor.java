@@ -338,6 +338,13 @@ public class DeploymentInjectingDependencyVisitor {
             throws BootstrapDependencyProcessingException {
         log.debugf("Injecting deployment dependency %s", extDep.info.deploymentArtifact);
         final DependencyNode deploymentNode = collectDependencies(extDep.info.deploymentArtifact, extDep.exclusions);
+        if (deploymentNode.getChildren().isEmpty()) {
+            throw new BootstrapDependencyProcessingException(
+                    "Failed to collect dependencies of " + deploymentNode.getArtifact()
+                            + ": either its POM could not be resolved from the available Maven repositories "
+                            + "or the artifact does not have any dependencies while at least a dependency on the runtime artifact "
+                            + extDep.info.runtimeArtifact + " is expected");
+        }
 
         if (resolver.getProjectModuleResolver() != null) {
             clearReloadable(deploymentNode);

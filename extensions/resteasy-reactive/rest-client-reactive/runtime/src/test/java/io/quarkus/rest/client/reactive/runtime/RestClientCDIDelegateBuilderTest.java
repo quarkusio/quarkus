@@ -8,6 +8,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -118,6 +119,7 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.connectionTTL = Optional.of(30000); // value in milliseconds
         clientConfig.connectionPoolSize = Optional.of(103);
         clientConfig.maxRedirects = Optional.of(104);
+        clientConfig.headers = Collections.emptyMap();
 
         RestClientsConfig configRoot = new RestClientsConfig();
         configRoot.multipartPostEncoderMode = Optional.of("HTML5");

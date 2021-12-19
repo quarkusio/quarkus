@@ -143,7 +143,9 @@ public class QuarkusIntegrationTestExtension
                     testProfileAndProperties.testProfile != null
                             && testProfileAndProperties.testProfile.disableGlobalTestResources(),
                     devServicesProps, containerNetworkId == null ? Optional.empty() : Optional.of(containerNetworkId));
-            testResourceManager.init();
+            testResourceManager.init(
+                    testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
+                            : null);
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);

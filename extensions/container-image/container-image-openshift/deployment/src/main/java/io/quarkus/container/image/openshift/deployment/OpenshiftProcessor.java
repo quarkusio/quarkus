@@ -222,8 +222,12 @@ public class OpenshiftProcessor {
             JarBuildItem jar) {
 
         OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 
@@ -283,8 +287,13 @@ public class OpenshiftProcessor {
             NativeImageBuildItem nativeImage) {
 
         OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 

@@ -16,6 +16,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -94,6 +95,14 @@ public class RestClientCDIDelegateBuilder<T> {
             // configuration bean contains value in milliseconds
             int connectionTTLSeconds = connectionTTL.get() / 1000;
             builder.property(QuarkusRestClientProperties.CONNECTION_TTL, connectionTTLSeconds);
+        }
+
+        Map<String, String> headers = clientConfigByClassName().headers;
+        if (headers.isEmpty()) {
+            headers = clientConfigByConfigKey().headers;
+        }
+        if ((headers != null) && !headers.isEmpty()) {
+            builder.property(QuarkusRestClientProperties.STATIC_HEADERS, headers);
         }
     }
 

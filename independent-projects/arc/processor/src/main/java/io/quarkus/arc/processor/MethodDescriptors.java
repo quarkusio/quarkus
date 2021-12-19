@@ -18,7 +18,6 @@ import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptorInvocation;
 import io.quarkus.arc.impl.InvocationContexts;
 import io.quarkus.arc.impl.MapValueSupplier;
-import io.quarkus.arc.impl.Objects;
 import io.quarkus.arc.impl.Reflections;
 import io.quarkus.arc.impl.RemovedBeanImpl;
 import io.quarkus.arc.impl.Sets;
@@ -84,32 +83,7 @@ public final class MethodDescriptors {
     public static final MethodDescriptor OBJECT_EQUALS = MethodDescriptor.ofMethod(Object.class, "equals", boolean.class,
             Object.class);
 
-    /**
-     * No longer used - will be deleted
-     * 
-     * @deprecated
-     */
-    @Deprecated
-    public static final MethodDescriptor OBJECT_HASH_CODE = MethodDescriptor.ofMethod(Object.class, "hashCode", int.class);
-
-    /**
-     * No longer used - will be deleted
-     * 
-     * @deprecated
-     */
-    @Deprecated
-    public static final MethodDescriptor OBJECT_TO_STRING = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
-
     public static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
-
-    /**
-     * No longer used - will be deleted
-     * 
-     * @deprecated
-     */
-    @Deprecated
-    public static final MethodDescriptor OBJECTS_REFERENCE_EQUALS = MethodDescriptor.ofMethod(Objects.class, "referenceEquals",
-            boolean.class, Object.class, Object.class);
 
     public static final MethodDescriptor INTERCEPTOR_INVOCATION_POST_CONSTRUCT = MethodDescriptor.ofMethod(
             InterceptorInvocation.class,

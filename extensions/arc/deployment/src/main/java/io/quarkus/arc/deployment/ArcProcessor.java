@@ -322,6 +322,7 @@ public class ArcProcessor {
             });
         }
         builder.setTransformUnproxyableClasses(arcConfig.transformUnproxyableClasses);
+        builder.setFailOnInterceptedPrivateMethod(arcConfig.failOnInterceptedPrivateMethod);
         builder.setJtaCapabilities(capabilities.isPresent(Capability.TRANSACTIONS));
         builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);
         builder.setAllowMocking(launchModeBuildItem.getLaunchMode() == LaunchMode.TEST);
@@ -783,7 +784,7 @@ public class ArcProcessor {
                 ResultHandle injectionPointAnnotations = BeanGenerator.collectInjectionPointAnnotations(null, null,
                         beanDeployment,
                         mc, injectionPoint, annotationLiterals,
-                        annotationName -> !annotationName.equals(DotNames.DEPRECATED));
+                        beanRegistrationPhase.getBeanProcessor().getInjectionPointAnnotationsPredicate());
                 ResultHandle javaMember = BeanGenerator.getJavaMemberHandle(mc, injectionPoint,
                         ReflectionRegistration.NOOP);
                 ResultHandle container = mc

@@ -180,6 +180,7 @@ public class ResteasyReactiveCommonProcessor {
         }
         if (filterItem instanceof ContainerRequestFilterBuildItem) {
             interceptor.setNonBlockingRequired(((ContainerRequestFilterBuildItem) filterItem).isNonBlockingRequired());
+            interceptor.setReadBody(((ContainerRequestFilterBuildItem) filterItem).isReadBody());
         }
         if (interceptors instanceof PreMatchInterceptorContainer
                 && ((ContainerRequestFilterBuildItem) filterItem).isPreMatching()) {

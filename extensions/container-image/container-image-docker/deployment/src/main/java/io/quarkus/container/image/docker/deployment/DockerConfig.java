@@ -42,6 +42,11 @@ public class DockerConfig {
     public Optional<List<String>> cacheFrom;
 
     /**
+     * The networking mode for the RUN instructions during build
+     */
+    public Optional<String> network;
+
+    /**
      * Name of binary used to execute the docker commands.
      */
     @ConfigItem(defaultValue = "docker")

@@ -57,7 +57,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <gitflow-incremental-builder.version>3.14.4</gitflow-incremental-builder.version>
+        <gitflow-incremental-builder.version>3.14.5</gitflow-incremental-builder.version>
         <quarkus-platform-bom-plugin.version>0.0.40</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
@@ -66,7 +66,7 @@
         <!-- Dependency versions -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.42.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.43.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.0</grpc-jprotoc.version>
         <protoc.version>3.19.1</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>

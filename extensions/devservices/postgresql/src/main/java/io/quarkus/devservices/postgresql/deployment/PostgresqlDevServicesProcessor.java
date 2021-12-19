@@ -16,6 +16,8 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.runtime.LaunchMode;
@@ -24,7 +26,12 @@ public class PostgresqlDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(PostgresqlDevServicesProcessor.class);
 
-    public static final String TAG = "13.2";
+    public static final String TAG = "14.1";
+
+    @BuildStep
+    ConsoleCommandBuildItem psqlCommand(DevServicesLauncherConfigResultBuildItem devServices) {
+        return new ConsoleCommandBuildItem(new PostgresCommand(devServices));
+    }
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupPostgres(
@@ -67,7 +74,9 @@ public class PostgresqlDevServicesProcessor {
         private String hostName = null;
 
         public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
-            super(DockerImageName.parse(imageName.orElse(PostgreSQLContainer.IMAGE + ":" + PostgresqlDevServicesProcessor.TAG))
+            super(DockerImageName
+                    .parse(imageName
+                            .orElse("docker.io/" + PostgreSQLContainer.IMAGE + ":" + PostgresqlDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

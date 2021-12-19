@@ -108,4 +108,22 @@ public class UserTagTest {
                         .data("items", Map.of(1, Map.of("quantity", 10, "unit", "kg"))).render());
     }
 
+    @Test
+    public void testDefaultedKey() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
+                .strictRendering(false)
+                .build();
+
+        Template tag = engine.parse("{it}:{name}:{isCool}:{age}:{foo.bar}:{foo}");
+        engine.putTemplate("my-tag-id", tag);
+        assertEquals("Ondrej:Ondrej:true:2:NOT_FOUND:NOT_FOUND",
+                engine.parse("{#myTag name age=2 isCool foo.length _isolated=true/}")
+                        .data("name", "Ondrej", "isCool", true, "foo", "bzzz").render());
+        assertEquals("Ondrej:Ondrej:true:2:NOT_FOUND:NOT_FOUND",
+                engine.parse("{#myTag name age=2 isCool foo.length _isolated /}")
+                        .data("name", "Ondrej", "isCool", true, "foo", "bzzz").render());
+    }
+
 }

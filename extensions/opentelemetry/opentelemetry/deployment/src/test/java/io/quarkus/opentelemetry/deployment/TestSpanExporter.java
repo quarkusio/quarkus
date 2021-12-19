@@ -5,9 +5,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -20,8 +20,8 @@ import io.quarkus.arc.Unremovable;
 @Unremovable
 @ApplicationScoped
 public class TestSpanExporter implements SpanExporter {
-    private final List<SpanData> finishedSpanItems = new ArrayList<>();
-    private boolean isStopped = false;
+    private final List<SpanData> finishedSpanItems = new CopyOnWriteArrayList<>();
+    private volatile boolean isStopped = false;
 
     /**
      * Careful when retrieving the list of finished spans. There is a chance when the response is already sent to the
@@ -30,33 +30,25 @@ public class TestSpanExporter implements SpanExporter {
      * spans.
      */
     public List<SpanData> getFinishedSpanItems(int spanCount) {
-        synchronized (this) {
-            assertSpanCount(spanCount);
-            return finishedSpanItems.stream().sorted(comparingLong(SpanData::getStartEpochNanos).reversed())
-                    .collect(Collectors.toList());
-        }
+        assertSpanCount(spanCount);
+        return finishedSpanItems.stream().sorted(comparingLong(SpanData::getStartEpochNanos).reversed())
+                .collect(Collectors.toList());
     }
 
     public void assertSpanCount(int spanCount) {
-        synchronized (this) {
-            await().atMost(30, SECONDS).untilAsserted(() -> assertEquals(spanCount, finishedSpanItems.size()));
-        }
+        await().atMost(30, SECONDS).untilAsserted(() -> assertEquals(spanCount, finishedSpanItems.size()));
     }
 
     public void reset() {
-        synchronized (this) {
-            finishedSpanItems.clear();
-        }
+        finishedSpanItems.clear();
     }
 
     @Override
     public CompletableResultCode export(Collection<SpanData> spans) {
-        synchronized (this) {
-            if (isStopped) {
-                return CompletableResultCode.ofFailure();
-            }
-            finishedSpanItems.addAll(spans);
+        if (isStopped) {
+            return CompletableResultCode.ofFailure();
         }
+        finishedSpanItems.addAll(spans);
         return CompletableResultCode.ofSuccess();
     }
 
@@ -67,10 +59,8 @@ public class TestSpanExporter implements SpanExporter {
 
     @Override
     public CompletableResultCode shutdown() {
-        synchronized (this) {
-            finishedSpanItems.clear();
-            isStopped = true;
-        }
+        finishedSpanItems.clear();
+        isStopped = true;
         return CompletableResultCode.ofSuccess();
     }
 }

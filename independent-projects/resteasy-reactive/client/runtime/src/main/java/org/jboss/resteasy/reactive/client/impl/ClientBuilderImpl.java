@@ -57,6 +57,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private HttpClientOptions httpClientOptions = new HttpClientOptions();
     private ClientLogger clientLogger = new DefaultClientLogger();
+    private String userAgent = "Resteasy Reactive Client";
 
     @Override
     public ClientBuilder withConfig(Configuration config) {
@@ -198,7 +199,7 @@ public class ClientBuilderImpl extends ClientBuilder {
                 followRedirects,
                 multiQueryParamMode,
                 loggingScope,
-                clientLogger);
+                clientLogger, userAgent);
 
     }
 
@@ -276,6 +277,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilderImpl trustAll(boolean trustAll) {
         this.trustAll = trustAll;
+        return this;
+    }
+
+    public ClientBuilderImpl setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
         return this;
     }
 

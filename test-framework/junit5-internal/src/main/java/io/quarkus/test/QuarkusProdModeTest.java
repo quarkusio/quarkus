@@ -373,7 +373,7 @@ public class QuarkusProdModeTest
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            manager.init();
+            manager.init(null);
             testResourceProperties = manager.start();
             store.put(TestResourceManager.class.getName(), manager);
             store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {

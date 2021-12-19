@@ -56,11 +56,14 @@ public class CompilerFlagsTest {
                         new CompilerFlags(setOf(), listOf("-target", "3"), null, null, null)),
                 () -> assertEquals(
                         new CompilerFlags(setOf(), listOf(), "1", "2", "3"),
-                        new CompilerFlags(setOf(), listOf("--release", "1", "-source", "2", "-target", "3"), null, null, null)),
+                        new CompilerFlags(setOf(), listOf("--release", "1"), null, null, null)),
                 () -> assertEquals(
-                        new CompilerFlags(setOf(), listOf("--release", "4", "-source", "5", "-target", "6"), "1", "2", "3"),
-                        new CompilerFlags(setOf(), listOf("--release", "1", "-source", "2", "-target", "3", "--release", "4",
-                                "-source", "5", "-target", "6"), null, null, null)));
+                        new CompilerFlags(setOf(), listOf(), null, "2", "3"),
+                        new CompilerFlags(setOf(), listOf("-source", "2", "-target", "3"), null, null, null)),
+                () -> assertEquals(
+                        new CompilerFlags(setOf(), listOf("-source", "5", "-target", "6"), null, "2", "3"),
+                        new CompilerFlags(setOf(), listOf("-source", "2", "-target", "3", "-source", "5", "-target", "6"),
+                                null, null, null)));
     }
 
     @Test
@@ -68,8 +71,11 @@ public class CompilerFlagsTest {
         assertAll(
                 () -> assertEquals(
                         new CompilerFlags(setOf("-b", "-c", "-d"), listOf("-a", "-b", "-c"), "1", "2", "3"),
-                        new CompilerFlags(setOf(),
-                                listOf("-d", "--release", "1", "-source", "2", "-target", "3", "-a", "-b", "-c"),
+                        new CompilerFlags(setOf(), listOf("-d", "--release", "1", "-a", "-b", "-c"), null, null, null)));
+        assertAll(
+                () -> assertEquals(
+                        new CompilerFlags(setOf("-b", "-c", "-d"), listOf("-a", "-b", "-c"), null, "2", "3"),
+                        new CompilerFlags(setOf(), listOf("-d", "-source", "2", "-target", "3", "-a", "-b", "-c"),
                                 null, null, null)));
     }
 

@@ -236,6 +236,7 @@
                 <module>maven</module>
                 <module>scala</module>
                 <module>kotlin</module>
+                <module>kotlin-serialization</module>
                 <module>mongodb-panache</module>
                 <module>mongodb-panache-kotlin</module>
                 <module>mongodb-rest-data-panache</module>
@@ -261,12 +262,12 @@
                 <module>injectmock</module>
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>
-                <module>reactive-messaging-http</module>
                 <module>reactive-messaging-rabbitmq</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
+                <module>rest-client-reactive-kotlin-serialization</module>
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>

@@ -40,6 +40,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
@@ -150,7 +151,8 @@ public class NativeImageBuildStep {
             List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
             List<UnsupportedOSBuildItem> unsupportedOses,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled) {
+            Optional<ProcessInheritIODisabled> processInheritIODisabled,
+            Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
             copySourcesToSourceCache(outputTargetBuildItem);
@@ -176,7 +178,7 @@ public class NativeImageBuildStep {
 
         NativeImageBuildRunner buildRunner = getNativeImageBuildRunner(nativeConfig, outputDir,
                 nativeImageName, resultingExecutableName);
-        buildRunner.setup(processInheritIODisabled.isPresent());
+        buildRunner.setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
         final GraalVM.Version graalVMVersion = buildRunner.getGraalVMVersion();
 
         if (graalVMVersion.isDetected()) {
@@ -224,7 +226,8 @@ public class NativeImageBuildStep {
 
             NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs, nativeImageName,
                     resultingExecutableName, outputDir,
-                    nativeConfig.debug.enabled, processInheritIODisabled.isPresent());
+                    nativeConfig.debug.enabled,
+                    processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
             if (buildNativeResult.getExitCode() != 0) {
                 throw imageGenerationFailed(buildNativeResult.getExitCode(), nativeConfig.isContainerBuild());
             }
@@ -246,6 +249,8 @@ public class NativeImageBuildStep {
                             graalVMVersion.version.toString(),
                             graalVMVersion.javaFeatureVersion,
                             graalVMVersion.distribution.name()));
+        } catch (ImageGenerationFailureException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
         } finally {
@@ -374,16 +379,16 @@ public class NativeImageBuildStep {
     private RuntimeException imageGenerationFailed(int exitValue, boolean isContainerBuild) {
         if (exitValue == OOM_ERROR_VALUE) {
             if (isContainerBuild && !SystemUtils.IS_OS_LINUX) {
-                return new RuntimeException("Image generation failed. Exit code was " + exitValue
+                return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
                         + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
                         + QUARKUS_XMX_PROPERTY + "\" property");
             } else {
-                return new RuntimeException("Image generation failed. Exit code was " + exitValue
+                return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
                         + " which indicates an out of memory error. Consider increasing the Xmx value for native image generation by setting the \""
                         + QUARKUS_XMX_PROPERTY + "\" property");
             }
         } else {
-            return new RuntimeException("Image generation failed. Exit code: " + exitValue);
+            return new ImageGenerationFailureException("Image generation failed. Exit code: " + exitValue);
         }
     }
 
@@ -846,6 +851,13 @@ public class NativeImageBuildStep {
                     }
                 }
             }
+        }
+    }
+
+    private static class ImageGenerationFailureException extends RuntimeException {
+
+        private ImageGenerationFailureException(String message) {
+            super(message);
         }
     }
 }

@@ -84,13 +84,15 @@ public class ClientImpl implements Client {
     final HandlerChain handlerChain;
     final Vertx vertx;
     private final MultiQueryParamMode multiQueryParamMode;
+    private final String userAgent;
 
     public ClientImpl(HttpClientOptions options, ConfigurationImpl configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext, boolean followRedirects,
             MultiQueryParamMode multiQueryParamMode,
             LoggingScope loggingScope,
-            ClientLogger clientLogger) {
+            ClientLogger clientLogger, String userAgent) {
+        this.userAgent = userAgent;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
         // TODO: ssl context
         // TODO: hostnameVerifier
@@ -172,6 +174,10 @@ public class ClientImpl implements Client {
     void abortIfClosed() {
         if (isClosed)
             throw new IllegalStateException("Client is closed");
+    }
+
+    public String getUserAgent() {
+        return userAgent;
     }
 
     @Override

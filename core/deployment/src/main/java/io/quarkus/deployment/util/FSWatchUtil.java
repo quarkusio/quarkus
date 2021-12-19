@@ -32,6 +32,10 @@ public class FSWatchUtil {
      */
     public void observe(Collection<Watcher> watchers,
             long intervalMs) {
+        if (watchers.isEmpty()) {
+            return;
+        }
+
         ThreadFactory tf = (Runnable r) -> new Thread(r, "FSWatchUtil");
         ExecutorService executorService = Executors.newSingleThreadExecutor(tf);
         executorService.execute(

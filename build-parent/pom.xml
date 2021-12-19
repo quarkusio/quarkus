@@ -20,10 +20,10 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.6.0</kotlin.version>
+        <kotlin.version>1.6.10</kotlin.version>
         <dokka.version>1.6.0</dokka.version>
         <scala.version>2.12.13</scala.version>
-        <scala-maven-plugin.version>4.5.4</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.5.6</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
@@ -65,7 +65,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.4</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>7.3.1</gradle-wrapper.version>
+        <gradle-wrapper.version>7.3.2</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
 
@@ -86,10 +86,13 @@
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
         <keycloak.docker.image>quay.io/keycloak/keycloak:15.0.2</keycloak.docker.image>
 
-        <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
+        <unboundid-ldap.version>6.0.3</unboundid-ldap.version>
 
         <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.0.0</wiremock-maven-plugin.version>
+
+        <!-- Artemis test dependencies -->
+        <artemis.version>2.19.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -320,6 +323,60 @@
                 <version>${subethasmtp.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <!-- Artemis test dependencies -->
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-server</artifactId>
+                <version>${artemis.version}</version>
+                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.geronimo.specs</groupId>
+                        <artifactId>geronimo-json_1.0_spec</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.johnzon</groupId>
+                        <artifactId>johnzon-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.logmanager</groupId>
+                        <artifactId>jboss-logmanager</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <!-- Excluding the API jar as the impl jar also contains the API -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-amqp-protocol</artifactId>
+                <version>${artemis.version}</version>
+                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                       <groupId>org.apache.activemq</groupId>
+                       <artifactId>artemis-server</artifactId>
+                    </exclusion>
+                    <!-- Excluding the API jar as the impl jar also contains the API -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -505,6 +562,11 @@
                                             <exclude>org.slf4j:slf4j-jdk14</exclude>
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
+                                            <!-- Ban Logback implementations -->
+                                            <exclude>ch.qos.logback:logback-classic</exclude>
+                                            <exclude>ch.qos.logback:logback-core</exclude>
+                                            <exclude>ch.qos.logback:logback-access</exclude>
+                                            <exclude>ch.qos.logback:logback</exclude>
                                             <exclude>org.osgi:org.osgi.annotation.versioning</exclude>
                                             <!-- Ban Spring Dependencies (since we have our own jars)-->
                                             <exclude>org.springframework:spring-core</exclude>

@@ -330,7 +330,7 @@
         "supported-maven-versions": "[3.6.2,)",
         "proposed-maven-version": "3.8.4",
         "maven-wrapper-version": "0.7.7",
-        "gradle-wrapper-version": "7.3.1"
+        "gradle-wrapper-version": "7.3.2"
       }
     },
     "codestarts-artifacts": [

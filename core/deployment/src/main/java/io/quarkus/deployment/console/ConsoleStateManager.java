@@ -52,7 +52,7 @@ public class ConsoleStateManager {
         public void accept(int[] ints) {
             for (int i : ints) {
                 if (readLineBuilder != null) {
-                    if (i == '\n') {
+                    if (i == '\n' || i == '\r') {
                         readLineConsumer.accept(readLineBuilder.toString());
                         readLineBuilder = null;
                         readLineConsumer = null;
@@ -129,6 +129,10 @@ public class ConsoleStateManager {
         commands.add(new ConsoleCommand((char) 12, null, null, 10002, null, this::clearScreen));
         commands.add(new ConsoleCommand((char) 13, null, null, 10001, null, this::printBlankLine));
         commands.add(new ConsoleCommand('h', "Shows this help", "for more options", 10000, null, this::printHelp));
+        if (QuarkusConsole.INSTANCE instanceof AeshConsole) {
+            commands.add(new ConsoleCommand(':', "Enters terminal mode", "for the terminal", 9000, null, () -> {
+            }));
+        }
         commands.add(new ConsoleCommand('q', "Quits the application", null, this::exitQuarkus));
         context.reset(commands.toArray(new ConsoleCommand[0]));
     }

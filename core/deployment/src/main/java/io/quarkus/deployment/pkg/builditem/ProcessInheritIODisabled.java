@@ -17,7 +17,9 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * made available
  *
  * @see io.quarkus.deployment.util.ProcessUtil
+ * @deprecated use {@link ProcessInheritIODisabledBuildItem} instead
  */
+@Deprecated
 public final class ProcessInheritIODisabled extends SimpleBuildItem {
 
     /**

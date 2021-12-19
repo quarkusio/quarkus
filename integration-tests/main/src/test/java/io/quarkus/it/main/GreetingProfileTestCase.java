@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,11 @@ public class GreetingProfileTestCase {
         Assertions.assertEquals(155, DummyTestResource.state.get());
     }
 
+    @Test
+    public void testContext() {
+        Assertions.assertEquals(MyProfile.class.getName(), DummyTestResource.testProfile.get());
+    }
+
     public static class MyProfile implements QuarkusTestProfile {
 
         @Override
@@ -79,9 +85,15 @@ public class GreetingProfileTestCase {
     public static class DummyTestResource implements QuarkusTestResourceLifecycleManager {
 
         public static final AtomicInteger state = new AtomicInteger(0);
+        public static final AtomicReference<String> testProfile = new AtomicReference<>(null);
         public static final int START_DELTA = 55;
 
         private Integer numArg;
+
+        @Override
+        public void setContext(Context context) {
+            testProfile.set(context.testProfile());
+        }
 
         @Override
         public void init(Map<String, String> initArgs) {

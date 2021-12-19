@@ -69,7 +69,13 @@ public final class OracleMetadataOverrides {
         //These re-implement all the "--initialize-at-build-time" arguments found in the native-image.properties :
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.OracleDriver"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.OracleDriver"));
-        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("java.sql.DriverManager"));
+
+        // The Oracle driver's metadata hints to require java.sql.DriverManager to be initialized at runtime, but:
+        //  A) I disagree with the fact that a driver makes changes outside of its scope (java.sql in this case)
+        //  B) It does actually not compile if you have other JDBC drivers, as other implementations need this class initialized during build
+        //  C) This metadata is expected to get improved in the next public release of the Oracle JDBC driver
+        // runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("java.sql.DriverManager"));
+
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.LogicalConnection"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.pool.OraclePooledConnection"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.pool.OracleDataSource"));
@@ -110,6 +116,12 @@ public final class OracleMetadataOverrides {
     RemovedResourceBuildItem overrideSubstitutions() {
         return new RemovedResourceBuildItem(GACT.fromString("com.oracle.database.jdbc:ojdbc11"),
                 Collections.singleton("oracle/nativeimage/Target_java_io_ObjectStreamClass.class"));
+    }
+
+    @BuildStep
+    RemovedResourceBuildItem enhancedCharsetSubstitutions() {
+        return new RemovedResourceBuildItem(GACT.fromString("com.oracle.database.jdbc:ojdbc11"),
+                Collections.singleton("oracle/nativeimage/CharacterSetFeature.class"));
     }
 
 }

@@ -60,7 +60,6 @@
         <module>mutiny</module>
         <module>vertx</module>
         <module>netty</module>
-        <module>reactive-messaging-http</module>
         <module>reactive-streams-operators</module>
         <module>smallrye-reactive-messaging</module>
         <module>smallrye-reactive-messaging-kafka</module>

@@ -1039,12 +1039,6 @@ public final class HibernateOrmProcessor {
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME,
                 persistenceUnitConfig.database.charset.name());
 
-        persistenceUnitConfig.database.defaultCatalog.ifPresent(
-                catalog -> descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
-
-        persistenceUnitConfig.database.defaultSchema.ifPresent(
-                schema -> descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
-
         if (persistenceUnitConfig.database.globallyQuotedIdentifiers) {
             descriptor.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");
         }

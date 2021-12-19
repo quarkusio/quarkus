@@ -13,11 +13,11 @@ updates:
       - dependency-name: org.jboss:jboss-parent
       - dependency-name: org.jboss.resteasy:*
       - dependency-name: org.apache.activemq:*
-      - dependency-name: org.flywaydb:flyway-core
-      - dependency-name: org.liquibase:liquibase-core
-      - dependency-name: org.liquibase.ext:liquibase-mongodb
+      - dependency-name: org.flywaydb:*
+      - dependency-name: org.liquibase:*
+      - dependency-name: org.liquibase.ext:*
       - dependency-name: org.freemarker:freemarker
-      - dependency-name: io.fabric8:kubernetes-client-bom
+      - dependency-name: io.fabric8:*
       - dependency-name: org.apache.httpcomponents:*
       - dependency-name: org.quartz-scheduler:quartz
       - dependency-name: com.cronutils:cron-utils
@@ -27,6 +27,8 @@ updates:
       - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
+      - dependency-name: org.apache.logging.log4j:*
+      - dependency-name: org.slf4j:*
       - dependency-name: org.ow2.asm:*
       - dependency-name: org.glassfish:jakarta-el
       - dependency-name: com.google.cloud.tools:jib-core
@@ -34,6 +36,7 @@ updates:
       - dependency-name: io.quarkus.gizmo:gizmo
       - dependency-name: io.quarkus.http:*
       - dependency-name: io.quarkus:quarkus-fs-util
+      - dependency-name: io.quarkus:quarkus-spring-*-api
       # Elytron
       - dependency-name: org.wildfly.security:wildfly-elytron
       - dependency-name: org.wildfly.security:wildfly-elytron-*
@@ -46,6 +49,7 @@ updates:
       # Kafka
       - dependency-name: org.apache.kafka:*
       - dependency-name: org.apache.zookeeper:zookeeper
+      - dependency-name: io.strimzi:kafka-oauth-client
       # Scala
       - dependency-name: org.scala-lang:*
       - dependency-name: net.alchim31.maven:scala-maven-plugin
@@ -88,8 +92,6 @@ updates:
       #Jandex
       - dependency-name: org.jboss:jandex
       - dependency-name: org.jboss.jandex:jandex-maven-plugin
-      #Neo4j
-      - dependency-name: org.neo4j.driver:neo4j-java-driver
       #WireMock
       - dependency-name: com.github.tomakehurst:wiremock-jre8
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
@@ -109,7 +111,7 @@ updates:
       - dependency-name: com.microsoft.azure.functions:*
       # Apache Commons
       - dependency-name: commons-io:commons-io
-      - dependency-name: org.apache.commons:commons-lang3
+      - dependency-name: org.apache.commons:*
       - dependency-name: commons-codec:commons-codec
       # Micrometer
       - dependency-name: io.micrometer:micrometer-bom
@@ -141,6 +143,27 @@ updates:
       - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
       - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
+      # Others
+      - dependency-name: com.puppycrawl.tools:checkstyle
+      - dependency-name: com.google.cloud.functions:*
+      - dependency-name: com.google.errorprone:*
+      - dependency-name: com.google.http-client:*
+      - dependency-name: com.nimbusds:nimbus-jose-jwt
+      - dependency-name: io.apicurio:*
+      - dependency-name: io.dekorate:servicebinding-annotations
+      - dependency-name: io.opentelemetry:*
+      - dependency-name: io.opentelemetry.*:*
+      - dependency-name: io.opentracing.contrib:*
+      - dependency-name: org.aesh:readline
+      - dependency-name: org.checkerframework:checker-qual
+      - dependency-name: org.jboss.metadata:jboss-metadata-web
+      - dependency-name: org.jboss.modules:jboss-modules
+      - dependency-name: com.unboundid:unboundid-ldapsdk
+      - dependency-name: org.commonmark:commonmark
+      - dependency-name: org.webjars:*
+      - dependency-name: org.asciidoctor:asciidoctorj
+      - dependency-name: com.github.javaparser:javaparser-core
+      - dependency-name: org.jboss.jdeparser:jdeparser
     ignore:
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]

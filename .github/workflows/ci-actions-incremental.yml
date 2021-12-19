@@ -454,7 +454,7 @@ jobs:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
           path: |
             **/build/test-results/test/TEST-*.xml
-            **/target/**
+            **/target/*-reports/TEST-*.xml
             target/build-report.json
             LICENSE.txt
           retention-days: 2

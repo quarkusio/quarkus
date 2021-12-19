@@ -127,7 +127,7 @@ public class ClassPathUtils {
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to create a URL for '" + file.substring(0, exclam) + "'", e);
             }
-            try (FileSystem jarFs = ZipUtils.newFileSystem(jar, null)) {
+            try (FileSystem jarFs = ZipUtils.newFileSystem(jar)) {
                 Path localPath = jarFs.getPath("/");
                 if (exclam >= 0) {
                     localPath = localPath.resolve(file.substring(exclam + 1));

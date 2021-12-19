@@ -119,7 +119,9 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
                                 context.getRequiredTestClass().getClassLoader()),
                         testProfileAndProperties.testProfile != null
                                 && testProfileAndProperties.testProfile.disableGlobalTestResources());
-                testResourceManager.init();
+                testResourceManager.init(
+                        testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
+                                : null);
                 Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
                 additionalProperties.putAll(QuarkusMainIntegrationTestExtension.devServicesProps);
                 Map<String, String> resourceManagerProps = testResourceManager.start();

@@ -31,10 +31,10 @@ jobs:
           ./mvnw --settings .github/mvn-settings.xml \
             -B \
             -Prelease \
-            -Dmaven.test.skip=true \
             -DskipTests -DskipITs \
             -Ddokka \
             -Dmaven.repo.local=$HOME/release/repository \
+            -Dgpg.skip \
             clean install
       - name: Report
         if: always()

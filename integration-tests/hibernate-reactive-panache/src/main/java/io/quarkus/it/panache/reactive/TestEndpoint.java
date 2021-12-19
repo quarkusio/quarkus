@@ -224,7 +224,10 @@ public class TestEndpoint {
                                 return assertThrows(PanacheQueryException.class,
                                         () -> Person.find("#Person.namedQueryNotFound").list(),
                                         "singleResult should have thrown");
-                            }).flatMap(v -> NamedQueryEntity.list("#NamedQueryMappedSuperClass.getAll"))
+                            }).flatMap(v -> assertThrows(IllegalArgumentException.class,
+                                    () -> Person.list("#Person.getByName", Sort.by("name"), Parameters.with("name", "stef")),
+                                    "Should have thrown sort exception"))
+                            .flatMap(v -> NamedQueryEntity.list("#NamedQueryMappedSuperClass.getAll"))
                             .flatMap(v -> NamedQueryEntity.list("#NamedQueryEntity.getAll"))
                             .flatMap(v -> NamedQueryWith2QueriesEntity.list("#NamedQueryWith2QueriesEntity.getAll1"))
                             .flatMap(v -> NamedQueryWith2QueriesEntity.list("#NamedQueryWith2QueriesEntity.getAll2"))
@@ -966,7 +969,10 @@ public class TestEndpoint {
                                 return assertThrows(PanacheQueryException.class,
                                         () -> personDao.find("#Person.namedQueryNotFound").list(),
                                         "singleResult should have thrown");
-                            }).flatMap(v -> namedQueryRepository.list("#NamedQueryMappedSuperClass.getAll"))
+                            }).flatMap(v -> assertThrows(IllegalArgumentException.class,
+                                    () -> personDao.list("#Person.getByName", Sort.by("name"), Parameters.with("name", "stef")),
+                                    "Should have thrown sort exception"))
+                            .flatMap(v -> namedQueryRepository.list("#NamedQueryMappedSuperClass.getAll"))
                             .flatMap(v -> namedQueryRepository.list("#NamedQueryEntity.getAll"))
                             .flatMap(v -> namedQueryWith2QueriesRepository.list("#NamedQueryWith2QueriesEntity.getAll1"))
                             .flatMap(v -> namedQueryWith2QueriesRepository.list("#NamedQueryWith2QueriesEntity.getAll2"))

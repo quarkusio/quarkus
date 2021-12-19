@@ -297,10 +297,10 @@ For example, you can use Docker to run your database:
 
 [source, bash]
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 \
+docker run -it --rm=true \
     --name postgres-quarkus -e POSTGRES_USER=quarkus \
     -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=fruits \
-    -p 5432:5432 postgres:13.1
+    -p 5432:5432 postgres:14.1
 ----
 
 Then, launch the application using:

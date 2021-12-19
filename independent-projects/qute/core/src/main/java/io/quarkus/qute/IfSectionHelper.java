@@ -14,7 +14,6 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 
 /**
  * Basic {@code if} statement.
@@ -410,6 +409,8 @@ public class IfSectionHelper implements SectionHelper {
                 decimal = new BigDecimal((Integer) value);
             } else if (value instanceof Double) {
                 decimal = new BigDecimal((Double) value);
+            } else if (value instanceof Float) {
+                decimal = new BigDecimal((Float) value);
             } else if (value instanceof String) {
                 decimal = new BigDecimal(value.toString());
             } else {
@@ -422,18 +423,77 @@ public class IfSectionHelper implements SectionHelper {
 
     static List<Object> parseParams(List<Object> params, ParserDelegate parserDelegate) {
 
-        int highestPrecedence = 0;
-        // Replace operators and composite params if needed
+        replaceOperatorsAndCompositeParams(params, parserDelegate);
+        int highestPrecedence = getHighestPrecedence(params);
+
+        if (!isGroupingNeeded(params)) {
+            // No operators or all of the same precedence
+            return params;
+        }
+
+        // Take the operators with highest precedence and form groups
+        // For example "user.active && target.status == NEW && !target.voted" becomes "user.active && [target.status == NEW] && [!target.voted]"
+        // The algorithm used is not very robust and should be improved later
+        List<Object> highestGroup = null;
+        List<Object> ret = new ArrayList<>();
+        int lastGroupdIdx = 0;
+
+        for (ListIterator<Object> iterator = params.listIterator(); iterator.hasNext();) {
+            int prevIdx = iterator.previousIndex();
+            Object param = iterator.next();
+            if (param instanceof Operator) {
+                Operator op = (Operator) param;
+                if (op.precedence == highestPrecedence) {
+                    if (highestGroup == null) {
+                        highestGroup = new ArrayList<>();
+                        if (op.isBinary()) {
+                            highestGroup.add(params.get(prevIdx));
+                        }
+                    }
+                    highestGroup.add(param);
+                    // Add non-grouped elements 
+                    if (prevIdx > lastGroupdIdx) {
+                        int from = lastGroupdIdx > 0 ? lastGroupdIdx + 1 : 0;
+                        int to = op.isBinary() ? prevIdx : prevIdx + 1;
+                        params.subList(from, to).forEach(ret::add);
+                    }
+                } else if (op.precedence < highestPrecedence) {
+                    if (highestGroup != null) {
+                        ret.add(highestGroup);
+                        lastGroupdIdx = prevIdx;
+                        highestGroup = null;
+                    }
+                } else {
+                    throw new IllegalStateException();
+                }
+            } else if (highestGroup != null) {
+                highestGroup.add(param);
+            }
+        }
+        if (highestGroup != null) {
+            ret.add(highestGroup);
+        } else {
+            // Add all remaining non-grouped elements
+            if (lastGroupdIdx + 1 != params.size()) {
+                params.subList(lastGroupdIdx + 1, params.size()).forEach(ret::add);
+            }
+        }
+        return parseParams(ret, parserDelegate);
+    }
+
+    private static boolean isGroupingNeeded(List<Object> params) {
+        // No operators or all of the same precedence
+        return params.stream().filter(p -> (p instanceof Operator)).map(p -> ((Operator) p).getPrecedence()).distinct()
+                .count() > 1;
+    }
+
+    private static void replaceOperatorsAndCompositeParams(List<Object> params, ParserDelegate parserDelegate) {
         for (ListIterator<Object> iterator = params.listIterator(); iterator.hasNext();) {
             Object param = iterator.next();
             if (param instanceof String) {
                 String stringParam = param.toString();
                 Operator operator = Operator.from(stringParam);
                 if (operator != null) {
-                    // Binary operator
-                    if (operator.getPrecedence() > highestPrecedence) {
-                        highestPrecedence = operator.getPrecedence();
-                    }
                     if (operator.isBinary() && !iterator.hasNext()) {
                         throw parserDelegate.createParserError(
                                 "binary operator [" + operator + "] set but the second operand not present for {#if} section");
@@ -457,50 +517,19 @@ public class IfSectionHelper implements SectionHelper {
                 }
             }
         }
+    }
 
-        if (params.stream().filter(p -> p instanceof Operator).map(p -> ((Operator) p).getPrecedence())
-                .collect(Collectors.toSet()).size() <= 1) {
-            // No binary operators or all of the same precedence
-            return params;
-        }
-
-        // Take the operators with highest precedence and form groups
-        List<Object> highestGroup = null;
-        List<Object> ret = new ArrayList<>();
-        int lastGroupdIdx = 0;
-
-        for (ListIterator<Object> iterator = params.listIterator(); iterator.hasNext();) {
-            int prevIdx = iterator.previousIndex();
-            Object param = iterator.next();
-            if (isBinaryOperatorEq(param, highestPrecedence)) {
-                if (highestGroup == null) {
-                    highestGroup = new ArrayList<>();
-                    highestGroup.add(params.get(prevIdx));
+    private static int getHighestPrecedence(List<Object> params) {
+        int highestPrecedence = 0;
+        for (Object param : params) {
+            if (param instanceof Operator) {
+                Operator op = (Operator) param;
+                if (op.precedence > highestPrecedence) {
+                    highestPrecedence = op.precedence;
                 }
-                highestGroup.add(param);
-                // Add non-grouped elements 
-                if (prevIdx > lastGroupdIdx) {
-                    params.subList(lastGroupdIdx > 0 ? lastGroupdIdx + 1 : 0, prevIdx).forEach(ret::add);
-                }
-            } else if (isBinaryOperatorLt(param, highestPrecedence)) {
-                if (highestGroup != null) {
-                    ret.add(highestGroup);
-                    lastGroupdIdx = prevIdx;
-                    highestGroup = null;
-                }
-            } else if (highestGroup != null) {
-                highestGroup.add(param);
             }
         }
-        if (highestGroup != null) {
-            ret.add(highestGroup);
-        } else {
-            // Add all remaining non-grouped elements
-            if (lastGroupdIdx + 1 != params.size()) {
-                params.subList(lastGroupdIdx + 1, params.size()).forEach(ret::add);
-            }
-        }
-        return parseParams(ret, parserDelegate);
+        return highestPrecedence;
     }
 
     static List<Object> processCompositeParam(String stringParam, ParserDelegate parserDelegate) {
@@ -512,14 +541,6 @@ public class IfSectionHelper implements SectionHelper {
         Parser.splitSectionParams(stringParam.substring(1, stringParam.length() - 1), TemplateException::new)
                 .forEachRemaining(split::add);
         return parseParams(split, parserDelegate);
-    }
-
-    private static boolean isBinaryOperatorEq(Object val, int precedence) {
-        return val instanceof Operator && ((Operator) val).getPrecedence() == precedence;
-    }
-
-    private static boolean isBinaryOperatorLt(Object val, int precedence) {
-        return val instanceof Operator && ((Operator) val).getPrecedence() < precedence;
     }
 
     @SuppressWarnings("unchecked")

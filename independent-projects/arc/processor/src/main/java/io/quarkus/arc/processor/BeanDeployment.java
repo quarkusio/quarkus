@@ -102,6 +102,8 @@ public class BeanDeployment {
 
     final boolean transformUnproxyableClasses;
 
+    final boolean failOnInterceptedPrivateMethod;
+
     private final boolean jtaCapabilities;
 
     private final AlternativePriorities alternativePriorities;
@@ -190,6 +192,7 @@ public class BeanDeployment {
         this.beanResolver = new BeanResolverImpl(this);
         this.interceptorResolver = new InterceptorResolver(this);
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
+        this.failOnInterceptedPrivateMethod = builder.failOnInterceptedPrivateMethod;
         this.jtaCapabilities = builder.jtaCapabilities;
         this.alternativePriorities = builder.alternativePriorities;
     }

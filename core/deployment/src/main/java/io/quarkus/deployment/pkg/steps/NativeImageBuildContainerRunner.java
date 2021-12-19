@@ -24,7 +24,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     final NativeConfig nativeConfig;
     protected final NativeConfig.ContainerRuntime containerRuntime;
-    private final String[] baseContainerRuntimeArgs;
+    String[] baseContainerRuntimeArgs;
     protected final String outputPath;
     private final String containerName;
 

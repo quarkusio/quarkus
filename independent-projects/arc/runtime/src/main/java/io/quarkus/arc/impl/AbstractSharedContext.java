@@ -45,9 +45,14 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
     }
 
     @Override
+    public ContextState getStateIfActive() {
+        return this;
+    }
+
+    @Override
     public Map<InjectableBean<?>, Object> getContextualInstances() {
         return instances.getPresentValues().stream()
-                .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+                .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
     }
 
     @Override

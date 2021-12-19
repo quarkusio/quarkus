@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class WebJarLocatorDevModeTest {
+public class WebJarLocatorDevModeTest extends WebJarLocatorTestSupport {
     private static final String META_INF_RESOURCES = "META-INF/resources/";
 
     @RegisterExtension
@@ -48,9 +48,9 @@ public class WebJarLocatorDevModeTest {
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/3.5.1/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery/" + JQUERY_VERSION + "/jquery.min.js").then()
                 .statusCode(200);
-        RestAssured.get("/webjars/momentjs/2.24.0/min/moment.min.js").then()
+        RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test non-existing Web Jar
@@ -95,9 +95,9 @@ public class WebJarLocatorDevModeTest {
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/3.5.1/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery/" + JQUERY_VERSION + "/jquery.min.js").then()
                 .statusCode(200);
-        RestAssured.get("/webjars/momentjs/2.24.0/min/moment.min.js").then()
+        RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test non-existing Web Jar

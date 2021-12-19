@@ -13,7 +13,10 @@
     <artifactId>quarkus-integration-test-webjars-locator</artifactId>
 
     <name>Quarkus - Integration Tests - WebJar Locator</name>
-    
+
+    <properties>
+        <webjar.momentjs.version>2.24.0</webjar.momentjs.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -32,7 +35,7 @@
         <dependency>
           <groupId>org.webjars</groupId>
           <artifactId>momentjs</artifactId>
-          <version>2.24.0</version>
+          <version>${webjar.momentjs.version}</version>
         </dependency>
 
         <dependency>
@@ -87,6 +90,15 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <webjar.jquery.version>${webjar.jquery.version}</webjar.jquery.version>
+                        <webjar.momentjs.version>${webjar.momentjs.version}</webjar.momentjs.version>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

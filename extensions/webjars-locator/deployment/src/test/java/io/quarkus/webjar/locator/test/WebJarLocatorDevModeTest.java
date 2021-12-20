@@ -42,13 +42,13 @@ public class WebJarLocatorDevModeTest extends WebJarLocatorTestSupport {
                 .body(is("Test"));
 
         // Test Existing Web Jars
-        RestAssured.get("/webjars/jquery/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/" + JQUERY_VERSION + "/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/" + JQUERY_UI_VERSION + "/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);
@@ -95,7 +95,7 @@ public class WebJarLocatorDevModeTest extends WebJarLocatorTestSupport {
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/" + JQUERY_VERSION + "/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/" + JQUERY_UI_VERSION + "/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);

@@ -20,7 +20,7 @@ public class WebJarLocatorTest extends WebJarLocatorTestSupport {
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "/index.html")
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"))
-            .setForcedDependencies(Arrays.asList(new AppArtifact("org.webjars", "jquery", JQUERY_VERSION),
+            .setForcedDependencies(Arrays.asList(new AppArtifact("org.webjars", "jquery-ui", JQUERY_UI_VERSION),
                     new AppArtifact("org.webjars", "momentjs", MOMENTJS_VERSION)));
 
     @Test
@@ -39,13 +39,13 @@ public class WebJarLocatorTest extends WebJarLocatorTestSupport {
                 .body(is("Test"));
 
         // Test Existing Web Jars
-        RestAssured.get("/webjars/jquery/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/" + JQUERY_VERSION + "/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/" + JQUERY_UI_VERSION + "/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);

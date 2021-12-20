@@ -8,7 +8,7 @@ import io.restassured.RestAssured;
 @QuarkusTest
 public class WebJarResourceTest {
 
-    private static final String JQUERY_VERSION = System.getProperty("webjar.jquery.version");
+    private static final String JQUERY_UI_VERSION = System.getProperty("webjar.jquery-ui.version");
     private static final String MOMENTJS_VERSION = System.getProperty("webjar.momentjs.version");
 
     @Test
@@ -20,7 +20,7 @@ public class WebJarResourceTest {
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/" + JQUERY_VERSION + "/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/" + JQUERY_UI_VERSION + "/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);

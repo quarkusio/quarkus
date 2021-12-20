@@ -16,6 +16,7 @@
 
     <properties>
         <webjar.momentjs.version>2.24.0</webjar.momentjs.version>
+        <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
     </properties>
 
     <dependencies>
@@ -29,8 +30,8 @@
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
-            <artifactId>jquery</artifactId>
-            <version>${webjar.jquery.version}</version>
+            <artifactId>jquery-ui</artifactId>
+            <version>${webjar.jquery-ui.version}</version>
         </dependency>
         <dependency>
           <groupId>org.webjars</groupId>
@@ -95,7 +96,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <webjar.jquery.version>${webjar.jquery.version}</webjar.jquery.version>
+                        <webjar.jquery-ui.version>${webjar.jquery-ui.version}</webjar.jquery-ui.version>
                         <webjar.momentjs.version>${webjar.momentjs.version}</webjar.momentjs.version>
                     </systemPropertyVariables>
                 </configuration>

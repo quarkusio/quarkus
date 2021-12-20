@@ -14,6 +14,7 @@
 
     <properties>
         <webjar.momentjs.version>2.24.0</webjar.momentjs.version>
+        <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
     </properties>
 
     <dependencies>
@@ -45,19 +46,19 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- Using setForcedDependencies only works if the dependency is in the pom's test scope. -->
         <dependency>
-          <groupId>org.webjars</groupId>
-          <artifactId>jquery</artifactId>
-          <version>${webjar.jquery.version}</version>
-          <scope>test</scope>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery-ui</artifactId>
+            <version>${webjar.jquery-ui.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>org.webjars</groupId>
-          <artifactId>momentjs</artifactId>
-          <version>${webjar.momentjs.version}</version>
-          <scope>test</scope>
+            <groupId>org.webjars</groupId>
+            <artifactId>momentjs</artifactId>
+            <version>${webjar.momentjs.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.webjars.bowergithub.dc-js</groupId>
@@ -66,9 +67,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-resteasy-deployment</artifactId>
-          <scope>test</scope>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -90,7 +91,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <webjar.jquery.version>${webjar.jquery.version}</webjar.jquery.version>
+                        <webjar.jquery-ui.version>${webjar.jquery-ui.version}</webjar.jquery-ui.version>
                         <webjar.momentjs.version>${webjar.momentjs.version}</webjar.momentjs.version>
                     </systemPropertyVariables>
                 </configuration>

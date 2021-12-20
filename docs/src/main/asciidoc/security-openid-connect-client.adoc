@@ -589,7 +589,7 @@ Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures th
 
 ==== Additional JWT Authentication options
 
-If either `client_secret_jwt` or `private_key_jwt` authentication methods are used then the JWT signature algorithm, key identifier and audience can be customized, for example:
+If either `client_secret_jwt` or `private_key_jwt` authentication methods are used then the JWT signature algorithm, key identifier, audience, subject and issuer can be customized, for example:
 
 [source,properties]
 ----
@@ -609,6 +609,30 @@ quarkus.oidc-client.credentials.jwt.signature-algorithm=RS512
 
 # The token endpoint URL is the default audience value, use the base address URL instead:
 quarkus.oidc-client.credentials.jwt.audience=${quarkus.oidc-client.auth-server-url}
+
+# custom subject instead of the client id :
+quarkus.oidc-client.credentials.jwt.subject=custom-subject
+
+# custom issuer instead of the client id :
+quarkus.oidc-client.credentials.jwt.issuer=custom-issuer
+----
+
+==== Apple POST JWT
+
+Apple OpenId Connect Provider uses a `client_secret_post` method where a secret is a JWT produced with a `private_key_jwt` authentication method but with Apple account specific issuer and subject properties.
+
+`quarkus-oidc-client` supports a non-standard `client_secret_post_jwt` authentication method which can be configured as follows:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=${apple.url}
+quarkus.oidc-client.client-id=${apple.client-id}
+quarkus.oidc-client.credentials.client-secret.method=post-jwt
+
+quarkus.oidc-client.credentials.jwt.key-file=ecPrivateKey.pem
+quarkus.oidc-client.credentials.jwt.signature-algorithm=ES256
+quarkus.oidc-client.credentials.jwt.subject=${apple.subject}
+quarkus.oidc-client.credentials.jwt.issuer=${apple.issuer}
 ----
 
 [[integration-testing-oidc-client]]

@@ -9,6 +9,8 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -91,7 +93,11 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     }
                     config.setIntrospectionPath("introspect");
                     config.setUserInfoPath("userinfo");
-                    config.setClientId("client");
+                    config.setClientId("client-introspection-only");
+                    Credentials creds = config.getCredentials();
+                    creds.clientSecret.setMethod(Credentials.Secret.Method.POST_JWT);
+                    creds.getJwt().setKeyFile("ecPrivateKey.pem");
+                    creds.getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
                     return config;
                 } else if ("tenant-oidc-no-opaque-token".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();

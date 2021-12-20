@@ -1,8 +1,6 @@
 package io.quarkus.kafka.client.runtime;
 
-import io.quarkus.kubernetes.service.binding.runtime.ServiceBinding;
-import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConfigSource;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,7 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.kubernetes.service.binding.runtime.ServiceBinding;
+import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConfigSource;
 
 public class KafkaBindingConverterTest {
 
@@ -19,6 +20,8 @@ public class KafkaBindingConverterTest {
     private final static String BINDING_DIRECTORY_KAFKA_BOOTSTRAP_CAMELCASE = "kafka-bootstrap-camelcase";
     private final static String BINDING_DIRECTORY_KAFKA_BOOTSTRAP_WITH_HYPHEN = "kafka-bootstrap-with-hyphen";
     private final static String BINDING_DIRECTORY_KAFKA_SASL_PLAIN = "kafka-sasl-plain";
+    private final static String BINDING_DIRECTORY_KAFKA_SASL_SCRAM_512 = "kafka-sasl-scram-512";
+    private final static String BINDING_DIRECTORY_KAFKA_SASL_SCRAM_256 = "kafka-sasl-scram-256";
 
     private final KafkaBindingConverter converter = new KafkaBindingConverter();
 
@@ -41,7 +44,8 @@ public class KafkaBindingConverterTest {
 
     @Test
     public void testKafkaBootstrapWithHyphenServiceBinding() {
-        ServiceBinding kafkaServiceBinding = new ServiceBinding(rootPath.resolve(BINDING_DIRECTORY_KAFKA_BOOTSTRAP_WITH_HYPHEN));
+        ServiceBinding kafkaServiceBinding = new ServiceBinding(
+                rootPath.resolve(BINDING_DIRECTORY_KAFKA_BOOTSTRAP_WITH_HYPHEN));
         Optional<ServiceBindingConfigSource> configSourceOptional = converter.convert(List.of(kafkaServiceBinding));
         assertThat(configSourceOptional).isPresent();
         Map<String, String> properties = configSourceOptional.get().getProperties();
@@ -58,6 +62,33 @@ public class KafkaBindingConverterTest {
         assertThat(properties.get("kafka.bootstrap.servers")).isEqualTo("localhost:9092");
         assertThat(properties.get("kafka.security.protocol")).isEqualTo("SASL_PLAINTEXT");
         assertThat(properties.get("kafka.sasl.mechanism")).isEqualTo("PLAIN");
-        assertThat(properties.get("kafka.sasl.jaas.config")).isEqualTo("org.apache.kafka.common.security.plain.PlainLoginModule required username='my-user' password='my-pass';");
+        assertThat(properties.get("kafka.sasl.jaas.config")).isEqualTo(
+                "org.apache.kafka.common.security.plain.PlainLoginModule required username='my-user' password='my-pass';");
+    }
+
+    @Test
+    public void testKafkaSaslScram512ServiceBinding() {
+        ServiceBinding kafkaServiceBinding = new ServiceBinding(rootPath.resolve(BINDING_DIRECTORY_KAFKA_SASL_SCRAM_512));
+        Optional<ServiceBindingConfigSource> configSourceOptional = converter.convert(List.of(kafkaServiceBinding));
+        assertThat(configSourceOptional).isPresent();
+        Map<String, String> properties = configSourceOptional.get().getProperties();
+        assertThat(properties.get("kafka.bootstrap.servers")).isEqualTo("localhost:9092");
+        assertThat(properties.get("kafka.security.protocol")).isEqualTo("SASL_PLAINTEXT");
+        assertThat(properties.get("kafka.sasl.mechanism")).isEqualTo("SCRAM-SHA-512");
+        assertThat(properties.get("kafka.sasl.jaas.config")).isEqualTo(
+                "org.apache.kafka.common.security.scram.ScramLoginModule required username='my-user' password='my-pass';");
+    }
+
+    @Test
+    public void testKafkaSaslScram256ServiceBinding() {
+        ServiceBinding kafkaServiceBinding = new ServiceBinding(rootPath.resolve(BINDING_DIRECTORY_KAFKA_SASL_SCRAM_256));
+        Optional<ServiceBindingConfigSource> configSourceOptional = converter.convert(List.of(kafkaServiceBinding));
+        assertThat(configSourceOptional).isPresent();
+        Map<String, String> properties = configSourceOptional.get().getProperties();
+        assertThat(properties.get("kafka.bootstrap.servers")).isEqualTo("localhost:9092");
+        assertThat(properties.get("kafka.security.protocol")).isEqualTo("SASL_PLAINTEXT");
+        assertThat(properties.get("kafka.sasl.mechanism")).isEqualTo("SCRAM-SHA-256");
+        assertThat(properties.get("kafka.sasl.jaas.config")).isEqualTo(
+                "org.apache.kafka.common.security.scram.ScramLoginModule required username='my-user' password='my-pass';");
     }
 }

@@ -1,4 +1,4 @@
-package io.quarkus.jaxrs.client.reactive.deployment;
+package io.quarkus.jaxrs.client.reactive.runtime;
 
 import java.io.Closeable;
 import java.lang.annotation.Annotation;

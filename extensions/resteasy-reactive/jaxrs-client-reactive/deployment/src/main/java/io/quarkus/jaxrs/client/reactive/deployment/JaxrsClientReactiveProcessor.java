@@ -129,6 +129,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.runtime.ClientResponseBuilderFactory;
 import io.quarkus.jaxrs.client.reactive.runtime.JaxrsClientReactiveRecorder;
+import io.quarkus.jaxrs.client.reactive.runtime.RestClientBase;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;

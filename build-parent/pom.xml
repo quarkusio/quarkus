@@ -586,6 +586,7 @@
                                             <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
                                             <!-- Includes its own copy of an old version of the servlet API-->
                                             <exclude>org.apache.tomcat.embed:tomcat-embed-core</exclude>
+                                            <exclude>org.jboss.modules:jboss-modules</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

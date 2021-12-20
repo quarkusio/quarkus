@@ -581,6 +581,8 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
 ----
 All methods that are annotated with `@Modifying` will automatically be annotated with `@Transactional`.
 
+TIP: In Quarkus, `@Param` is optional when parameter names have been compiled to bytecode (which is active by default in generated projects).
+
 ==== Naming Strategies
 
 Hibernate ORM maps property names using a physical naming strategy and an implicit naming strategy. If you wish to use Spring Boot's default naming strategies, the following properties need to be set:

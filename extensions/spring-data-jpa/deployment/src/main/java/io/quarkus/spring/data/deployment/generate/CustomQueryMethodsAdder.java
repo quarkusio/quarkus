@@ -18,7 +18,6 @@ import java.util.regex.Pattern;
 import javax.transaction.Transactional;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -105,7 +104,6 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         "Offending method is " + methodName + " of Repository " + repositoryName);
             }
 
-            boolean useNamedParams = (method.annotation(DotNames.SPRING_DATA_PARAM) != null);
             List<Type> methodParameterTypes = method.parameters();
             String[] methodParameterTypesStr = new String[methodParameterTypes.size()];
             List<Integer> queryParameterIndexes = new ArrayList<>(methodParameterTypes.size());
@@ -129,7 +127,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                                 + " can be specified");
                     }
                     sortParameterIndex = i;
-                } else if (!useNamedParams) {
+                } else {
                     queryParameterIndexes.add(i);
                 }
             }
@@ -137,14 +135,21 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             // go through the method annotations, find the @Param annotation on parameters
             // and map the name to the method param index
             Map<String, Integer> namedParameterToIndex = new HashMap<>();
-            List<AnnotationInstance> annotations = method.annotations();
-            for (AnnotationInstance annotation : annotations) {
-                if ((annotation.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER)
-                        || (!DotNames.SPRING_DATA_PARAM.equals(annotation.name()))) {
-                    continue;
+            for (AnnotationInstance annotation : method.annotations(DotNames.SPRING_DATA_PARAM)) {
+                var index = (int) annotation.target().asMethodParameter().position();
+                namedParameterToIndex.put(annotation.value().asString(), index);
+            }
+            // if no or only some parameters are annotated with @Param, add the compiled names (if present)
+            if (namedParameterToIndex.size() < methodParameterTypes.size()) {
+                for (int index = 0; index < methodParameterTypes.size(); index++) {
+                    if (namedParameterToIndex.values().contains(index)) {
+                        continue;
+                    }
+                    String parameterName = method.parameterName(index);
+                    if (parameterName != null) {
+                        namedParameterToIndex.put(parameterName, index);
+                    }
                 }
-                namedParameterToIndex.put(annotation.value().asString(),
-                        (int) annotation.target().asMethodParameter().position());
             }
 
             boolean isModifying = (method.annotation(DotNames.SPRING_DATA_MODIFYING) != null);
@@ -155,23 +160,26 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                                 "support Pageable and Sort method parameters");
             }
 
+            Set<String> usedNamedParameters = extractNamedParameters(queryString);
+            if (!usedNamedParameters.isEmpty()) {
+                Set<String> missingParameters = new LinkedHashSet<>(usedNamedParameters);
+                missingParameters.removeAll(namedParameterToIndex.keySet());
+                if (!missingParameters.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            method.name() + " of Repository " + repositoryClassInfo
+                                    + " is missing the named parameters " + missingParameters
+                                    + ", provided are " + namedParameterToIndex.keySet()
+                                    + ". Ensure that the parameters are correctly annotated with @Param.");
+                }
+                namedParameterToIndex.keySet().retainAll(usedNamedParameters);
+            } else {
+                namedParameterToIndex.clear();
+            }
+
             DotName methodReturnTypeDotName = method.returnType().name();
 
             try (MethodCreator methodCreator = classCreator.getMethodCreator(method.name(), methodReturnTypeDotName.toString(),
                     methodParameterTypesStr)) {
-
-                Set<String> usedNamedParameters = extractNamedParameters(queryString);
-                if (!usedNamedParameters.isEmpty()) {
-                    Set<String> missingParameters = new LinkedHashSet<>(usedNamedParameters);
-                    missingParameters.removeAll(namedParameterToIndex.keySet());
-                    if (!missingParameters.isEmpty()) {
-                        throw new IllegalArgumentException(
-                                method.name() + " of Repository " + repositoryClassInfo
-                                        + " is missing the named parameters " + missingParameters
-                                        + ", provided are " + namedParameterToIndex.keySet()
-                                        + ". Ensure that the parameters are correctly annotated with @Param.");
-                    }
-                }
                 if (isModifying) {
                     methodCreator.addAnnotation(Transactional.class);
                     AnnotationInstance modifyingAnnotation = method.annotation(DotNames.SPRING_DATA_MODIFYING);
@@ -189,7 +197,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         // we need to strip 'delete' or else JpaOperations.delete will generate the wrong query
                         String deleteQueryString = queryString.substring("delete".length());
                         ResultHandle deleteCount;
-                        if (useNamedParams) {
+                        if (!namedParameterToIndex.isEmpty()) {
                             ResultHandle parameters = generateParametersObject(namedParameterToIndex, methodCreator);
 
                             // call JpaOperations.delete
@@ -227,7 +235,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         }
 
                         ResultHandle updateCount;
-                        if (useNamedParams) {
+                        if (!namedParameterToIndex.isEmpty()) {
                             ResultHandle parameters = generateParametersObject(namedParameterToIndex, methodCreator);
                             ResultHandle parametersMap = methodCreator.invokeVirtualMethod(
                                     MethodDescriptor.ofMethod(Parameters.class, "map", Map.class),
@@ -315,7 +323,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                     }
 
                     ResultHandle panacheQuery;
-                    if (useNamedParams) {
+                    if (!namedParameterToIndex.isEmpty()) {
                         ResultHandle parameters = generateParametersObject(namedParameterToIndex, methodCreator);
 
                         // call JpaOperations.find()

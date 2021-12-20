@@ -23,7 +23,9 @@ public interface UserRepository extends JpaRepository<User, String> {
     @Query("UPDATE LoginEvent e SET e.processed = true")
     void processLoginEventsPlainAutoClearAndFlush();
 
-    User getUserByFullNameUsingNamedQuery(@Param("name") String name);
+    // purposely without @Param to also test fallback to compiled parameter name
+    User getUserByFullNameUsingNamedQuery(String name);
 
-    User getUserByFullNameUsingNamedQueries(@Param("name") String name);
+    // purposely with compiled parameter name not matching the query to also test that @Param takes precedence
+    User getUserByFullNameUsingNamedQueries(@Param("name") String arg);
 }

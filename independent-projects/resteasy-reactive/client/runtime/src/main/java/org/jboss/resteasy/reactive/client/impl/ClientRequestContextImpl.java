@@ -5,6 +5,7 @@ import static java.util.Collections.singletonList;
 
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -54,10 +55,16 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.configuration = configuration;
         this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
 
+        // TODO This needs to be challenged:
         // Always create a duplicated context because each REST Client invocation must have its own context
         // A separate context allows integrations like OTel to create a separate Span for each invocation (expected)
-        Context current = client.vertx.getOrCreateContext();
-        this.context = VertxContext.createNewDuplicatedContext(current);
+        Context ctxt = Vertx.currentContext();
+        if (ctxt != null && VertxContext.isDuplicatedContext(ctxt)) {
+            this.context = ctxt;
+        } else {
+            Context current = client.vertx.getOrCreateContext();
+            this.context = VertxContext.createNewDuplicatedContext(current);
+        }
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }
 

@@ -130,7 +130,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         boolean processingSuspended = false;
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
-        boolean disasociateRequestScope = false;
+        boolean disassociateRequestScope = false;
         boolean aborted = false;
         try {
             while (position < handlers.length) {
@@ -146,7 +146,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                             running = true;
                             if (isRequestScopeManagementRequired()) {
                                 if (requestScopeActivated) {
-                                    disasociateRequestScope = true;
+                                    disassociateRequestScope = true;
                                     requestScopeActivated = false;
                                 }
                             } else {
@@ -190,7 +190,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 }
                 close();
             } else {
-                if (disasociateRequestScope) {
+                if (disassociateRequestScope) {
                     requestScopeDeactivated();
                     currentRequestScope.deactivate();
                 }

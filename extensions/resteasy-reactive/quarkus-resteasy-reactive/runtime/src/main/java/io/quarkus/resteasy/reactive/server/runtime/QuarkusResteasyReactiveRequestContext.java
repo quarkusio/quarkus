@@ -45,6 +45,13 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         }
     }
 
+    @Override
+    protected void requestScopeDeactivated() {
+        // we intentionally don't call 'CurrentRequestManager.set(null)'
+        // because there is no need to clear the current request
+        // as that is backed by a DuplicatedContext and not accessible to other requests anyway
+    }
+
     protected SecurityContext createSecurityContext() {
         return new ResteasyReactiveSecurityContext(context);
     }

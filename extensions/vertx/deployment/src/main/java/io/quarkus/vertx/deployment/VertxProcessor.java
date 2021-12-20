@@ -20,6 +20,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.deployment.CurrentContextFactoryBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.processor.AnnotationStore;
@@ -96,6 +97,12 @@ class VertxProcessor {
                 shutdown, codecByClass);
         serviceStart.produce(new ServiceStartBuildItem("vertx"));
         return new VertxBuildItem(recorder.forceStart(vertx.getVertx()));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    CurrentContextFactoryBuildItem currentContextFactory(VertxRecorder recorder) {
+        return new CurrentContextFactoryBuildItem(recorder.currentContextFactory());
     }
 
     @BuildStep

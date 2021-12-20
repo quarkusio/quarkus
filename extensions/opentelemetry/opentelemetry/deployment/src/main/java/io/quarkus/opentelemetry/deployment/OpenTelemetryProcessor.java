@@ -3,7 +3,6 @@ package io.quarkus.opentelemetry.deployment;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -21,6 +20,8 @@ import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -52,15 +53,6 @@ public class OpenTelemetryProcessor {
     private static final DotName LEGACY_SPAN_ATRIBUTE = DotName.createSimple(
             io.opentelemetry.extension.annotations.SpanAttribute.class.getName());;
     private static final DotName SPAN_ATTRIBUTE = DotName.createSimple(SpanAttribute.class.getName());
-
-    static class RestClientAvailable implements BooleanSupplier {
-        private static final boolean IS_REST_CLIENT_AVAILABLE = isClassPresent("javax.ws.rs.client.ClientRequestFilter");
-
-        @Override
-        public boolean getAsBoolean() {
-            return IS_REST_CLIENT_AVAILABLE;
-        }
-    }
 
     @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
@@ -138,11 +130,15 @@ public class OpenTelemetryProcessor {
         }));
     }
 
-    @BuildStep(onlyIf = RestClientAvailable.class)
-    void registerProvider(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
+    @BuildStep
+    void registerRestClientClassicProvider(
+            Capabilities capabilities,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
-        additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
+        if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)) {
+            additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
+            additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
+        }
     }
 
     @BuildStep

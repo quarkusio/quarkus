@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
 import org.aesh.command.CommandResult;
@@ -29,6 +28,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
+import io.quarkus.deployment.console.QuarkusCommand;
 import io.quarkus.resteasy.reactive.server.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
@@ -126,7 +126,7 @@ public class ResteasyReactiveDevModeProcessor {
     }
 
     @CommandDefinition(name = "open", description = "Opens a path in a web browser")
-    public static class OpenCommand implements Command {
+    public static class OpenCommand extends QuarkusCommand {
 
         @Argument(required = true, completer = PathCompleter.class)
         private String url;
@@ -144,7 +144,7 @@ public class ResteasyReactiveDevModeProcessor {
         }
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult doExecute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
             DevConsoleProcessor.openBrowser(rp, np, url.startsWith("/") ? url : "/" + url, host, port);
             return CommandResult.SUCCESS;
         }

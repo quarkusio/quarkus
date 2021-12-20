@@ -53,16 +53,16 @@ public class ImageGeometryFontsTest {
     // @formatter:off
     @ValueSource(strings = {
     // Image format name followed by expected pixel values
-    "TIFF |46,14,32,255 |72,22,22,255 |255,200,0,255 |255,0,0,255 |0,255,0,255",
-    "GIF  |2,0,0,0      |5,0,0,0      |213,0,0,0     |130,0,0,0   |63,0,0,0",
-    "PNG  |46,14,32,255 |72,22,22,255 |255,200,0,255 |255,0,0,255 |0,255,0,255",
-    "JPG  |73,0,44,0    |122,7,4,0    |255,178,26,0  |254,2,0,0   |24,238,16,0",
-    "BMP  |46,14,32,0   |72,22,22,0   |255,200,0,0   |255,0,0,0   |0,255,0,0",
-    "WBMP |0,0,0,0      |0,0,0,0      |1,0,0,0       |0,0,0,0     |0,0,0,0"
+    "TIFF █46,14,32,255 █72,22,22,255 █255,200,0,255 █255,0,0,255 █0,255,0,255",
+    "GIF  █2,0,0,0      █5,0,0,0      █213,0,0,0     █130,0,0,0   █63,0,0,0",
+    "PNG  █46,14,32,255 █72,22,22,255 █255,200,0,255 █255,0,0,255 █0,255,0,255",
+    "JPG  █73,0,44,0    █122,7,4,0    █255,178,26,0  █254,2,0,0   █24,238,16,0",
+    "BMP  █46,14,32,0   █72,22,22,0   █255,200,0,0   █255,0,0,0   █0,255,0,0",
+    "WBMP █0,0,0,0      █0,0,0,0      █1,0,0,0       █0,0,0,0     █0,0,0,0"
     })
     // @formatter:on
     public void testGeometryAndFonts(String testData) throws IOException {
-        final String[] formatPixels = testData.split("\\|");
+        final String[] formatPixels = testData.split("\\█");
         final String formatName = formatPixels[0].trim();
         final byte[] imgBytes = given()
                 .when()

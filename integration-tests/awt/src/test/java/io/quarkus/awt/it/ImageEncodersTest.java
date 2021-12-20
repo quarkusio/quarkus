@@ -39,7 +39,7 @@ public class ImageEncodersTest {
      * Document format in encoders_test_config.txt.
      * e.g.
      *
-     * TYPE_4BYTE_ABGR/TIFF/CS_PYCC/ZLib|255,0,0,255|0,0,255,255
+     * TYPE_4BYTE_ABGR/TIFF/CS_PYCC/ZLib█255,0,0,255█0,0,255,255
      * │              │    │       │    │           └── Second pixel values to test at x:2 y:2
      * │              │    │       │    └── First pixel values to test at x:25 y:25.
      * │              │    │       └── Compression algorithm.
@@ -66,7 +66,7 @@ public class ImageEncodersTest {
                 new File(ImageEncodersTest.class.getResource("/encoders_test_config.txt").getFile()), UTF_8)) {
             while (sc.hasNextLine()) {
                 final String line = sc.nextLine();
-                final String[] segments = line.split("\\|");
+                final String[] segments = line.split("█");
                 // Config for the image encoder, type, format, color space, compression
                 final String path = segments[0];
                 final byte[] imgBytes = given()

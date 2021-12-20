@@ -109,7 +109,7 @@
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
         <!-- Webjars -->
-        <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
+        <webjar.bootstrap.version>5.1.3</webjar.bootstrap.version>
         <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
         <webjar.jquery.version>3.5.1</webjar.jquery.version>
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>

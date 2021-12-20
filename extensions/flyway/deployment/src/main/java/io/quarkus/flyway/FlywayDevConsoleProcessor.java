@@ -1,5 +1,6 @@
 package io.quarkus.flyway;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static java.util.List.of;
 
 import java.nio.file.Files;
@@ -15,6 +16,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -24,6 +26,7 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainersSupplier;
 import io.quarkus.flyway.runtime.FlywayDataSourceBuildTimeConfig;
+import io.quarkus.flyway.runtime.devconsole.FlywayDevConsoleRecorder;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
@@ -34,6 +37,12 @@ public class FlywayDevConsoleProcessor {
             FlywayProcessor.MigrationStateBuildItem migrationStateBuildItem, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         return new DevConsoleRuntimeTemplateInfoBuildItem("containers", new FlywayContainersSupplier(), this.getClass(),
                 curateOutcomeBuildItem);
+    }
+
+    @BuildStep
+    @Record(value = RUNTIME_INIT, optional = true)
+    DevConsoleRouteBuildItem invokeEndpoint(FlywayDevConsoleRecorder recorder) {
+        return new DevConsoleRouteBuildItem("datasources", "POST", recorder.handler());
     }
 
     @BuildStep

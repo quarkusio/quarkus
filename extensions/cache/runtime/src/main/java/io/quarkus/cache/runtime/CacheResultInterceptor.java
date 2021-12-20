@@ -42,43 +42,71 @@ public class CacheResultInterceptor extends CacheInterceptor {
         }
 
         try {
-
-            Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
-                @Override
-                public Object apply(Object k) {
-                    try {
-                        if (Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType())) {
-                            LOGGER.debugf("Adding %s entry with key [%s] into cache [%s]",
-                                    UnresolvedUniValue.class.getSimpleName(), key, binding.cacheName());
-                            return UnresolvedUniValue.INSTANCE;
-                        } else {
-                            return invocationContext.proceed();
+            final boolean isUni = Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType());
+            if (isUni) {
+                Uni<Object> ret = cache.get(key, new Function<Object, Object>() {
+                    @Override
+                    public Object apply(Object k) {
+                        LOGGER.debugf("Adding %s entry with key [%s] into cache [%s]",
+                                UnresolvedUniValue.class.getSimpleName(), key, binding.cacheName());
+                        return UnresolvedUniValue.INSTANCE;
+                    }
+                }).onItem().transformToUni(o -> {
+                    if (o == UnresolvedUniValue.INSTANCE) {
+                        try {
+                            return ((Uni<Object>) invocationContext.proceed())
+                                    .onItem().call(emittedValue -> cache.replaceUniValue(key, emittedValue));
+                        } catch (CacheException e) {
+                            throw e;
+                        } catch (Exception e) {
+                            throw new CacheException(e);
                         }
-                    } catch (Throwable e) {
+                    } else {
+                        return Uni.createFrom().item(o);
+                    }
+                });
+                if (binding.lockTimeout() <= 0) {
+                    return ret;
+                }
+                return ret.ifNoItem().after(Duration.ofMillis(binding.lockTimeout())).recoverWithUni(() -> {
+                    try {
+                        return (Uni<?>) invocationContext.proceed();
+                    } catch (CacheException e) {
+                        throw e;
+                    } catch (Exception e) {
                         throw new CacheException(e);
                     }
-                }
-            });
+                });
 
-            Object value;
-            if (binding.lockTimeout() <= 0) {
-                value = cacheValue.await().indefinitely();
             } else {
-                try {
-                    /*
-                     * If the current thread started the cache value computation, then the computation is already finished since
-                     * it was done synchronously and the following call will never time out.
-                     */
-                    value = cacheValue.await().atMost(Duration.ofMillis(binding.lockTimeout()));
-                } catch (TimeoutException e) {
-                    // TODO: Add statistics here to monitor the timeout.
-                    return invocationContext.proceed();
+                Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
+                    @Override
+                    public Object apply(Object k) {
+                        try {
+                            return invocationContext.proceed();
+                        } catch (CacheException e) {
+                            throw e;
+                        } catch (Throwable e) {
+                            throw new CacheException(e);
+                        }
+                    }
+                });
+                Object value;
+                if (binding.lockTimeout() <= 0) {
+                    value = cacheValue.await().indefinitely();
+                } else {
+                    try {
+                        /*
+                         * If the current thread started the cache value computation, then the computation is already finished
+                         * since
+                         * it was done synchronously and the following call will never time out.
+                         */
+                        value = cacheValue.await().atMost(Duration.ofMillis(binding.lockTimeout()));
+                    } catch (TimeoutException e) {
+                        // TODO: Add statistics here to monitor the timeout.
+                        return invocationContext.proceed();
+                    }
                 }
-            }
-
-            if (Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType())) {
-                return resolveUni(invocationContext, cache, key, value);
-            } else {
                 return value;
             }
 
@@ -88,16 +116,6 @@ public class CacheResultInterceptor extends CacheInterceptor {
             } else {
                 throw e;
             }
-        }
-    }
-
-    private Object resolveUni(InvocationContext invocationContext, AbstractCache cache, Object key, Object value)
-            throws Exception {
-        if (value == UnresolvedUniValue.INSTANCE) {
-            return ((Uni<Object>) invocationContext.proceed())
-                    .onItem().call(emittedValue -> cache.replaceUniValue(key, emittedValue));
-        } else {
-            return Uni.createFrom().item(value);
         }
     }
 }

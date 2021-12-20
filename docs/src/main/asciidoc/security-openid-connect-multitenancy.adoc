@@ -135,7 +135,7 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class CustomTenantResolver implements TenantResolver {
 
-    @Override 
+    @Override
     public String resolve(RoutingContext context) {
         String path = context.request().path();
         String[] parts = path.split("/");
@@ -151,6 +151,45 @@ public class CustomTenantResolver implements TenantResolver {
 ----
 
 From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, `null` is returned to indicate that the default tenant configuration should be used.
+
+[NOTE]
+===
+When a current tenant represents an OIDC `web-app` application, the current `io.vertx.ext.web.RoutingContext` will contain a `tenant-id` attribute by the time the custom tenant resolver has been called for all the requests completing the code authentication flow and the already authenticated requests, when either a tenant specific state or session cookie already exists.
+Therefore, when working with mulltiple OpenId Connect Providers, you only need a path specific check to resolve a tenant id if the `RoutingContext` does not have the `tenant-id` attribute set, for example:
+
+[source,java]
+----
+package org.acme.quickstart.oidc;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.oidc.TenantResolver;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomTenantResolver implements TenantResolver {
+
+    @Override
+    public String resolve(RoutingContext context) {
+        String tenantId = context.get("tenant-id");
+        if (tenantId != null) {
+            return tenantId;
+        } else {
+            // Initial login request
+            String path = context.request().path();
+            String[] parts = path.split("/");
+
+            if (parts.length == 0) {
+                // resolve to default tenant configuration
+                return null;
+            }
+            return parts[1];
+        }
+    }
+}
+----
+
+===
 
 [NOTE]
 ===

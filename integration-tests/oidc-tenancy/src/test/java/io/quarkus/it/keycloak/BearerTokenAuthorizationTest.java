@@ -7,12 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
+import java.net.URI;
 
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
 
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.WebRequest;
+import com.gargoylesoftware.htmlunit.WebResponse;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
@@ -38,13 +41,43 @@ public class BearerTokenAuthorizationTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+            assertNotNull(getStateCookie(webClient, "tenant-web-app"));
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
             assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app:alice", page.getBody().asText());
+            // First call after a redirect, tenant-id is initially calculated from the state `q_auth` cookie.
+            // 'reauthenticated' flag is set is because, in fact, it is actually a 2nd call due to
+            // quarkus-oidc doing a final redirect after completing a code flow to drop the redirect OIDC parameters
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asText());
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
+            assertNull(getStateCookie(webClient, "tenant-web-app"));
+
+            // Second call after a redirect, tenant-id is calculated from the state `q_session` cookie
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asText());
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
+            assertNull(getStateCookie(webClient, "tenant-web-app"));
+
+            // Local logout
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp?logout=true");
+            assertEquals("tenant-web-app:alice:reauthenticated:logout", page.getBody().asText());
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+            assertNull(getStateCookie(webClient, "tenant-web-app"));
+
+            // Check a new login is requested via redirect
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant/tenant-web-app/api/user/webapp").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+            assertNotNull(getStateCookie(webClient, "tenant-web-app"));
+            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
+
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -142,7 +175,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app:alice", page.getBody().asText());
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asText());
             // tenant-web-app2
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
@@ -506,6 +539,10 @@ public class BearerTokenAuthorizationTest {
 
     private Cookie getStateCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookie("q_auth" + (tenantId == null ? "" : "_" + tenantId));
+    }
+
+    private Cookie getSessionCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
     }
 
     private String getStateCookieSavedPath(WebClient webClient, String tenantId) {

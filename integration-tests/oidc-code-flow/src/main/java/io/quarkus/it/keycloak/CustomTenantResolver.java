@@ -5,6 +5,7 @@ import java.util.List;
 import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -52,7 +53,12 @@ public class CustomTenantResolver implements TenantResolver {
         }
 
         if (path.contains("tenant-https")) {
-            return "tenant-https";
+            if (context.getCookie("q_session_tenant-https_test") != null) {
+                context.put("reauthenticated", "true");
+                return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            } else {
+                return "tenant-https";
+            }
         }
 
         if (path.contains("tenant-xhr")) {
@@ -88,6 +94,6 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-2";
         }
 
-        return null;
+        return OidcUtils.DEFAULT_TENANT_ID;
     }
 }

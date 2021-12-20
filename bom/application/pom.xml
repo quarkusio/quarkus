@@ -151,7 +151,7 @@
         <maven-invoker.version>3.0.1</maven-invoker.version>
         <awaitility.version>4.1.1</awaitility.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
-        <flyway.version>8.2.2</flyway.version>
+        <flyway.version>8.2.3</flyway.version>
         <yasson.version>1.0.10</yasson.version>
         <liquibase.version>4.6.2</liquibase.version>
         <liquibase-mongodb.version>4.6.2</liquibase-mongodb.version>

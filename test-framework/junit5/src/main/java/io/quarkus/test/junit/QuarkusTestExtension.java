@@ -703,9 +703,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             old = setCCL(runningQuarkusApplication.getClassLoader());
         }
 
-        initTestState(extensionContext, state);
-        if (old != null) {
-            setCCL(old);
+        try {
+            initTestState(extensionContext, state);
+        } finally {
+            if (old != null) {
+                setCCL(old);
+            }
         }
         return result;
     }

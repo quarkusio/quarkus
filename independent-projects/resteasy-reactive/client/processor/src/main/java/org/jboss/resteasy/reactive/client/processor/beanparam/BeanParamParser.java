@@ -79,11 +79,13 @@ public class BeanParamParser {
                 if (target.kind() == AnnotationTarget.Kind.FIELD) {
                     FieldInfo fieldInfo = target.asField();
                     resultList.add(new CookieParamItem(annotation.value().asString(),
-                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())));
+                            new FieldExtractor(null, fieldInfo.name(),
+                                    fieldInfo.declaringClass().name().toString()),
+                            fieldInfo.type().name().toString()));
                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo getterMethod = getGetterMethod(beanParamClass, target.asMethod());
                     resultList.add(new CookieParamItem(annotation.value().asString(),
-                            new GetterExtractor(getterMethod)));
+                            new GetterExtractor(getterMethod), getterMethod.returnType().name().toString()));
                 }
             }
         }
@@ -94,12 +96,14 @@ public class BeanParamParser {
                 AnnotationTarget target = headerParamAnnotation.target();
                 if (target.kind() == AnnotationTarget.Kind.FIELD) {
                     FieldInfo fieldInfo = target.asField();
+                    String paramType = fieldInfo.type().name().toString();
                     resultList.add(new HeaderParamItem(headerParamAnnotation.value().asString(),
-                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())));
+                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
+                            paramType));
                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo getterMethod = getGetterMethod(beanParamClass, target.asMethod());
                     resultList.add(new HeaderParamItem(headerParamAnnotation.value().asString(),
-                            new GetterExtractor(getterMethod)));
+                            new GetterExtractor(getterMethod), getterMethod.returnType().name().toString()));
                 }
             }
         }
@@ -110,11 +114,13 @@ public class BeanParamParser {
                 AnnotationTarget target = pathParamAnnotation.target();
                 if (target.kind() == AnnotationTarget.Kind.FIELD) {
                     FieldInfo fieldInfo = target.asField();
-                    resultList.add(new PathParamItem(pathParamAnnotation.value().asString(),
+                    String fieldType = fieldInfo.type().name().toString();
+                    resultList.add(new PathParamItem(pathParamAnnotation.value().asString(), fieldType,
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())));
                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo getterMethod = getGetterMethod(beanParamClass, target.asMethod());
-                    resultList.add(new PathParamItem(pathParamAnnotation.value().asString(),
+                    String paramType = getterMethod.returnType().name().toString();
+                    resultList.add(new PathParamItem(pathParamAnnotation.value().asString(), paramType,
                             new GetterExtractor(getterMethod)));
                 }
             }

@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.http.HttpClient;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.ext.ParamConverterProvider;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -29,6 +31,7 @@ public class WebTargetImpl implements WebTarget {
     // an additional handler that is passed to the handlerChain
     // used to support observability features
     private ClientRestHandler preClientSendHandler = null;
+    private List<ParamConverterProvider> paramConverterProviders = Collections.emptyList();
 
     public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration,
@@ -378,8 +381,13 @@ public class WebTargetImpl implements WebTarget {
         return this;
     }
 
+    public WebTargetImpl setParamConverterProviders(List<ParamConverterProvider> providers) {
+        this.paramConverterProviders = providers;
+        return this;
+    }
+
     public <T> T proxy(Class<?> clazz) {
-        return restClient.getClientContext().getClientProxies().get(clazz, this);
+        return restClient.getClientContext().getClientProxies().get(clazz, this, paramConverterProviders);
     }
 
     public ClientImpl getRestClient() {

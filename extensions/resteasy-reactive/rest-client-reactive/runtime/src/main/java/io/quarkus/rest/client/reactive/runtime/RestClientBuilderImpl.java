@@ -16,6 +16,7 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Configuration;
+import javax.ws.rs.ext.ParamConverterProvider;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -46,6 +47,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private final ClientBuilderImpl clientBuilder = (ClientBuilderImpl) new ClientBuilderImpl()
             .withConfig(new ConfigurationImpl(RuntimeType.CLIENT));
     private final List<ResponseExceptionMapper<?>> exceptionMappers = new ArrayList<>();
+    private final List<ParamConverterProvider> paramConverterProviders = new ArrayList<>();
 
     private URI uri;
     private boolean followRedirects;
@@ -221,7 +223,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     private void registerMpSpecificProvider(Class<?> componentClass) {
-        if (ResponseExceptionMapper.class.isAssignableFrom(componentClass)) {
+        if (ResponseExceptionMapper.class.isAssignableFrom(componentClass)
+                || ParamConverterProvider.class.isAssignableFrom(componentClass)) {
             try {
                 registerMpSpecificProvider(componentClass.getDeclaredConstructor().newInstance());
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -234,6 +237,9 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private void registerMpSpecificProvider(Object component) {
         if (component instanceof ResponseExceptionMapper) {
             exceptionMappers.add((ResponseExceptionMapper<?>) component);
+        }
+        if (component instanceof ParamConverterProvider) {
+            paramConverterProviders.add((ParamConverterProvider) component);
         }
     }
 
@@ -287,6 +293,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         ClientImpl client = clientBuilder.build();
         WebTargetImpl target = (WebTargetImpl) client.target(uri);
+        target.setParamConverterProviders(paramConverterProviders);
         try {
             return target.proxy(aClass);
         } catch (InvalidRestClientDefinitionException e) {

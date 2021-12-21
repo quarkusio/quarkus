@@ -170,9 +170,10 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    RouteBuildItem handler(LaunchModeBuildItem launch,
+    void handler(LaunchModeBuildItem launch,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<RouteBuildItem> routes,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
@@ -209,13 +210,29 @@ public class SmallRyeOpenApiProcessor {
                 .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
 
         Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
-        return nonApplicationRootPathBuildItem.routeBuilder()
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(openApiConfig.path)
                 .routeConfigKey("quarkus.smallrye-openapi.path")
                 .handler(handler)
                 .displayOnNotFoundPage("Open API Schema document")
                 .blockingRoute()
-                .build();
+                .build());
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(openApiConfig.path + ".json")
+                .handler(handler)
+                .build());
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(openApiConfig.path + ".yaml")
+                .handler(handler)
+                .build());
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(openApiConfig.path + ".yml")
+                .handler(handler)
+                .build());
     }
 
     @BuildStep

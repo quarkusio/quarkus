@@ -96,7 +96,7 @@
         <hibernate-search.version>6.0.7.Final</hibernate-search.version>
         <narayana.version>5.12.4.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
-        <agroal.version>1.13</agroal.version>
+        <agroal.version>1.14</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <elasticsearch-rest-client.version>7.10.0</elasticsearch-rest-client.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -127,7 +127,7 @@
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.21.0</assertj.version>
-        <infinispan.version>13.0.0.Final</infinispan.version>
+        <infinispan.version>13.0.5.Final</infinispan.version>
         <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
         <caffeine.version>2.9.3</caffeine.version>
         <netty.version>4.1.72.Final</netty.version>
@@ -189,7 +189,7 @@
         <log4j-jboss-logmanager.version>1.2.2.Final</log4j-jboss-logmanager.version>
         <avro.version>1.11.0</avro.version>
         <apicurio-registry.version>2.1.4.Final</apicurio-registry.version>
-        <apicurio-common-rest-client.version>0.1.0.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
+        <apicurio-common-rest-client.version>0.1.5.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
         <jacoco.version>0.8.7</jacoco.version>
         <testcontainers.version>1.16.2</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.2.12</docker-java.version> <!-- must be the version Testcontainers use -->

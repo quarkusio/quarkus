@@ -203,7 +203,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         assertThat(profile).isEqualTo("dev");
 
         //make sure webjars work
-        DevModeTestUtils.getHttpResponse("webjars/bootstrap/4.6.0/css/bootstrap.min.css");
+        DevModeTestUtils.getHttpResponse("webjars/jquery-ui/1.13.0/jquery-ui.min.js");
 
         assertThatOutputWorksCorrectly(running.log());
 

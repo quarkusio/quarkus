@@ -13,6 +13,9 @@
     <maven.compiler.source>11</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.target>11</maven.compiler.target>
+
+    <!-- do not update this dependency, it needs to be stable for testing -->
+    <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -42,8 +45,8 @@
     </dependency>
     <dependency>
       <groupId>org.webjars</groupId>
-      <artifactId>bootstrap</artifactId>
-      <version>${webjar.bootstrap.version}</version>
+      <artifactId>jquery-ui</artifactId>
+      <version>${webjar.jquery-ui.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>

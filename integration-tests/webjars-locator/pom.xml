@@ -15,6 +15,7 @@
     <name>Quarkus - Integration Tests - WebJar Locator</name>
 
     <properties>
+        <!-- do not update these dependencies, they are only used for testing -->
         <webjar.momentjs.version>2.24.0</webjar.momentjs.version>
         <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
     </properties>

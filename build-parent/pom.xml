@@ -45,6 +45,7 @@
         <asciidoctorj.version>2.5.2</asciidoctorj.version>
         <htmlunit.version>2.40.0</htmlunit.version>
         <javaparser-core.version>3.23.1</javaparser-core.version>
+        <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
 
         <!-- Dev tools -->
@@ -190,6 +191,18 @@
                 <groupId>org.commonmark</groupId>
                 <artifactId>commonmark</artifactId>
                 <version>${commonmark.version}</version>
+            </dependency>
+
+            <!-- Extension processor -->
+            <dependency>
+                <groupId>org.jboss.jdeparser</groupId>
+                <artifactId>jdeparser</artifactId>
+                <version>${jdeparser.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.javaparser</groupId>
+                <artifactId>javaparser-core</artifactId>
+                <version>${javaparser-core.version}</version>
             </dependency>
 
             <!-- Miscellaneous -->

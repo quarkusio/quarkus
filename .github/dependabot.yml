@@ -50,6 +50,8 @@ updates:
       - dependency-name: org.apache.kafka:*
       - dependency-name: org.apache.zookeeper:zookeeper
       - dependency-name: io.strimzi:kafka-oauth-client
+      - dependency-name: com.nimbusds:nimbus-jose-jwt
+      - dependency-name: io.apicurio:*
       # Scala
       - dependency-name: org.scala-lang:*
       - dependency-name: net.alchim31.maven:scala-maven-plugin
@@ -89,13 +91,13 @@ updates:
       - dependency-name: org.jboss.narayana.stm:stm
       # Agroal
       - dependency-name: io.agroal:*
-      #Jandex
+      # Jandex
       - dependency-name: org.jboss:jandex
       - dependency-name: org.jboss.jandex:jandex-maven-plugin
-      #WireMock
+      # WireMock
       - dependency-name: com.github.tomakehurst:wiremock-jre8
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
-      #Picocli
+      # Picocli
       - dependency-name: info.picocli:*
       # Caffeine
       - dependency-name: com.github.ben-manes.caffeine:caffeine
@@ -154,8 +156,6 @@ updates:
       - dependency-name: com.google.cloud.functions:*
       - dependency-name: com.google.errorprone:*
       - dependency-name: com.google.http-client:*
-      - dependency-name: com.nimbusds:nimbus-jose-jwt
-      - dependency-name: io.apicurio:*
       - dependency-name: io.dekorate:servicebinding-annotations
       - dependency-name: io.opentelemetry:*
       - dependency-name: io.opentelemetry.*:*
@@ -163,13 +163,17 @@ updates:
       - dependency-name: org.aesh:readline
       - dependency-name: org.checkerframework:checker-qual
       - dependency-name: org.jboss.metadata:jboss-metadata-web
-      - dependency-name: org.jboss.modules:jboss-modules
       - dependency-name: com.unboundid:unboundid-ldapsdk
       - dependency-name: org.commonmark:commonmark
       - dependency-name: org.asciidoctor:asciidoctorj
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: org.jboss.jdeparser:jdeparser
     ignore:
+      # this one cannot be upgraded due to the usage of proxies in new versions
+      # the proxy implements interfaces in a random order which causes issues
+      # https://github.com/quarkusio/quarkus/issues/18033
+      # https://github.com/opentracing-contrib/java-jdbc/issues/116
+      - dependency-name: io.opentracing.contrib:opentracing-jdbc
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck

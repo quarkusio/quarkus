@@ -258,7 +258,7 @@ public class SmallRyeOpenApiProcessor {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
                 MethodInfo method = ai.target().asMethod();
                 if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
-                    String ref = JandexUtil.createUniqueMethodReference(method);
+                    String ref = JandexUtil.createUniqueMethodReference(method.declaringClass(), method);
                     methodReferences.put(ref, List.of(ai.value().asStringArray()));
                 }
             }
@@ -267,7 +267,7 @@ public class SmallRyeOpenApiProcessor {
                 List<MethodInfo> methods = classInfo.methods();
                 for (MethodInfo method : methods) {
                     if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
-                        String ref = JandexUtil.createUniqueMethodReference(method);
+                        String ref = JandexUtil.createUniqueMethodReference(classInfo, method);
                         methodReferences.put(ref, List.of(ai.value().asStringArray()));
                     }
                 }
@@ -397,7 +397,7 @@ public class SmallRyeOpenApiProcessor {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
                 MethodInfo method = ai.target().asMethod();
                 if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
-                    String ref = JandexUtil.createUniqueMethodReference(method);
+                    String ref = JandexUtil.createUniqueMethodReference(method.declaringClass(), method);
                     methodReferences.put(ref, List.of(ai.value().asStringArray()));
                 }
             }
@@ -406,7 +406,7 @@ public class SmallRyeOpenApiProcessor {
                 List<MethodInfo> methods = classInfo.methods();
                 for (MethodInfo method : methods) {
                     if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
-                        String ref = JandexUtil.createUniqueMethodReference(method);
+                        String ref = JandexUtil.createUniqueMethodReference(classInfo, method);
                         methodReferences.put(ref, List.of(ai.value().asStringArray()));
                     }
                 }
@@ -427,20 +427,28 @@ public class SmallRyeOpenApiProcessor {
         for (AnnotationInstance ai : openapiAnnotations) {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
                 MethodInfo method = ai.target().asMethod();
-                String ref = JandexUtil.createUniqueMethodReference(method);
                 if (Modifier.isInterface(method.declaringClass().flags())) {
                     Collection<ClassInfo> allKnownImplementors = apiFilteredIndexViewBuildItem.getIndex()
                             .getAllKnownImplementors(method.declaringClass().name());
                     for (ClassInfo impl : allKnownImplementors) {
-                        classNames.put(ref, impl.simpleName());
+                        MethodInfo implMethod = impl.method(method.name(), method.parameters().toArray(new Type[] {}));
+                        if (implMethod != null) {
+                            String implRef = JandexUtil.createUniqueMethodReference(impl, method);
+                            classNames.put(implRef, impl.simpleName());
+                        }
                     }
                 } else if (Modifier.isAbstract(method.declaringClass().flags())) {
                     Collection<ClassInfo> allKnownSubclasses = apiFilteredIndexViewBuildItem.getIndex()
                             .getAllKnownSubclasses(method.declaringClass().name());
                     for (ClassInfo impl : allKnownSubclasses) {
-                        classNames.put(ref, impl.simpleName());
+                        MethodInfo implMethod = impl.method(method.name(), method.parameters().toArray(new Type[] {}));
+                        if (implMethod != null) {
+                            String implRef = JandexUtil.createUniqueMethodReference(impl, method);
+                            classNames.put(implRef, impl.simpleName());
+                        }
                     }
                 } else {
+                    String ref = JandexUtil.createUniqueMethodReference(method.declaringClass(), method);
                     classNames.put(ref, method.declaringClass().simpleName());
                 }
             }

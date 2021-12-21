@@ -61,10 +61,8 @@ $(document).ready(function(){
 
 function clearFilterInput(){
     $("#filterInput").val("");
-    $(".configTable tr").filter(function() {
-        if($(this).is(":visible")){
-            $(this).toggle($(this).text().toLowerCase().indexOf("") > -1)
-        }
+    $(".configTable tr").each(function() {
+        $(this).toggle(true)
     });
     hideEmptyTables();
 }

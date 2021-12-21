@@ -13,4 +13,11 @@ public class SmallRyeJwtConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean blockingAuthentication;
+
+    /**
+     * Disable the auth challenge, set it to true if your application is a web application that
+     * needs to handle its login redirect
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean disableChallenge;
 }

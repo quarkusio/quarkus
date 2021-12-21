@@ -522,6 +522,58 @@ quarkus.cache.caffeine."bar".maximum-size=1000 <2>
 <1> The `foo` cache is being configured.
 <2> The `bar` cache is being configured.
 
+== Enabling Micrometer metrics
+
+Each cache declared using the <<#annotations-api,annotations caching API>> can be monitored using Micrometer metrics.
+
+[NOTE]
+====
+The cache metrics collection will only work if your application depends on a `quarkus-micrometer-registry-*` extension.
+See the xref:micrometer.adoc[Micrometer metrics guide] to learn how to use Micrometer in Quarkus.
+====
+
+The cache metrics collection is disabled by default.
+It can be enabled from the `application.properties` file:
+
+[source,properties]
+----
+quarkus.cache.caffeine."foo".metrics-enabled=true
+----
+
+[WARNING]
+====
+Like all instrumentation methods, collecting metrics comes with a small overhead that can impact the application performances.
+====
+
+The collected metrics contain cache statistics such as:
+
+- the approximate current number of entries in the cache
+- the number of entries that were added to the cache
+- the number of times a cache lookup has been performed, including information about hits and misses
+- the number of evictions and the weight of the evicted entries
+
+Here is an example of cache metrics available for an application that depends on the `quarkus-micrometer-registry-prometheus` extension:
+
+[source]
+----
+# HELP cache_size The number of entries in this cache. This may be an approximation, depending on the type of cache.
+# TYPE cache_size gauge
+cache_size{cache="foo",} 8.0
+# HELP cache_puts_total The number of entries added to the cache
+# TYPE cache_puts_total counter
+cache_puts_total{cache="foo",} 12.0
+# HELP cache_gets_total The number of times cache lookup methods have returned a cached value.
+# TYPE cache_gets_total counter
+cache_gets_total{cache="foo",result="hit",} 53.0
+cache_gets_total{cache="foo",result="miss",} 12.0
+# HELP cache_evictions_total cache evictions
+# TYPE cache_evictions_total counter
+cache_evictions_total{cache="foo",} 4.0
+# HELP cache_eviction_weight_total The sum of weights of evicted entries. This total does not include manual invalidations.
+# TYPE cache_eviction_weight_total counter
+cache_eviction_weight_total{cache="foo",} 540.0
+----
+
 == Annotated beans examples
 
 === Implicit simple cache key

@@ -73,6 +73,12 @@ public class CacheConfig {
              */
             @ConfigItem
             Optional<Duration> expireAfterAccess;
+
+            /**
+             * Whether or not metrics are recorded if the application depends on the Micrometer extension. Setting this
+             * value to {@code true} will enable the accumulation of cache stats inside Caffeine.
+             */
+            boolean metricsEnabled;
         }
     }
 }

@@ -1,6 +1,5 @@
 package io.quarkus.cache.runtime.caffeine;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -14,6 +13,8 @@ import org.jboss.logging.Logger;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.stats.ConcurrentStatsCounter;
+import com.github.benmanes.caffeine.cache.stats.StatsCounter;
 
 import io.quarkus.cache.CacheException;
 import io.quarkus.cache.CaffeineCache;
@@ -29,43 +30,43 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     private static final Logger LOGGER = Logger.getLogger(CaffeineCacheImpl.class);
 
-    private AsyncCache<Object, Object> cache;
+    final AsyncCache<Object, Object> cache;
 
-    private String name;
+    private final CaffeineCacheInfo cacheInfo;
+    private final StatsCounter statsCounter;
 
-    private Integer initialCapacity;
-
-    private Long maximumSize;
-
-    private Duration expireAfterWrite;
-
-    private Duration expireAfterAccess;
-
-    public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo) {
-        this.name = cacheInfo.name;
+    public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo, boolean recordStats) {
+        this.cacheInfo = cacheInfo;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
         if (cacheInfo.initialCapacity != null) {
-            this.initialCapacity = cacheInfo.initialCapacity;
             builder.initialCapacity(cacheInfo.initialCapacity);
         }
         if (cacheInfo.maximumSize != null) {
-            this.maximumSize = cacheInfo.maximumSize;
             builder.maximumSize(cacheInfo.maximumSize);
         }
         if (cacheInfo.expireAfterWrite != null) {
-            this.expireAfterWrite = cacheInfo.expireAfterWrite;
             builder.expireAfterWrite(cacheInfo.expireAfterWrite);
         }
         if (cacheInfo.expireAfterAccess != null) {
-            this.expireAfterAccess = cacheInfo.expireAfterAccess;
             builder.expireAfterAccess(cacheInfo.expireAfterAccess);
+        }
+        if (recordStats) {
+            statsCounter = new ConcurrentStatsCounter();
+            builder.recordStats(new Supplier<StatsCounter>() {
+                @Override
+                public StatsCounter get() {
+                    return statsCounter;
+                }
+            });
+        } else {
+            statsCounter = StatsCounter.disabledStatsCounter();
         }
         cache = builder.buildAsync();
     }
 
     @Override
     public String getName() {
-        return name;
+        return cacheInfo.name;
     }
 
     @Override
@@ -89,7 +90,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
      * Returns a {@link CompletableFuture} holding the cache value identified by {@code key}, obtaining that value from
      * {@code valueLoader} if necessary. The value computation is done synchronously on the calling thread and the
      * {@link CompletableFuture} is immediately completed before being returned.
-     * 
+     *
      * @param key cache key
      * @param valueLoader function used to compute the cache value if {@code key} is not already associated with a value
      * @return a {@link CompletableFuture} holding the cache value
@@ -99,6 +100,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         CompletableFuture<Object> newCacheValue = new CompletableFuture<>();
         CompletableFuture<Object> existingCacheValue = cache.asMap().putIfAbsent(key, newCacheValue);
         if (existingCacheValue == null) {
+            statsCounter.recordMisses(1);
             try {
                 Object value = valueLoader.apply(key);
                 newCacheValue.complete(NullValueConverter.toCacheValue(value));
@@ -108,6 +110,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             }
             return unwrapCacheValueOrThrowable(newCacheValue);
         } else {
+            statsCounter.recordHits(1);
             return unwrapCacheValueOrThrowable(existingCacheValue);
         }
     }
@@ -159,7 +162,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         return Uni.createFrom().item(() -> {
             // If the cache no longer contains the key because it was removed, we don't want to put it back.
             cache.asMap().computeIfPresent(key, (k, currentValue) -> {
-                LOGGER.debugf("Replacing Uni value entry with key [%s] into cache [%s]", key, name);
+                LOGGER.debugf("Replacing Uni value entry with key [%s] into cache [%s]", key, cacheInfo.name);
                 /*
                  * The following computed value will always replace the current cache value (whether it is an
                  * UnresolvedUniValue or not) if this method is called multiple times with the same key.
@@ -176,23 +179,8 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     }
 
     // For testing purposes only.
-    public Integer getInitialCapacity() {
-        return initialCapacity;
-    }
-
-    // For testing purposes only.
-    public Long getMaximumSize() {
-        return maximumSize;
-    }
-
-    // For testing purposes only.
-    public Duration getExpireAfterWrite() {
-        return expireAfterWrite;
-    }
-
-    // For testing purposes only.
-    public Duration getExpireAfterAccess() {
-        return expireAfterAccess;
+    public CaffeineCacheInfo getCacheInfo() {
+        return cacheInfo;
     }
 
     public long getSize() {

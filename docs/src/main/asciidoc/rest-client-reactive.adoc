@@ -708,6 +708,29 @@ You should see a JSON object containing some basic information about this extens
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
+== Logging traffic
+REST Client Reactive can log the requests it sends and the responses it receives.
+To enable logging, add the `quarkus.rest-client.logging.scope` property to your `application.properties` and set it to:
+
+* `request-response` to log the request and response contents, or
+* `all` to also enable low level logging of the underlying libraries.
+
+As HTTP messages can have large bodies, we limit the amount of body characters logged. The default limit is `100`, you can change it by specifying `quarkus.rest-client.logging.body-limit`.
+
+NOTE: REST Client Reactive is logging the traffic with level DEBUG and does not alter logger properties. You may need to adjust your logger configuration to use this feature.
+
+An example logging configuration:
+
+[source,properties]
+----
+quarkus.rest-client.logging.scope=request-response
+quarkus.rest-client.logging.body-limit=50
+
+quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
+----
+
+
+
 == Using a Mock HTTP Server for tests
 
 For tests, you can easily mock the HTTP server with Wiremock.

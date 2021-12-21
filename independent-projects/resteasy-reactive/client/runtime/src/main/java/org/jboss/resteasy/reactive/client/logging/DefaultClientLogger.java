@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.client.impl;
+package org.jboss.resteasy.reactive.client.logging;
 
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;

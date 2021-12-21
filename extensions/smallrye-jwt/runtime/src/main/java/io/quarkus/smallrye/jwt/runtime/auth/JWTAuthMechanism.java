@@ -39,6 +39,9 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
     @Inject
     private JWTAuthContextInfo authContextInfo;
 
+    @Inject
+    private SmallRyeJwtConfig config;
+
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
@@ -57,6 +60,8 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
+        if (config.disableChallenge)
+            return Uni.createFrom().nullItem();
         ChallengeData result = new ChallengeData(
                 HttpResponseStatus.UNAUTHORIZED.code(),
                 HttpHeaderNames.WWW_AUTHENTICATE,

@@ -19,6 +19,10 @@ public final class ValueResolvers {
 
     static final String THIS = "this";
 
+    static final String ELVIS = "?:";
+    static final String OR = "or";
+    static final String COLON = ":";
+
     public static ValueResolver rawResolver() {
         return new ValueResolver() {
 
@@ -90,7 +94,7 @@ public final class ValueResolvers {
                     return false;
                 }
                 String name = context.getName();
-                return name.equals("?:") || name.equals("or") || name.equals(":");
+                return name.equals(ELVIS) || name.equals(OR) || name.equals(COLON);
             }
 
             @Override

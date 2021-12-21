@@ -16,12 +16,14 @@ public class InfinispanTestResource implements QuarkusTestResourceLifecycleManag
     public static final String PORT_ARG = "port";
     public static final String USER_ARG = "user";
     public static final String PASSWORD_ARG = "password";
+    public static final String ARTIFACTS_ARG = "artifacts";
     private static final int DEFAULT_PORT = ConfigurationProperties.DEFAULT_HOTROD_PORT;
     private static final String DEFAULT_USER = "admin";
     private static final String DEFAULT_PASSWORD = "password";
     private static InfinispanContainer INFINISPAN;
     private String USER;
     private String PASSWORD;
+    private String[] ARTIFACTS;
     private Integer HOTROD_PORT;
 
     @Override
@@ -29,12 +31,13 @@ public class InfinispanTestResource implements QuarkusTestResourceLifecycleManag
         HOTROD_PORT = Optional.ofNullable(initArgs.get(PORT_ARG)).map(Integer::parseInt).orElse(DEFAULT_PORT);
         USER = Optional.ofNullable(initArgs.get(USER_ARG)).orElse(DEFAULT_USER);
         PASSWORD = Optional.ofNullable(initArgs.get(PASSWORD_ARG)).orElse(DEFAULT_PASSWORD);
+        ARTIFACTS = Optional.ofNullable(initArgs.get(ARTIFACTS_ARG).split(",")).orElse(new String[0]);
     }
 
     @Override
     public Map<String, String> start() {
         INFINISPAN = new InfinispanContainer();
-        INFINISPAN.withUser(USER).withPassword(PASSWORD);
+        INFINISPAN.withUser(USER).withPassword(PASSWORD).withArtifacts(ARTIFACTS);
         LOGGER.infof("Starting Infinispan Server %s on port %s with user %s and password %s", Version.getMajorMinor(),
                 HOTROD_PORT, USER, PASSWORD);
         INFINISPAN.start();

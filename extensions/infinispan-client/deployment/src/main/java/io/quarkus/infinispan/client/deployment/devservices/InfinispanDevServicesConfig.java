@@ -1,6 +1,8 @@
 package io.quarkus.infinispan.client.deployment.devservices;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -54,6 +56,17 @@ public class InfinispanDevServicesConfig {
     @ConfigItem(defaultValue = "infinispan")
     public String serviceName;
 
+    /**
+     * List of the artifacts to automatically download and add to the Infinispan server libraries.
+     * <p>
+     * For example a Maven coordinate
+     * (org.postgresql:postgresql:42.3.1) or a dependency location url.
+     * <p>
+     * If an invalid value is passed, the Infinispan server will throw an error when trying to start.
+     */
+    @ConfigItem
+    public Optional<List<String>> artifacts;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -64,11 +77,12 @@ public class InfinispanDevServicesConfig {
         return enabled == that.enabled &&
                 Objects.equals(port, that.port) &&
                 Objects.equals(shared, that.shared) &&
-                Objects.equals(serviceName, that.serviceName);
+                Objects.equals(serviceName, that.serviceName) &&
+                Objects.equals(artifacts, this.artifacts);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, port, shared, serviceName);
+        return Objects.hash(enabled, port, shared, serviceName, artifacts);
     }
 }

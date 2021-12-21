@@ -53,12 +53,13 @@ public class ServiceBindingProcessor {
         String applicationName = applicationInfo.getName();
         //First we add all user provided services
         config.services.forEach((key, s) -> {
-            createRequirement(applicationName, key, config).ifPresent(r -> requirements.put(key, r));
+            createRequirementFromConfig(applicationName, key, config).ifPresent(r -> requirements.put(key, r));
         });
 
         //Then we try to make requirements out of qualifies for services not already provided by the user
         qualifiers.forEach(q -> {
-            Optional<ServiceBindingRequirementBuildItem> requirement = createRequirement(applicationName, config, q);
+            Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier(applicationName, config,
+                    q);
             requirement.ifPresent(r -> {
                 String id = q.getId();
                 requirements.putIfAbsent(id, r);
@@ -84,37 +85,69 @@ public class ServiceBindingProcessor {
         return result;
     }
 
-    protected static Optional<ServiceBindingRequirementBuildItem> createRequirement(String applicationName, String serviceKey,
-            KubernetesServiceBindingConfig config) {
-        String name = config.services != null && config.services.containsKey(serviceKey)
-                ? config.services.get(serviceKey).name.orElse(serviceKey)
-                : serviceKey;
+    /**
+     * Create an {@link Optional} {@link ServiceBindingRequirementBuildItem} from a {@link KubernetesServiceBindingConfig}
+     * entry.
+     * 
+     * @param applicationName The name of the application.
+     * @param serviceId The key of the service.
+     * @param config The config instance.
+     * @return The servicebinding requirement that corresponds to the matching entry, or empty if no service with serviceId was
+     *         found in config.
+     */
+    protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromConfig(String applicationName,
+            String serviceId, KubernetesServiceBindingConfig config) {
+        String name = config.services != null && config.services.containsKey(serviceId)
+                ? config.services.get(serviceId).name.orElse(serviceId)
+                : serviceId;
 
-        return createRequirement(applicationName, serviceKey, serviceKey, name, config);
+        return createRequirementFromConfig(applicationName, serviceId, serviceId, name, config);
     }
 
-    protected static Optional<ServiceBindingRequirementBuildItem> createRequirement(String applicationName, String serviceKey,
-            String serviceId, String serviceName, KubernetesServiceBindingConfig config) {
+    /**
+     * Create an {@link Optional} {@link ServiceBindingRequirementBuildItem} from a {@link KubernetesServiceBindingConfig}
+     * entry.
+     * 
+     * @param applicationName The name of the application.
+     * @param defaultsLookupKey The key to use for looking up default apiVersion/kind).
+     * @param serviceId The key of the service.
+     * @param resourceName The name of the target resource.
+     * @param config The config instance.
+     * @return The servicebinding requirement that corresponds to the matching entry, or empty if no service with serviceId was
+     *         found in config.
+     */
+    protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromConfig(String applicationName,
+            String defaultsLookupKey, String serviceId, String resourceName, KubernetesServiceBindingConfig config) {
         if (config.services != null && config.services.containsKey(serviceId)) {
             ServiceConfig provided = config.services.get(serviceId);
-            String apiVersion = provided.apiVersion
-                    .orElseGet(() -> getDefaultQualifiedKind(serviceKey).map(ServiceBindingProcessor::apiVersion).orElse(""));
-            String kind = provided.kind.orElseGet(() -> getDefaultQualifiedKind(serviceKey).map(ServiceBindingProcessor::kind)
-                    .orElseThrow(() -> new IllegalStateException("Failed to determing bindable service kind.")));
+            String apiVersion = provided.apiVersion.orElseGet(
+                    () -> getDefaultQualifiedKind(defaultsLookupKey).map(ServiceBindingProcessor::apiVersion).orElse(""));
+            String kind = provided.kind
+                    .orElseGet(() -> getDefaultQualifiedKind(defaultsLookupKey).map(ServiceBindingProcessor::kind)
+                            .orElseThrow(() -> new IllegalStateException("Failed to determing bindable service kind.")));
             //When a service is partically or fully configured, use the configured binding or fallback to the application name and service id combination.
             return Optional
                     .of(new ServiceBindingRequirementBuildItem(provided.binding.orElse(applicationName + "-" + serviceId),
-                            apiVersion, kind, provided.name.orElse(serviceName)));
+                            apiVersion, kind, provided.name.orElse(resourceName)));
         }
         return Optional.empty();
     }
 
-    protected static Optional<ServiceBindingRequirementBuildItem> createRequirement(String applicationName,
+    /**
+     * Create an {@link Optional} {@link ServiceBindingRequirementBuildItem} from a {@link ServiceBindingQualifierBuildItem}.
+     * 
+     * @param applicationName The name of the application.
+     * @param config The config instance.
+     * @param qualifier The qualifier that will be converted to a requirement.
+     * @return The servicebinding requirement that corresponds to the config entry that matches the qualifier, or the defaults
+     *         for the qualifier. Returns empty if none of the above was found.
+     */
+    protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromQualifier(String applicationName,
             KubernetesServiceBindingConfig config, ServiceBindingQualifierBuildItem qualifier) {
         String serviceId = qualifier.getId();
 
         if (config.services != null && config.services.containsKey(serviceId)) {
-            return createRequirement(applicationName, qualifier.getKind(), serviceId, qualifier.getName(), config);
+            return createRequirementFromConfig(applicationName, qualifier.getKind(), serviceId, qualifier.getName(), config);
         } else if (DEFAULTS.containsKey(qualifier.getKind())) {
             String value = DEFAULTS.get(qualifier.getKind());
             //When no service is configured, we use as binding name the combination of kind and name.
@@ -124,11 +157,11 @@ public class ServiceBindingProcessor {
         return Optional.empty();
     }
 
-    protected static Optional<String> getDefaultQualifiedKind(String id) {
-        if (!DEFAULTS.containsKey(id)) {
+    protected static Optional<String> getDefaultQualifiedKind(String key) {
+        if (!DEFAULTS.containsKey(key)) {
             return Optional.empty();
         }
-        return Optional.of(DEFAULTS.get(id));
+        return Optional.of(DEFAULTS.get(key));
     }
 
     protected static String apiVersion(String name) {

@@ -88,6 +88,7 @@ public class ResteasyServerCommonProcessor {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = "javax.ws.rs.Application";
+    private static final String MESSAGES_RESOURCE_BUNDLE = "messages";
 
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
@@ -181,8 +182,12 @@ public class ResteasyServerCommonProcessor {
 
     @BuildStep
     NativeImageConfigBuildItem config() {
+        if (Thread.currentThread().getContextClassLoader().getResource(MESSAGES_RESOURCE_BUNDLE) == null) {
+            return null;
+        }
+
         return NativeImageConfigBuildItem.builder()
-                .addResourceBundle("messages")
+                .addResourceBundle(MESSAGES_RESOURCE_BUNDLE)
                 .build();
     }
 

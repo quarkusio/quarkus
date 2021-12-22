@@ -151,6 +151,9 @@ updates:
       - dependency-name: org.webjars:jquery
       - dependency-name: org.webjars:codemirror
       - dependency-name: org.webjars.npm:mermaid
+      # Elasticsearch - we do not update the high level client
+      - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
+      - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*

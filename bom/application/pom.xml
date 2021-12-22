@@ -98,7 +98,10 @@
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.14</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-rest-client.version>7.10.0</elasticsearch-rest-client.version>
+        <elasticsearch-rest-client.version>7.16.2</elasticsearch-rest-client.version>
+        <elasticsearch-opensource-components.version>${elasticsearch-rest-client.version}</elasticsearch-opensource-components.version>
+        <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
+        <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.0</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>
@@ -4409,12 +4412,12 @@
             <dependency>
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>elasticsearch-rest-client</artifactId>
-                <version>${elasticsearch-rest-client.version}</version>
+                <version>${elasticsearch-opensource-components.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>elasticsearch-rest-high-level-client</artifactId>
-                <version>${elasticsearch-rest-client.version}</version>
+                <version>${elasticsearch-proprietary-components-keeping-old-opensource-version.version}</version>
                 <exclusions>
                     <!-- exclude log4j2 to get its version from log4j2-jboss-logmanager -->
                     <exclusion>
@@ -4426,7 +4429,7 @@
             <dependency>
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>elasticsearch-rest-client-sniffer</artifactId>
-                <version>${elasticsearch-rest-client.version}</version>
+                <version>${elasticsearch-opensource-components.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>

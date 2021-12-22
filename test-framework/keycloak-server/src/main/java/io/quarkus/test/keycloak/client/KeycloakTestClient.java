@@ -98,8 +98,10 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     public String getAuthServerBaseUrl() {
         try {
             var uri = new URI(getAuthServerUrl());
-            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), "/auth", null, null)
-                    .toString();
+            // Keycloak-X does not have the `/auth` path segment by default.
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(),
+                    (uri.getPath().startsWith("/auth") ? "/auth" : null), null, null)
+                            .toString();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -113,7 +115,7 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
     public String getAuthServerUrl() {
         String authServerUrl = getPropertyValue(CLIENT_AUTH_SERVER_URL_PROP, null);
         if (authServerUrl == null) {
-            getPropertyValue(AUTH_SERVER_URL_PROP, null);
+            authServerUrl = getPropertyValue(AUTH_SERVER_URL_PROP, null);
         }
         if (authServerUrl == null) {
             throw new ConfigurationException(

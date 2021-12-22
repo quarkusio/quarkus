@@ -142,6 +142,8 @@ public class KubernetesClientProcessor {
                 .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.api.model.IntOrString"));
         reflectiveClasses
                 .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.internal.KubernetesDeserializer"));
+        reflectiveClasses
+                .produce(new ReflectiveClassBuildItem(true, true, "io.fabric8.kubernetes.client.VersionInfo"));
 
         if (log.isDebugEnabled()) {
             final String watchedClassNames = watchedClasses

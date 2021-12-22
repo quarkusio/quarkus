@@ -48,6 +48,9 @@ public class KubernetesClientTest {
 
         RestAssured.when().post("/pod/test").then()
                 .body(containsString("54321"));
+
+        RestAssured.when().get("/version").then()
+                .statusCode(200);
     }
 
     @Test

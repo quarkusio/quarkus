@@ -345,11 +345,28 @@ class HibernateValidatorProcessor {
 
     @BuildStep
     NativeImageConfigBuildItem nativeImageConfig() {
-        return NativeImageConfigBuildItem.builder()
-                .addResourceBundle(AbstractMessageInterpolator.DEFAULT_VALIDATION_MESSAGES)
-                .addResourceBundle(AbstractMessageInterpolator.USER_VALIDATION_MESSAGES)
-                .addResourceBundle(AbstractMessageInterpolator.CONTRIBUTOR_VALIDATION_MESSAGES)
-                .build();
+        List<String> potentialHibernateValidatorResourceBundles = List.of(
+                AbstractMessageInterpolator.DEFAULT_VALIDATION_MESSAGES,
+                AbstractMessageInterpolator.USER_VALIDATION_MESSAGES,
+                AbstractMessageInterpolator.CONTRIBUTOR_VALIDATION_MESSAGES);
+        List<String> userDefinedHibernateValidatorResourceBundles = new ArrayList<>();
+
+        for (String potentialHibernateValidatorResourceBundle : potentialHibernateValidatorResourceBundles) {
+            if (Thread.currentThread().getContextClassLoader().getResource(potentialHibernateValidatorResourceBundle) != null) {
+                userDefinedHibernateValidatorResourceBundles.add(potentialHibernateValidatorResourceBundle);
+            }
+        }
+
+        if (userDefinedHibernateValidatorResourceBundles.isEmpty()) {
+            return null;
+        }
+
+        NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
+        for (String hibernateValidatorResourceBundle : userDefinedHibernateValidatorResourceBundles) {
+            builder.addResourceBundle(hibernateValidatorResourceBundle);
+        }
+
+        return builder.build();
     }
 
     @BuildStep

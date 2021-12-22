@@ -88,9 +88,9 @@ public class KeycloakDevServicesProcessor {
 
     private static final String KEYCLOAK_ADMIN_USER = "admin";
     private static final String KEYCLOAK_ADMIN_PASSWORD = "admin";
-    private static final String KEYCLOAK_FRONTEND_URL = "KEYCLOAK_FRONTEND_URL";
 
     // Properties recognized by Wildfly-powered Keycloak
+    private static final String KEYCLOAK_WILDFLY_FRONTEND_URL = "KEYCLOAK_FRONTEND_URL";
     private static final String KEYCLOAK_WILDFLY_USER_PROP = "KEYCLOAK_USER";
     private static final String KEYCLOAK_WILDFLY_PASSWORD_PROP = "KEYCLOAK_PASSWORD";
     private static final String KEYCLOAK_WILDFLY_IMPORT_PROP = "KEYCLOAK_IMPORT";
@@ -98,6 +98,7 @@ public class KeycloakDevServicesProcessor {
     private static final String KEYCLOAK_WILDFLY_VENDOR_PROP = "DB_VENDOR";
 
     // Properties recognized by Quarkus-powered Keycloak
+    private static final String KEYCLOAK_QUARKUS_HOSTNAME = "KC_HOSTNAME";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KEYCLOAK_ADMIN";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KEYCLOAK_ADMIN_PASSWORD";
 
@@ -238,8 +239,9 @@ public class KeycloakDevServicesProcessor {
         final String realmName = realmNameToUse != null ? realmNameToUse : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(capturedKeycloakInternalURL, realmName);
 
-        String clientAuthServerUrl = capturedKeycloakHostURL != null ? realmsURL(capturedKeycloakHostURL, realmName)
-                : realmsURL(capturedKeycloakInternalURL, realmName);
+        String clientAuthServerBaseUrl = capturedKeycloakHostURL != null ? capturedKeycloakHostURL
+                : capturedKeycloakInternalURL;
+        String clientAuthServerUrl = realmsURL(clientAuthServerBaseUrl, realmName);
 
         String oidcClientId = getOidcClientId();
         String oidcClientSecret = getOidcClientSecret();
@@ -247,7 +249,7 @@ public class KeycloakDevServicesProcessor {
         Map<String, String> users = getUsers(capturedDevServicesConfiguration.users, createRealm);
 
         if (createRealm) {
-            createRealm(capturedKeycloakInternalURL, users, oidcClientId, oidcClientSecret);
+            createRealm(clientAuthServerBaseUrl, users, oidcClientId, oidcClientSecret);
         }
         devServices.produce(new DevServicesConfigResultBuildItem(KEYCLOAK_URL_KEY, capturedKeycloakInternalURL));
         devServices.produce(new DevServicesConfigResultBuildItem(AUTH_SERVER_URL_CONFIG_KEY, authServerInternalUrl));
@@ -416,7 +418,11 @@ public class KeycloakDevServicesProcessor {
 
             if (useSharedNetwork) {
                 hostName = ConfigureUtil.configureSharedNetwork(this, "keycloak");
-                addEnv(KEYCLOAK_FRONTEND_URL, "http://localhost:" + fixedExposedPort.getAsInt());
+                if (keycloakX) {
+                    addEnv(KEYCLOAK_QUARKUS_HOSTNAME, "localhost");
+                } else {
+                    addEnv(KEYCLOAK_WILDFLY_FRONTEND_URL, "http://localhost:" + fixedExposedPort.getAsInt());
+                }
             }
 
             if (fixedExposedPort.isPresent()) {

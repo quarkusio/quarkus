@@ -67,7 +67,8 @@ public class MariaDBDevServicesProcessor {
         private String hostName = null;
 
         public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
-            super(DockerImageName.parse(imageName.orElse(MariaDBContainer.IMAGE + ":" + MariaDBDevServicesProcessor.TAG))
+            super(DockerImageName
+                    .parse(imageName.orElse("docker.io/" + MariaDBContainer.IMAGE + ":" + MariaDBDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MariaDBContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

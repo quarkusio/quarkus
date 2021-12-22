@@ -33,17 +33,16 @@ public class UniValueTest {
     public void test() {
         // STEP 1
         // Action: a method annotated with @CacheResult and returning a Uni is called.
-        // Expected effect: the method is invoked and an UnresolvedUniValue is cached.
+        // Expected effect: the method is not invoked, as Uni is lazy
         // Verified by: invocations counter and CacheResultInterceptor log.
         Uni<String> uni1 = cachedService.cachedMethod(KEY);
-        assertEquals(1, cachedService.getInvocations());
+        assertEquals(0, cachedService.getInvocations());
 
         // STEP 2
         // Action: same call as STEP 1.
-        // Expected effect: the method is invoked because the key is associated with a cached UnresolvedUniValue.
-        // Verified by: invocations counter and CacheResultInterceptor log.
+        // Expected effect: the method is not invoked, as Uni is lazy
         Uni<String> uni2 = cachedService.cachedMethod(KEY);
-        assertEquals(2, cachedService.getInvocations());
+        assertEquals(0, cachedService.getInvocations());
 
         // STEP 3
         // Action: the Uni returned in STEP 1 is subscribed to and we wait for an item event to be fired.
@@ -51,22 +50,25 @@ public class UniValueTest {
         // Verified by: subscriptions counter and CaffeineCache log.
         String emittedItem1 = uni1.await().indefinitely();
         assertEquals("1", emittedItem1); // This checks the subscriptions counter value.
+        //the method would be called to resolve the value
+        assertEquals(1, cachedService.getInvocations());
 
         // STEP 4
         // Action: the Uni returned in STEP 2 is subscribed to and we wait for an item event to be fired.
         // Expected effect: the emitted item from STEP 3 is replaced with the emitted item from this step in the cache.
         // Verified by: subscriptions counter, CaffeineCache log and different objects references between STEPS 3 and 4 emitted items.
         String emittedItem2 = uni2.await().indefinitely();
-        assertTrue(emittedItem1 != emittedItem2);
-        assertEquals("2", emittedItem2); // This checks the subscriptions counter value.
+        assertTrue(emittedItem1 == emittedItem2);
+        assertEquals("1", emittedItem2); // This checks the subscriptions counter value.
+        assertEquals(1, cachedService.getInvocations());
 
         // STEP 5
         // Action: same call as STEP 2 but we immediately subscribe to the returned Uni and wait for an item event to be fired.
         // Expected effect: the method is not invoked and the emitted item cached during STEP 4 is returned.
         // Verified by: invocations and subscriptions counters, same object reference between STEPS 4 and 5 emitted items.
         String emittedItem3 = cachedService.cachedMethod(KEY).await().indefinitely();
-        assertEquals(2, cachedService.getInvocations());
-        assertEquals("2", emittedItem3); // This checks the subscriptions counter value.
+        assertEquals(1, cachedService.getInvocations());
+        assertEquals("1", emittedItem3); // This checks the subscriptions counter value.
         assertTrue(emittedItem2 == emittedItem3);
 
         // STEP 6
@@ -74,16 +76,16 @@ public class UniValueTest {
         // Expected effect: the method is invoked and an UnresolvedUniValue is cached.
         // Verified by: invocations and subscriptions counters, CacheResultInterceptor log and different objects references between STEPS 5 and 6 emitted items.
         String emittedItem4 = cachedService.cachedMethod("another-key").await().indefinitely();
-        assertEquals(3, cachedService.getInvocations());
-        assertEquals("3", emittedItem4); // This checks the subscriptions counter value.
+        assertEquals(2, cachedService.getInvocations());
+        assertEquals("2", emittedItem4); // This checks the subscriptions counter value.
         assertTrue(emittedItem3 != emittedItem4);
     }
 
     @ApplicationScoped
     static class CachedService {
 
-        private int invocations;
-        private int subscriptions;
+        private volatile int invocations;
+        private volatile int subscriptions;
 
         @CacheResult(cacheName = "test-cache")
         public Uni<String> cachedMethod(String key) {

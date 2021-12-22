@@ -240,18 +240,6 @@ final class ExpressionImpl implements Expression {
             return typeInfo;
         }
 
-        void setCachedResolver(ValueResolver resolver) {
-            ValueResolver last = this.cachedResolver;
-            if (last != null) {
-                return;
-            }
-            synchronized (this) {
-                if (this.cachedResolver == null) {
-                    this.cachedResolver = resolver;
-                }
-            }
-        }
-
         @Override
         public int hashCode() {
             return Objects.hash(name, typeInfo);

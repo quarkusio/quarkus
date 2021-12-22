@@ -13,13 +13,6 @@ import java.util.stream.Collectors;
 
 public final class Results {
 
-    /**
-     * This field will be removed at some point post Quarkus 2.1.
-     * 
-     * @deprecated Use {@link #notFound(EvalContext)} or {@link #notFound(String)} instead
-     */
-    @Deprecated
-    public static final CompletionStage<Object> NOT_FOUND = CompletedStage.of(Result.NOT_FOUND);
     public static final CompletedStage<Object> FALSE = CompletedStage.of(false);
     public static final CompletedStage<Object> TRUE = CompletedStage.of(true);
     public static final CompletedStage<Object> NULL = CompletedStage.of(null);
@@ -33,7 +26,7 @@ public final class Results {
      * @return {@code true} if the value represents a "not found" result
      */
     public static boolean isNotFound(Object result) {
-        return Result.NOT_FOUND == result || result instanceof NotFound;
+        return result instanceof NotFound;
     }
 
     public static CompletionStage<Object> notFound(EvalContext evalContext) {
@@ -90,22 +83,6 @@ public final class Results {
             });
         }
         return ret;
-    }
-
-    /**
-     * This enum will be removed at some point post Quarkus 2.1.
-     * 
-     * @deprecated {@link NotFound} instead.
-     */
-    @Deprecated
-    public enum Result {
-
-        NOT_FOUND;
-
-        @Override
-        public String toString() {
-            return "NOT_FOUND";
-        }
     }
 
     /**

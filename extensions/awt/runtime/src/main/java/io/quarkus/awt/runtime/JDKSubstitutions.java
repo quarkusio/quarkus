@@ -5,13 +5,12 @@ import java.util.PropertyResourceBundle;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.jdk.JDK11OrLater;
 
 /**
  * TODO: This is just a workaround,
  * see AwtProcessor#yankI18NPropertiesFromHostJDK
  */
-@TargetClass(className = "com.sun.imageio.plugins.common.I18NImpl", onlyWith = JDK11OrLater.class)
+@TargetClass(className = "com.sun.imageio.plugins.common.I18NImpl")
 final class Target_com_sun_imageio_plugins_common_I18NImpl {
 
     @Substitute

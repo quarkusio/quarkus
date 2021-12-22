@@ -1,6 +1,5 @@
 package io.quarkus.jaxb.deployment;
 
-import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -336,7 +335,7 @@ class JaxbProcessor {
         try {
             String path = p.toAbsolutePath().toString().substring(1);
             String pkg = p.toAbsolutePath().getParent().toString().substring(1)
-                    .replace(File.separator, ".") + ".";
+                    .replace(p.getFileSystem().getSeparator(), ".") + ".";
 
             resource.produce(new NativeImageResourceBuildItem(path));
 

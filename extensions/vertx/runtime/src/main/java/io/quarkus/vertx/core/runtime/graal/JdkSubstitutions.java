@@ -11,7 +11,6 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.InjectAccessors;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.jdk.JDK11OrLater;
 
 @TargetClass(className = "jdk.internal.loader.URLClassPath$Loader")
 final class Target_URLClassPath$Loader {
@@ -29,7 +28,7 @@ final class Target_URLClassPath$FileLoader {
     }
 }
 
-@TargetClass(className = "jdk.internal.loader.URLClassPath", onlyWith = JDK11OrLater.class)
+@TargetClass(className = "jdk.internal.loader.URLClassPath")
 final class Target_jdk_internal_loader_URLClassPath {
 
     @Substitute
@@ -52,7 +51,7 @@ final class Target_jdk_internal_loader_URLClassPath {
 }
 
 @Substitute
-@TargetClass(className = "sun.nio.ch.WindowsAsynchronousFileChannelImpl", innerClass = "DefaultIocpHolder", onlyWith = JDK11OrLater.class)
+@TargetClass(className = "sun.nio.ch.WindowsAsynchronousFileChannelImpl", innerClass = "DefaultIocpHolder")
 @Platforms({ Platform.WINDOWS.class })
 final class Target_sun_nio_ch_WindowsAsynchronousFileChannelImpl_DefaultIocpHolder {
 
@@ -61,7 +60,7 @@ final class Target_sun_nio_ch_WindowsAsynchronousFileChannelImpl_DefaultIocpHold
     static Target_sun_nio_ch_Iocp defaultIocp;
 }
 
-@TargetClass(className = "sun.nio.ch.Iocp", onlyWith = JDK11OrLater.class)
+@TargetClass(className = "sun.nio.ch.Iocp")
 @Platforms({ Platform.WINDOWS.class })
 final class Target_sun_nio_ch_Iocp {
 
@@ -75,7 +74,7 @@ final class Target_sun_nio_ch_Iocp {
     }
 }
 
-@TargetClass(className = "sun.nio.ch.ThreadPool", onlyWith = JDK11OrLater.class)
+@TargetClass(className = "sun.nio.ch.ThreadPool")
 @Platforms({ Platform.WINDOWS.class })
 final class Target_sun_nio_ch_ThreadPool {
 

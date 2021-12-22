@@ -260,6 +260,7 @@ public class ConfigEditorProcessor {
         Path path = resourcesDir.get(0);
         Path configPath = path.resolve("application.properties");
         if (!Files.exists(configPath)) {
+            Files.createDirectories(configPath.getParent());
             configPath = Files.createFile(path.resolve("application.properties"));
         }
         return configPath;

@@ -156,10 +156,12 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
         if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
             //we always re-auth if it is a post to the auth URL
+            context.put(HttpAuthenticationMechanism.class.getName(), this);
             return runFormAuth(context, identityProviderManager);
         } else {
             PersistentLoginManager.RestoreResult result = loginManager.restore(context);
             if (result != null) {
+                context.put(HttpAuthenticationMechanism.class.getName(), this);
                 Uni<SecurityIdentity> ret = identityProviderManager
                         .authenticate(HttpSecurityUtils
                                 .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
@@ -194,7 +196,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM);
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM));
     }
 }

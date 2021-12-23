@@ -225,16 +225,28 @@ And let's build the native executable again:
 
 [WARNING]
 ====
-This behavior is new to GraalVM 19.3+.
+This behavior is new to GraalVM 21.3+.
 ====
 
-When creating a native binary, GraalVM embraces the principle of "immutable security" for the root certificates.
-This essentially means that the root certificates are fixed at image build time, based on the certificate configuration used at that build time
-(which for Quarkus means when you perform a build having `quarkus.package.type=native` set).
-This avoids shipping a `cacerts` file or requiring a system property be set in order to set up root
-certificates that are provided by the OS where the binary runs.
+GraalVM supports both build time and runtime certificate configuration.
 
-As a consequence, system properties such as `javax.net.ssl.trustStore` do not have an effect at
+=== Build time configuration
+
+The build time approach favors the principle of "immutable security" where the appropriate certificates are added at build time, and can never be changed afterward.
+This guarantees that the list of valid certificates cannot be tampered with when the application gets deployed in production.
+
+However, this comes with a few drawbacks:
+
+ * If you use the same executable in all environments, and a certificate expires, the application needs to be rebuilt, and redeployed into production with the new certificate, which is an inconvenience.
+ * Even worse, if a certificate gets revoked because of a security breach, all applications that embed this certificate need to be rebuilt and redeployed in a timely manner.
+ * This requires also to add into the application all certificates for all environments (e.g. DEV, TEST, PROD), which means that a certificate that is required for DEV but should not be used elsewhere, will make its way anyway in production.
+ * Providing all certificates at build time complicates the CI, specifically in dynamic environments such as Kubernetes where valid certificates are provided by the platform in the `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` PEM file.
+ * Lastly, this does not play well with third party software that do not provide a dedicated build for each customer environment.
+
+Creating a native executable using build time certificates essentially means that the root certificates are fixed at image build time, based on the certificate configuration used at build time (which for Quarkus means when you perform a build having `quarkus.package.type=native` set).
+This avoids shipping a `cacerts` file or requiring a system property be set in order to set up root certificates that are provided by the OS where the binary runs.
+
+In this situation, system properties such as `javax.net.ssl.trustStore` do not have an effect at
 run time, so when the defaults need to be changed, these system properties must be provided at image build time.
 The easiest way to do so is by setting `quarkus.native.additional-build-args`. For example:
 
@@ -244,11 +256,11 @@ quarkus.native.additional-build-args=-J-Djavax.net.ssl.trustStore=/tmp/mycerts,-
 ----
 
 will ensure that the certificates of `/tmp/mycerts` are baked into the native binary and used *in addition* to the default cacerts.
+The file containing the custom TrustStore does *not* (and probably should not) have to be present at runtime as its content has been baked into the native binary.
 
-[IMPORTANT]
-====
-The file containing the custom TrustStore does *not* have to be present at runtime as its content has been baked into the native binary.
-====
+=== Run time configuration
+
+Using the runtime certificate configuration, supported by GraalVM since 21.3 does not require any special or additional configuration compared to regular java programs or Quarkus in jvm mode. See the https://www.graalvm.org/reference-manual/native-image/CertificateManagement/#run-time-options[GraalVM documentation] for more information.
 
 [#working-with-containers]
 === Working with containers
@@ -258,7 +270,4 @@ as described in the previous section, it will work properly in container as well
 
 == Conclusion
 
-We make building native executable easy and, even if the SSL support in GraalVM is still requiring some serious thinking,
-it should be mostly transparent when using Quarkus.
-
-We track GraalVM progress on a regular basis so we will promptly integrate in Quarkus any improvement with respect to SSL support.
+We make building native executable using SSL easy, and provide several options to cope well with different types of security requirements.

@@ -60,7 +60,8 @@ public class ConfigMappingUtils {
                 reflectiveClasses
                         .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods(true).build());
                 reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true).build());
+                        .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true)
+                                .methods(true).build());
 
                 for (Class<?> parent : getHierarchy(mappingMetadata.getInterfaceType())) {
                     reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods(true).build());

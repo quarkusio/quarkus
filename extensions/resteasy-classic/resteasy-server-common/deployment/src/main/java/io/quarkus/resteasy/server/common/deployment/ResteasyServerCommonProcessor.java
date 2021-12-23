@@ -1003,7 +1003,12 @@ public class ResteasyServerCommonProcessor {
                 throw new RuntimeException("More than one Application class: " + applications);
             }
             selectedAppClass = applicationClassInfo;
-            // FIXME: yell if there's more than one
+            if (selectedAppClass.annotations().containsKey(ResteasyDotNames.CDI_INJECT)) {
+                throw new RuntimeException(
+                        "Usage of '@Inject' is not allowed in 'javax.ws.rs.core.Application' classes. Offending class is '"
+                                + selectedAppClass.name() + "'");
+            }
+
             String applicationClass = applicationClassInfo.name().toString();
             try {
                 Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);

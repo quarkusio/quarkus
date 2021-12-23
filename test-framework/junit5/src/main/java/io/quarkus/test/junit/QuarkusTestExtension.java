@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 
 import java.io.Closeable;
@@ -68,6 +69,7 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -305,6 +307,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             ExtensionState state = new ExtensionState(testResourceManager, shutdownTask);
             return state;
         } catch (Throwable e) {
+            if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+                activateLogging();
+            }
 
             try {
                 if (testResourceManager != null) {

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
 
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DevServicesContext;
@@ -205,6 +206,9 @@ public class QuarkusIntegrationTestExtension
 
             return state;
         } catch (Throwable e) {
+            if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+                activateLogging();
+            }
 
             try {
                 if (testResourceManager != null) {

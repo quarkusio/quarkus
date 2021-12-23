@@ -7,8 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.Feature;
@@ -39,6 +44,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 public class SwaggerUiProcessor {
+    private static final Logger LOG = Logger.getLogger(SwaggerUiProcessor.class);
 
     private static final String SWAGGER_UI_WEBJAR_GROUP_ID = "io.smallrye";
     private static final String SWAGGER_UI_WEBJAR_ARTIFACT_ID = "smallrye-open-api-ui";
@@ -56,6 +62,8 @@ public class SwaggerUiProcessor {
 
     // To autoset some security config from OIDC
     private static final String OIDC_CLIENT_ID = "quarkus.oidc.client-id";
+
+    private static final String OIDC_NONCE_KEY = "nonce";
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature,
@@ -377,10 +385,27 @@ public class SwaggerUiProcessor {
             String oauthScopes = swaggerUiConfig.oauthScopes.get();
             options.put(Option.oauthScopes, oauthScopes);
         }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, String> oauthAdditionalQueryStringParamMap = new HashMap<>();
         if (swaggerUiConfig.oauthAdditionalQueryStringParams.isPresent()) {
             String oauthAdditionalQueryStringParams = swaggerUiConfig.oauthAdditionalQueryStringParams.get();
-            options.put(Option.oauthAdditionalQueryStringParams, oauthAdditionalQueryStringParams);
+            Map<String, String> map = objectMapper.readValue(oauthAdditionalQueryStringParams, Map.class);
+            if (map == null || map.isEmpty()) {
+                LOG.warn(
+                        "Property 'quarkus.swagger-ui.oauth-additional-query-string-params' should be a map, example: quarkus.swagger-ui.oauth-additional-query-string-params='{\"foo\": \"bar\"}' ");
+            } else {
+                oauthAdditionalQueryStringParamMap.putAll(map);
+            }
         }
+
+        // If not provided, add generated nonce id. Swagger UI should actually do this. They do not support nonce at the moment. Once they do we can remove this.
+        if (!oauthAdditionalQueryStringParamMap.containsKey(OIDC_NONCE_KEY)) {
+            oauthAdditionalQueryStringParamMap.put(OIDC_NONCE_KEY, UUID.randomUUID().toString());
+        }
+        options.put(Option.oauthAdditionalQueryStringParams,
+                objectMapper.writeValueAsString(oauthAdditionalQueryStringParamMap));
+
         if (swaggerUiConfig.oauthUseBasicAuthenticationWithAccessCodeGrant.isPresent()) {
             String oauthUseBasicAuthenticationWithAccessCodeGrant = swaggerUiConfig.oauthUseBasicAuthenticationWithAccessCodeGrant
                     .get().toString();

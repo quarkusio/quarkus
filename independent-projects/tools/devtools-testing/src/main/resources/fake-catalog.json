@@ -329,7 +329,7 @@
         "gradle-plugin-version": "999-FAKE",
         "supported-maven-versions": "[3.6.2,)",
         "proposed-maven-version": "3.8.4",
-        "maven-wrapper-version": "0.7.7",
+        "maven-wrapper-version": "3.1.0",
         "gradle-wrapper-version": "7.3.2"
       }
     },

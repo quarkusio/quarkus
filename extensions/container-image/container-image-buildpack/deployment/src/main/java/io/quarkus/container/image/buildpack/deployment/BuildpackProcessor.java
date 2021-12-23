@@ -8,11 +8,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
+import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.model.AuthConfig;
+import com.github.dockerjava.api.model.PushResponseItem;
+
+import dev.snowdrop.buildpack.Buildpack;
 import dev.snowdrop.buildpack.BuildpackBuilder;
-import dev.snowdrop.buildpack.LogRelay;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
@@ -20,11 +25,9 @@ import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
@@ -52,11 +55,6 @@ public class BuildpackProcessor {
         return new AvailableContainerImageExtensionBuildItem(BUILDPACK);
     }
 
-    @BuildStep(onlyIf = BuildpackBuild.class)
-    public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_BUILDPACK);
-    }
-
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, BuildpackBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, BuildpackConfig buildpackConfig,
             PackageConfig packageConfig,
@@ -71,12 +69,17 @@ public class BuildpackProcessor {
             Optional<AppCDSResultBuildItem> appCDSResult,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
             return;
         }
 
-        String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest, outputTarget, false /*isNative*/);
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+            return;
+        }
+
+        String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest,
+                outputTarget, false /* isNative */);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
                 Collections.singletonMap("container-image", targetImageName)));
@@ -92,8 +95,12 @@ public class BuildpackProcessor {
             List<ContainerImageLabelBuildItem> containerImageLabels,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 
@@ -102,8 +109,9 @@ public class BuildpackProcessor {
                     "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
         }
 
-        String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest, outputTarget, true /*isNative*/);
-        
+        String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest,
+                outputTarget, true /* isNative */);
+
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
                 Collections.singletonMap("container-image", targetImageName)));
     }
@@ -128,86 +136,79 @@ public class BuildpackProcessor {
         result.put(ProjectDirs.TARGET, targetDirectory);
         return result;
     }
-    
-    private String runBuildpackBuild(BuildpackConfig buildpackConfig, 
+
+    private String runBuildpackBuild(BuildpackConfig buildpackConfig,
             ContainerImageInfoBuildItem containerImage,
             ContainerImageConfig containerImageConfig,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             OutputTargetBuildItem outputTarget,
             boolean isNativeBuild) {
-        
+
         Map<ProjectDirs, Path> dirs = getPaths(outputTarget);
 
-        log.info("Using target dir of " + dirs.get(ProjectDirs.TARGET));
-        log.info("Using source root of " + dirs.get(ProjectDirs.SOURCE));
-        log.info("Using project root of " + dirs.get(ProjectDirs.ROOT));
+        log.debug("Using target dir of " + dirs.get(ProjectDirs.TARGET));
+        log.debug("Using source root of " + dirs.get(ProjectDirs.SOURCE));
+        log.debug("Using project root of " + dirs.get(ProjectDirs.ROOT));
 
         String targetImageName = containerImage.getImage().toString();
-        log.info("Using Destination image of " + targetImageName);
-        if(containerImageConfig.tag.isPresent()) {
-            log.info("Tag : "+containerImageConfig.tag.get());
+        log.debug("Using Destination image of " + targetImageName);
+
+        Map<String, String> envMap = buildpackConfig.builderEnv;
+        if (!envMap.isEmpty()) {
+            log.info("Using builder environment of " + envMap);
         }
-        if(containerImageConfig.additionalTags.isPresent()) {
-            
-        }
-        
-        log.info("Using Builder image of " + buildpackConfig.builderImage);
-        
-        if(containerImageConfig.push || pushRequest.isPresent() ) {
-                if (!containerImageConfig.registry.isPresent()) {
-                    log.info("No container image registry was set, so 'docker.io' will be used");
+
+        log.info("Initiating Buildpack build");
+        Buildpack buildpack = Buildpack.builder()
+                .addNewFileContent(dirs.get(ProjectDirs.ROOT).toFile())
+                .withFinalImage(targetImageName)
+                .withEnvironment(envMap)
+                .withLogLevel(buildpackConfig.logLevel)
+                .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds)
+                .withLogger(new BuildpackLogger())
+                .accept(BuildpackBuilder.class, b -> {
+
+                    if (isNativeBuild) {
+                        buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuildImage(i));
+                    } else {
+                        buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuildImage(i));
+                    }
+
+                    if (buildpackConfig.runImage.isPresent()) {
+                        log.info("Using Run image of " + buildpackConfig.runImage.get());
+                        b.withRunImage(buildpackConfig.runImage.get());
+                    }
+                    if (buildpackConfig.dockerHost.isPresent()) {
+                        log.info("Using DockerHost of " + buildpackConfig.dockerHost.get());
+                        b.withDockerHost(buildpackConfig.dockerHost.get());
+                    }
+
+                }).build();
+        log.info("Buildpack build complete");
+
+        if (containerImageConfig.isPushExplicitlyEnabled() || pushRequest.isPresent()) {
+            if (!containerImageConfig.registry.isPresent()) {
+                log.info("No container image registry was set, so 'docker.io' will be used");
+            }
+            Optional<String> r = containerImageConfig.registry;
+            Optional<String> g = containerImageConfig.group;
+            Optional<String> n = containerImageConfig.name;
+
+            AuthConfig authConfig = new AuthConfig();
+            authConfig.withRegistryAddress(containerImageConfig.registry.orElse("docker.io"));
+            containerImageConfig.username.ifPresent(u -> authConfig.withUsername(u));
+            containerImageConfig.password.ifPresent(p -> authConfig.withPassword(p));
+
+            Stream.concat(Stream.of(containerImage.getImage()), containerImage.getAdditionalImageTags().stream()).forEach(i -> {
+                ResultCallback.Adapter<PushResponseItem> adapter = new ResultCallback.Adapter<>();
+                buildpack.getDockerClient().pushImageCmd(i).exec(adapter);
+                try {
+                    adapter.awaitCompletion();
+                } catch (InterruptedException e) {
+                    throw new IllegalStateException(e);
                 }
-                Optional<String> r = containerImageConfig.registry;
-                Optional<String> u = containerImageConfig.username;
-                Optional<String> p = containerImageConfig.password;
-                Optional<String> g = containerImageConfig.group;
-                Optional<String> n = containerImageConfig.name;
-                //TODO: connect info to buildpack lib =)
-        }
-    
-        try {
-            log.info("Configuring Buildpack build");
-            
-            Map<String,String> envMap = buildpackConfig.builderEnv;
-            if(!envMap.isEmpty()) {
-                log.info("Using builder environment of "+envMap);
-            }
-            
-            BuildpackBuilder bpb = BuildpackBuilder.get()
-                    .withContent(dirs.get(ProjectDirs.ROOT).toFile())
-                    .withFinalImage(targetImageName)
-                    .withBuildImage(buildpackConfig.builderImage)
-                    .withEnv(envMap);
-            
-            if(buildpackConfig.runImage.isPresent()) {
-                log.info("Using Run image of " + buildpackConfig.runImage.get());
-                bpb = bpb.withRunImage(buildpackConfig.runImage.get());
-            }
-            if(buildpackConfig.logLevel.isPresent()) {
-                log.info("Using Buildpack loglevel of " + buildpackConfig.logLevel.get());
-                bpb = bpb.withLogLevel(buildpackConfig.logLevel.get());
-            }
-            if(buildpackConfig.dockerHost.isPresent()) {
-                log.info("Using DockerHost of " + buildpackConfig.dockerHost.get());
-                bpb = bpb.withDockerHost(buildpackConfig.dockerHost.get());
-            }
-            if(buildpackConfig.pullTimeoutSeconds.isPresent()) {
-                log.info("Using Docker pull timeout of " + buildpackConfig.pullTimeoutSeconds.get());
-                bpb = bpb.withPullTimeout(buildpackConfig.pullTimeoutSeconds.get());
-            }
-            
-            log.info("Initiating Buildpack build");
-            int rc = bpb.build(new LogRelay());
-            if (rc != 0) {
-                throw new RuntimeException("Buildpack build failed with rc=" + rc);
-            }
-            
-            log.info("Buildpack build complete");
-            
-        } catch (Exception e) {
-            throw new RuntimeException("Buildpack build failed : ", e);
+            });
         }
         return targetImageName;
-    }    
-
+    }
 }

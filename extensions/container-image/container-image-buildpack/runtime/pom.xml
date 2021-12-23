@@ -14,12 +14,25 @@
     <name>Quarkus - Container Image - Buildpack</name>
     <description>Build container images of your application using Buildpacks</description>
 
-
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image</artifactId>
+        </dependency>
+    </dependencies>
     <build>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <providesIf>
+                            <positive>io.quarkus.container.image.buildpack.deployment.BuildpackBuild</positive>
+                            <name>io.quarkus.container.image.buildpack</name>
+                        </providesIf>
+                    </capabilities>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

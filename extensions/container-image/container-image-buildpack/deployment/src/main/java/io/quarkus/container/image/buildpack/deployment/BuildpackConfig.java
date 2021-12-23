@@ -11,16 +11,22 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class BuildpackConfig {
 
     /**
-     * The buildpacks builder image to use when building the project.
+     * The buildpacks builder image to use when building the project in jvm mode.
      */
-    @ConfigItem(defaultValue = "paketobuildpacks/builder:full")
-    public String builderImage;
-    
+    @ConfigItem
+    public Optional<String> jvmBuilderImage;
+
+    /**
+     * The buildpacks builder image to use when building the project in jvm mode.
+     */
+    @ConfigItem
+    public Optional<String> nativeBuilderImage;
+
     /**
      * Environment key/values to pass to buildpacks.
      */
     @ConfigItem
-    public Map<String,String> builderEnv;
+    public Map<String, String> builderEnv;
 
     /**
      * The buildpacks run image to use when building the project
@@ -33,8 +39,8 @@ public class BuildpackConfig {
     /**
      * Max pull timeout for builder/run images, in seconds
      */
-    @ConfigItem
-    public Optional<Integer> pullTimeoutSeconds;
+    @ConfigItem(defaultValue = "300")
+    public Integer pullTimeoutSeconds;
 
     /**
      * DOCKER_HOST value to use.
@@ -49,8 +55,8 @@ public class BuildpackConfig {
      * Log level to use..
      * Defaults to 'info'
      */
-    @ConfigItem
-    public Optional<String> logLevel;
+    @ConfigItem(defaultValue = "info")
+    public String logLevel;
 
     /**
      * The username to use to authenticate with the registry used to pull the base JVM image
@@ -63,6 +69,5 @@ public class BuildpackConfig {
      */
     @ConfigItem
     public Optional<String> baseRegistryPassword;
-    
-    
+
 }

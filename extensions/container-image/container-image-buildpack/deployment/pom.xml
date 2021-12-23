@@ -23,8 +23,14 @@
             <artifactId>quarkus-container-image-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.snowdrop</groupId>
-            <artifactId>java-buildpack-client</artifactId>
+            <groupId>dev.snowdrop</groupId>
+            <artifactId>buildpack-client</artifactId>
+            <exclusions>
+              <exclusion>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>*</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>        
     </dependencies>
 

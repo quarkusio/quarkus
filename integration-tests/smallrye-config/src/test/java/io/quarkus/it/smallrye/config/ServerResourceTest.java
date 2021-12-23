@@ -60,6 +60,15 @@ class ServerResourceTest {
     }
 
     @Test
+    void serverHost() {
+        given()
+                .get("/server/host")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body(equalTo("localhost"));
+    }
+
+    @Test
     void properties() {
         given()
                 .get("/server/properties")

@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
     env:
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+      MAVEN_OPTS: -Xmx2560m
       JBANG_REPO: $HOME/release/repository
     steps:
       - uses: actions/checkout@v2

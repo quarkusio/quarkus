@@ -15,6 +15,7 @@ import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.Keyclo
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.oidc.runtime.OidcConfig;
@@ -55,7 +56,7 @@ public class KeycloakPolicyEnforcerRecorder {
             KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
             TlsConfig tlsConfig) {
 
-        if (oidcConfig.applicationType == OidcTenantConfig.ApplicationType.WEB_APP
+        if (oidcConfig.applicationType.orElse(ApplicationType.SERVICE) == OidcTenantConfig.ApplicationType.WEB_APP
                 && oidcConfig.roles.source.orElse(null) != Source.accesstoken) {
             throw new OIDCException("Application 'web-app' type is only supported if access token is the source of roles");
         }

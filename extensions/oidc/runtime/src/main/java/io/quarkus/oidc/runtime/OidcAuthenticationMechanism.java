@@ -8,6 +8,7 @@ import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -77,10 +78,11 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     private boolean isWebApp(RoutingContext context, OidcTenantConfig oidcConfig) {
-        if (OidcTenantConfig.ApplicationType.HYBRID == oidcConfig.applicationType) {
+        ApplicationType applicationType = oidcConfig.applicationType.orElse(ApplicationType.SERVICE);
+        if (OidcTenantConfig.ApplicationType.HYBRID == applicationType) {
             return context.request().getHeader("Authorization") == null;
         }
-        return OidcTenantConfig.ApplicationType.WEB_APP == oidcConfig.applicationType;
+        return OidcTenantConfig.ApplicationType.WEB_APP == applicationType;
     }
 
     @Override

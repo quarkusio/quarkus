@@ -23,8 +23,8 @@ public class OidcCommonConfig {
      * Enables OIDC discovery.
      * If the discovery is disabled then the OIDC endpoint URLs must be configured individually.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean discoveryEnabled = true;
+    @ConfigItem(defaultValueDocumentation = "true")
+    public Optional<Boolean> discoveryEnabled = Optional.empty();
 
     /**
      * Relative path or absolute URL of the OIDC token endpoint which issues access and refresh tokens.
@@ -549,12 +549,12 @@ public class OidcCommonConfig {
         this.credentials = credentials;
     }
 
-    public boolean isDiscoveryEnabled() {
+    public Optional<Boolean> isDiscoveryEnabled() {
         return discoveryEnabled;
     }
 
     public void setDiscoveryEnabled(boolean enabled) {
-        this.discoveryEnabled = enabled;
+        this.discoveryEnabled = Optional.of(enabled);
     }
 
     public Proxy getProxy() {

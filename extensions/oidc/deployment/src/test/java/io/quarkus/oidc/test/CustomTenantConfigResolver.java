@@ -19,7 +19,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus");
             config.setClientId("quarkus-web-app");
             config.getCredentials().setSecret("secret");
-            config.applicationType = ApplicationType.WEB_APP;
+            config.setApplicationType(ApplicationType.WEB_APP);
             return Uni.createFrom().item(config);
         }
         return Uni.createFrom().nullItem();

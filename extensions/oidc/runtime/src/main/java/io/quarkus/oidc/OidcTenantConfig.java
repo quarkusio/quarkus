@@ -32,8 +32,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
     /**
      * The application type, which can be one of the following values from enum {@link ApplicationType}.
      */
-    @ConfigItem(defaultValue = "service")
-    public ApplicationType applicationType = ApplicationType.SERVICE;
+    @ConfigItem(defaultValueDocumentation = "service")
+    public Optional<ApplicationType> applicationType = Optional.empty();
 
     /**
      * Relative path or absolute URL of the OIDC authorization endpoint which authenticates the users.
@@ -535,10 +535,10 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<String> cookieDomain = Optional.empty();
 
         /**
-         * If this property is set to 'true' then an OIDC UserInfo endpoint will be called
+         * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
          */
-        @ConfigItem(defaultValue = "false")
-        public boolean userInfoRequired;
+        @ConfigItem(defaultValueDocumentation = "false")
+        public Optional<Boolean> userInfoRequired = Optional.empty();
 
         /**
          * Session age extension in minutes.
@@ -564,11 +564,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean javaScriptAutoRedirect = true;
 
         /**
-         * Requires that ID token is available when the authorization code flow completes. In most case this property
-         * should be enabled. Disable this property only when you need to use the authorization code flow with OAuth2 providers.
+         * Requires that ID token is available when the authorization code flow completes.
+         * Disable this property only when you need to use the authorization code flow with OAuth2 providers which do not return
+         * ID token.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean idTokenRequired = true;
+        @ConfigItem(defaultValueDocumentation = "true")
+        public Optional<Boolean> idTokenRequired = Optional.empty();
 
         public boolean isJavaScriptAutoRedirect() {
             return javaScriptAutoRedirect;
@@ -590,8 +591,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
             return scopes;
         }
 
-        public void setScopes(Optional<List<String>> scopes) {
-            this.scopes = scopes;
+        public void setScopes(List<String> scopes) {
+            this.scopes = Optional.of(scopes);
         }
 
         public Map<String, String> getExtraParams() {
@@ -642,12 +643,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.cookieDomain = Optional.of(cookieDomain);
         }
 
-        public boolean isUserInfoRequired() {
+        public Optional<Boolean> isUserInfoRequired() {
             return userInfoRequired;
         }
 
         public void setUserInfoRequired(boolean userInfoRequired) {
-            this.userInfoRequired = userInfoRequired;
+            this.userInfoRequired = Optional.of(userInfoRequired);
         }
 
         public boolean isRemoveRedirectParameters() {
@@ -682,12 +683,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.cookiePathHeader = Optional.of(cookiePathHeader);
         }
 
-        public boolean isIdTokenRequired() {
+        public Optional<Boolean> isIdTokenRequired() {
             return idTokenRequired;
         }
 
         public void setIdTokenRequired(boolean idTokenRequired) {
-            this.idTokenRequired = idTokenRequired;
+            this.idTokenRequired = Optional.of(idTokenRequired);
         }
 
         public Optional<String> getCookieSuffix() {
@@ -928,12 +929,34 @@ public class OidcTenantConfig extends OidcCommonConfig {
         HYBRID
     }
 
-    public ApplicationType getApplicationType() {
+    /**
+     * Well known OpenId Connect provider identifier
+     */
+    @ConfigItem
+    public Optional<Provider> provider = Optional.empty();
+
+    public static enum Provider {
+        APPLE,
+        FACEBOOK,
+        GITHUB,
+        GOOGLE,
+        MICROSOFT
+    }
+
+    public Optional<Provider> getProvider() {
+        return provider;
+    }
+
+    public void setProvider(Provider provider) {
+        this.provider = Optional.of(provider);
+    }
+
+    public Optional<ApplicationType> getApplicationType() {
         return applicationType;
     }
 
     public void setApplicationType(ApplicationType type) {
-        this.applicationType = type;
+        this.applicationType = Optional.of(type);
     }
 
     public boolean isAllowTokenIntrospectionCache() {

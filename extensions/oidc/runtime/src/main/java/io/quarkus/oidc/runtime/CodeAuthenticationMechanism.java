@@ -106,7 +106,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(AuthorizationCodeTokens.class.getName(), session);
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(session.getIdToken(),
-                                        !configContext.oidcConfig.authentication.isIdTokenRequired()))
+                                        !configContext.oidcConfig.authentication.isIdTokenRequired().orElse(true)))
                                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                                     @Override
                                                     public Uni<Void> apply(SecurityIdentity identity) {
@@ -294,7 +294,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         boolean internalIdToken = false;
                         if (tokens.getIdToken() == null) {
-                            if (configContext.oidcConfig.authentication.isIdTokenRequired()) {
+                            if (configContext.oidcConfig.authentication.isIdTokenRequired().orElse(true)) {
                                 return Uni.createFrom()
                                         .failure(new AuthenticationCompletionException("ID Token is not available"));
                             } else {

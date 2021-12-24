@@ -60,9 +60,15 @@ public class CodeFlowAuthorizationTest {
     @Test
     public void testCodeFlowUserInfo() throws IOException {
         defineCodeFlowAuthorizationOauth2TokenStub();
+        doTestCodeFlowUserInfo("code-flow-user-info-only");
+        doTestCodeFlowUserInfo("code-flow-user-info-github");
+        doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github");
+    }
+
+    private void doTestCodeFlowUserInfo(String tenantId) throws IOException {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
-            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-user-info");
+            HtmlPage page = webClient.getPage("http://localhost:8081/" + tenantId);
 
             HtmlForm form = page.getFormByName("form");
             form.getInputByName("username").type("alice");
@@ -72,7 +78,7 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice:alice, cache size: 1", page.getBody().asText());
 
-            assertNotNull(getSessionCookie(webClient, "code-flow-user-info-only"));
+            assertNotNull(getSessionCookie(webClient, tenantId));
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -84,7 +90,7 @@ public class CodeFlowAuthorizationTest {
     }
 
     private void defineCodeFlowAuthorizationOauth2TokenStub() {
-        wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/oauth2-tokens")
+        wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/access_token")
                 .withRequestBody(containing("authorization_code"))
                 .willReturn(WireMock.aResponse()
                         .withHeader("Content-Type", "application/json")

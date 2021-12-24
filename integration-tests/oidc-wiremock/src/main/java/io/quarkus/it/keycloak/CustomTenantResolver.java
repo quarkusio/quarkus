@@ -17,8 +17,11 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.endsWith("code-flow") || path.endsWith("code-flow/logout")) {
             return "code-flow";
         }
-        if (path.endsWith("code-flow-user-info")) {
+        if (path.endsWith("code-flow-user-info-only")) {
             return "code-flow-user-info-only";
+        }
+        if (path.endsWith("code-flow-user-info-github")) {
+            return "code-flow-user-info-github";
         }
         if (path.endsWith("bearer")) {
             return "bearer";

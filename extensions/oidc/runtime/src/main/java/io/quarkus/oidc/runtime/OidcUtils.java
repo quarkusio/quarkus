@@ -25,6 +25,7 @@ import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -281,5 +282,86 @@ public final class OidcUtils {
         } else {
             cookie.setPath(auth.getCookiePath());
         }
+    }
+
+    /**
+     * Merge the current tenant and well-known OpenId Connect provider configurations.
+     * Initialized properties take priority over uninitialized properties.
+     *
+     * Initialized properties in the current tenant configuration take priority
+     * over the same initialized properties in the well-known OpenId Connect provider configuration.
+     * 
+     * Tenant id property of the current tenant must be set before the merge operation.
+     * 
+     * @param tenant current tenant configuration
+     * @param provider well-known OpenId Connect provider configuration
+     * @return merged configuration
+     */
+    static OidcTenantConfig mergeTenantConfig(OidcTenantConfig tenant, OidcTenantConfig provider) {
+        if (tenant.tenantId.isEmpty()) {
+            // OidcRecorder sets it before the merge operation
+            throw new IllegalStateException();
+        }
+        // root properties
+        if (tenant.authServerUrl.isEmpty()) {
+            tenant.authServerUrl = provider.authServerUrl;
+        }
+        if (tenant.applicationType.isEmpty()) {
+            tenant.applicationType = provider.applicationType;
+        }
+        if (tenant.discoveryEnabled.isEmpty()) {
+            tenant.discoveryEnabled = provider.discoveryEnabled;
+        }
+        if (tenant.authorizationPath.isEmpty()) {
+            tenant.authorizationPath = provider.authorizationPath;
+        }
+        if (tenant.jwksPath.isEmpty()) {
+            tenant.jwksPath = provider.jwksPath;
+        }
+        if (tenant.tokenPath.isEmpty()) {
+            tenant.tokenPath = provider.tokenPath;
+        }
+        if (tenant.userInfoPath.isEmpty()) {
+            tenant.userInfoPath = provider.userInfoPath;
+        }
+
+        // authentication
+        if (tenant.authentication.idTokenRequired.isEmpty()) {
+            tenant.authentication.idTokenRequired = provider.authentication.idTokenRequired;
+        }
+        if (tenant.authentication.userInfoRequired.isEmpty()) {
+            tenant.authentication.userInfoRequired = provider.authentication.userInfoRequired;
+        }
+        if (tenant.authentication.scopes.isEmpty()) {
+            tenant.authentication.scopes = provider.authentication.scopes;
+        }
+
+        // credentials
+        if (tenant.credentials.clientSecret.method.isEmpty()) {
+            tenant.credentials.clientSecret.method = provider.credentials.clientSecret.method;
+        }
+        if (tenant.credentials.jwt.audience.isEmpty()) {
+            tenant.credentials.jwt.audience = provider.credentials.jwt.audience;
+        }
+        if (tenant.credentials.jwt.signatureAlgorithm.isEmpty()) {
+            tenant.credentials.jwt.signatureAlgorithm = provider.credentials.jwt.signatureAlgorithm;
+        }
+
+        // token
+        if (tenant.token.issuer.isEmpty()) {
+            tenant.token.issuer = provider.token.issuer;
+        }
+
+        return tenant;
+    }
+
+    static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {
+        if (oidcTenantConfig != null && oidcTenantConfig.provider.isPresent()) {
+            return OidcUtils.mergeTenantConfig(oidcTenantConfig,
+                    KnownOidcProviders.provider(oidcTenantConfig.provider.get()));
+        } else {
+            return oidcTenantConfig;
+        }
+
     }
 }

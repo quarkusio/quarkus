@@ -305,7 +305,7 @@ public class OidcClientResource {
         cfg.setAuthServerUrl("http://localhost:8081/auth/realms/quarkus/");
         cfg.setClientId("quarkus");
         cfg.getCredentials().setSecret("secret");
-        Uni<OidcClient> client = clients.newClient(config);
+        Uni<OidcClient> client = clients.newClient(cfg);
         // use this client to get the token
     }
 }

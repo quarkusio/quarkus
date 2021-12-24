@@ -3110,6 +3110,7 @@ Then, at the end of your documentation, include the extensive documentation:
 
 Finally, generate the documentation and check it out.
 
+[[ecosystem-ci]]
 == Continuous testing of your extension
 
 In order to make it easy for extension authors to test their extensions daily against the latest snapshot of Quarkus, Quarkus has introduced
@@ -3126,6 +3127,8 @@ Before publishing your extension to the xref:tooling.adoc[Quarkus tooling], make
 ** `description` (unless you have it already set in the `runtime/pom.xml`'s `<description>` element, which is the recommended approach)
 
 * Your extension is published in Maven Central
+
+* Your extension repository is configured to use the <<ecosystem-ci, Ecosystem CI>>.
 
 Then you must create a pull request adding a `your-extension.yaml` file in the `extensions/` directory in the link:https://github.com/quarkusio/quarkus-extension-catalog[Quarkus Extension Catalog]. The YAML must have the following structure:
 

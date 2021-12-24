@@ -1,8 +1,10 @@
 package io.quarkus.kafka.client.deployment;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -79,6 +81,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
 import io.quarkus.kafka.client.runtime.KafkaRecorder;
@@ -137,7 +140,21 @@ public class KafkaProcessor {
         log.produce(new LogCategoryBuildItem("org.apache.kafka.clients", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.utils", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.metrics", Level.WARNING));
+    }
 
+    @BuildStep
+    void silenceUnwantedConfigLogs(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters) {
+        String[] ignoredConfigProperties = { "wildfly.sasl.relax-compliance", "ssl.endpoint.identification.algorithm" };
+
+        List<String> ignoredMessages = new ArrayList<>();
+        for (String ignoredConfigProperty : ignoredConfigProperties) {
+            ignoredMessages.add("The configuration '" + ignoredConfigProperty + "' was supplied but isn't a known config.");
+        }
+
+        logCleanupFilters.produce(new LogCleanupFilterBuildItem("org.apache.kafka.clients.consumer.ConsumerConfig",
+                ignoredMessages));
+        logCleanupFilters.produce(new LogCleanupFilterBuildItem("org.apache.kafka.clients.producer.ProducerConfig",
+                ignoredMessages));
     }
 
     @BuildStep

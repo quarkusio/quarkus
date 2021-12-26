@@ -367,6 +367,15 @@
                 <type>pom</type>
             </dependency>
 
+            <!-- Google HTTP Client Library For Java BOM -->
+            <dependency>
+                <groupId>com.google.http-client</groupId>
+                <artifactId>google-http-client-bom</artifactId>
+                <version>${google-http-client.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
             <!-- Quarkus core -->
 
             <dependency>
@@ -5082,11 +5091,6 @@
                         <artifactId>jsr305</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.google.http-client</groupId>
-                <artifactId>google-http-client</artifactId>
-                <version>${google-http-client.version}</version>
             </dependency>
 
             <!-- gRPC additional dependencies (the rest is managed by the BOM) -->

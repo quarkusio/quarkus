@@ -177,7 +177,7 @@
         <checker-qual.version>3.21.0</checker-qual.version>
         <error-prone-annotations.version>2.10.0</error-prone-annotations.version>
         <jib-core.version>0.20.0</jib-core.version>
-        <google-http-client.version>1.38.0</google-http-client.version>
+        <google-http-client.version>1.40.1</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.6.2</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
@@ -363,6 +363,15 @@
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>vertx-mutiny-clients-bom</artifactId>
                 <version>${smallrye-mutiny-vertx-binding.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <!-- Google HTTP Client Library For Java BOM -->
+            <dependency>
+                <groupId>com.google.http-client</groupId>
+                <artifactId>google-http-client-bom</artifactId>
+                <version>${google-http-client.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -5082,11 +5091,6 @@
                         <artifactId>jsr305</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.google.http-client</groupId>
-                <artifactId>google-http-client</artifactId>
-                <version>${google-http-client.version}</version>
             </dependency>
 
             <!-- gRPC additional dependencies (the rest is managed by the BOM) -->

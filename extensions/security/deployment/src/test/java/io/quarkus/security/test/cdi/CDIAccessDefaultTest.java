@@ -22,6 +22,10 @@ import io.quarkus.security.test.cdi.app.SubclassWithDenyAll;
 import io.quarkus.security.test.cdi.app.SubclassWithPermitAll;
 import io.quarkus.security.test.cdi.app.SubclassWithoutAnnotations;
 import io.quarkus.security.test.cdi.app.TestException;
+import io.quarkus.security.test.cdi.app.interfaces.BeanImplementingInterfaceWithClassLevelAnnotation;
+import io.quarkus.security.test.cdi.app.interfaces.BeanImplementingInterfaceWithMethodLevelAnnotations;
+import io.quarkus.security.test.cdi.app.interfaces.InterfaceWithClassLevelAnnotation;
+import io.quarkus.security.test.cdi.app.interfaces.InterfaceWithMethodLevelAnnotations;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
@@ -46,10 +50,21 @@ public class CDIAccessDefaultTest {
     @Inject
     SubclassWithoutAnnotations unannotatedBean;
 
+    @Inject
+    BeanImplementingInterfaceWithMethodLevelAnnotations beanImplementingInterfaceWithMethodLevelAnnotations;
+
+    @Inject
+    BeanImplementingInterfaceWithClassLevelAnnotation beanImplementingInterfaceWithClassLevelAnnotation;
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithSecuredMethods.class,
+                    .addClasses(
+                            BeanImplementingInterfaceWithClassLevelAnnotation.class,
+                            InterfaceWithClassLevelAnnotation.class,
+                            BeanImplementingInterfaceWithMethodLevelAnnotations.class,
+                            InterfaceWithMethodLevelAnnotations.class,
+                            BeanWithSecuredMethods.class,
                             IdentityMock.class,
                             AuthData.class,
                             SubclassWithDenyAll.class,
@@ -178,4 +193,33 @@ public class CDIAccessDefaultTest {
         assertFailureFor(() -> unannotatedBean.noAdditionalConstraints(), UnauthorizedException.class, ANONYMOUS);
         assertFailureFor(() -> unannotatedBean.noAdditionalConstraints(), ForbiddenException.class, USER, ADMIN);
     }
+
+    @Test
+    public void shouldFailToAccessForbiddenOnInterface() {
+        assertFailureFor(() -> beanImplementingInterfaceWithMethodLevelAnnotations.forbidden(),
+                UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> beanImplementingInterfaceWithMethodLevelAnnotations.forbidden(),
+                ForbiddenException.class, USER, ADMIN);
+    }
+
+    @Test
+    public void shouldRestrictAccessToSpecificRoleOnInterface() {
+        assertFailureFor(() -> beanImplementingInterfaceWithMethodLevelAnnotations.securedMethod(),
+                UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> beanImplementingInterfaceWithMethodLevelAnnotations.securedMethod(),
+                ForbiddenException.class, USER);
+        assertSuccess(() -> beanImplementingInterfaceWithMethodLevelAnnotations.securedMethod(),
+                "accessibleForAdminOnly", ADMIN);
+    }
+
+    @Test
+    public void shouldFailToAccessToSpecificRoleOnInterfaceWithClassLevelAnnotation() {
+        assertFailureFor(() -> beanImplementingInterfaceWithClassLevelAnnotation.allowedForAdmin(), UnauthorizedException.class,
+                ANONYMOUS);
+        assertFailureFor(() -> beanImplementingInterfaceWithClassLevelAnnotation.allowedForAdmin(), ForbiddenException.class,
+                USER);
+        assertSuccess(() -> beanImplementingInterfaceWithClassLevelAnnotation.allowedForAdmin(), "accessibleForAdminOnly",
+                ADMIN);
+    }
+
 }

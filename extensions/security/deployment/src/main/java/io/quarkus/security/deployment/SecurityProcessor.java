@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
@@ -42,6 +43,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -523,8 +525,17 @@ public class SecurityProcessor {
      */
     @BuildStep
     void transformSecurityAnnotations(BuildProducer<AnnotationsTransformerBuildItem> transformers,
+            BeanArchiveIndexBuildItem beanArchiveBuildItem,
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityBuildTimeConfig config) {
+        if (config.inheritSecurityAnnotations()) {
+            transformers
+                    .produce(new AnnotationsTransformerBuildItem(
+                            new InterfaceMethodLevelAnnotationsTransformer(beanArchiveBuildItem.getIndex())));
+            transformers
+                    .produce(new AnnotationsTransformerBuildItem(
+                            new InterfaceClassLevelAnnotationTransformer(beanArchiveBuildItem.getIndex())));
+        }
         if (config.denyUnannotated()) {
             transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
         }
@@ -573,7 +584,7 @@ public class SecurityProcessor {
 
         IndexView index = beanArchiveBuildItem.getIndex();
         Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(index, configExpSecurityCheckProducer,
-                additionalSecured.values(), config.denyUnannotated(), recorder, configBuilderProducer,
+                additionalSecured.values(), config, recorder, configBuilderProducer,
                 reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
@@ -634,7 +645,8 @@ public class SecurityProcessor {
 
     private static Map<MethodInfo, SecurityCheck> gatherSecurityAnnotations(IndexView index,
             BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
-            Collection<AdditionalSecured> additionalSecuredMethods, boolean denyUnannotated, SecurityCheckRecorder recorder,
+            Collection<AdditionalSecured> additionalSecuredMethods, SecurityBuildTimeConfig config,
+            SecurityCheckRecorder recorder,
             BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<RolesAllowedConfigExpResolverBuildItem> rolesAllowedConfigExpResolverBuildItems) {
@@ -642,17 +654,20 @@ public class SecurityProcessor {
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
         Map<MethodInfo, SecurityCheck> result = new HashMap<>();
-        gatherSecurityAnnotations(index, PERMIT_ALL, methodToInstanceCollector, classAnnotations,
+        gatherSecurityAnnotations(index, PERMIT_ALL, config.inheritSecurityAnnotations(), methodToInstanceCollector,
+                classAnnotations,
                 ((m, i) -> result.put(m, recorder.permitAll())));
-        gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector, classAnnotations,
+        gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, config.inheritSecurityAnnotations(), methodToInstanceCollector,
+                classAnnotations,
                 ((m, i) -> result.put(m, recorder.authenticated())));
-        gatherSecurityAnnotations(index, DENY_ALL, methodToInstanceCollector, classAnnotations,
+        gatherSecurityAnnotations(index, DENY_ALL, config.inheritSecurityAnnotations(), methodToInstanceCollector,
+                classAnnotations,
                 ((m, i) -> result.put(m, recorder.denyAll())));
 
         // here we just collect all methods annotated with @RolesAllowed
         Map<MethodInfo, String[]> methodToRoles = new HashMap<>();
         gatherSecurityAnnotations(
-                index, ROLES_ALLOWED, methodToInstanceCollector, classAnnotations,
+                index, ROLES_ALLOWED, config.inheritSecurityAnnotations(), methodToInstanceCollector, classAnnotations,
                 ((methodInfo, instance) -> methodToRoles.put(methodInfo, instance.value().asStringArray())));
 
         /*
@@ -765,7 +780,7 @@ public class SecurityProcessor {
          * If we need to add the denyAll security check to all unannotated methods, we simply go through all secured methods,
          * collect the declaring classes, then go through all methods of the classes and add the necessary check
          */
-        if (denyUnannotated) {
+        if (config.denyUnannotated()) {
             Set<ClassInfo> allClassesWithSecurityChecks = new HashSet<>(methodToInstanceCollector.keySet().size());
             for (MethodInfo methodInfo : methodToInstanceCollector.keySet()) {
                 allClassesWithSecurityChecks.add(methodInfo.declaringClass());
@@ -823,6 +838,7 @@ public class SecurityProcessor {
 
     private static void gatherSecurityAnnotations(
             IndexView index, DotName dotName,
+            boolean inheritSecurityAnnotations,
             Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods,
             Map<ClassInfo, AnnotationInstance> classLevelAnnotations,
             BiConsumer<MethodInfo, AnnotationInstance> putResult) {
@@ -839,6 +855,17 @@ public class SecurityProcessor {
                 }
                 alreadyCheckedMethods.put(methodInfo, instance);
                 putResult.accept(methodInfo, instance);
+                if (inheritSecurityAnnotations) {
+                    for (MethodInfo implementingMethodInfo : getAllKnownUnannotatedImplementations(index, methodInfo)) {
+                        if (alreadyCheckedMethods.containsKey(implementingMethodInfo)) {
+                            throw new IllegalStateException("Method " + implementingMethodInfo.name() + " of class "
+                                    + implementingMethodInfo.declaringClass()
+                                    + " inherit multiple security annotations");
+                        }
+                        alreadyCheckedMethods.put(implementingMethodInfo, instance);
+                        putResult.accept(implementingMethodInfo, instance);
+                    }
+                }
             }
         }
         // now add the class annotations to methods if they haven't already been annotated
@@ -855,6 +882,16 @@ public class SecurityProcessor {
                             putResult.accept(methodInfo, instance);
                         }
                     }
+                    if (inheritSecurityAnnotations) {
+                        for (ClassInfo implementingClassInfo : getAllKnownUnannotatedImplementations(index, target.asClass())) {
+                            for (MethodInfo methodInfo : implementingClassInfo.methods()) {
+                                AnnotationInstance alreadyExistingInstance = alreadyCheckedMethods.get(methodInfo);
+                                if ((alreadyExistingInstance == null)) {
+                                    putResult.accept(methodInfo, instance);
+                                }
+                            }
+                        }
+                    }
                 } else {
                     throw new IllegalStateException(
                             "Class " + target.asClass() + " is annotated with multiple security annotations " + instance.name()
@@ -863,6 +900,23 @@ public class SecurityProcessor {
             }
 
         }
+    }
+
+    private static Collection<MethodInfo> getAllKnownUnannotatedImplementations(IndexView index, MethodInfo methodInfo) {
+        Collection<ClassInfo> allKnownImplementors = index.getAllKnownImplementors(methodInfo.declaringClass().name());
+        return allKnownImplementors.stream()
+                .map(implementor -> implementor.method(methodInfo.name(),
+                        methodInfo.parameterTypes().toArray(new Type[0])))
+                .filter(Objects::nonNull)
+                .filter(implementedMethod -> !hasStandardSecurityAnnotation(implementedMethod))
+                .collect(Collectors.toSet());
+    }
+
+    private static Collection<ClassInfo> getAllKnownUnannotatedImplementations(IndexView index, ClassInfo classInfo) {
+        Collection<ClassInfo> allKnownImplementors = index.getAllKnownImplementors(classInfo.name());
+        return allKnownImplementors.stream()
+                .filter(implementor -> !hasStandardSecurityAnnotation(implementor))
+                .collect(Collectors.toSet());
     }
 
     @BuildStep

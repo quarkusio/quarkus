@@ -29,5 +29,9 @@ public class SecurityBuildTimeConfig {
      */
     @ConfigItem(name = "deny-unannotated-members")
     public boolean denyUnannotated;
-
+    /**
+     * If set to true, security annotations will be inherited.
+     */
+    @ConfigItem(name = "inherit-security-annotations", defaultValue = "true")
+    public boolean inheritSecurityAnnotations;
 }

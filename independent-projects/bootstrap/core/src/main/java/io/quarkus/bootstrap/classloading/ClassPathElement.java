@@ -2,12 +2,10 @@ package io.quarkus.bootstrap.classloading;
 
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.EmptyPathTree;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 import java.io.Closeable;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.Collections;
@@ -81,7 +79,7 @@ public interface ClassPathElement extends Closeable {
      * Creates an element from a file system path
      */
     static ClassPathElement fromPath(Path path, boolean runtime) {
-        return new PathTreeClassPathElement(Files.isDirectory(path) ? new DirectoryPathTree(path) : PathTree.ofArchive(path),
+        return new PathTreeClassPathElement(PathTree.ofDirectoryOrArchive(path),
                 runtime);
     }
 

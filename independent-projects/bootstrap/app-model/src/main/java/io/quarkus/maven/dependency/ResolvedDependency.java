@@ -2,12 +2,10 @@ package io.quarkus.maven.dependency;
 
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.EmptyPathTree;
 import io.quarkus.paths.MultiRootPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathTree;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 public interface ResolvedDependency extends Dependency {
@@ -40,12 +38,12 @@ public interface ResolvedDependency extends Dependency {
         }
         if (paths.isSinglePath()) {
             final Path p = paths.getSinglePath();
-            return Files.isDirectory(p) ? new DirectoryPathTree(p) : PathTree.ofArchive(p);
+            return PathTree.ofDirectoryOrArchive(p);
         }
         final PathTree[] trees = new PathTree[paths.size()];
         int i = 0;
         for (Path p : paths) {
-            trees[i++] = Files.isDirectory(p) ? new DirectoryPathTree(p) : PathTree.ofArchive(p);
+            trees[i++] = PathTree.ofDirectoryOrArchive(p);
         }
         return new MultiRootPathTree(trees);
     }

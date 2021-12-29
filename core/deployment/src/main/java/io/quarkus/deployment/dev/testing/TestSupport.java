@@ -190,6 +190,7 @@ public class TestSupport implements TestController {
                             .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
                             .setProjectRoot(Paths.get(module.getProjectDirectory()))
                             .setApplicationRoot(PathsCollection.from(paths))
+                            .clearLocalArtifacts() // we want to re-discover the local dependencies with test scope
                             .build()
                             .bootstrap();
                     if (mainModule) {

@@ -602,6 +602,11 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
+        public Builder clearLocalArtifacts() {
+            localArtifacts.clear();
+            return this;
+        }
+
         public Builder setRebuild(boolean value) {
             this.rebuild = value;
             return this;

@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
 import io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThread;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +26,13 @@ public class QuarkusEntryPoint {
         System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
                 "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
         Timing.staticInitStarted(false);
-        doRun(args);
+
+        try {
+            doRun(args);
+        } catch (Exception e) {
+            InitialConfigurator.DELAYED_HANDLER.close();
+            throw e;
+        }
     }
 
     private static void doRun(Object args) throws IOException, ClassNotFoundException, IllegalAccessException,

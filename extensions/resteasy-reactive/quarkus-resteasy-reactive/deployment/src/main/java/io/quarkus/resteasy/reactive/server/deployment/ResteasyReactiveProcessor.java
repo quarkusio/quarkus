@@ -148,10 +148,8 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationCompletionException;
-import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -169,6 +167,8 @@ public class ResteasyReactiveProcessor {
             DotName.createSimple(HttpServerRequest.class.getName()),
             DotName.createSimple(HttpServerResponse.class.getName()),
             DotName.createSimple(RoutingContext.class.getName()));
+
+    private static final int SECURITY_EXCEPTION_MAPPERS_PRIORITY = Priorities.USER + 1;
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
@@ -814,23 +814,15 @@ public class ResteasyReactiveProcessor {
         exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
                 AuthenticationCompletionExceptionMapper.class.getName(),
                 AuthenticationCompletionException.class.getName(),
-                Priorities.USER, false));
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                AuthenticationFailedExceptionMapper.class.getName(),
-                AuthenticationFailedException.class.getName(),
-                Priorities.USER + 1, false));
+                SECURITY_EXCEPTION_MAPPERS_PRIORITY, false));
         exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
                 AuthenticationRedirectExceptionMapper.class.getName(),
                 AuthenticationRedirectException.class.getName(),
-                Priorities.USER, false));
+                SECURITY_EXCEPTION_MAPPERS_PRIORITY, false));
         exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
                 ForbiddenExceptionMapper.class.getName(),
                 ForbiddenException.class.getName(),
-                Priorities.USER + 1, false));
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                UnauthorizedExceptionMapper.class.getName(),
-                UnauthorizedException.class.getName(),
-                Priorities.USER + 1, false));
+                SECURITY_EXCEPTION_MAPPERS_PRIORITY, false));
     }
 
     @BuildStep

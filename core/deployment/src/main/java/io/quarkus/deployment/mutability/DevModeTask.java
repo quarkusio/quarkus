@@ -172,6 +172,11 @@ public class DevModeTask {
                                 Files.createDirectories(target);
                             } else {
                                 if (!Files.exists(target)) {
+                                    // make sure the parent directories are created first
+                                    // META-INF/MANIFEST.MF is often written first,
+                                    // even before META-INF is written probably due to
+                                    // https://bugs.openjdk.java.net/browse/JDK-8031748
+                                    Files.createDirectories(target.getParent());
                                     try (OutputStream out = Files.newOutputStream(target)) {
                                         IoUtils.copy(out, fs);
                                     }

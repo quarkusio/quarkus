@@ -3,32 +3,32 @@ package io.quarkus.deployment.ide;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import io.quarkus.dev.console.DevConsoleManager;
 
 public enum Ide {
 
     // see for cli syntax of idea https://www.jetbrains.com/help/idea/opening-files-from-command-line.html
-    IDEA("idea", null, "--help"),
-    ECLIPSE("eclipse", null, (String[]) null),
-    VSCODE("code", null, "--version"),
-    NETBEANS("netbeans", null, "--help");
+    IDEA("idea", Collections.emptyList(), List.of("--help")),
+    ECLIPSE("eclipse", Collections.emptyList(), Collections.emptyList()),
+    VSCODE("code", List.of("--goto", "{fileName}:{lineNumber}"), List.of("--version")),
+    NETBEANS("netbeans", Collections.emptyList(), List.of("--help"));
 
     private final String defaultCommand;
     private final List<String> markerArgs;
-    private final String lineNumberArg;
+    private final List<String> lineNumberArgs;
     private String machineSpecificCommand;
 
     private String effectiveCommand;
 
-    Ide(String defaultCommand, String lineNumberArg, String... markerArgs) {
+    Ide(String defaultCommand, List<String> lineNumberArgs, List<String> markerArgs) {
         this.defaultCommand = defaultCommand;
-        this.lineNumberArg = lineNumberArg;
-        this.markerArgs = markerArgs != null ? Arrays.asList(markerArgs) : Collections.emptyList();
+        this.lineNumberArgs = lineNumberArgs;
+        this.markerArgs = markerArgs;
     }
 
     /**
@@ -46,7 +46,7 @@ public enum Ide {
 
     private String doGetEffectiveCommand() {
         if (defaultCommand != null) {
-            if (markerArgs == null) {
+            if (markerArgs.isEmpty()) {
                 // in this case there is nothing much we can do but hope that the default command will work
                 return defaultCommand;
             } else {
@@ -75,13 +75,13 @@ public enum Ide {
             return Collections.singletonList(fileName);
         }
 
-        if (lineNumberArg == null) {
+        if (lineNumberArgs.isEmpty()) {
             return Collections.singletonList(fileName + ":" + line);
         }
 
-        String formattedLineArg = String.format(lineNumberArg, line);
-
-        return List.of(formattedLineArg, fileName);
+        return lineNumberArgs.stream()
+                .map(arg -> arg.replace("{fileName}", fileName).replace("{lineNumber}", line))
+                .collect(Collectors.toList());
     }
 
     public void setMachineSpecificCommand(String machineSpecificCommand) {

@@ -46,6 +46,8 @@ final class QuarkusSQLServerConnection {
 
 }
 
-class SQLServerJDBCSubstitutions {
+@TargetClass(className = "com.microsoft.aad.adal4j.AuthenticationException")
+@Substitute
+final class AuthenticationExceptionSubstitutions {
 
 }

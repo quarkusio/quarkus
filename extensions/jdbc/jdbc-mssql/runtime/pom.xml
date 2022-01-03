@@ -30,11 +30,13 @@
         <!--
             adal4j isn't used directly but you need to have it around for compilation to succeed.
             Since that's the only reason, doesn't seem necessary to require the specific version in the shared bom.
+            Newer versions of mssql-jdbc use msal4j rather than adal4j; thus declare dependency as optional.
             -->
         <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>adal4j</artifactId>
             <version>1.6.6</version>
+            <optional>true</optional>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>

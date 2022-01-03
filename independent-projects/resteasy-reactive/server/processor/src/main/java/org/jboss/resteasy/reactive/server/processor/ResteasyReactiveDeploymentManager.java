@@ -79,8 +79,9 @@ public class ResteasyReactiveDeploymentManager {
     public static class ScanStep {
         final IndexView index;
         int inputBufferSize = 10000;
+        int outputBufferSize = 8192;
         /**
-         * By default we assume a default produced media type of "text/plain"
+         * By default, we assume a default produced media type of "text/plain"
          * for String endpoint return types. If this is disabled, the default
          * produced media type will be "[text/plain, *&sol;*]" which is more
          * expensive due to negotiation.
@@ -207,7 +208,8 @@ public class ResteasyReactiveDeploymentManager {
                     .setAdditionalReaders(readers)
                     .setAdditionalWriters(writers)
                     .setInjectableBeans(new HashMap<>())
-                    .setConfig(new ResteasyReactiveConfig(inputBufferSize, singleDefaultProduces, defaultProduces))
+                    .setConfig(new ResteasyReactiveConfig(inputBufferSize, outputBufferSize, singleDefaultProduces,
+                            defaultProduces))
                     .setHttpAnnotationToMethod(resources.getHttpAnnotationToMethod())
                     .setApplicationScanningResult(applicationScanningResult);
             for (MethodScanner scanner : methodScanners) {
@@ -376,7 +378,7 @@ public class ResteasyReactiveDeploymentManager {
             }
 
             DeploymentInfo info = new DeploymentInfo()
-                    .setConfig(new ResteasyReactiveConfig())
+                    .setResteasyReactiveConfig(new ResteasyReactiveConfig())
                     .setFeatures(sa.scannedFeatures)
                     .setInterceptors(sa.resourceInterceptors)
                     .setDynamicFeatures(sa.dynamicFeatures)

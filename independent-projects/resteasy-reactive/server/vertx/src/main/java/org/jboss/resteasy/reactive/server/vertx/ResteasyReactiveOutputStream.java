@@ -19,6 +19,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     private static final Logger log = Logger.getLogger("org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveOutputStream");
     private final ResteasyReactiveRequestContext context;
     protected final HttpServerRequest request;
+    private final int outputBufferSize;
     private ByteBuf pooledBuffer;
     private boolean committed;
 
@@ -32,6 +33,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     public ResteasyReactiveOutputStream(VertxResteasyReactiveRequestContext context) {
         this.context = context;
         this.request = context.getContext().request();
+        this.outputBufferSize = context.getDeployment().getResteasyReactiveConfig().getOutputBufferSize();
         request.response().exceptionHandler(new Handler<Throwable>() {
             @Override
             public void handle(Throwable event) {
@@ -196,7 +198,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         ByteBuf buffer = pooledBuffer;
         try {
             if (buffer == null) {
-                pooledBuffer = buffer = PooledByteBufAllocator.DEFAULT.directBuffer();
+                pooledBuffer = buffer = PooledByteBufAllocator.DEFAULT.directBuffer(outputBufferSize);
             }
             while (rem > 0) {
                 int toWrite = Math.min(rem, buffer.writableBytes());
@@ -205,7 +207,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 idx += toWrite;
                 if (!buffer.isWritable()) {
                     ByteBuf tmpBuf = buffer;
-                    this.pooledBuffer = buffer = PooledByteBufAllocator.DEFAULT.directBuffer();
+                    this.pooledBuffer = buffer = PooledByteBufAllocator.DEFAULT.directBuffer(outputBufferSize);
                     writeBlocking(tmpBuf, false);
                 }
             }

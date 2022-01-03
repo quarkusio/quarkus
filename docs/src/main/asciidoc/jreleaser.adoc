@@ -56,8 +56,7 @@ This command initializes the file structure and the minimum set of required file
         ├── docker
         │   ├── Dockerfile.jvm
         │   ├── Dockerfile.legacy-jar
-        │   ├── Dockerfile.native
-        │   └── Dockerfile.native-distroless
+        │   └── Dockerfile.native
         ├── java
         │   └── org
         │       └── acme

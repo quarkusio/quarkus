@@ -20,11 +20,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     private final ResteasyReactiveRequestContext context;
     protected final HttpServerRequest request;
     private ByteBuf pooledBuffer;
-    private long written;
     private boolean committed;
 
     private boolean closed;
-    private boolean finished;
     protected boolean waitingForDrain;
     protected boolean drainHandlerRegistered;
     protected boolean first = true;
@@ -217,7 +215,6 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             }
             throw new IOException(e);
         }
-        updateWritten(len);
     }
 
     public void writeBlocking(ByteBuf buffer, boolean finished) throws IOException {
@@ -238,13 +235,6 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 request.response().setChunked(true);
             }
         }
-        if (finished) {
-            this.finished = true;
-        }
-    }
-
-    void updateWritten(final long len) throws IOException {
-        this.written += len;
     }
 
     /**

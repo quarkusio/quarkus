@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -51,11 +53,34 @@ public class DevConsoleRecorder {
         });
     }
 
+    /**
+     *
+     * @param devConsoleFinalDestination
+     * @param shutdownContext
+     * @return
+     * @deprecated use {@link #fileSystemStaticHandler(List, String, ShutdownContext)}
+     */
+    @Deprecated
     public Handler<RoutingContext> devConsoleHandler(String devConsoleFinalDestination,
             ShutdownContext shutdownContext) {
-        shutdownContext.addShutdownTask(new CleanupDevConsoleTempDirectory(devConsoleFinalDestination));
+        List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations = new ArrayList<>();
+        webRootConfigurations.add(
+                new FileSystemStaticHandler.StaticWebRootConfiguration(devConsoleFinalDestination, ""));
 
-        return new DevConsoleStaticHandler(devConsoleFinalDestination);
+        return fileSystemStaticHandler(webRootConfigurations, devConsoleFinalDestination, shutdownContext);
+    }
+
+    public Handler<RoutingContext> fileSystemStaticHandler(
+            List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations,
+            String devConsoleFinalDestination,
+            ShutdownContext shutdownContext) {
+
+        FileSystemStaticHandler fileSystemStaticHandler = new FileSystemStaticHandler(webRootConfigurations);
+
+        shutdownContext.addShutdownTask(new CleanupDevConsoleTempDirectory(devConsoleFinalDestination));
+        shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(fileSystemStaticHandler));
+
+        return fileSystemStaticHandler;
     }
 
     public Handler<RoutingContext> continuousTestHandler(ShutdownContext context) {

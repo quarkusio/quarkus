@@ -99,6 +99,7 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
+import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
@@ -235,6 +236,7 @@ public class DevConsoleProcessor {
         vertxOptions.getMetricsOptions().setEnabled(false);
         //Not good for development:
         vertxOptions.getFileSystemOptions().setFileCachingEnabled(false);
+        vertxOptions.getFileSystemOptions().setClassPathResolvingEnabled(false);
         VertxBuilder builder = new VertxBuilder(vertxOptions);
         builder.threadFactory(new VertxThreadFactory() {
             @Override
@@ -406,11 +408,20 @@ public class DevConsoleProcessor {
         Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem,
                 curateOutcomeBuildItem,
                 launchModeBuildItem,
-                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH);
+                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH, true, true);
 
+        List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations = new ArrayList<>();
+        webRootConfigurations.add(
+                new FileSystemStaticHandler.StaticWebRootConfiguration(devConsoleStaticResourcesDeploymentPath.toString(), ""));
+        for (Path resolvedPath : devConsoleResourcesArtifact.getResolvedPaths()) {
+            webRootConfigurations
+                    .add(new FileSystemStaticHandler.StaticWebRootConfiguration(resolvedPath.toString(),
+                            STATIC_RESOURCES_PATH));
+        }
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route("dev/resources/*")
-                .handler(recorder.devConsoleHandler(devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
+                .handler(recorder.fileSystemStaticHandler(
+                        webRootConfigurations, devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
                 .build());
 
         // Add the log stream
@@ -720,7 +731,7 @@ public class DevConsoleProcessor {
                         jarPath = jarPath.substring(1).replace('/', '\\');
                     }
                     try (FileSystem fs = ZipUtils
-                            .newFileSystem(Paths.get(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name())), classLoader)) {
+                            .newFileSystem(Paths.get(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name())))) {
                         scanTemplates(fs, null, fs.getRootDirectories(), devTemplatePaths);
                     }
                 } else if ("file".equals(devTemplatesURL.getProtocol())) {

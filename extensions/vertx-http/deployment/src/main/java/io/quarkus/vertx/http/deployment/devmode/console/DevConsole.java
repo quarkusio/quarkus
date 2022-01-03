@@ -9,12 +9,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.yaml.snakeyaml.Yaml;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -34,6 +36,8 @@ import io.vertx.ext.web.RoutingContext;
  * and has access to build time stuff
  */
 public class DevConsole implements Handler<RoutingContext> {
+
+    private static final Logger log = Logger.getLogger(DevConsole.class);
 
     static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
     private static final Comparator<Map<String, Object>> EXTENSION_COMPARATOR = Comparator
@@ -70,19 +74,22 @@ public class DevConsole implements Handler<RoutingContext> {
                     try {
                         final Yaml yaml = new Yaml();
                         ClassPathUtils.consumeAsPaths("/META-INF/quarkus-extension.yaml", p -> {
-                            final String desc;
-                            try (Scanner scanner = new Scanner(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
-                                scanner.useDelimiter("\\A");
-                                desc = scanner.hasNext() ? scanner.next() : null;
-                            } catch (IOException e) {
-                                throw new RuntimeException("Failed to read " + p, e);
+                            try {
+                                final String desc;
+                                try (Scanner scanner = new Scanner(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
+                                    scanner.useDelimiter("\\A");
+                                    desc = scanner.hasNext() ? scanner.next() : null;
+                                }
+                                if (desc == null) {
+                                    // should be an exception?
+                                    return;
+                                }
+                                final Map<String, Object> metadata = yaml.load(desc);
+                                extensions.put(getExtensionNamespace(metadata), metadata);
+                            } catch (IOException | RuntimeException e) {
+                                // don't abort, just log, to prevent a single extension from breaking entire dev ui
+                                log.error("Failed to process extension descriptor " + p.toUri(), e);
                             }
-                            if (desc == null) {
-                                // should be an exception?
-                                return;
-                            }
-                            final Map<String, Object> metadata = yaml.load(desc);
-                            extensions.put(getExtensionNamespace(metadata), metadata);
                         });
                         this.globalData.put("configKeyMap", getConfigKeyMap());
                     } catch (IOException x) {
@@ -173,14 +180,15 @@ public class DevConsole implements Handler<RoutingContext> {
         });
     }
 
-    public void sendMainPage(RoutingContext event) {
+    private void sendMainPage(RoutingContext event) {
         Template devTemplate = engine.getTemplate("index");
         List<Map<String, Object>> actionableExtensions = new ArrayList<>();
         List<Map<String, Object>> nonActionableExtensions = new ArrayList<>();
-        for (Map<String, Object> loaded : this.extensions.values()) {
+        for (Entry<String, Map<String, Object>> entry : this.extensions.entrySet()) {
+            final String namespace = entry.getKey();
+            final Map<String, Object> loaded = entry.getValue();
             @SuppressWarnings("unchecked")
             final Map<String, Object> metadata = (Map<String, Object>) loaded.get("metadata");
-            final String namespace = getExtensionNamespace(loaded);
             currentExtension.set(namespace); // needed because the template of the extension is going to be read
             Template simpleTemplate = engine.getTemplate(namespace + "/embedded.html");
             boolean hasConsoleEntry = simpleTemplate != null;

@@ -11,8 +11,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.cli.common.ExitCode;
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments;
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation;
@@ -75,9 +73,6 @@ public class KotlinCompilationProvider implements CompilationProvider {
         compilerArguments.setSuppressWarnings(true);
         SimpleKotlinCompilerMessageCollector messageCollector = new SimpleKotlinCompilerMessageCollector();
         K2JVMCompiler compiler = new K2JVMCompiler();
-        if (context.getCompilerOptions() != null && !context.getCompilerOptions().isEmpty()) {
-            compiler.parseArguments(context.getCompilerOptions().toArray(new String[0]), compilerArguments);
-        }
 
         ExitCode exitCode = compiler.exec(
                 messageCollector,
@@ -130,8 +125,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
         }
 
         @Override
-        public void report(@NotNull CompilerMessageSeverity severity, @NotNull String s,
-                @Nullable CompilerMessageSourceLocation location) {
+        public void report(CompilerMessageSeverity severity, String s, CompilerMessageSourceLocation location) {
             if (severity.isError()) {
                 if ((location != null) && (location.getLineContent() != null)) {
                     errors.add(String.format("%s%n%s:%d:%d%nReason: %s", location.getLineContent(), location.getPath(),

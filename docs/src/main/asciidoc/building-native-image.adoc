@@ -602,7 +602,7 @@ Please see xref:native-and-ssl.adoc#working-with-containers[our Using SSL With N
 NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel:$TAG AS build`.
 `$TAG` can be found on the https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[Quarkus Mandrel Images Tags page].
 
-=== Using a distroless base image
+=== Using a Distroless base image
 
 IMPORTANT: Distroless image support is experimental.
 
@@ -623,11 +623,11 @@ USER nonroot
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
-TIP: Projects generated with https://code.quarkus.io already have this Dockerfile in the `src/main/docker` directory.
-
 Quarkus provides the `quay.io/quarkus/quarkus-distroless-image:1.0` image.
 It contains the required packages to run a native executable and is only **9Mb**.
 Just add your application on top of this image, and you will get a tiny container image.
+
+Distroless images should not be used in production without rigorous testing.
 
 === Native executable compression
 

@@ -6,5 +6,3 @@ language:
       dockerfile:
         native:
           from: quay.io/quarkus/quarkus-micro-image:1.0
-        native-distroless:
-          from: quay.io/quarkus/quarkus-distroless-image:1.0

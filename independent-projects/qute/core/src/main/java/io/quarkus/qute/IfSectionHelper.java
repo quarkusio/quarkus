@@ -7,7 +7,6 @@ import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -24,50 +23,121 @@ public class IfSectionHelper implements SectionHelper {
     private static final String IF = "if";
     private static final String LOGICAL_COMPLEMENT = "!";
 
-    private final List<IfBlock> blocks;
+    private final IfContext ifContext;
 
     IfSectionHelper(SectionInitContext context) {
-        ImmutableList.Builder<IfBlock> builder = ImmutableList.builder();
+        List<ConditionBlock> conditionBlocks = new ArrayList<>();
         for (SectionBlock part : context.getBlocks()) {
             if (SectionHelperFactory.MAIN_BLOCK_NAME.equals(part.label) || ELSE.equals(part.label)) {
-                builder.add(new IfBlock(part, context));
+                conditionBlocks.add(new ConditionBlock(part, context));
             }
         }
-        this.blocks = builder.build();
+        if (conditionBlocks.size() == 1) {
+            this.ifContext = new SingletonContext(conditionBlocks.get(0));
+        } else if (conditionBlocks.size() == 2) {
+            this.ifContext = new DoubletonContext(conditionBlocks.get(0), conditionBlocks.get(1));
+        } else {
+            this.ifContext = new ListContext(ImmutableList.copyOf(conditionBlocks));
+        }
     }
 
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-        if (blocks.size() == 1) {
-            IfBlock block = blocks.get(0);
+        return ifContext.resolve(context);
+    }
+
+    interface IfContext {
+
+        CompletionStage<ResultNode> resolve(SectionResolutionContext context);
+
+    }
+
+    static final class SingletonContext implements IfContext {
+
+        private final ConditionBlock block;
+
+        SingletonContext(ConditionBlock block) {
+            this.block = block;
+        }
+
+        @Override
+        public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
             return block.condition.evaluate(context).thenCompose(r -> {
                 if (isFalsy(r)) {
                     return ResultNode.NOOP;
                 } else {
-                    return context.execute(block.block, context.resolutionContext());
+                    return context.execute(block.section, context.resolutionContext());
                 }
             });
         }
-        return resolveBlocks(context, blocks.iterator());
+
     }
 
-    private CompletionStage<ResultNode> resolveBlocks(SectionResolutionContext context,
-            Iterator<IfBlock> blocks) {
-        IfBlock block = blocks.next();
-        if (block.condition.isEmpty()) {
-            // else without operands
-            return context.execute(block.block, context.resolutionContext());
+    static final class DoubletonContext implements IfContext {
+
+        private final ConditionBlock block;
+        private final ConditionBlock next;
+
+        public DoubletonContext(ConditionBlock block, ConditionBlock next) {
+            this.block = block;
+            this.next = next;
         }
-        return block.condition.evaluate(context).thenCompose(r -> {
-            if (isFalsy(r)) {
-                if (blocks.hasNext()) {
-                    return resolveBlocks(context, blocks);
+
+        @Override
+        public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
+            return block.condition.evaluate(context).thenCompose(r -> {
+                if (isFalsy(r)) {
+                    if (next.condition.isEmpty()) {
+                        // else without operands
+                        return context.execute(next.section, context.resolutionContext());
+                    }
+                    return next.condition.evaluate(context).thenCompose(nr -> {
+                        if (isFalsy(nr)) {
+                            return ResultNode.NOOP;
+                        } else {
+                            return context.execute(next.section, context.resolutionContext());
+                        }
+                    });
+                } else {
+                    return context.execute(block.section, context.resolutionContext());
                 }
-                return ResultNode.NOOP;
-            } else {
-                return context.execute(block.block, context.resolutionContext());
+            });
+        }
+
+    }
+
+    static final class ListContext implements IfContext {
+
+        private final List<ConditionBlock> blocks;
+
+        ListContext(List<ConditionBlock> blocks) {
+            this.blocks = blocks;
+        }
+
+        @Override
+        public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
+            return resolveBlocks(context, blocks.iterator());
+        }
+
+        private CompletionStage<ResultNode> resolveBlocks(SectionResolutionContext context,
+                Iterator<ConditionBlock> blocks) {
+            ConditionBlock block = blocks.next();
+            if (block.condition.isEmpty()) {
+                // else without operands
+                return context.execute(block.section, context.resolutionContext());
             }
-        });
+            return block.condition.evaluate(context).thenCompose(r -> {
+                if (isFalsy(r)) {
+                    if (blocks.hasNext()) {
+                        return resolveBlocks(context, blocks);
+                    }
+                    return ResultNode.NOOP;
+                } else {
+                    return context.execute(block.section, context.resolutionContext());
+                }
+            });
+        }
+
     }
 
     public static class Factory implements SectionHelperFactory<IfSectionHelper> {
@@ -127,13 +197,13 @@ public class IfSectionHelper implements SectionHelper {
 
     }
 
-    static class IfBlock {
+    static class ConditionBlock {
 
-        final SectionBlock block;
+        final SectionBlock section;
         final Condition condition;
 
-        public IfBlock(SectionBlock block, SectionInitContext context) {
-            this.block = block;
+        public ConditionBlock(SectionBlock block, SectionInitContext context) {
+            this.section = block;
             List<Object> params = parseParams(new ArrayList<>(block.parameters.values()), context);
             if (!params.isEmpty() && !SectionHelperFactory.MAIN_BLOCK_NAME.equals(block.label)) {
                 params = params.subList(1, params.size());
@@ -149,16 +219,16 @@ public class IfSectionHelper implements SectionHelper {
 
         Operator getOperator();
 
-        default boolean isLogicalComplement() {
-            return Operator.NOT.equals(getOperator());
-        }
-
         default boolean isEmpty() {
             return false;
         }
 
         default Object getLiteralValue() {
             return null;
+        }
+
+        default Boolean logicalComplement(Object val) {
+            return Booleans.isFalsy(val) ? Boolean.TRUE : Boolean.FALSE;
         }
 
     }
@@ -177,7 +247,11 @@ public class IfSectionHelper implements SectionHelper {
 
         @Override
         public CompletionStage<Object> evaluate(SectionResolutionContext context) {
-            return context.resolutionContext().evaluate(expression);
+            CompletionStage<Object> ret = context.resolutionContext().evaluate(expression);
+            if (operator == Operator.NOT) {
+                return ret.thenApply(this::logicalComplement);
+            }
+            return ret;
         }
 
         @Override
@@ -209,35 +283,44 @@ public class IfSectionHelper implements SectionHelper {
 
         @Override
         public CompletionStage<Object> evaluate(SectionResolutionContext context) {
-            return evaluateNext(context, null, conditions.iterator());
+            CompletionStage<Object> ret = evaluateNext(context, null, conditions.iterator());
+            if (operator == Operator.NOT) {
+                return ret.thenApply(this::logicalComplement);
+            }
+            return ret;
         }
 
-        static CompletionStage<Object> evaluateNext(SectionResolutionContext context, Object value, Iterator<Condition> iter) {
-            CompletableFuture<Object> result = new CompletableFuture<>();
+        CompletionStage<Object> evaluateNext(SectionResolutionContext context, Object previousValue,
+                Iterator<Condition> iter) {
             Condition next = iter.next();
             Boolean shortResult = null;
             Operator operator = next.getOperator();
             if (operator != null && operator.isShortCircuiting()) {
-                shortResult = operator.evaluate(value);
+                shortResult = operator.evaluate(previousValue);
             }
             if (shortResult != null) {
                 // There is no need to continue with the next operand
-                result.complete(shortResult);
+                return CompletedStage.of(shortResult);
             } else {
+                CompletableFuture<Object> result = new CompletableFuture<>();
                 Object literalVal = next.getLiteralValue();
                 if (literalVal != null) {
-                    processConditionValue(context, next, operator, value, literalVal, result, iter);
+                    // A literal value does not need to be evaluated
+                    if (operator == Operator.NOT) {
+                        literalVal = logicalComplement(literalVal);
+                    }
+                    processConditionValue(context, operator, previousValue, literalVal, result, iter);
                 } else {
                     next.evaluate(context).whenComplete((r, t) -> {
                         if (t != null) {
                             result.completeExceptionally(t);
                         } else {
-                            processConditionValue(context, next, operator, value, r, result, iter);
+                            processConditionValue(context, operator, previousValue, r, result, iter);
                         }
                     });
                 }
+                return result;
             }
-            return result;
         }
 
         @Override
@@ -255,12 +338,9 @@ public class IfSectionHelper implements SectionHelper {
             return "CompositeCondition [conditions=" + conditions.size() + ", operator=" + operator + "]";
         }
 
-        static void processConditionValue(SectionResolutionContext context, Condition condition, Operator operator,
+        void processConditionValue(SectionResolutionContext context, Operator operator,
                 Object previousValue, Object conditionValue, CompletableFuture<Object> result, Iterator<Condition> iter) {
             Object val;
-            if (condition.isLogicalComplement()) {
-                conditionValue = Booleans.isFalsy(conditionValue) ? Boolean.TRUE : Boolean.FALSE;
-            }
             if (operator == null || !operator.isBinary()) {
                 val = conditionValue;
             } else {
@@ -310,7 +390,7 @@ public class IfSectionHelper implements SectionHelper {
         private final int precedence;
 
         Operator(int precedence, String... aliases) {
-            this.aliases = Arrays.asList(aliases);
+            this.aliases = List.of(aliases);
             this.precedence = precedence;
         }
 
@@ -403,10 +483,10 @@ public class IfSectionHelper implements SectionHelper {
                 decimal = (BigDecimal) value;
             } else if (value instanceof BigInteger) {
                 decimal = new BigDecimal((BigInteger) value);
-            } else if (value instanceof Long) {
-                decimal = new BigDecimal((Long) value);
             } else if (value instanceof Integer) {
                 decimal = new BigDecimal((Integer) value);
+            } else if (value instanceof Long) {
+                decimal = new BigDecimal((Long) value);
             } else if (value instanceof Double) {
                 decimal = new BigDecimal((Double) value);
             } else if (value instanceof Float) {
@@ -576,7 +656,12 @@ public class IfSectionHelper implements SectionHelper {
                     nextOperator = null;
                 }
             }
-            condition = new CompositeCondition(operator, ImmutableList.copyOf(conditions));
+
+            if (operator == null && conditions.size() == 1) {
+                condition = conditions.get(0);
+            } else {
+                condition = new CompositeCondition(operator, ImmutableList.copyOf(conditions));
+            }
         } else {
             throw new TemplateException("Unsupported param type: " + param);
         }

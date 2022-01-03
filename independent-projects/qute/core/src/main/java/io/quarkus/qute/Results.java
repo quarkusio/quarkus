@@ -1,7 +1,7 @@
 package io.quarkus.qute;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,9 +41,7 @@ public final class Results {
         return CompletedStage.of(NotFound.EMPTY);
     }
 
-    static CompletableFuture<ResultNode> process(List<CompletionStage<ResultNode>> results) {
-        CompletableFuture<ResultNode> ret = new CompletableFuture<ResultNode>();
-
+    static CompletionStage<ResultNode> process(List<CompletionStage<ResultNode>> results) {
         // Collect async results first 
         @SuppressWarnings("unchecked")
         Supplier<ResultNode>[] allResults = new Supplier[results.size()];
@@ -57,7 +55,7 @@ public final class Results {
             } else {
                 CompletableFuture<ResultNode> fu = result.toCompletableFuture();
                 if (asyncResults == null) {
-                    asyncResults = new LinkedList<>();
+                    asyncResults = new ArrayList<>();
                 }
                 asyncResults.add(fu);
                 allResults[idx++] = Futures.toSupplier(fu);
@@ -65,8 +63,9 @@ public final class Results {
         }
         if (asyncResults == null) {
             // No async results present
-            ret.complete(new MultiResultNode(allResults));
+            return CompletedStage.of(new MultiResultNode(allResults));
         } else {
+            CompletableFuture<ResultNode> ret = new CompletableFuture<ResultNode>();
             CompletionStage<?> cs;
             if (asyncResults.size() == 1) {
                 cs = asyncResults.get(0);
@@ -81,8 +80,8 @@ public final class Results {
                     ret.complete(new MultiResultNode(allResults));
                 }
             });
+            return ret;
         }
-        return ret;
     }
 
     /**

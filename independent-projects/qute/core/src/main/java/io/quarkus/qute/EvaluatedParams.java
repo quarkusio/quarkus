@@ -1,8 +1,8 @@
 package io.quarkus.qute;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -40,7 +40,7 @@ public final class EvaluatedParams {
             } else {
                 CompletableFuture<?> fu = result.toCompletableFuture();
                 if (asyncResults == null) {
-                    asyncResults = new LinkedList<>();
+                    asyncResults = new ArrayList<>();
                 }
                 asyncResults.add(fu);
                 allResults[i++] = Futures.toSupplier(fu);
@@ -84,7 +84,7 @@ public final class EvaluatedParams {
             } else {
                 CompletableFuture<Object> fu = result.toCompletableFuture();
                 if (asyncResults == null) {
-                    asyncResults = new LinkedList<>();
+                    asyncResults = new ArrayList<>();
                 }
                 asyncResults.add(fu);
                 allResults[i++] = Futures.toSupplier(fu);

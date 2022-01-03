@@ -29,9 +29,9 @@ public final class ImmutableList {
         if (list.isEmpty()) {
             return Collections.emptyList();
         } else if (list.size() == 1) {
-            return Collections.singletonList(list.get(0));
+            return of(list.get(0));
         } else if (list.size() == 2) {
-            return new ImmutableList2<T>(list.get(0), list.get(1));
+            return of(list.get(0), list.get(1));
         }
         return new ImmutableArrayList<>(list.toArray());
     }
@@ -47,9 +47,9 @@ public final class ImmutableList {
             case 0:
                 return Collections.emptyList();
             case 1:
-                return Collections.singletonList(elements[0]);
+                return of(elements[0]);
             case 2:
-                return new ImmutableList2<>(elements[0], elements[1]);
+                return of(elements[0], elements[1]);
             default:
                 return new ImmutableArrayList<>(elements);
         }
@@ -57,12 +57,23 @@ public final class ImmutableList {
 
     /**
      * 
-     * @param <T>
+     * @param <E>
      * @param element
      * @return an immutable list
      */
-    public static <T> List<T> of(T element) {
+    public static <E> List<E> of(E element) {
         return Collections.singletonList(element);
+    }
+
+    /**
+     * 
+     * @param <E>
+     * @param e1
+     * @param e2
+     * @return an immutable list
+     */
+    public static <E> List<E> of(E e1, E e2) {
+        return new ImmutableList2<>(e1, e2);
     }
 
     /**

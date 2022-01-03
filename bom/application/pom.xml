@@ -101,7 +101,7 @@
         <elasticsearch-rest-client.version>7.16.2</elasticsearch-rest-client.version>
         <elasticsearch-opensource-components.version>${elasticsearch-rest-client.version}</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
-        <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.0</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
+        <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>

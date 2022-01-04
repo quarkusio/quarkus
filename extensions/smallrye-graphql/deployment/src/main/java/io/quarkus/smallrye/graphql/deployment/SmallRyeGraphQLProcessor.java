@@ -417,7 +417,7 @@ public class SmallRyeGraphQLProcessor {
             LaunchModeBuildItem launchMode,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
 
-        // User did not set this explisitly 
+        // User did not set this explicitly
         if (!graphQLConfig.printDataFetcherException.isPresent()) {
             if (launchMode.getLaunchMode().isDevOrTest()) {
                 systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.PRINT_DATAFETCHER_EXCEPTION, TRUE));

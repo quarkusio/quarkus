@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :toc:
 
-This guide demonstrates how to use Quarkus OpenID Connect (OIDC) Extension to protect your Quarkus HTTP endpoints using OpenId Connect Authorization Code Flow supported by OpenId Connect compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
+This guide demonstrates how to use Quarkus OpenID Connect (OIDC) Extension to protect your Quarkus HTTP endpoints using OpenID Connect Authorization Code Flow supported by OpenID Connect compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
 
 The extension allows to easily authenticate the users of your web application by redirecting them to the OpenID Connect Provider (e.g.: Keycloak) to login and, once the authentication is complete, return them back with the code confirming the successful authentication. The extension will request ID and access tokens from the OpenID Connect Provider using an authorization code grant and verify these tokens in order to authorize an access to the application.
 
@@ -326,12 +326,12 @@ RefreshToken is only used to refresh the current ID and access tokens as part of
 
 If IdToken does not provide enough information about the currently authenticated user then you can set a `quarkus.oidc.authentication.user-info-required=true` property for a https://openid.net/specs/openid-connect-core-1_0.html#UserInfo[UserInfo] JSON object from the OIDC userinfo endpoint to be requested.
 
-A request will be sent to the OpenId Provider UserInfo endpoint using the access token returned with the authorization code grant response and an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created. `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
+A request will be sent to the OpenID Provider UserInfo endpoint using the access token returned with the authorization code grant response and an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created. `io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
 
 [[config-metadata]]
 === Configuration Metadata
 
-The current tenant's discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenId Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
+The current tenant's discovered link:https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata[OpenID Connect Configuration Metadata] is represented by `io.quarkus.oidc.OidcConfigurationMetadata` and can be either injected or accessed as a `SecurityIdentity` `configuration-metadata` attribute.
 
 The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is public.
 
@@ -353,7 +353,7 @@ Additionally a custom `SecurityIdentityAugmentor` can also be used to add the ro
 
 Please see xref:security-openid-connect.adoc#token-verification-introspection[Token Verification And Introspection] for details about how the tokens are verified and introspected.
 
-Note that in case of `web-app` applications only `IdToken` is verified by default since the access token is not used by default to access the current Quarkus `web-app` endpoint and instead meant to be propagated to the services expecting this access token, for example, to the OpenId Connect Provider's UserInfo endpoint, etc. However if you expect the access token to contain the roles required to access the current Quarkus endpoint (`quarkus.oidc.roles.source=accesstoken`) then it will also be verified.
+Note that in case of `web-app` applications only `IdToken` is verified by default since the access token is not used by default to access the current Quarkus `web-app` endpoint and instead meant to be propagated to the services expecting this access token, for example, to the OpenID Connect Provider's UserInfo endpoint, etc. However if you expect the access token to contain the roles required to access the current Quarkus endpoint (`quarkus.oidc.roles.source=accesstoken`) then it will also be verified.
 
 [[token-introspection-userinfo-cache]]
 === Token Introspection and UserInfo Cache
@@ -448,7 +448,7 @@ quarkus.http.auth.permission.authenticated.policy=permit
 You may also need to set `quarkus.oidc.authentication.cookie-path` to a path value common to all of the application resources which is `/` in this example.
 See <<oidc-cookies, Dealing with Cookies>> for more information.
 
-Note that some OpenId Connect providers do not support https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-Initiated Logout] specification (possibly because it is still technically a draft) and do not return an OpenId Connect well-known `end_session_endpoint` metadata property. However it should not be a problem since these providers' specific logout mechanisms may only differ in how the logout URL query parameters are named.
+Note that some OpenID Connect providers do not support https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-Initiated Logout] specification (possibly because it is still technically a draft) and do not return an OpenID Connect well-known `end_session_endpoint` metadata property. However it should not be a problem since these providers' specific logout mechanisms may only differ in how the logout URL query parameters are named.
 
 According to the https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-Initiated Logout] specification, the `quarkus.oidc.logout.post-logout-path` property is represented as a `post_logout_redirect_uri` query parameter which will not be recognized by the providers which do not support this specification.
 
@@ -505,7 +505,7 @@ public class ServiceResource {
 [[session-management]]
 === Session Management
 
-If you have a xref:security-openid-connect.adoc#single-page-applications[Single Page Application for Service Applications] where your OpenId Connect Provider script such as `keycloak.js` is managing an authoriization code flow then that script will also control the SPA authentication session lifespan.
+If you have a xref:security-openid-connect.adoc#single-page-applications[Single Page Application for Service Applications] where your OpenID Connect Provider script such as `keycloak.js` is managing an authoriization code flow then that script will also control the SPA authentication session lifespan.
 
 If you work with a Quarkus OIDC `web-app` application then it is Quarkus OIDC Code Authentication mechanism which is managing the user session lifespan.
 
@@ -646,14 +646,14 @@ If you plan to consume this application from a Single Page Application running o
 
 === Integration with GitHub and other OAuth2 providers
 
-Some well known providers such as `GitHub` or `LinkedIn` are not `OpenId Connect` but `OAuth2` providers which support the `authorization code flow`, for example, link:https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps[GitHub OAuth2] and link:https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow[LinkedIn OAuth2].
+Some well known providers such as `GitHub` or `LinkedIn` are not `OpenID Connect` but `OAuth2` providers which support the `authorization code flow`, for example, link:https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps[GitHub OAuth2] and link:https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow[LinkedIn OAuth2].
 
-The main difference between `OpenId Connect` and `OAuth2` providers is that `OpenId Connect` providers, by building on top of `OAuth2`, return an `ID Token` representing a user authentication, in addition to the standard authorization code flow `access` and `refresh` tokens returned by `OAuth2` providers.
+The main difference between `OpenID Connect` and `OAuth2` providers is that `OpenID Connect` providers, by building on top of `OAuth2`, return an `ID Token` representing a user authentication, in addition to the standard authorization code flow `access` and `refresh` tokens returned by `OAuth2` providers.
 
 `OAuth2` providers such as `GitHub` do not return `IdToken`, the fact of the user authentication is implicit and is indirectly represented by the `access` token which represents an authenticated user authorizing the current Quarkus `web-app` application to access some data on behalf of the authenticated user.
 
 For example, when working with `GitHub`, the Quarkus endpoint can acquire an `access` token which will allow it to request a `GitHub` profile of the current user.
-In fact this is exactly how a standard `OpenId Connect` `UserInfo` acqusition also works - by authenticating into your `OpenId Connect` provider you also give a permission to Quarkus application to acquire your <<user-info,UserInfo>> on your behalf - and it also shows what is meant by `OpenId Connect` being built on top of `OAuth2`.
+In fact this is exactly how a standard `OpenID Connect` `UserInfo` acqusition also works - by authenticating into your `OpenID Connect` provider you also give a permission to Quarkus application to acquire your <<user-info,UserInfo>> on your behalf - and it also shows what is meant by `OpenID Connect` being built on top of `OAuth2`.
 
 In order to support the integration with such `OAuth2` servers, `quarkus-oidc` needs to be configured to allow the authorization code flow responses without `IdToken`: `quarkus.oidc.authentication.id-token-required=false`.
 
@@ -727,7 +727,7 @@ public class TokenResource {
 }
 ----
 
-If you support more than one social provider with the help of xref:security-openid-connect-multitenancy.adoc[OpenId Connect Multi-Tenancy], for example, `Google` which is an OpenId Connect Provider returning `IdToken` and `GitHub` which is an `OAuth2` provider returning no `IdToken` and only allowing to access `UserInfo` then you can have your endpoint working with only the injected `SecurityIdentity` for both `Google` and `GitHub` flows. A simple augmentation of `SecurityIdentity` will be required where a principal created with the internally generated `IdToken` will be replaced with the `UserInfo` based principal when the GiHub flow is active:
+If you support more than one social provider with the help of xref:security-openid-connect-multitenancy.adoc[OpenID Connect Multi-Tenancy], for example, `Google` which is an OpenID Connect Provider returning `IdToken` and `GitHub` which is an `OAuth2` provider returning no `IdToken` and only allowing to access `UserInfo` then you can have your endpoint working with only the injected `SecurityIdentity` for both `Google` and `GitHub` flows. A simple augmentation of `SecurityIdentity` will be required where a principal created with the internally generated `IdToken` will be replaced with the `UserInfo` based principal when the GiHub flow is active:
 
 [source,java]
 ----
@@ -840,7 +840,7 @@ quarkus.oidc.token.issuer=https://accounts.google.com
 
 === Provider Endpoint configuration
 
-OIDC `web-app` application needs to know OpenId Connect provider's authorization, token, `JsonWebKey` (JWK) set and possibly `UserInfo`, introspection and end session (RP-initiated logout) endpoint addresses.
+OIDC `web-app` application needs to know OpenID Connect provider's authorization, token, `JsonWebKey` (JWK) set and possibly `UserInfo`, introspection and end session (RP-initiated logout) endpoint addresses.
 
 By default they are discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc.auth-server-url`.
 
@@ -870,7 +870,7 @@ Please see xref:security-openid-connect-client.adoc#token-propagation[Token Prop
 [[oidc-provider-client-authentication]]
 === Oidc Provider Client Authentication
 
-`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenId Connect Provider has to be done. It has to authenticate to the OpenId Connect Provider when the authorization code has to be exchanged for the ID, access and refresh tokens, when the ID and access tokens have to be refreshed or introspected.
+`quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OpenID Connect Provider has to be done. It has to authenticate to the OpenID Connect Provider when the authorization code has to be exchanged for the ID, access and refresh tokens, when the ID and access tokens have to be refreshed or introspected.
 
 All the https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[OIDC Client Authentication] options are supported, for example:
 
@@ -974,7 +974,7 @@ quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.key-file=privateKey.pem
 
-# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it.
+# This is a token key identifier 'kid' header - set it if your OpenID Connect provider requires it.
 # Note if the key is represented in a JSON Web Key (JWK) format with a `kid` property then
 # using 'quarkus.oidc.credentials.jwt.token-key-id' is not necessary.
 quarkus.oidc.credentials.jwt.token-key-id=mykey
@@ -995,7 +995,7 @@ quarkus.oidc.credentials.jwt.issuer=custom-issuer
 
 ==== Apple POST JWT
 
-Apple OpenId Connect Provider uses a `client_secret_post` method where a secret is a JWT produced with a `private_key_jwt` authentication method but with Apple account specific issuer and subject claims.
+Apple OpenID Connect Provider uses a `client_secret_post` method where a secret is a JWT produced with a `private_key_jwt` authentication method but with Apple account specific issuer and subject claims.
 
 `quarkus-oidc` supports a non-standard `client_secret_post_jwt` authentication method which can be configured as follows:
 
@@ -1111,7 +1111,7 @@ public class CodeFlowAuthorizationTest {
 
 Additionally, `OidcWiremockTestResource` set token issuer and audience to `https://service.example.com` which can be customized with `quarkus.test.oidc.token.issuer` and `quarkus.test.oidc.token.audience` system properties.
 
-`OidcWiremockTestResource` can be used to emulate all OpenId Connect providers.
+`OidcWiremockTestResource` can be used to emulate all OpenID Connect providers.
 
 [[integration-testing-keycloak-devservices]]
 ==== Dev Services for Keycloak
@@ -1233,7 +1233,7 @@ OIDC authentication mechanism can be affected if your Quarkus application is run
 
 In such cases configuring Quarkus to recognize the original headers forwarded by the proxy will be required, see xref:http-reference.adoc#reverse-proxy[Running behind a reverse proxy] Vert.x documentation section for more information.
 
-For example, if your Quarkus endpoint runs in a cluster behind Kubernetes Ingress then a redirect from the OpenId Connect Provider back to this endpoint may not work since the calculated `redirect_uri` parameter may point to the internal endpoint address. This problem can be resolved with the following configuration:
+For example, if your Quarkus endpoint runs in a cluster behind Kubernetes Ingress then a redirect from the OpenID Connect Provider back to this endpoint may not work since the calculated `redirect_uri` parameter may point to the internal endpoint address. This problem can be resolved with the following configuration:
 
 [source,properties]
 ----
@@ -1247,9 +1247,9 @@ where `X-ORIGINAL-HOST` is set by Kubernetes Ingress to represent the external e
 
 `quarkus.oidc.authentication.force-redirect-https-scheme` property may also be used when the Quarkus application is running behind a SSL terminating reverse proxy.
 
-=== External and Internal Access to OpenId Connect Provider
+=== External and Internal Access to OpenID Connect Provider
 
-Note that the OpenId Connect Provider externally accessible authorization, logout and other endpoints may have different HTTP(S) URLs compared to the URLs auto-discovered or configured relative to `quarkus.oidc.auth-server-url` internal URL.
+Note that the OpenID Connect Provider externally accessible authorization, logout and other endpoints may have different HTTP(S) URLs compared to the URLs auto-discovered or configured relative to `quarkus.oidc.auth-server-url` internal URL.
 In such cases an issuer verification failure may be reported by the endpoint and redirects to the externally accessible Connect Provider endpoints may fail.
 
 In such cases, if you work with Keycloak then please start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally accessible base URL.
@@ -1257,9 +1257,9 @@ If you work with other Openid Connect providers then please check your provider'
 
 === Customize authentication requests
 
-By default, only the `response_type` (set to `code`), `scope` (set to 'openid'), `client_id`, `redirect_uri` and `state` properties are passed as HTTP query parameters to the OpenId Connect provider's authorization endpoint when the user is redirected to it to authenticate.
+By default, only the `response_type` (set to `code`), `scope` (set to 'openid'), `client_id`, `redirect_uri` and `state` properties are passed as HTTP query parameters to the OpenID Connect provider's authorization endpoint when the user is redirected to it to authenticate.
 
-You can add more properties to it with `quarkus.oidc.authentication.extra-params`. For example, some OpenId Connect providers may choose to return the authorization code as part of the redirect URI's fragment which would break the authentication process - it can be fixed as follows:
+You can add more properties to it with `quarkus.oidc.authentication.extra-params`. For example, some OpenID Connect providers may choose to return the authorization code as part of the redirect URI's fragment which would break the authentication process - it can be fixed as follows:
 
 [source,properties]
 ----

@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 This guide explains how to use:
 
- - `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak]
+ - `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak]
  - `quarkus-oidc-token-propagation` extension to propagate the current `Bearer` or `Authorization Code Flow` access tokens
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
@@ -124,7 +124,7 @@ and then you can use `OidcClient.refreshTokens` method with a provided refresh t
 
 Using the `token exchange` grant may be required if you are building a complex microservices application and would like to avoid the same `Bearer` token be propagated to and used by more than one service. Please see <<token-propagation,Token Propagation in MicroProfile RestClient client filter>> for more details.
 
-Using `OidcClient` to support the `authorization code` grant might be required if for some reasons you can not use the xref:security-openid-connect-web-authentication.adoc[Quarkus OpenId Connect extension] to support Authorization Code Flow. If there is a very good reason for you to implement Authorization Code Flow then you can configure `OidcClient` as follows:
+Using `OidcClient` to support the `authorization code` grant might be required if for some reasons you can not use the xref:security-openid-connect-web-authentication.adoc[Quarkus OpenID Connect extension] to support Authorization Code Flow. If there is a very good reason for you to implement Authorization Code Flow then you can configure `OidcClient` as follows:
 
 [source,properties]
 ----
@@ -491,12 +491,12 @@ Additionally, `quarkus.oidc-client.refresh-token-time-skew` property can be used
 
 If the access token needs to be refreshed but no refresh token is available then an attempt will be made to acquire a new token using the configured grant such as `client_credentials`.
 
-Please note that some OpenId Connect Providers will not return a refresh token in a `client_credentials` grant response. For example, starting from Keycloak 12 a refresh token will not be returned by default for `client_credentials`. The providers may also restrict a number of times a refresh token can be used.
+Please note that some OpenID Connect Providers will not return a refresh token in a `client_credentials` grant response. For example, starting from Keycloak 12 a refresh token will not be returned by default for `client_credentials`. The providers may also restrict a number of times a refresh token can be used.
 
 [[oidc-client-authentication]]
 === OidcClient Authentication
 
-`OidcClient` has to authenticate to the OpenId Connect Provider for the `client_credentials` and other grant requests to succeed.
+`OidcClient` has to authenticate to the OpenID Connect Provider for the `client_credentials` and other grant requests to succeed.
 All the https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[OIDC Client Authentication] options are supported, for example:
 
 `client_secret_basic`:
@@ -599,7 +599,7 @@ quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
 quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.jwt.key-file=privateKey.pem
 
-# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it.
+# This is a token key identifier 'kid' header - set it if your OpenID Connect provider requires it.
 # Note if the key is represented in a JSON Web Key (JWK) format with a `kid` property then
 # using 'quarkus.oidc-client.credentials.jwt.token-key-id' is not necessary.
 quarkus.oidc-client.credentials.jwt.token-key-id=mykey
@@ -619,7 +619,7 @@ quarkus.oidc-client.credentials.jwt.issuer=custom-issuer
 
 ==== Apple POST JWT
 
-Apple OpenId Connect Provider uses a `client_secret_post` method where a secret is a JWT produced with a `private_key_jwt` authentication method but with Apple account specific issuer and subject properties.
+Apple OpenID Connect Provider uses a `client_secret_post` method where a secret is a JWT produced with a `private_key_jwt` authentication method but with Apple account specific issuer and subject properties.
 
 `quarkus-oidc-client` supports a non-standard `client_secret_post_jwt` authentication method which can be configured as follows:
 
@@ -746,7 +746,7 @@ and finally write the test code. Given the Wiremock-based resource above, the fi
 
 ==== Keycloak
 
-If you work with Keycloak then you can use the same approach as described in the xref:security-openid-connect#integration-testing-keycloak.adoc[OpenId Connect Bearer Token Integration testing] `Keycloak` section.
+If you work with Keycloak then you can use the same approach as described in the xref:security-openid-connect#integration-testing-keycloak.adoc[OpenID Connect Bearer Token Integration testing] `Keycloak` section.
 
 === How to check the errors in the logs
 
@@ -823,7 +823,7 @@ Alternatively, `AccessTokenRequestFilter` can be registered automatically with a
 
 ==== Exchange Token Before Propagation
 
-If the current access token needs to be exchanged before propagation and you work with link:https://www.keycloak.org/docs/latest/securing_apps/#_token-exchange[Keycloak] or other OpenId Connect Provider which supports a link:https://tools.ietf.org/html/rfc8693[Token Exchange] token grant then you can configure `AccessTokenRequestFilter` like this:
+If the current access token needs to be exchanged before propagation and you work with link:https://www.keycloak.org/docs/latest/securing_apps/#_token-exchange[Keycloak] or other OpenID Connect Provider which supports a link:https://tools.ietf.org/html/rfc8693[Token Exchange] token grant then you can configure `AccessTokenRequestFilter` like this:
 
 [source,properties]
 ----
@@ -836,13 +836,13 @@ quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 quarkus.oidc-token-propagation.exchange-token=true
 ----
 
-Note `AccessTokenRequestFilter` will use `OidcClient` to exchange the current token and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenId Connect Provider.
+Note `AccessTokenRequestFilter` will use `OidcClient` to exchange the current token and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
 
 `AccessTokenRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation.client-name` configuration property.
 
 === RestClient JsonWebTokenRequestFilter
 
-Using `JsonWebTokenRequestFilter` is recommended if you work with Bearer JWT tokens where these tokens can have their claims such as `issuer` and `audience` modified and the updated tokens secured (for example, re-signed) again. It expects an injected `org.eclipse.microprofile.jwt.JsonWebToken` and therefore will not work with the opaque tokens. Also, if your OpenId Connect Provider supports a Token Exchange protocol then it is recommended to use `AccessTokenRequestFilter` instead - as both JWT and opaque bearer tokens can be securely exchanged with `AccessTokenRequestFilter`.
+Using `JsonWebTokenRequestFilter` is recommended if you work with Bearer JWT tokens where these tokens can have their claims such as `issuer` and `audience` modified and the updated tokens secured (for example, re-signed) again. It expects an injected `org.eclipse.microprofile.jwt.JsonWebToken` and therefore will not work with the opaque tokens. Also, if your OpenID Connect Provider supports a Token Exchange protocol then it is recommended to use `AccessTokenRequestFilter` instead - as both JWT and opaque bearer tokens can be securely exchanged with `AccessTokenRequestFilter`.
 
 `JsonWebTokenRequestFilter` makes it easy for `Service A` implementations to update the injected `org.eclipse.microprofile.jwt.JsonWebToken` with the new `issuer` and `audience` claim values and secure the updated token again with a new signature. The only difficult step is to ensure `Service A` has a signing key - it should be provisioned from a secure file system or from the remote secure storage such as Vault.
 
@@ -898,12 +898,12 @@ smallrye.jwt.new-token.audience=http://downstream-resource
 smallrye.jwt.new-token.override-matching-claims=true
 ----
 
-As already noted above, please use `AccessTokenRequestFilter` if you work with Keycloak or OpenId Connect Provider which supports a Token Exchange protocol.
+As already noted above, please use `AccessTokenRequestFilter` if you work with Keycloak or OpenID Connect Provider which supports a Token Exchange protocol.
 
 [[integration-testing-token-propagation]]
 === Testing
 
-You can generate the tokens as described in xref:security-openid-connect.adoc#integration-testing[OpenId Connect Bearer Token Integration testing] section.
+You can generate the tokens as described in xref:security-openid-connect.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] section.
 Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered token propagation filter to invoke on the downstream endpoint, for example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
 
 == References

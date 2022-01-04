@@ -1033,6 +1033,11 @@ class RedisClientImpl implements RedisClient {
     }
 
     @Override
+    public Response zunion(List<String> args) {
+        return await(redisAPI.zunion(args));
+    }
+
+    @Override
     public Response zunionstore(List<String> args) {
         return await(redisAPI.zunionstore(args));
     }

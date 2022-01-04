@@ -2040,6 +2040,16 @@ class ReactiveRedisClientImpl implements ReactiveRedisClient {
     }
 
     @Override
+    public Uni<Response> zunion(List<String> args) {
+        return redisAPI.zunion(args);
+    }
+
+    @Override
+    public Response zunionAndAwait(List<String> args) {
+        return redisAPI.zunionAndAwait(args);
+    }
+
+    @Override
     public Uni<Response> zunionstore(List<String> args) {
         return redisAPI.zunionstore(args);
     }

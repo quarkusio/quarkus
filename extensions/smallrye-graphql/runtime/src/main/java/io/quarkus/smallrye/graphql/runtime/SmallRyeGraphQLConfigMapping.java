@@ -42,7 +42,6 @@ public class SmallRyeGraphQLConfigMapping extends RelocateConfigSourceIntercepto
         mapKey(relocations, ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, QUARKUS_HTTP_POST_QUERYPARAMETERS_ENABLED);
         mapKey(relocations, ConfigKey.ERROR_EXTENSION_FIELDS, QUARKUS_ERROR_EXTENSION_FIELDS);
         mapKey(relocations, ConfigKey.DEFAULT_ERROR_MESSAGE, QUARKUS_DEFAULT_ERROR_MESSAGE);
-        mapKey(relocations, ConfigKey.PRINT_DATAFETCHER_EXCEPTION, QUARKUS_PRINT_DATAFETCHER_EXCEPTION);
         mapKey(relocations, ConfigKey.SCHEMA_INCLUDE_SCALARS, QUARKUS_SCHEMA_INCLUDE_SCALARS);
         mapKey(relocations, ConfigKey.SCHEMA_INCLUDE_DEFINITION, QUARKUS_SCHEMA_INCLUDE_DEFINITION);
         mapKey(relocations, ConfigKey.SCHEMA_INCLUDE_DIRECTIVES, QUARKUS_SCHEMA_INCLUDE_DIRECTIVES);

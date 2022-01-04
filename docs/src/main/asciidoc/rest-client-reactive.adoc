@@ -96,7 +96,19 @@ The model above is only a subset of the fields provided by the service, but it s
 
 [NOTE]
 ====
-The fields of `Extension` were made `public` in order to make Jackson able to serialize them using its default settings. For more information about configuring Jackson, see xref:rest-json.adoc#jackson[this guide].
+Using `public` fields in the model is an important detail so that Jackson can populate them using its default settings,
+otherwise the fields will remain with default values (e.g. `null` for objects) when a successfull response is received.
+Setting class level `@JsonAutoDetect(fieldVisibility = Visibility.ANY)` annotation is a quick way to make Jackson populate fields,
+while keeping their non-public visibility.
+For more information about configuring Jackson, see xref:rest-json.adoc#jackson[this guide].
+====
+
+[TIP]
+====
+Java field names tend to be in CamelCase (e.g. `myLovelyHorse`),
+but JSON attributes might sometimes differ (e.g. `mylovelyhorse`).
+A quick way to resolve this disparity is to annotate the Java fields, which are in CamelCase,
+with `@JsonProperty` containing the JSON attribute name (e.g. `@JsonProperty("mylovelyhorse") myLovelyHorse`).
 ====
 
 == Create the interface

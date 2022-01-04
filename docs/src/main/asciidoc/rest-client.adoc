@@ -97,6 +97,11 @@ public class Extension {
 
 The model above is only a subset of the fields provided by the service, but it suffices for the purposes of this guide.
 
+[NOTE]
+====
+The fields of `Extension` were made `public` in order to make Jackson able to serialize them using its default settings. For more information about configuring Jackson, see xref:rest-json.adoc#jackson[this guide].
+====
+
 == Create the interface
 
 Using the RESTEasy REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/ExtensionsService.java` and have the following content:

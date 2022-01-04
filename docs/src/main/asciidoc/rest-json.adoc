@@ -185,6 +185,7 @@ It will allow to narrow down the number of JAX-RS providers (which can be seen a
 [[json]]
 === Configuring JSON support
 
+[[jackson]]
 ==== Jackson
 
 In Quarkus, the default Jackson `ObjectMapper` obtained via CDI (and consumed by the Quarkus extensions) is configured to ignore unknown properties

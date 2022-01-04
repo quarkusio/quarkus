@@ -17,7 +17,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -92,6 +91,7 @@ import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.qute.i18n.MessageBundles;
 import io.quarkus.qute.runtime.MessageBundleRecorder;
 import io.quarkus.qute.runtime.QuteConfig;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.util.StringUtil;
 
 public class MessageBundleProcessor {
@@ -115,11 +115,13 @@ public class MessageBundleProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses, BeanRegistrationPhaseBuildItem beanRegistration,
             BuildProducer<BeanConfiguratorBuildItem> configurators,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) throws IOException {
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles,
+            LocalesBuildTimeConfig locales) throws IOException {
 
         IndexView index = beanArchiveIndex.getIndex();
         Map<String, ClassInfo> found = new HashMap<>();
         List<MessageBundleBuildItem> bundles = new ArrayList<>();
+        List<DotName> localizedInterfaces = new ArrayList<>();
         Set<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem);
 
         Path messagesPath = applicationArchivesBuildItem.getRootArchive().getChildPath(MESSAGES);
@@ -153,7 +155,7 @@ public class MessageBundleProcessor {
                     found.put(name, bundleClass);
 
                     // Find localizations for each interface
-                    String defaultLocale = getDefaultLocale(bundleAnnotation);
+                    String defaultLocale = getDefaultLocale(bundleAnnotation, locales);
                     List<ClassInfo> localized = new ArrayList<>();
                     for (ClassInfo implementor : index.getKnownDirectImplementors(bundleClass.name())) {
                         if (Modifier.isInterface(implementor.flags())) {
@@ -169,6 +171,7 @@ public class MessageBundleProcessor {
                                     "A localized message bundle interface [%s] already exists for locale %s: [%s]",
                                     previous != null ? previous : bundleClass, locale, localizedInterface));
                         }
+                        localizedInterfaces.add(localizedInterface.name());
                     }
 
                     // Find localized files
@@ -196,6 +199,23 @@ public class MessageBundleProcessor {
             }
         }
 
+        // Detect interfaces annotated with @Localized that don't extend a message bundle interface
+        for (AnnotationInstance localizedAnnotation : index.getAnnotations(Names.LOCALIZED)) {
+            if (localizedAnnotation.target().kind() == Kind.CLASS) {
+                ClassInfo localized = localizedAnnotation.target().asClass();
+                if (Modifier.isInterface(localized.flags())) {
+                    if (!localizedInterfaces.contains(localized.name())) {
+                        throw new MessageBundleException(
+                                String.format(
+                                        "A localized message bundle interface must extend a message bundle interface: "
+                                                + localized));
+                    }
+                } else {
+                    throw new MessageBundleException("@Localized must be declared on an interface: " + localized);
+                }
+            }
+        }
+
         // Generate implementations
         // name -> impl class
         Map<String, String> generatedImplementations = generateImplementations(bundles, generatedClasses,
@@ -207,7 +227,8 @@ public class MessageBundleProcessor {
             beanRegistration.getContext().configure(bundleInterface.name()).addType(bundle.getDefaultBundleInterface().name())
                     // The default message bundle - add both @Default and @Localized
                     .addQualifier(DotNames.DEFAULT).addQualifier().annotation(Names.LOCALIZED)
-                    .addValue("value", getDefaultLocale(bundleInterface.classAnnotation(Names.BUNDLE))).done().unremovable()
+                    .addValue("value", getDefaultLocale(bundleInterface.classAnnotation(Names.BUNDLE), locales)).done()
+                    .unremovable()
                     .scope(Singleton.class).creator(mc -> {
                         // Just create a new instance of the generated class
                         mc.returnValue(
@@ -1010,11 +1031,11 @@ public class MessageBundleProcessor {
         }
     }
 
-    private String getDefaultLocale(AnnotationInstance bundleAnnotation) {
+    private String getDefaultLocale(AnnotationInstance bundleAnnotation, LocalesBuildTimeConfig locales) {
         AnnotationValue localeValue = bundleAnnotation.value(BUNDLE_LOCALE);
         String defaultLocale;
         if (localeValue == null || localeValue.asString().equals(MessageBundle.DEFAULT_LOCALE)) {
-            defaultLocale = Locale.getDefault().toLanguageTag();
+            defaultLocale = locales.defaultLocale.toLanguageTag();
         } else {
             defaultLocale = localeValue.asString();
         }

@@ -5,8 +5,10 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -36,6 +38,7 @@ import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.Startup;
 
 @Startup(Interceptor.Priority.PLATFORM_BEFORE)
@@ -56,15 +59,20 @@ public class EngineProducer {
     private final String basePath;
     private final String tagPath;
     private final Pattern templatePathExclude;
+    private final Locale defaultLocale;
+    private final Charset defaultCharset;
 
     public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
-            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes, LaunchMode launchMode) {
+            Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes, LaunchMode launchMode,
+            LocalesBuildTimeConfig locales) {
         this.contentTypes = contentTypes;
         this.suffixes = config.suffixes;
         this.basePath = "templates/";
         this.tagPath = basePath + TAGS;
         this.tags = context.getTags();
         this.templatePathExclude = config.templatePathExclude;
+        this.defaultLocale = locales.defaultLocale;
+        this.defaultCharset = config.defaultCharset;
 
         LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(), tags,
                 context.getResolverClasses());
@@ -227,7 +235,7 @@ public class EngineProducer {
             }
         }
         if (resource != null) {
-            return Optional.of(new ResourceTemplateLocation(resource, guessVariant(templatePath)));
+            return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath)));
         }
         return Optional.empty();
     }
@@ -240,9 +248,10 @@ public class EngineProducer {
         return cl.getResource(path);
     }
 
-    Variant guessVariant(String path) {
-        // TODO detect locale and encoding
-        return Variant.forContentType(contentTypes.getContentType(path));
+    Variant createVariant(String path) {
+        // Guess the content type from the path
+        String contentType = contentTypes.getContentType(path);
+        return new Variant(defaultLocale, defaultCharset, contentType);
     }
 
     static class ResourceTemplateLocation implements TemplateLocation {
@@ -257,8 +266,15 @@ public class EngineProducer {
 
         @Override
         public Reader read() {
+            Charset charset = null;
+            if (variant.isPresent()) {
+                charset = variant.get().getCharset();
+            }
+            if (charset == null) {
+                charset = StandardCharsets.UTF_8;
+            }
             try {
-                return new InputStreamReader(resource.openStream(), StandardCharsets.UTF_8);
+                return new InputStreamReader(resource.openStream(), charset);
             } catch (IOException e) {
                 return null;
             }

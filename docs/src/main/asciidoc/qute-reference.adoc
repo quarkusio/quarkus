@@ -57,29 +57,29 @@ Once we have an `Engine` instance we could parse the template contents:
 
 [source,java]
 ----
-Template helloTemplate = engine.parse(helloHtmlContent);
+Template hello = engine.parse(helloHtmlContent);
 ----
 
 TIP: In Quarkus, you can simply inject the template definition. The template is automatically parsed and cached - see <<quarkus_integration>>.
 
-Finally, we will create a *template instance*, set the data and render the output:
+Finally, create a *template instance*, set the data and render the output:
 
 [source,java]
 ----
 // Renders <html><p>Hello Jim!</p></html>
-helloTemplate.data("name", "Jim").render(); <1> <2>
+hello.data("name", "Jim").render(); <1> <2>
 ----
 <1> `Template.data(String, Object)` is a convenient method that creates a template instance and sets the data in one step.
 <2> `TemplateInstance.render()` triggers a synchronous rendering, i.e. the current thread is blocked until the rendering is finished. However, there are also asynchronous ways to trigger the rendering and consume the results. For example there is the `TemplateInstance.renderAsync()` method that returns `CompletionStage<String>` or `TemplateInstance.createMulti()` that returns Mutiny's `Multi<String>`.
 
 So the workflow is simple: 
 
-1. Create template contents (`hello.html`),
-2. Parse template definition (`io.quarkus.qute.Template`),
-3. Create template instance (`io.quarkus.qute.TemplateInstance`),
-4. Render output.
+1. Create the template contents (`hello.html`),
+2. Parse the template definition (`io.quarkus.qute.Template`),
+3. Create a template instance (`io.quarkus.qute.TemplateInstance`),
+4. Render the output.
 
-TIP: The `Engine` is able to cache the definitions so that it's not necessary to parse the contents again and again. In Quarkus, the caching is done automatically.
+TIP: The `Engine` is able to cache the template definitions so that it's not necessary to parse the contents again and again. In Quarkus, the caching is done automatically.
 
 [[core_features]]
 == Core Features
@@ -1073,10 +1073,11 @@ engineBuilder.addValueResolver(ValueResolver.builder()
 [[template-locator]]
 ==== Template Locator
 
-Manual registration is sometimes handy but it's also possible to register a template locator using `EngineBuilder.addLocator(Function<String, Optional<Reader>>)`.
+Manual registration is sometimes handy but it's also possible to register a template locator using `EngineBuilder.addLocator()`.
 This locator is used whenever the `Engine.getTemplate()` method is called and the engine has no template for a given id stored in the cache.
+The locator is responsible to use the correct character encoding when reading the contents of a template.
 
-NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically.
+NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically and the encoding set via `quarkus.qute.default-charset` (UTF-8 by default) is used.
 
 ==== Content Filters
 
@@ -1883,7 +1884,7 @@ NOTE: A warning message is logged for each _unused_ parameter.
 
 ==== Localization
 
-The default locale of the Java Virtual Machine used to *build the application* is used for the `@MessageBundle` interface by default.
+The default locale specified via the `quarkus.default-locale` config property is used for the `@MessageBundle` interface by default.
 However, the `io.quarkus.qute.i18n.MessageBundle#locale()` can be used to specify a custom locale.
 Additionally, there are two ways to define a localized bundle:
 
@@ -1941,8 +1942,9 @@ hello=Hello \
 ----
 Note that the line terminator is escaped with a backslash character `\` and white space at the start of the following line is ignored. I.e. `{msg:hello('Edgar')}` would be rendered as `Hello Edgar and good morning!`.
 
-Once we have the localized bundles defined we need a way to _select_ the correct bundle.
-If you use a message bundle expression in a template you'll have to specify the `locale` attribute of a template instance.
+Once we have the localized bundles defined we need a way to _select_ the correct bundle for a specific template instance, i.e. to specify the locale for all message bundle expressions in the template.
+By default, the locale specified via the `quarkus.default-locale` configuration property is used to select the bundle.
+Alternatively, you can specify the `locale` attribute of a template instance.
 
 .`locale` Attribute Example
 [source,java]

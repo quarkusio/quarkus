@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +19,7 @@ public class HtmlEscaperTest {
 
             @Override
             public Optional<Variant> getVariant() {
-                return Optional.of(new Variant(Locale.getDefault(), Variant.TEXT_HTML, null));
+                return Optional.of(Variant.forContentType(Variant.TEXT_HTML));
             }
 
             @Override

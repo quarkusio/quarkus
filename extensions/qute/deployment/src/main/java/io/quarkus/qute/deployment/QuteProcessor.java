@@ -12,6 +12,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
+import java.nio.charset.Charset;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1235,7 +1236,7 @@ public class QuteProcessor {
                     if (basePath != null) {
                         LOGGER.debugf("Found extension templates dir: %s", path);
                         scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                config.templatePathExclude);
+                                config);
                         break;
                     }
                 } else {
@@ -1244,7 +1245,7 @@ public class QuteProcessor {
                         if (Files.exists(basePath)) {
                             LOGGER.debugf("Found extension templates in: %s", path);
                             scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                    config.templatePathExclude);
+                                    config);
                         }
                     } catch (IOException e) {
                         LOGGER.warnf(e, "Unable to create the file system from the path: %s", path);
@@ -1261,7 +1262,7 @@ public class QuteProcessor {
                     LOGGER.debugf("Found templates dir: %s", basePath);
                     basePaths.add(basePath);
                     scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                            config.templatePathExclude);
+                            config);
                     break;
                 }
             }
@@ -2139,7 +2140,7 @@ public class QuteProcessor {
     private static void produceTemplateBuildItems(BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String basePath, String filePath,
-            Path originalPath) {
+            Path originalPath, QuteConfig config) {
         if (filePath.isEmpty()) {
             return;
         }
@@ -2149,13 +2150,14 @@ public class QuteProcessor {
         // NOTE: we cannot just drop the template because a template param can be added 
         watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, true));
         nativeImageResources.produce(new NativeImageResourceBuildItem(fullPath));
-        templatePaths.produce(new TemplatePathBuildItem(filePath, originalPath, readTemplateContent(originalPath)));
+        templatePaths.produce(
+                new TemplatePathBuildItem(filePath, originalPath, readTemplateContent(originalPath, config.defaultCharset)));
     }
 
     private void scan(Path root, Path directory, String basePath, BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            Pattern templatePathExclude)
+            QuteConfig config)
             throws IOException {
         try (Stream<Path> files = Files.list(directory)) {
             Iterator<Path> iter = files.iterator();
@@ -2167,15 +2169,15 @@ public class QuteProcessor {
                     if (File.separatorChar != '/') {
                         templatePath = templatePath.replace(File.separatorChar, '/');
                     }
-                    if (templatePathExclude.matcher(templatePath).matches()) {
+                    if (config.templatePathExclude.matcher(templatePath).matches()) {
                         LOGGER.debugf("Template file exluded: %s", filePath);
                         continue;
                     }
                     produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath,
-                            filePath);
+                            filePath, config);
                 } else if (Files.isDirectory(filePath)) {
                     LOGGER.debugf("Scan directory: %s", filePath);
-                    scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources, templatePathExclude);
+                    scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources, config);
                 }
             }
         }
@@ -2226,9 +2228,9 @@ public class QuteProcessor {
         return false;
     }
 
-    static String readTemplateContent(Path path) {
+    static String readTemplateContent(Path path, Charset defaultCharset) {
         try {
-            return Files.readString(path);
+            return Files.readString(path, defaultCharset);
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to read the template content from path: " + path, e);
         }

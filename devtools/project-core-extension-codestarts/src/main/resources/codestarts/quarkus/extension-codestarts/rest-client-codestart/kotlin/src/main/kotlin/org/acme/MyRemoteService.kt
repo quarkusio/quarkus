@@ -5,7 +5,7 @@ import javax.ws.rs.GET
 import javax.ws.rs.Path
 import javax.ws.rs.QueryParam
 
-@RegisterRestClient(baseUri = "https://stage.code.quarkus.io/api")
+@RegisterRestClient(baseUri = "https://code.quarkus.io/api")
 interface MyRemoteService {
 
     @GET

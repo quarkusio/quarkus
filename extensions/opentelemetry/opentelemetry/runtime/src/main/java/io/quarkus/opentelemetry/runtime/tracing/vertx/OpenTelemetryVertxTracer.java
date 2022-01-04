@@ -81,6 +81,10 @@ public class OpenTelemetryVertxTracer
             final Iterable<Map.Entry<String, String>> headers,
             final TagExtractor<R> tagExtractor) {
 
+        if (!(request instanceof HttpRequest)) {
+            return null;
+        }
+
         io.opentelemetry.context.Context parentContext = context.getLocal(ACTIVE_CONTEXT);
         if (parentContext == null) {
             parentContext = io.opentelemetry.context.Context.root();
@@ -107,6 +111,10 @@ public class OpenTelemetryVertxTracer
             return;
         }
 
+        if (!(response instanceof HttpResponse)) {
+            return;
+        }
+
         Scope scope = spanOperation.getScope();
         if (scope == null) {
             return;
@@ -129,6 +137,10 @@ public class OpenTelemetryVertxTracer
             final String operation,
             final BiConsumer<String, String> headers,
             final TagExtractor<R> tagExtractor) {
+
+        if (!(request instanceof HttpRequest)) {
+            return null;
+        }
 
         io.opentelemetry.context.Context parentContext = context.getLocal(ACTIVE_CONTEXT);
         if (parentContext == null) {
@@ -154,6 +166,10 @@ public class OpenTelemetryVertxTracer
             final TagExtractor<R> tagExtractor) {
 
         if (spanOperation == null) {
+            return;
+        }
+
+        if (!(response instanceof HttpResponse)) {
             return;
         }
 

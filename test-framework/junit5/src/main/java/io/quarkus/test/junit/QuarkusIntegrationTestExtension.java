@@ -11,6 +11,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DevServicesContext;
+import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestHostLauncher;
 import io.quarkus.test.common.TestResourceManager;
@@ -108,6 +110,17 @@ public class QuarkusIntegrationTestExtension
                 state = doProcessStart(quarkusArtifactProperties, selectedProfile, extensionContext);
                 store.put(IntegrationTestExtensionState.class.getName(), state);
             } catch (Throwable e) {
+                try {
+                    Path appLogPath = PropertyTestUtil.getLogFilePath();
+                    File appLogFile = appLogPath.toFile();
+                    if (appLogFile.exists() && (appLogFile.length() > 0)) {
+                        System.err.println("Failed to launch the application. The application logs can be found at: "
+                                + appLogPath.toAbsolutePath());
+                    }
+                } catch (IllegalStateException ignored) {
+
+                }
+
                 failedBoot = true;
                 firstException = e;
             }

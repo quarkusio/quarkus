@@ -1045,6 +1045,9 @@ extensions may use the full range of configuration types made available by Small
 * `java.nio.file.Path`
 * `io.quarkus.runtime.configuration.MemorySize` to represent data sizes
 * `java.net.InetSocketAddress`, `java.net.InetAddress` and `org.wildfly.common.net.CidrAddress`
+* `java.util.Locale` where the string value is an IETF BCP 47 language tag
+* `java.nio.charset.Charset` where the string value is a canonical name or an alias
+* `java.time.ZoneId` where the string value is parsed via `java.time.ZoneId.of(String)`
 * A `List` or `Optional` of any of the above types
 * `OptionalInt`, `OptionalLong`, `OptionalDouble`
 

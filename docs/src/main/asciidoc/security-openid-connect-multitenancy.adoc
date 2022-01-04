@@ -14,7 +14,7 @@ When serving multiple customers from the same application (e.g.: SaaS), each cus
 
 Please read the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide if you need to authorize a tenant using Bearer Token Authorization.
 
-Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize a tenant using OpenId Connect Authorization Code Flow.
+Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize a tenant using OpenID Connect Authorization Code Flow.
 
 == Prerequisites
 
@@ -155,7 +155,7 @@ From the implementation above, tenants are resolved from the request path so tha
 [NOTE]
 ===
 When a current tenant represents an OIDC `web-app` application, the current `io.vertx.ext.web.RoutingContext` will contain a `tenant-id` attribute by the time the custom tenant resolver has been called for all the requests completing the code authentication flow and the already authenticated requests, when either a tenant specific state or session cookie already exists.
-Therefore, when working with mulltiple OpenId Connect Providers, you only need a path specific check to resolve a tenant id if the `RoutingContext` does not have the `tenant-id` attribute set, for example:
+Therefore, when working with mulltiple OpenID Connect Providers, you only need a path specific check to resolve a tenant id if the `RoutingContext` does not have the `tenant-id` attribute set, for example:
 
 [source,java]
 ----

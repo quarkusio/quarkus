@@ -82,7 +82,7 @@ This will run the test with an identity with the given username and roles. Note 
 disable authorization while also providing an identity to run the test under, which can be useful if the endpoint expects an
 identity to be present.
 
-See xref:security-openid-connect.adoc#integration-testing-security-annotation[OpenId Connect Bearer Token Integration testing], xref:security-openid-connect-web-authentication.adoc#integration-testing-security-annotation[OpenId Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
+See xref:security-openid-connect.adoc#integration-testing-security-annotation[OpenID Connect Bearer Token Integration testing], xref:security-openid-connect-web-authentication.adoc#integration-testing-security-annotation[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
 
 [WARNING]
 ====
@@ -98,7 +98,7 @@ for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.aut
 == Use Wiremock for Integration Testing
 
 You can also use Wiremock to mock the authorization OAuth2 and OIDC services: 
-See xref:security-oauth2#integration-testing.adoc[OAuth2 Integration testing], xref:security-openid-connect.adoc#integration-testing-wiremock[OpenId Connect Bearer Token Integration testing], xref:security-openid-connect-web-authentication.adoc#integration-testing-wiremock[OpenId Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
+See xref:security-oauth2#integration-testing.adoc[OAuth2 Integration testing], xref:security-openid-connect.adoc#integration-testing-wiremock[OpenID Connect Bearer Token Integration testing], xref:security-openid-connect-web-authentication.adoc#integration-testing-wiremock[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-wiremock[SmallRye JWT Integration testing] for more details.
 
 == References
 

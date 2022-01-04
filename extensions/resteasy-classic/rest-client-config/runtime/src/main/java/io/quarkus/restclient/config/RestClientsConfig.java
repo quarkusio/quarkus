@@ -54,6 +54,32 @@ public class RestClientsConfig {
     @ConfigItem
     public Optional<String> multipartPostEncoderMode;
 
+    /**
+     * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
+     * (or IP address) and port for requests of clients to use. Can be overwritten by client-specific settings
+     *
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> proxyAddress;
+
+    /**
+     * Proxy username, equivalent to the http.proxy or https.proxy system property
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> proxyUser;
+
+    /**
+     * Proxy password, equivalent to the http.proxyPassword or https.proxyPassword system property
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> proxyPassword;
+
     public RestClientLoggingConfig logging;
 
     public RestClientConfig getClientConfig(String configKey) {

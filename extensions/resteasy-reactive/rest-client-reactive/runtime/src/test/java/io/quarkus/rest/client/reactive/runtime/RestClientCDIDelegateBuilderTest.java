@@ -20,7 +20,6 @@ import javax.ws.rs.client.ClientResponseFilter;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
@@ -71,9 +70,9 @@ public class RestClientCDIDelegateBuilderTest {
     }
 
     @Test
-    public void testQuarkusConfig() throws Exception {
+    public void testQuarkusConfig() {
         RestClientsConfig configRoot = createSampleConfiguration();
-        RestClientBuilder restClientBuilderMock = Mockito.mock(RestClientBuilder.class);
+        RestClientBuilderImpl restClientBuilderMock = Mockito.mock(RestClientBuilderImpl.class);
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",
@@ -107,6 +106,8 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.readTimeout = Optional.of(101L);
         clientConfig.followRedirects = Optional.of(true);
         clientConfig.proxyAddress = Optional.of("localhost:1234");
+        clientConfig.proxyUser = Optional.of("admin");
+        clientConfig.proxyPassword = Optional.of("adm1n");
         clientConfig.queryParamStyle = Optional.of(QueryParamStyle.COMMA_SEPARATED);
         clientConfig.trustStore = Optional.of(truststoreFile.getAbsolutePath());
         clientConfig.trustStorePassword = Optional.of("truststorePassword");

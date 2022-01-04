@@ -45,6 +45,9 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private String proxyHost;
     private int proxyPort;
+    private String proxyPassword;
+    private String proxyUser;
+
     private boolean followRedirects;
     private boolean trustAll;
 
@@ -115,6 +118,16 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder proxyPassword(String proxyPassword) {
+        this.proxyPassword = proxyPassword;
+        return this;
+    }
+
+    public ClientBuilder proxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+        return this;
+    }
+
     public ClientBuilder httpClientOptions(HttpClientOptions httpClientOptions) {
         this.httpClientOptions = httpClientOptions;
         return this;
@@ -174,10 +187,41 @@ public class ClientBuilderImpl extends ClientBuilder {
         }
 
         if (proxyHost != null) {
-            options.setProxyOptions(
-                    new ProxyOptions()
-                            .setHost(proxyHost)
-                            .setPort(proxyPort));
+            ProxyOptions proxyOptions = new ProxyOptions()
+                    .setHost(proxyHost)
+                    .setPort(proxyPort);
+            if (proxyPassword != null && !proxyPassword.isBlank()) {
+                proxyOptions.setPassword(proxyPassword);
+            }
+            if (proxyUser != null && !proxyUser.isBlank()) {
+                proxyOptions.setUsername(proxyUser);
+            }
+            options.setProxyOptions(proxyOptions);
+        } else {
+            String proxyHost = options.isSsl()
+                    ? System.getProperty("https.proxyHost", "none")
+                    : System.getProperty("http.proxyHost", "none");
+            String proxyPortAsString = options.isSsl()
+                    ? System.getProperty("https.proxyPort", "443")
+                    : System.getProperty("http.proxyPort", "80");
+            int proxyPort = Integer.parseInt(proxyPortAsString);
+
+            if (!"none".equals(proxyHost)) {
+                ProxyOptions proxyOptions = new ProxyOptions().setHost(proxyHost).setPort(proxyPort);
+                proxyUser = options.isSsl()
+                        ? System.getProperty("https.proxyUser")
+                        : System.getProperty("http.proxyUser");
+                if (proxyUser != null && !proxyUser.isBlank()) {
+                    proxyOptions.setUsername(proxyUser);
+                }
+                proxyPassword = options.isSsl()
+                        ? System.getProperty("https.proxyPassword")
+                        : System.getProperty("http.proxyPassword");
+                if (proxyPassword != null && !proxyPassword.isBlank()) {
+                    proxyOptions.setPassword(proxyPassword);
+                }
+                options.setProxyOptions(proxyOptions);
+            }
         }
 
         clientLogger.setBodySize(loggingBodySize);

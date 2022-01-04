@@ -128,6 +128,7 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.4.0</rest-assured.version>
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
+        <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.22.0</assertj.version>
         <infinispan.version>13.0.5.Final</infinispan.version>
@@ -4445,6 +4446,11 @@
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit-pioneer</groupId>
+                <artifactId>junit-pioneer</artifactId>
+                <version>${junit-pioneer.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jacoco</groupId>

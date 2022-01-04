@@ -101,7 +101,7 @@ public class RuntimeResourceDeployment {
 
     private final DeploymentInfo info;
     private final ServerSerialisers serialisers;
-    private final ResteasyReactiveConfig quarkusRestConfig;
+    private final ResteasyReactiveConfig resteasyReactiveConfig;
     private final Supplier<Executor> executorSupplier;
     private final RuntimeInterceptorDeployment runtimeInterceptorDeployment;
     private final DynamicEntityWriter dynamicEntityWriter;
@@ -118,7 +118,7 @@ public class RuntimeResourceDeployment {
             ResourceLocatorHandler resourceLocatorHandler, boolean defaultBlocking) {
         this.info = info;
         this.serialisers = info.getSerialisers();
-        this.quarkusRestConfig = info.getConfig();
+        this.resteasyReactiveConfig = info.getResteasyReactiveConfig();
         this.executorSupplier = executorSupplier;
         this.runtimeInterceptorDeployment = runtimeInterceptorDeployment;
         this.dynamicEntityWriter = dynamicEntityWriter;
@@ -265,7 +265,7 @@ public class RuntimeResourceDeployment {
             if (!defaultBlocking) {
                 if (!method.isBlocking()) {
                     // allow the body to be read by chunks
-                    handlers.add(new InputHandler(quarkusRestConfig.getInputBufferSize(), executorSupplier));
+                    handlers.add(new InputHandler(resteasyReactiveConfig.getInputBufferSize(), executorSupplier));
                     checkReadBodyRequestFilters = true;
                 }
             }

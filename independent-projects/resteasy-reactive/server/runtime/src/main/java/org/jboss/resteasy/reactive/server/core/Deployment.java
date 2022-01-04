@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
+import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.util.types.Types;
@@ -43,6 +44,7 @@ public class Deployment {
     private final List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers;
     private final RuntimeExceptionMapper exceptionMapper;
     private final boolean resumeOn404;
+    private final ResteasyReactiveConfig resteasyReactiveConfig;
     //this is not final, as it is set after startup
     private RuntimeConfiguration runtimeConfiguration;
 
@@ -56,7 +58,8 @@ public class Deployment {
             List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
             List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers,
             RuntimeExceptionMapper exceptionMapper,
-            boolean resumeOn404) {
+            boolean resumeOn404,
+            ResteasyReactiveConfig resteasyReactiveConfig) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -73,6 +76,7 @@ public class Deployment {
         this.runtimeConfigurableServerRestHandlers = runtimeConfigurableServerRestHandlers;
         this.exceptionMapper = exceptionMapper;
         this.resumeOn404 = resumeOn404;
+        this.resteasyReactiveConfig = resteasyReactiveConfig;
     }
 
     public RuntimeExceptionMapper getExceptionMapper() {
@@ -85,6 +89,10 @@ public class Deployment {
 
     public ConfigurationImpl getConfiguration() {
         return configuration;
+    }
+
+    public ResteasyReactiveConfig getResteasyReactiveConfig() {
+        return resteasyReactiveConfig;
     }
 
     public ExceptionMapping getExceptionMapping() {

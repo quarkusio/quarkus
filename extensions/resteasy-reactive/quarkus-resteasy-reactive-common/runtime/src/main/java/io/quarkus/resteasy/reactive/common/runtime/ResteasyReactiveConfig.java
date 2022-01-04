@@ -19,6 +19,15 @@ public class ResteasyReactiveConfig {
     public MemorySize inputBufferSize;
 
     /**
+     * The size of the output stream response buffer. If a response is larger than this and no content-length
+     * is provided then the request will be chunked.
+     *
+     * Larger values may give slight performance increases for large responses, at the expense of more memory usage.
+     */
+    @ConfigItem(defaultValue = "8191")
+    public int outputBufferSize;
+
+    /**
      * By default we assume a default produced media type of "text/plain"
      * for String endpoint return types. If this is disabled, the default
      * produced media type will be "[text/plain, *&sol;*]" which is more

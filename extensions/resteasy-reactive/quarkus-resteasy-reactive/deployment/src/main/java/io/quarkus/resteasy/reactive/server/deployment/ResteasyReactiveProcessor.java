@@ -726,7 +726,7 @@ public class ResteasyReactiveProcessor {
         Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
         DeploymentInfo deploymentInfo = new DeploymentInfo()
                 .setInterceptors(interceptors.sort())
-                .setConfig(createRestReactiveConfig(config))
+                .setResteasyReactiveConfig(createRestReactiveConfig(config))
                 .setExceptionMapping(exceptionMapping)
                 .setCtxResolvers(contextResolvers)
                 .setFeatures(feats)
@@ -784,6 +784,7 @@ public class ResteasyReactiveProcessor {
 
         return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
                 getEffectivePropertyValue("input-buffer-size", config.inputBufferSize.asLongValue(), Long.class, mpConfig),
+                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize, Integer.class, mpConfig),
                 getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces, Boolean.class, mpConfig),
                 getEffectivePropertyValue("default-produces", config.defaultProduces, Boolean.class, mpConfig));
     }

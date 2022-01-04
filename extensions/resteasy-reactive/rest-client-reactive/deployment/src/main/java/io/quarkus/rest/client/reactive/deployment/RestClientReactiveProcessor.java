@@ -28,6 +28,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -88,8 +89,10 @@ class RestClientReactiveProcessor {
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
     private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
+    private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
 
     private static final String DISABLE_SMART_PRODUCES_QUARKUS = "quarkus.rest-client.disable-smart-produces";
+    private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
 
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
@@ -339,6 +342,8 @@ class RestClientReactiveProcessor {
             ClassInfo jaxrsInterface = registerRestClient.target().asClass();
             // for each interface annotated with @RegisterRestClient, generate a $$CDIWrapper CDI bean that can be injected
             if (Modifier.isAbstract(jaxrsInterface.flags())) {
+                validateKotlinDefaultMethods(jaxrsInterface, index);
+
                 List<MethodInfo> methodsToImplement = new ArrayList<>();
 
                 // search this interface and its super interfaces for jaxrs methods
@@ -450,6 +455,22 @@ class RestClientReactiveProcessor {
         }
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);
+        }
+    }
+
+    // By default, Kotlin does not use Java interface default methods, but generates a helper class that contains the implementation.
+    // In order to avoid the extra complexity of having to deal with this mode, we simply fail the build when this situation is encountered
+    // and provide an actionable error message on how to remedy the situation.
+    private void validateKotlinDefaultMethods(ClassInfo jaxrsInterface, IndexView index) {
+        if (jaxrsInterface.classAnnotation(KOTLIN_METADATA_ANNOTATION) != null) {
+            var potentialDefaultImplClass = DotName
+                    .createSimple(jaxrsInterface.name().toString() + KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX);
+            if (index.getClassByName(potentialDefaultImplClass) != null) {
+                throw new RestClientDefinitionException(String.format(
+                        "Using Kotlin default methods on interfaces that are not backed by Java 8 default interface methods is not supported. See %s for more details. Offending interface is '%s'.",
+                        "https://kotlinlang.org/docs/java-to-kotlin-interop.html#default-methods-in-interfaces",
+                        jaxrsInterface.name().toString()));
+            }
         }
     }
 

@@ -57,10 +57,14 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private T build() {
         RestClientBuilder builder = RestClientBuilder.newBuilder();
-        return build(builder);
+        if (!(builder instanceof RestClientBuilderImpl)) {
+            throw new IllegalStateException("Expected RestClientBuilder to be an instance of "
+                    + RestClientBuilderImpl.class.getName() + ", got " + builder.getClass().getName());
+        }
+        return build((RestClientBuilderImpl) builder);
     }
 
-    T build(RestClientBuilder builder) {
+    T build(RestClientBuilderImpl builder) {
         configureBaseUrl(builder);
         configureTimeouts(builder);
         configureProviders(builder);
@@ -103,28 +107,19 @@ public class RestClientCDIDelegateBuilder<T> {
         }
     }
 
-    private void configureProxy(RestClientBuilder builder) {
+    private void configureProxy(RestClientBuilderImpl builder) {
         Optional<String> maybeProxy = oneOf(clientConfigByClassName().proxyAddress,
                 clientConfigByConfigKey().proxyAddress);
-        if (maybeProxy.isPresent()) {
-            String proxyString = maybeProxy.get();
-
-            int lastColonIndex = proxyString.lastIndexOf(':');
-
-            if (lastColonIndex <= 0 || lastColonIndex == proxyString.length() - 1) {
-                throw new RuntimeException("Invalid proxy string. Expected <hostname>:<port>, found '" + proxyString + "'");
-            }
-
-            String host = proxyString.substring(0, lastColonIndex);
-            int port;
-            try {
-                port = Integer.parseInt(proxyString.substring(lastColonIndex + 1));
-            } catch (NumberFormatException e) {
-                throw new RuntimeException("Invalid proxy setting. The port is not a number in '" + proxyString + "'", e);
-            }
-
-            builder.proxyAddress(host, port);
+        if (maybeProxy.isEmpty()) {
+            return;
         }
+        ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(maybeProxy.get());
+        builder.proxyAddress(hostAndPort.host, hostAndPort.port);
+
+        oneOf(clientConfigByClassName().proxyUser, clientConfigByConfigKey().proxyUser)
+                .ifPresent(builder::proxyUser);
+        oneOf(clientConfigByClassName().proxyPassword, clientConfigByConfigKey().proxyPassword)
+                .ifPresent(builder::proxyPassword);
     }
 
     private void configureQueryParamStyle(RestClientBuilder builder) {

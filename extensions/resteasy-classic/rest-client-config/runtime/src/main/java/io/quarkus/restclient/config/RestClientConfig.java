@@ -27,6 +27,8 @@ public class RestClientConfig {
         EMPTY.readTimeout = Optional.empty();
         EMPTY.followRedirects = Optional.empty();
         EMPTY.proxyAddress = Optional.empty();
+        EMPTY.proxyUser = Optional.empty();
+        EMPTY.proxyPassword = Optional.empty();
         EMPTY.queryParamStyle = Optional.empty();
         EMPTY.trustStore = Optional.empty();
         EMPTY.trustStorePassword = Optional.empty();
@@ -94,6 +96,22 @@ public class RestClientConfig {
      */
     @ConfigItem
     public Optional<String> proxyAddress;
+
+    /**
+     * Proxy username.
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> proxyUser;
+
+    /**
+     * Proxy password.
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> proxyPassword;
 
     /**
      * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
@@ -182,6 +200,8 @@ public class RestClientConfig {
         instance.readTimeout = getConfigValue(configKey, "read-timeout", Long.class);
         instance.followRedirects = getConfigValue(configKey, "follow-redirects", Boolean.class);
         instance.proxyAddress = getConfigValue(configKey, "proxy-address", String.class);
+        instance.proxyUser = getConfigValue(configKey, "proxy-user", String.class);
+        instance.proxyPassword = getConfigValue(configKey, "proxy-password", String.class);
         instance.queryParamStyle = getConfigValue(configKey, "query-param-style", QueryParamStyle.class);
         instance.trustStore = getConfigValue(configKey, "trust-store", String.class);
         instance.trustStorePassword = getConfigValue(configKey, "trust-store-password", String.class);
@@ -209,6 +229,8 @@ public class RestClientConfig {
         instance.readTimeout = getConfigValue(interfaceClass, "read-timeout", Long.class);
         instance.followRedirects = getConfigValue(interfaceClass, "follow-redirects", Boolean.class);
         instance.proxyAddress = getConfigValue(interfaceClass, "proxy-address", String.class);
+        instance.proxyUser = getConfigValue(interfaceClass, "proxy-user", String.class);
+        instance.proxyPassword = getConfigValue(interfaceClass, "proxy-password", String.class);
         instance.queryParamStyle = getConfigValue(interfaceClass, "query-param-style", QueryParamStyle.class);
         instance.trustStore = getConfigValue(interfaceClass, "trust-store", String.class);
         instance.trustStorePassword = getConfigValue(interfaceClass, "trust-store-password", String.class);

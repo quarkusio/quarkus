@@ -698,6 +698,32 @@ clients created with the `@RegisterRestClient` annotation.
 All the available modes are described in the link:https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html[Netty documentation]
 
 
+== Proxy support
+REST Client Reactive supports sending requests through a proxy.
+It honors the JVM settings for it but also allows to specify both:
+
+* global client proxy settings, with `quarkus.rest-client.proxy-address`, `quarkus.rest-client.proxy-user`, `quarkus.rest-client.proxy-password`
+
+* per-client proxy settings, with `quarkus.rest-client.<my-client>.proxy-address`, etc
+
+An example configuration for setting proxy:
+
+[source,properties]
+----
+# global proxy configuration is used for all clients
+quarkus.rest-client.proxy-address=localhost:8182
+quarkus.rest-client.proxy-user=<proxy user name>
+quarkus.rest-client.proxy-password=<proxy password>
+
+# per-client configuration overrides the global settings for a specific client
+quarkus.rest-client.my-client.proxy-address=localhost:8183
+quarkus.rest-client.my-client.proxy-user=<proxy user name>
+quarkus.rest-client.my-client.proxy-password=<proxy password>
+quarkus.rest-client.my-client.url=...
+----
+
+NOTE: MicroProfile REST Client specification does not allow setting proxy credentials. In order to specify proxy user and proxy password programmatically, you need to cast your `RestClientBuilder` to `RestClientBuilderImpl`.
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`.

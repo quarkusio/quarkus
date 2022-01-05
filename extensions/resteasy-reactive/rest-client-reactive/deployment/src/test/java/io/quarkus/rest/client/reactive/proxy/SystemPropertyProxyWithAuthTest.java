@@ -34,6 +34,7 @@ public class SystemPropertyProxyWithAuthTest extends ProxyTestBase {
     @SetSystemProperty(key = "http.proxyPort", value = "8183")
     @SetSystemProperty(key = "http.proxyUser", value = "admin")
     @SetSystemProperty(key = "http.proxyPassword", value = "r00t")
+    @SetSystemProperty(key = "http.nonProxyHosts", value = "example.com")
     void shouldProxyWithCredentialsFromProperties() {
         assertThat(client1.get().readEntity(String.class)).isEqualTo(AUTHENTICATED_PROXY);
         assertThat(client2.get().readEntity(String.class)).isEqualTo(PROXY_8181);

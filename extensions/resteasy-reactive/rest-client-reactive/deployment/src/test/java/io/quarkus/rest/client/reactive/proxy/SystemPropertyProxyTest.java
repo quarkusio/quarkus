@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junitpioneer.jupiter.SetSystemProperty;
 
+import io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SystemPropertyProxyTest extends ProxyTestBase {
@@ -32,11 +33,21 @@ public class SystemPropertyProxyTest extends ProxyTestBase {
     @Test
     @SetSystemProperty(key = "http.proxyHost", value = "localhost")
     @SetSystemProperty(key = "http.proxyPort", value = "8182")
+    // the default nonProxyHosts skip proxying localhost
+    @SetSystemProperty(key = "http.nonProxyHosts", value = "example.com")
     void shouldProxyWithSystemProperties() {
         assertThat(client1.get().readEntity(String.class)).isEqualTo(PROXY_8182);
         assertThat(client2.get().readEntity(String.class)).isEqualTo(PROXY_8181);
 
-        Response response2 = RestClientBuilder.newBuilder().baseUri(appUri).build(Client2.class).get();
-        assertThat(response2.readEntity(String.class)).isEqualTo(PROXY_8182);
+        Response response = RestClientBuilder.newBuilder().baseUri(appUri).build(Client2.class).get();
+        assertThat(response.readEntity(String.class)).isEqualTo(PROXY_8182);
+
+        response = RestClientBuilder.newBuilder().baseUri(appUri).build(Client2.class).get();
+        assertThat(response.readEntity(String.class)).isEqualTo(PROXY_8182);
+
+        RestClientBuilderImpl restClientBuilder = (RestClientBuilderImpl) RestClientBuilder.newBuilder();
+        response = restClientBuilder.baseUri(appUri).proxyAddress("none", -1)
+                .build(Client2.class).get();
+        assertThat(response.readEntity(String.class)).isEqualTo(NO_PROXY);
     }
 }

@@ -65,7 +65,7 @@ public class RestClientsConfig {
     public Optional<String> proxyAddress;
 
     /**
-     * Proxy username, equivalent to the http.proxy or https.proxy system property
+     * Proxy username, equivalent to the http.proxy or https.proxy JVM settings.
      *
      * This property is applicable to reactive REST clients only.
      */
@@ -73,12 +73,21 @@ public class RestClientsConfig {
     public Optional<String> proxyUser;
 
     /**
-     * Proxy password, equivalent to the http.proxyPassword or https.proxyPassword system property
+     * Proxy password, equivalent to the http.proxyPassword or https.proxyPassword JVM settings.
      *
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
     public Optional<String> proxyPassword;
+
+    /**
+     * Hosts to access without proxy, similar to the http.nonProxyHosts or https.nonProxyHosts JVM settings.
+     * Please note that unlike the JVM settings, this property is empty by default
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> nonProxyHosts;
 
     public RestClientLoggingConfig logging;
 

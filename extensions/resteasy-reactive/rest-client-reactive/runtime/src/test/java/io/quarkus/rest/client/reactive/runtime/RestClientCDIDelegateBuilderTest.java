@@ -108,6 +108,7 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.proxyAddress = Optional.of("localhost:1234");
         clientConfig.proxyUser = Optional.of("admin");
         clientConfig.proxyPassword = Optional.of("adm1n");
+        clientConfig.nonProxyHosts = Optional.empty();
         clientConfig.queryParamStyle = Optional.of(QueryParamStyle.COMMA_SEPARATED);
         clientConfig.trustStore = Optional.of(truststoreFile.getAbsolutePath());
         clientConfig.trustStorePassword = Optional.of("truststorePassword");

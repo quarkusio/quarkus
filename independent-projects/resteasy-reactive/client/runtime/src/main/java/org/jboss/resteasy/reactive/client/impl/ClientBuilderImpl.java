@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.client.ClientBuilder;
@@ -35,6 +36,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private static final ClientContextResolver CLIENT_CONTEXT_RESOLVER = ClientContextResolver.getInstance();
     private static final char[] EMPTY_CHAR_ARARAY = new char[0];
+    public static final String PIPE = Pattern.quote("|");
 
     private ConfigurationImpl configuration;
     private HostnameVerifier hostnameVerifier;
@@ -47,6 +49,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private int proxyPort;
     private String proxyPassword;
     private String proxyUser;
+    private String nonProxyHosts;
 
     private boolean followRedirects;
     private boolean trustAll;
@@ -187,16 +190,19 @@ public class ClientBuilderImpl extends ClientBuilder {
         }
 
         if (proxyHost != null) {
-            ProxyOptions proxyOptions = new ProxyOptions()
-                    .setHost(proxyHost)
-                    .setPort(proxyPort);
-            if (proxyPassword != null && !proxyPassword.isBlank()) {
-                proxyOptions.setPassword(proxyPassword);
+            if (!"none".equals(proxyHost)) {
+                ProxyOptions proxyOptions = new ProxyOptions()
+                        .setHost(proxyHost)
+                        .setPort(proxyPort);
+                if (proxyPassword != null && !proxyPassword.isBlank()) {
+                    proxyOptions.setPassword(proxyPassword);
+                }
+                if (proxyUser != null && !proxyUser.isBlank()) {
+                    proxyOptions.setUsername(proxyUser);
+                }
+                options.setProxyOptions(proxyOptions);
+                configureNonProxyHosts(options, nonProxyHosts);
             }
-            if (proxyUser != null && !proxyUser.isBlank()) {
-                proxyOptions.setUsername(proxyUser);
-            }
-            options.setProxyOptions(proxyOptions);
         } else {
             String proxyHost = options.isSsl()
                     ? System.getProperty("https.proxyHost", "none")
@@ -204,6 +210,9 @@ public class ClientBuilderImpl extends ClientBuilder {
             String proxyPortAsString = options.isSsl()
                     ? System.getProperty("https.proxyPort", "443")
                     : System.getProperty("http.proxyPort", "80");
+            String nonProxyHosts = options.isSsl()
+                    ? System.getProperty("https.nonProxyHosts", "localhost|127.*|[::1]")
+                    : System.getProperty("http.nonProxyHosts", "localhost|127.*|[::1]");
             int proxyPort = Integer.parseInt(proxyPortAsString);
 
             if (!"none".equals(proxyHost)) {
@@ -221,6 +230,9 @@ public class ClientBuilderImpl extends ClientBuilder {
                     proxyOptions.setPassword(proxyPassword);
                 }
                 options.setProxyOptions(proxyOptions);
+                if (nonProxyHosts != null) {
+                    configureNonProxyHosts(options, nonProxyHosts);
+                }
             }
         }
 
@@ -236,6 +248,16 @@ public class ClientBuilderImpl extends ClientBuilder {
                 loggingScope,
                 clientLogger, userAgent);
 
+    }
+
+    private void configureNonProxyHosts(HttpClientOptions options, String nonProxyHosts) {
+        if (nonProxyHosts != null) {
+            for (String host : nonProxyHosts.split(PIPE)) {
+                if (!host.isBlank()) {
+                    options.addNonProxyHost(host);
+                }
+            }
+        }
     }
 
     private Buffer asBuffer(KeyStore keyStore, char[] password) {
@@ -317,6 +339,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilderImpl setUserAgent(String userAgent) {
         this.userAgent = userAgent;
+        return this;
+    }
+
+    public ClientBuilderImpl nonProxyHosts(String nonProxyHosts) {
+        this.nonProxyHosts = nonProxyHosts;
         return this;
     }
 }

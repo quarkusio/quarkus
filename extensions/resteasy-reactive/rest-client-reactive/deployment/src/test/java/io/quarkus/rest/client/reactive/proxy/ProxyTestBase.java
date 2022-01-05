@@ -16,6 +16,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 
 public abstract class ProxyTestBase {
 
+    public static final String NO_PROXY = "noProxy";
+
     public static final String PROXY_8181 = "proxyServer1";
     public static final String PROXY_8182 = "proxyServer2";
     public static final String AUTHENTICATED_PROXY = "authenticatedProxy";

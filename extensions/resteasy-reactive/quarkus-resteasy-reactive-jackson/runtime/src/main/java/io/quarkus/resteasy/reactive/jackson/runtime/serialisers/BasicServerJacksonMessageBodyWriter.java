@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 
 import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
@@ -35,7 +36,7 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
         setContentTypeIfNecessary(context);
         OutputStream stream = context.getOrCreateOutputStream();
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
-            stream.write(((String) o).getBytes());
+            stream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             defaultWriter.writeValue(stream, o);
         }

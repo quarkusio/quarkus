@@ -39,12 +39,12 @@ This means that it does not profit from a few small enhancements that Oracle hav
 This enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
 This is particularly important when it comes to conformance and security.
 
-* Mandrel is currently only recommended for building native executables that target Linux containerized environments.
-This means that Mandrel users should use containers to build their native executables.
-If you are building native executables for macOS or Windows target platforms,
+* Mandrel is recommended for building native executables that target Linux containerized environments.
+This means that Mandrel users are encouraged to use containers to build their native executables.
+If you are building native executables for macOS,
 you should consider using Oracle GraalVM instead,
-because Mandrel does not currently target these platforms.
-Building native executables directly on bare metal Linux is possible,
+because Mandrel does not currently target this platform.
+Building native executables directly on bare metal Linux or Windows is possible,
 with details available in the https://github.com/graalvm/mandrel/blob/default/README.md[Mandrel README]
 and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 

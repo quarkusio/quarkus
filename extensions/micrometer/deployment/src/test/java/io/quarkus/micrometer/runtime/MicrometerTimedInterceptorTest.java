@@ -18,6 +18,7 @@ import io.quarkus.micrometer.test.CountedResource;
 import io.quarkus.micrometer.test.GuardedResult;
 import io.quarkus.micrometer.test.TimedResource;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 
 public class MicrometerTimedInterceptorTest {
     @RegisterExtension
@@ -100,6 +101,39 @@ public class MicrometerTimedInterceptorTest {
     }
 
     @Test
+    void testTimeMethod_Uni() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = timed.uniCall(guardedResult);
+        guardedResult.complete();
+        uni.subscribe().asCompletionStage().join();
+
+        Timer timer = registry.get("uni.call")
+                .tag("method", "uniCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("exception", "none")
+                .tag("extra", "tag").timer();
+        Assertions.assertNotNull(timer);
+        Assertions.assertEquals(1, timer.count());
+    }
+
+    @Test
+    void testTimeMethod_UniFailed() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = timed.uniCall(guardedResult);
+        guardedResult.complete(new NullPointerException());
+        Assertions.assertThrows(java.util.concurrent.CompletionException.class,
+                () -> uni.subscribe().asCompletionStage().join());
+
+        Timer timer = registry.get("uni.call")
+                .tag("method", "uniCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("exception", "NullPointerException")
+                .tag("extra", "tag").timer();
+        Assertions.assertNotNull(timer);
+        Assertions.assertEquals(1, timer.count());
+    }
+
+    @Test
     void testTimeMethod_LongTaskTimer() {
         timed.longCall(false);
         LongTaskTimer timer = registry.get("longCall")
@@ -146,6 +180,37 @@ public class MicrometerTimedInterceptorTest {
 
         LongTaskTimer timer = registry.get("async.longCall")
                 .tag("method", "longAsyncCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("extra", "tag").longTaskTimer();
+        Assertions.assertNotNull(timer);
+        Assertions.assertEquals(0, timer.activeTasks());
+    }
+
+    @Test
+    void testTimeMethod_LongTaskTimer_Uni() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = timed.longUniCall(guardedResult);
+        guardedResult.complete();
+        uni.subscribe().asCompletionStage().join();
+
+        LongTaskTimer timer = registry.get("uni.longCall")
+                .tag("method", "longUniCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("extra", "tag").longTaskTimer();
+        Assertions.assertNotNull(timer);
+        Assertions.assertEquals(0, timer.activeTasks());
+    }
+
+    @Test
+    void testTimeMethod_LongTaskTimer_UniFailed() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = timed.longUniCall(guardedResult);
+        guardedResult.complete(new NullPointerException());
+        Assertions.assertThrows(java.util.concurrent.CompletionException.class,
+                () -> uni.subscribe().asCompletionStage().join());
+
+        LongTaskTimer timer = registry.get("uni.longCall")
+                .tag("method", "longUniCall")
                 .tag("class", "io.quarkus.micrometer.test.TimedResource")
                 .tag("extra", "tag").longTaskTimer();
         Assertions.assertNotNull(timer);

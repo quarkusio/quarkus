@@ -39,46 +39,24 @@ This means that it does not profit from a few small enhancements that Oracle hav
 This enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
 This is particularly important when it comes to conformance and security.
 
-* Mandrel is currently only recommended for building native executables that target Linux containerized environments.
-This means that Mandrel users should use containers to build their native executables.
-If you are building native executables for macOS or Windows target platforms,
+* Mandrel is recommended for building native executables that target Linux containerized environments.
+This means that Mandrel users are encouraged to use containers to build their native executables.
+If you are building native executables for macOS,
 you should consider using Oracle GraalVM instead,
-because Mandrel does not currently target these platforms.
-Building native executables directly on bare metal Linux is possible,
+because Mandrel does not currently target this platform.
+Building native executables directly on bare metal Linux or Windows is possible,
 with details available in the https://github.com/graalvm/mandrel/blob/default/README.md[Mandrel README]
 and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
-The prerequisites vary slightly depending on whether you are using Oracle GraalVM CE/EE or Mandrel.
+== Prerequisites
 
-[IMPORTANT]
-.Install the Java 11 version of GraalVM
-====
-While Oracle GraalVM is available for both Java 8 and Java 11 (Mandrel only supports Java 11), Quarkus only works with the Java 11 version.
-If you use the Oracle distribution, make sure to install the Java 11 version.
-====
-
-== Prerequisites for Mandrel
-
-To complete this guide using Mandrel, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11 installed with `JAVA_HOME` configured appropriately
-* A working container runtime (Docker, podman)
-* The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
-
-Skip to <<#container-runtime,this section>> to continue with the guide for Mandrel,
-and follow the Mandrel-specific instructions in that section.
-
-== Prerequisites for Oracle GraalVM CE/EE
-
-To complete this guide, you need:
+To complete this guide using Oracle GraalVM CE/EE, you need:
 
 * less than 15 minutes
 * an IDE
 * JDK 11 installed with `JAVA_HOME` configured appropriately
 * A xref:configuring-c-development[working C development environment]
-* GraalVM version {graalvm-version} (be sure to install the Java 11 support) installed and xref:configuring-graalvm[configured appropriately]
+* Mandrel or Oracle GraalVM CE/EE version {graalvm-version} installed and xref:configuring-graalvm[configured appropriately]
 * A working container runtime (Docker, podman)
 * The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
@@ -116,10 +94,9 @@ If you cannot install GraalVM, you can use a multi-stage Docker build to run Mav
 
 Version {graalvm-version} is required. Using the community edition is enough.
 
-1. Install GraalVM (pick the java 11 version) if you haven't already. You have a few options for this:
-** Use platform-specific install tools like https://github.com/graalvm/homebrew-tap[homebrew], https://sdkman.io/jdks#Oracle[sdkman], or https://github.com/ScoopInstaller/Java[scoop].
-** Download the appropriate Community Edition archive from <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
-Make sure to download and install at Java 11 version.
+1. Install GraalVM if you haven't already. You have a few options for this:
+** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
+** Use platform-specific install tools like https://sdkman.io/jdks#Oracle[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
 [source,bash]
@@ -127,7 +104,7 @@ Make sure to download and install at Java 11 version.
 export GRAALVM_HOME=$HOME/Development/graalvm/
 ----
 +
-On macOS, point the variable to the `Home` sub-directory:
+On macOS (not supported by Mandrel), point the variable to the `Home` sub-directory:
 +
 [source,bash]
 ----
@@ -140,7 +117,7 @@ On Windows, you will have to go through the Control Panel to set your environmen
 ====
 Installing via scoop will do this for you.
 ====
-3. Install the `native-image` tool using `gu install`:
+3. (Only for Oracle GraalVM CE/EE) Install the `native-image` tool using `gu install`:
 +
 [source,bash]
 ----

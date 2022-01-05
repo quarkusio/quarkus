@@ -522,5 +522,10 @@ triage:
       notify: [cescoffier]
       directories:
         - adr/
+    - labels: [area/context-propagation]
+      title: "(context propagation|context-propagation)"
+      notify: [FroMage, manovotn]
+      directories:
+        - extensions/smallrye-context-propagation
   qe:
     notify: [rsvoboda, mjurc]

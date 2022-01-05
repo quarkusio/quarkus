@@ -167,7 +167,7 @@ public class ClientImpl implements Client {
             });
         }
 
-        handlerChain = new HandlerChain(followRedirects, loggingScope, clientLogger);
+        handlerChain = new HandlerChain(followRedirects, loggingScope, clientContext.getMultipartResponsesData(), clientLogger);
     }
 
     public ClientContext getClientContext() {

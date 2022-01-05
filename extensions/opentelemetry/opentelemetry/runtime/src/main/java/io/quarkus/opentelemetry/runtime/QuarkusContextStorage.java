@@ -6,6 +6,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 
 public enum QuarkusContextStorage implements ContextStorage {
     INSTANCE;
@@ -40,6 +41,7 @@ public enum QuarkusContextStorage implements ContextStorage {
                 }
                 if (beforeAttach == null) {
                     vertxContext.removeLocal(ACTIVE_CONTEXT);
+                    ((ContextInternal) vertxContext).unwrap().removeLocal(ACTIVE_CONTEXT);
                 } else {
                     vertxContext.putLocal(ACTIVE_CONTEXT, beforeAttach);
                 }

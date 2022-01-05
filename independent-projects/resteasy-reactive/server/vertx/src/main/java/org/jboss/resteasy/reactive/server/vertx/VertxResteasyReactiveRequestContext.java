@@ -6,6 +6,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -60,6 +61,8 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         context.addHeadersEndHandler(this);
         String expect = request.getHeader(HttpHeaderNames.EXPECT);
         ContextInternal internal = ((ConnectionBase) context.request().connection()).getContext();
+        ContextInternal current = (ContextInternal) Vertx.currentContext();
+        internal.localContextData().putAll(current.localContextData());
         if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
             continueState = ContinueState.REQUIRED;
         }

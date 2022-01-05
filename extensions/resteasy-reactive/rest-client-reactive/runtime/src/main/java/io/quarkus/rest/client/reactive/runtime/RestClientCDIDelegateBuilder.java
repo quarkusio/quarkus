@@ -113,13 +113,21 @@ public class RestClientCDIDelegateBuilder<T> {
         if (maybeProxy.isEmpty()) {
             return;
         }
-        ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(maybeProxy.get());
-        builder.proxyAddress(hostAndPort.host, hostAndPort.port);
 
-        oneOf(clientConfigByClassName().proxyUser, clientConfigByConfigKey().proxyUser)
-                .ifPresent(builder::proxyUser);
-        oneOf(clientConfigByClassName().proxyPassword, clientConfigByConfigKey().proxyPassword)
-                .ifPresent(builder::proxyPassword);
+        String proxyAddress = maybeProxy.get();
+        if (proxyAddress.equals("none")) {
+            builder.proxyAddress("none", 0);
+        } else {
+            ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(proxyAddress);
+            builder.proxyAddress(hostAndPort.host, hostAndPort.port);
+
+            oneOf(clientConfigByClassName().proxyUser, clientConfigByConfigKey().proxyUser)
+                    .ifPresent(builder::proxyUser);
+            oneOf(clientConfigByClassName().proxyPassword, clientConfigByConfigKey().proxyPassword)
+                    .ifPresent(builder::proxyPassword);
+            oneOf(clientConfigByClassName().nonProxyHosts, clientConfigByConfigKey().nonProxyHosts)
+                    .ifPresent(builder::nonProxyHosts);
+        }
     }
 
     private void configureQueryParamStyle(RestClientBuilder builder) {

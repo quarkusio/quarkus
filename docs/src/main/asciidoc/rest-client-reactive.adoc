@@ -702,9 +702,15 @@ All the available modes are described in the link:https://netty.io/4.1/api/io/ne
 REST Client Reactive supports sending requests through a proxy.
 It honors the JVM settings for it but also allows to specify both:
 
-* global client proxy settings, with `quarkus.rest-client.proxy-address`, `quarkus.rest-client.proxy-user`, `quarkus.rest-client.proxy-password`
+* global client proxy settings, with `quarkus.rest-client.proxy-address`, `quarkus.rest-client.proxy-user`, `quarkus.rest-client.proxy-password`, `quarkus.rest-client.non-proxy-hosts`
 
-* per-client proxy settings, with `quarkus.rest-client.<my-client>.proxy-address`, etc
+* per-client proxy settings, with `quarkus.rest-client.<my-client>.proxy-address`, etc. These are applied only to clients injected with CDI, that is the ones created with `@RegisterRestClient`
+
+If `proxy-address` is set on the client level, the client uses its specific proxy settings. No proxy settings are propagated from the global configuration or JVM properties.
+
+If `proxy-address` is not set for the client but is set on the global level, the client uses the global settings.
+Otherwise, the client uses the JVM settings.
+
 
 An example configuration for setting proxy:
 
@@ -714,6 +720,7 @@ An example configuration for setting proxy:
 quarkus.rest-client.proxy-address=localhost:8182
 quarkus.rest-client.proxy-user=<proxy user name>
 quarkus.rest-client.proxy-password=<proxy password>
+quarkus.rest-client.non-proxy-hosts=example.com
 
 # per-client configuration overrides the global settings for a specific client
 quarkus.rest-client.my-client.proxy-address=localhost:8183

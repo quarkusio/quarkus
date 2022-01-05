@@ -29,6 +29,7 @@ public class RestClientConfig {
         EMPTY.proxyAddress = Optional.empty();
         EMPTY.proxyUser = Optional.empty();
         EMPTY.proxyPassword = Optional.empty();
+        EMPTY.nonProxyHosts = Optional.empty();
         EMPTY.queryParamStyle = Optional.empty();
         EMPTY.trustStore = Optional.empty();
         EMPTY.trustStorePassword = Optional.empty();
@@ -93,6 +94,8 @@ public class RestClientConfig {
     /**
      * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
      * (or IP address) and port for requests of this client to use.
+     *
+     * Use `none` to disable proxy
      */
     @ConfigItem
     public Optional<String> proxyAddress;
@@ -112,6 +115,14 @@ public class RestClientConfig {
      */
     @ConfigItem
     public Optional<String> proxyPassword;
+
+    /**
+     * Hosts to access without proxy
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> nonProxyHosts;
 
     /**
      * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
@@ -202,6 +213,7 @@ public class RestClientConfig {
         instance.proxyAddress = getConfigValue(configKey, "proxy-address", String.class);
         instance.proxyUser = getConfigValue(configKey, "proxy-user", String.class);
         instance.proxyPassword = getConfigValue(configKey, "proxy-password", String.class);
+        instance.nonProxyHosts = getConfigValue(configKey, "non-proxy-hosts", String.class);
         instance.queryParamStyle = getConfigValue(configKey, "query-param-style", QueryParamStyle.class);
         instance.trustStore = getConfigValue(configKey, "trust-store", String.class);
         instance.trustStorePassword = getConfigValue(configKey, "trust-store-password", String.class);
@@ -231,6 +243,7 @@ public class RestClientConfig {
         instance.proxyAddress = getConfigValue(interfaceClass, "proxy-address", String.class);
         instance.proxyUser = getConfigValue(interfaceClass, "proxy-user", String.class);
         instance.proxyPassword = getConfigValue(interfaceClass, "proxy-password", String.class);
+        instance.nonProxyHosts = getConfigValue(interfaceClass, "non-proxy-hosts", String.class);
         instance.queryParamStyle = getConfigValue(interfaceClass, "query-param-style", QueryParamStyle.class);
         instance.trustStore = getConfigValue(interfaceClass, "trust-store", String.class);
         instance.trustStorePassword = getConfigValue(interfaceClass, "trust-store-password", String.class);

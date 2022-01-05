@@ -58,6 +58,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private Integer proxyPort;
     private String proxyUser;
     private String proxyPassword;
+    private String nonProxyHosts;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -116,7 +117,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         if (proxyHost == null) {
             throw new IllegalArgumentException("proxyHost must not be null");
         }
-        if (proxyPort <= 0 || proxyPort > 65535) {
+        if ((proxyPort <= 0 || proxyPort > 65535) && !proxyHost.equals("none")) {
             throw new IllegalArgumentException("Invalid port number");
         }
         this.proxyHost = proxyHost;
@@ -132,6 +133,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl proxyUser(String proxyUser) {
         this.proxyUser = proxyUser;
+        return this;
+    }
+
+    public RestClientBuilderImpl nonProxyHosts(String nonProxyHosts) {
+        this.nonProxyHosts = nonProxyHosts;
         return this;
     }
 
@@ -309,11 +315,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         clientBuilder.trustAll(trustAll);
 
         if (proxyHost != null) {
-            configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+            configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts);
         } else if (restClientsConfig.proxyAddress.isPresent()) {
             HostAndPort globalProxy = ProxyAddressUtil.parseAddress(restClientsConfig.proxyAddress.get());
             configureProxy(globalProxy.host, globalProxy.port, restClientsConfig.proxyUser.orElse(null),
-                    restClientsConfig.proxyPassword.orElse(null));
+                    restClientsConfig.proxyPassword.orElse(null), restClientsConfig.nonProxyHosts.orElse(null));
         }
         ClientImpl client = clientBuilder.build();
         WebTargetImpl target = (WebTargetImpl) client.target(uri);
@@ -325,12 +331,17 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
     }
 
-    private void configureProxy(String proxyHost, Integer proxyPort, String proxyUser, String proxyPassword) {
+    private void configureProxy(String proxyHost, Integer proxyPort, String proxyUser, String proxyPassword,
+            String nonProxyHosts) {
         if (proxyHost != null) {
             clientBuilder.proxy(proxyHost, proxyPort);
             if (proxyUser != null && proxyPassword != null) {
                 clientBuilder.proxyUser(proxyUser);
                 clientBuilder.proxyPassword(proxyPassword);
+            }
+
+            if (nonProxyHosts != null) {
+                clientBuilder.nonProxyHosts(nonProxyHosts);
             }
         }
     }

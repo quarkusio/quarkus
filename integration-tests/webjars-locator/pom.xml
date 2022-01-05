@@ -102,6 +102,15 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <webjar.jquery-ui.version>${webjar.jquery-ui.version}</webjar.jquery-ui.version>
+                        <webjar.momentjs.version>${webjar.momentjs.version}</webjar.momentjs.version>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

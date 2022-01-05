@@ -1,7 +1,6 @@
 package io.quarkus.kotlin.serialization
 
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
 import kotlinx.serialization.serializer
@@ -11,6 +10,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter.AllWriteab
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext
 import java.io.OutputStream
 import java.lang.reflect.Type
+import java.nio.charset.StandardCharsets
 import javax.inject.Inject
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
@@ -25,7 +25,7 @@ class KotlinSerializationMessageBodyWriter(@Inject var json: Json) : AllWriteabl
     ) {
         JsonMessageBodyWriterUtil.setContentTypeIfNecessary(httpHeaders)
         if (o is String) { // YUK: done in order to avoid adding extra quotes...
-            entityStream.write(o.toByteArray())
+            entityStream.write(o.toByteArray(StandardCharsets.UTF_8))
         } else {
             json.encodeToStream(o, entityStream)
         }
@@ -37,7 +37,7 @@ class KotlinSerializationMessageBodyWriter(@Inject var json: Json) : AllWriteabl
         val stream: OutputStream = NoopCloseAndFlushOutputStream(originalStream)
 
         if (o is String) { // YUK: done in order to avoid adding extra quotes...
-            stream.write(o.toByteArray())
+            stream.write(o.toByteArray(StandardCharsets.UTF_8))
         } else {
             json.encodeToStream(serializer(genericType), o, stream)
         }

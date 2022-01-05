@@ -12,12 +12,11 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.paths.OpenPathTree;
-import io.quarkus.paths.PathTree;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,7 +48,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      *
      * This should not be used for hot reloadable elements
      */
-    private final Map<ArtifactKey, ClassPathElement> augmentationElements = new HashMap<>();
+    private final Map<ArtifactKey, List<ClassPathElement>> augmentationElements = new HashMap<>();
 
     /**
      * The augmentation class loader.
@@ -172,19 +171,20 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 }
             };
         }
-        ClassPathElement cpe = augmentationElements.get(artifact.getKey());
-        if (cpe != null) {
-            consumer.accept(cpe);
+        List<ClassPathElement> cpeList = augmentationElements.get(artifact.getKey());
+        if (cpeList != null) {
+            for (ClassPathElement cpe : cpeList) {
+                consumer.accept(cpe);
+            }
             return;
         }
-        final PathTree contentTree = artifact.getContentTree();
-        if (contentTree.isEmpty()) {
-            consumer.accept(ClassPathElement.EMPTY);
-            return;
+        cpeList = new ArrayList<>(2);
+        for (Path path : artifact.getResolvedPaths()) {
+            final ClassPathElement element = ClassPathElement.fromPath(path);
+            consumer.accept(element);
+            cpeList.add(element);
         }
-        cpe = ClassPathElement.fromDependency(artifact);
-        consumer.accept(cpe);
-        augmentationElements.put(artifact.getKey(), cpe);
+        augmentationElements.put(artifact.getKey(), cpeList);
     }
 
     private void addCpElement(QuarkusClassLoader.Builder builder, ResolvedDependency dep, ClassPathElement element) {
@@ -223,7 +223,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
 
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
-                builder.addElement(ClassPathElement.fromPath(i, false));
+                builder.addElement(ClassPathElement.fromPath(i));
             }
             Map<String, byte[]> banned = new HashMap<>();
             for (List<String> i : configuredClassLoading.removedResources.values()) {
@@ -231,7 +231,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     banned.put(j, new byte[0]);
                 }
             }
-            builder.addBannedElement(new MemoryClassPathElement(banned, false));
+            builder.addBannedElement(new MemoryClassPathElement(banned));
             augmentClassLoader = builder.build();
         }
         return augmentClassLoader;
@@ -254,18 +254,16 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
 
-            final boolean flatTestClassPath = quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST
-                    && quarkusBootstrap.isFlatClassPath();
-            if (flatTestClassPath) {
+            if (quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST && quarkusBootstrap.isFlatClassPath()) {
                 //in test mode we have everything in the base class loader
                 //there is no need to restart so there is no need for an additional CL
 
                 for (Path root : quarkusBootstrap.getApplicationRoot()) {
-                    builder.addElement(ClassPathElement.fromPath(root, true));
+                    builder.addElement(ClassPathElement.fromPath(root));
                 }
             } else {
                 for (Path root : quarkusBootstrap.getApplicationRoot()) {
-                    builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromPath(root, true)));
+                    builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromPath(root)));
                 }
             }
 
@@ -274,38 +272,31 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
                 if (!i.isHotReloadable()) {
                     for (Path root : i.getResolvedPaths()) {
-                        builder.addElement(ClassPathElement.fromPath(root, true));
+                        builder.addElement(ClassPathElement.fromPath(root));
                     }
                 } else {
                     for (Path root : i.getResolvedPaths()) {
                         hotReloadPaths.add(root);
-                        builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromPath(root, true)));
+                        builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromPath(root)));
                     }
                 }
             }
-            builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap(), true));
+            builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap()));
             Map<String, byte[]> banned = new HashMap<>();
             for (List<String> i : configuredClassLoading.removedResources.values()) {
                 for (String j : i) {
                     banned.put(j, new byte[0]);
                 }
             }
-            builder.addBannedElement(new MemoryClassPathElement(banned, true));
+            builder.addBannedElement(new MemoryClassPathElement(banned));
 
-            for (ResolvedDependency dependency : appModel.getDependencies()) {
-                if (!dependency.isRuntimeCp() ||
-                        isHotReloadable(dependency, hotReloadPaths) ||
-                        configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
+            for (ResolvedDependency dependency : appModel.getRuntimeDependencies()) {
+                if (isHotReloadable(dependency, hotReloadPaths)) {
                     continue;
                 }
-                if (!flatTestClassPath && dependency.isReloadable()
-                        && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
-                    if (dependency.getType().equals(ArtifactCoords.TYPE_JAR)) {
-                        builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromDependency(dependency)));
-                    }
+                if (configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
                     continue;
                 }
-
                 if (configuredClassLoading.removedArtifacts.contains(dependency.getKey())) {
                     processCpElement(dependency, builder::addBannedElement);
                 } else {
@@ -319,7 +310,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     }
 
     private static boolean isHotReloadable(ResolvedDependency a, Set<Path> hotReloadPaths) {
-        for (Path p : a.getContentTree().getRoots()) {
+        for (Path p : a.getResolvedPaths()) {
             if (hotReloadPaths.contains(p)) {
                 return true;
             }
@@ -337,22 +328,19 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 .setAggregateParentResources(true);
 
         for (Path root : quarkusBootstrap.getApplicationRoot()) {
-            builder.addElement(ClassPathElement.fromPath(root, true));
+            builder.addElement(ClassPathElement.fromPath(root));
         }
 
-        builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap(), false));
+        builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap()));
 
         //additional user class path elements first
         for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
             for (Path root : i.getResolvedPaths()) {
-                builder.addElement(ClassPathElement.fromPath(root, true));
+                builder.addElement(ClassPathElement.fromPath(root));
             }
         }
-        for (ResolvedDependency dependency : appModel.getDependencies()) {
-            if (dependency.isRuntimeCp() &&
-                    dependency.getType().equals(ArtifactCoords.TYPE_JAR) &&
-                    (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
+        for (ResolvedDependency dependency : appModel.getRuntimeDependencies()) {
+            if (configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
         }
@@ -374,23 +362,20 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 .setAggregateParentResources(true);
         builder.setTransformedClasses(transformedClasses);
 
-        builder.addElement(new MemoryClassPathElement(resources, true));
+        builder.addElement(new MemoryClassPathElement(resources));
         for (Path root : quarkusBootstrap.getApplicationRoot()) {
-            builder.addElement(ClassPathElement.fromPath(root, true));
+            builder.addElement(ClassPathElement.fromPath(root));
         }
 
         for (AdditionalDependency i : getQuarkusBootstrap().getAdditionalApplicationArchives()) {
             if (i.isHotReloadable()) {
                 for (Path root : i.getResolvedPaths()) {
-                    builder.addElement(ClassPathElement.fromPath(root, true));
+                    builder.addElement(ClassPathElement.fromPath(root));
                 }
             }
         }
-        for (ResolvedDependency dependency : appModel.getDependencies()) {
-            if (dependency.isRuntimeCp() &&
-                    dependency.getType().equals(ArtifactCoords.TYPE_JAR) &&
-                    (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
+        for (ResolvedDependency dependency : appModel.getRuntimeDependencies()) {
+            if (configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
         }
@@ -429,21 +414,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
         ClassFilteredBannedElement(ClassPathElement delegate) {
             this.delegate = delegate;
-        }
-
-        @Override
-        public ArtifactKey getDependencyKey() {
-            return delegate.getDependencyKey();
-        }
-
-        @Override
-        public boolean isRuntime() {
-            return delegate.isRuntime();
-        }
-
-        @Override
-        public <T> T withOpenTree(Function<OpenPathTree, T> func) {
-            return delegate.withOpenTree(func);
         }
 
         @Override

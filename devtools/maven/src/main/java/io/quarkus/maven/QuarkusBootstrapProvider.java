@@ -172,19 +172,13 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setDevMode(mode == LaunchMode.DEVELOPMENT)
                     .setTest(mode == LaunchMode.TEST);
 
-            final ArtifactCoords artifactCoords = appArtifact(mojo);
             final List<MavenProject> localProjects = mojo.mavenProject().getCollectedProjects();
-            final Set<ArtifactKey> localProjectKeys = new HashSet<>(localProjects.size());
-            for (MavenProject p : localProjects) {
-                localProjectKeys.add(new GACT(p.getGroupId(), p.getArtifactId()));
-            }
             final Set<ArtifactKey> reloadableModules = new HashSet<>(localProjects.size() + 1);
-            for (Artifact a : mojo.mavenProject().getArtifacts()) {
-                if (localProjectKeys.contains(new GACT(a.getGroupId(), a.getArtifactId()))) {
-                    reloadableModules.add(new GACT(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getType()));
-                }
+            final ArtifactCoords artifactCoords = appArtifact(mojo);
+            reloadableModules.add(new GACT(artifactCoords.getGroupId(), artifactCoords.getArtifactId()));
+            for (MavenProject project : localProjects) {
+                reloadableModules.add(new GACT(project.getGroupId(), project.getArtifactId()));
             }
-            reloadableModules.add(artifactCoords.getKey());
 
             final ApplicationModel appModel;
             try {

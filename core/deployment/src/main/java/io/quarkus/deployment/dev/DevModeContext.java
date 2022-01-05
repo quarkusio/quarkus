@@ -15,9 +15,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.paths.PathCollection;
-import io.quarkus.paths.PathList;
 
 /**
  * Object that is used to pass context data from the plugin doing the invocation
@@ -27,7 +27,7 @@ import io.quarkus.paths.PathList;
  */
 public class DevModeContext implements Serializable {
 
-    public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null);
+    public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathsCollection.of(), null, null, null);
 
     public static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
 
@@ -59,7 +59,7 @@ public class DevModeContext implements Serializable {
     private String alternateEntryPoint;
     private QuarkusBootstrap.Mode mode = QuarkusBootstrap.Mode.DEV;
     private String baseName;
-    private final Set<ArtifactKey> localArtifacts = new HashSet<>();
+    private final Set<AppArtifactKey> localArtifacts = new HashSet<>();
 
     public boolean isLocalProjectDiscovery() {
         return localProjectDiscovery;
@@ -232,7 +232,7 @@ public class DevModeContext implements Serializable {
         this.baseName = baseName;
     }
 
-    public Set<ArtifactKey> getLocalArtifacts() {
+    public Set<AppArtifactKey> getLocalArtifacts() {
         return localArtifacts;
     }
 
@@ -245,17 +245,16 @@ public class DevModeContext implements Serializable {
         private final CompilationUnit test;
 
         private final String preBuildOutputDir;
-        private final PathCollection sourceParents;
+        private final PathsCollection sourceParents;
         private final String targetDir;
 
         ModuleInfo(Builder builder) {
             this.appArtifactKey = builder.appArtifactKey;
-            this.name = builder.name == null ? builder.appArtifactKey.toGacString() : builder.name;
+            this.name = builder.name;
             this.projectDirectory = builder.projectDirectory;
             this.main = new CompilationUnit(builder.sourcePaths, builder.classesPath,
                     builder.resourcePaths,
                     builder.resourcesOutputPath);
-
             if (builder.testClassesPath != null) {
                 this.test = new CompilationUnit(builder.testSourcePaths,
                         builder.testClassesPath, builder.testResourcePaths, builder.testResourcesOutputPath);
@@ -275,7 +274,7 @@ public class DevModeContext implements Serializable {
             return projectDirectory;
         }
 
-        public PathCollection getSourceParents() {
+        public PathsCollection getSourceParents() {
             return sourceParents;
         }
 
@@ -313,18 +312,18 @@ public class DevModeContext implements Serializable {
             private ArtifactKey appArtifactKey;
             private String name;
             private String projectDirectory;
-            private PathCollection sourcePaths = PathList.of();
+            private PathsCollection sourcePaths = PathsCollection.of();
             private String classesPath;
-            private PathCollection resourcePaths = PathList.of();
+            private PathsCollection resourcePaths = PathsCollection.of();
             private String resourcesOutputPath;
 
             private String preBuildOutputDir;
-            private PathCollection sourceParents = PathList.of();
+            private PathsCollection sourceParents = PathsCollection.of();
             private String targetDir;
 
-            private PathCollection testSourcePaths = PathList.of();
+            private PathsCollection testSourcePaths = PathsCollection.of();
             private String testClassesPath;
-            private PathCollection testResourcePaths = PathList.of();
+            private PathsCollection testResourcePaths = PathsCollection.of();
             private String testResourcesOutputPath;
 
             public Builder setArtifactKey(ArtifactKey appArtifactKey) {
@@ -342,7 +341,7 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setSourcePaths(PathCollection sourcePaths) {
+            public Builder setSourcePaths(PathsCollection sourcePaths) {
                 this.sourcePaths = sourcePaths;
                 return this;
             }
@@ -352,7 +351,7 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setResourcePaths(PathCollection resourcePaths) {
+            public Builder setResourcePaths(PathsCollection resourcePaths) {
                 this.resourcePaths = resourcePaths;
                 return this;
             }
@@ -367,7 +366,7 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setSourceParents(PathCollection sourceParents) {
+            public Builder setSourceParents(PathsCollection sourceParents) {
                 this.sourceParents = sourceParents;
                 return this;
             }
@@ -377,7 +376,7 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setTestSourcePaths(PathCollection testSourcePaths) {
+            public Builder setTestSourcePaths(PathsCollection testSourcePaths) {
                 this.testSourcePaths = testSourcePaths;
                 return this;
             }
@@ -387,7 +386,7 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
-            public Builder setTestResourcePaths(PathCollection testResourcePaths) {
+            public Builder setTestResourcePaths(PathsCollection testResourcePaths) {
                 this.testResourcePaths = testResourcePaths;
                 return this;
             }
@@ -404,12 +403,12 @@ public class DevModeContext implements Serializable {
     }
 
     public static class CompilationUnit implements Serializable {
-        private PathCollection sourcePaths;
+        private PathsCollection sourcePaths;
         private final String classesPath;
-        private final PathCollection resourcePaths;
+        private final PathsCollection resourcePaths;
         private final String resourcesOutputPath;
 
-        public CompilationUnit(PathCollection sourcePaths, String classesPath, PathCollection resourcePaths,
+        public CompilationUnit(PathsCollection sourcePaths, String classesPath, PathsCollection resourcePaths,
                 String resourcesOutputPath) {
             this.sourcePaths = sourcePaths;
             this.classesPath = classesPath;
@@ -417,7 +416,7 @@ public class DevModeContext implements Serializable {
             this.resourcesOutputPath = resourcesOutputPath;
         }
 
-        public PathCollection getSourcePaths() {
+        public PathsCollection getSourcePaths() {
             return sourcePaths;
         }
 
@@ -425,7 +424,7 @@ public class DevModeContext implements Serializable {
             return classesPath;
         }
 
-        public PathCollection getResourcePaths() {
+        public PathsCollection getResourcePaths() {
             return resourcePaths;
         }
 

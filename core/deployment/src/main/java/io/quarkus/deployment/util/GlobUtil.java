@@ -1,4 +1,4 @@
-package io.quarkus.util;
+package io.quarkus.deployment.util;
 
 import java.util.regex.Pattern;
 

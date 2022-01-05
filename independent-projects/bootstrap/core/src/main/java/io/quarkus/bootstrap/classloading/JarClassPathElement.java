@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.classloading;
 
-import io.quarkus.paths.OpenPathTree;
-import io.quarkus.paths.PathTree;
 import io.smallrye.common.io.jar.JarEntries;
 import io.smallrye.common.io.jar.JarFiles;
 import java.io.ByteArrayOutputStream;
@@ -33,10 +31,7 @@ import org.jboss.logging.Logger;
 
 /**
  * A class path element that represents a file on the file system
- * 
- * @deprecated in favor of {@link PathTreeClassPathElement}
  */
-@Deprecated
 public class JarClassPathElement implements ClassPathElement {
 
     public static final int JAVA_VERSION;
@@ -68,13 +63,12 @@ public class JarClassPathElement implements ClassPathElement {
     private final Path root;
     private final Lock readLock;
     private final Lock writeLock;
-    private final boolean runtime;
 
     //Closing the jarFile requires the exclusive lock, while reading data from the jarFile requires the shared lock.
     private final JarFile jarFile;
     private volatile boolean closed;
 
-    public JarClassPathElement(Path root, boolean runtime) {
+    public JarClassPathElement(Path root) {
         try {
             jarPath = root.toUri().toURL();
             this.root = root;
@@ -84,21 +78,6 @@ public class JarClassPathElement implements ClassPathElement {
             this.writeLock = readWriteLock.writeLock();
         } catch (IOException e) {
             throw new UncheckedIOException("Error while reading file as JAR: " + root, e);
-        }
-        this.runtime = runtime;
-    }
-
-    @Override
-    public boolean isRuntime() {
-        return runtime;
-    }
-
-    @Override
-    public <T> T withOpenTree(Function<OpenPathTree, T> func) {
-        try (OpenPathTree openTree = PathTree.ofArchive(root).openTree()) {
-            return func.apply(openTree);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
         }
     }
 

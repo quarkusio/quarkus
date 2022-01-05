@@ -1,53 +1,36 @@
 package io.quarkus.bootstrap.workspace;
 
-import io.quarkus.paths.DirectoryPathTree;
-import io.quarkus.paths.PathTree;
 import java.io.File;
 import java.io.Serializable;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
-public class DefaultSourceDir implements SourceDir, Serializable {
+public class DefaultProcessedSources implements ProcessedSources, Serializable {
 
-    private final PathTree srcTree;
-    private final PathTree outputTree;
+    private final File srcDir;
+    private final File destinationDir;
     private final Map<Object, Object> data;
 
-    public DefaultSourceDir(File srcDir, File destinationDir) {
+    public DefaultProcessedSources(File srcDir, File destinationDir) {
         this(srcDir, destinationDir, Collections.emptyMap());
     }
 
-    public DefaultSourceDir(File srcDir, File destinationDir, Map<Object, Object> data) {
-        this(new DirectoryPathTree(srcDir.toPath()), new DirectoryPathTree(destinationDir.toPath()), data);
-    }
-
-    public DefaultSourceDir(PathTree srcTree, PathTree outputTree, Map<Object, Object> data) {
-        this.srcTree = srcTree;
-        this.outputTree = outputTree;
+    public DefaultProcessedSources(File srcDir, File destinationDir, Map<Object, Object> data) {
+        this.srcDir = srcDir;
+        this.destinationDir = destinationDir;
         this.data = data;
     }
 
     @Override
-    public Path getDir() {
-        return srcTree.getRoots().iterator().next();
+    public File getSourceDir() {
+        return srcDir;
     }
 
     @Override
-    public PathTree getSourceTree() {
-        return srcTree;
-    }
-
-    @Override
-    public Path getOutputDir() {
-        return outputTree.getRoots().iterator().next();
-    }
-
-    @Override
-    public PathTree getOutputTree() {
-        return outputTree;
+    public File getDestinationDir() {
+        return destinationDir;
     }
 
     public <T> T getValue(Object key, Class<T> type) {
@@ -57,7 +40,7 @@ public class DefaultSourceDir implements SourceDir, Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(data, outputTree, srcTree);
+        return Objects.hash(data, destinationDir, srcDir);
     }
 
     @Override
@@ -68,15 +51,15 @@ public class DefaultSourceDir implements SourceDir, Serializable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        DefaultSourceDir other = (DefaultSourceDir) obj;
-        return Objects.equals(data, other.data) && Objects.equals(outputTree, other.outputTree)
-                && Objects.equals(srcTree, other.srcTree);
+        DefaultProcessedSources other = (DefaultProcessedSources) obj;
+        return Objects.equals(data, other.data) && Objects.equals(destinationDir, other.destinationDir)
+                && Objects.equals(srcDir, other.srcDir);
     }
 
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder();
-        buf.append(srcTree.getRoots()).append(" -> ").append(outputTree.getRoots());
+        buf.append(srcDir).append(" -> ").append(destinationDir);
         if (!data.isEmpty()) {
             final Iterator<Map.Entry<Object, Object>> i = data.entrySet().iterator();
             Map.Entry<Object, Object> e = i.next();

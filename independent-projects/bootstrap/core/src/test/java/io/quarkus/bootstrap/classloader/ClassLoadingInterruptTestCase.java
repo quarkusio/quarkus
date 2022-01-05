@@ -22,7 +22,7 @@ public class ClassLoadingInterruptTestCase {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new DirectoryClassPathElement(path.resolve("tmp"), true))
+                    .addElement(new DirectoryClassPathElement(path.resolve("tmp")))
                     .build();
             Class<?> c = cl.loadClass(InterruptClass.class.getName());
             Assertions.assertNotEquals(c, InterruptClass.class);

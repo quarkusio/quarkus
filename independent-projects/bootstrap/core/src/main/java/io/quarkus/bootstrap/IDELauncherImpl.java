@@ -8,10 +8,7 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.bootstrap.workspace.ArtifactSources;
-import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.maven.dependency.ResolvedDependency;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -45,26 +42,25 @@ public class IDELauncherImpl implements Closeable {
                 final ApplicationModel quarkusModel = BuildToolHelper.enableGradleAppModelForDevMode(classesDir);
                 context.put(BootstrapConstants.SERIALIZED_APP_MODEL, BootstrapUtils.serializeAppModel(quarkusModel, false));
 
-                final Path launchingModulePath = quarkusModel.getApplicationModule().getMainSources().getSourceDirs().iterator()
-                        .next().getOutputDir();
+                final Path launchingModulePath = quarkusModel.getApplicationModule().getMainSources().iterator().next()
+                        .getDestinationDir().toPath();
 
                 // Gradle uses a different output directory for classes, we override the one used by the IDE
                 builder.setProjectRoot(launchingModulePath)
                         .setApplicationRoot(launchingModulePath)
                         .setTargetDirectory(quarkusModel.getApplicationModule().getBuildDir().toPath());
 
-                for (ResolvedDependency dep : quarkusModel.getDependencies()) {
-                    final WorkspaceModule module = dep.getWorkspaceModule();
-                    if (module == null) {
-                        continue;
-                    }
-                    final ArtifactSources sources = module.getSources(dep.getClassifier());
-                    for (SourceDir dir : sources.getSourceDirs()) {
-                        builder.addAdditionalApplicationArchive(new AdditionalDependency(dir.getOutputDir(), true, false));
-                    }
-                    for (SourceDir dir : sources.getResourceDirs()) {
-                        builder.addAdditionalApplicationArchive(new AdditionalDependency(dir.getOutputDir(), true, false));
-                    }
+                for (WorkspaceModule additionalModule : quarkusModel.getWorkspaceModules()) {
+                    additionalModule.getMainSources().forEach(src -> {
+                        builder.addAdditionalApplicationArchive(
+                                new AdditionalDependency(src.getDestinationDir().toPath(), true, false));
+
+                    });
+                    additionalModule.getMainResources().forEach(src -> {
+                        builder.addAdditionalApplicationArchive(
+                                new AdditionalDependency(src.getDestinationDir().toPath(), true, false));
+
+                    });
                 }
             } else {
                 builder.setApplicationRoot(classesDir)

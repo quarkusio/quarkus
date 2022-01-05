@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.classloading;
 
-import io.quarkus.paths.DirectoryPathTree;
-import io.quarkus.paths.OpenPathTree;
 import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -18,33 +16,18 @@ import java.security.cert.Certificate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
  * A class path element that represents a file on the file system
- * 
- * @deprecated in favor of {@link PathTreeClassPathElement}
  */
-@Deprecated
 public class DirectoryClassPathElement extends AbstractClassPathElement {
 
     private final Path root;
-    private final boolean runtime;
 
-    public DirectoryClassPathElement(Path root, boolean runtime) {
+    public DirectoryClassPathElement(Path root) {
         assert root != null : "root is null";
         this.root = root.normalize();
-        this.runtime = runtime;
-    }
-
-    public <T> T withOpenTree(Function<OpenPathTree, T> func) {
-        return func.apply(new DirectoryPathTree(root));
-    }
-
-    @Override
-    public boolean isRuntime() {
-        return runtime;
     }
 
     @Override

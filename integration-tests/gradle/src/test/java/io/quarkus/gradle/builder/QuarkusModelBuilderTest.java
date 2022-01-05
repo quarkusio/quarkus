@@ -19,9 +19,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.ProcessedSources;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.paths.PathTree;
 
 class QuarkusModelBuilderTest {
 
@@ -58,40 +57,29 @@ class QuarkusModelBuilderTest {
         assertEquals(projectDir, projectModule.getModuleDir());
         assertEquals(new File(projectDir, "build"), projectModule.getBuildDir());
 
-        SourceDir src = projectModule.getMainSources().getSourceDirs().iterator().next();
+        ProcessedSources src = projectModule.getMainSources().iterator().next();
         assertNotNull(src);
-        assertThat(src.getOutputDir()).isEqualTo(projectDir.toPath().resolve("build/classes/java/main"));
-        PathTree sourceTree = src.getSourceTree();
-        assertThat(sourceTree).isNotNull();
-        assertThat(sourceTree.getRoots()).hasSize(1);
-        assertThat(sourceTree.getRoots().iterator().next()).isEqualTo(projectDir.toPath().resolve("src/main/java"));
+        assertThat(src.getDestinationDir()).isEqualTo(new File(projectDir, "build/classes/java/main"));
+        assertThat(src.getSourceDir()).isEqualTo(new File(projectDir, "src/main/java"));
 
-        src = projectModule.getMainSources().getResourceDirs().iterator().next();
+        src = projectModule.getMainResources().iterator().next();
         assertNotNull(src);
-        assertThat(src.getOutputDir()).isEqualTo(projectDir.toPath().resolve("build/resources/main"));
-        sourceTree = src.getSourceTree();
-        assertThat(sourceTree).isNotNull();
-        assertThat(sourceTree.getRoots()).hasSize(1);
-        assertThat(sourceTree.getRoots().iterator().next()).isEqualTo(projectDir.toPath().resolve("src/main/resources"));
+        assertThat(src.getDestinationDir()).isEqualTo(new File(projectDir, "build/resources/main"));
+        assertThat(src.getSourceDir()).isEqualTo(new File(projectDir, "src/main/resources"));
 
         if (withTests) {
-            src = projectModule.getTestSources().getSourceDirs().iterator().next();
+            src = projectModule.getTestSources().iterator().next();
             assertNotNull(src);
-            assertThat(src.getOutputDir()).isEqualTo(projectDir.toPath().resolve("build/classes/java/test"));
-            sourceTree = src.getSourceTree();
-            assertThat(sourceTree).isNotNull();
-            assertThat(sourceTree.getRoots()).hasSize(1);
-            assertThat(sourceTree.getRoots().iterator().next()).isEqualTo(projectDir.toPath().resolve("src/test/java"));
+            assertThat(src.getDestinationDir()).isEqualTo(new File(projectDir, "build/classes/java/test"));
+            assertThat(src.getSourceDir()).isEqualTo(new File(projectDir, "src/test/java"));
 
-            src = projectModule.getTestSources().getResourceDirs().iterator().next();
+            src = projectModule.getTestResources().iterator().next();
             assertNotNull(src);
-            assertThat(src.getOutputDir()).isEqualTo(projectDir.toPath().resolve("build/resources/test"));
-            sourceTree = src.getSourceTree();
-            assertThat(sourceTree).isNotNull();
-            assertThat(sourceTree.getRoots()).hasSize(1);
-            assertThat(sourceTree.getRoots().iterator().next()).isEqualTo(projectDir.toPath().resolve("src/test/resources"));
+            assertThat(src.getDestinationDir()).isEqualTo(new File(projectDir, "build/resources/test"));
+            assertThat(src.getSourceDir()).isEqualTo(new File(projectDir, "src/test/resources"));
         } else {
-            assertThat(projectModule.getTestSources()).isNull();
+            assertThat(projectModule.getTestSources()).isEmpty();
+            assertThat(projectModule.getTestResources()).isEmpty();
         }
     }
 

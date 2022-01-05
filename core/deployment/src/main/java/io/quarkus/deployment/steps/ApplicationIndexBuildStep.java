@@ -32,7 +32,7 @@ public class ApplicationIndexBuildStep {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (file.getFileName().toString().endsWith(".class")) {
+                    if (file.toString().endsWith(".class")) {
                         log.debugf("Indexing %s", file);
                         try (InputStream stream = Files.newInputStream(file)) {
                             indexer.index(stream);

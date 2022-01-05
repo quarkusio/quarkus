@@ -3,6 +3,7 @@ package io.quarkus.deployment.dev;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -53,9 +54,9 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.changeagent.ClassChangeAgent;
-import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.deployment.dev.filewatch.FileChangeCallback;
 import io.quarkus.deployment.dev.filewatch.FileChangeEvent;
 import io.quarkus.deployment.dev.filewatch.WatchServiceFileSystemWatcher;
@@ -68,8 +69,6 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.dev.testing.TestScanningLock;
-import io.quarkus.paths.PathCollection;
-import io.quarkus.paths.PathList;
 
 public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable {
     public static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux");
@@ -190,13 +189,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public List<Path> getSourcesDir() {
-        final List<Path> paths = new ArrayList<>();
-        for (ModuleInfo m : context.getAllModules()) {
-            for (Path p : m.getMain().getSourcePaths()) {
-                paths.add(p);
-            }
-        }
-        return paths;
+        return context.getAllModules().stream().flatMap(m -> m.getMain().getSourcePaths().toList().stream())
+                .collect(toList());
     }
 
     private void startTestScanningTimer() {
@@ -847,12 +841,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             final Set<Path> moduleResources = correspondingResources.computeIfAbsent(compilationUnit,
                     m -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
             boolean doCopy = true;
-            PathCollection rootPaths = compilationUnit.getResourcePaths();
+            PathsCollection rootPaths = compilationUnit.getResourcePaths();
             String outputPath = compilationUnit.getResourcesOutputPath();
             if (rootPaths.isEmpty()) {
                 String rootPath = compilationUnit.getClassesPath();
                 if (rootPath != null) {
-                    rootPaths = PathList.of(Paths.get(rootPath));
+                    rootPaths = PathsCollection.of(Paths.get(rootPath));
                 }
                 outputPath = rootPath;
                 doCopy = false;
@@ -860,7 +854,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             if (rootPaths.isEmpty() || outputPath == null) {
                 continue;
             }
-            final List<Path> roots = rootPaths.stream()
+            final List<Path> roots = rootPaths.toList().stream()
                     .filter(Files::exists)
                     .filter(Files::isReadable)
                     .collect(Collectors.toList());
@@ -1083,13 +1077,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         for (DevModeContext.ModuleInfo module : context.getAllModules()) {
             List<DevModeContext.CompilationUnit> compilationUnits = cuf.apply(module);
             for (DevModeContext.CompilationUnit unit : compilationUnits) {
-                PathCollection rootPaths = unit.getResourcePaths();
+                PathsCollection rootPaths = unit.getResourcePaths();
                 if (rootPaths.isEmpty()) {
                     String rootPath = unit.getClassesPath();
                     if (rootPath == null) {
                         continue;
                     }
-                    rootPaths = PathList.of(Path.of(rootPath));
+                    rootPaths = PathsCollection.of(Paths.get(rootPath));
                 }
                 for (Path root : rootPaths) {
                     for (String path : watchedFilePaths.keySet()) {

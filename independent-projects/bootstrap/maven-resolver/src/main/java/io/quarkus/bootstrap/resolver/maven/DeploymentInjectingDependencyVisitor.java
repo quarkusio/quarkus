@@ -7,6 +7,7 @@ import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
+import io.quarkus.bootstrap.workspace.ProcessedSources;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactDependency;
@@ -14,6 +15,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -66,6 +68,7 @@ public class DeploymentInjectingDependencyVisitor {
     private final List<Dependency> managedDeps;
     private final List<RemoteRepository> mainRepos;
     private final ApplicationModelBuilder appBuilder;
+    private final boolean preferWorkspacePaths;
     private final boolean collectReloadableModules;
 
     private boolean collectingTopExtensionRuntimeNodes = true;
@@ -79,9 +82,10 @@ public class DeploymentInjectingDependencyVisitor {
     public final Set<ArtifactKey> allRuntimeDeps = new HashSet<>();
 
     public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, ApplicationModelBuilder appBuilder,
+            List<RemoteRepository> mainRepos, ApplicationModelBuilder appBuilder, boolean preferWorkspacePaths,
             boolean collectReloadableModules)
             throws BootstrapDependencyProcessingException {
+        this.preferWorkspacePaths = preferWorkspacePaths;
         this.collectReloadableModules = collectReloadableModules;
         // we need to be able to take into account whether the deployment dependencies are on an optional dependency branch
         // for that we are going to use a custom dependency selector and re-initialize the resolver to use it
@@ -193,17 +197,17 @@ public class DeploymentInjectingDependencyVisitor {
                     module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(),
                             artifact.getArtifactId());
                 }
-                final ResolvedDependencyBuilder newRtDep = toAppArtifact(artifact, module)
-                        .setRuntimeCp()
-                        .setDeploymentCp()
-                        .setOptional(node.getDependency().isOptional())
-                        .setScope(node.getDependency().getScope())
-                        .setDirect(collectingDirectDeps);
+                final ResolvedDependencyBuilder newRtDep = toAppArtifact(artifact, module,
+                        preferWorkspacePaths && extDep == null && collectingTopExtensionRuntimeNodes)
+                                .setRuntimeCp()
+                                .setDeploymentCp()
+                                .setOptional(node.getDependency().isOptional())
+                                .setScope(node.getDependency().getScope())
+                                .setDirect(collectingDirectDeps);
                 if (module != null) {
                     newRtDep.setWorkspaceModule().setReloadable();
                     if (collectReloadableModules) {
-                        appBuilder.addReloadableWorkspaceModule(new GACT(artifact.getGroupId(), artifact.getArtifactId(),
-                                artifact.getClassifier(), artifact.getExtension()));
+                        appBuilder.addReloadableWorkspaceModule(new GACT(artifact.getGroupId(), artifact.getArtifactId()));
                     }
                 }
                 if (extDep != null) {
@@ -366,7 +370,7 @@ public class DeploymentInjectingDependencyVisitor {
             clearReloadable(child);
         }
         final io.quarkus.maven.dependency.Dependency dep = appBuilder.getDependency(getKey(node.getArtifact()));
-        if (dep != null && dep.isWorkspaceModule()) {
+        if (dep != null && dep.isWorkspacetModule()) {
             ((ArtifactDependency) dep).clearFlag(DependencyFlags.RELOADABLE);
         }
     }
@@ -628,7 +632,8 @@ public class DeploymentInjectingDependencyVisitor {
         return new GACT(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension());
     }
 
-    public static ResolvedDependencyBuilder toAppArtifact(Artifact artifact, WorkspaceModule module) {
+    public static ResolvedDependencyBuilder toAppArtifact(Artifact artifact, WorkspaceModule module,
+            boolean preferWorkspacePaths) {
         return ResolvedDependencyBuilder.newInstance()
                 .setWorkspaceModule(module)
                 .setGroupId(artifact.getGroupId())
@@ -636,7 +641,35 @@ public class DeploymentInjectingDependencyVisitor {
                 .setClassifier(artifact.getClassifier())
                 .setType(artifact.getExtension())
                 .setVersion(artifact.getVersion())
-                .setResolvedPaths(artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath()));
+                .setResolvedPaths(getResolvedPaths(artifact, module, preferWorkspacePaths));
+    }
+
+    public static PathCollection getResolvedPaths(Artifact artifact, WorkspaceModule module, boolean preferWorkspacePaths) {
+        if (preferWorkspacePaths && module != null) {
+            final PathList.Builder pathBuilder = PathList.builder();
+            if ("tests".equals(artifact.getClassifier())) {
+                collectResolvedPaths(pathBuilder, module.getTestSources());
+                collectResolvedPaths(pathBuilder, module.getTestResources());
+            } else {
+                collectResolvedPaths(pathBuilder, module.getMainSources());
+                collectResolvedPaths(pathBuilder, module.getMainResources());
+            }
+            if (!pathBuilder.isEmpty()) {
+                return pathBuilder.build();
+            }
+        }
+        return artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath());
+    }
+
+    private static void collectResolvedPaths(final PathList.Builder pathBuilder, Collection<ProcessedSources> srcs) {
+        for (ProcessedSources src : srcs) {
+            if (src.getDestinationDir().exists()) {
+                final Path p = src.getDestinationDir().toPath();
+                if (!pathBuilder.contains(p)) {
+                    pathBuilder.add(p);
+                }
+            }
+        }
     }
 
     private static String toGactv(Artifact a) {

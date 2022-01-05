@@ -134,28 +134,28 @@ public class AppArtifactKey implements ArtifactKey, Serializable {
             return true;
         if (obj == null)
             return false;
-        if (!(obj instanceof ArtifactKey))
+        if (getClass() != obj.getClass())
             return false;
-        ArtifactKey other = (ArtifactKey) obj;
+        AppArtifactKey other = (AppArtifactKey) obj;
         if (artifactId == null) {
-            if (other.getArtifactId() != null)
+            if (other.artifactId != null)
                 return false;
-        } else if (!artifactId.equals(other.getArtifactId()))
+        } else if (!artifactId.equals(other.artifactId))
             return false;
         if (classifier == null) {
-            if (other.getClassifier() != null)
+            if (other.classifier != null)
                 return false;
-        } else if (!classifier.equals(other.getClassifier()))
+        } else if (!classifier.equals(other.classifier))
             return false;
         if (groupId == null) {
-            if (other.getGroupId() != null)
+            if (other.groupId != null)
                 return false;
-        } else if (!groupId.equals(other.getGroupId()))
+        } else if (!groupId.equals(other.groupId))
             return false;
         if (type == null) {
-            if (other.getType() != null)
+            if (other.type != null)
                 return false;
-        } else if (!type.equals(other.getType()))
+        } else if (!type.equals(other.type))
             return false;
         return true;
     }

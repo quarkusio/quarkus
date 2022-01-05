@@ -127,11 +127,11 @@ public class GACT implements ArtifactKey, Serializable {
             return true;
         if (obj == null)
             return false;
-        if (!(obj instanceof ArtifactKey))
+        if (getClass() != obj.getClass())
             return false;
-        ArtifactKey other = (ArtifactKey) obj;
-        return Objects.equals(artifactId, other.getArtifactId()) && Objects.equals(classifier, other.getClassifier())
-                && Objects.equals(groupId, other.getGroupId()) && Objects.equals(type, other.getType());
+        GACT other = (GACT) obj;
+        return Objects.equals(artifactId, other.artifactId) && Objects.equals(classifier, other.classifier)
+                && Objects.equals(groupId, other.groupId) && Objects.equals(type, other.type);
     }
 
     @Override
@@ -145,6 +145,15 @@ public class GACT implements ArtifactKey, Serializable {
         }
         if (type != null) {
             buf.append(':').append(type);
+        }
+        return buf.toString();
+    }
+
+    public String toGacString() {
+        final StringBuilder buf = new StringBuilder();
+        buf.append(groupId).append(':').append(artifactId);
+        if (!classifier.isEmpty()) {
+            buf.append(':').append(classifier);
         }
         return buf.toString();
     }

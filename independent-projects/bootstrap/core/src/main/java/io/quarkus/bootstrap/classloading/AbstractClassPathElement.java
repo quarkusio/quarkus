@@ -9,33 +9,28 @@ public abstract class AbstractClassPathElement implements ClassPathElement {
 
     private static final Logger log = Logger.getLogger(AbstractClassPathElement.class);
 
-    protected volatile Manifest manifest;
-    protected volatile boolean manifestInitialized = false;
+    private volatile Manifest manifest;
+    private volatile boolean initialized = false;
 
     @Override
     public Manifest getManifest() {
-        if (manifestInitialized) {
+        if (initialized) {
             return manifest;
         }
         synchronized (this) {
-            if (manifestInitialized) {
+            if (initialized) {
                 return manifest;
             }
-            manifest = readManifest();
-            manifestInitialized = true;
-        }
-        return manifest;
-    }
-
-    protected Manifest readManifest() {
-        final ClassPathResource mf = getResource("META-INF/MANIFEST.MF");
-        if (mf != null) {
-            try {
-                return new Manifest(new ByteArrayInputStream(mf.getData()));
-            } catch (IOException e) {
-                log.warnf("Failed to parse manifest for %s", toString(), e);
+            ClassPathResource mf = getResource("META-INF/MANIFEST.MF");
+            if (mf != null) {
+                try {
+                    manifest = new Manifest(new ByteArrayInputStream(mf.getData()));
+                } catch (IOException e) {
+                    log.warnf("Failed to parse manifest for %s", toString());
+                }
             }
+            initialized = true;
+            return manifest;
         }
-        return null;
     }
 }

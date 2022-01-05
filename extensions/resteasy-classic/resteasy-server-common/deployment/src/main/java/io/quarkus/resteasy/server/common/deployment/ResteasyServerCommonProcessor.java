@@ -648,10 +648,6 @@ public class ResteasyServerCommonProcessor {
                 ServletConfigSource.class,
                 ServletContextConfigSource.class,
                 FilterConfigSource.class));
-
-        // Providers that are also beans are unremovable
-        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                b -> jaxrsProvidersToRegisterBuildItem.getProviders().contains(b.getBeanClass().toString())));
     }
 
     private static void generateDefaultConstructors(BuildProducer<BytecodeTransformerBuildItem> transformers,

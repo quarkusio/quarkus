@@ -38,15 +38,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         registerAsParallelCapable();
     }
 
-    public static List<ClassPathElement> getElements(String resourceName, boolean localOnly) {
-        final ClassLoader ccl = Thread.currentThread().getContextClassLoader();
-        if (!(ccl instanceof QuarkusClassLoader)) {
-            throw new IllegalStateException("The current classloader is not an instance of "
-                    + QuarkusClassLoader.class.getName() + " but " + ccl.getClass().getName());
-        }
-        return ((QuarkusClassLoader) ccl).getElementsWithResource(resourceName, localOnly);
-    }
-
     private final String name;
     private final List<ClassPathElement> elements;
     private final ConcurrentMap<ClassPathElement, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
@@ -104,7 +95,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.parent = builder.parent;
         this.parentFirst = builder.parentFirst;
         this.resettableElement = builder.resettableElement;
-        this.transformedClasses = new MemoryClassPathElement(builder.transformedClasses, true);
+        this.transformedClasses = new MemoryClassPathElement(builder.transformedClasses);
         this.aggregateParentResources = builder.aggregateParentResources;
         this.classLoaderEventListeners = builder.classLoaderEventListeners.isEmpty() ? Collections.emptyList()
                 : builder.classLoaderEventListeners;
@@ -160,7 +151,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             throw new IllegalStateException("Classloader is not resettable");
         }
         synchronized (this) {
-            this.transformedClasses = new MemoryClassPathElement(transformedClasses, true);
+            this.transformedClasses = new MemoryClassPathElement(transformedClasses);
             resettableElement.reset(generatedResources);
             state = null;
         }
@@ -538,6 +529,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return ret;
     }
 
+    @SuppressWarnings("unused")
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
         return super.defineClass(name, b, off, len);
     }

@@ -42,11 +42,9 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.bootstrap.workspace.ArtifactSources;
-import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
-import io.quarkus.paths.PathList;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
@@ -201,7 +199,7 @@ public final class IntegrationTestUtil {
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
 
-        final PathList.Builder rootBuilder = PathList.builder();
+        PathsCollection.Builder rootBuilder = PathsCollection.builder();
 
         if (!appClassLocation.equals(testClassLocation)) {
             rootBuilder.add(testClassLocation);
@@ -215,6 +213,7 @@ public final class IntegrationTestUtil {
         final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                 .setIsolateDeployment(true)
                 .setMode(QuarkusBootstrap.Mode.TEST);
+        QuarkusTestProfile profileInstance = null;
 
         final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
         runnerBuilder.setProjectRoot(projectRoot);
@@ -238,25 +237,22 @@ public final class IntegrationTestUtil {
         if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
             ApplicationModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
             if (model != null && model.getApplicationModule() != null) {
-                final ArtifactSources testSources = model.getApplicationModule().getTestSources();
-                if (testSources != null) {
-                    for (SourceDir src : testSources.getSourceDirs()) {
-                        if (!Files.exists(src.getOutputDir())) {
-                            final Path classes = src.getOutputDir();
-                            if (!rootBuilder.contains(classes)) {
-                                rootBuilder.add(classes);
-                            }
-                        }
-                    }
-                }
-                for (SourceDir src : model.getApplicationModule().getMainSources().getSourceDirs()) {
-                    if (!Files.exists(src.getOutputDir())) {
-                        final Path classes = src.getOutputDir();
+                model.getApplicationModule().getTestSources().forEach(src -> {
+                    if (!src.getDestinationDir().exists()) {
+                        final Path classes = src.getDestinationDir().toPath();
                         if (!rootBuilder.contains(classes)) {
                             rootBuilder.add(classes);
                         }
                     }
-                }
+                });
+                model.getApplicationModule().getMainSources().forEach(src -> {
+                    if (!src.getDestinationDir().exists()) {
+                        final Path classes = src.getDestinationDir().toPath();
+                        if (!rootBuilder.contains(classes)) {
+                            rootBuilder.add(classes);
+                        }
+                    }
+                });
             }
         } else if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
             final String[] sourceDirectories = System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR).split(",");

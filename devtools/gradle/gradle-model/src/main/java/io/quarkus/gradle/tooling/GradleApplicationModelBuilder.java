@@ -44,10 +44,9 @@ import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
-import io.quarkus.bootstrap.workspace.DefaultSourceDir;
+import io.quarkus.bootstrap.workspace.DefaultProcessedSources;
 import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
-import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.ProcessedSources;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -149,7 +148,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final ResolvedDependency appArtifact = getProjectArtifact(project, mode);
         final ApplicationModelBuilder modelBuilder = new ApplicationModelBuilder()
                 .setAppArtifact(appArtifact)
-                .addReloadableWorkspaceModule(appArtifact.getKey())
+                .addReloadableWorkspaceModule(new GACT(appArtifact.getGroupId(), appArtifact.getArtifactId()))
                 .setPlatformImports(platformImports);
 
         final Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies = new LinkedHashMap<>();
@@ -178,33 +177,33 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final DefaultWorkspaceModule mainModule = new DefaultWorkspaceModule(
                 new GAV(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()),
                 project.getProjectDir(), project.getBuildDir());
-        mainModule.setBuildFiles(PathList.of(project.getBuildFile().toPath()));
-
         initProjectModule(project, mainModule, javaConvention.getSourceSets().findByName(SourceSet.MAIN_SOURCE_SET_NAME),
-                SourceSet.MAIN_SOURCE_SET_NAME, "");
+                false);
         if (mode.equals(LaunchMode.TEST)) {
             initProjectModule(project, mainModule, javaConvention.getSourceSets().findByName(SourceSet.TEST_SOURCE_SET_NAME),
-                    SourceSet.TEST_SOURCE_SET_NAME, "tests");
+                    true);
         }
 
         final PathList.Builder paths = PathList.builder();
-        collectDestinationDirs(mainModule.getMainSources().getSourceDirs(), paths);
-        collectDestinationDirs(mainModule.getMainSources().getResourceDirs(), paths);
+        mainModule.getMainSources().forEach(src -> {
+            collectDestinationDirs(src, paths);
+        });
+        mainModule.getMainResources().forEach(src -> {
+            collectDestinationDirs(src, paths);
+        });
 
         return appArtifact.setWorkspaceModule(mainModule).setResolvedPaths(paths.build()).build();
     }
 
-    private static void collectDestinationDirs(Collection<SourceDir> sources, final PathList.Builder paths) {
-        for (SourceDir src : sources) {
-            if (!Files.exists(src.getOutputDir())) {
-                return;
-            }
-            final Path path = src.getOutputDir();
-            if (paths.contains(path)) {
-                return;
-            }
-            paths.add(path);
+    private static void collectDestinationDirs(ProcessedSources src, final PathList.Builder paths) {
+        if (!src.getDestinationDir().exists()) {
+            return;
         }
+        final Path path = src.getDestinationDir().toPath();
+        if (paths.contains(path)) {
+            return;
+        }
+        paths.add(path);
     }
 
     private static void processQuarkusDir(ResolvedDependencyBuilder artifactBuilder, Path quarkusDir,
@@ -336,7 +335,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 final String parentPath = f.getParent();
                 final String group = HashUtil.sha1(parentPath == null ? f.getName() : parentPath);
                 String name = f.getName();
-                String type = ArtifactCoords.TYPE_JAR;
+                String type = "jar";
                 if (!f.isDirectory()) {
                     final int dot = f.getName().lastIndexOf('.');
                     if (dot > 0) {
@@ -432,10 +431,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
     }
 
-    private static String toNonNullClassifier(String resolvedClassifier) {
-        return resolvedClassifier == null ? "" : resolvedClassifier;
-    }
-
     private DefaultWorkspaceModule initProjectModuleAndBuildPaths(final Project project,
             ResolvedArtifact resolvedArtifact, ApplicationModelBuilder appModel, final ResolvedDependencyBuilder appDep,
             final JavaPluginConvention javaExt, PathList.Builder buildPaths, String sourceName, boolean test) {
@@ -447,17 +442,27 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                         resolvedArtifact.getModuleVersion().getId().getVersion()),
                 project.getProjectDir(),
                 project.getBuildDir());
-        projectModule.setBuildFiles(PathList.of(project.getBuildFile().toPath()));
 
-        final String classifier = toNonNullClassifier(resolvedArtifact.getClassifier());
-        initProjectModule(project, projectModule, javaExt.getSourceSets().findByName(sourceName), sourceName, classifier);
+        initProjectModule(project, projectModule, javaExt.getSourceSets().findByName(sourceName), test);
 
-        collectDestinationDirs(projectModule.getSources(classifier).getSourceDirs(), buildPaths);
-        collectDestinationDirs(projectModule.getSources(classifier).getResourceDirs(), buildPaths);
+        if (test) {
+            projectModule.getTestSources().forEach(src -> {
+                collectDestinationDirs(src, buildPaths);
+            });
+            projectModule.getTestResources().forEach(src -> {
+                collectDestinationDirs(src, buildPaths);
+            });
+        } else {
+            projectModule.getMainSources().forEach(src -> {
+                collectDestinationDirs(src, buildPaths);
+            });
+            projectModule.getMainResources().forEach(src -> {
+                collectDestinationDirs(src, buildPaths);
+            });
+        }
 
         appModel.addReloadableWorkspaceModule(
-                new GACT(resolvedArtifact.getModuleVersion().getId().getGroup(), resolvedArtifact.getName(), classifier,
-                        GACTV.TYPE_JAR));
+                new GACT(resolvedArtifact.getModuleVersion().getId().getGroup(), resolvedArtifact.getName()));
         return projectModule;
     }
 
@@ -478,19 +483,18 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         });
     }
 
-    private static void initProjectModule(Project project, DefaultWorkspaceModule module, SourceSet sourceSet,
-            String sourceName, String classifier) {
+    private static void initProjectModule(Project project, DefaultWorkspaceModule module, SourceSet sourceSet, boolean test) {
 
         if (sourceSet == null) {
             return;
         }
 
+        module.setBuildFiles(PathList.of(project.getBuildFile().toPath()));
+
         final FileCollection allClassesDirs = sourceSet.getOutput().getClassesDirs();
         // some plugins do not add source directories to source sets and they may be missing from sourceSet.getAllJava()
         // see https://github.com/quarkusio/quarkus/issues/20755
 
-        final List<SourceDir> sourceDirs = new ArrayList<>(1);
-        final List<SourceDir> resourceDirs = new ArrayList<>(1);
         project.getTasks().withType(AbstractCompile.class, t -> {
             if (!t.getEnabled()) {
                 return;
@@ -509,9 +513,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 if (a.getRelativePath().getSegments().length == 1) {
                     final File srcDir = a.getFile().getParentFile();
                     if (srcDirs.add(srcDir)) {
-                        DefaultSourceDir sources = new DefaultSourceDir(srcDir, destDir,
+                        DefaultProcessedSources sources = new DefaultProcessedSources(srcDir, destDir,
                                 Collections.singletonMap("compiler", t.getName()));
-                        sourceDirs.add(sources);
+                        if (test) {
+                            module.addTestSources(sources);
+                        } else {
+                            module.addMainSources(sources);
+                        }
                     }
                 }
             });
@@ -537,17 +545,24 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 if (a.getRelativePath().getSegments().length == 1) {
                     final File srcDir = a.getFile().getParentFile();
                     if (srcDirs.add(srcDir)) {
-                        resourceDirs.add(new DefaultSourceDir(srcDir, destDir));
+                        addResources(module, srcDir, destDir, test);
                     }
                 }
             });
         });
         // there could be a task generating resources
-        if (resourcesOutputDir.exists() && resourceDirs.isEmpty()) {
-            sourceSet.getResources().getSrcDirs()
-                    .forEach(srcDir -> resourceDirs.add(new DefaultSourceDir(srcDir, resourcesOutputDir)));
+        if (resourcesOutputDir.exists() && (test ? module.getTestResources().isEmpty() : module.getMainResources().isEmpty())) {
+            sourceSet.getResources().getSrcDirs().forEach(srcDir -> addResources(module, srcDir, resourcesOutputDir, test));
         }
-        module.addArtifactSources(new DefaultArtifactSources(classifier, sourceDirs, resourceDirs));
+    }
+
+    private static void addResources(DefaultWorkspaceModule module, File srcDir, final File destDir, boolean test) {
+        final DefaultProcessedSources resrc = new DefaultProcessedSources(srcDir, destDir);
+        if (test) {
+            module.addTestResources(resrc);
+        } else {
+            module.addMainResources(resrc);
+        }
     }
 
     private void addSubstitutedProject(PathList.Builder paths, File projectFile) {
@@ -620,6 +635,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     }
 
     private static ArtifactKey toAppDependenciesKey(String groupId, String artifactId, String classifier) {
+        // Default classifier is empty string and not null value, lets keep it that way
+        classifier = classifier == null ? "" : classifier;
         return new GACT(groupId, artifactId, classifier, ArtifactCoords.TYPE_JAR);
     }
 }

@@ -40,11 +40,11 @@ import org.gradle.util.GradleVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.GACT;
-import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusDev extends QuarkusTask {
@@ -342,7 +342,7 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     private void addLocalProject(Project project, GradleDevModeLauncher.Builder builder, Set<GACT> addeDeps, boolean root) {
-        final GACT key = new GACT(project.getGroup().toString(), project.getName(), "", "jar");
+        final GACT key = new GACT(project.getGroup().toString(), project.getName());
         if (addeDeps.contains(key)) {
             return;
         }
@@ -399,14 +399,14 @@ public class QuarkusDev extends QuarkusTask {
         }
 
         DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
-                .setArtifactKey(key)
+                .setArtifactKey(new GACT(key.getGroupId(), key.getArtifactId()))
                 .setName(project.getName())
                 .setProjectDirectory(project.getProjectDir().getAbsolutePath())
-                .setSourcePaths(PathList.from(sourcePaths))
+                .setSourcePaths(PathsCollection.from(sourcePaths))
                 .setClassesPath(classesDir)
-                .setResourcePaths(PathList.from(resourcesSrcDirs))
+                .setResourcePaths(PathsCollection.from(resourcesSrcDirs))
                 .setResourcesOutputPath(resourcesOutputPath)
-                .setSourceParents(PathList.from(sourceParentPaths))
+                .setSourceParents(PathsCollection.from(sourceParentPaths))
                 .setPreBuildOutputDir(project.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString())
                 .setTargetDir(project.getBuildDir().toString());
 
@@ -445,9 +445,9 @@ public class QuarkusDev extends QuarkusTask {
                             // currently resources dir should exist
                             testResourcesOutputPath = testClassesDir;
                         }
-                        moduleBuilder.setTestSourcePaths(PathList.from(testSourcePaths))
+                        moduleBuilder.setTestSourcePaths(PathsCollection.from(testSourcePaths))
                                 .setTestClassesPath(testClassesDir)
-                                .setTestResourcePaths(PathList.from(testResourcesSrcDirs))
+                                .setTestResourcePaths(PathsCollection.from(testResourcesSrcDirs))
                                 .setTestResourcesOutputPath(testResourcesOutputPath);
                     }
                 }

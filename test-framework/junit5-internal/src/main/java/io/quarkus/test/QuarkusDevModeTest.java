@@ -48,6 +48,7 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
@@ -56,7 +57,6 @@ import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.GACT;
-import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -392,12 +392,13 @@ public class QuarkusDevModeTest
 
             DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
                     .setArtifactKey(GACT.fromString("io.quarkus.test:app-under-test"))
+                    .setName("default")
                     .setProjectDirectory(deploymentDir.toAbsolutePath().toString())
-                    .setSourcePaths(PathList.of(deploymentSourcePath.toAbsolutePath()))
+                    .setSourcePaths(PathsCollection.of(deploymentSourcePath.toAbsolutePath()))
                     .setClassesPath(classes.toAbsolutePath().toString())
-                    .setResourcePaths(PathList.of(deploymentResourcePath.toAbsolutePath()))
+                    .setResourcePaths(PathsCollection.of(deploymentResourcePath.toAbsolutePath()))
                     .setResourcesOutputPath(classes.toAbsolutePath().toString())
-                    .setSourceParents(PathList.of(deploymentSourceParentPath.toAbsolutePath()))
+                    .setSourceParents(PathsCollection.of(deploymentSourceParentPath.toAbsolutePath()))
                     .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
                     .setTargetDir(targetDir.toAbsolutePath().toString());
 
@@ -442,9 +443,9 @@ public class QuarkusDevModeTest
                     });
                 }
                 moduleBuilder
-                        .setTestSourcePaths(PathList.of(deploymentTestSourcePath.toAbsolutePath()))
+                        .setTestSourcePaths(PathsCollection.of(deploymentTestSourcePath.toAbsolutePath()))
                         .setTestClassesPath(testClasses.toAbsolutePath().toString())
-                        .setTestResourcePaths(PathList.of(deploymentTestResourcePath.toAbsolutePath()))
+                        .setTestResourcePaths(PathsCollection.of(deploymentTestResourcePath.toAbsolutePath()))
                         .setTestResourcesOutputPath(testClasses.toAbsolutePath().toString());
             }
 
@@ -833,7 +834,7 @@ public class QuarkusDevModeTest
     private Path copySourceFilesForClass(Path projectSourcesDir, Path deploymentSourcesDir, Path classesDir, Path classFile) {
         for (CompilationProvider provider : compilationProviders) {
             Path source = provider.getSourcePath(classFile,
-                    PathList.of(projectSourcesDir.toAbsolutePath()),
+                    PathsCollection.of(projectSourcesDir.toAbsolutePath()),
                     classesDir.toAbsolutePath().toString());
             if (source != null) {
                 String relative = projectSourcesDir.relativize(source).toString();
@@ -855,7 +856,7 @@ public class QuarkusDevModeTest
             Path classFile) {
         for (CompilationProvider provider : compilationProviders) {
             Path source = provider.getSourcePath(classFile,
-                    PathList.of(projectSourcesDir.toAbsolutePath()),
+                    PathsCollection.of(projectSourcesDir.toAbsolutePath()),
                     classesDir.toAbsolutePath().toString());
             if (source != null) {
                 String relative = projectSourcesDir.relativize(source).toString();

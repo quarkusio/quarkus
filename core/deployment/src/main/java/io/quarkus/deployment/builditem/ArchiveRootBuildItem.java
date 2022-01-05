@@ -13,7 +13,6 @@ import java.util.List;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.fs.util.ZipUtils;
-import io.quarkus.paths.PathCollection;
 
 public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
@@ -30,7 +29,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
             return this;
         }
 
-        public Builder addArchiveRoots(PathCollection paths) {
+        public Builder addArchiveRoots(PathsCollection paths) {
             paths.forEach(archiveRoots::add);
             return this;
         }

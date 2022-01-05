@@ -102,7 +102,7 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
         private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
         private String path;
 
-        private Builder(HttpRootPathBuildItem buildItem) {
+        Builder(HttpRootPathBuildItem buildItem) {
             this.buildItem = buildItem;
         }
 
@@ -143,6 +143,7 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
                 this.path = route;
                 this.routeType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
             }
+
             super.routeFunction(this.path, routeFunction);
             return this;
         }

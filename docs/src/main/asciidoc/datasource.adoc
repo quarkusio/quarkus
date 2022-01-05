@@ -76,7 +76,22 @@ mcr.microsoft.com/mssql/server:2017-CU12
 
 [NOTE]
 ====
-All services based on containers are ran using `testcontainers`. Even though extra URL properties can be set in your `application.properties` file, specific `testcontainers` properties such as `TC_INITSCRIPT`, `TC_INITFUNCTION`, `TC_DAEMON`, `TC_TMPFS` are not supported.
+All services based on containers are run using Testcontainers but Quarkus is not using the Testcontainers JDBC driver.
+
+Thus, even though extra JDBC URL properties can be set in your `application.properties` file,
+specific properties supported by the Testcontainers JDBC driver such as `TC_INITSCRIPT`, `TC_INITFUNCTION`, `TC_DAEMON`, `TC_TMPFS` are not supported.
+
+Quarkus can support specific properties sent to the container itself though and,
+typically, this is the case for `TC_MY_CNF` which allows to override the MariaDB/MySQL configuration file.
+
+Overriding the MariaDB/MySQL configuration would be done as follows:
+
+[source,properties]
+----
+quarkus.datasource.devservices.container-properties.TC_MY_CNF=testcontainers/mysql-conf
+----
+
+This support is database specific and needs to be implemented in each dev service specifically.
 ====
 
 === JDBC datasource

@@ -25,6 +25,7 @@ public class MySQLDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(MySQLDevServicesProcessor.class);
 
     public static final String TAG = "8.0.24";
+    public static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "TC_MY_CNF";
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMysql(
@@ -32,7 +33,8 @@ public class MySQLDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MYSQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    Optional<String> datasourceName, Optional<String> imageName,
+                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusMySQLContainer container = new QuarkusMySQLContainer(imageName, fixedExposedPort,
                         !devServicesSharedNetworkBuildItem.isEmpty());
@@ -40,7 +42,13 @@ public class MySQLDevServicesProcessor {
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
                         .withDatabaseName(datasourceName.orElse("default"));
-                additionalProperties.forEach(container::withUrlParam);
+
+                if (containerProperties.containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {
+                    container.withConfigurationOverride(containerProperties.get(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME));
+                }
+
+                additionalJdbcUrlProperties.forEach(container::withUrlParam);
+
                 container.start();
 
                 LOG.info("Dev Services for MySQL started.");

@@ -266,6 +266,7 @@ public class DevServicesDatasourceProcessor {
                     .startDatabase(ConfigProvider.getConfig().getOptionalValue(prefix + "username", String.class),
                             ConfigProvider.getConfig().getOptionalValue(prefix + "password", String.class),
                             Optional.ofNullable(dbName), dataSourceBuildTimeConfig.devservices.imageName,
+                            dataSourceBuildTimeConfig.devservices.containerProperties,
                             dataSourceBuildTimeConfig.devservices.properties,
                             dataSourceBuildTimeConfig.devservices.port, launchMode, globalDevServicesConfig.timeout);
             closeableList.add(datasource.getCloseTask());

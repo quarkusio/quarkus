@@ -30,7 +30,8 @@ public class DerbyDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.DERBY, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    Optional<String> datasourceName, Optional<String> imageName,
+                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 try {
                     int port = fixedExposedPort.isPresent() ? fixedExposedPort.getAsInt()
@@ -57,7 +58,7 @@ public class DerbyDevServicesProcessor {
                     LOG.info("Dev Services for Derby started.");
 
                     StringBuilder additionalArgs = new StringBuilder();
-                    for (Map.Entry<String, String> i : additionalProperties.entrySet()) {
+                    for (Map.Entry<String, String> i : additionalJdbcUrlProperties.entrySet()) {
                         additionalArgs.append(";");
                         additionalArgs.append(i.getKey());
                         additionalArgs.append("=");

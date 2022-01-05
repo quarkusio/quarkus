@@ -18,6 +18,7 @@ import io.quarkus.micrometer.test.CountedResource;
 import io.quarkus.micrometer.test.GuardedResult;
 import io.quarkus.micrometer.test.TimedResource;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 
 public class MicrometerCounterInterceptorTest {
 
@@ -168,6 +169,85 @@ public class MicrometerCounterInterceptorTest {
         CompletableFuture<?> completableFuture = counted.emptyAsyncMetricName(guardedResult);
         guardedResult.complete(new NullPointerException());
         Assertions.assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
+
+        Counter counter = registry.get("method.counted")
+                .tag("method", "emptyMetricName")
+                .tag("class", "io.quarkus.micrometer.test.CountedResource")
+                .tag("exception", "NullPointerException")
+                .tag("result", "failure").counter();
+        Assertions.assertNotNull(counter);
+        Assertions.assertEquals(1, counter.count());
+    }
+
+    @Test
+    void testCountUniFailuresOnly_NoMetricsOnSuccess() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = counted.onlyCountUniFailures(guardedResult);
+        guardedResult.complete();
+        uni.subscribe().asCompletionStage().join();
+
+        Assertions.assertThrows(MeterNotFoundException.class, () -> registry.get("uni.none").counter());
+    }
+
+    @Test
+    void testCountUniAllMetrics_MetricsOnSuccess() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = counted.countAllUniInvocations(guardedResult);
+        guardedResult.complete();
+        uni.subscribe().asCompletionStage().join();
+
+        Counter counter = registry.get("uni.all")
+                .tag("method", "countAllUniInvocations")
+                .tag("class", "io.quarkus.micrometer.test.CountedResource")
+                .tag("extra", "tag")
+                .tag("exception", "none")
+                .tag("result", "success").counter();
+        Assertions.assertNotNull(counter);
+        Assertions.assertEquals(1, counter.count());
+    }
+
+    @Test
+    void testCountUniAllMetrics_MetricsOnFailure() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = counted.countAllUniInvocations(guardedResult);
+        guardedResult.complete(new NullPointerException());
+        Assertions.assertThrows(java.util.concurrent.CompletionException.class,
+                () -> uni.subscribe().asCompletionStage().join());
+
+        Counter counter = registry.get("uni.all")
+                .tag("method", "countAllUniInvocations")
+                .tag("class", "io.quarkus.micrometer.test.CountedResource")
+                .tag("extra", "tag")
+                .tag("exception", "NullPointerException")
+                .tag("result", "failure").counter();
+        Assertions.assertNotNull(counter);
+        Assertions.assertEquals(1, counter.count());
+        Assertions.assertNull(counter.getId().getDescription());
+    }
+
+    @Test
+    void testCountUniEmptyMetricName_Success() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = counted.emptyUniMetricName(guardedResult);
+        guardedResult.complete();
+        uni.subscribe().asCompletionStage().join();
+
+        Counter counter = registry.get("method.counted")
+                .tag("method", "emptyUniMetricName")
+                .tag("class", "io.quarkus.micrometer.test.CountedResource")
+                .tag("exception", "none")
+                .tag("result", "success").counter();
+        Assertions.assertNotNull(counter);
+        Assertions.assertEquals(1, counter.count());
+    }
+
+    @Test
+    void testCountUniEmptyMetricName_Failure() {
+        GuardedResult guardedResult = new GuardedResult();
+        Uni<?> uni = counted.emptyUniMetricName(guardedResult);
+        guardedResult.complete(new NullPointerException());
+        Assertions.assertThrows(java.util.concurrent.CompletionException.class,
+                () -> uni.subscribe().asCompletionStage().join());
 
         Counter counter = registry.get("method.counted")
                 .tag("method", "emptyMetricName")

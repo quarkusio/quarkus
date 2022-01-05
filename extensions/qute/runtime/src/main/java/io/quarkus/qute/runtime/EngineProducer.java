@@ -26,6 +26,7 @@ import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.Qute;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
@@ -167,6 +168,10 @@ public class EngineProducer {
         }
         // Add locator
         builder.addLocator(this::locate);
+
+        // Add a special parserk hook for Qute.fmt() methods
+        builder.addParserHook(new Qute.IndexedArgumentsParserHook());
+
         engine = builder.build();
 
         // Load discovered templates
@@ -174,6 +179,9 @@ public class EngineProducer {
             engine.getTemplate(path);
         }
         engineReady.fire(engine);
+
+        // Set the engine instance
+        Qute.setEngine(engine);
     }
 
     @Produces

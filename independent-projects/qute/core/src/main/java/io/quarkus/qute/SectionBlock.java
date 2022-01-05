@@ -72,37 +72,55 @@ public final class SectionBlock {
 
     void optimizeNodes(Set<TemplateNode> nodesToRemove) {
         List<TemplateNode> effectiveNodes = new ArrayList<>();
+        boolean hasLineSeparator = false;
+        boolean nodeIgnored = false;
         for (TemplateNode node : nodes) {
             if (node instanceof SectionNode) {
                 effectiveNodes.add(node);
                 ((SectionNode) node).optimizeNodes(nodesToRemove);
-            } else if (node != Parser.COMMENT_NODE && !(node instanceof ParameterDeclarationNode)
-                    && (nodesToRemove.isEmpty() || !nodesToRemove.contains(node))) {
+            } else if (node == Parser.COMMENT_NODE || (node instanceof ParameterDeclarationNode)
+                    || nodesToRemove.contains(node)) {
                 // Ignore comments, param declarations and nodes for removal
-                effectiveNodes.add(node);
-            }
-        }
-        // Collapse adjacent text and line separator nodes
-        List<TemplateNode> finalNodes = new ArrayList<>();
-        List<TextNode> group = null;
-        for (TemplateNode node : effectiveNodes) {
-            if (node instanceof TextNode) {
-                if (group == null) {
-                    group = new ArrayList<>();
-                }
-                group.add((TextNode) node);
+                nodeIgnored = true;
             } else {
-                if (group != null) {
-                    collapseGroup(group, finalNodes);
-                    group = null;
+                effectiveNodes.add(node);
+                if (node instanceof LineSeparatorNode) {
+                    hasLineSeparator = true;
                 }
-                finalNodes.add(node);
             }
         }
-        if (group != null) {
-            collapseGroup(group, finalNodes);
+
+        if (!hasLineSeparator && !nodeIgnored) {
+            // No optimizations are possible
+            return;
         }
-        nodes = ImmutableList.copyOf(finalNodes);
+
+        if (hasLineSeparator) {
+            List<TemplateNode> finalNodes;
+            // Collapse adjacent text and line separator nodes
+            finalNodes = new ArrayList<>();
+            List<TextNode> textGroup = null;
+            for (TemplateNode node : effectiveNodes) {
+                if (node instanceof TextNode) {
+                    if (textGroup == null) {
+                        textGroup = new ArrayList<>();
+                    }
+                    textGroup.add((TextNode) node);
+                } else {
+                    if (textGroup != null) {
+                        collapseGroup(textGroup, finalNodes);
+                        textGroup = null;
+                    }
+                    finalNodes.add(node);
+                }
+            }
+            if (textGroup != null) {
+                collapseGroup(textGroup, finalNodes);
+            }
+            nodes = ImmutableList.copyOf(finalNodes);
+        } else if (nodeIgnored) {
+            nodes = ImmutableList.copyOf(effectiveNodes);
+        }
     }
 
     private void collapseGroup(List<TextNode> group, List<TemplateNode> finalNodes) {

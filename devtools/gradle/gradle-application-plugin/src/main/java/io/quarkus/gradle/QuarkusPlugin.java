@@ -167,7 +167,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     ConfigurationContainer configurations = project.getConfigurations();
 
                     // create a custom configuration for devmode
-                    Configuration configuration = configurations.create(DEV_MODE_CONFIGURATION_NAME)
+                    Configuration devModeConfiguration = configurations.create(DEV_MODE_CONFIGURATION_NAME)
                             .extendsFrom(configurations.findByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
 
                     tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile.class,
@@ -197,12 +197,15 @@ public class QuarkusPlugin implements Plugin<Project> {
                         task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
                                 quarkusGenerateCodeDev,
                                 quarkusGenerateCodeTests);
-                        task.setQuarkusDevConfiguration(configuration);
+                        task.setQuarkusDevConfiguration(devModeConfiguration);
                     });
                     quarkusRemoteDev.configure(task -> task.dependsOn(classesTask, resourcesTask));
-                    quarkusTest.configure(task -> task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
-                            quarkusGenerateCode,
-                            quarkusGenerateCodeTests));
+                    quarkusTest.configure(task -> {
+                        task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,
+                                quarkusGenerateCode,
+                                quarkusGenerateCodeTests);
+                        task.setQuarkusDevConfiguration(devModeConfiguration);
+                    });
                     quarkusBuild.configure(
                             task -> task.dependsOn(classesTask, resourcesTask, tasks.named(JavaPlugin.JAR_TASK_NAME)));
 

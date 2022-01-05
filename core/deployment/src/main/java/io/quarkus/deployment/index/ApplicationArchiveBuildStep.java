@@ -1,22 +1,20 @@
 package io.quarkus.deployment.index;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.Index;
@@ -24,6 +22,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.ApplicationArchiveImpl;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -39,13 +39,15 @@ import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.fs.util.ZipUtils;
-import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.PathList;
+import io.quarkus.paths.PathTree;
+import io.quarkus.paths.PathVisit;
+import io.quarkus.paths.PathVisitor;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -90,11 +92,6 @@ public class ApplicationArchiveBuildStep {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             ClassLoadingConfig classLoadingConfig) throws IOException {
 
-        Set<String> markerFiles = new HashSet<>();
-        for (AdditionalApplicationArchiveMarkerBuildItem i : appMarkers) {
-            markerFiles.add(i.getFile());
-        }
-
         IndexCache indexCache = liveReloadContext.getContextObject(IndexCache.class);
         if (indexCache == null) {
             indexCache = new IndexCache();
@@ -107,7 +104,7 @@ public class ApplicationArchiveBuildStep {
         }
 
         List<ApplicationArchive> applicationArchives = scanForOtherIndexes(buildCloseables,
-                markerFiles, root, additionalApplicationArchiveBuildItem, indexDependencyBuildItems, indexCache,
+                appMarkers, root, additionalApplicationArchiveBuildItem, indexDependencyBuildItems, indexCache,
                 curateOutcomeBuildItem, removedResources);
         return new ApplicationArchivesBuildItem(
                 new ApplicationArchiveImpl(appindex.getIndex(), PathList.from(root.getRootDirs()),
@@ -116,7 +113,7 @@ public class ApplicationArchiveBuildStep {
     }
 
     private List<ApplicationArchive> scanForOtherIndexes(QuarkusBuildCloseablesBuildItem buildCloseables,
-            Set<String> applicationArchiveFiles,
+            List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers,
             ArchiveRootBuildItem root, List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives,
             List<IndexDependencyBuildItem> indexDependencyBuildItem, IndexCache indexCache,
             CurateOutcomeBuildItem curateOutcomeBuildItem, Map<ArtifactKey, Set<String>> removedResources)
@@ -126,7 +123,11 @@ public class ApplicationArchiveBuildStep {
         Set<Path> indexedPaths = new HashSet<>();
 
         //get paths that are included via marker files
-        Set<String> markers = new HashSet<>(applicationArchiveFiles);
+        final Set<String> markers = new HashSet<>(appMarkers.size() + 1);
+        for (AdditionalApplicationArchiveMarkerBuildItem i : appMarkers) {
+            final String marker = i.getFile();
+            markers.add(marker.endsWith("/") ? marker.substring(0, marker.length() - 1) : marker);
+        }
         markers.add(IndexingUtil.JANDEX_INDEX);
         addMarkerFilePaths(markers, root, curateOutcomeBuildItem, indexedPaths, appArchives, buildCloseables,
                 indexCache, removedResources);
@@ -172,7 +173,7 @@ public class ApplicationArchiveBuildStep {
                     throw new RuntimeException(
                             "Could not resolve artifact " + key + " among the runtime dependencies of the application");
                 }
-                for (Path path : artifact.getResolvedPaths()) {
+                for (Path path : artifact.getContentTree().getRoots()) {
                     if (!root.isExcludedFromIndexing(path) && !root.getPaths().contains(path) && indexedDeps.add(path)) {
                         appArchives.add(createApplicationArchive(buildCloseables, indexCache, path, key,
                                 removedResources));
@@ -187,20 +188,18 @@ public class ApplicationArchiveBuildStep {
     private static ApplicationArchive createApplicationArchive(QuarkusBuildCloseablesBuildItem buildCloseables,
             IndexCache indexCache, Path dep, ArtifactKey artifactKey, Map<ArtifactKey, Set<String>> removedResources)
             throws IOException {
+        LOGGER.debugf("Indexing dependency: %s", dep);
+        final Set<String> removed = removedResources.get(artifactKey);
         Path rootDir = dep;
-        boolean isDirectory = Files.isDirectory(dep);
-        if (!isDirectory) {
+        final IndexView index;
+        if (Files.isDirectory(dep)) {
+            index = indexPathTree(new DirectoryPathTree(dep), removed);
+        } else {
             final FileSystem fs = buildCloseables.add(ZipUtils.newFileSystem(dep));
             rootDir = fs.getRootDirectories().iterator().next();
+            index = handleJarPath(dep, indexCache, removed);
         }
-        final IndexView index = indexPath(indexCache, dep, removedResources.get(artifactKey), isDirectory);
         return new ApplicationArchiveImpl(index, rootDir, dep, artifactKey);
-    }
-
-    private static IndexView indexPath(IndexCache indexCache, Path dep, Set<String> removed, boolean isWorkspaceModule)
-            throws IOException {
-        LOGGER.debugf("Indexing dependency: %s", dep);
-        return isWorkspaceModule ? handleFilePath(dep, removed) : handleJarPath(dep, indexCache, removed);
     }
 
     private static void addMarkerFilePaths(Set<String> applicationArchiveMarkers,
@@ -208,86 +207,100 @@ public class ApplicationArchiveBuildStep {
             List<ApplicationArchive> appArchives, QuarkusBuildCloseablesBuildItem buildCloseables,
             IndexCache indexCache, Map<ArtifactKey, Set<String>> removed)
             throws IOException {
-
-        Set<URI> markedUris = new HashSet<>();
+        final QuarkusClassLoader cl = ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader());
+        final Set<ArtifactKey> indexedElements = new HashSet<>();
         for (String marker : applicationArchiveMarkers) {
-            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(marker);
-
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                String s = resource.toString();
-                if ("jar".equals(resource.getProtocol())) {
-                    // Path is in the format  jar:file:/path/to/jarfile.jar!/META-INF/jandex.idx. Only the path to jar
-                    // is needed, for comparisons and opening fs. Remove the protocol an path inside jar here.
-                    // Results in file:/path/to/jarfile.jar
-                    s = s.substring(4, s.lastIndexOf("!"));
-                } else if ("file".equals(resource.getProtocol())) {
-                    s = s.substring(0, s.length() - marker.length());
-                }
-                markedUris.add(URI.create(s));
-            }
-        }
-
-        List<ResolvedDependency> applicationArchives = new ArrayList<>();
-        for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
-            if (!ArtifactCoords.TYPE_JAR.equals(dep.getType())) {
+            final List<ClassPathElement> elements = cl.getElementsWithResource(marker, false);
+            if (elements.isEmpty()) {
                 continue;
             }
-
-            final PathCollection artifactPaths = dep.getResolvedPaths();
-            for (Path p : artifactPaths) {
-                if (root.isExcludedFromIndexing(p)) {
+            for (ClassPathElement cpe : elements) {
+                if (!cpe.isRuntime()) {
                     continue;
                 }
-
-                if (markedUris.contains(p.toUri())) {
-                    applicationArchives.add(dep);
-                    break;
+                final ArtifactKey dependencyKey = cpe.getDependencyKey();
+                if (dependencyKey == null || !indexedElements.add(dependencyKey)) {
+                    continue;
                 }
-            }
-        }
+                cpe.withOpenTree(tree -> {
+                    indexedPaths.addAll(tree.getOriginalTree().getRoots());
 
-        for (ResolvedDependency dep : applicationArchives) {
-            final PathList.Builder rootDirs = PathList.builder();
-            final PathCollection artifactPaths = dep.getResolvedPaths();
-            final List<IndexView> indexes = new ArrayList<>(artifactPaths.size());
-            for (Path p : artifactPaths) {
-                boolean isDirectory = Files.isDirectory(p);
-                if (isDirectory) {
-                    rootDirs.add(p);
-                } else {
-                    FileSystem fs = ZipUtils.newFileSystem(p);
-                    buildCloseables.add(fs);
-                    fs.getRootDirectories().forEach(rootDirs::add);
-                }
-                indexes.add(indexPath(indexCache, p, removed.get(dep.getKey()), isDirectory));
-                indexedPaths.add(p);
+                    final Path rootPath = tree.getOriginalTree().getRoots().size() == 1
+                            ? tree.getOriginalTree().getRoots().iterator().next()
+                            : null;
+                    if (rootPath != null && !Files.isDirectory(rootPath)) {
+                        if (root.isExcludedFromIndexing(rootPath)) {
+                            return null;
+                        }
+                        Index index = indexCache.cache.get(rootPath);
+                        if (index == null) {
+                            try {
+                                index = IndexingUtil.indexTree(tree,
+                                        dependencyKey == null ? Collections.emptySet() : removed.get(dependencyKey));
+                            } catch (IOException ioe) {
+                                throw new UncheckedIOException(ioe);
+                            }
+                            indexCache.cache.put(rootPath, index);
+                        }
+                        appArchives.add(new ApplicationArchiveImpl(index, PathList.of(tree.getRoots().iterator().next()),
+                                PathList.of(rootPath),
+                                dependencyKey));
+                        return null;
+                    }
+
+                    final ApplicationArchive archive = tree.processPath(marker, visit -> {
+                        if (visit == null || root.isExcludedFromIndexing(visit.getRoot())) {
+                            return null;
+                        }
+
+                        final PathList.Builder rootDirs = PathList.builder();
+                        final Collection<Path> artifactPaths = tree.getRoots();
+                        final List<IndexView> indexes = new ArrayList<>(artifactPaths.size());
+                        for (Path p : artifactPaths) {
+                            if (Files.isDirectory(p)) {
+                                rootDirs.add(p);
+                            } else {
+                                rootDirs.add(visit.getPath().getRoot());
+                            }
+                        }
+                        try {
+                            indexes.add(indexPathTree(tree, removed.get(dependencyKey)));
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                        return new ApplicationArchiveImpl(
+                                indexes.size() == 1 ? indexes.get(0) : CompositeIndex.create(indexes),
+                                rootDirs.build(), PathList.from(artifactPaths), dependencyKey);
+                    });
+                    if (archive != null) {
+                        appArchives.add(archive);
+                    }
+                    return null;
+                });
             }
-            appArchives
-                    .add(new ApplicationArchiveImpl(indexes.size() == 1 ? indexes.get(0) : CompositeIndex.create(indexes),
-                            rootDirs.build(), artifactPaths, dep.getKey()));
         }
     }
 
-    private static Index handleFilePath(Path path, Set<String> removed) throws IOException {
+    private static Index indexPathTree(PathTree tree, Set<String> removed) throws IOException {
         Indexer indexer = new Indexer();
-        try (Stream<Path> stream = Files.walk(path)) {
-            stream.forEach(path1 -> {
-                if (removed != null) {
-                    String relative = path.relativize(path1).toString().replace("\\", "/");
-                    if (removed.contains(relative)) {
-                        return;
-                    }
+        tree.walk(new PathVisitor() {
+            @Override
+            public void visitPath(PathVisit visit) {
+                final Path path = visit.getPath();
+                final Path fileName = path.getFileName();
+                if (fileName == null
+                        || !fileName.toString().endsWith(".class")
+                        || Files.isDirectory(path)
+                        || removed != null && removed.contains(visit.getRelativePath("/"))) {
+                    return;
                 }
-                if (path1.toString().endsWith(".class")) {
-                    try (FileInputStream in = new FileInputStream(path1.toFile())) {
-                        indexer.index(in);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                try (InputStream in = Files.newInputStream(path)) {
+                    indexer.index(in);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-            });
-        }
+            }
+        });
         return indexer.complete();
     }
 
@@ -309,8 +322,6 @@ public class ApplicationArchiveBuildStep {
      * to re-index them each time. We cache them here to reduce the hot reload time.
      */
     private static final class IndexCache {
-
         final Map<Path, Index> cache = new HashMap<>();
-
     }
 }

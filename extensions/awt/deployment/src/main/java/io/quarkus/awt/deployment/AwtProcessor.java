@@ -5,7 +5,6 @@ import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -21,6 +20,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.fs.util.ZipUtils;
 
 class AwtProcessor {
 
@@ -120,7 +120,7 @@ class AwtProcessor {
 
         final Path pathToModule = Path.of(nativeConfig.graalvmHome.orElse(nativeConfig.javaHome.getAbsolutePath()),
                 "jmods", "java.desktop.jmod");
-        try (final FileSystem fileSystem = FileSystems.newFileSystem(pathToModule, null);
+        try (final FileSystem fileSystem = ZipUtils.newFileSystem(pathToModule);
                 final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             out.writeBytes(Files.readAllBytes(
                     fileSystem.getPath("classes/com/sun/imageio/plugins/common/" + IIO_PLUGIN_I18N)));

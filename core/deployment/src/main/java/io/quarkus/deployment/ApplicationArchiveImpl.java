@@ -65,6 +65,11 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
     }
 
     @Override
+    @Deprecated
+    /**
+     * @deprecated in favor of {@link #getKey()}
+     * @return archive key
+     */
     public AppArtifactKey getArtifactKey() {
         return artifactKey == null ? null
                 : new AppArtifactKey(artifactKey.getGroupId(), artifactKey.getArtifactId(), artifactKey.getClassifier(),

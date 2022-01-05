@@ -3,6 +3,7 @@ package io.quarkus.maven.dependency;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
+import io.quarkus.paths.PathTree;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -11,6 +12,7 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
 
     private PathCollection paths;
     private WorkspaceModule module;
+    private volatile transient PathTree contentTree;
 
     public ResolvedArtifactDependency(ArtifactCoords coords) {
         this(coords, (PathCollection) null);
@@ -54,6 +56,11 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
     @Override
     public WorkspaceModule getWorkspaceModule() {
         return module;
+    }
+
+    @Override
+    public PathTree getContentTree() {
+        return contentTree == null ? contentTree = ResolvableDependency.super.getContentTree() : contentTree;
     }
 
     @Override

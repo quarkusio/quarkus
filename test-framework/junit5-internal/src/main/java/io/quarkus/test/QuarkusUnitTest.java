@@ -557,7 +557,7 @@ public class QuarkusUnitTest
                                     QuarkusClassLoader
                                             .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
                                             .addClassLoaderEventListeners(this.classLoadListeners)
-                                            .addBannedElement(ClassPathElement.fromPath(testLocation)).build());
+                                            .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build());
                 }
                 builder.addClassLoaderEventListeners(this.classLoadListeners);
                 curatedApplication = builder.build().bootstrap();

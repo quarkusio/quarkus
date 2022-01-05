@@ -1,14 +1,18 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Resource;
 import org.apache.maven.project.MavenProject;
 
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.workspace.DefaultProcessedSources;
+import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
+import io.quarkus.bootstrap.workspace.DefaultSourceDir;
 import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.maven.dependency.GAV;
@@ -25,21 +29,24 @@ class QuarkusMavenWorkspaceBuilder {
                 new File(build.getDirectory()));
 
         final File classesDir = new File(build.getOutputDirectory());
-        project.getCompileSourceRoots()
-                .forEach(s -> module.addMainSources(new DefaultProcessedSources(new File(s), classesDir)));
-        final File testClassesDir = new File(build.getTestOutputDirectory());
-        project.getTestCompileSourceRoots()
-                .forEach(s -> module.addTestSources(new DefaultProcessedSources(new File(s), testClassesDir)));
-
+        final List<SourceDir> sources = new ArrayList<>(project.getCompileSourceRoots().size());
+        project.getCompileSourceRoots().forEach(s -> sources.add(new DefaultSourceDir(new File(s), classesDir)));
+        final List<SourceDir> resources = new ArrayList<>(build.getResources().size());
         for (Resource r : build.getResources()) {
-            module.addMainResources(new DefaultProcessedSources(new File(r.getDirectory()),
+            resources.add(new DefaultSourceDir(new File(r.getDirectory()),
                     r.getTargetPath() == null ? classesDir : new File(r.getTargetPath())));
         }
+        module.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.MAIN, sources, resources));
 
+        final File testClassesDir = new File(build.getTestOutputDirectory());
+        final List<SourceDir> testSources = new ArrayList<>(project.getCompileSourceRoots().size());
+        project.getTestCompileSourceRoots().forEach(s -> testSources.add(new DefaultSourceDir(new File(s), testClassesDir)));
+        final List<SourceDir> testResources = new ArrayList<>(build.getTestResources().size());
         for (Resource r : build.getTestResources()) {
-            module.addTestResources(new DefaultProcessedSources(new File(r.getDirectory()),
+            testResources.add(new DefaultSourceDir(new File(r.getDirectory()),
                     r.getTargetPath() == null ? testClassesDir : new File(r.getTargetPath())));
         }
+        module.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.TEST, testSources, testResources));
 
         module.setBuildFiles(PathList.of(project.getFile().toPath()));
 

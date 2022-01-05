@@ -7,10 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 public class PathList implements PathCollection, Serializable {
 
@@ -133,6 +133,23 @@ public class PathList implements PathCollection, Serializable {
         return buf.append(']').toString();
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(paths);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        PathList other = (PathList) obj;
+        return Objects.equals(paths, other.paths);
+    }
+
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeInt(paths.size());
         for (Path p : paths) {
@@ -147,9 +164,5 @@ public class PathList implements PathCollection, Serializable {
             paths.add(Paths.get(in.readUTF()));
         }
         this.paths = Collections.unmodifiableList(paths);
-    }
-
-    public Collection<Path> toList() {
-        return new ArrayList<>(paths);
     }
 }

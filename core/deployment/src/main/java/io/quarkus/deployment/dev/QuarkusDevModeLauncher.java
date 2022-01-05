@@ -30,8 +30,8 @@ import java.util.zip.ZipOutputStream;
 import org.apache.maven.shared.utils.cli.CommandLineUtils;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.utilities.JavaBinFinder;
 
@@ -225,12 +225,12 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
-        public B localArtifact(AppArtifactKey localArtifact) {
+        public B localArtifact(ArtifactKey localArtifact) {
             localArtifacts.add(localArtifact);
             return (B) this;
         }
 
-        public boolean isLocal(AppArtifactKey artifact) {
+        public boolean isLocal(ArtifactKey artifact) {
             return localArtifacts.contains(artifact);
         }
 
@@ -297,7 +297,7 @@ public abstract class QuarkusDevModeLauncher {
     private String baseName;
     private Consumer<DevModeContext> entryPointCustomizer;
     private String applicationArgs;
-    private Set<AppArtifactKey> localArtifacts = new HashSet<>();
+    private Set<ArtifactKey> localArtifacts = new HashSet<>();
     private ModuleInfo main;
     private List<ModuleInfo> dependencies = new ArrayList<>(0);
     private List<File> classpath = new ArrayList<>(0);

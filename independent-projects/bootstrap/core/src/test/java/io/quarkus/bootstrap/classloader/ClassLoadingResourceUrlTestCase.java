@@ -36,7 +36,7 @@ public class ClassLoadingResourceUrlTestCase {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new DirectoryClassPathElement(path.resolve("tmp")))
+                    .addElement(new DirectoryClassPathElement(path.resolve("tmp"), true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);
@@ -72,7 +72,7 @@ public class ClassLoadingResourceUrlTestCase {
         try {
             jar.as(ExplodedExporter.class).exportExploded(tmpDir.toFile(), "tmpcltest");
             final ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new DirectoryClassPathElement(tmpDir.resolve("tmpcltest")))
+                    .addElement(new DirectoryClassPathElement(tmpDir.resolve("tmpcltest"), true))
                     .build();
 
             try (final InputStream is = cl.getResourceAsStream("b/")) {
@@ -99,7 +99,7 @@ public class ClassLoadingResourceUrlTestCase {
             jar.as(ZipExporter.class).exportTo(path.toFile(), true);
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new JarClassPathElement(path))
+                    .addElement(new JarClassPathElement(path, true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);
@@ -126,7 +126,8 @@ public class ClassLoadingResourceUrlTestCase {
 
         ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
                 .addElement(
-                        new MemoryClassPathElement(Collections.singletonMap("a.txt", "hello".getBytes(StandardCharsets.UTF_8))))
+                        new MemoryClassPathElement(Collections.singletonMap("a.txt", "hello".getBytes(StandardCharsets.UTF_8)),
+                                true))
                 .build();
         URL res = cl.getResource("a.txt");
         Assertions.assertNotNull(res);

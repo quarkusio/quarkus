@@ -26,12 +26,12 @@ public interface Dependency extends ArtifactCoords {
         return isFlagSet(DependencyFlags.DEPLOYMENT_CP);
     }
 
-    default boolean isWorkspacetModule() {
+    default boolean isWorkspaceModule() {
         return isFlagSet(DependencyFlags.WORKSPACE_MODULE);
     }
 
     default boolean isReloadable() {
-        return isFlagSet(DependencyFlags.RELOADABLE) && isWorkspacetModule();
+        return isFlagSet(DependencyFlags.RELOADABLE) && isWorkspaceModule();
     }
 
     default boolean isFlagSet(int flag) {

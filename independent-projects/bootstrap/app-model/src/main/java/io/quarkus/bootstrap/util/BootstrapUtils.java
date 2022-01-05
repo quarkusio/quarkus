@@ -83,7 +83,7 @@ public class BootstrapUtils {
                 new AppArtifactKey(k.getGroupId(), k.getArtifactId(), k.getClassifier(), k.getType())));
 
         appModel.getReloadableWorkspaceDependencies().forEach(k -> builder.addLocalProjectArtifact(
-                new AppArtifactKey(k.getGroupId(), k.getArtifactId())));
+                new AppArtifactKey(k.getGroupId(), k.getArtifactId(), k.getClassifier(), k.getType())));
 
         return builder.build();
     }

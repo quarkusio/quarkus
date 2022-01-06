@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -159,17 +160,24 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public Uni<Void> replaceUniValue(Object key, Object emittedValue) {
-        return Uni.createFrom().item(() -> {
-            // If the cache no longer contains the key because it was removed, we don't want to put it back.
-            cache.asMap().computeIfPresent(key, (k, currentValue) -> {
-                LOGGER.debugf("Replacing Uni value entry with key [%s] into cache [%s]", key, cacheInfo.name);
-                /*
-                 * The following computed value will always replace the current cache value (whether it is an
-                 * UnresolvedUniValue or not) if this method is called multiple times with the same key.
-                 */
-                return CompletableFuture.completedFuture(NullValueConverter.toCacheValue(emittedValue));
-            });
-            return null;
+        return Uni.createFrom().item(new Supplier<Void>() {
+            @Override
+            public Void get() {
+                // If the cache no longer contains the key because it was removed, we don't want to put it back.
+                cache.asMap().computeIfPresent(key,
+                        new BiFunction<Object, CompletableFuture<Object>, CompletableFuture<Object>>() {
+                            @Override
+                            public CompletableFuture<Object> apply(Object k, CompletableFuture<Object> currentValue) {
+                                LOGGER.debugf("Replacing Uni value entry with key [%s] into cache [%s]", key, cacheInfo.name);
+                                /*
+                                 * The following computed value will always replace the current cache value (whether it is an
+                                 * UnresolvedUniValue or not) if this method is called multiple times with the same key.
+                                 */
+                                return CompletableFuture.completedFuture(NullValueConverter.toCacheValue(emittedValue));
+                            }
+                        });
+                return null;
+            }
         });
     }
 

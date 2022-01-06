@@ -2,6 +2,7 @@ package io.quarkus.cache.runtime;
 
 import java.time.Duration;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
@@ -42,41 +43,52 @@ public class CacheResultInterceptor extends CacheInterceptor {
         }
 
         try {
-            final boolean isUni = Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType());
-            if (isUni) {
-                Uni<Object> ret = cache.get(key, new Function<Object, Object>() {
+            if (isUniReturnType(invocationContext)) {
+                Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
                     @Override
                     public Object apply(Object k) {
                         LOGGER.debugf("Adding %s entry with key [%s] into cache [%s]",
                                 UnresolvedUniValue.class.getSimpleName(), key, binding.cacheName());
                         return UnresolvedUniValue.INSTANCE;
                     }
-                }).onItem().transformToUni(o -> {
-                    if (o == UnresolvedUniValue.INSTANCE) {
-                        try {
-                            return ((Uni<Object>) invocationContext.proceed())
-                                    .onItem().call(emittedValue -> cache.replaceUniValue(key, emittedValue));
-                        } catch (CacheException e) {
-                            throw e;
-                        } catch (Exception e) {
-                            throw new CacheException(e);
+                }).onItem().transformToUni(new Function<Object, Uni<?>>() {
+                    @Override
+                    public Uni<?> apply(Object value) {
+                        if (value == UnresolvedUniValue.INSTANCE) {
+                            try {
+                                return ((Uni<Object>) invocationContext.proceed())
+                                        .call(new Function<Object, Uni<?>>() {
+                                            @Override
+                                            public Uni<?> apply(Object emittedValue) {
+                                                return cache.replaceUniValue(key, emittedValue);
+                                            }
+                                        });
+                            } catch (CacheException e) {
+                                throw e;
+                            } catch (Exception e) {
+                                throw new CacheException(e);
+                            }
+                        } else {
+                            return Uni.createFrom().item(value);
                         }
-                    } else {
-                        return Uni.createFrom().item(o);
                     }
                 });
                 if (binding.lockTimeout() <= 0) {
-                    return ret;
+                    return cacheValue;
                 }
-                return ret.ifNoItem().after(Duration.ofMillis(binding.lockTimeout())).recoverWithUni(() -> {
-                    try {
-                        return (Uni<?>) invocationContext.proceed();
-                    } catch (CacheException e) {
-                        throw e;
-                    } catch (Exception e) {
-                        throw new CacheException(e);
-                    }
-                });
+                return cacheValue.ifNoItem().after(Duration.ofMillis(binding.lockTimeout()))
+                        .recoverWithUni(new Supplier<Uni<?>>() {
+                            @Override
+                            public Uni<?> get() {
+                                try {
+                                    return (Uni<?>) invocationContext.proceed();
+                                } catch (CacheException e) {
+                                    throw e;
+                                } catch (Exception e) {
+                                    throw new CacheException(e);
+                                }
+                            }
+                        });
 
             } else {
                 Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {

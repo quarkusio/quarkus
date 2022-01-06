@@ -51,7 +51,7 @@ public class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
     private Set<File> filesIncludedInClasspath = new HashSet<>();
-    private Configuration quarkusDevConfiguration;
+    protected Configuration quarkusDevConfiguration;
 
     private File buildDir;
 

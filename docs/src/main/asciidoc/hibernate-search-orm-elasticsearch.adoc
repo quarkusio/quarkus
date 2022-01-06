@@ -9,8 +9,8 @@ include::./attributes.adoc[]
 
 You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You're at the right place.
 
-With this guide, you'll learn how to synchronize your entities to an Elasticsearch cluster in a heart beat with Hibernate Search.
-We will also explore how you can can query your Elasticsearch cluster using the Hibernate Search API.
+With this guide, you'll learn how to synchronize your entities to an Elasticsearch cluster in a heartbeat with Hibernate Search.
+We will also explore how you can query your Elasticsearch cluster using the Hibernate Search API.
 
 == Prerequisites
 

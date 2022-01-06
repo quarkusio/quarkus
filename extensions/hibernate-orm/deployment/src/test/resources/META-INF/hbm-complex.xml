@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <class name="io.quarkus.hibernate.orm.xml.hbm.NonAnnotatedComplexEntity">
+        <id name="id">
+            <generator class="identity"/>
+        </id>
+        <property name="name" column="thename"/>
+        <component name="value" class="io.quarkus.hibernate.orm.xml.hbm.NonAnnotatedComponentEntity" lazy="false">
+            <property name="value">
+                <column name="value"/>
+            </property>
+        </component>
+    </class>
+</hibernate-mapping>

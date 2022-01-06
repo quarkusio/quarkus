@@ -12,7 +12,8 @@ class PanacheRepositoryResourceGetMethodTest extends AbstractGetMethodTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, CollectionsResource.class, CollectionsRepository.class,
                             AbstractEntity.class, AbstractItem.class, Item.class, ItemsResource.class,
-                            ItemsRepository.class)
+                            ItemsRepository.class, EmptyListItem.class, EmptyListItemsRepository.class,
+                            EmptyListItemsResource.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 }

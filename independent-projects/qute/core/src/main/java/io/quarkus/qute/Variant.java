@@ -1,15 +1,17 @@
 package io.quarkus.qute;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Media type, locale and encoding.
+ * Content type, locale and encoding.
  */
 public final class Variant {
 
     public static Variant forContentType(String contentType) {
-        return new Variant(null, contentType, null);
+        return new Variant(Locale.getDefault(), StandardCharsets.UTF_8, contentType);
     }
 
     public final static String TEXT_HTML = "text/html";
@@ -19,12 +21,18 @@ public final class Variant {
 
     private final Locale locale;
     private final String contentType;
-    private final String encoding;
+    private final Charset encoding;
+    private final int hashCode;
 
-    public Variant(Locale locale, String contentType, String encoding) {
+    public Variant(Locale locale, Charset encoding, String contentType) {
         this.locale = locale;
         this.contentType = contentType;
         this.encoding = encoding;
+        this.hashCode = Objects.hash(encoding, locale, contentType);
+    }
+
+    public Variant(Locale locale, String contentType, String encoding) {
+        this(locale, encoding != null ? Charset.forName(encoding) : null, contentType);
     }
 
     public Locale getLocale() {
@@ -40,12 +48,16 @@ public final class Variant {
     }
 
     public String getEncoding() {
+        return encoding != null ? encoding.name() : null;
+    }
+
+    public Charset getCharset() {
         return encoding;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(encoding, locale, contentType);
+        return hashCode;
     }
 
     @Override

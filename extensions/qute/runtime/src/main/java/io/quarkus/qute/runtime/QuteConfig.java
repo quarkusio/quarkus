@@ -1,5 +1,6 @@
 package io.quarkus.qute.runtime;
 
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,5 +81,11 @@ public class QuteConfig {
      */
     @ConfigItem(defaultValue = "text/html,text/xml,application/xml,application/xhtml+xml")
     public List<String> escapeContentTypes;
+
+    /**
+     * The default charset of the templates files.
+     */
+    @ConfigItem(defaultValue = "UTF-8")
+    public Charset defaultCharset;
 
 }

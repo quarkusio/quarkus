@@ -328,4 +328,13 @@ public abstract class AbstractGetMethodTest {
             assertThat(link.getRel()).isEqualTo("previous");
         });
     }
+
+    @Test
+    void shouldListEmptyTables() {
+        given().accept("application/hal+json")
+                .and().queryParam("page", 1)
+                .and().queryParam("size", 1)
+                .when().get("/empty-list-items")
+                .then().statusCode(200);
+    }
 }

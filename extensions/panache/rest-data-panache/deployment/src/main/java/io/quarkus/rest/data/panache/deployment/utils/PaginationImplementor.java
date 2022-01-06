@@ -119,7 +119,12 @@ public final class PaginationImplementor {
      */
     private ResultHandle getLastPage(BytecodeCreator creator, ResultHandle page, ResultHandle pageCount) {
         ResultHandle pageNumber = creator.invokeStaticMethod(
-                ofMethod(Integer.class, "sum", int.class, int.class, int.class), pageCount, creator.load(-1));
+                ofMethod(Math.class, "max", int.class, int.class, int.class),
+                creator.invokeStaticMethod(
+                        ofMethod(Integer.class, "sum", int.class, int.class, int.class),
+                        pageCount,
+                        creator.load(-1)),
+                creator.load(0));
         return creator.invokeVirtualMethod(
                 ofMethod(Page.class, "index", Page.class, int.class), page, pageNumber);
     }

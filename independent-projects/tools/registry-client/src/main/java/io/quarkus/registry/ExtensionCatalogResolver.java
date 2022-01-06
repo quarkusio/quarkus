@@ -508,8 +508,10 @@ public class ExtensionCatalogResolver {
                     continue;
                 }
                 stream = platform.getStream(streamId);
+                if (stream != null) {
+                    break;
+                }
             }
-            break;
         }
 
         if (stream == null) {

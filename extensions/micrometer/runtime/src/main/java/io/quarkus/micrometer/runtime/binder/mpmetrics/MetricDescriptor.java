@@ -10,7 +10,7 @@ import org.eclipse.microprofile.metrics.annotation.Metric;
 
 import io.micrometer.core.instrument.Tags;
 
-class MetricDescriptor {
+public class MetricDescriptor {
     final String name;
     final Tags tags;
     ExtendedMetricID metricId = null;

@@ -68,6 +68,10 @@ The following table lists the attributes you can pass to the `create` command:
 | _[]_
 | The list of extensions to add to the project (comma-separated)
 
+| `quarkusRegistryClient`
+| `true`
+| Whether or not Quarkus should use the online registry to resolve extension catalogs. If this is set to false, the extension catalog will be narrowed to the defined (or default) platform BOM.
+
 |===
 
 By default, the command will target the `io.quarkus.platform:quarkus-bom:{quarkus-version}` platform release (unless the coordinates of the desired platform release have been specified).

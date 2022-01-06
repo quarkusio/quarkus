@@ -21,6 +21,7 @@ If any organization would like get added or removed please make a pull request b
 |Ennovative Solutions   | https://quarkus.io/blog/ennovativesolutions-uses-quarkus-with-aws-lambda/        |
 |GoWithFlow             | https://quarkus.io/blog/gowithflow-chooses-quarkus-to-deliver-fast-to-production/|
 |Lufthansa Technik      | https://quarkus.io/blog/aviatar-experiences-significant-savings/                 |
+|Logicdrop              | https://quarkus.io/blog/logicdrop-customer-story/                                |
 |Payair                 | https://quarkus.io/blog/why-did-payair-technologies-switch-to-quarkus/           |
 |Sedona                 | https://quarkus.io/blog/sedona-rewrites-insurance-premium/                       |
 |Suomen Asiakastieto Oy | https://quarkus.io/blog/asiakastieto-chooses-quarkus-for-microservices/          |

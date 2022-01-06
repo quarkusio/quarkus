@@ -11,7 +11,8 @@ class PanacheEntityResourceGetMethodTest extends AbstractGetMethodTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
-                            Item.class, ItemsResource.class)
+                            Item.class, ItemsResource.class,
+                            EmptyListItem.class, EmptyListItemsResource.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 }

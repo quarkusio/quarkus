@@ -301,7 +301,7 @@ public final class JpaJandexScavenger {
                 // The call to 'enlistExplicitClass' above may not
                 // detect that this class is an entity if it is not annotated
                 collector.entityTypes.add(name);
-                collectHbmXmlEmbeddedTypes(collector, packagePrefix, attributes);
+                collectHbmXmlEmbeddedTypes(collector, packagePrefix, compositeAttribute.getAttributes());
             }
         }
     }

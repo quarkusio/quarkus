@@ -201,7 +201,9 @@ public class QuartzScheduler implements Scheduler {
                             LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
                                     scheduled);
                         } else {
-                            scheduler.rescheduleJob(trigger.getKey(), trigger);
+                            org.quartz.Trigger oldTrigger = scheduler.getTrigger(trigger.getKey());
+                            scheduler.rescheduleJob(trigger.getKey(),
+                                    triggerBuilder.startAt(oldTrigger.getNextFireTime()).build());
                             LOGGER.debugf("Rescheduled business method %s with config %s", method.getMethodDescription(),
                                     scheduled);
                         }

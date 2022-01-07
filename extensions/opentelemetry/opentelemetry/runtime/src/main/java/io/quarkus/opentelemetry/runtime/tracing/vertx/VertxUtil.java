@@ -1,9 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.vertx;
 
-import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import io.vertx.core.http.HttpServerRequest;
 
@@ -17,27 +14,39 @@ public final class VertxUtil {
     private VertxUtil() {
     }
 
-    private static Optional<String> getForwardedHeaderValue(HttpServerRequest httpServerRequest) {
-        return Optional.ofNullable(httpServerRequest.getHeader(FORWARDED))
-                .map(FORWARDED_FOR_PATTERN::matcher)
-                .filter(Matcher::find)
-                .map(matcher -> matcher.group(1).trim());
+    private static String getForwardedHeaderValue(HttpServerRequest httpServerRequest) {
+        var forwardedHeader = httpServerRequest.getHeader(FORWARDED);
+        if (forwardedHeader == null) {
+            return null;
+        }
+        var forwardedHeaderMatcher = FORWARDED_FOR_PATTERN.matcher(forwardedHeader);
+        if (forwardedHeaderMatcher.find()) {
+            return forwardedHeaderMatcher.group(1).trim();
+        }
+        return null;
     }
 
-    private static Optional<String> getXForwardedHeaderValue(HttpServerRequest httpServerRequest) {
-        return Optional.ofNullable(httpServerRequest.getHeader(X_FORWARDED_FOR))
-                .flatMap(o -> Stream.of(o.split(COMMA_SPLITTER, SPLIT_LIMIT))
-                        .findFirst());
+    private static String getXForwardedHeaderValue(HttpServerRequest httpServerRequest) {
+        var xForwardedForHeader = httpServerRequest.getHeader(X_FORWARDED_FOR);
+        if (xForwardedForHeader == null) {
+            return null;
+        }
+        return xForwardedForHeader.split(COMMA_SPLITTER, SPLIT_LIMIT)[0];
     }
 
     public static String extractClientIP(HttpServerRequest httpServerRequest) {
         // Tries to fetch Forwarded first since X-Forwarded can be lost by a proxy
         // If Forwarded is not there tries to fetch the X-Forwarded-For header
         // If none is found resorts to the remote address from the http request
-        return getForwardedHeaderValue(httpServerRequest)
-                .orElseGet(() -> getXForwardedHeaderValue(httpServerRequest)
-                        .orElseGet(() -> httpServerRequest.remoteAddress() != null ? httpServerRequest.remoteAddress().host()
-                                : null));
 
+        var forwardedHeaderValue = getForwardedHeaderValue(httpServerRequest);
+        if (forwardedHeaderValue != null) {
+            return forwardedHeaderValue;
+        }
+        var xForwardedHeaderValue = getXForwardedHeaderValue(httpServerRequest);
+        if (xForwardedHeaderValue != null) {
+            return xForwardedHeaderValue;
+        }
+        return httpServerRequest.remoteAddress() != null ? httpServerRequest.remoteAddress().host() : null;
     }
 }

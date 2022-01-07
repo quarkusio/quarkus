@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 
+@org.junit.jupiter.api.Tag("failsOnJDK18")
 public class MultiModuleKotlinProjectDevModeTest extends QuarkusDevGradleTestBase {
 
     @Override

@@ -24,10 +24,3 @@ dependencies {
 compileJava {
     options.compilerArgs << '-parameters'
 }
-
-// This is a fix as kotlin 1.6.0 does not support Java 18 yet
-if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_18)) {
-    tasks.quarkusDev {
-        compilerArgs = ["-jvm-target", "17"]
-    }
-}

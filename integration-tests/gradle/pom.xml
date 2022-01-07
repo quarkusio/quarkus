@@ -361,6 +361,16 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>jdk18-workarounds</id>
+            <activation>
+                <jdk>[18,)</jdk>
+            </activation>
+            <properties>
+                <!-- auto-exclude tests that are known to fail on JDK 18 or above (tagged via @Tag("failsOnJDK18")) -->
+                <excludedGroups>failsOnJDK18</excludedGroups>
+            </properties>
+        </profile>
     </profiles>
 
 </project>

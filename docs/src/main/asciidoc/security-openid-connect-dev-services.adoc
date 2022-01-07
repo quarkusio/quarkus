@@ -34,6 +34,11 @@ KeyCloak Dev Services Starting:
 
 The `quay.io/keycloak/keycloak:15.0.2` image which contains a `Keycloak` distribution powered by `WildFly` is currently used to start a container by default. See the <<keycloak-initialization, Keycloak Initialization>> section for more details about the image selection.
 
+[IMPORTANT]
+====
+When logging in the Keycloak admin console, the username is `admin` and the password is `admin`.
+====
+
 Note that by default, `Dev Services for Keycloak` will not start a new container if it finds a container with a `quarkus-dev-service-keycloak` label and connect to it if this label's value matches the value of the `quarkus.keycloak.devservices.service-name` property (default value is `quarkus`). In such cases you will see a slighty different output:
 
 [source,shell]

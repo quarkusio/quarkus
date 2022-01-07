@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 :sectnumlevels: 4
 :toc:
 
-In this guide we're going to describe the basic principles of the Quarkus programming model that is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+In this guide we're going to describe the basic principles of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 
 == OK. Let's start simple. What is a bean?
 
@@ -101,7 +101,7 @@ public class Translator {
 == Can I use setter and constructor injection?
 
 Yes, you can.
-In fact, in CDI the "setter injection" is superseded by more powerful https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#initializer_methods[initializer methods, window="_blank"].
+In fact, in CDI the "setter injection" is superseded by more powerful https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#initializer_methods[initializer methods, window="_blank"].
 Initializers may accept multiple parameters and don't have to follow the JavaBean naming conventions.
 
 .Initialized and Constructor Injection Example
@@ -131,7 +131,7 @@ It's also not necessary to add `@Inject` if there is only one constructor presen
 
 == You talked about some qualifiers?
 
-https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#qualifiers[Qualifiers, window="_blank"] are annotations that help the container to distinguish beans that implement the same type.
+https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#qualifiers[Qualifiers, window="_blank"] are annotations that help the container to distinguish beans that implement the same type.
 As we already said a bean is assignable to an injection point if it has all the required qualifiers.
 If you declare no qualifier at an injection point the `@Default` qualifier is assumed.
 
@@ -160,7 +160,7 @@ public class SuperiorTranslator extends Translator {
     }
 }
 ----
-<1> `@Superior` is a https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#defining_qualifier_types[qualifier annotation, window="_blank"].
+<1> `@Superior` is a https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#defining_qualifier_types[qualifier annotation, window="_blank"].
 
 This bean would be assignable to `@Inject @Superior Translator` and `@Inject @Superior SuperiorTranslator` but not to `@Inject Translator`.
 The reason is that `@Inject Translator` is automatically transformed to `@Inject @Default Translator` during typesafe resolution.
@@ -211,7 +211,7 @@ Therefore, we recommend to stick with `@ApplicationScoped` by default unless the
 [[client_proxies]]
 == I don't understand the concept of client proxies.
 
-Indeed, the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#client_proxies[client proxies, window="_blank"] could be hard to grasp but they provide some useful functionality.
+Indeed, the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#client_proxies[client proxies, window="_blank"] could be hard to grasp but they provide some useful functionality.
 A client proxy is basically an object that delegates all method invocations to a target bean instance.
 It's a container construct that implements `io.quarkus.arc.ClientProxy` and extends the bean class.
 
@@ -239,7 +239,7 @@ class Translator_ClientProxy extends Translator { <1>
     }
 }
 ----
-<1> The `Translator_ClientProxy` instance is always injected instead of a direct reference to a https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#contextual_instance[contextual instance, window="_blank"] of the `Translator` bean.
+<1> The `Translator_ClientProxy` instance is always injected instead of a direct reference to a https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#contextual_instance[contextual instance, window="_blank"] of the `Translator` bean.
 
 Client proxies allow for:
 
@@ -471,11 +471,11 @@ TIP: For more info about events/observers visit https://docs.jboss.org/weld/refe
 
 == Conclusion
 
-In this guide, we've covered some of the basic topics of the Quarkus programming model that is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+In this guide, we've covered some of the basic topics of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, a full CDI implementation is not used under the hood.
 Quarkus only implements a subset of the CDI features - see also <<cdi-reference.adoc#supported_features,the list of supported features>> and <<cdi-reference.adoc#limitations,the list of limitations>>.
 On the other hand, there are quite a few <<cdi-reference#nonstandard_features,non-standard features>> and <<cdi-reference.adoc#build_time_apis,Quarkus-specific APIs>>.
 We believe that our efforts will drive the innovation of the CDI specification towards the build-time oriented developer stacks in the future.
 
 TIP: If you wish to learn more about Quarkus-specific features and limitations there is a Quarkus xref:cdi-reference.adoc[CDI Reference Guide].
-We also recommend you to read the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[CDI specification] and the https://docs.jboss.org/weld/reference/latest/en-US/html/[Weld documentation] (Weld is a CDI Reference Implementation) to get acquainted with more complex topics.
+We also recommend you to read the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[CDI specification] and the https://docs.jboss.org/weld/reference/latest/en-US/html/[Weld documentation] (Weld is a CDI Reference Implementation) to get acquainted with more complex topics.

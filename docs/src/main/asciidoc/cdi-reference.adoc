@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 :sectnumlevels: 4
 :toc:
 
-Quarkus DI solution (also called ArC) is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
@@ -24,7 +24,7 @@ NOTE: Most of the existing CDI code should work just fine but there are some sma
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
 However, Quarkus is using a *simplified bean discovery*.
-There is only single bean archive with the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
+There is only single bean archive with the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
 
 The bean archive is synthesized from:
 
@@ -34,7 +34,7 @@ The bean archive is synthesized from:
 * dependencies referenced by `quarkus.index-dependency` in `application.properties`,
 * and Quarkus integration code.
 
-Bean classes that don't have a http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
+Bean classes that don't have a https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
 This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
 In fact, the declaring bean classes are considered annotated with `@Dependent`. 

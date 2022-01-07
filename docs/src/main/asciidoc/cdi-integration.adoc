@@ -90,8 +90,8 @@ NOTE: If no default scope is specified the `@Dependent` pseudo-scope is used.
 
 === _Reason 2_: Class Is Discovered but Has No Bean Defining Annotation
 
-In Quarkus, the application is represented by a single bean archive with the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"].
-Therefore, bean classes that don't have a https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[bean defining annotation, window="_blank"] are ignored.
+In Quarkus, the application is represented by a single bean archive with the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"].
+Therefore, bean classes that don't have a https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#bean_defining_annotations[bean defining annotation, window="_blank"] are ignored.
 Bean defining annotations are declared on the class-level and include scopes, stereotypes and `@Interceptor`.
 
 _Solution 1_: Use the `AutoAddScopeBuildItem`. This build item can be used to add a scope to a class that meets certain conditions.
@@ -160,7 +160,7 @@ _Solution_: Use the `AdditionalBeanBuildItem` as described in <<additional_bean_
 == Use Case - I Need To Transform Metadata
 
 In some cases, it's useful to be able to modify the metadata.
-Quarkus provides a powerful alternative to https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#process_annotated_type[`javax.enterprise.inject.spi.ProcessAnnotatedType`, window="_blank"].
+Quarkus provides a powerful alternative to https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#process_annotated_type[`javax.enterprise.inject.spi.ProcessAnnotatedType`, window="_blank"].
 With an `AnnotationsTransformerBuildItem` it's possible to override the annotations that exist on bean classes.
 
 For example, you might want to add an interceptor binding to a specific bean class.
@@ -251,7 +251,7 @@ void doSomethingWithNamedBeans(SynthesisFinishedBuildItem synthesisFinished, Bui
 Sometimes it is practical to be able to register a _synthetic bean_.
 Bean attributes of a synthetic bean are not derived from a Java class, method or field.
 Instead, all the attributes are defined by an extension.
-In regular CDI, this could be achieved using the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#after_bean_discovery[`AfterBeanDiscovery.addBean()`, window="_blank"] methods.
+In regular CDI, this could be achieved using the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#after_bean_discovery[`AfterBeanDiscovery.addBean()`, window="_blank"] methods.
 
 _Solution_: If you need to register a synthetic bean then use the `SyntheticBeanBuildItem`.
 

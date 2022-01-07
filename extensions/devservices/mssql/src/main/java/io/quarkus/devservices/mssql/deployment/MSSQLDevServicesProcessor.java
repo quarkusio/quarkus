@@ -35,13 +35,14 @@ public class MSSQLDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    Optional<String> datasourceName, Optional<String> imageName,
+                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(imageName, fixedExposedPort,
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("Quarkuspassword1"));
-                additionalProperties.forEach(container::withUrlParam);
+                additionalJdbcUrlProperties.forEach(container::withUrlParam);
                 container.start();
 
                 LOG.info("Dev Services for Microsoft SQL Server started.");

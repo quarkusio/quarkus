@@ -35,7 +35,8 @@ public class DB2DevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.DB2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    Optional<String> datasourceName, Optional<String> imageName,
+                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusDb2Container container = new QuarkusDb2Container(imageName, fixedExposedPort,
                         !devServicesSharedNetworkBuildItem.isEmpty());
@@ -43,7 +44,7 @@ public class DB2DevServicesProcessor {
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
                         .withDatabaseName(datasourceName.orElse("default"));
-                additionalProperties.forEach(container::withUrlParam);
+                additionalJdbcUrlProperties.forEach(container::withUrlParam);
                 container.start();
 
                 LOG.info("Dev Services for IBM Db2 started.");

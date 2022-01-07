@@ -39,7 +39,8 @@ public class PostgresqlDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.POSTGRESQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    Optional<String> datasourceName, Optional<String> imageName,
+                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(imageName, fixedExposedPort,
                         !devServicesSharedNetworkBuildItem.isEmpty());
@@ -47,7 +48,7 @@ public class PostgresqlDevServicesProcessor {
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
                         .withDatabaseName(datasourceName.orElse("default"));
-                additionalProperties.forEach(container::withUrlParam);
+                additionalJdbcUrlProperties.forEach(container::withUrlParam);
 
                 container.start();
 

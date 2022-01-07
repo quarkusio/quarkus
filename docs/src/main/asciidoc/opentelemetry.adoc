@@ -159,7 +159,7 @@ service:
 
 ----
 
-Start the OpenTelemetry Collector and Jaeger system via the following docker-compose file that you can launch via `docker-compose run -d`:
+Start the OpenTelemetry Collector and Jaeger system via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----

@@ -2295,7 +2295,7 @@ Capabilities should follow the naming conventions of Java packages; e.g. `io.qua
 Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` enum and their name should always start with the `io.quarkus` prefix.
 
 ==== Bean Defining Annotations
-The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
+The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
 
 .Register a Bean Defining Annotation
 [source,java]

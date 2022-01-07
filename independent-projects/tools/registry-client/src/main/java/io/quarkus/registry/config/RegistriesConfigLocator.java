@@ -144,7 +144,7 @@ public class RegistriesConfigLocator {
      *
      * @return the default location of the registry client configuration file
      */
-    static Path getDefaultConfigYamlLocation() {
+    public static Path getDefaultConfigYamlLocation() {
         return Paths.get(System.getProperty("user.home")).resolve(CONFIG_RELATIVE_PATH);
     }
 

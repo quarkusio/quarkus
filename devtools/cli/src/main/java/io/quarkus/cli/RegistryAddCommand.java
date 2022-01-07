@@ -7,6 +7,7 @@ import java.util.List;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
 import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Add a Quarkus extension registry", description = "%n"
@@ -22,12 +23,17 @@ public class RegistryAddCommand extends BaseRegistryCommand {
     @Override
     public Integer call() throws Exception {
         boolean existingConfig = false;
-        Path configYaml = null;
+        Path configYaml;
 
         // If a configuration was specified, check if it exists
         if (registryClient.getConfigArg() != null) {
             configYaml = Paths.get(registryClient.getConfigArg());
             existingConfig = Files.exists(configYaml);
+        } else {
+            configYaml = RegistriesConfigLocator.locateConfigYaml();
+            if (configYaml == null) {
+                configYaml = RegistriesConfigLocator.getDefaultConfigYamlLocation();
+            }
         }
 
         final RegistriesConfig.Mutable config;

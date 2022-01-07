@@ -160,9 +160,10 @@ class HibernateValidatorProcessor {
                     "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveContextLocaleResolver"));
         }
 
-        // A constraint validator with an injection point but no scope is added as @Singleton
-        autoScopes.produce(AutoAddScopeBuildItem.builder().implementsInterface(CONSTRAINT_VALIDATOR).requiresContainerServices()
-                .defaultScope(BuiltinScope.SINGLETON).build());
+        // A constraint validator with an injection point but no scope is added as @Dependent
+        autoScopes.produce(AutoAddScopeBuildItem.builder().implementsInterface(CONSTRAINT_VALIDATOR)
+                .requiresContainerServices()
+                .defaultScope(BuiltinScope.DEPENDENT).build());
 
         // Do not remove the Bean Validation beans
         unremovableBean.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {

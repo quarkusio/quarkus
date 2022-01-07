@@ -4,15 +4,13 @@ public class NonAnnotatedComplexEntity {
 
     private long id;
 
-    private String name;
-
-    private NonAnnotatedComponentEntity value;
+    private NonAnnotatedComponentEntity value = new NonAnnotatedComponentEntity();
 
     public NonAnnotatedComplexEntity() {
     }
 
     public NonAnnotatedComplexEntity(String name) {
-        this.name = name;
+        this.value.setName(name);
     }
 
     public long getId() {
@@ -21,14 +19,6 @@ public class NonAnnotatedComplexEntity {
 
     public void setId(long id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public NonAnnotatedComponentEntity getValue() {

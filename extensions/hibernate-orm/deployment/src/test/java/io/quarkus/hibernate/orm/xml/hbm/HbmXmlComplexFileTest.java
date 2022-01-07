@@ -35,10 +35,7 @@ public class HbmXmlComplexFileTest {
     @Transactional
     public void ormXmlTakenIntoAccount() {
         assertThat(SchemaUtil.getColumnNames(entityManagerFactory, NonAnnotatedComplexEntity.class))
-                .contains("thename")
-                .doesNotContain("name");
-        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, NonAnnotatedComplexEntity.class))
-                .contains("value");
+                .contains("thename");
     }
 
     @Test
@@ -46,7 +43,8 @@ public class HbmXmlComplexFileTest {
     public void smokeTest() {
         SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager,
                 NonAnnotatedComplexEntity.class, NonAnnotatedComplexEntity::new,
-                NonAnnotatedComplexEntity::getId, NonAnnotatedComplexEntity::setName, NonAnnotatedComplexEntity::getName);
+                NonAnnotatedComplexEntity::getId,
+                (e, name) -> e.getValue().setName(name), e -> e.getValue().getName());
     }
 
 }

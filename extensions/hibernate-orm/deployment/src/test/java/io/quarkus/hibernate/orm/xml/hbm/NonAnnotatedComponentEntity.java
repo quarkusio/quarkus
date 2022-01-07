@@ -2,13 +2,13 @@ package io.quarkus.hibernate.orm.xml.hbm;
 
 public class NonAnnotatedComponentEntity {
 
-    private String value;
+    private String name;
 
-    public String getValue() {
-        return value;
+    public String getName() {
+        return name;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setName(String name) {
+        this.name = name;
     }
 }

@@ -7,10 +7,9 @@
         <id name="id">
             <generator class="identity"/>
         </id>
-        <property name="name" column="thename"/>
         <component name="value" class="io.quarkus.hibernate.orm.xml.hbm.NonAnnotatedComponentEntity" lazy="false">
-            <property name="value">
-                <column name="value"/>
+            <property name="name">
+                <column name="thename"/>
             </property>
         </component>
     </class>

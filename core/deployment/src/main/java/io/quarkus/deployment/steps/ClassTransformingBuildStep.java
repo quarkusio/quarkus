@@ -32,6 +32,7 @@ import org.objectweb.asm.ClassWriter;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.QuarkusClassVisitor;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -313,6 +314,9 @@ public class ClassTransformingBuildStep {
             ClassVisitor visitor = writer;
             for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
                 visitor = i.apply(className, visitor);
+                if (visitor instanceof QuarkusClassVisitor) {
+                    ((QuarkusClassVisitor) visitor).setOriginalClassReaderOptions(classReaderOptions);
+                }
             }
             cr.accept(visitor, classReaderOptions);
             data = writer.toByteArray();

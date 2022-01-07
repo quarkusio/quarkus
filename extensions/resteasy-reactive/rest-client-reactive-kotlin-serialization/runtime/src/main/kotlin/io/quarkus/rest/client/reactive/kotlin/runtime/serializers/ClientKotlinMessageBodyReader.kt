@@ -13,7 +13,7 @@ import javax.ws.rs.core.MultivaluedMap
 import javax.ws.rs.ext.MessageBodyReader
 
 @OptIn(ExperimentalSerializationApi::class)
-class ClientKotlinMessageBodyReader(@Inject val json: Json) : MessageBodyReader<Any> {
+class ClientKotlinMessageBodyReader(val json: Json) : MessageBodyReader<Any> {
     override fun isReadable(type: Class<*>?, generic: Type?, annotations: Array<out Annotation>?, mediaType: MediaType?) = true
 
     override fun readFrom(

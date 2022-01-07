@@ -22,6 +22,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-kotlin-serialization</artifactId>
+            <version>999-SNAPSHOT</version>
         </dependency>
 
         <dependency>

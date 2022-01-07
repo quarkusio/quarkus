@@ -233,6 +233,12 @@ public class SimpleQuarkusRestResource {
     }
 
     @GET
+    @Path("writer/mutiny-buffer")
+    public io.vertx.mutiny.core.buffer.Buffer mutinyBuffer() {
+        return io.vertx.mutiny.core.buffer.Buffer.buffer("MUTINY-BUFFER");
+    }
+
+    @GET
     @Path("async/cs/ok")
     public CompletionStage<String> asyncCompletionStageOK() {
         return CompletableFuture.completedFuture("CS-OK");

@@ -79,6 +79,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMetho
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -216,7 +217,12 @@ public class ResteasyReactiveProcessor {
     @BuildStep
     void vertxIntegration(BuildProducer<MessageBodyWriterBuildItem> writerBuildItemBuildProducer) {
         writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerVertxBufferMessageBodyWriter.class.getName(),
-                Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER, true,
+                io.vertx.core.buffer.Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER,
+                true,
+                Priorities.USER));
+        writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerMutinyBufferMessageBodyWriter.class.getName(),
+                io.vertx.mutiny.core.buffer.Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD),
+                RuntimeType.SERVER, true,
                 Priorities.USER));
         writerBuildItemBuildProducer
                 .produce(new MessageBodyWriterBuildItem(ServerVertxAsyncFileMessageBodyWriter.class.getName(),

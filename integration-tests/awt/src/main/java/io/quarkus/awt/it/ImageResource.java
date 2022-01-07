@@ -8,6 +8,7 @@ import static javax.imageio.ImageWriteParam.MODE_DEFAULT;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Transparency;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
@@ -17,6 +18,7 @@ import java.awt.image.WritableRaster;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import javax.imageio.IIOImage;
@@ -222,6 +224,14 @@ public class ImageResource {
                     .entity(bos.toByteArray())
                     .build();
         }
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/fonts")
+    public Response fonts() {
+        return Response.ok().entity(Arrays.toString(
+                GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())).build();
     }
 
     /**

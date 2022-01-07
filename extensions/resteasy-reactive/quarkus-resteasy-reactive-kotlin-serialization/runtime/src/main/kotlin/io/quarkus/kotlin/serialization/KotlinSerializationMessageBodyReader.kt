@@ -15,8 +15,8 @@ import javax.inject.Inject
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.MultivaluedMap
 
-class KotlinSerializationMessageBodyReader(@Inject var json: Json) : AbstractJsonMessageBodyReader(), ServerMessageBodyReader<Any> {
-    override fun isReadable(type: Class<*>, genericType: Type, annotations: Array<Annotation>, mediaType: MediaType) =
+class KotlinSerializationMessageBodyReader(private val json: Json) : AbstractJsonMessageBodyReader(), ServerMessageBodyReader<Any> {
+    override fun isReadable(type: Class<*>, genericType: Type, annotations: Array<Annotation>?, mediaType: MediaType) =
         isReadable(mediaType, type)
 
     override fun isReadable(type: Class<*>, genericType: Type, lazyMethod: ResteasyReactiveResourceInfo, mediaType: MediaType) =

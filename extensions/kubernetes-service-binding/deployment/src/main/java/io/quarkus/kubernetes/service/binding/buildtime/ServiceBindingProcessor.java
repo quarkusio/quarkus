@@ -21,7 +21,7 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
  * Generated ServiceBinding rules:
  *
  * 1. .metadata.name:
- * When no user configuration is present then the combination [app.name] - [qualifier kind] + [qualifier name] will be used.
+ * When no user configuration is present then the combination [app.name] - [qualifier kind] - [qualifier name] will be used.
  *
  * Examples:
  * - app-postgresql-default
@@ -31,6 +31,19 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
  * 2. .spec.service[*].name:
  * Since services are qualified using apiVersion, we don't need to carry over the [qualifier kind]. In this case the name is
  * just [qualifier name].*
+ *
+ * Notes:
+ *
+ * The following pairs are equivallent:
+ * 
+ * quarkus.kubernetes-service-binding.services.prostresql-default.xxx=yyy
+ * quarkus.kubernetes-service-binding.services.prostresql.xxx=yyy
+ *
+ * quarkus.kubernetes-service-binding.services.prostresql-persondb.xxx=yyy
+ * quarkus.kubernetes-service-binding.services.persondb.xxx=yyy
+ *
+ * When service are auto bound the minimal from (e.g. persondb) will be used.
+ * Users are still able to to tune things using the [kind]-[name] combo to avoid naming clashes.
  * 
  */
 public class ServiceBindingProcessor {
@@ -144,15 +157,18 @@ public class ServiceBindingProcessor {
      */
     protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromQualifier(String applicationName,
             KubernetesServiceBindingConfig config, ServiceBindingQualifierBuildItem qualifier) {
-        String serviceId = qualifier.getId();
 
-        if (config.services != null && config.services.containsKey(serviceId)) {
-            return createRequirementFromConfig(applicationName, qualifier.getKind(), serviceId, qualifier.getName(), config);
+        if (config.services != null && config.services.containsKey(qualifier.getId())) {
+            return createRequirementFromConfig(applicationName, qualifier.getKind(), qualifier.getId(), qualifier.getName(),
+                    config);
+        } else if (config.services != null && config.services.containsKey(qualifier.getName())) {
+            return createRequirementFromConfig(applicationName, qualifier.getKind(), qualifier.getName(), qualifier.getName(),
+                    config);
         } else if (DEFAULTS.containsKey(qualifier.getKind())) {
             String value = DEFAULTS.get(qualifier.getKind());
             //When no service is configured, we use as binding name the combination of kind and name.
-            return Optional.of(new ServiceBindingRequirementBuildItem(applicationName + "-" + serviceId, apiVersion(value),
-                    kind(value), serviceId));
+            return Optional.of(new ServiceBindingRequirementBuildItem(applicationName + "-" + qualifier.getId(),
+                    apiVersion(value), kind(value), qualifier.getId()));
         }
         return Optional.empty();
     }

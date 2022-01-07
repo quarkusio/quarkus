@@ -409,7 +409,7 @@ public class QuarkusBootstrap implements Serializable {
         boolean isolateDeployment;
         MavenArtifactResolver mavenArtifactResolver;
         ArtifactCoords managingProject;
-        List<Dependency> forcedDependencies = new ArrayList<>();
+        List<Dependency> forcedDependencies = Collections.emptyList();
         boolean disableClasspathCache;
         ApplicationModel existingModel;
         final Set<ArtifactKey> localArtifacts = new HashSet<>();

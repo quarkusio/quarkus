@@ -36,7 +36,8 @@ public final class VertxUtil {
         // If none is found resorts to the remote address from the http request
         return getForwardedHeaderValue(httpServerRequest)
                 .orElseGet(() -> getXForwardedHeaderValue(httpServerRequest)
-                        .orElseGet(() -> httpServerRequest.remoteAddress().host()));
+                        .orElseGet(() -> httpServerRequest.remoteAddress() != null ? httpServerRequest.remoteAddress().host()
+                                : null));
 
     }
 }

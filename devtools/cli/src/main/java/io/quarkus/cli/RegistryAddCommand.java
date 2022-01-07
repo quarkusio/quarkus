@@ -30,16 +30,13 @@ public class RegistryAddCommand extends BaseRegistryCommand {
             existingConfig = Files.exists(configYaml);
         }
 
+        registryClient.refreshRegistryCache(output);
         final RegistriesConfig.Mutable config;
-        if (existingConfig) {
-            registryClient.refreshRegistryCache(output);
-            config = registryClient.resolveConfig().mutable();
-            if (config.getSource().getFilePath() == null) {
-                output.error("Can only modify file-based configuration. Config source is " + config.getSource().describe());
-                return CommandLine.ExitCode.SOFTWARE;
-            }
-        } else {
+        if (configYaml != null && !existingConfig) {
+            // we're creating a new configuration for a new file
             config = RegistriesConfig.builder();
+        } else {
+            config = registryClient.resolveConfig().mutable();
         }
 
         boolean persist = false;
@@ -48,10 +45,10 @@ public class RegistryAddCommand extends BaseRegistryCommand {
         }
 
         if (persist) {
-            if (existingConfig) {
-                config.persist();
-            } else {
+            if (configYaml != null) {
                 config.persist(configYaml);
+            } else {
+                config.persist();
             }
         }
         return CommandLine.ExitCode.OK;

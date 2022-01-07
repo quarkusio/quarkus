@@ -1106,11 +1106,8 @@ reluctantly deal with, such as:
 
 - Duplicating ID logic: most entities need an ID, most people don't care how it's set, because it's not really
 relevant to your model.
-- Dumb getters and setters: since Java lacks support for properties in the language, we have to create fields,
-then generate getters and setters for those fields, even if they don't actually do anything more than read/write
-the fields.
 - Traditional EE patterns advise to split entity definition (the model) from the operations you can do on them
-(DAOs, Repositories), but really that requires an unnatural split between the state and its operations even though
+(DAOs, Repositories), but really that requires a split between the state and its operations even though
 we would never do something like that for regular objects in the Object Oriented architecture, where state and methods
 are in the same class. Moreover, this requires two classes per entity, and requires injection of the DAO or Repository
 where you need to do entity operations, which breaks your edit flow and requires you to get out of the code you're
@@ -1124,9 +1121,9 @@ With Panache, we took an opinionated approach to tackle all these problems:
 
 - Make your entities extend `PanacheEntity`: it has an ID field that is auto-generated. If you require
 a custom ID strategy, you can extend `PanacheEntityBase` instead and handle the ID yourself.
-- Use public fields. Get rid of dumb getter and setters. Under the hood, we will generate all getters and setters
-that are missing, and rewrite every access to these fields to use the accessor methods. This way you can still
-write _useful_ accessors when you need them, which will be used even though your entity users still use field accesses.
+- Use public fields. Get rid of dumb getter and setters. Hibernate ORM w/o Panache also doesn't require you to use getters and setters,
+but Panache will additionally generate all getters and setters that are missing, and rewrite every access to these fields to use the accessor methods. This way you can still
+write _useful_ accessors when you need them, which will be used even though your entity users still use field accesses. This implies that from the Hibernate perspective you're using accessors via getters and setters even while it looks like field accessors.
 - With the active record pattern: put all your entity logic in static methods in your entity class and don't create DAOs.
 Your entity superclass comes with lots of super useful static methods, and you can add your own in your entity class.
 Users can just start using your entity `Person` by typing `Person.` and getting completion for all the operations in a single place.

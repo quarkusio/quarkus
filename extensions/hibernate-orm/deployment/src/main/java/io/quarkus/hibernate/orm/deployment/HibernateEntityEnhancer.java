@@ -10,6 +10,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+import io.quarkus.deployment.QuarkusClassVisitor;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.gizmo.Gizmo;
 import net.bytebuddy.ClassFileVersion;
@@ -36,7 +37,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
         return new HibernateEnhancingClassVisitor(className, outputClassVisitor);
     }
 
-    private static class HibernateEnhancingClassVisitor extends ClassVisitor {
+    private static class HibernateEnhancingClassVisitor extends QuarkusClassVisitor {
 
         private final String className;
         private final ClassVisitor outputClassVisitor;
@@ -78,7 +79,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             final byte[] transformedBytes = hibernateEnhancement(className, inputBytes);
             //Then re-convert the transformed bytecode to not interrupt the visitor chain:
             ClassReader cr = new ClassReader(transformedBytes);
-            cr.accept(outputClassVisitor, 0);
+            cr.accept(outputClassVisitor, super.getOriginalClassReaderOptions());
         }
 
         private byte[] hibernateEnhancement(final String className, final byte[] originalBytes) {

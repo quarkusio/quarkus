@@ -18,10 +18,10 @@ public class LoggingWithPanacheTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(LoggingBean.class, NoStackTraceTestException.class))
+                    .addClasses(LoggingBean.class, LoggingEntity.class, NoStackTraceTestException.class))
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".min-level", "TRACE")
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".level", "TRACE")
-            .setLogRecordPredicate(record -> "io.quarkus.logging.LoggingBean".equals(record.getLoggerName()))
+            .setLogRecordPredicate(record -> record.getLoggerName().startsWith("io.quarkus.logging.Logging"))
             .assertLogRecords(records -> {
                 Formatter formatter = new PatternFormatter("[%p] %m");
                 List<String> lines = records.stream().map(formatter::format).map(String::trim).collect(Collectors.toList());
@@ -38,7 +38,8 @@ public class LoggingWithPanacheTest {
                         "[WARN] three: foo | bar | baz",
                         "[ERROR] four: foo | bar | baz | quux",
                         "[WARN] foo | bar | baz | quux: io.quarkus.logging.NoStackTraceTestException",
-                        "[ERROR] Hello Error: io.quarkus.logging.NoStackTraceTestException");
+                        "[ERROR] Hello Error: io.quarkus.logging.NoStackTraceTestException",
+                        "[INFO] Hi!");
             });
 
     @Inject
@@ -47,5 +48,6 @@ public class LoggingWithPanacheTest {
     @Test
     public void test() {
         bean.doSomething();
+        new LoggingEntity().something();
     }
 }

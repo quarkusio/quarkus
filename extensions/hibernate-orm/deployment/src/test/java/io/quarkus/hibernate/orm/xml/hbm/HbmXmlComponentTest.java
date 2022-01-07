@@ -14,16 +14,17 @@ import io.quarkus.hibernate.orm.SchemaUtil;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class HbmXmlComplexFileTest {
+public class HbmXmlComponentTest {
     @RegisterExtension
     final static QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar
                     .addClass(SmokeTestUtils.class)
                     .addClass(SchemaUtil.class)
-                    .addClass(NonAnnotatedComplexEntity.class)
-                    .addClass(NonAnnotatedComponentEntity.class)
-                    .addAsResource("application-mapping-files-my-complex-hbm-xml.properties", "application.properties")
-                    .addAsResource("META-INF/hbm-complex.xml", "my-complex-hbm.xml"));
+                    .addClass(NonAnnotatedComponentUsingEntity.class)
+                    .addClass(NonAnnotatedComponent.class)
+                    .addAsResource("META-INF/hbm-component.xml", "my-hbm.xml"))
+            .withConfigurationResource("application.properties")
+            .overrideConfigKey("quarkus.hibernate-orm.mapping-files", "my-hbm.xml");
 
     @Inject
     EntityManagerFactory entityManagerFactory;
@@ -33,8 +34,8 @@ public class HbmXmlComplexFileTest {
 
     @Test
     @Transactional
-    public void ormXmlTakenIntoAccount() {
-        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, NonAnnotatedComplexEntity.class))
+    public void hbmXmlTakenIntoAccount() {
+        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, NonAnnotatedComponentUsingEntity.class))
                 .contains("thename");
     }
 
@@ -42,8 +43,8 @@ public class HbmXmlComplexFileTest {
     @Transactional
     public void smokeTest() {
         SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager,
-                NonAnnotatedComplexEntity.class, NonAnnotatedComplexEntity::new,
-                NonAnnotatedComplexEntity::getId,
+                NonAnnotatedComponentUsingEntity.class, NonAnnotatedComponentUsingEntity::new,
+                NonAnnotatedComponentUsingEntity::getId,
                 (e, name) -> e.getValue().setName(name), e -> e.getValue().getName());
     }
 

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.xml.hbm;
 
-public class NonAnnotatedComponentEntity {
+public class NonAnnotatedComponent {
 
     private String name;
 

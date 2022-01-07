@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
+import java.nio.charset.StandardCharsets;
 import javax.ws.rs.core.MultivaluedMap;
 
 public final class JacksonMessageBodyWriterUtil {
@@ -43,7 +44,7 @@ public final class JacksonMessageBodyWriterUtil {
             OutputStream entityStream, ObjectWriter defaultWriter) throws IOException {
         setContentTypeIfNecessary(httpHeaders);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
-            entityStream.write(((String) o).getBytes());
+            entityStream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             if (annotations != null) {
                 for (Annotation annotation : annotations) {

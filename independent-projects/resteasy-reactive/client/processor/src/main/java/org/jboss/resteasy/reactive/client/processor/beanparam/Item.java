@@ -20,5 +20,4 @@ public abstract class Item {
     public ResultHandle extract(BytecodeCreator methodCreator, ResultHandle param) {
         return valueExtractor.extract(methodCreator, param);
     }
-
 }

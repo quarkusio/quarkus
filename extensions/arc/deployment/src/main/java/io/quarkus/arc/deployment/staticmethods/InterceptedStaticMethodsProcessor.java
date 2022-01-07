@@ -95,8 +95,10 @@ public class InterceptedStaticMethodsProcessor {
 
         for (ClassInfo clazz : beanArchiveIndex.getIndex().getKnownClasses()) {
             for (MethodInfo method : clazz.methods()) {
-                // Find all static methods (except for static initializers)
-                if (!Modifier.isStatic(method.flags()) || "<clinit>".equals(method.name())) {
+                // Find all non-synthetic static methods (except for static initializers)
+                if (method.isSynthetic()
+                        || !Modifier.isStatic(method.flags())
+                        || "<clinit>".equals(method.name())) {
                     continue;
                 }
                 // Get the (possibly transformed) set of annotations

@@ -22,10 +22,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-kotlin-serialization-common</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

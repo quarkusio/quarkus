@@ -203,7 +203,8 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setBuildSystemProperties(effectiveProperties)
                     .setProjectRoot(mojo.baseDir().toPath())
                     .setBaseName(mojo.finalName())
-                    .setTargetDirectory(mojo.buildDir().toPath());
+                    .setTargetDirectory(mojo.buildDir().toPath())
+                    .setForcedDependencies(mojo.forcedDependencies(mode));
 
             try {
                 return builder.build().bootstrap();

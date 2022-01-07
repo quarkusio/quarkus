@@ -18,7 +18,7 @@ import javax.ws.rs.core.MultivaluedMap
 
 @Produces("application/json", "application/*+json", "text/json")
 @OptIn(ExperimentalSerializationApi::class)
-class KotlinSerializationMessageBodyWriter(var json: Json) : AllWriteableMessageBodyWriter() {
+class KotlinSerializationMessageBodyWriter(private val json: Json) : AllWriteableMessageBodyWriter() {
     override fun writeTo(
         o: Any, type: Class<*>, genericType: Type, annotations: Array<Annotation>, mediaType: MediaType,
         httpHeaders: MultivaluedMap<String, Any>, entityStream: OutputStream

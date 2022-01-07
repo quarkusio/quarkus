@@ -4,6 +4,8 @@ import static io.quarkus.deployment.Feature.REST_CLIENT_REACTIVE_KOTLIN_SERIALIZ
 
 import java.util.Collections;
 
+import javax.ws.rs.Priorities;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -34,9 +36,9 @@ public class RestClientReactiveKotlinSerializationProcessor {
 
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(ClientKotlinMessageBodyReader.class.getName(), Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        Collections.singletonList(MediaType.APPLICATION_JSON), RuntimeType.CLIENT, true, Priorities.USER));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(ClientKotlinMessageBodyWriter.class.getName(), Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        Collections.singletonList(MediaType.APPLICATION_JSON), RuntimeType.CLIENT, true, Priorities.USER));
     }
 }

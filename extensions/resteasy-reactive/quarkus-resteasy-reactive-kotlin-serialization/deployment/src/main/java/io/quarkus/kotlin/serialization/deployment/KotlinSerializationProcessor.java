@@ -5,6 +5,8 @@ import static io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProduc
 
 import java.util.List;
 
+import javax.ws.rs.Priorities;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -29,10 +31,12 @@ public class KotlinSerializationProcessor {
                 .setUnremovable().build());
         additionalReaders.produce(new MessageBodyReaderBuildItem(
                 KotlinSerializationMessageBodyReader.class.getName(), Object.class.getName(), List.of(
-                        MediaType.APPLICATION_JSON)));
+                        MediaType.APPLICATION_JSON),
+                RuntimeType.SERVER, true, Priorities.USER));
         additionalWriters.produce(new MessageBodyWriterBuildItem(
                 KotlinSerializationMessageBodyWriter.class.getName(), Object.class.getName(), List.of(
-                        MediaType.APPLICATION_JSON)));
+                        MediaType.APPLICATION_JSON),
+                RuntimeType.SERVER, true, Priorities.USER));
     }
 
     @BuildStep

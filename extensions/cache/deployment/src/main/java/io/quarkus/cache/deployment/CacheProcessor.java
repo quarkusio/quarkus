@@ -11,6 +11,7 @@ import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_RESULT;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTORS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_BINDINGS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_BINDING_CONTAINERS;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.MULTI;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.REGISTER_REST_CLIENT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.runtime.metrics.MetricsFactory.MICROMETER;
@@ -33,6 +34,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
@@ -64,6 +66,8 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 
 class CacheProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger(CacheProcessor.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -184,8 +188,13 @@ class CacheProcessor {
                 if (Modifier.isPrivate(methodInfo.flags())) {
                     throwables.add(new PrivateMethodTargetException(methodInfo, binding.name()));
                 }
-                if (CACHE_RESULT.equals(binding.name()) && methodInfo.returnType().kind() == Type.Kind.VOID) {
-                    throwables.add(new VoidReturnTypeTargetException(methodInfo));
+                if (CACHE_RESULT.equals(binding.name())) {
+                    if (methodInfo.returnType().kind() == Type.Kind.VOID) {
+                        throwables.add(new VoidReturnTypeTargetException(methodInfo));
+                    } else if (MULTI.equals(methodInfo.returnType().name())) {
+                        LOGGER.warnf("@CacheResult is not currently supported on a method returning %s [class=%s, method=%s]",
+                                MULTI, methodInfo.declaringClass().name(), methodInfo.name());
+                    }
                 }
                 break;
             default:

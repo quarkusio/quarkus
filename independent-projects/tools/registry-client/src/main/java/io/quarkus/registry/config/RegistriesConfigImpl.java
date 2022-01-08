@@ -217,7 +217,9 @@ public class RegistriesConfigImpl implements RegistriesConfig {
 
     static void persistConfigSource(RegistriesConfigImpl config) throws IOException {
         Path targetFile = config.configSource.getFilePath();
-        if (targetFile == null) {
+        if (config.configSource == ConfigSource.DEFAULT) {
+            targetFile = RegistriesConfigLocator.getDefaultConfigYamlLocation();
+        } else if (targetFile == null) {
             throw new UnsupportedOperationException(
                     String.format("Can not write configuration as it was read from an alternate source: %s",
                             config.configSource.describe()));

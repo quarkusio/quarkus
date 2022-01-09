@@ -10,7 +10,9 @@ import static java.util.stream.Collectors.toSet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -253,12 +255,13 @@ public class ConfigGenerationBuildStep {
         configWatchedFiles.add(
                 Paths.get(userDir, "config", String.format("application-%s.properties", profile)).toAbsolutePath().toString());
 
-        Optional<List<String>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, String.class);
+        Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
         optionalLocations.ifPresent(locations -> {
-            for (String location : locations) {
-                if (!Files.isDirectory(Paths.get(location))) {
-                    configWatchedFiles.add(location);
-                    configWatchedFiles.add(appendProfileToFilename(location, profile));
+            for (URI location : locations) {
+                Path path = location.getScheme() != null ? Paths.get(location) : Paths.get(location.getPath());
+                if (!Files.isDirectory(path)) {
+                    configWatchedFiles.add(location.toString());
+                    configWatchedFiles.add(appendProfileToFilename(location.toString(), profile));
                 }
             }
         });

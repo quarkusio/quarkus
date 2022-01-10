@@ -4,6 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 /**
@@ -15,13 +16,16 @@ public class IndexedEntity {
 
     @Id
     @GeneratedValue
-    private Long id;
+    public Long id;
 
-    public Long getId() {
-        return id;
+    @FullTextField
+    public String name;
+
+    protected IndexedEntity() {
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public IndexedEntity(String name) {
+        this.name = name;
     }
+
 }

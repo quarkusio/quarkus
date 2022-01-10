@@ -52,7 +52,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     public VertxResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
             RoutingContext context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
-            ClassLoader devModeTccl) {
+            ClassLoader devModeTccl, List<String> vertxContextPropsToCopy) {
         super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
         this.context = context;
         this.request = context.request();
@@ -61,8 +61,18 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         context.addHeadersEndHandler(this);
         String expect = request.getHeader(HttpHeaderNames.EXPECT);
         ContextInternal internal = ((ConnectionBase) context.request().connection()).getContext();
-        ContextInternal current = (ContextInternal) Vertx.currentContext();
-        internal.localContextData().putAll(current.localContextData());
+        if (!vertxContextPropsToCopy.isEmpty()) {
+            ContextInternal current = (ContextInternal) Vertx.currentContext();
+            Map<Object, Object> internalLocalContextData = internal.localContextData();
+            Map<Object, Object> currentLocalContextData = current.localContextData();
+            for (int i = 0; i < vertxContextPropsToCopy.size(); i++) {
+                String name = vertxContextPropsToCopy.get(i);
+                Object value = currentLocalContextData.get(name);
+                if (value != null) {
+                    internalLocalContextData.put(name, value);
+                }
+            }
+        }
         if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
             continueState = ContinueState.REQUIRED;
         }

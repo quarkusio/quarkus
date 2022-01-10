@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
 import io.vertx.ext.web.RoutingContext;
+import java.util.Collections;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.RequestContextFactory;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -14,6 +15,6 @@ public class VertxRequestContextFactory implements RequestContextFactory {
             ProvidersImpl providers, Object context, ThreadSetupAction requestContext,
             ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         return new VertxResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
-                requestContext, handlerChain, abortHandlerChain, null);
+                requestContext, handlerChain, abortHandlerChain, null, Collections.emptyList());
     }
 }

@@ -4,6 +4,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.enterprise.inject.CreationException;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -75,4 +79,21 @@ public class RestClientsConfig {
         configs.put(clientInterface.getName(), clientConfig);
     }
 
+    public static RestClientsConfig getInstance() {
+        InstanceHandle<RestClientsConfig> configHandle;
+        try {
+            configHandle = Arc.container().instance(RestClientsConfig.class);
+        } catch (CreationException e) {
+            String message = "The Rest Client configuration cannot be initialized at this stage. "
+                    + "Try to wrap your Rest Client injection in the Provider<> interface:\n\n"
+                    + "  @Inject\n"
+                    + "  @RestClient\n"
+                    + "  Provider<MyRestClientInterface> myRestClient;\n";
+            throw new RuntimeException(message, e);
+        }
+        if (!configHandle.isAvailable()) {
+            throw new IllegalStateException("Unable to find the RestClientConfigs");
+        }
+        return configHandle.get();
+    }
 }

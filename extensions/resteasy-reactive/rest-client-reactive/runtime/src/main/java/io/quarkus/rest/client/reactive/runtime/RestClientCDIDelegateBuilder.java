@@ -24,8 +24,6 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 
@@ -44,7 +42,7 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey) {
-        this(jaxrsInterface, baseUriFromAnnotation, configKey, getConfigRoot());
+        this(jaxrsInterface, baseUriFromAnnotation, configKey, RestClientsConfig.getInstance());
     }
 
     RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey,
@@ -330,15 +328,6 @@ public class RestClientCDIDelegateBuilder<T> {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
         }
-    }
-
-    private static RestClientsConfig getConfigRoot() {
-        InstanceHandle<RestClientsConfig> configHandle = Arc.container()
-                .instance(RestClientsConfig.class);
-        if (!configHandle.isAvailable()) {
-            throw new IllegalStateException("Unable to find the RestClientsConfig");
-        }
-        return configHandle.get();
     }
 
     private RestClientConfig clientConfigByConfigKey() {

@@ -41,7 +41,7 @@ public class RestClientBase {
     public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
             Class<?>[] annotationProviders) {
         this(proxyType, baseUriFromAnnotation, configKey, annotationProviders,
-                getConfigRoot());
+                RestClientsConfig.getInstance());
     }
 
     RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
@@ -312,15 +312,6 @@ public class RestClientBase {
             }
             throw e;
         }
-    }
-
-    private static RestClientsConfig getConfigRoot() {
-        InstanceHandle<RestClientsConfig> configHandle = Arc.container()
-                .instance(RestClientsConfig.class);
-        if (!configHandle.isAvailable()) {
-            throw new IllegalStateException("Unable to find the RestClientConfigs");
-        }
-        return configHandle.get();
     }
 
     private RestClientConfig clientConfigByConfigKey() {

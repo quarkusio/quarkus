@@ -22,12 +22,51 @@ In this guide, you will find an <<hello_world_example,introductory example>>, th
 
 NOTE: Qute is primarily designed as a Quarkus extension. It is possible to use it as a "standalone" library too. However, in such case some of the features are not available. In general, any feature mentioned under the <<quarkus_integration>> section is missing. You can find more information about the limitations and possibilities in the <<standalone>> section.
 
+[[the_simplest_example]]
+== The Simplest Example
+
+The easiest way to try Qute is to use the convenient `io.quarkus.qute.Qute` class and call one of its `fmt()` static methods that can be used to format simple messages:
+
+[source,java]
+----
+import io.quarkus.qute.Qute;
+
+Qute.fmt("Hello {}!", "Lucy"); <1>
+// => Hello Lucy!
+
+Qute.fmt("Hello {name} {surname ?: 'Default'}!", Map.of("name", "Andy")); <2>
+// => Hello Andy Default!
+
+Qute.fmt("<html>{header}</html>").contentType("text/html").data("header", "<h1>My header</h1>").render(); <3>
+// <html>&lt;h1&gt;Header&lt;/h1&gt;</html> <4>
+
+Qute.fmt("I am {#if ok}happy{#else}sad{/if}!", Map.of("ok", true)); <5>
+// => I am happy!
+----
+<1> The empty expression `{}` is a placeholder that is replaced with an index-based array accessor, i.e. `{data[0]}`.
+<2> You can provide a data map instead.
+<3> A builder-like API is available for more complex formatting requirements.
+<4> Note that for a "text/html" template the special chars are replaced with html entities by default.
+<5> You can use any <<basic-building-blocks,building block>> in the template. In this case, the <<if_section>> is used to render the appropriate part of the message based on the input data.
+
+TIP: In <<quarkus_integration,Quarkus>>, the engine used to format the messages is the same as the one injected by `@Inject Engine`. Therefore, you can make use of any Quarkus-specific integration feature such as <<template_extension_methods>>, <<injecting-beans-directly-in-templates>> or even <<type-safe-message-bundles>>.
+
+
+The format object returned by the `Qute.fmt(String)` method can be evaluated lazily and used e.g. as a log message:
+
+[source,java]
+----
+LOG.info(Qute.fmt("Hello {name}!").data("name", "Foo"));
+// => Hello Foo! and the message template is only evaluated if the log level INFO is used for the specific logger
+----
+
+NOTE: Please read the javadoc of the `io.quarkus.qute.Qute` class for more details. 
 
 [[hello_world_example]]
 == Hello World Example
 
-In this example, we'd like to demonstrate the basic workflow when working with Qute templates.
-Let's start with a simple hello world example.
+In this example, we would like to demonstrate the _basic workflow_ when working with Qute templates.
+Let's start with a simple "hello world" example.
 We will always need some *template contents*:
 
 .hello.html
@@ -84,6 +123,7 @@ TIP: The `Engine` is able to cache the template definitions so that it's not nec
 [[core_features]]
 == Core Features
 
+[[basic-building-blocks]]
 === Basic Building Blocks
 
 The dynamic parts of a template include comments, expressions, sections and unparsed character data.
@@ -1195,6 +1235,7 @@ class MyService {
 
 NOTE: When using `quarkus-resteasy-qute` the content negotiation is performed automatically. See <<resteasy_integration>>.
 
+[[injecting-beans-directly-in-templates]]
 === Injecting Beans Directly In Templates
 
 A CDI bean annotated with `@Named` can be referenced in any template through `cdi` and/or `inject` namespaces:

@@ -1,10 +1,10 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.Parser.StringReader;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;

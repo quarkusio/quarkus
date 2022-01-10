@@ -70,7 +70,7 @@ class SectionNode implements TemplateNode {
         SectionHelperFactory<?> factory;
         private EngineImpl engine;
 
-        public Builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
+        Builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
                 Function<String, TemplateException> errorFun) {
             this.helperName = helperName;
             this.origin = origin;

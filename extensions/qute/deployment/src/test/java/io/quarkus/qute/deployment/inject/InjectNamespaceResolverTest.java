@@ -13,6 +13,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.deployment.Hello;
 import io.quarkus.test.QuarkusUnitTest;
@@ -35,6 +36,12 @@ public class InjectNamespaceResolverTest {
     public void testInjection() {
         assertEquals("pong != simple and pong != simple", foo.render());
         assertEquals(2, SimpleBean.DESTROYS.longValue());
+
+        // Test the convenient Qute class
+        // By default, the content type is plain text
+        assertEquals("pong::<br>", Qute.fmt("{cdi:hello.ping}::{}", "<br>"));
+        assertEquals("pong::&lt;br&gt;",
+                Qute.fmt("{cdi:hello.ping}::{newLine}").contentType("text/html").data("newLine", "<br>").render());
     }
 
     @Named("simple")

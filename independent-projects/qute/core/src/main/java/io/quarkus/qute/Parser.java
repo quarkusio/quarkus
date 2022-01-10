@@ -7,7 +7,6 @@ import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -22,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -76,6 +76,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     private boolean ignoreContent;
     private AtomicInteger expressionIdGenerator;
     private final List<Function<String, String>> contentFilters;
+    private boolean hasLineSeparator;
 
     public Parser(EngineImpl engine, Reader reader, String templateId, String generatedId, Optional<Variant> variant) {
         this.engine = engine;
@@ -118,7 +119,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 .setEngine(engine)
                 .setHelperFactory(ROOT_SECTION_HELPER_FACTORY));
 
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         Reader r = reader;
 
         try {
@@ -164,8 +165,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
             }
             TemplateImpl template = new TemplateImpl(engine, root.build(), generatedId, variant);
 
-            Set<TemplateNode> nodesToRemove;
-            if (engine.removeStandaloneLines) {
+            Set<TemplateNode> nodesToRemove = Collections.emptySet();
+            if (hasLineSeparator && engine.removeStandaloneLines) {
                 nodesToRemove = new HashSet<>();
                 List<List<TemplateNode>> lines = readLines(template.root);
                 for (List<TemplateNode> line : lines) {
@@ -178,12 +179,13 @@ class Parser implements Function<String, Expression>, ParserHelper {
                         }
                     }
                 }
-            } else {
-                nodesToRemove = Collections.emptySet();
+                if (nodesToRemove.isEmpty()) {
+                    nodesToRemove = Collections.emptySet();
+                }
             }
             template.root.optimizeNodes(nodesToRemove);
 
-            LOGGER.tracef("Parsing finished in %s ms", System.currentTimeMillis() - start);
+            LOGGER.tracef("Parsing finished in %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
             return template;
 
         } catch (IOException e) {
@@ -256,6 +258,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
             state = State.TEXT;
             processCharacter(character);
         }
+        // Parsing of one-line templates can be optimized 
+        hasLineSeparator = true;
     }
 
     private void comment(char character) {
@@ -743,15 +747,15 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
         String namespace = null;
         int namespaceIdx = value.indexOf(NAMESPACE_SEPARATOR);
-        int spaceIdx = value.indexOf(' ');
-        int bracketIdx = value.indexOf('(');
+        int spaceIdx;
+        int bracketIdx;
 
         List<String> strParts;
         if (namespaceIdx != -1
                 // No space or colon before the space
-                && (spaceIdx == -1 || namespaceIdx < spaceIdx)
+                && ((spaceIdx = value.indexOf(' ')) == -1 || namespaceIdx < spaceIdx)
                 // No bracket or colon before the bracket
-                && (bracketIdx == -1 || namespaceIdx < bracketIdx)
+                && ((bracketIdx = value.indexOf('(')) == -1 || namespaceIdx < bracketIdx)
                 // No string literal
                 && !LiteralSupport.isStringLiteralSeparator(value.charAt(0))) {
             // Expression that starts with a namespace
@@ -943,6 +947,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     private static String toString(Reader in)
             throws IOException {
+        if (in instanceof StringReader) {
+            return ((StringReader) in).str;
+        }
         StringBuilder out = new StringBuilder();
         CharBuffer buffer = CharBuffer.allocate(8192);
         while (in.read(buffer) != -1) {
@@ -951,6 +958,18 @@ class Parser implements Function<String, Expression>, ParserHelper {
             buffer.clear();
         }
         return out.toString();
+    }
+
+    static class StringReader extends java.io.StringReader {
+
+        // make the underlying string accessible
+        final String str;
+
+        public StringReader(String s) {
+            super(s);
+            this.str = s;
+        }
+
     }
 
     static class OriginImpl implements Origin {

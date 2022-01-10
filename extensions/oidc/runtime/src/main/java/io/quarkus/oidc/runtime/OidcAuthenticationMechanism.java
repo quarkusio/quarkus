@@ -4,9 +4,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -24,23 +22,22 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism {
 
-    @Inject
-    DefaultTenantConfigResolver resolver;
+    private final BearerAuthenticationMechanism bearerAuth = new BearerAuthenticationMechanism();
+    private final CodeAuthenticationMechanism codeAuth = new CodeAuthenticationMechanism();
 
-    private BearerAuthenticationMechanism bearerAuth = new BearerAuthenticationMechanism();
-    private CodeAuthenticationMechanism codeAuth = new CodeAuthenticationMechanism();
+    private final DefaultTenantConfigResolver resolver;
 
-    @PostConstruct
-    public void init() {
-        bearerAuth.setResolver(resolver);
-        codeAuth.setResolver(resolver);
+    public OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver) {
+        this.resolver = resolver;
+        this.bearerAuth.setResolver(resolver);
+        this.codeAuth.setResolver(resolver);
     }
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         setTenantIdAttribute(context);
-        return resolve(context).chain(new Function<OidcTenantConfig, Uni<? extends SecurityIdentity>>() {
+        return resolve(context).chain(new Function<>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcConfig) {
                 if (!oidcConfig.tenantEnabled) {
@@ -55,7 +52,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
         setTenantIdAttribute(context);
-        return resolve(context).chain(new Function<OidcTenantConfig, Uni<? extends ChallengeData>>() {
+        return resolve(context).chain(new Function<>() {
             @Override
             public Uni<? extends ChallengeData> apply(OidcTenantConfig oidcTenantConfig) {
                 if (!oidcTenantConfig.tenantEnabled) {
@@ -68,7 +65,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     private Uni<OidcTenantConfig> resolve(RoutingContext context) {
-        return resolver.resolveConfig(context).map(new Function<OidcTenantConfig, OidcTenantConfig>() {
+        return resolver.resolveConfig(context).map(new Function<>() {
             @Override
             public OidcTenantConfig apply(OidcTenantConfig oidcTenantConfig) {
                 if (oidcTenantConfig == null) {

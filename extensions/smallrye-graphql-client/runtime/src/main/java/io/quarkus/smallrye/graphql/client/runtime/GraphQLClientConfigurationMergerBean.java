@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.graphql.client.runtime;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -47,6 +48,7 @@ public class GraphQLClientConfigurationMergerBean {
                 GraphQLClientConfiguration transformed = new GraphQLClientConfiguration();
                 transformed.setHeaders(quarkusConfig.headers);
                 quarkusConfig.url.ifPresent(transformed::setUrl);
+                transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols.orElse(new ArrayList<>()));
                 upstreamConfiguration.addClient(configKey, transformed);
             } else {
                 // if SmallRye configuration already contains this client, override it with the Quarkus configuration
@@ -55,6 +57,13 @@ public class GraphQLClientConfigurationMergerBean {
                 // merge the headers
                 if (quarkusConfig.headers != null) {
                     upstreamConfig.getHeaders().putAll(quarkusConfig.headers);
+                }
+                if (quarkusConfig.subprotocols.isPresent()) {
+                    if (upstreamConfig.getWebsocketSubprotocols() != null) {
+                        upstreamConfig.getWebsocketSubprotocols().addAll(quarkusConfig.subprotocols.get());
+                    } else {
+                        upstreamConfig.setWebsocketSubprotocols(quarkusConfig.subprotocols.get());
+                    }
                 }
             }
         }

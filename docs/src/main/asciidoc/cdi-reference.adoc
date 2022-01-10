@@ -957,6 +957,49 @@ public class Processor {
 }
 ----
 
+=== Ignoring Class-Level Interceptor Bindings for Methods and Constructors
+
+If a managed bean declares interceptor binding annotations on the class level, the corresponding `@AroundInvoke` interceptors will apply to all business methods.
+Similarly, the corresponding `@AroundConstruct` interceptors will apply to the bean constructor.
+
+For example, suppose we have a logging interceptor with the `@Logged` binding annotation and a tracing interceptor with the `@Traced` binding annotation:
+
+[source, java]
+----
+@ApplicationScoped
+@Logged
+public class MyService {
+    public void doSomething() {
+        ...
+    }
+
+    @Traced
+    public void doSomethingElse() {
+        ...
+    }
+}
+----
+
+In this example, both `doSomething` and `doSomethingElse` will be intercepted by the hypothetical logging interceptor.
+Additionally, the `doSomethingElse` method will be intercepted by the hypothetical tracing interceptor.
+
+Now, if that `@Traced` interceptor also performed all the necessary logging, we'd like to skip the `@Logged` interceptor for this method, but keep it for all other methods.
+To achieve that, you can annotate the method with `@NoClassInterceptors`:
+
+[source, java]
+----
+@Traced
+@NoClassInterceptors
+public void doSomethingElse() {
+    ...
+}
+----
+
+The `@NoClassInterceptors` annotation may be put on methods and constructors and means that all class-level interceptors are ignored for these methods and constructors.
+In other words, if a method/constructor is annotated `@NoClassInterceptors`, then the only interceptors that will apply to this method/constructor are interceptors declared directly on the method/constructor.
+
+This annotation affects only business method interceptors (`@AroundInvoke`) and constructor lifecycle callback interceptors (`@AroundConstruct`).
+
 [[build_time_apis]]
 == Build Time Extensions
 

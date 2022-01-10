@@ -8,7 +8,6 @@ import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.PERMIT;
 import static javax.servlet.DispatcherType.REQUEST;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -237,9 +236,9 @@ public class UndertowBuildStep {
                 new HotDeploymentWatchedFileBuildItem(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF));
 
         //check for the file in the handlers dir
-        Path handlerPath = applicationArchivesBuildItem.getRootArchive()
-                .getChildPath(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF);
-        if (handlerPath != null) {
+        final boolean handlerPath = applicationArchivesBuildItem.getRootArchive()
+                .apply(tree -> tree.contains(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF));
+        if (handlerPath) {
             producer.produce(new ServletExtensionBuildItem(new UndertowHandlersConfServletExtension()));
             nativeImageResourceBuildItemBuildProducer.produce(
                     new NativeImageResourceBuildItem(UndertowHandlersConfServletExtension.META_INF_UNDERTOW_HANDLERS_CONF));

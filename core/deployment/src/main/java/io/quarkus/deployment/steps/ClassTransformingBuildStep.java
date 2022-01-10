@@ -239,7 +239,7 @@ public class ClassTransformingBuildStep {
         if (packageConfig.writeTransformedBytecodeToBuildOutput && (launchMode.getLaunchMode() == LaunchMode.NORMAL)) {
             // the idea here is to write the transformed classes into the build tool's output directory to make core coverage work
 
-            for (Path path : archiveRoot.getRootDirs()) {
+            for (Path path : archiveRoot.getRootDirectories()) {
                 copyTransformedClasses(path, transformedClassesByJar.get(path));
             }
         }

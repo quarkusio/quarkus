@@ -14,14 +14,16 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.capabilities.CapabilityConfig;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -42,6 +44,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -99,6 +102,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     @Component
     BootstrapWorkspaceProvider workspaceProvider;
+
+    @Parameter(defaultValue = "${session}", readonly = true)
+    MavenSession session;
 
     /**
      * The current repository/network configuration of Maven.
@@ -268,22 +274,22 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);
-            props.put(AppModel.PARENT_FIRST_ARTIFACTS, val);
+            props.put(ApplicationModel.PARENT_FIRST_ARTIFACTS, val);
         }
 
         if (runnerParentFirstArtifacts != null && !runnerParentFirstArtifacts.isEmpty()) {
             String val = String.join(",", runnerParentFirstArtifacts);
-            props.put(AppModel.RUNNER_PARENT_FIRST_ARTIFACTS, val);
+            props.put(ApplicationModel.RUNNER_PARENT_FIRST_ARTIFACTS, val);
         }
 
         if (excludedArtifacts != null && !excludedArtifacts.isEmpty()) {
             String val = String.join(",", excludedArtifacts);
-            props.put(AppModel.EXCLUDED_ARTIFACTS, val);
+            props.put(ApplicationModel.EXCLUDED_ARTIFACTS, val);
         }
 
         if (lesserPriorityArtifacts != null && !lesserPriorityArtifacts.isEmpty()) {
             String val = String.join(",", lesserPriorityArtifacts);
-            props.put(AppModel.LESSER_PRIORITY_ARTIFACTS, val);
+            props.put(ApplicationModel.LESSER_PRIORITY_ARTIFACTS, val);
         }
 
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
@@ -845,22 +851,33 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return null;
         }
         // if it hasn't been packaged yet, we skip it, we are not packaging yet
-        if (!a.getExtension().equals("jar") || packaged && !isJarFile(f)) {
+        if (!a.getExtension().equals(ArtifactCoords.TYPE_JAR) || packaged && !isJarFile(f)) {
             return null;
         }
         try {
             if (f.isDirectory()) {
-                final Path p = getExtensionDescriptorOrNull(f.toPath());
-                return p == null ? null : readExtensionDescriptor(p);
-            } else {
-                try (FileSystem fs = ZipUtils.newFileSystem(f.toPath())) {
-                    final Path p = getExtensionDescriptorOrNull(fs.getPath(""));
-                    return p == null ? null : readExtensionDescriptor(p);
+                return readExtensionDescriptorIfExists(f.toPath());
+            }
+            // In case of a parallel build, the resolved JAR might not have been fully written, which may result in a failure to read it
+            // so we try the classes dir first
+            if (session.isParallel()) {
+                final LocalProject localProject = workspaceProvider.getProject(a.getGroupId(), a.getArtifactId());
+                final Path classesDir = localProject == null ? null : localProject.getClassesDir();
+                if (classesDir != null && Files.exists(classesDir)) {
+                    return readExtensionDescriptorIfExists(classesDir);
                 }
+            }
+            try (FileSystem fs = ZipUtils.newFileSystem(f.toPath())) {
+                return readExtensionDescriptorIfExists(fs.getPath(""));
             }
         } catch (Throwable e) {
             throw new IllegalStateException("Failed to read " + f, e);
         }
+    }
+
+    private Properties readExtensionDescriptorIfExists(final Path classesDir) throws IOException {
+        final Path p = getExtensionDescriptorOrNull(classesDir);
+        return p == null ? null : readExtensionDescriptor(p);
     }
 
     private Path getExtensionDescriptorOrNull(Path runtimeExtRootDir) {
@@ -1122,6 +1139,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                         .setRemoteRepositoryManager(remoteRepoManager)
                         .setRepositorySystemSession(session)
                         .setRemoteRepositories(repos)
+                        .setPreferPomsFromWorkspace(true)
                         .setCurrentProject(workspaceProvider.origin()));
                 resolver = new MavenArtifactResolver(ctx);
             } catch (BootstrapMavenException e) {

@@ -64,6 +64,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.paths.PathUtils;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
@@ -779,12 +780,12 @@ public class SmallRyeOpenApiProcessor {
         List<Result> results = new ArrayList<>();
 
         // First check for the file in both META-INF and WEB-INF/classes/META-INF
-        results = addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YAML);
-        results = addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
-        results = addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YML);
-        results = addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YML);
-        results = addStaticModelIfExist(results, Format.JSON, META_INF_OPENAPI_JSON);
-        results = addStaticModelIfExist(results, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
+        addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YAML);
+        addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
+        addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YML);
+        addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YML);
+        addStaticModelIfExist(results, Format.JSON, META_INF_OPENAPI_JSON);
+        addStaticModelIfExist(results, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
 
         // Add any aditional directories if configured
         if (openApiConfig.additionalDocsDirectory.isPresent()) {
@@ -792,9 +793,9 @@ public class SmallRyeOpenApiProcessor {
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
                 try {
-                    List<String> filesInDir = getResourceFiles(path.toString(), target);
+                    List<String> filesInDir = getResourceFiles(PathUtils.asString(path, "/"), target);
                     for (String possibleModelFile : filesInDir) {
-                        results = addStaticModelIfExist(results, possibleModelFile);
+                        addStaticModelIfExist(results, possibleModelFile);
                     }
                 } catch (IOException ioe) {
                     ioe.printStackTrace();
@@ -805,18 +806,17 @@ public class SmallRyeOpenApiProcessor {
         return results;
     }
 
-    private List<Result> addStaticModelIfExist(List<Result> results, String path) {
+    private void addStaticModelIfExist(List<Result> results, String path) {
         if (path.endsWith(".json")) {
             // Scan a specific json file
-            results = addStaticModelIfExist(results, Format.JSON, path);
+            addStaticModelIfExist(results, Format.JSON, path);
         } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
             // Scan a specific yaml file
-            results = addStaticModelIfExist(results, Format.YAML, path);
+            addStaticModelIfExist(results, Format.YAML, path);
         }
-        return results;
     }
 
-    private List<Result> addStaticModelIfExist(List<Result> results, Format format, String path) {
+    private void addStaticModelIfExist(List<Result> results, Format format, String path) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         try (InputStream inputStream = cl.getResourceAsStream(path)) {
             if (inputStream != null) {
@@ -825,7 +825,6 @@ public class SmallRyeOpenApiProcessor {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-        return results;
     }
 
     private List<String> getResourceFiles(String pathName, Path target) throws IOException {

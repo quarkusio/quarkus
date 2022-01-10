@@ -4,20 +4,20 @@ import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import java.io.File;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
+
+    public static final String MAIN = "";
+    public static final String TEST = "tests";
 
     private final WorkspaceModuleId id;
     private final File moduleDir;
     private final File buildDir;
-    private final Collection<ProcessedSources> mainSources = new ArrayList<>(1);
-    private final Collection<ProcessedSources> mainResources = new ArrayList<>(1);
-    private final Collection<ProcessedSources> testSources = new ArrayList<>(1);
-    private final Collection<ProcessedSources> testResources = new ArrayList<>(1);
     private PathCollection buildFiles;
+    private final Map<String, ArtifactSources> sourcesSets = new HashMap<>();
 
     public DefaultWorkspaceModule(WorkspaceModuleId id, File moduleDir, File buildDir) {
         super();
@@ -41,40 +41,23 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         return buildDir;
     }
 
-    @Override
-    public Collection<ProcessedSources> getMainSources() {
-        return mainSources;
-    }
-
-    public void addMainSources(ProcessedSources mainSources) {
-        this.mainSources.add(mainSources);
+    public void addArtifactSources(ArtifactSources src) {
+        sourcesSets.put(src.getClassifier(), src);
     }
 
     @Override
-    public Collection<ProcessedSources> getMainResources() {
-        return mainResources;
-    }
-
-    public void addMainResources(ProcessedSources mainResources) {
-        this.mainResources.add(mainResources);
+    public boolean hasSources(String classifier) {
+        return sourcesSets.containsKey(classifier);
     }
 
     @Override
-    public Collection<ProcessedSources> getTestSources() {
-        return testSources;
-    }
-
-    public void addTestSources(ProcessedSources testSources) {
-        this.testSources.add(testSources);
+    public ArtifactSources getSources(String name) {
+        return sourcesSets.get(name);
     }
 
     @Override
-    public Collection<ProcessedSources> getTestResources() {
-        return testResources;
-    }
-
-    public void addTestResources(ProcessedSources testResources) {
-        this.testResources.add(testResources);
+    public Collection<String> getSourceClassifiers() {
+        return sourcesSets.keySet();
     }
 
     public void setBuildFiles(PathCollection buildFiles) {
@@ -91,22 +74,9 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         final StringBuilder buf = new StringBuilder();
         buf.append(id);
         buf.append(" ").append(moduleDir);
-        appendSources(buf, "sources", getMainSources());
-        appendSources(buf, "resources", getMainResources());
-        appendSources(buf, "test-sources", getTestSources());
-        appendSources(buf, "test-resources", getTestResources());
+        sourcesSets.values().forEach(a -> {
+            buf.append(" ").append(a);
+        });
         return buf.toString();
-    }
-
-    private void appendSources(StringBuilder buf, String name, Collection<ProcessedSources> sources) {
-        if (!sources.isEmpty()) {
-            buf.append(" ").append(name).append("[");
-            final Iterator<ProcessedSources> i = sources.iterator();
-            buf.append(i.next());
-            while (i.hasNext()) {
-                buf.append(";").append(i.next());
-            }
-            buf.append("]");
-        }
     }
 }

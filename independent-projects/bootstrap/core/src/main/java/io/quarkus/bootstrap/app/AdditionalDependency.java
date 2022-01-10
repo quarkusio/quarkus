@@ -38,16 +38,10 @@ public class AdditionalDependency implements Serializable {
     }
 
     /**
-     * @deprecated in favor of {@link #AdditionalDependency(PathCollection, boolean, boolean)}
      * @param archivePath archive paths
      * @param hotReloadable whether the dependency is reloadable
      * @param forceApplicationArchive whether it should be added as an application archive
      */
-    @Deprecated
-    public AdditionalDependency(PathsCollection archivePath, boolean hotReloadable, boolean forceApplicationArchive) {
-        this(PathList.from(archivePath), hotReloadable, forceApplicationArchive);
-    }
-
     public AdditionalDependency(PathCollection paths, boolean hotReloadable, boolean forceApplicationArchive) {
         this.paths = paths;
         this.hotReloadable = hotReloadable;

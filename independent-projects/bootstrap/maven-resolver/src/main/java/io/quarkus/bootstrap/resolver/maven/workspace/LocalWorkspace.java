@@ -1,10 +1,10 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -104,37 +104,8 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
                                 && lp.getVersion().equals(resolvedVersion))) {
             return null;
         }
-        if (!Objects.equals(artifact.getClassifier(), lp.getAppArtifact().getClassifier())) {
-            if ("tests".equals(artifact.getClassifier())) {
-                //special classifier used for test jars
-                final Path path = lp.getTestClassesDir();
-                if (Files.exists(path)) {
-                    return path.toFile();
-                }
-            }
-            return null;
-        }
-        final String type = artifact.getExtension();
-        if (type.equals(AppArtifactCoords.TYPE_JAR)) {
-            Path path = lp.getClassesDir();
-            if (Files.exists(path)) {
-                return path.toFile();
-            }
 
-            // it could be a project with no sources/resources, in which case Maven will create an empty JAR
-            // if it has previously been packaged we can return it
-            path = lp.getOutputDir().resolve(getFileName(artifact));
-            if (Files.exists(path)) {
-                return path.toFile();
-            }
-
-            path = emptyJarOutput(lp, artifact);
-            if (path != null) {
-                return path.toFile();
-            }
-
-            // otherwise, this project hasn't been built yet
-        } else if (type.equals(AppArtifactCoords.TYPE_POM)) {
+        if (ArtifactCoords.TYPE_POM.equals(artifact.getExtension())) {
             final File pom = lp.getRawModel().getPomFile();
             // if the pom exists we should also check whether the main artifact can also be resolved from the workspace
             if (pom.exists() && ("pom".equals(lp.getRawModel().getPackaging())
@@ -143,12 +114,38 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
                     || emptyJarOutput(lp, artifact) != null)) {
                 return pom;
             }
-        } else {
-            // check whether the artifact exists in the project's output dir
-            final Path path = lp.getOutputDir().resolve(getFileName(artifact));
+        }
+
+        // Check whether the artifact exists in the project's output dir.
+        // It could also be a project with no sources/resources, in which case Maven will create an empty JAR
+        // if it has previously been packaged we can use it
+        Path path = lp.getOutputDir().resolve(getFileName(artifact));
+        if (Files.exists(path)) {
+            return path.toFile();
+        }
+
+        if (!Objects.equals(artifact.getClassifier(), lp.getAppArtifact().getClassifier())) {
+            if ("tests".equals(artifact.getClassifier())) {
+                //special classifier used for test jars
+                path = lp.getTestClassesDir();
+                if (Files.exists(path)) {
+                    return path.toFile();
+                }
+            }
+            // otherwise, this artifact hasn't been built yet
+            return null;
+        }
+
+        if (ArtifactCoords.TYPE_JAR.equals(artifact.getExtension())) {
+            path = lp.getClassesDir();
             if (Files.exists(path)) {
                 return path.toFile();
             }
+            path = emptyJarOutput(lp, artifact);
+            if (path != null) {
+                return path.toFile();
+            }
+            // otherwise, this project hasn't been built yet
         }
         return null;
     }
@@ -162,7 +159,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
         // so the Maven resolver will succeed resolving it from the repo.
         // If the artifact does not exist in the local repo, we are creating an empty classes directory in the target directory.
         if (!Files.exists(lp.getSourcesSourcesDir())
-                && lp.getResourcesSourcesDirs().toList().stream().noneMatch(Files::exists)
+                && lp.getResourcesSourcesDirs().stream().noneMatch(Files::exists)
                 && !isFoundInLocalRepo(artifact)) {
             try {
                 final Path classesDir = lp.getClassesDir();

@@ -59,10 +59,12 @@ public class UndertowStaticResourcesBuildStep {
         Set<String> knownFiles = new HashSet<>();
         Set<String> knownDirectories = new HashSet<>();
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            Path resource = i.getChildPath(META_INF_RESOURCES);
-            if (resource != null && Files.exists(resource)) {
-                collectKnownPaths(resource, knownFiles, knownDirectories);
-            }
+            i.accept(tree -> {
+                Path resource = tree.getPath(META_INF_RESOURCES);
+                if (resource != null && Files.exists(resource)) {
+                    collectKnownPaths(resource, knownFiles, knownDirectories);
+                }
+            });
         }
 
         ClassPathUtils.consumeAsPaths(META_INF_RESOURCES, resource -> {

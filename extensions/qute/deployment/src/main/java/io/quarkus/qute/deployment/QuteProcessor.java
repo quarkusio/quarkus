@@ -1254,18 +1254,24 @@ public class QuteProcessor {
             }
         }
         for (ApplicationArchive archive : allApplicationArchives) {
-            for (Path rootDir : archive.getRootDirectories()) {
-                // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
-                // a wrong directory name on case-insensitive file systems 
-                Path basePath = Files.list(rootDir).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
-                if (basePath != null) {
-                    LOGGER.debugf("Found templates dir: %s", basePath);
-                    basePaths.add(basePath);
-                    scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                            config);
-                    break;
+            archive.accept(tree -> {
+                for (Path rootDir : tree.getRoots()) {
+                    // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
+                    // a wrong directory name on case-insensitive file systems
+                    try {
+                        Path basePath = Files.list(rootDir).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                        if (basePath != null) {
+                            LOGGER.debugf("Found templates dir: %s", basePath);
+                            basePaths.add(basePath);
+                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
+                                    config);
+                            break;
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
                 }
-            }
+            });
         }
     }
 

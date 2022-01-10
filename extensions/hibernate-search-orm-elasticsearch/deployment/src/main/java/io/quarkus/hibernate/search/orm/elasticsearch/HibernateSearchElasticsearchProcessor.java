@@ -2,6 +2,8 @@ package io.quarkus.hibernate.search.orm.elasticsearch;
 
 import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.INDEXED;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,6 +11,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
@@ -26,8 +29,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -41,6 +47,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.ElasticsearchVersio
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchBackendBuildTimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchIndexBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -66,7 +73,9 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations,
-            BuildProducer<FeatureBuildItem> feature) {
+            BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_SEARCH_ELASTICSEARCH));
 
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -116,10 +125,9 @@ class HibernateSearchElasticsearchProcessor {
             }
         }
 
-        checkConfig(persistenceUnitName, puConfig, defaultBackendIsUsed);
-
         configuredPersistenceUnits
-                .produce(new HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(persistenceUnitName, puConfig));
+                .produce(new HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(persistenceUnitName, puConfig,
+                        defaultBackendIsUsed));
     }
 
     @BuildStep
@@ -194,13 +202,38 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
-    private static void checkConfig(String persistenceUnitName,
-            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig, boolean defaultBackendIsUsed) {
+    @BuildStep
+    public void processPersistenceUnitBuildTimeConfig(
+            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
+            processPersistenceUnitBuildTimeConfig(configuredPersistenceUnit, applicationArchivesBuildItem, nativeImageResources,
+                    hotDeploymentWatchedFiles);
+        }
+    }
+
+    private void processPersistenceUnitBuildTimeConfig(
+            HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+        String persistenceUnitName = configuredPersistenceUnit.getPersistenceUnitName();
+        HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig = configuredPersistenceUnit
+                .getBuildTimeConfig();
+
         Set<String> propertyKeysWithNoVersion = new LinkedHashSet<>();
-        if (defaultBackendIsUsed) {
+        if (configuredPersistenceUnit.isDefaultBackendUsed()) {
+            ElasticsearchBackendBuildTimeConfig backendConfig = buildTimeConfig != null ? buildTimeConfig.defaultBackend : null;
             // we validate that the version is present for the default backend
-            if (buildTimeConfig == null || !buildTimeConfig.defaultBackend.version.isPresent()) {
+            if (backendConfig == null || !backendConfig.version.isPresent()) {
                 propertyKeysWithNoVersion.add(elasticsearchVersionPropertyKey(persistenceUnitName, null));
+            }
+            if (backendConfig != null) {
+                // we register files referenced from the default backend configuration
+                registerClasspathFileFromBackendConfig(persistenceUnitName, null, backendConfig,
+                        applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
             }
         }
 
@@ -209,10 +242,15 @@ class HibernateSearchElasticsearchProcessor {
                 ? buildTimeConfig.namedBackends.backends
                 : Collections.emptyMap();
         for (Entry<String, ElasticsearchBackendBuildTimeConfig> additionalBackendEntry : backends.entrySet()) {
-            if (!additionalBackendEntry.getValue().version.isPresent()) {
+            String backendName = additionalBackendEntry.getKey();
+            ElasticsearchBackendBuildTimeConfig backendConfig = additionalBackendEntry.getValue();
+            if (!backendConfig.version.isPresent()) {
                 propertyKeysWithNoVersion
-                        .add(elasticsearchVersionPropertyKey(persistenceUnitName, additionalBackendEntry.getKey()));
+                        .add(elasticsearchVersionPropertyKey(persistenceUnitName, backendName));
             }
+            // we register files referenced from named backends configuration
+            registerClasspathFileFromBackendConfig(persistenceUnitName, backendName, backendConfig,
+                    applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
         }
         if (!propertyKeysWithNoVersion.isEmpty()) {
             throw new ConfigurationException(
@@ -222,7 +260,64 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
+    private static void registerClasspathFileFromBackendConfig(String persistenceUnitName, String backendName,
+            ElasticsearchBackendBuildTimeConfig backendConfig,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+        registerClasspathFileFromIndexConfig(persistenceUnitName, backendName, null, backendConfig.indexDefaults,
+                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+        for (Entry<String, ElasticsearchIndexBuildTimeConfig> entry : backendConfig.indexes.entrySet()) {
+            String indexName = entry.getKey();
+            ElasticsearchIndexBuildTimeConfig indexConfig = entry.getValue();
+            registerClasspathFileFromIndexConfig(persistenceUnitName, backendName, indexName, indexConfig,
+                    applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+        }
+    }
+
+    private static void registerClasspathFileFromIndexConfig(String persistenceUnitName, String backendName, String indexName,
+            ElasticsearchIndexBuildTimeConfig indexConfig,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+        registerClasspathFileFromConfig(persistenceUnitName, backendName, indexName, "schema-management.settings-file",
+                indexConfig.schemaManagement.settingsFile,
+                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+        registerClasspathFileFromConfig(persistenceUnitName, backendName, indexName, "schema-management.mapping-file",
+                indexConfig.schemaManagement.mappingFile,
+                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+    }
+
+    private static void registerClasspathFileFromConfig(String persistenceUnitName, String backendName, String indexName,
+            String propertyKeyRadical,
+            Optional<String> classpathFileOptional,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+        if (!classpathFileOptional.isPresent()) {
+            return;
+        }
+        String classpathFile = classpathFileOptional.get();
+
+        Path existingPath = applicationArchivesBuildItem.getRootArchive().getChildPath(classpathFile);
+
+        if (existingPath == null || Files.isDirectory(existingPath)) {
+            //raise exception if explicit file is not present (i.e. not the default)
+            throw new ConfigurationException(
+                    "Unable to find file referenced in '"
+                            + backendPropertyKey(persistenceUnitName, backendName, indexName, propertyKeyRadical) + "="
+                            + classpathFile
+                            + "'. Remove property or add file to your path.");
+        }
+        nativeImageResources.produce(new NativeImageResourceBuildItem(classpathFile));
+        hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(classpathFile));
+    }
+
     private static String elasticsearchVersionPropertyKey(String persistenceUnitName, String backendName) {
+        return backendPropertyKey(persistenceUnitName, backendName, null, "version");
+    }
+
+    private static String backendPropertyKey(String persistenceUnitName, String backendName, String indexName, String radical) {
         StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-search-orm.");
         if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             keyBuilder.append(persistenceUnitName).append(".");
@@ -231,7 +326,10 @@ class HibernateSearchElasticsearchProcessor {
         if (backendName != null) {
             keyBuilder.append(backendName).append(".");
         }
-        keyBuilder.append("version");
+        if (indexName != null) {
+            keyBuilder.append("indexes.").append(indexName).append(".");
+        }
+        keyBuilder.append(radical);
         return keyBuilder.toString();
     }
 

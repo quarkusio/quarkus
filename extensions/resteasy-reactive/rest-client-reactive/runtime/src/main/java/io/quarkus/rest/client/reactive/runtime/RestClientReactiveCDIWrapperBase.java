@@ -7,6 +7,8 @@ import javax.annotation.PreDestroy;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.NoClassInterceptors;
+
 public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> implements Closeable {
     private static final Logger log = Logger.getLogger(RestClientReactiveCDIWrapperBase.class);
 
@@ -17,11 +19,13 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     }
 
     @Override
+    @NoClassInterceptors
     public void close() throws IOException {
         delegate.close();
     }
 
     @PreDestroy
+    @NoClassInterceptors
     public void destroy() {
         try {
             close();
@@ -32,6 +36,7 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
 
     // used by generated code
     @SuppressWarnings("unused")
+    @NoClassInterceptors
     public Object getDelegate() {
         return delegate;
     }

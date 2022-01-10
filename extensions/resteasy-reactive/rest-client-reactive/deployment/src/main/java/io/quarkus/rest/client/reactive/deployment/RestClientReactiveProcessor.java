@@ -1,6 +1,8 @@
 package io.quarkus.rest.client.reactive.deployment;
 
 import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
@@ -45,6 +47,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -93,6 +96,14 @@ class RestClientReactiveProcessor {
 
     private static final String DISABLE_SMART_PRODUCES_QUARKUS = "quarkus.rest-client.disable-smart-produces";
     private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
+
+    private static final Set<DotName> SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS = Set.of(
+            REGISTER_REST_CLIENT,
+            REGISTER_PROVIDER,
+            REGISTER_PROVIDERS,
+            CLIENT_HEADER_PARAM,
+            CLIENT_HEADER_PARAMS,
+            REGISTER_CLIENT_HEADERS);
 
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
@@ -331,6 +342,7 @@ class RestClientReactiveProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            CustomScopeAnnotationsBuildItem scopes,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             RestClientReactiveConfig clientConfig,
             RestClientRecorder recorder) {
@@ -388,6 +400,19 @@ class RestClientReactiveProcessor {
                             .getObjectType(jaxrsInterface.name().toString().replace('.', '/'));
                     classCreator.addAnnotation(Typed.class.getName(), RetentionPolicy.RUNTIME)
                             .addValue("value", new org.objectweb.asm.Type[] { asmType });
+
+                    for (AnnotationInstance annotation : jaxrsInterface.classAnnotations()) {
+                        if (SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS.contains(annotation.name())) {
+                            continue;
+                        }
+
+                        // scope annotation is added to the generated class already, see above
+                        if (scopes.isScopeIn(Set.of(annotation))) {
+                            continue;
+                        }
+
+                        classCreator.addAnnotation(annotation);
+                    }
 
                     // CONSTRUCTOR:
 
@@ -525,7 +550,7 @@ class RestClientReactiveProcessor {
             if (scopeToUse == null) {
                 log.warnf("Unsupported default scope {} provided for rest client {}. Defaulting to {}",
                         scope, restClientInterface.name(), globalDefaultScope.getName());
-                scopeToUse = BuiltinScope.DEPENDENT.getInfo();
+                scopeToUse = globalDefaultScope.getInfo();
             }
         } else {
             final Set<DotName> annotations = restClientInterface.annotations().keySet();

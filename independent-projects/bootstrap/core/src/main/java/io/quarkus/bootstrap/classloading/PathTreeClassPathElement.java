@@ -5,15 +5,11 @@ import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -115,10 +111,15 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
             }
             //we still need this to work if it is closed, so shutdown hooks work
             //once it is closed it simply does not hold on to any resources
+            final boolean interrupted = Thread.interrupted();
             try (OpenPathTree openTree = pathTree.getOriginalTree().open()) {
                 return func.apply(openTree);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
+            } finally {
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
         } finally {
             lock.readLock().unlock();
@@ -232,13 +233,15 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
                             Thread.currentThread().interrupt();
                             return bytes;
                         } catch (ClosedChannelException e) {
+                            // This could happen in tests or dev mode when the application is being terminated
+                            // while some threads are still trying to load classes.
+                            // Reset the interrupted status and try completing the operation by reading from a newly open archive
                             lock.readLock().unlock();
                             try {
                                 close();
                             } finally {
                                 lock.readLock().lock();
                             }
-                            // try completing the operation by reading from a newly open archive
                         }
                     } catch (IOException e) {
                         if (pathTree.isOpen()) {
@@ -264,10 +267,23 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
                         }
                     }
                 }
+                // reading the entry directly from the JAR
+                final boolean interrupted = Thread.interrupted();
                 try {
-                    return readUrl(getUrl());
-                } catch (IOException e) {
-                    throw new RuntimeException("Unable to read " + name, e);
+                    return pathTree.getOriginalTree().apply(name, visit -> {
+                        if (visit == null) {
+                            return null;
+                        }
+                        try {
+                            return Files.readAllBytes(visit.getPath());
+                        } catch (IOException e) {
+                            throw new RuntimeException("Unable to read " + name, e);
+                        }
+                    });
+                } finally {
+                    if (interrupted) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
             } finally {
                 lock.readLock().unlock();
@@ -285,37 +301,6 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
             } finally {
                 lock.readLock().unlock();
             }
-        }
-    }
-
-    private static byte[] readUrl(URL url) throws IOException {
-        if ("jar".equals(url.getProtocol())) {
-            URLConnection urlConnection = url.openConnection();
-            urlConnection.setUseCaches(false);
-            try (InputStream is = urlConnection.getInputStream()) {
-                return readStreamContent(is);
-            }
-        }
-        if ("file".equals(url.getProtocol())) {
-            try (InputStream is = Files.newInputStream(Path.of(url.toURI()))) {
-                return readStreamContent(is);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException("Failed to translate " + url + " to local path", e);
-            }
-        }
-        try (InputStream is = url.openStream()) {
-            return readStreamContent(is);
-        }
-    }
-
-    private static byte[] readStreamContent(InputStream inputStream) throws IOException {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            byte[] buf = new byte[10000];
-            int r;
-            while ((r = inputStream.read(buf)) > 0) {
-                out.write(buf, 0, r);
-            }
-            return out.toByteArray();
         }
     }
 }

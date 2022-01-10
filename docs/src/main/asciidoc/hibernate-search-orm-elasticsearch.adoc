@@ -9,8 +9,8 @@ include::./attributes.adoc[]
 
 You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You're at the right place.
 
-With this guide, you'll learn how to synchronize your entities to an Elasticsearch cluster in a heart beat with Hibernate Search.
-We will also explore how you can can query your Elasticsearch cluster using the Hibernate Search API.
+With this guide, you'll learn how to synchronize your entities to an Elasticsearch or OpenSearch cluster in a heartbeat with Hibernate Search.
+We will also explore how you can query your Elasticsearch or OpenSearch cluster using the Hibernate Search API.
 
 == Prerequisites
 
@@ -569,6 +569,7 @@ quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <8
 <5> We need to tell Hibernate Search about the version of Elasticsearch we will use.
 It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
 Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
+Note that, for OpenSearch, you need to prefix the version with `opensearch:`; see <<opensearch>>.
 <6> We point to the custom `AnalysisConfigurer` which defines the configuration of our analyzers and normalizers.
 <7> Obviously, this is not for production: we drop and recreate the index every time we start the application.
 <8> This means that we wait for the entities to be searchable before considering a write complete.
@@ -637,6 +638,27 @@ You can now interact with your REST service:
  * create new authors and books and search for them too
 
 As you can see, all your updates are automatically synchronized to the Elasticsearch cluster.
+
+[[opensearch]]
+== OpenSearch compatibility
+
+Hibernate Search is compatible with both https://www.elastic.co/elasticsearch[Elasticsearch]
+and https://www.opensearch.org/[OpenSearch],
+but it assumes it is working with an Elasticsearch cluster by default.
+
+To have Hibernate Search work with an OpenSearch cluster instead,
+link:{hibernate-search-doc-prefix}#backend-elasticsearch-configuration-version[prefix the configured version with `opensearch:`],
+as shown below.
+
+[source,properties]
+----
+quarkus.hibernate-search-orm.elasticsearch.version=opensearch:1.2
+----
+
+All other configuration options and APIs are exactly the same as with Elasticsearch.
+
+You can find more information about compatible distributions and versions of Elasticsearch in
+link:{hibernate-search-doc-prefix}#getting-started-compatibility[this section of Hibernate Search's reference documentation].
 
 [[multiple-persistence-units]]
 == Multiple persistence units

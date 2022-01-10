@@ -54,7 +54,7 @@ class HibernateSearchElasticsearchProcessor {
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
         filters.produce(new LogCleanupFilterBuildItem(
-                "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchIntegrator", "HSEARCH000034"));
+                "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrationService", "HSEARCH000034"));
     }
 
     @BuildStep
@@ -64,7 +64,8 @@ class HibernateSearchElasticsearchProcessor {
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
-            BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> integrations,
+            BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
+            BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations,
             BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_SEARCH_ELASTICSEARCH));
 
@@ -84,7 +85,7 @@ class HibernateSearchElasticsearchProcessor {
                 }
             }
             buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puDescriptor.getPersistenceUnitName(),
-                    configuredPersistenceUnits, integrations);
+                    configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
         }
 
         registerReflectionForGson(reflectiveClass);
@@ -93,11 +94,16 @@ class HibernateSearchElasticsearchProcessor {
     private void buildForPersistenceUnit(HibernateSearchElasticsearchRecorder recorder,
             Collection<AnnotationInstance> indexedAnnotationsForPU, String persistenceUnitName,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
-            BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> integrations) {
+            BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
+            BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
         if (indexedAnnotationsForPU.isEmpty()) {
             // we don't have any indexed entity, we can disable Hibernate Search
-            integrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createDisabledListener()));
+            staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                    persistenceUnitName).setInitListener(recorder.createDisabledStaticInitListener()));
+            // we need a runtime listener even when Hibernate Search is disabled,
+            // just to let Hibernate Search boot up until the point where it checks whether it's enabled or not
+            runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                    persistenceUnitName).setInitListener(recorder.createDisabledRuntimeInitListener()));
             return;
         }
 
@@ -123,7 +129,7 @@ class HibernateSearchElasticsearchProcessor {
             return;
         }
 
-        integrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+        staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
                 persistenceUnitName).setInitListener(recorder.createStaticInitListener(puConfig)));
     }
 

@@ -79,6 +79,9 @@
         <elasticsearch-server.version>7.10.0</elasticsearch-server.version>
         <elasticsearch.image>docker.elastic.co/elasticsearch/elasticsearch-oss:${elasticsearch-server.version}</elasticsearch.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
+        <opensearch-server.version>1.2.3</opensearch-server.version>
+        <opensearch.image>opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
+        <opensearch.protocol>http</opensearch.protocol>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>

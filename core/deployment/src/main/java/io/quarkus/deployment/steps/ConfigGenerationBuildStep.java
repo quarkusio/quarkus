@@ -260,8 +260,8 @@ public class ConfigGenerationBuildStep {
             for (URI location : locations) {
                 Path path = location.getScheme() != null ? Paths.get(location) : Paths.get(location.getPath());
                 if (!Files.isDirectory(path)) {
-                    configWatchedFiles.add(location.toString());
-                    configWatchedFiles.add(appendProfileToFilename(location.toString(), profile));
+                    configWatchedFiles.add(path.toString());
+                    configWatchedFiles.add(appendProfileToFilename(path.toString(), profile));
                 }
             }
         });

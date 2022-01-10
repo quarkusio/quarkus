@@ -88,7 +88,10 @@ public class ConsoleProcessor {
     @Consume(ConsoleInstalledBuildItem.class)
     @BuildStep
     void setupExceptionHandler(BuildProducer<ExceptionNotificationBuildItem> exceptionNotificationBuildItem,
-            EffectiveIdeBuildItem ideSupport) {
+            EffectiveIdeBuildItem ideSupport, LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.isAuxiliaryApplication()) {
+            return;
+        }
         final AtomicReference<StackTraceElement> lastUserCode = new AtomicReference<>();
         exceptionNotificationBuildItem
                 .produce(new ExceptionNotificationBuildItem(new BiConsumer<Throwable, StackTraceElement>() {

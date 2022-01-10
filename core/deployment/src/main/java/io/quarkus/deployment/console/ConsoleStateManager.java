@@ -244,6 +244,7 @@ public class ConsoleStateManager {
                 .collect(Collectors.toList());
         if (sorted.isEmpty()) {
             QuarkusConsole.INSTANCE.setPromptMessage(null);
+            oldPrompt = null;
         } else {
             StringBuilder sb = new StringBuilder("Press");
             boolean first = true;

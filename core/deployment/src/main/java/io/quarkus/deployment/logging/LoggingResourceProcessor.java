@@ -64,6 +64,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
+import io.quarkus.deployment.console.QuarkusCommand;
 import io.quarkus.deployment.console.SetCompleter;
 import io.quarkus.deployment.dev.ExceptionNotificationBuildItem;
 import io.quarkus.deployment.dev.testing.MessageFormat;
@@ -536,7 +537,7 @@ public final class LoggingResourceProcessor {
     }
 
     @CommandDefinition(name = "set-level", description = "Sets the log level for a logger")
-    public static class SetLogLevelCommand implements Command {
+    public static class SetLogLevelCommand extends QuarkusCommand {
 
         @Option(required = true, completer = LoggerCompleter.class)
         private String logger;
@@ -545,7 +546,7 @@ public final class LoggingResourceProcessor {
         private String level;
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult doExecute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
             java.util.logging.Logger logger = LogManager.getLogManager().getLogger(this.logger);
             Level level = org.jboss.logmanager.Level.parse(this.level);
             logger.setLevel(level);

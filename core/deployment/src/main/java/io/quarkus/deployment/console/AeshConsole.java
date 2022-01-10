@@ -225,10 +225,12 @@ public class AeshConsole extends QuarkusConsole {
                     if (delegateConnection != null) {
                         //console mode
                         //just sent the input to the delegate
-                        for (var k : keys) {
-                            if (k == 27) { // escape key
-                                exitCliMode();
-                                return;
+                        if (keys.length == 1) {
+                            for (var k : keys) {
+                                if (k == 27) { // escape key
+                                    exitCliMode();
+                                    return;
+                                }
                             }
                         }
                         if (delegateConnection.getStdinHandler() != null) {

@@ -358,7 +358,6 @@ public class DevMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
-        saveTerminalState();
 
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
 
@@ -371,12 +370,16 @@ public class DevMojo extends AbstractMojo {
             final PluginDescriptor pluginDescr = getPluginDescriptor();
             final Plugin pluginDef = getConfiguredPluginOrNull(pluginDescr.getGroupId(), pluginDescr.getArtifactId());
             if (pluginDef == null || !isGoalConfigured(pluginDef, "build")) {
-                getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
-                        "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
-                        " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
+                getLog().warn("The quarkus-maven-plugin build goal was not configured for this project," +
+                        " skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus:dev" +
+                        " on this project make sure the quarkus-maven-plugin is configured with the build goal" +
+                        " or disable the enforceBuildGoal flag (via plugin configuration or via" +
+                        " -Dquarkus.enforceBuildGoal=false).");
                 return;
             }
         }
+
+        saveTerminalState();
 
         try {
 

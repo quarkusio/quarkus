@@ -50,7 +50,7 @@ public class H2DevServicesProcessor {
                     String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
                             + datasourceName.orElse("default")
                             + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
-                    return new RunningDevServicesDatasource(
+                    return new RunningDevServicesDatasource(null,
                             connectionUrl,
                             "sa",
                             "sa",

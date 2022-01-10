@@ -8,7 +8,10 @@ import io.quarkus.builder.item.MultiBuildItem;
  * Used to start and configure dev services, any processor starting dev services should produce these items.
  *
  * Quarkus will make sure the relevant settings are present in both JVM and native modes.
+ *
+ * @deprecated use {@link DevServicesResultBuildItem}
  */
+@Deprecated
 public final class DevServicesConfigResultBuildItem extends MultiBuildItem {
 
     final String key;

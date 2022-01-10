@@ -1,0 +1,65 @@
+{#include main fluid=true}
+{#style}
+table.inner > tbody > tr:nth-of-type(odd) {
+    background: transparent;
+}
+table.inner > tbody > tr:nth-of-type(even) {
+    background: transparent;
+}
+table.inner > tbody > tr > td {
+    padding: 5px;
+}
+{/style}
+{#title}Services{/title}
+{#body}
+<table class="table table-striped">
+    <thead class="thead-dark">
+    <tr>
+        <th scope="col">Service</th>
+        <th scope="col">Config</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for service in info:devServices}
+    <tr>
+        <td>
+            <h5>{service.name}</h5>
+            <div>
+                <table class="table-borderless inner">
+                    <tbody>
+                    <tr>
+                        <td><strong>Container</strong></td>
+                        <td>{service.containerInfo.getShortId()} {service.containerInfo.formatNames()}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Image</strong></td>
+                        <td>{service.containerInfo.imageName}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Networks</strong></td>
+                        <td>{service.containerInfo.formatNetworks()}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Exposed Ports</strong></td>
+                        <td>{service.containerInfo.formatPorts()}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </td>
+        <td>
+            <br>
+            {#for config in service.configs}
+            <code>
+                <a href="{devRootAppend}/io.quarkus.quarkus-vertx-http/config?filterByExtension=''&filterConfigKeys={config.key}">{config.key}</a>
+                = {config.value}
+            </code>
+            <br>
+            {/for}
+        </td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+{/body}
+{/include}

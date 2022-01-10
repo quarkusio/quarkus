@@ -62,6 +62,10 @@
             <artifactId>svm</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

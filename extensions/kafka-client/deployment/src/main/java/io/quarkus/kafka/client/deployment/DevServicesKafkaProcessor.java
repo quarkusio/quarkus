@@ -1,6 +1,5 @@
 package io.quarkus.kafka.client.deployment;
 
-import java.io.Closeable;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -26,12 +25,13 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
-import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -65,82 +65,77 @@ public class DevServicesKafkaProcessor {
 
     private static final ContainerLocator kafkaContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, KAFKA_PORT);
 
-    static volatile Closeable closeable;
+    static volatile RunningDevService devService;
     static volatile KafkaDevServiceCfg cfg;
     static volatile boolean first = true;
 
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
-    public DevServicesKafkaBrokerBuildItem startKafkaDevService(
+    public DevServicesResultBuildItem startKafkaDevService(
             LaunchModeBuildItem launchMode,
             KafkaBuildTimeConfig kafkaClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
 
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
 
-        if (closeable != null) {
+        if (devService != null) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
             if (!shouldShutdownTheBroker) {
-                return null;
+                return devService.toBuildItem();
             }
             shutdownBroker();
             cfg = null;
         }
-        KafkaBroker kafkaBroker;
-        DevServicesKafkaBrokerBuildItem bootstrapServers;
+
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "Kafka Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-
-            kafkaBroker = startKafka(configuration, launchMode,
+            devService = startKafka(configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
                     devServicesConfig.timeout);
-            bootstrapServers = null;
-            if (kafkaBroker != null) {
-                closeable = kafkaBroker.getCloseable();
-                devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(
-                        KAFKA_BOOTSTRAP_SERVERS, kafkaBroker.getBootstrapServers()));
-                bootstrapServers = new DevServicesKafkaBrokerBuildItem(kafkaBroker.getBootstrapServers());
-            }
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);
         }
 
+        if (devService == null) {
+            return null;
+        }
+
         // Configure the watch dog
         if (first) {
             first = false;
             Runnable closeTask = () -> {
-                if (closeable != null) {
+                if (devService != null) {
                     shutdownBroker();
                 }
                 first = true;
-                closeable = null;
+                devService = null;
                 cfg = null;
             };
             closeBuildItem.addCloseTask(closeTask, true);
         }
         cfg = configuration;
 
-        if (bootstrapServers != null) {
-            if (kafkaBroker.isOwner()) {
-                log.infof(
-                        "Dev Services for Kafka started. Other Quarkus applications in dev mode will find the "
-                                + "broker automatically. For Quarkus applications in production mode, you can connect to"
-                                + " this by starting your application with -Dkafka.bootstrap.servers=%s",
-                        bootstrapServers.getBootstrapServers());
-            }
-            createTopicPartitions(bootstrapServers.getBootstrapServers(), configuration);
+        if (devService.isOwner()) {
+            log.infof(
+                    "Dev Services for Kafka started. Other Quarkus applications in dev mode will find the "
+                            + "broker automatically. For Quarkus applications in production mode, you can connect to"
+                            + " this by starting your application with -Dkafka.bootstrap.servers=%s",
+                    getKafkaBootstrapServers());
         }
+        createTopicPartitions(getKafkaBootstrapServers(), configuration);
+        return devService.toBuildItem();
+    }
 
-        return bootstrapServers;
+    public static String getKafkaBootstrapServers() {
+        return devService.getConfig().get(KAFKA_BOOTSTRAP_SERVERS);
     }
 
     public void createTopicPartitions(String bootstrapServers, KafkaDevServiceCfg configuration) {
@@ -186,18 +181,18 @@ public class DevServicesKafkaProcessor {
     }
 
     private void shutdownBroker() {
-        if (closeable != null) {
+        if (devService != null) {
             try {
-                closeable.close();
+                devService.close();
             } catch (Throwable e) {
                 log.error("Failed to stop the Kafka broker", e);
             } finally {
-                closeable = null;
+                devService = null;
             }
         }
     }
 
-    private KafkaBroker startKafka(KafkaDevServiceCfg config,
+    private RunningDevService startKafka(KafkaDevServiceCfg config,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
@@ -228,7 +223,7 @@ public class DevServicesKafkaProcessor {
                 launchMode.getLaunchMode());
 
         // Starting the broker
-        final Supplier<KafkaBroker> defaultKafkaBrokerSupplier = () -> {
+        final Supplier<RunningDevService> defaultKafkaBrokerSupplier = () -> {
             if (config.imageName.contains("strimzi")) {
                 StrimziKafkaContainer container = new StrimziKafkaContainer(config.imageName)
                         .withBrokerId(1)
@@ -244,9 +239,10 @@ public class DevServicesKafkaProcessor {
                 timeout.ifPresent(container::withStartupTimeout);
 
                 container.start();
-                return new KafkaBroker(
-                        container.getBootstrapServers(),
-                        container::close);
+                return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
+                        container.getContainerId(),
+                        container::close,
+                        KAFKA_BOOTSTRAP_SERVERS, container.getBootstrapServers());
             } else {
                 RedPandaKafkaContainer container = new RedPandaKafkaContainer(
                         DockerImageName.parse(config.imageName),
@@ -256,13 +252,18 @@ public class DevServicesKafkaProcessor {
                 timeout.ifPresent(container::withStartupTimeout);
                 container.start();
 
-                return new KafkaBroker(
-                        container.getBootstrapServers(),
-                        container::close);
+                return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
+                        container.getContainerId(),
+                        container::close,
+                        KAFKA_BOOTSTRAP_SERVERS, container.getBootstrapServers());
             }
         };
 
-        return maybeContainerAddress.map(containerAddress -> new KafkaBroker(containerAddress.getUrl(), null))
+        return maybeContainerAddress
+                .map(containerAddress -> new RunningDevService(Feature.KAFKA_CLIENT.getName(),
+                        containerAddress.getId(),
+                        null,
+                        KAFKA_BOOTSTRAP_SERVERS, containerAddress.getUrl()))
                 .orElseGet(defaultKafkaBrokerSupplier);
     }
 
@@ -288,28 +289,6 @@ public class DevServicesKafkaProcessor {
     private KafkaDevServiceCfg getConfiguration(KafkaBuildTimeConfig cfg) {
         KafkaDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
         return new KafkaDevServiceCfg(devServicesConfig);
-    }
-
-    private static class KafkaBroker {
-        private final String url;
-        private final Closeable closeable;
-
-        public KafkaBroker(String url, Closeable closeable) {
-            this.url = url;
-            this.closeable = closeable;
-        }
-
-        public boolean isOwner() {
-            return closeable != null;
-        }
-
-        public String getBootstrapServers() {
-            return url;
-        }
-
-        public Closeable getCloseable() {
-            return closeable;
-        }
     }
 
     private static final class KafkaDevServiceCfg {

@@ -32,6 +32,8 @@ public abstract class AbstractRestResponseBuilder<T> extends RestResponse.Respon
     static {
         defaultReasonPhrases.put(100, "Continue");
         defaultReasonPhrases.put(101, "Switching Protocols");
+        defaultReasonPhrases.put(102, "Processing");
+        defaultReasonPhrases.put(103, "Early Hints");
         defaultReasonPhrases.put(200, "OK");
         defaultReasonPhrases.put(201, "Created");
         defaultReasonPhrases.put(202, "Accepted");
@@ -39,6 +41,8 @@ public abstract class AbstractRestResponseBuilder<T> extends RestResponse.Respon
         defaultReasonPhrases.put(204, "No Content");
         defaultReasonPhrases.put(205, "Reset Content");
         defaultReasonPhrases.put(206, "Partial Content");
+        defaultReasonPhrases.put(208, "Already Reported");
+        defaultReasonPhrases.put(226, "IM Used");
         defaultReasonPhrases.put(300, "Multiple Choices");
         defaultReasonPhrases.put(301, "Moved Permanently");
         defaultReasonPhrases.put(302, "Found");
@@ -65,16 +69,22 @@ public abstract class AbstractRestResponseBuilder<T> extends RestResponse.Respon
         defaultReasonPhrases.put(415, "Unsupported Media Type");
         defaultReasonPhrases.put(416, "Requested Range Not Satisfiable");
         defaultReasonPhrases.put(417, "Expectation Failed");
+        defaultReasonPhrases.put(421, "Misdirected Request");
         defaultReasonPhrases.put(426, "Upgrade Required");
-        defaultReasonPhrases.put(428, "Expectation Failed");
-        defaultReasonPhrases.put(429, "Precondition Required");
-        defaultReasonPhrases.put(431, "Too Many Requests");
+        defaultReasonPhrases.put(428, "Precondition Required");
+        defaultReasonPhrases.put(429, "Too Many Requests");
+        defaultReasonPhrases.put(431, "Request Header Fields Too Large");
+        defaultReasonPhrases.put(451, "Unavailable For Legal Reasons");
         defaultReasonPhrases.put(500, "Internal Server Error");
         defaultReasonPhrases.put(501, "Not Implemented");
         defaultReasonPhrases.put(502, "Bad Gateway");
         defaultReasonPhrases.put(503, "Service Unavailable");
         defaultReasonPhrases.put(504, "Gateway Timeout");
         defaultReasonPhrases.put(505, "HTTP Version Not Supported");
+        defaultReasonPhrases.put(506, "Variant Also Negotiates");
+        defaultReasonPhrases.put(507, "Insufficient Storage");
+        defaultReasonPhrases.put(508, "Loop Detected");
+        defaultReasonPhrases.put(510, "Not Extended");
         defaultReasonPhrases.put(511, "Network Authentication Required");
     }
 

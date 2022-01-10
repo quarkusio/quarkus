@@ -10,6 +10,7 @@ import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.GAV;
 import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.PathCollection;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Build;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Plugin;
@@ -366,7 +368,33 @@ public class LocalProject {
         }
         module.setBuildFiles(PathList.of(getRawModel().getPomFile().toPath()));
 
+        module.setDirectDependencyConstraints(getRawModel().getDependencyManagement() == null ? Collections.emptyList()
+                : toArtifactDependencies(getRawModel().getDependencyManagement().getDependencies()));
+
+        module.setDirectDependencies(toArtifactDependencies(getRawModel().getDependencies()));
+
         return this.module = module;
+    }
+
+    private List<io.quarkus.maven.dependency.Dependency> toArtifactDependencies(final List<Dependency> rawModelDeps) {
+        if (rawModelDeps.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final List<io.quarkus.maven.dependency.Dependency> directDeps = new ArrayList<>(rawModelDeps.size());
+        for (Dependency d : rawModelDeps) {
+            directDeps.add(new ArtifactDependency(resolveElementValue(d.getGroupId()),
+                    resolveElementValue(d.getArtifactId()), resolveElementValue(d.getClassifier()),
+                    resolveElementValue(d.getType()),
+                    resolveElementValue(d.getVersion()), d.getScope(), d.isOptional()));
+        }
+        return directDeps;
+    }
+
+    private String resolveElementValue(String elementValue) {
+        if (elementValue == null || elementValue.isEmpty() || !(elementValue.startsWith("${") && elementValue.endsWith("}"))) {
+            return elementValue;
+        }
+        return rawModel.getProperties().getProperty(elementValue.substring(2, elementValue.length() - 1), elementValue);
     }
 
     private DefaultArtifactSources processJarPluginExecutionConfig(PluginExecution e, boolean test) {

@@ -105,12 +105,13 @@ public class GACTV implements ArtifactCoords, Serializable {
             return true;
         if (obj == null)
             return false;
-        if (getClass() != obj.getClass())
+        if (!(obj instanceof ArtifactCoords)) {
             return false;
-        GACTV other = (GACTV) obj;
-        return Objects.equals(artifactId, other.artifactId) && Objects.equals(classifier, other.classifier)
-                && Objects.equals(groupId, other.groupId) && Objects.equals(type, other.type)
-                && Objects.equals(version, other.version);
+        }
+        ArtifactCoords other = (ArtifactCoords) obj;
+        return Objects.equals(artifactId, other.getArtifactId()) && Objects.equals(groupId, other.getGroupId())
+                && Objects.equals(version, other.getVersion()) && Objects.equals(type, other.getType())
+                && Objects.equals(classifier, other.getClassifier());
     }
 
     @Override

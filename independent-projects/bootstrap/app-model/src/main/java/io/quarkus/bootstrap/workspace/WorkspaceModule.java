@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.workspace;
 
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.paths.EmptyPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathTree;
@@ -43,4 +44,8 @@ public interface WorkspaceModule {
         return artifactSources == null || !artifactSources.isOutputAvailable() ? EmptyPathTree.getInstance()
                 : artifactSources.getOutputTree();
     }
+
+    Collection<Dependency> getDirectDependencyConstraints();
+
+    Collection<Dependency> getDirectDependencies();
 }

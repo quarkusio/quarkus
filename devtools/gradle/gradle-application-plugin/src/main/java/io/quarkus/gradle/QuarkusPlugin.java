@@ -43,6 +43,7 @@ import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
 import io.quarkus.gradle.tasks.QuarkusGenerateCode;
 import io.quarkus.gradle.tasks.QuarkusGoOffline;
+import io.quarkus.gradle.tasks.QuarkusInfo;
 import io.quarkus.gradle.tasks.QuarkusListCategories;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
 import io.quarkus.gradle.tasks.QuarkusListPlatforms;
@@ -51,6 +52,7 @@ import io.quarkus.gradle.tasks.QuarkusRemoveExtension;
 import io.quarkus.gradle.tasks.QuarkusTest;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusTestNative;
+import io.quarkus.gradle.tasks.QuarkusUpdate;
 import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 
@@ -74,6 +76,8 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_TEST_TASK_NAME = "quarkusTest";
     public static final String DEV_MODE_CONFIGURATION_NAME = "quarkusDev";
     public static final String QUARKUS_GO_OFFLINE_TASK_NAME = "quarkusGoOffline";
+    public static final String QUARKUS_INFO_TASK_NAME = "quarkusInfo";
+    public static final String QUARKUS_UPDATE_TASK_NAME = "quarkusUpdate";
 
     @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";
@@ -112,6 +116,8 @@ public class QuarkusPlugin implements Plugin<Project> {
         tasks.register(LIST_PLATFORMS_TASK_NAME, QuarkusListPlatforms.class);
         tasks.register(ADD_EXTENSION_TASK_NAME, QuarkusAddExtension.class);
         tasks.register(REMOVE_EXTENSION_TASK_NAME, QuarkusRemoveExtension.class);
+        tasks.register(QUARKUS_INFO_TASK_NAME, QuarkusInfo.class);
+        tasks.register(QUARKUS_UPDATE_TASK_NAME, QuarkusUpdate.class);
         tasks.register(QUARKUS_GO_OFFLINE_TASK_NAME, QuarkusGoOffline.class, task -> {
             task.setCompileClasspath(project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
             task.setTestCompileClasspath(

@@ -68,6 +68,13 @@ public class MavenProjectBuildFile extends BuildFile {
     public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,
             Properties projectProps, MavenArtifactResolver mvnResolver, MessageWriter log,
             Supplier<String> defaultQuarkusVersion) throws RegistryResolutionException {
+        return getProject(projectPom, projectModel, projectDir, projectProps, mvnResolver, mvnResolver, log,
+                defaultQuarkusVersion);
+    }
+
+    public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,
+            Properties projectProps, MavenArtifactResolver artifactResolver, MavenArtifactResolver catalogArtifactResolver,
+            MessageWriter log, Supplier<String> defaultQuarkusVersion) throws RegistryResolutionException {
         final List<ArtifactCoords> managedDeps;
         final Supplier<List<ArtifactCoords>> deps;
         final List<ArtifactCoords> importedPlatforms;
@@ -79,7 +86,7 @@ public class MavenProjectBuildFile extends BuildFile {
             // TODO allow multiple streams in the same catalog for now
             quarkusVersion = null;// defaultQuarkusVersion.get();
         } else {
-            final ArtifactDescriptorResult descriptor = describe(mvnResolver, projectPom);
+            final ArtifactDescriptorResult descriptor = describe(artifactResolver, projectPom);
             managedDeps = toArtifactCoords(descriptor.getManagedDependencies());
             deps = () -> toArtifactCoords(descriptor.getDependencies());
             importedPlatforms = collectPlatformDescriptors(managedDeps, log);
@@ -88,7 +95,7 @@ public class MavenProjectBuildFile extends BuildFile {
 
         final ExtensionCatalog extensionCatalog;
         final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? QuarkusProjectHelper.getCatalogResolver(mvnResolver, log)
+                ? QuarkusProjectHelper.getCatalogResolver(catalogArtifactResolver, log)
                 : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {
@@ -103,15 +110,16 @@ public class MavenProjectBuildFile extends BuildFile {
             }
         } else {
             if (importedPlatforms.isEmpty()) {
-                extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, mvnResolver, log);
+                extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, artifactResolver,
+                        log);
             } else {
-                extensionCatalog = ToolsUtils.mergePlatforms(importedPlatforms, mvnResolver);
+                extensionCatalog = ToolsUtils.mergePlatforms(importedPlatforms, artifactResolver);
             }
         }
         final MavenProjectBuildFile extensionManager = new MavenProjectBuildFile(projectDir, extensionCatalog,
-                projectModel, deps, managedDeps, projectProps, projectPom == null ? null : mvnResolver);
+                projectModel, deps, managedDeps, projectProps, projectPom == null ? null : artifactResolver);
         final List<ResourceLoader> codestartResourceLoaders = codestartLoadersBuilder().catalog(extensionCatalog)
-                .artifactResolver(mvnResolver).build();
+                .artifactResolver(artifactResolver).build();
         return QuarkusProject.of(projectDir, extensionCatalog,
                 codestartResourceLoaders, log, extensionManager);
     }

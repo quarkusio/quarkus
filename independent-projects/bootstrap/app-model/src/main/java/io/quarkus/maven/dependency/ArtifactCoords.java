@@ -20,4 +20,17 @@ public interface ArtifactCoords {
     default String toGACTVString() {
         return getGroupId() + ":" + getArtifactId() + ":" + getClassifier() + ":" + getType() + ":" + getVersion();
     }
+
+    default String toCompactCoords() {
+        final StringBuilder b = new StringBuilder();
+        b.append(getGroupId()).append(':').append(getArtifactId()).append(':');
+        if (!getClassifier().isEmpty()) {
+            b.append(getClassifier()).append(':');
+        }
+        if (!TYPE_JAR.equals(getType())) {
+            b.append(getType()).append(':');
+        }
+        b.append(getVersion());
+        return b.toString();
+    }
 }

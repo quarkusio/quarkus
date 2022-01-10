@@ -43,6 +43,7 @@ public class ExtensionCatalogResolver {
     public static ExtensionCatalogResolver empty() {
         final ExtensionCatalogResolver resolver = new ExtensionCatalogResolver();
         resolver.registries = Collections.emptyList();
+        resolver.log = MessageWriter.info();
         return resolver;
     }
 

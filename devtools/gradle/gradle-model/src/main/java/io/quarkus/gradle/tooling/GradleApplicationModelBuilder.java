@@ -50,7 +50,9 @@ import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.GAV;
@@ -154,7 +156,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         final Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies = new LinkedHashMap<>();
         Configuration classpathConfig = classpathConfig(project, mode);
-        collectDependencies(classpathConfig.getResolvedConfiguration(), mode, project, appDependencies, modelBuilder);
+        collectDependencies(classpathConfig.getResolvedConfiguration(), mode, project, appDependencies, modelBuilder,
+                (DefaultWorkspaceModule) appArtifact.getWorkspaceModule());
 
         Configuration deploymentConfig = deploymentClasspathConfig(project, mode, deploymentDeps);
         collectExtensionDependencies(project, deploymentConfig, appDependencies);
@@ -221,6 +224,9 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             return;
         }
         artifactBuilder.setRuntimeExtensionArtifact();
+        if (artifactBuilder.isFlagSet(DependencyFlags.DIRECT)) {
+            artifactBuilder.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
+        }
         final String extensionCoords = artifactBuilder.toGACTVString();
         modelBuilder.handleExtensionProperties(extProps, extensionCoords);
 
@@ -311,7 +317,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private void collectDependencies(ResolvedConfiguration configuration,
             LaunchMode mode, Project project, Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies,
-            ApplicationModelBuilder modelBuilder) {
+            ApplicationModelBuilder modelBuilder, DefaultWorkspaceModule wsModule) {
 
         final Set<ResolvedArtifact> resolvedArtifacts = configuration.getResolvedArtifacts();
         // if the number of artifacts is less than the number of files then probably
@@ -321,8 +327,10 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 : null;
 
         configuration.getFirstLevelModuleDependencies()
-                .forEach(d -> collectDependencies(d, mode, project, appDependencies, artifactFiles, new HashSet<>(),
-                        modelBuilder));
+                .forEach(d -> {
+                    collectDependencies(d, mode, project, appDependencies, artifactFiles, new HashSet<>(), modelBuilder,
+                            wsModule);
+                });
 
         if (artifactFiles != null) {
             // detect FS paths that aren't provided by the resolved artifacts
@@ -362,20 +370,24 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private void collectDependencies(org.gradle.api.artifacts.ResolvedDependency resolvedDep, LaunchMode mode, Project project,
             Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies, Set<File> artifactFiles,
-            Set<ArtifactKey> processedModules, ApplicationModelBuilder modelBuilder) {
+            Set<ArtifactKey> processedModules, ApplicationModelBuilder modelBuilder, DefaultWorkspaceModule parentModule) {
 
+        DefaultWorkspaceModule projectModule = null;
         for (ResolvedArtifact a : resolvedDep.getModuleArtifacts()) {
             final ArtifactKey artifactKey = toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(),
                     a.getClassifier());
             if (!isDependency(a) || appDependencies.containsKey(artifactKey)) {
                 continue;
             }
+            final ArtifactCoords depCoords = toArtifactCoords(a);
             final ResolvedDependencyBuilder depBuilder = ResolvedDependencyBuilder.newInstance()
-                    .setCoords(toArtifactCoords(a))
+                    .setCoords(depCoords)
                     .setDirect(processedModules.isEmpty())
                     .setRuntimeCp();
+            if (parentModule != null) {
+                parentModule.addDirectDependency(new ArtifactDependency(depCoords));
+            }
 
-            DefaultWorkspaceModule projectModule = null;
             PathCollection paths = null;
             if ((LaunchMode.DEVELOPMENT.equals(mode) || LaunchMode.TEST.equals(mode)) &&
                     a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
@@ -413,11 +425,10 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 }
             }
 
-            final ResolvedDependencyBuilder artifactBuilder = depBuilder
-                    .setResolvedPaths(paths == null ? PathList.of(a.getFile().toPath()) : paths)
+            depBuilder.setResolvedPaths(paths == null ? PathList.of(a.getFile().toPath()) : paths)
                     .setWorkspaceModule(projectModule);
-            processQuarkusDependency(artifactBuilder, modelBuilder);
-            appDependencies.put(artifactBuilder.getKey(), artifactBuilder);
+            processQuarkusDependency(depBuilder, modelBuilder);
+            appDependencies.put(depBuilder.getKey(), depBuilder);
 
             if (artifactFiles != null) {
                 artifactFiles.add(a.getFile());
@@ -427,7 +438,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         processedModules.add(new GACT(resolvedDep.getModuleGroup(), resolvedDep.getModuleName()));
         for (org.gradle.api.artifacts.ResolvedDependency child : resolvedDep.getChildren()) {
             if (!processedModules.contains(new GACT(child.getModuleGroup(), child.getModuleName()))) {
-                collectDependencies(child, mode, project, appDependencies, artifactFiles, processedModules, modelBuilder);
+                collectDependencies(child, mode, project, appDependencies, artifactFiles, processedModules, modelBuilder,
+                        projectModule);
             }
         }
     }
@@ -457,13 +469,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         appModel.addReloadableWorkspaceModule(
                 new GACT(resolvedArtifact.getModuleVersion().getId().getGroup(), resolvedArtifact.getName(), classifier,
-                        GACTV.TYPE_JAR));
+                        ArtifactCoords.TYPE_JAR));
         return projectModule;
     }
 
     private void processQuarkusDependency(ResolvedDependencyBuilder artifactBuilder, ApplicationModelBuilder modelBuilder) {
         artifactBuilder.getResolvedPaths().forEach(artifactPath -> {
-            if (!Files.exists(artifactPath) || !artifactBuilder.getType().equals(GACTV.TYPE_JAR)) {
+            if (!Files.exists(artifactPath) || !artifactBuilder.getType().equals(ArtifactCoords.TYPE_JAR)) {
                 return;
             }
             if (Files.isDirectory(artifactPath)) {

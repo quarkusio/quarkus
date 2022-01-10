@@ -3,10 +3,7 @@ package io.quarkus.maven;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class ArtifactCoords implements Serializable {
-
-    public static final String TYPE_JAR = "jar";
-    public static final String TYPE_POM = "pom";
+public class ArtifactCoords implements io.quarkus.maven.dependency.ArtifactCoords, Serializable {
 
     public static ArtifactCoords fromString(String str) {
         return new ArtifactCoords(split(str, new String[5]));
@@ -96,15 +93,15 @@ public class ArtifactCoords implements Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (o == null || !(o instanceof io.quarkus.maven.dependency.ArtifactCoords)) {
             return false;
         }
-        ArtifactCoords that = (ArtifactCoords) o;
-        return Objects.equals(groupId, that.groupId) &&
-                Objects.equals(artifactId, that.artifactId) &&
-                Objects.equals(classifier, that.classifier) &&
-                Objects.equals(type, that.type) &&
-                Objects.equals(version, that.version);
+        io.quarkus.maven.dependency.ArtifactCoords that = (io.quarkus.maven.dependency.ArtifactCoords) o;
+        return Objects.equals(groupId, that.getGroupId()) &&
+                Objects.equals(artifactId, that.getArtifactId()) &&
+                Objects.equals(classifier, that.getClassifier()) &&
+                Objects.equals(type, that.getType()) &&
+                Objects.equals(version, that.getVersion());
     }
 
     @Override
@@ -125,5 +122,18 @@ public class ArtifactCoords implements Serializable {
             buf.append(classifier);
         }
         return buf.append(':').append(type).append(':').append(version);
+    }
+
+    public String toCompactCoords() {
+        final StringBuilder b = new StringBuilder();
+        b.append(getGroupId()).append(':').append(getArtifactId()).append(':');
+        if (!getClassifier().isEmpty()) {
+            b.append(getClassifier()).append(':');
+        }
+        if (!TYPE_JAR.equals(getType())) {
+            b.append(getType()).append(':');
+        }
+        b.append(getVersion());
+        return b.toString();
     }
 }

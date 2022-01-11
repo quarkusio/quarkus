@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -122,9 +123,28 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    void filterSetup(Capabilities capabilities,
+            HttpBuildTimeConfig buildTimeConfig,
+            HttpSecurityRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem,
+            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer) {
+        if (!capabilities.isPresent(Capability.SECURITY)) {
+            return;
+        }
+        filterBuildItemBuildProducer
+                .produce(new FilterBuildItem(
+                        recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive,
+                                beanContainerBuildItem.getValue()),
+                        FilterBuildItem.AUTHENTICATION));
+        filterBuildItemBuildProducer
+                .produce(new FilterBuildItem(recorder.permissionCheckHandler(beanContainerBuildItem.getValue()),
+                        FilterBuildItem.AUTHORIZATION));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     void setupAuthenticationMechanisms(
             HttpSecurityRecorder recorder,
-            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
             Capabilities capabilities,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListenerBuildItemBuildProducer,
@@ -147,12 +167,6 @@ public class HttpSecurityProcessor {
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class)
                             .addBeanClass(HttpAuthorizer.class).build());
-            filterBuildItemBuildProducer
-                    .produce(new FilterBuildItem(
-                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive),
-                            FilterBuildItem.AUTHENTICATION));
-            filterBuildItemBuildProducer
-                    .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));
 
             if (!buildTimeConfig.auth.permissions.isEmpty()) {
                 beanContainerListenerBuildItemBuildProducer

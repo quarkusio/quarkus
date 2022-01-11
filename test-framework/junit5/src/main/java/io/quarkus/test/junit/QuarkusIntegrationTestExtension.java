@@ -59,6 +59,10 @@ public class QuarkusIntegrationTestExtension
     private static Map<String, String> devServicesProps;
     private static String containerNetworkId;
 
+    static {
+        PropertyTestUtil.setLoggingSetupIsImminent();
+    }
+
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {

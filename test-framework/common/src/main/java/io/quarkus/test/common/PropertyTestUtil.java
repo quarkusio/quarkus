@@ -13,6 +13,10 @@ public class PropertyTestUtil {
 
     private static final String LOG_FILE_PATH_PROPERTY = "quarkus.log.file.path";
 
+    // this property is only used by this class, so it doesn't follow the regular quarkus.* pattern 
+    private static final String LOGGING_SETUP_IS_IMMINENT_PROPERTY = PropertyTestUtil.class.getName()
+            + ".logging-setup-is-imminent";
+
     public static void setLogFileProperty() {
         System.setProperty(LOG_FILE_PATH_PROPERTY, getLogFileLocation());
     }
@@ -50,5 +54,13 @@ public class PropertyTestUtil {
             return Arrays.asList("build", logFileName);
         }
         return Arrays.asList("target", logFileName);
+    }
+
+    public static void setLoggingSetupIsImminent() {
+        System.setProperty(LOGGING_SETUP_IS_IMMINENT_PROPERTY, "true");
+    }
+
+    public static boolean isLoggingSetupImminent() {
+        return Boolean.getBoolean(LOGGING_SETUP_IS_IMMINENT_PROPERTY);
     }
 }

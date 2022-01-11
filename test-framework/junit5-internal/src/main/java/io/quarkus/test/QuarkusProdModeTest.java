@@ -60,6 +60,7 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.common.PathTestHelper;
+import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.utilities.JavaBinFinder;
@@ -88,6 +89,7 @@ public class QuarkusProdModeTest
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
         rootLogger = (Logger) LogManager.getLogManager().getLogger("");
+        PropertyTestUtil.setLoggingSetupIsImminent();
     }
 
     private Path outputDir;

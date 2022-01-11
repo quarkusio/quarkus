@@ -94,6 +94,7 @@ public class QuarkusDevModeTest
                     "QuarkusDevModeTest must be used with the the JBoss LogManager. See https://quarkus.io/guides/logging#how-to-configure-logging-for-quarkustest for an example of how to configure it in Maven.");
         }
         rootLogger = (org.jboss.logmanager.Logger) logger;
+        PropertyTestUtil.setLoggingSetupIsImminent();
     }
 
     private DevModeMain devModeMain;

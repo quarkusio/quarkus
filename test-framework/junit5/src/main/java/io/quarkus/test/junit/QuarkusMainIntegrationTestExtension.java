@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.test.junit.main.Launch;
@@ -44,6 +45,10 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
     Properties quarkusArtifactProperties;
 
     LaunchResult result;
+
+    static {
+        PropertyTestUtil.setLoggingSetupIsImminent();
+    }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {

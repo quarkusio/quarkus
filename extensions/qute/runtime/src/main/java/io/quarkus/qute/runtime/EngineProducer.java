@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
+import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 import javax.interceptor.Interceptor;
@@ -40,6 +41,7 @@ import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
+import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 
 @Startup(Interceptor.Priority.PLATFORM_BEFORE)
@@ -196,6 +198,11 @@ public class EngineProducer {
     @ApplicationScoped
     Engine getEngine() {
         return engine;
+    }
+
+    void onShutdown(@Observes ShutdownEvent event) {
+        // Make sure to clear the Qute cache
+        Qute.clearCache();
     }
 
     String getBasePath() {

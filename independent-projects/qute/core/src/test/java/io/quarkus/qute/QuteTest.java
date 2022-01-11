@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import static io.quarkus.qute.Qute.fmt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.qute.Qute.Fmt;
@@ -17,13 +16,8 @@ public class QuteTest {
         assertEquals("Hello Martin and Lu!", Qute.fmt("Hello {} and {}!", "Martin", "Lu"));
         assertEquals("Hello Martin!", Qute.fmt("Hello {name}!", Map.of("name", "Martin")));
         assertEquals("Animal name is cat!", Qute.fmt("Animal name is {animal.name}!", Map.of("animal", new Animal("cat"))));
-
-        assertEquals("My name is Martin.", Qute.fmt("My name is {}.").cache().dataArray("Martin").render());
-        assertEquals("My name is Martin.", fmt("My name is {data.0}.").noCache().dataArray("Martin").render());
-
         assertEquals("The name Lu is nice.",
                 Qute.fmt("The name {name} is {#if name is 'Lu'}nice{#else}so-so{/if}.", Map.of("name", "Lu")));
-
         assertEquals("1::2::3::", Qute.fmt("{#each data.0}{it}::{/each}", List.of(1, 2, 3)));
 
         // set a different engine - this one does not use reflection but a custom value resolver for Animal
@@ -58,6 +52,48 @@ public class QuteTest {
         assertEquals(0, Animal.FOO_COUNTER.get());
         assertEquals("Lazy 1!", fmt.toString());
         assertEquals(1, Animal.FOO_COUNTER.get());
+    }
+
+    @Test
+    public void testFmtCache() {
+        AtomicInteger counter = new AtomicInteger();
+        Qute.setEngine(Engine.builder()
+                .addDefaults()
+                .addParserHook(new Qute.IndexedArgumentsParserHook())
+                .addParserHook(new ParserHook() {
+
+                    @Override
+                    public void beforeParsing(ParserHelper parserHelper) {
+                        counter.incrementAndGet();
+                    }
+                })
+                .addResultMapper(new HtmlEscaper(List.of(Variant.TEXT_HTML)))
+                .build());
+        assertEquals("Hello!", Qute.fmt("Hello!").cache().render());
+        assertEquals(1, counter.get());
+        assertEquals("Hello!", Qute.fmt("Hello!").cache().render());
+        assertEquals(1, counter.get());
+    }
+
+    @Test
+    public void testFmtNoCache() {
+        AtomicInteger counter = new AtomicInteger();
+        Qute.setEngine(Engine.builder()
+                .addDefaults()
+                .addParserHook(new Qute.IndexedArgumentsParserHook())
+                .addParserHook(new ParserHook() {
+
+                    @Override
+                    public void beforeParsing(ParserHelper parserHelper) {
+                        counter.incrementAndGet();
+                    }
+                })
+                .addResultMapper(new HtmlEscaper(List.of(Variant.TEXT_HTML)))
+                .build());
+        assertEquals("Hello!", Qute.fmt("Hello!").noCache().render());
+        assertEquals(1, counter.get());
+        assertEquals("Hello!", Qute.fmt("Hello!").noCache().render());
+        assertEquals(2, counter.get());
     }
 
     @Test

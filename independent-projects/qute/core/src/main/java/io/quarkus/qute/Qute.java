@@ -67,11 +67,14 @@ public final class Qute {
      * <p>
      * Note that the engine should have a {@link IndexedArgumentsParserHook} registered so that the
      * {@link #fmt(String, Object...)} method works correcly.
+     * <p>
+     * The cache is always cleared when a new engine is set.
      * 
      * @param engine
      * @see #engine()
      */
     public static void setEngine(Engine engine) {
+        clearCache();
         Qute.engine = engine;
     }
 

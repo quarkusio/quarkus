@@ -4,6 +4,8 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigGroup
 public class DataSourceRuntimeConfig {
@@ -24,6 +26,7 @@ public class DataSourceRuntimeConfig {
      * The credentials provider name
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> credentialsProvider = Optional.empty();
 
     /**
@@ -35,5 +38,6 @@ public class DataSourceRuntimeConfig {
      * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> credentialsProviderName = Optional.empty();
 }

@@ -4,6 +4,8 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigGroup
 public class DataSourceJdbcBuildTimeConfig {
@@ -18,6 +20,7 @@ public class DataSourceJdbcBuildTimeConfig {
      * The datasource driver class name
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> driver = Optional.empty();
 
     /**

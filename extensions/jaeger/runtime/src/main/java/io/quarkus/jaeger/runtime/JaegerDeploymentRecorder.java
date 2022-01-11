@@ -1,5 +1,6 @@
 package io.quarkus.jaeger.runtime;
 
+import java.text.NumberFormat;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
@@ -79,7 +80,7 @@ public class JaegerDeploymentRecorder {
         initTracerProperty("JAEGER_REPORTER_FLUSH_INTERVAL", jaeger.reporterFlushInterval,
                 duration -> String.valueOf(duration.toMillis()));
         initTracerProperty("JAEGER_SAMPLER_TYPE", jaeger.samplerType, type -> type);
-        initTracerProperty("JAEGER_SAMPLER_PARAM", jaeger.samplerParam, param -> param.toString());
+        initTracerProperty("JAEGER_SAMPLER_PARAM", jaeger.samplerParam, param -> NumberFormat.getInstance().format(param));
         initTracerProperty("JAEGER_SAMPLER_MANAGER_HOST_PORT", jaeger.samplerManagerHostPort, hostPort -> hostPort.toString());
         initTracerProperty("JAEGER_SERVICE_NAME", jaeger.serviceName, name -> name);
         initTracerProperty("JAEGER_TAGS", jaeger.tags, tags -> tags.toString());

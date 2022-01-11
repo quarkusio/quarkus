@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
+import java.util.List;
+
 import javax.enterprise.event.Event;
 import javax.ws.rs.core.SecurityContext;
 
@@ -23,8 +25,9 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     public QuarkusResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
             RoutingContext context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
             ServerRestHandler[] abortHandlerChain, ClassLoader devModeTccl,
-            CurrentIdentityAssociation currentIdentityAssociation) {
-        super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain, devModeTccl);
+            CurrentIdentityAssociation currentIdentityAssociation, List<String> vertxContextPropsToCopy) {
+        super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain, devModeTccl,
+                vertxContextPropsToCopy);
         this.association = currentIdentityAssociation;
     }
 

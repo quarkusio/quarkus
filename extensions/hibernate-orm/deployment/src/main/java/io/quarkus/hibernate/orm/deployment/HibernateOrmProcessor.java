@@ -41,6 +41,8 @@ import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
+import javax.xml.bind.JAXBElement;
+import javax.xml.namespace.QName;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
@@ -124,6 +126,8 @@ import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
+import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
+import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleCreateDDLSupplier;
@@ -602,6 +606,16 @@ public final class HibernateOrmProcessor {
         recorderContext.registerSubstitution(QuarkusPersistenceUnitDefinition.class,
                 QuarkusPersistenceUnitDefinition.Serialized.class,
                 QuarkusPersistenceUnitDefinition.Substitution.class);
+
+        if (hasXmlMappings(persistenceUnitDescriptorBuildItems)) {
+            //Make it possible to record JAXBElement as bytecode:
+            recorderContext.registerSubstitution(JAXBElement.class,
+                    JAXBElementSubstitution.Serialized.class,
+                    JAXBElementSubstitution.class);
+            recorderContext.registerSubstitution(QName.class,
+                    QNameSubstitution.Serialized.class,
+                    QNameSubstitution.class);
+        }
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(

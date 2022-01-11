@@ -38,12 +38,6 @@ import io.vertx.ext.web.RoutingContext;
 public class HttpSecurityRecorder {
 
     private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
-    protected static final Consumer<Throwable> NOOP_CALLBACK = new Consumer<Throwable>() {
-        @Override
-        public void accept(Throwable throwable) {
-
-        }
-    };
 
     final RuntimeValue<HttpConfiguration> httpConfiguration;
     final HttpBuildTimeConfig buildTimeConfig;

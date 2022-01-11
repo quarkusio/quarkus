@@ -56,7 +56,9 @@ public class GradleLogger implements LoggerProvider {
                         } catch (Exception e) {
                             text = invalidFormat(format, parameters);
                         }
-                    doActualLog(log, level, text, thrown);
+                    if (!text.startsWith("JBoss Threads version")) {
+                        doActualLog(log, level, text, thrown);
+                    }
                 }
             }
 

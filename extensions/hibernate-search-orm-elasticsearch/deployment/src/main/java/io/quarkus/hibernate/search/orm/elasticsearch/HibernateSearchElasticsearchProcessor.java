@@ -37,6 +37,7 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRu
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
@@ -59,7 +60,7 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void build(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
+    public void build(HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -71,10 +72,6 @@ class HibernateSearchElasticsearchProcessor {
 
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<AnnotationInstance> indexedAnnotations = index.getAnnotations(INDEXED);
-
-        // Make it possible to record the ElasticsearchVersion as bytecode:
-        recorderContext.registerSubstitution(ElasticsearchVersion.class,
-                String.class, ElasticsearchVersionSubstitution.class);
 
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             Collection<AnnotationInstance> indexedAnnotationsForPU = new ArrayList<>();
@@ -123,14 +120,7 @@ class HibernateSearchElasticsearchProcessor {
         checkConfig(persistenceUnitName, puConfig, defaultBackendIsUsed);
 
         configuredPersistenceUnits
-                .produce(new HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(persistenceUnitName));
-
-        if (puConfig == null) {
-            return;
-        }
-
-        staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                persistenceUnitName).setInitListener(recorder.createStaticInitListener(puConfig)));
+                .produce(new HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(persistenceUnitName, puConfig));
     }
 
     @BuildStep
@@ -147,6 +137,39 @@ class HibernateSearchElasticsearchProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void setStaticConfig(RecorderContext recorderContext, HibernateSearchElasticsearchRecorder recorder,
+            List<HibernateSearchIntegrationStaticConfiguredBuildItem> integrationStaticConfigBuildItems,
+            List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
+            BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticConfigured) {
+        // Make it possible to record the ElasticsearchVersion as bytecode:
+        recorderContext.registerSubstitution(ElasticsearchVersion.class,
+                String.class, ElasticsearchVersionSubstitution.class);
+
+        for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
+            String puName = configuredPersistenceUnit.getPersistenceUnitName();
+            List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners = new ArrayList<>();
+            boolean xmlMappingRequired = false;
+            for (HibernateSearchIntegrationStaticConfiguredBuildItem item : integrationStaticConfigBuildItems) {
+                if (item.getPersistenceUnitName().equals(puName)) {
+                    HibernateOrmIntegrationStaticInitListener listener = item.getInitListener();
+                    if (listener != null) {
+                        integrationStaticInitListeners.add(listener);
+                    }
+                }
+                if (item.isXmlMappingRequired()) {
+                    xmlMappingRequired = true;
+                }
+            }
+            staticConfigured.produce(
+                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
+                            .setInitListener(recorder.createStaticInitListener(configuredPersistenceUnit.getBuildTimeConfig(),
+                                    integrationStaticInitListeners))
+                            .setXmlMappingRequired(xmlMappingRequired));
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setRuntimeConfig(HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
@@ -158,7 +181,10 @@ class HibernateSearchElasticsearchProcessor {
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners = new ArrayList<>();
             for (HibernateSearchIntegrationRuntimeConfiguredBuildItem item : integrationRuntimeConfigBuildItems) {
                 if (item.getPersistenceUnitName().equals(puName)) {
-                    integrationRuntimeInitListeners.add(item.getInitListener());
+                    HibernateOrmIntegrationRuntimeInitListener listener = item.getInitListener();
+                    if (listener != null) {
+                        integrationRuntimeInitListeners.add(listener);
+                    }
                 }
             }
             runtimeConfigured.produce(

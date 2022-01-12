@@ -70,6 +70,7 @@ public class RestClientCDIDelegateBuilder<T> {
         configureRedirects(builder);
         configureQueryParamStyle(builder);
         configureProxy(builder);
+        configureShared(builder);
         configureCustomProperties(builder);
         return builder.build(jaxrsInterface);
     }
@@ -148,6 +149,23 @@ public class RestClientCDIDelegateBuilder<T> {
                 clientConfigByConfigKey().followRedirects);
         if (maybeFollowRedirects.isPresent()) {
             builder.followRedirects(maybeFollowRedirects.get());
+        }
+    }
+
+    private void configureShared(RestClientBuilder builder) {
+        Optional<Boolean> shared = oneOf(clientConfigByClassName().shared,
+                clientConfigByConfigKey().shared);
+        if (shared.isPresent()) {
+            builder.property(QuarkusRestClientProperties.SHARED, shared.get());
+
+            if (shared.get()) {
+                // Name is only used if shared = true
+                Optional<String> name = oneOf(clientConfigByClassName().name,
+                        clientConfigByConfigKey().name);
+                if (name.isPresent()) {
+                    builder.property(QuarkusRestClientProperties.NAME, name.get());
+                }
+            }
         }
     }
 

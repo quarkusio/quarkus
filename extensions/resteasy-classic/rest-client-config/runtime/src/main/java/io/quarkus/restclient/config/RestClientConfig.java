@@ -42,6 +42,8 @@ public class RestClientConfig {
         EMPTY.connectionPoolSize = Optional.empty();
         EMPTY.maxRedirects = Optional.empty();
         EMPTY.headers = Collections.emptyMap();
+        EMPTY.shared = Optional.empty();
+        EMPTY.name = Optional.empty();
     }
 
     /**
@@ -200,6 +202,24 @@ public class RestClientConfig {
     @ConfigItem
     public Map<String, String> headers;
 
+    /**
+     * Set to true to share the HTTP client between REST clients.
+     * There can be multiple shared clients distinguished by <em>name</em>, when no specific name is set,
+     * the name <code>__vertx.DEFAULT</code> is used.
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<Boolean> shared;
+
+    /**
+     * Set the HTTP client name, used when the client is shared, otherwise ignored.
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> name;
+
     public static RestClientConfig load(String configKey) {
         final RestClientConfig instance = new RestClientConfig();
 
@@ -226,6 +246,8 @@ public class RestClientConfig {
         instance.connectionPoolSize = getConfigValue(configKey, "connection-pool-size", Integer.class);
         instance.maxRedirects = getConfigValue(configKey, "max-redirects", Integer.class);
         instance.headers = getConfigValues(configKey, "headers", String.class, String.class);
+        instance.shared = getConfigValue(configKey, "shared", Boolean.class);
+        instance.name = getConfigValue(configKey, "name", String.class);
 
         return instance;
     }
@@ -256,6 +278,8 @@ public class RestClientConfig {
         instance.connectionPoolSize = getConfigValue(interfaceClass, "connection-pool-size", Integer.class);
         instance.maxRedirects = getConfigValue(interfaceClass, "max-redirects", Integer.class);
         instance.headers = getConfigValues(interfaceClass, "headers", String.class, String.class);
+        instance.shared = getConfigValue(interfaceClass, "shared", Boolean.class);
+        instance.name = getConfigValue(interfaceClass, "name", String.class);
 
         return instance;
     }

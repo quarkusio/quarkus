@@ -91,6 +91,8 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_TTL, 30); // value in seconds
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 103);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MAX_REDIRECTS, 104);
+        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.SHARED, true);
+        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.NAME, "my-client");
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE,
                 HttpPostRequestEncoder.EncoderMode.HTML5);
     }
@@ -122,6 +124,8 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.connectionPoolSize = Optional.of(103);
         clientConfig.maxRedirects = Optional.of(104);
         clientConfig.headers = Collections.emptyMap();
+        clientConfig.shared = Optional.of(true);
+        clientConfig.name = Optional.of("my-client");
 
         RestClientsConfig configRoot = new RestClientsConfig();
         configRoot.multipartPostEncoderMode = Optional.of("HTML5");

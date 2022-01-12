@@ -29,6 +29,7 @@ public final class EngineBuilder {
     final List<NamespaceResolver> namespaceResolvers;
     final List<TemplateLocator> locators;
     final List<ResultMapper> resultMappers;
+    final List<TemplateInstance.Initializer> initializers;
     Function<String, SectionHelperFactory<?>> sectionHelperFunc;
     final List<ParserHook> parserHooks;
     boolean removeStandaloneLines;
@@ -42,6 +43,7 @@ public final class EngineBuilder {
         this.locators = new ArrayList<>();
         this.resultMappers = new ArrayList<>();
         this.parserHooks = new ArrayList<>();
+        this.initializers = new ArrayList<>();
         this.strictRendering = true;
         this.removeStandaloneLines = true;
         this.iterationMetadataPrefix = LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE;
@@ -168,6 +170,16 @@ public final class EngineBuilder {
      */
     public EngineBuilder addResultMapper(ResultMapper mapper) {
         this.resultMappers.add(mapper);
+        return this;
+    }
+
+    /**
+     * 
+     * @param initializer
+     * @return self
+     */
+    public EngineBuilder addTemplateInstanceInitializer(TemplateInstance.Initializer initializer) {
+        this.initializers.add(initializer);
         return this;
     }
 

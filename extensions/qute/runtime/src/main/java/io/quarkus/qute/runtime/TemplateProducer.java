@@ -171,11 +171,13 @@ public class TemplateProducer {
 
         private TemplateInstance templateInstance() {
             TemplateInstance instance = template().instance();
-            instance.data(data());
+            if (dataMap != null) {
+                dataMap.forEach(instance::data);
+            } else if (data != null) {
+                instance.data(data);
+            }
             if (!attributes.isEmpty()) {
-                for (Entry<String, Object> entry : attributes.entrySet()) {
-                    instance.setAttribute(entry.getKey(), entry.getValue());
-                }
+                attributes.forEach(instance::setAttribute);
             }
             return instance;
         }

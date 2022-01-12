@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  * <p>
  * A template extension method:
  * <ul>
- * <li>must not be private</li>
+ * <li>must not be private,</li>
  * <li>must be static,</li>
  * <li>must not return {@code void}.</li>
  * </ul>

@@ -74,7 +74,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -104,6 +103,7 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
+import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
@@ -116,6 +116,7 @@ import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator.ResolveCreator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.Param;
+import io.quarkus.qute.generator.TemplateGlobalGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.runtime.ContentTypes;
 import io.quarkus.qute.runtime.EngineProducer;
@@ -343,7 +344,7 @@ public class QuteProcessor {
     @BuildStep
     TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
             TemplateFilePathsBuildItem filePaths, List<CheckedTemplateBuildItem> checkedTemplates,
-            List<MessageBundleMethodBuildItem> messageBundleMethods, QuteConfig config) {
+            List<MessageBundleMethodBuildItem> messageBundleMethods, List<TemplateGlobalBuildItem> globals, QuteConfig config) {
         long start = System.nanoTime();
 
         checkDuplicatePaths(templatePaths);
@@ -430,6 +431,11 @@ public class QuteProcessor {
                             path = path.substring(0, path.length() - (suffix.length() + 1));
                             break;
                         }
+                    }
+                    // Set the bindings for globals first so that type-safe templates can override them
+                    for (TemplateGlobalBuildItem global : globals) {
+                        parserHelper.addParameter(global.getName(),
+                                JandexUtil.getBoxedTypeName(global.getVariableType()).toString());
                     }
                     for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
                         if (checkedTemplate.templateId.equals(path)) {
@@ -1063,16 +1069,18 @@ public class QuteProcessor {
 
     @BuildStep
     void generateValueResolvers(QuteConfig config, BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            CombinedIndexBuildItem combinedIndex, BeanArchiveIndexBuildItem beanArchiveIndex,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<TemplatePathBuildItem> templatePaths,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<ImplicitValueResolverBuildItem> implicitClasses,
             TemplatesAnalysisBuildItem templatesAnalysis,
+            List<PanacheEntityClassesBuildItem> panacheEntityClasses,
+            List<TemplateDataBuildItem> templateData,
+            List<TemplateGlobalBuildItem> templateGlobals,
             BuildProducer<GeneratedValueResolverBuildItem> generatedResolvers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<PanacheEntityClassesBuildItem> panacheEntityClasses,
-            List<TemplateDataBuildItem> templateData) {
+            BuildProducer<GeneratedTemplateInitializerBuildItem> generatedInitializers) {
 
         IndexView index = beanArchiveIndex.getIndex();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {
@@ -1087,6 +1095,9 @@ public class QuteProcessor {
                 }
                 if (idx == -1) {
                     idx = name.lastIndexOf(ValueResolverGenerator.SUFFIX);
+                }
+                if (idx == -1) {
+                    idx = name.lastIndexOf(TemplateGlobalGenerator.SUFFIX);
                 }
                 String className = name.substring(0, idx);
                 if (className.contains(ValueResolverGenerator.NESTED_SEPARATOR)) {
@@ -1139,8 +1150,8 @@ public class QuteProcessor {
         ValueResolverGenerator generator = builder.build();
         generator.generate();
 
-        Set<String> generatedTypes = new HashSet<>();
-        generatedTypes.addAll(generator.getGeneratedTypes());
+        Set<String> generatedValueResolvers = new HashSet<>();
+        generatedValueResolvers.addAll(generator.getGeneratedTypes());
 
         ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(index, classOutput);
         Map<DotName, Map<String, List<TemplateExtensionMethodBuildItem>>> classToNamespaceExtensions = new HashMap<>();
@@ -1201,13 +1212,34 @@ public class QuteProcessor {
             }
         }
 
-        generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
+        generatedValueResolvers.addAll(extensionMethodGenerator.getGeneratedTypes());
 
-        LOGGER.debugf("Generated types: %s", generatedTypes);
+        LOGGER.debugf("Generated value resolvers: %s", generatedValueResolvers);
 
-        for (String generateType : generatedTypes) {
-            generatedResolvers.produce(new GeneratedValueResolverBuildItem(generateType));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generateType));
+        for (String generatedType : generatedValueResolvers) {
+            generatedResolvers.produce(new GeneratedValueResolverBuildItem(generatedType));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedType));
+        }
+
+        if (!templateGlobals.isEmpty()) {
+            TemplateGlobalGenerator globalGenerator = new TemplateGlobalGenerator(classOutput);
+
+            Map<DotName, Map<String, AnnotationTarget>> classToTargets = new HashMap<>();
+            Map<DotName, List<TemplateGlobalBuildItem>> classToGlobals = templateGlobals.stream()
+                    .collect(Collectors.groupingBy(TemplateGlobalBuildItem::getDeclaringClass));
+            for (Entry<DotName, List<TemplateGlobalBuildItem>> entry : classToGlobals.entrySet()) {
+                classToTargets.put(entry.getKey(), entry.getValue().stream().collect(
+                        Collectors.toMap(TemplateGlobalBuildItem::getName, TemplateGlobalBuildItem::getTarget)));
+            }
+
+            for (Entry<DotName, Map<String, AnnotationTarget>> e : classToTargets.entrySet()) {
+                globalGenerator.generate(index.getClassByName(e.getKey()), e.getValue());
+            }
+
+            for (String generatedType : globalGenerator.getGeneratedTypes()) {
+                generatedInitializers.produce(new GeneratedTemplateInitializerBuildItem(generatedType));
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedType));
+            }
         }
     }
 
@@ -1401,7 +1433,8 @@ public class QuteProcessor {
     @Record(value = STATIC_INIT)
     void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
             List<GeneratedValueResolverBuildItem> generatedValueResolvers, List<TemplatePathBuildItem> templatePaths,
-            Optional<TemplateVariantsBuildItem> templateVariants) {
+            Optional<TemplateVariantsBuildItem> templateVariants,
+            List<GeneratedTemplateInitializerBuildItem> templateInitializers) {
 
         List<String> templates = new ArrayList<>();
         List<String> tags = new ArrayList<>();
@@ -1424,7 +1457,8 @@ public class QuteProcessor {
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(QuteContext.class)
                 .supplier(recorder.createContext(generatedValueResolvers.stream()
                         .map(GeneratedValueResolverBuildItem::getClassName).collect(Collectors.toList()), templates,
-                        tags, variants))
+                        tags, variants, templateInitializers.stream()
+                                .map(GeneratedTemplateInitializerBuildItem::getClassName).collect(Collectors.toList())))
                 .done());
     }
 
@@ -1983,6 +2017,85 @@ public class QuteProcessor {
                 builder.addClass(templateData.getTargetClass(), templateData.getAnnotationInstance());
                 return templateData.getAnnotationInstance();
             });
+        }
+    }
+
+    @BuildStep
+    void collectTemplateGlobals(BeanArchiveIndexBuildItem beanArchiveIndex, BuildProducer<TemplateGlobalBuildItem> globals) {
+        IndexView index = beanArchiveIndex.getIndex();
+        Map<String, TemplateGlobalBuildItem> nameToGlobal = new HashMap<>();
+        for (AnnotationInstance annotation : index.getAnnotations(TemplateGlobalGenerator.TEMPLATE_GLOBAL)) {
+            switch (annotation.target().kind()) {
+                case CLASS:
+                    addGlobalClass(annotation.target().asClass(), nameToGlobal);
+                    break;
+                case FIELD:
+                    addGlobalField(annotation.value(TemplateGlobalGenerator.NAME), annotation.target().asField(), nameToGlobal);
+                    break;
+                case METHOD:
+                    addGlobalMethod(annotation.value(TemplateGlobalGenerator.NAME), annotation.target().asMethod(),
+                            nameToGlobal);
+                    break;
+                default:
+                    throw new TemplateException("Invalid annotation target for @TemplateGlobal: " + annotation);
+            }
+        }
+        nameToGlobal.values().forEach(globals::produce);
+    }
+
+    private void addGlobalClass(ClassInfo clazz, Map<String, TemplateGlobalBuildItem> nameToGlobal) {
+        for (FieldInfo field : clazz.fields()) {
+            if (Modifier.isStatic(field.flags())
+                    && !Modifier.isPrivate(field.flags())
+                    && !field.isSynthetic()
+                    && !field.hasAnnotation(TemplateGlobalGenerator.TEMPLATE_GLOBAL)) {
+                addGlobalField(null, field, nameToGlobal);
+            }
+        }
+        for (MethodInfo method : clazz.methods()) {
+            if (Modifier.isStatic(method.flags())
+                    && !Modifier.isPrivate(method.flags())
+                    && method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
+                    && !method.isSynthetic()
+                    && !method.hasAnnotation(TemplateGlobalGenerator.TEMPLATE_GLOBAL)) {
+                addGlobalMethod(null, method, nameToGlobal);
+            }
+        }
+    }
+
+    private void addGlobalMethod(AnnotationValue nameValue, MethodInfo method,
+            Map<String, TemplateGlobalBuildItem> nameToGlobal) {
+        TemplateGlobalGenerator.validate(method);
+        String name = TemplateGlobal.ELEMENT_NAME;
+        if (nameValue != null) {
+            name = nameValue.asString();
+        }
+        if (name.equals(TemplateGlobal.ELEMENT_NAME)) {
+            name = method.name();
+        }
+        TemplateGlobalBuildItem global = new TemplateGlobalBuildItem(name, method, method.returnType());
+        addGlobalVariable(global, nameToGlobal);
+    }
+
+    private void addGlobalField(AnnotationValue nameValue, FieldInfo field, Map<String, TemplateGlobalBuildItem> nameToGlobal) {
+        TemplateGlobalGenerator.validate(field);
+        String name = TemplateGlobal.ELEMENT_NAME;
+        if (nameValue != null) {
+            name = nameValue.asString();
+        }
+        if (name.equals(TemplateGlobal.ELEMENT_NAME)) {
+            name = field.name();
+        }
+        TemplateGlobalBuildItem global = new TemplateGlobalBuildItem(name, field, field.type());
+        addGlobalVariable(global, nameToGlobal);
+    }
+
+    private void addGlobalVariable(TemplateGlobalBuildItem global, Map<String, TemplateGlobalBuildItem> nameToGlobal) {
+        TemplateGlobalBuildItem prev = nameToGlobal.put(global.getName(), global);
+        if (prev != null) {
+            throw new TemplateException(
+                    String.format("Duplicate global variable defined via @TemplateGlobal for the name [%s]:\n\t- %s\n\t- %s",
+                            global.getName(), global, prev));
         }
     }
 

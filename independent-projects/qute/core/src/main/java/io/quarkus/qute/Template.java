@@ -19,6 +19,7 @@ public interface Template {
      * Create a new template instance to configure the model data.
      * 
      * @return a new template instance
+     * @see TemplateInstance.Initializer
      */
     TemplateInstance instance();
 

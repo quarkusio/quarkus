@@ -135,4 +135,9 @@ public interface Engine {
      */
     public Evaluator getEvaluator();
 
+    /**
+     * @return an immutable list of template instance initializers
+     */
+    public List<TemplateInstance.Initializer> getTemplateInstanceInitializers();
+
 }

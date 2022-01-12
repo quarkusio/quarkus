@@ -10,7 +10,8 @@ import io.quarkus.runtime.annotations.Recorder;
 public class QuteRecorder {
 
     public Supplier<Object> createContext(List<String> resolverClasses,
-            List<String> templatePaths, List<String> tags, Map<String, List<String>> variants) {
+            List<String> templatePaths, List<String> tags, Map<String, List<String>> variants,
+            List<String> templateInstanceInitializerClasses) {
         return new Supplier<Object>() {
 
             @Override
@@ -36,6 +37,12 @@ public class QuteRecorder {
                     public Map<String, List<String>> getVariants() {
                         return variants;
                     }
+
+                    @Override
+                    public List<String> getTemplateInstanceInitializerClasses() {
+                        return templateInstanceInitializerClasses;
+                    }
+
                 };
             }
         };
@@ -50,6 +57,9 @@ public class QuteRecorder {
         List<String> getTags();
 
         Map<String, List<String>> getVariants();
+
+        List<String> getTemplateInstanceInitializerClasses();
+
     }
 
 }

@@ -854,7 +854,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import io.quarkus.oidc.token.propagation.JsonWebToken;
 
 @RegisterRestClient
-@AccessToken
+@JsonWebToken
 @Path("/")
 public interface ProtectedResourceService {
 
@@ -871,7 +871,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter;
 
 @RegisterRestClient
-@RegisterProvider(JsonWebTokenTokenRequestFilter.class)
+@RegisterProvider(JsonWebTokenRequestFilter.class)
 @Path("/")
 public interface ProtectedResourceService {
 

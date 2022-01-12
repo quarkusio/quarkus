@@ -1796,7 +1796,7 @@ public class BeanGenerator extends AbstractGenerator {
 
     private String getProxyTypeName(BeanInfo bean, String baseName) {
         StringBuilder proxyTypeName = new StringBuilder();
-        proxyTypeName.append(bean.getTargetPackageName());
+        proxyTypeName.append(bean.getClientProxyPackageName());
         if (proxyTypeName.length() > 0) {
             proxyTypeName.append(".");
         }
@@ -1838,7 +1838,7 @@ public class BeanGenerator extends AbstractGenerator {
         // Create a new proxy instance, atomicity does not really matter here
         BytecodeCreator proxyNull = proxy.ifNull(proxyInstance).trueBranch();
         proxyNull.assign(proxyInstance, proxyNull.newInstance(
-                MethodDescriptor.ofConstructor(proxyTypeName, beanCreator.getClassName()), proxyNull.getThis()));
+                MethodDescriptor.ofConstructor(proxyTypeName, String.class), proxyNull.load(bean.getIdentifier())));
         proxyNull.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_PROXY, proxyTypeName),
                 proxyNull.getThis(),
                 proxyInstance);

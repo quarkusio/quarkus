@@ -44,8 +44,9 @@ import io.quarkus.runtime.annotations.Recorder;
 public class HibernateSearchElasticsearchRecorder {
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
-            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig) {
-        return new HibernateSearchIntegrationStaticInitListener(buildTimeConfig);
+            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
+            List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
+        return new HibernateSearchIntegrationStaticInitListener(buildTimeConfig, integrationStaticInitListeners);
     }
 
     public HibernateOrmIntegrationStaticInitListener createDisabledStaticInitListener() {
@@ -118,10 +119,13 @@ public class HibernateSearchElasticsearchRecorder {
             implements HibernateOrmIntegrationStaticInitListener {
 
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
+        private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
 
         private HibernateSearchIntegrationStaticInitListener(
-                HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig) {
+                HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
+                List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
             this.buildTimeConfig = buildTimeConfig;
+            this.integrationStaticInitListeners = integrationStaticInitListeners;
         }
 
         @Override
@@ -130,11 +134,19 @@ public class HibernateSearchElasticsearchRecorder {
                     EngineSettings.BACKGROUND_FAILURE_HANDLER,
                     buildTimeConfig.backgroundFailureHandler);
 
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.COORDINATION_STRATEGY,
+                    buildTimeConfig.coordination.strategy);
+
             contributeBackendBuildTimeProperties(propertyCollector, null, buildTimeConfig.defaultBackend);
 
             for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.namedBackends.backends
                     .entrySet()) {
                 contributeBackendBuildTimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
+            }
+
+            for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
+                listener.contributeBootProperties(propertyCollector);
             }
         }
 
@@ -146,6 +158,10 @@ public class HibernateSearchElasticsearchRecorder {
                     .valueReadHandleFactory(ValueReadHandleFactory.usingJavaLangReflect())
                     .build();
             booter.preBoot(propertyCollector);
+
+            for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
+                listener.onMetadataInitialized(metadata, bootstrapContext, propertyCollector);
+            }
         }
 
         private void contributeBackendBuildTimeProperties(BiConsumer<String, Object> propertyCollector, String backendName,
@@ -218,6 +234,9 @@ public class HibernateSearchElasticsearchRecorder {
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.QUERY_LOADING_FETCH_SIZE,
                     runtimeConfig.queryLoading.fetchSize);
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.MULTI_TENANCY_TENANT_IDS,
+                    runtimeConfig.multiTenancy.tenantIds);
 
             contributeBackendRuntimeProperties(propertyCollector, null,
                     runtimeConfig.defaultBackend);

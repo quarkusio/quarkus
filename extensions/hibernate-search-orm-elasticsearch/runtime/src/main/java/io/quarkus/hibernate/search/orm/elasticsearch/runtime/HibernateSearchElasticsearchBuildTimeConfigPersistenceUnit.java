@@ -39,6 +39,12 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     @ConfigItem
     public Optional<String> backgroundFailureHandler;
 
+    /**
+     * Configuration for coordination between threads or application instances.
+     */
+    @ConfigItem
+    public CoordinationConfig coordination;
+
     @ConfigGroup
     public static class ElasticsearchNamedBackendsBuildTimeConfig {
 
@@ -140,4 +146,20 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
         @ConfigItem
         public Optional<String> strategy;
     }
+
+    @ConfigGroup
+    public static class CoordinationConfig {
+
+        /**
+         * The strategy to use for coordinating between threads or even separate instances of the application,
+         * in particular in automatic indexing.
+         *
+         * See <<coordination>> for more information.
+         *
+         * @asciidoclet
+         */
+        @ConfigItem(defaultValue = "none")
+        public String strategy;
+    }
+
 }

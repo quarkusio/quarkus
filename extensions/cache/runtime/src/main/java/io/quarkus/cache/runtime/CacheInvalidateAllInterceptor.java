@@ -1,5 +1,7 @@
 package io.quarkus.cache.runtime;
 
+import java.util.function.Function;
+
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
@@ -8,7 +10,10 @@ import javax.interceptor.InvocationContext;
 import org.jboss.logging.Logger;
 
 import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheException;
 import io.quarkus.cache.CacheInvalidateAll;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @CacheInvalidateAll(cacheName = "") // The `cacheName` attribute is @Nonbinding.
 @Interceptor
@@ -25,15 +30,49 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
         if (interceptionContext.getInterceptorBindings().isEmpty()) {
             // This should never happen.
             LOGGER.warn(INTERCEPTOR_BINDINGS_ERROR_MSG);
+            return invocationContext.proceed();
+        } else if (isUniReturnType(invocationContext)) {
+            return invalidateAllNonBlocking(invocationContext, interceptionContext);
         } else {
-            for (CacheInvalidateAll binding : interceptionContext.getInterceptorBindings()) {
-                Cache cache = cacheManager.getCache(binding.cacheName()).get();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debugf("Invalidating all entries from cache [%s]", binding.cacheName());
-                }
-                cache.invalidateAll().await().indefinitely();
-            }
+            return invalidateAllBlocking(invocationContext, interceptionContext);
+        }
+    }
+
+    private Object invalidateAllNonBlocking(InvocationContext invocationContext,
+            CacheInterceptionContext<CacheInvalidateAll> interceptionContext) {
+        return Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
+                .onItem().transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
+                    @Override
+                    public Uni<Void> apply(CacheInvalidateAll binding) {
+                        return invalidateAll(binding);
+                    }
+                })
+                .onItem().ignoreAsUni()
+                .onItem().transformToUni(new Function<Object, Uni<?>>() {
+                    @Override
+                    public Uni<?> apply(Object ignored) {
+                        try {
+                            return (Uni<Object>) invocationContext.proceed();
+                        } catch (Exception e) {
+                            throw new CacheException(e);
+                        }
+                    }
+                });
+    }
+
+    private Object invalidateAllBlocking(InvocationContext invocationContext,
+            CacheInterceptionContext<CacheInvalidateAll> interceptionContext) throws Exception {
+        for (CacheInvalidateAll binding : interceptionContext.getInterceptorBindings()) {
+            invalidateAll(binding).await().indefinitely();
         }
         return invocationContext.proceed();
+    }
+
+    private Uni<Void> invalidateAll(CacheInvalidateAll binding) {
+        Cache cache = cacheManager.getCache(binding.cacheName()).get();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debugf("Invalidating all entries from cache [%s]", binding.cacheName());
+        }
+        return cache.invalidateAll();
     }
 }

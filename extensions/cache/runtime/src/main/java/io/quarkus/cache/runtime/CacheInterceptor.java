@@ -19,6 +19,7 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CompositeCacheKey;
+import io.smallrye.mutiny.Uni;
 
 public abstract class CacheInterceptor {
 
@@ -130,5 +131,9 @@ public abstract class CacheInterceptor {
             // will be used.
             return new CompositeCacheKey(methodParameterValues);
         }
+    }
+
+    protected static boolean isUniReturnType(InvocationContext invocationContext) {
+        return Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType());
     }
 }

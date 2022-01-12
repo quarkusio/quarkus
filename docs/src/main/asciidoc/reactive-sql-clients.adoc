@@ -481,6 +481,11 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 |`io.vertx.mutiny.mssqlclient.MSSQLPool`
 |`@p1`, `@p2`, etc.
 
+|Oracle
+|`quarkus-reactive-oracle-client`
+|`io.vertx.mutiny.oracleclient.OraclePool`
+|`?`
+
 |PostgreSQL
 |`quarkus-reactive-pg-client`
 |`io.vertx.mutiny.pgclient.PgPool`
@@ -712,6 +717,10 @@ include::{generated-dir}/config/quarkus-reactive-mysql-client.adoc[opts=optional
 === Microsoft SQL Server
 
 include::{generated-dir}/config/quarkus-reactive-mssql-client.adoc[opts=optional, leveloffset=+1]
+
+=== Oracle
+
+include::{generated-dir}/config/quarkus-reactive-oracle-client.adoc[opts=optional, leveloffset=+1]
 
 === PostgreSQL
 

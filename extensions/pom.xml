@@ -72,6 +72,7 @@
         <module>reactive-pg-client</module>
         <module>reactive-mysql-client</module>
         <module>reactive-mssql-client</module>
+        <module>reactive-oracle-client</module>
         <module>mailer</module>
         <module>grpc</module>
         <module>redis-client</module>

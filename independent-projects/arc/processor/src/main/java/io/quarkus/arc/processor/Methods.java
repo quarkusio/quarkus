@@ -228,6 +228,11 @@ final class Methods {
 
     private static Set<AnnotationInstance> mergeBindings(BeanDeployment beanDeployment, ClassInfo classInfo,
             Set<AnnotationInstance> classLevelBindings, boolean ignoreMethodLevelBindings, MethodInfo method) {
+
+        if (beanDeployment.getAnnotation(method, DotNames.NO_CLASS_INTERCEPTORS) != null) {
+            classLevelBindings = Set.of();
+        }
+
         if (ignoreMethodLevelBindings) {
             return classLevelBindings;
         }

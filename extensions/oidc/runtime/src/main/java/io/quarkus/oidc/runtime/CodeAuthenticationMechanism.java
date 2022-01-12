@@ -5,6 +5,7 @@ import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_R
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -191,7 +192,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             return Uni.createFrom().item(new ChallengeData(499, "WWW-Authenticate", "OIDC"));
                         }
 
-                        StringBuilder codeFlowParams = new StringBuilder();
+                        StringBuilder codeFlowParams = new StringBuilder(168); // experimentally determined to be a good size for preventing resizing and not wasting space
 
                         // response_type
                         codeFlowParams.append(OidcConstants.CODE_FLOW_RESPONSE_TYPE).append(EQ)
@@ -202,8 +203,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 .append(OidcCommonUtils.urlEncode(configContext.oidcConfig.clientId.get()));
 
                         // scope
-                        List<String> scopes = new ArrayList<>();
+                        List<String> oidcConfigScopes = configContext.oidcConfig.getAuthentication().scopes.isPresent()
+                                ? configContext.oidcConfig.getAuthentication().scopes.get()
+                                : Collections.emptyList();
+                        List<String> scopes = new ArrayList<>(oidcConfigScopes.size() + 1);
                         scopes.add("openid");
+                        scopes.addAll(oidcConfigScopes);
                         configContext.oidcConfig.getAuthentication().scopes.ifPresent(scopes::addAll);
                         codeFlowParams.append(AMP).append(OidcConstants.TOKEN_SCOPE).append(EQ)
                                 .append(OidcCommonUtils.urlEncode(String.join(" ", scopes)));

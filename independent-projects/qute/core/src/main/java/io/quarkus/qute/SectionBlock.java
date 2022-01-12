@@ -27,14 +27,17 @@ public final class SectionBlock {
      */
     public final String label;
     /**
-     * An ordered map of parsed parameters.
+     * An unmodifiable ordered map of parsed parameters.
      */
     public final Map<String, String> parameters;
 
+    /**
+     * An unmodifiable ordered map of parameter expressions.
+     */
     public final Map<String, Expression> expressions;
 
     /**
-     * Section content.
+     * Section content - an immutable list of template nodes.
      */
     List<TemplateNode> nodes;
 
@@ -146,17 +149,15 @@ public final class SectionBlock {
         private final String id;
         private Origin origin;
         private String label;
-        private final Map<String, String> parameters;
+        private Map<String, String> parameters;
         private final List<TemplateNode> nodes;
-        private final Map<String, Expression> expressions;
+        private Map<String, Expression> expressions;
         private final Function<String, Expression> expressionFun;
         private final Function<String, TemplateException> errorFun;
 
         public Builder(String id, Function<String, Expression> expressionFun, Function<String, TemplateException> errorFun) {
             this.id = id;
-            this.parameters = new LinkedHashMap<>();
             this.nodes = new ArrayList<>();
-            this.expressions = new LinkedHashMap<>();
             this.expressionFun = expressionFun;
             this.errorFun = errorFun;
         }
@@ -177,19 +178,25 @@ public final class SectionBlock {
         }
 
         SectionBlock.Builder addParameter(String name, String value) {
-            this.parameters.put(name, value);
+            if (parameters == null) {
+                parameters = new LinkedHashMap<>();
+            }
+            parameters.put(name, value);
             return this;
         }
 
         @Override
         public Expression addExpression(String param, String value) {
             Expression expression = expressionFun.apply(value);
+            if (expressions == null) {
+                expressions = new LinkedHashMap<>();
+            }
             expressions.put(param, expression);
             return expression;
         }
 
         public Map<String, String> getParameters() {
-            return Collections.unmodifiableMap(parameters);
+            return parameters == null ? Collections.emptyMap() : Collections.unmodifiableMap(parameters);
         }
 
         public String getLabel() {
@@ -202,6 +209,22 @@ public final class SectionBlock {
         }
 
         SectionBlock build() {
+            Map<String, String> parameters = this.parameters;
+            if (parameters == null) {
+                parameters = Collections.emptyMap();
+            } else if (parameters.size() == 1) {
+                parameters = Map.copyOf(parameters);
+            } else {
+                parameters = Collections.unmodifiableMap(parameters);
+            }
+            Map<String, Expression> expressions = this.expressions;
+            if (expressions == null) {
+                expressions = Collections.emptyMap();
+            } else if (expressions.size() == 1) {
+                expressions = Map.copyOf(expressions);
+            } else {
+                expressions = Collections.unmodifiableMap(expressions);
+            }
             return new SectionBlock(origin, id, label, parameters, expressions, nodes);
         }
     }

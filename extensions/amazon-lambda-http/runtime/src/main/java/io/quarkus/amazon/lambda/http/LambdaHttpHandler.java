@@ -167,8 +167,16 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.class, request);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.RequestContext.class, request.getRequestContext());
+        HttpMethod httpMethod = null;
+        if (request.getRequestContext() != null && request.getRequestContext().getHttp() != null
+                && request.getRequestContext().getHttp().getMethod() != null) {
+            httpMethod = HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod());
+        }
+        if (httpMethod == null) {
+            throw new IllegalStateException("Missing HTTP method in request event");
+        }
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod()), ofNullable(request.getRawQueryString())
+                httpMethod, ofNullable(request.getRawQueryString())
                         .filter(q -> !q.isEmpty()).map(q -> request.getRawPath() + '?' + q).orElse(request.getRawPath()),
                 quarkusHeaders);
         if (request.getHeaders() != null) { //apparently this can be null if no headers are sent

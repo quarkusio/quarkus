@@ -182,7 +182,6 @@ public class ExposedCloudEventTest {
             "  \"type\": \"test-type\", " +
             "  \"extclient\": \"ext-client-val\", " +
             "  \"dataschema\": \"test-dataschema-client\", " +
-            "  \"datacontenttype\": \"application/json\", " +
             "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " +
             "}";
 

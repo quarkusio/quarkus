@@ -492,6 +492,22 @@ public class BeanInfo implements InjectionTargetInfo {
         return packageName;
     }
 
+    public String getClientProxyPackageName() {
+        if (isProducerField() || isProducerMethod()) {
+            AnnotationTarget target = getTarget().get();
+            DotName typeName = target.kind() == Kind.FIELD ? target.asField().type().name()
+                    : target.asMethod().returnType().name();
+            String packageName = DotNames.packageName(typeName);
+            if (packageName.startsWith("java.")) {
+                // It is not possible to place a class in a JDK package
+                packageName = AbstractGenerator.DEFAULT_PACKAGE;
+            }
+            return packageName;
+        } else {
+            return getTargetPackageName();
+        }
+    }
+
     void validate(List<Throwable> errors, List<BeanDeploymentValidator> validators,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, Set<DotName> classesReceivingNoArgsCtor) {
         Beans.validateBean(this, errors, validators, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);

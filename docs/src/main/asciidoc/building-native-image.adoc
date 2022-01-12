@@ -418,7 +418,7 @@ If one of those extensions is present, then creating a container image for the n
 
 See the xref:container-image.adoc[Container Image guide] for more details.
 
-=== Manually
+=== Manually using the micro base image
 
 You can run the application in a container using the JAR produced by the Quarkus Maven Plugin.
 However, in this section we focus on creating a container image using the produced native executable.
@@ -431,7 +431,7 @@ we will instruct the Maven build to produce an executable by leveraging a contai
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a container.
-The project generation has provided a `Dockerfile.native` in the `src/main/docker` directory with the following content:
+The project generation has provided a `Dockerfile.native-micro` in the `src/main/docker` directory with the following content:
 
 [source,dockerfile]
 ----
@@ -473,6 +473,23 @@ And finally, run it with:
 ----
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
+
+=== Manually using the minimal base image
+
+The project generation has also provided a `Dockerfile.native` in the `src/main/docker` directory with the following content:
+
+[source,dockerfile]
+----
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5
+WORKDIR /work/
+COPY target/*-runner /work/application
+RUN chmod 775 /work
+EXPOSE 8080
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+----
+
+The UBI minimal image is bigger than the micro one mentioned above.
+It contains more utilities such as the `microdnf` package manager.
 
 [#multistage-docker]
 === Using a multi-stage Docker build

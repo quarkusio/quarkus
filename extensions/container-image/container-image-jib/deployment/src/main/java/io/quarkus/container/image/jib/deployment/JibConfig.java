@@ -23,7 +23,10 @@ public class JibConfig {
     public Optional<String> baseJvmImage;
 
     /**
-     * The base image to be used when a container image is being produced for the native binary build
+     * The base image to be used when a container image is being produced for the native binary build.
+     * The default is "quay.io/quarkus/quarkus-micro-image". You can also use
+     * "registry.access.redhat.com/ubi8/ubi-minimal" which is a bigger base image, but provide more built-in utilities
+     * such as the microdnf package manager.
      */
     @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:1.0")
     public String baseNativeImage;

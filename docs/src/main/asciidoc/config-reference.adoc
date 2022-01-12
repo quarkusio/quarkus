@@ -160,6 +160,61 @@ Optional<String> name; <3>
 
 TIP: Use xref:config-mappings.adoc#config-mappings[Config Mappings] to group similar configuration properties.
 
+=== Default Values
+
+If a property is associated with a default value (by way of the `defaultValue` attribute), and no configuration value
+is supplied for the property, then rather than throwing a `javax.enterprise.inject.spi.DeploymentException`, the
+default value will be used. The `defaultValue` value is expressed as a `String`, and uses the same conversion mechanism
+used to process configuration values. Several Built-in Converters already exist for primitives, boxed primitives, and
+other classes; for example:
+
+* Primitives: `boolean`, `byte`, `short`, etc.
+* Boxed primitives: `java.lang.Boolean`, `java.lang.Byte`, `java.lang.Short`, etc.
+* Optional containers: `java.util.Optional`, `java.util.OptionalInt`, `java.util.OptionalLong`, and `java.util.OptionalDouble`
+* Java `enum` types
+* JSR 310 `java.time.Duration`
+* JDK networking `java.net.SocketAddress`, `java.net.InetAddress`, etc.
+
+As you might expect, these converters are `org.eclipse.microprofile.config.spi.Converter` implementations. Therefore
+these converters comply with the Microprofile or custom implementation providers expression rules, like:
+
+* Boolean values will be `true` in cases "true", "1", "YES", "Y" "ON". Otherwise, value will be interpreted as false
+* For float and double values the fractional digits must be separated by a dot `.`
+
+Note that when a combination of `Optional*` types and the `defaultValue` attribute are used, the defined `defaultValue`
+will still be used and if no value is given for the property, the `Optional*` will be present and populated with the
+converted default value. However, when the property is explicitly empty, the default value is not used and the
+`Optional` will be empty. Consider this example:
+
+[source,properties]
+----
+# missing value, optional property
+greeting.name =
+----
+
+In this case, since `greeting.name` was configured to be `Optional*` up above, the corresponding property value will
+be an empty `Optional` and execution will continue normally. This would be the case even if there was a default value
+configured: the default value is *not* used if the property is explicitly cleared in the configuration.
+
+On the other hand, this example:
+
+[source,properties]
+----
+# missing value, non-optional
+greeting.suffix =
+----
+
+will result in a `java.util.NoSuchElementException: SRCFG02004: Required property greeting.message not found` on
+startup and the default value will not be assigned.
+
+Below is an example of a Quarkus-supplied converter:
+
+[source,java]
+----
+@ConfigProperty(name = "server.address", defaultValue = "192.168.1.1")
+InetAddress serverAddress;
+----
+
 == Programmatically access
 
 The `org.eclipse.microprofile.config.ConfigProvider.getConfig()` API allows to access the Config API programmatically.

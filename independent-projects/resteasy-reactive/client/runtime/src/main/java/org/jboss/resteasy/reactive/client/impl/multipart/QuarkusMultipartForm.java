@@ -41,8 +41,8 @@ public class QuarkusMultipartForm implements Iterable<QuarkusMultipartFormDataPa
         return charset;
     }
 
-    public QuarkusMultipartForm attribute(String name, String value) {
-        parts.add(new QuarkusMultipartFormDataPart(name, value));
+    public QuarkusMultipartForm attribute(String name, String value, String filename) {
+        parts.add(new QuarkusMultipartFormDataPart(name, value, filename));
         return this;
     }
 

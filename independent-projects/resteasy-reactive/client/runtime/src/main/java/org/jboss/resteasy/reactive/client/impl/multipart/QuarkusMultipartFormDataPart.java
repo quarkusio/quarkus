@@ -63,7 +63,7 @@ public class QuarkusMultipartFormDataPart {
         this.content = null;
     }
 
-    public QuarkusMultipartFormDataPart(String name, String value) {
+    public QuarkusMultipartFormDataPart(String name, String value, String filename) {
         if (name == null) {
             throw new NullPointerException("Multipart field name cannot be null");
         }
@@ -72,7 +72,7 @@ public class QuarkusMultipartFormDataPart {
         }
         this.name = name;
         this.value = value;
-        this.filename = null;
+        this.filename = filename;
         this.pathname = null;
         this.content = null;
         this.multiByteContent = null;

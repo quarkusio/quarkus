@@ -49,4 +49,14 @@ public class MultipartOutputResource {
         return response;
     }
 
+    @GET
+    @Path("/with-null-fields")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public MultipartOutputFileResponse nullFields() {
+        MultipartOutputFileResponse response = new MultipartOutputFileResponse();
+        response.name = null;
+        response.file = null;
+        return response;
+    }
+
 }

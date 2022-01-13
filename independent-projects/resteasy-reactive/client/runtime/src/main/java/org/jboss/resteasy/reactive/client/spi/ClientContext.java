@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.client.spi;
 
 import io.vertx.core.Vertx;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.jboss.resteasy.reactive.client.impl.ClientProxies;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
@@ -14,4 +15,6 @@ public interface ClientContext {
     Supplier<Vertx> getVertx();
 
     ClientProxies getClientProxies();
+
+    Map<Class<?>, MultipartResponseData> getMultipartResponsesData();
 }

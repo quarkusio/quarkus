@@ -1,13 +1,18 @@
 package io.quarkus.jaxrs.client.reactive.deployment;
 
 import static io.quarkus.deployment.Feature.JAXRS_CLIENT_REACTIVE;
+import static org.jboss.jandex.Type.Kind.ARRAY;
 import static org.jboss.jandex.Type.Kind.CLASS;
 import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
+import static org.jboss.jandex.Type.Kind.PRIMITIVE;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 
 import java.io.Closeable;
@@ -19,8 +24,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -45,9 +52,11 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.ParamConverterProvider;
 
+import org.apache.http.entity.ContentType;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -76,6 +85,8 @@ import org.jboss.resteasy.reactive.client.processor.beanparam.PathParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.QueryParamItem;
 import org.jboss.resteasy.reactive.client.processor.scanning.ClientEndpointIndexer;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.FieldFiller;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
@@ -93,6 +104,7 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
+import org.jboss.resteasy.reactive.multipart.FileDownload;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -131,6 +143,7 @@ import io.quarkus.jaxrs.client.reactive.runtime.ClientResponseBuilderFactory;
 import io.quarkus.jaxrs.client.reactive.runtime.JaxrsClientReactiveRecorder;
 import io.quarkus.jaxrs.client.reactive.runtime.RestClientBase;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
+import io.quarkus.jaxrs.client.reactive.runtime.impl.MultipartResponseDataBase;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
@@ -171,6 +184,8 @@ public class JaxrsClientReactiveProcessor {
 
     private static final Set<DotName> ASYNC_RETURN_TYPES = Set.of(COMPLETION_STAGE, UNI, MULTI);
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
+    public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
+            .ofMethod(MultipartResponseDataBase.class, "addFiller", void.class, FieldFiller.class);
 
     @BuildStep
     void addFeature(BuildProducer<FeatureBuildItem> features) {
@@ -275,6 +290,16 @@ public class JaxrsClientReactiveProcessor {
 
         Map<String, RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>>> clientImplementations = new HashMap<>();
         Map<String, String> failures = new HashMap<>();
+
+        Set<ClassInfo> multipartResponseTypes = new HashSet<>();
+        // collect classes annotated with MultipartForm and add classes that are used in rest client interfaces as return
+        // types for multipart responses
+        for (AnnotationInstance annotation : index.getAnnotations(ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM)) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                multipartResponseTypes.add(annotation.target().asClass());
+            }
+        }
+
         for (Map.Entry<DotName, String> i : result.getClientInterfaces().entrySet()) {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
@@ -287,7 +312,7 @@ public class JaxrsClientReactiveProcessor {
                     RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>> proxyProvider = generateClientInvoker(
                             recorderContext, clientProxy,
                             enricherBuildItems, generatedClassBuildItemBuildProducer, clazz, index, defaultConsumesType,
-                            result.getHttpAnnotationToMethod(), observabilityIntegrationNeeded);
+                            result.getHttpAnnotationToMethod(), observabilityIntegrationNeeded, multipartResponseTypes);
                     if (proxyProvider != null) {
                         clientImplementations.put(clientProxy.getClassName(), proxyProvider);
                     }
@@ -325,6 +350,225 @@ public class JaxrsClientReactiveProcessor {
                     .produce(new ReflectiveClassBuildItem(true, false, false, writerClass));
         }
 
+        Map<String, RuntimeValue<MultipartResponseData>> responsesData = new HashMap<>();
+        for (ClassInfo multipartResponseType : multipartResponseTypes) {
+            responsesData.put(multipartResponseType.toString(), createMultipartResponseData(multipartResponseType,
+                    generatedClassBuildItemBuildProducer, recorderContext));
+        }
+        recorder.setMultipartResponsesData(responsesData);
+    }
+
+    /**
+     * Scan `multipartResponseTypeInfo` for fields and setters/getters annotated with @PartType and prepares
+     * {@link MultipartResponseData} class for it. This class is later used to create a new instance of the response type
+     * and to provide {@link FieldFiller field fillers} that are responsible for setting values for each of the fields and
+     * setters
+     *
+     * @param multipartResponseTypeInfo a class to scan
+     * @param generatedClasses build producer for generating classes
+     * @param context recorder context to instantiate the newly created class
+     *
+     * @return a runtime value with an instance of the MultipartResponseData corresponding to the given class
+     */
+    private RuntimeValue<MultipartResponseData> createMultipartResponseData(ClassInfo multipartResponseTypeInfo,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, RecorderContext context) {
+        String multipartResponseType = multipartResponseTypeInfo.toString();
+        String dataClassName = multipartResponseType + "$$MultipartData";
+        try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true),
+                dataClassName, null, MultipartResponseDataBase.class.getName())) {
+
+            // implement {@link org.jboss.resteasy.reactive.client.spi.MultipartResponseData#newInstance}
+            // method that returns a new instance of the response type
+            MethodCreator newInstance = c.getMethodCreator("newInstance", Object.class);
+            newInstance.returnValue(
+                    newInstance.newInstance(MethodDescriptor.ofConstructor(multipartResponseType)));
+
+            // scan for public fields and public setters annotated with @PartType.
+            // initialize appropriate collections of FieldFillers in the constructor
+
+            MethodCreator constructor = c.getMethodCreator(MethodDescriptor.ofConstructor(multipartResponseType));
+            constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(MultipartResponseDataBase.class),
+                    constructor.getThis());
+
+            Map<String, AnnotationInstance> nonPublicPartTypeFields = new HashMap<>();
+            // 1. public fields
+            for (FieldInfo field : multipartResponseTypeInfo.fields()) {
+                AnnotationInstance partType = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
+                if (partType == null) {
+                    log.debugf("Skipping field %s.%s from multipart mapping because it is not annotated with " +
+                            "@PartType", multipartResponseType, field.name());
+                } else if (!Modifier.isPublic(field.flags())) {
+                    // the field is not public, let's memorize its name in case it has a getter
+                    nonPublicPartTypeFields.put(field.name(), partType);
+                } else {
+                    String partName = extractPartName(partType.target(), field.name());
+                    String fillerName = createFieldFillerForField(partType, field, partName, generatedClasses, dataClassName);
+                    constructor.invokeVirtualMethod(MULTIPART_RESPONSE_DATA_ADD_FILLER, constructor.getThis(),
+                            constructor.newInstance(MethodDescriptor.ofConstructor(fillerName)));
+                }
+            }
+            for (MethodInfo method : multipartResponseTypeInfo.methods()) {
+                String methodName = method.name();
+                if (methodName.startsWith("set") && method.parameters().size() == 1) {
+                    AnnotationInstance partType;
+                    String fieldName = setterToFieldName(methodName);
+                    if ((partType = partTypeFromGetterOrSetter(method)) != null
+                            || (partType = nonPublicPartTypeFields.get(fieldName)) != null) {
+                        String partName = extractPartName(partType.target(), fieldName);
+                        String fillerName = createFieldFillerForSetter(partType, method, partName, generatedClasses,
+                                dataClassName);
+                        constructor.invokeVirtualMethod(MULTIPART_RESPONSE_DATA_ADD_FILLER, constructor.getThis(),
+                                constructor.newInstance(MethodDescriptor.ofConstructor(fillerName)));
+                    } else {
+                        log.debugf("Ignoring possible setter " + methodName + ", no part type annotation found");
+                    }
+                }
+            }
+            constructor.returnValue(null);
+        }
+        return context.newInstance(dataClassName);
+    }
+
+    private String extractPartName(AnnotationTarget target, String fieldName) {
+        AnnotationInstance restForm;
+        AnnotationInstance formParam;
+        switch (target.kind()) {
+            case FIELD:
+                restForm = target.asField().annotation(REST_FORM_PARAM);
+                formParam = target.asField().annotation(FORM_PARAM);
+                break;
+            case METHOD:
+                restForm = target.asMethod().annotation(REST_FORM_PARAM);
+                formParam = target.asMethod().annotation(FORM_PARAM);
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        "PartType annotation is only supported on fields and (setter/getter) methods for multipart responses, found one on "
+                                + target);
+        }
+        return getAnnotationValueOrDefault(fieldName, restForm, formParam);
+    }
+
+    private String getAnnotationValueOrDefault(String fieldName, AnnotationInstance restForm, AnnotationInstance formParam) {
+        if (restForm != null) {
+            AnnotationValue restFormValue = restForm.value();
+            return restFormValue == null ? fieldName : restFormValue.asString();
+        } else if (formParam != null) {
+            return formParam.value().asString();
+        } else {
+            return fieldName;
+        }
+    }
+
+    private String createFieldFillerForSetter(AnnotationInstance partType, MethodInfo setter, String partName,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, String dataClassName) {
+        String fillerClassName = dataClassName + "$$" + setter.name();
+        try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true),
+                fillerClassName, null, FieldFiller.class.getName())) {
+            Type parameter = setter.parameters().get(0);
+            createFieldFillerConstructor(partType, parameter, partName, fillerClassName, c);
+
+            MethodCreator set = c
+                    .getMethodCreator(
+                            MethodDescriptor.ofMethod(fillerClassName, "set", void.class, Object.class, Object.class));
+
+            ResultHandle value = set.getMethodParam(1);
+            value = performValueConversion(parameter, set, value);
+
+            set.invokeVirtualMethod(setter, set.getMethodParam(0), value);
+
+            set.returnValue(null);
+        }
+        return fillerClassName;
+    }
+
+    private ResultHandle performValueConversion(Type parameter, MethodCreator set, ResultHandle value) {
+        if (parameter.kind() == CLASS) {
+            if (parameter.asClassType().name().equals(FILE)) {
+                // we should get a FileDownload type, let's convert it to File
+                value = set.invokeStaticMethod(MethodDescriptor.ofMethod(FieldFiller.class, "fileDownloadToFile",
+                        File.class, FileDownload.class), value);
+            } else if (parameter.asClassType().name().equals(PATH)) {
+                // we should get a FileDownload type, let's convert it to Path
+                value = set.invokeStaticMethod(MethodDescriptor.ofMethod(FieldFiller.class, "fileDownloadToPath",
+                        Path.class, FileDownload.class), value);
+            }
+        }
+        return value;
+    }
+
+    private String createFieldFillerForField(AnnotationInstance partType, FieldInfo field, String partName,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, String dataClassName) {
+        String fillerClassName = dataClassName + "$$" + field.name();
+        try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true),
+                fillerClassName, null, FieldFiller.class.getName())) {
+            createFieldFillerConstructor(partType, field.type(), partName, fillerClassName, c);
+
+            MethodCreator set = c
+                    .getMethodCreator(
+                            MethodDescriptor.ofMethod(fillerClassName, "set", void.class, Object.class, Object.class));
+
+            ResultHandle value = set.getMethodParam(1);
+            value = performValueConversion(field.type(), set, value);
+            set.writeInstanceField(field, set.getMethodParam(0), value);
+
+            set.returnValue(null);
+        }
+        return fillerClassName;
+    }
+
+    private void createFieldFillerConstructor(AnnotationInstance partType, Type type, String partName,
+            String fillerClassName, ClassCreator c) {
+        MethodCreator ctor = c.getMethodCreator(MethodDescriptor.ofConstructor(fillerClassName));
+
+        ResultHandle genericType;
+        if (type.kind() == PARAMETERIZED_TYPE) {
+            genericType = createGenericTypeFromParameterizedType(ctor, type.asParameterizedType());
+        } else if (type.kind() == CLASS) {
+            genericType = ctor.newInstance(
+                    MethodDescriptor.ofConstructor(GenericType.class, java.lang.reflect.Type.class),
+                    ctor.loadClass(type.asClassType().name().toString()));
+        } else if (type.kind() == ARRAY) {
+            genericType = ctor.newInstance(
+                    MethodDescriptor.ofConstructor(GenericType.class, java.lang.reflect.Type.class),
+                    ctor.loadClass(type.asArrayType().name().toString()));
+        } else if (type.kind() == PRIMITIVE) {
+            throw new IllegalArgumentException("Primitive types are not supported for multipart response mapping. " +
+                    "Please use a wrapper class instead");
+        } else {
+            throw new IllegalArgumentException("Unsupported field type for multipart response mapping: " +
+                    type + ". Only classes, arrays and parameterized types are supported");
+        }
+
+        ctor.invokeSpecialMethod(
+                MethodDescriptor.ofConstructor(FieldFiller.class, GenericType.class, String.class, String.class),
+                ctor.getThis(), genericType, ctor.load(partName), ctor.load(partType.value().asString()));
+        ctor.returnValue(null);
+    }
+
+    private AnnotationInstance partTypeFromGetterOrSetter(MethodInfo setter) {
+        AnnotationInstance partTypeAnno = setter.annotation(PART_TYPE_NAME);
+        if (partTypeAnno != null) {
+            return partTypeAnno;
+        }
+
+        String getterName = setter.name().replaceFirst("s", "g");
+        MethodInfo getter = setter.declaringClass().method(getterName);
+        if (getter != null && null != (partTypeAnno = getter.annotation(PART_TYPE_NAME))) {
+            return partTypeAnno;
+        }
+
+        return null;
+    }
+
+    private String setterToFieldName(String methodName) {
+        if (methodName.length() <= 3) {
+            return "";
+        } else {
+            char[] nameArray = methodName.toCharArray();
+            nameArray[3] = Character.toLowerCase(nameArray[3]);
+            return new String(nameArray, 3, nameArray.length - 3);
+        }
     }
 
     private org.jboss.resteasy.reactive.common.ResteasyReactiveConfig createRestReactiveConfig(ResteasyReactiveConfig config) {
@@ -481,7 +725,7 @@ public class JaxrsClientReactiveProcessor {
             RestClientInterface restClientInterface, List<JaxrsClientReactiveEnricherBuildItem> enrichers,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo interfaceClass,
             IndexView index, String defaultMediaType, Map<DotName, String> httpAnnotationToMethod,
-            boolean observabilityIntegrationNeeded) {
+            boolean observabilityIntegrationNeeded, Set<ClassInfo> multipartResponseTypes) {
 
         String name = restClientInterface.getClassName() + "$$QuarkusRestClientInterface";
         MethodDescriptor ctorDesc = MethodDescriptor.ofConstructor(name, WebTarget.class.getName(), List.class);
@@ -539,8 +783,12 @@ public class JaxrsClientReactiveProcessor {
                     handleSubResourceMethod(enrichers, generatedClasses, interfaceClass, index, defaultMediaType,
                             httpAnnotationToMethod,
                             name, c, constructor,
-                            baseTarget, methodIndex, webTargets, method, javaMethodParameters, jandexMethod);
+                            baseTarget, methodIndex, webTargets, method, javaMethodParameters, jandexMethod,
+                            multipartResponseTypes);
                 } else {
+
+                    // if the response is multipart, let's add it's class to the appropriate collection:
+                    addResponseTypeIfMultipart(multipartResponseTypes, jandexMethod, index);
 
                     // constructor: initializing the immutable part of the method-specific web target
                     FieldDescriptor webTargetForMethod = FieldDescriptor.of(name, "target" + methodIndex, WebTargetImpl.class);
@@ -722,11 +970,38 @@ public class JaxrsClientReactiveProcessor {
 
     }
 
+    private void addResponseTypeIfMultipart(Set<ClassInfo> multipartResponseTypes, MethodInfo method, IndexView index) {
+        AnnotationInstance produces = method.annotation(ResteasyReactiveDotNames.PRODUCES);
+        if (produces == null) {
+            produces = method.annotation(ResteasyReactiveDotNames.PRODUCES);
+        }
+        if (produces != null) {
+            String[] producesValues = produces.value().asStringArray();
+            for (String producesValue : producesValues) {
+                if (producesValue.toLowerCase(Locale.ROOT)
+                        .startsWith(ContentType.MULTIPART_FORM_DATA.getMimeType())) {
+                    multipartResponseTypes.add(returnTypeAsClass(method, index));
+                }
+            }
+        }
+    }
+
+    private ClassInfo returnTypeAsClass(MethodInfo jandexMethod, IndexView index) {
+        Type result = jandexMethod.returnType();
+        if (result.kind() == CLASS) {
+            return index.getClassByName(result.asClassType().name());
+        } else {
+            throw new IllegalArgumentException("multipart responses can only be mapped to non-generic classes, " +
+                    "got " + result + " of type: " + result.kind());
+        }
+    }
+
     private void handleSubResourceMethod(List<JaxrsClientReactiveEnricherBuildItem> enrichers,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo interfaceClass, IndexView index,
             String defaultMediaType, Map<DotName, String> httpAnnotationToMethod, String name, ClassCreator c,
             MethodCreator constructor, AssignableResultHandle baseTarget, int methodIndex, List<FieldDescriptor> webTargets,
-            ResourceMethod method, String[] javaMethodParameters, MethodInfo jandexMethod) {
+            ResourceMethod method, String[] javaMethodParameters, MethodInfo jandexMethod,
+            Set<ClassInfo> multipartResponseTypes) {
         Type returnType = jandexMethod.returnType();
         if (returnType.kind() != CLASS) {
             // sort of sub-resource method that returns a thing that isn't a class
@@ -1025,8 +1300,12 @@ public class JaxrsClientReactiveProcessor {
                     handleSubResourceMethod(enrichers, generatedClasses, subResourceInterface, index,
                             defaultMediaType, httpAnnotationToMethod,
                             subName, sub, subMethodCreator,
-                            methodTarget, subMethodIndex, webTargets, subMethod, subJavaMethodParameters, jandexSubMethod);
+                            methodTarget, subMethodIndex, webTargets, subMethod, subJavaMethodParameters, jandexSubMethod,
+                            multipartResponseTypes);
                 } else {
+                    // if the response is multipart, let's add it's class to the appropriate collection:
+                    addResponseTypeIfMultipart(multipartResponseTypes, jandexSubMethod, index);
+
                     AssignableResultHandle builder = subMethodCreator.createVariable(Invocation.Builder.class);
                     if (method.getProduces() == null || method.getProduces().length == 0) { // this should never happen!
                         subMethodCreator.assign(builder, subMethodCreator.invokeInterfaceMethod(

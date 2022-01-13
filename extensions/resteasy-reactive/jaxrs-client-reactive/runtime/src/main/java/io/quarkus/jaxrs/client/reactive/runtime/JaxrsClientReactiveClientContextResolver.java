@@ -1,11 +1,13 @@
 package io.quarkus.jaxrs.client.reactive.runtime;
 
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.client.impl.ClientProxies;
 import org.jboss.resteasy.reactive.client.impl.DefaultClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
@@ -50,6 +52,14 @@ public class JaxrsClientReactiveClientContextResolver implements ClientContextRe
                     return DefaultClientContext.INSTANCE.getClientProxies();
                 }
                 return clientProxies;
+            }
+
+            @Override
+            public Map<Class<?>, MultipartResponseData> getMultipartResponsesData() {
+                Map<Class<?>, MultipartResponseData> result = JaxrsClientReactiveRecorder.getMultipartResponsesData();
+                return result == null
+                        ? DefaultClientContext.INSTANCE.getMultipartResponsesData()
+                        : result;
             }
         };
     }

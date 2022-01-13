@@ -450,7 +450,7 @@ public interface ExtensionsService {
     // ...
 
     @GET
-    Uni<Set<Extension>> getByIdAsUni(@QueryParam("id") String id)
+    Uni<Set<Extension>> getByIdAsUni(@QueryParam("id") String id);
 }
 ----
 
@@ -470,7 +470,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 @Path("/extension")
-public class ExtensionsResource
+public class ExtensionsResource {
 
     @RestClient
     ExtensionsService extensionsService;
@@ -654,7 +654,11 @@ org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Author
 
 == Multipart Form support
 
-Rest Client Reactive allows sending data as multipart forms. This way you can for example
+REST Client Reactive support multipart messages.
+
+=== Sending Multipart messages
+
+REST Client Reactive allows sending data as multipart forms. This way you can for example
 send files efficiently.
 
 To send data as a multipart form, you need to create a class that would encapsulate all the fields
@@ -662,7 +666,7 @@ to be sent, e.g.
 
 [source, java]
 ----
-class FormDto {
+public class FormDto {
     @FormParam("file")
     @PartType(MediaType.APPLICATION_OCTET_STREAM)
     public File file;
@@ -697,6 +701,42 @@ by specifying `quarkus.rest-client.multipart-post-encoder-mode` in your
 clients created with the `@RegisterRestClient` annotation.
 All the available modes are described in the link:https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html[Netty documentation]
 
+=== Receiving Multipart Messages
+REST Client Reactive also supports receiving multipart messages.
+As with sending, to parse a multipart response, you need to create a class that describes the response data, e.g.
+
+[source,java]
+----
+public class FormDto {
+    @RestForm // <1>
+    @PartType(MediaType.APPLICATION_OCTET_STREAM)
+    public File file;
+
+    @FormParam("otherField") // <2>
+    @PartType(MediaType.TEXT_PLAIN)
+    public String textProperty;
+}
+----
+<1> uses the shorthand `@RestForm` annotation to make a field as a part of a multipart form
+<2> the standard `@FormParam` can also be used. It allows to override the name of the multipart part.
+
+Then, create an interface method that corresponds to the call and make it return the `FormDto`:
+[source,java]
+----
+    @GET
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    @Path("/get-file")
+    FormDto data sendMultipart();
+----
+
+At the moment, multipart response support is subject to the following limitations:
+
+- files sent in multipart responses can only be parsed to `File`, `Path` and `FileDownload`
+- each field of the response type has to be annotated with `@PartType` - fields without this annotation are ignored
+
+REST Client Reactive needs to know the classes used as multipart return types upfront. If you have an interface method that produces `multipart/form-data`, the return type will be discovered automatically. However, if you intend to use the `ClientBuilder` API to parse a response as multipart, you need to annotate your DTO class with `@MultipartForm`.
+
+WARNING: The files you download are not automatically removed and can take up a lot of disk space. Consider removing the files when you are done working with them.
 
 == Proxy support
 REST Client Reactive supports sending requests through a proxy.

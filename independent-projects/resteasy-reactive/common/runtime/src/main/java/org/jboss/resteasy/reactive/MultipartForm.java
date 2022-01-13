@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  * annotated with {@link io.smallrye.common.annotation.Blocking}.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.PARAMETER })
+@Target({ ElementType.PARAMETER, ElementType.TYPE })
 public @interface MultipartForm {
     String value() default "";
 }

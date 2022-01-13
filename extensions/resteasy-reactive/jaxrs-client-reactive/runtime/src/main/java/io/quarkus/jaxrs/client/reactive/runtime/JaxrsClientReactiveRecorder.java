@@ -12,6 +12,7 @@ import javax.ws.rs.ext.ParamConverterProvider;
 
 import org.jboss.resteasy.reactive.client.impl.ClientProxies;
 import org.jboss.resteasy.reactive.client.impl.ClientSerialisers;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
@@ -24,6 +25,7 @@ public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder 
 
     private static volatile Serialisers serialisers;
     private static volatile GenericTypeMapping genericTypeMapping;
+    private static volatile Map<Class<?>, MultipartResponseData> multipartResponsesData;
 
     private static volatile ClientProxies clientProxies = new ClientProxies(Collections.emptyMap(), Collections.emptyMap());
 
@@ -37,6 +39,19 @@ public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder 
 
     public static GenericTypeMapping getGenericTypeMapping() {
         return genericTypeMapping;
+    }
+
+    public static Map<Class<?>, MultipartResponseData> getMultipartResponsesData() {
+        return multipartResponsesData;
+    }
+
+    public void setMultipartResponsesData(Map<String, RuntimeValue<MultipartResponseData>> multipartResponsesData) {
+        Map<Class<?>, MultipartResponseData> runtimeMap = new HashMap<>();
+        for (Map.Entry<String, RuntimeValue<MultipartResponseData>> multipartData : multipartResponsesData.entrySet()) {
+            runtimeMap.put(loadClass(multipartData.getKey()), multipartData.getValue().getValue());
+        }
+
+        JaxrsClientReactiveRecorder.multipartResponsesData = runtimeMap;
     }
 
     public void setupClientProxies(

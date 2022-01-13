@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.smallrye.stork.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
@@ -35,6 +36,7 @@ import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -86,8 +88,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private ClientRequestContextImpl clientRequestContext;
     private ClientResponseContextImpl clientResponseContext;
     private InputStream responseEntityStream;
+    private List<InterfaceHttpData> responseMultiParts;
     private Response abortedWith;
     private ServiceInstance callStatsCollector;
+    private Map<Class<?>, MultipartResponseData> multipartResponsesData;
 
     public RestClientRequestContext(ClientImpl restClient,
             HttpClient httpClient, String httpMethod, URI uri,
@@ -423,6 +427,15 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return this;
     }
 
+    public RestClientRequestContext setResponseMultipartParts(List<InterfaceHttpData> responseMultiParts) {
+        this.responseMultiParts = responseMultiParts;
+        return this;
+    }
+
+    public List<InterfaceHttpData> getResponseMultipartParts() {
+        return responseMultiParts;
+    }
+
     public boolean isAborted() {
         return getAbortedWith() != null;
     }
@@ -454,5 +467,13 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public ServiceInstance getCallStatsCollector() {
         return callStatsCollector;
+    }
+
+    public Map<Class<?>, MultipartResponseData> getMultipartResponsesData() {
+        return multipartResponsesData;
+    }
+
+    public void setMultipartResponsesData(Map<Class<?>, MultipartResponseData> multipartResponsesData) {
+        this.multipartResponsesData = multipartResponsesData;
     }
 }

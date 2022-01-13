@@ -61,6 +61,6 @@ public enum QuarkusContextStorage implements ContextStorage {
     }
 
     private io.vertx.core.Context getVertxContext() {
-        return vertx.getOrCreateContext();
+        return vertx != null ? vertx.getOrCreateContext() : null;
     }
 }

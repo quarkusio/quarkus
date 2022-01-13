@@ -69,20 +69,22 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         Charset charset = requestContext.getDeployment().getRuntimeConfiguration().body().defaultCharset();
         String boundaryLine = "--" + boundary;
         for (PartItem part : parts) {
-            // write boundary: --...
-            writeLine(outputStream, boundaryLine, charset);
-            // write content disposition header
-            writeLine(outputStream, HttpHeaders.CONTENT_DISPOSITION + ": form-data; name=\"" + part.getName() + "\""
-                    + getFileNameIfFile(part.getValue()), charset);
-            // write content content type
-            writeLine(outputStream, HttpHeaders.CONTENT_TYPE + ": " + part.getType(), charset);
-            // extra line
-            writeLine(outputStream, charset);
+            if (part.getValue() != null) {
+                // write boundary: --...
+                writeLine(outputStream, boundaryLine, charset);
+                // write content disposition header
+                writeLine(outputStream, HttpHeaders.CONTENT_DISPOSITION + ": form-data; name=\"" + part.getName() + "\""
+                        + getFileNameIfFile(part.getValue()), charset);
+                // write content content type
+                writeLine(outputStream, HttpHeaders.CONTENT_TYPE + ": " + part.getType(), charset);
+                // extra line
+                writeLine(outputStream, charset);
 
-            // write content
-            write(outputStream, serialiseEntity(part.getValue(), part.getType(), requestContext));
-            // extra line
-            writeLine(outputStream, charset);
+                // write content
+                write(outputStream, serialiseEntity(part.getValue(), part.getType(), requestContext));
+                // extra line
+                writeLine(outputStream, charset);
+            }
         }
 
         // write boundary: -- ... --

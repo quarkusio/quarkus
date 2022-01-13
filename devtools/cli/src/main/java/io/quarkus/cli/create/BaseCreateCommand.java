@@ -21,9 +21,7 @@ import io.quarkus.devtools.project.codegen.ProjectGenerator;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Spec;
 
 public class BaseCreateCommand implements Callable<Integer> {
     @CommandLine.Mixin
@@ -169,6 +167,11 @@ public class BaseCreateCommand implements Callable<Integer> {
         setValue(ProjectGenerator.EXTENSIONS, extensions);
     }
 
+    /** Set Java source level */
+    public void setJavaVersion(String javaVersion) {
+        CreateProjectHelper.setJavaVersion(values, javaVersion);
+    }
+
     /**
      * Process code generation options (save values)
      * 
@@ -201,8 +204,6 @@ public class BaseCreateCommand implements Callable<Integer> {
             Map<String, String> properties)
             throws RegistryResolutionException {
 
-        // TODO: Allow the Java version to be configured? infer from active Java version?
-        CreateProjectHelper.setJavaVersion(values, null);
         CreateProjectHelper.handleSpringConfiguration(values);
         output.debug("Creating an app using the following settings: %s", values);
 

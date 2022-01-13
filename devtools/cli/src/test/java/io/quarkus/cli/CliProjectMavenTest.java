@@ -308,6 +308,38 @@ public class CliProjectMavenTest {
                 "Should contain JAVA, found: " + result.stdout);
     }
 
+    @Test
+    public void testCreateArgJava11() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
+                "-e", "-B", "--verbose",
+                "--java", "11");
+
+        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path pom = project.resolve("pom.xml");
+        String pomContent = CliDriver.readFileAsString(project, pom);
+
+        Assertions.assertTrue(pomContent.contains("maven.compiler.release>11<"),
+                "Java 11 should be used when specified. Found:\n" + pomContent);
+    }
+
+    @Test
+    public void testCreateArgJava17() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
+                "-e", "-B", "--verbose",
+                "--java", "17");
+
+        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path pom = project.resolve("pom.xml");
+        String pomContent = CliDriver.readFileAsString(project, pom);
+
+        Assertions.assertTrue(pomContent.contains("maven.compiler.release>17<"),
+                "Java 17 should be used when specified. Found:\n" + pomContent);
+    }
+
     String validateBasicIdentifiers(String group, String artifact, String version) throws Exception {
         Path pom = project.resolve("pom.xml");
 

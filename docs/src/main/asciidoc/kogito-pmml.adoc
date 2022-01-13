@@ -226,7 +226,7 @@ You can also invoke the _descriptive_ endpoint, that will provide also the _Outp
 curl -X POST http://localhost:8080/LogisticRegressionIrisData/descriptive \
     -H 'content-type: application/json' \
     -H 'accept: application/json' \
-    -d '{"person": {"name":"Jenny Quark", "age": 15}}'
+    -d '{ "Sepal.Length": 6.9, "Sepal.Width": 3.1, "Petal.Length": 5.1, "Petal.Width": 2.3 }'
 ----
 
 [source,JSON]

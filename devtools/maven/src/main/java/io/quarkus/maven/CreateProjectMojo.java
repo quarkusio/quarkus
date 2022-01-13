@@ -103,6 +103,9 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "platformVersion", required = false)
     private String bomVersion;
 
+    @Parameter(property = "javaVersion")
+    private String javaVersion;
+
     /**
      * The {@link #path} will define the REST path of the generated code when picking only one of those extensions resteasy,
      * resteasy-reactive and spring-web.
@@ -287,6 +290,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .artifactId(projectArtifactId)
                     .version(projectVersion)
                     .sourceType(sourceType)
+                    .javaTarget(javaVersion)
                     .className(className)
                     .packageName(packageName)
                     .extensions(extensions)

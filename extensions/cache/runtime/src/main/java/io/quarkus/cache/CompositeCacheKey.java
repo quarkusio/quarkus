@@ -41,4 +41,9 @@ public class CompositeCacheKey {
         }
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "CompositeCacheKey" + Arrays.toString(keyElements);
+    }
 }

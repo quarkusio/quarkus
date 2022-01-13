@@ -40,6 +40,7 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
 
     private Object invalidateAllNonBlocking(InvocationContext invocationContext,
             CacheInterceptionContext<CacheInvalidateAll> interceptionContext) {
+        LOGGER.trace("Invalidating all cache entries in a non-blocking way");
         return Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
                 .onItem().transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
                     @Override
@@ -62,6 +63,7 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
 
     private Object invalidateAllBlocking(InvocationContext invocationContext,
             CacheInterceptionContext<CacheInvalidateAll> interceptionContext) throws Exception {
+        LOGGER.trace("Invalidating all cache entries in a blocking way");
         for (CacheInvalidateAll binding : interceptionContext.getInterceptorBindings()) {
             invalidateAll(binding).await().indefinitely();
         }
@@ -70,9 +72,7 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
 
     private Uni<Void> invalidateAll(CacheInvalidateAll binding) {
         Cache cache = cacheManager.getCache(binding.cacheName()).get();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debugf("Invalidating all entries from cache [%s]", binding.cacheName());
-        }
+        LOGGER.debugf("Invalidating all entries from cache [%s]", binding.cacheName());
         return cache.invalidateAll();
     }
 }

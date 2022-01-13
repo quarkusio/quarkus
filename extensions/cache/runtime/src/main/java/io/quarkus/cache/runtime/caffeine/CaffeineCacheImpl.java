@@ -52,6 +52,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             builder.expireAfterAccess(cacheInfo.expireAfterAccess);
         }
         if (recordStats) {
+            LOGGER.tracef("Recording Caffeine stats for cache [%s]", cacheInfo.name);
             statsCounter = new ConcurrentStatsCounter();
             builder.recordStats(new Supplier<StatsCounter>() {
                 @Override
@@ -60,6 +61,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                 }
             });
         } else {
+            LOGGER.tracef("Caffeine stats recording is disabled for cache [%s]", cacheInfo.name);
             statsCounter = StatsCounter.disabledStatsCounter();
         }
         cache = builder.buildAsync();
@@ -111,6 +113,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             }
             return unwrapCacheValueOrThrowable(newCacheValue);
         } else {
+            LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
             statsCounter.recordHits(1);
             return unwrapCacheValueOrThrowable(existingCacheValue);
         }

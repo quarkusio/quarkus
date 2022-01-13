@@ -36,4 +36,9 @@ public class DefaultCacheKey {
         }
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "DefaultCacheKey[cacheName=" + cacheName + "]";
+    }
 }

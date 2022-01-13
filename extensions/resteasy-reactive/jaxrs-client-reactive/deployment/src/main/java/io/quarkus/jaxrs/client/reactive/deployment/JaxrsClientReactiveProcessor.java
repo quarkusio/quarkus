@@ -1142,6 +1142,7 @@ public class JaxrsClientReactiveProcessor {
 
             String formParamName = formParamName(field);
             String partType = formPartType(field);
+            String partFilename = formPartFilename(field);
 
             Type fieldType = field.type();
 
@@ -1152,7 +1153,7 @@ public class JaxrsClientReactiveProcessor {
                     // we support string, and send it as an attribute
                     ClassInfo fieldClass = index.getClassByName(fieldType.name());
                     if (DotNames.STRING.equals(fieldClass.name())) {
-                        addString(ifValueNotNull, multipartForm, formParamName, fieldValue);
+                        addString(ifValueNotNull, multipartForm, formParamName, partFilename, fieldValue);
                     } else if (is(FILE, fieldClass, index)) {
                         // file is sent as file :)
                         if (partType == null) {
@@ -1162,7 +1163,7 @@ public class JaxrsClientReactiveProcessor {
                         }
                         ResultHandle filePath = ifValueNotNull.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(File.class, "toPath", Path.class), fieldValue);
-                        addFile(ifValueNotNull, multipartForm, formParamName, partType, filePath);
+                        addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, filePath);
                     } else if (is(PATH, fieldClass, index)) {
                         // and so is path
                         if (partType == null) {
@@ -1170,10 +1171,10 @@ public class JaxrsClientReactiveProcessor {
                                     "No @PartType annotation found on multipart form field of type Path: " +
                                             formClass.name() + "." + field.name());
                         }
-                        addFile(ifValueNotNull, multipartForm, formParamName, partType, fieldValue);
+                        addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
                     } else if (is(BUFFER, fieldClass, index)) {
                         // and buffer
-                        addBuffer(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, field);
+                        addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, field);
                     } else { // assume POJO:
                         addPojo(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, field);
                     }
@@ -1189,12 +1190,12 @@ public class JaxrsClientReactiveProcessor {
                     ResultHandle buffer = ifValueNotNull.invokeStaticInterfaceMethod(
                             MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
                             fieldValue);
-                    addBuffer(ifValueNotNull, multipartForm, formParamName, partType, buffer, field);
+                    addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, buffer, field);
                     break;
                 case PRIMITIVE:
                     // primitives are converted to text and sent as attribute
                     ResultHandle string = primitiveToString(ifValueNotNull, fieldValue, field);
-                    addString(ifValueNotNull, multipartForm, formParamName, string);
+                    addString(ifValueNotNull, multipartForm, formParamName, partFilename, string);
                     break;
                 case PARAMETERIZED_TYPE:
                     ParameterizedType parameterizedType = fieldType.asParameterizedType();
@@ -1232,9 +1233,10 @@ public class JaxrsClientReactiveProcessor {
      * {@link QuarkusMultipartForm#textFileUpload(String, String, String, String)}
      */
     private void addFile(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
-            String partType, ResultHandle filePath) {
+            String partType, String partFilename, ResultHandle filePath) {
         ResultHandle fileNamePath = methodCreator.invokeInterfaceMethod(PATH_GET_FILENAME, filePath);
-        ResultHandle fileName = methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, fileNamePath);
+        ResultHandle fileName = partFilename != null ? methodCreator.load(partFilename)
+                : methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, fileNamePath);
         ResultHandle pathString = methodCreator.invokeVirtualMethod(OBJECT_TO_STRING, filePath);
         if (partType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM)) {
             methodCreator.assign(multipartForm,
@@ -1286,13 +1288,18 @@ public class JaxrsClientReactiveProcessor {
         }
     }
 
+    private ResultHandle partFilenameHandle(BytecodeCreator methodCreator, String partFilename) {
+        return partFilename != null ? methodCreator.load(partFilename) : methodCreator.loadNull();
+    }
+
     private void addString(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
-            ResultHandle fieldValue) {
+            String partFilename, ResultHandle fieldValue) {
         methodCreator.assign(multipartForm,
                 methodCreator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "attribute", QuarkusMultipartForm.class,
-                                String.class, String.class),
-                        multipartForm, methodCreator.load(formParamName), fieldValue));
+                                String.class, String.class, String.class),
+                        multipartForm, methodCreator.load(formParamName), fieldValue,
+                        partFilenameHandle(methodCreator, partFilename)));
     }
 
     private void addMultiAsFile(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
@@ -1327,7 +1334,9 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void addBuffer(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
-            String partType, ResultHandle buffer, FieldInfo field) {
+            String partType, String partFilename, ResultHandle buffer, FieldInfo field) {
+        ResultHandle filenameHandle = partFilename != null ? methodCreator.load(partFilename)
+                : methodCreator.load(formParamName);
         if (partType == null) {
             throw new IllegalArgumentException(
                     "No @PartType annotation found on multipart form field " +
@@ -1336,28 +1345,34 @@ public class JaxrsClientReactiveProcessor {
         if (partType.equalsIgnoreCase(MediaType.APPLICATION_OCTET_STREAM)) {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename, io.vertx.mutiny.core.buffer.Buffer content, String mediaType);
-                    // filename = name
                     methodCreator.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "binaryFileUpload",
                                     QuarkusMultipartForm.class, String.class, String.class, Buffer.class,
                                     String.class),
-                            multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
+                            multipartForm, methodCreator.load(formParamName), filenameHandle,
                             buffer, methodCreator.load(partType)));
         } else {
             methodCreator.assign(multipartForm,
                     // MultipartForm#textFileUpload(String name, String filename, io.vertx.mutiny.core.buffer.Buffer content, String mediaType)
-                    // filename = name
                     methodCreator.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "textFileUpload",
                                     QuarkusMultipartForm.class, String.class, String.class, Buffer.class,
                                     String.class),
-                            multipartForm, methodCreator.load(formParamName), methodCreator.load(formParamName),
+                            multipartForm, methodCreator.load(formParamName), filenameHandle,
                             buffer, methodCreator.load(partType)));
         }
     }
 
     private String formPartType(FieldInfo field) {
         AnnotationInstance partType = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
+        if (partType != null) {
+            return partType.value().asString();
+        }
+        return null;
+    }
+
+    private String formPartFilename(FieldInfo field) {
+        AnnotationInstance partType = field.annotation(ResteasyReactiveDotNames.PART_FILE_NAME);
         if (partType != null) {
             return partType.value().asString();
         }

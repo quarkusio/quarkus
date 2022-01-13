@@ -10,9 +10,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.identity.IdentityProvider;
@@ -28,23 +27,21 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Class that is responsible for running the HTTP based authentication
  */
-@ApplicationScoped
+@Singleton
 public class HttpAuthenticator {
-    final HttpAuthenticationMechanism[] mechanisms;
-    @Inject
-    IdentityProviderManager identityProviderManager;
-    @Inject
-    Instance<PathMatchingHttpSecurityPolicy> pathMatchingPolicy;
 
-    public HttpAuthenticator() {
-        mechanisms = null;
-    }
+    private final IdentityProviderManager identityProviderManager;
+    private final Instance<PathMatchingHttpSecurityPolicy> pathMatchingPolicy;
+    private final HttpAuthenticationMechanism[] mechanisms;
 
-    @Inject
-    public HttpAuthenticator(Instance<HttpAuthenticationMechanism> instance,
+    public HttpAuthenticator(IdentityProviderManager identityProviderManager,
+            Instance<PathMatchingHttpSecurityPolicy> pathMatchingPolicy,
+            Instance<HttpAuthenticationMechanism> httpAuthenticationMechanism,
             Instance<IdentityProvider<?>> providers) {
+        this.identityProviderManager = identityProviderManager;
+        this.pathMatchingPolicy = pathMatchingPolicy;
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
-        for (HttpAuthenticationMechanism mechanism : instance) {
+        for (HttpAuthenticationMechanism mechanism : httpAuthenticationMechanism) {
             boolean found = false;
             for (Class<? extends AuthenticationRequest> mechType : mechanism.getCredentialTypes()) {
                 for (IdentityProvider<?> i : providers) {

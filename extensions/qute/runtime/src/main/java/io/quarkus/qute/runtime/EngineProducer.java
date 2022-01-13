@@ -33,6 +33,7 @@ import io.quarkus.qute.Qute;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
+import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
@@ -182,6 +183,11 @@ public class EngineProducer {
         // Add a special parserk hook for Qute.fmt() methods
         builder.addParserHook(new Qute.IndexedArgumentsParserHook());
 
+        // Add template initializers
+        for (String initializerClass : context.getTemplateInstanceInitializerClasses()) {
+            builder.addTemplateInstanceInitializer(createInitializer(initializerClass));
+        }
+
         engine = builder.build();
 
         // Load discovered templates
@@ -224,6 +230,20 @@ public class EngineProducer {
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | IllegalArgumentException
                 | InvocationTargetException | NoSuchMethodException | SecurityException e) {
             throw new IllegalStateException("Unable to create resolver: " + resolverClassName, e);
+        }
+    }
+
+    private TemplateInstance.Initializer createInitializer(String initializerClassName) {
+        try {
+            Class<?> initializerClazz = Thread.currentThread()
+                    .getContextClassLoader().loadClass(initializerClassName);
+            if (TemplateInstance.Initializer.class.isAssignableFrom(initializerClazz)) {
+                return (TemplateInstance.Initializer) initializerClazz.getDeclaredConstructor().newInstance();
+            }
+            throw new IllegalStateException("Not an initializer: " + initializerClazz);
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | IllegalArgumentException
+                | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+            throw new IllegalStateException("Unable to create initializer: " + initializerClassName, e);
         }
     }
 

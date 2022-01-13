@@ -27,7 +27,13 @@ class TemplateImpl implements Template {
 
     @Override
     public TemplateInstance instance() {
-        return new TemplateInstanceImpl();
+        TemplateInstance instance = new TemplateInstanceImpl();
+        if (!engine.initializers.isEmpty()) {
+            for (TemplateInstance.Initializer initializer : engine.initializers) {
+                initializer.accept(instance);
+            }
+        }
+        return instance;
     }
 
     @Override

@@ -104,4 +104,14 @@ public interface TemplateInstance {
      */
     CompletionStage<Void> consume(Consumer<String> consumer);
 
+    /**
+     * This component can be used to initialize a template instance, i.e. the data and attributes.
+     * 
+     * @see TemplateInstance#data(String, Object)
+     * @see TemplateInstance#setAttribute(String, Object)
+     */
+    interface Initializer extends Consumer<TemplateInstance> {
+
+    }
+
 }

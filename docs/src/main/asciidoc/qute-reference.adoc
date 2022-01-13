@@ -1741,6 +1741,94 @@ NOTE: `@TemplateEnum` declared on a non-enum class is ignored. Also if an enum a
 
 TIP: Quarkus detects possible namespace collisions and fails the build if a specific namespace is defined by multiple `@TemplateData` and/or `@TemplateEnum` annotations.
 
+[[global_variables]]
+=== Global Variables
+
+The `io.quarkus.qute.TemplateGlobal` annotation can be used to denote static fields and methods that supply _global variables_ which are accessible in any template.
+Internally, each global variable is added to the data map of any `TemplateInstance` via the `TemplateInstance#data(String, Object)` method.
+
+.Global Variables Definition
+[source,java]
+----
+enum Color { RED, GREEN, BLUE }
+
+@TemplateGlobal <1>
+public class Globals {
+    
+    static int age = 40;
+    
+    static Color[] myColors() {
+      return new Color[] { Color.RED, Color.BLUE };
+    }
+    
+    @TemplateGlobal(name = "currentUser") <2>
+    static String user() {
+       return "Mia";
+    }
+}
+----
+<1> If a class is annotated with `@TemplateGlobal` then every non-void non-private static method that declares no parameters and every non-private static field is considered a global variable. The name is defaulted, i.e. the name of the field/method is used.
+<2> Method-level annotations override the class-level annotation. In this particular case, the name is not defaulted but selected explicitly.
+
+.A Template Accessing Global Variables
+[source,html]
+----
+User: {currentUser} <1>
+Age:  {age} <2>
+Colors: {#each myColors}{it}{#if it_hasNext}, {/if}{/each} <3>
+----
+<1> `currentUser` resolves to `Globals#user()`.
+<2> `age` resolves to `Globals#age`.
+<3> `myColors` resolves to `Globals#myColors()`.
+
+NOTE: Note that global variables implicitly add <<typesafe_expressions, parameter declarations>> to all templates and so any expression that references a global variable is validated during build.
+
+.The Output
+[source,html]
+----
+User: Mia
+Age:  40
+Colors: RED, BLUE
+----
+
+==== Resolving Conflicts
+
+Global variables may conflict with regular data objects.
+<<typesafe_templates,Type-safe templates>> override the global variables automatically.
+For example, the following definition overrides the global variable supplied by the `Globals#user()` method:
+
+.Type-safe Template Definition
+[source,java]
+----
+import org.acme.User;
+
+@CheckedTemplate
+public class Templates {
+    static native TemplateInstance hello(User currentUser); <1>
+}
+----
+<1> `currentUser` conflicts with the global variable supplied by `Globals#user()`.
+
+So the corresponding template does not result in a validation error even though the `Globals#user()` method returns `java.lang.String` which does not have the `name` property:
+
+.`templates/hello.txt`
+[source,html]
+----
+User name: {currentUser.name} <1>
+----
+<1> `org.acme.User` has the `name` property.
+
+For other templates an explicit parameter declaration is needed:
+
+[source,html]
+----
+{@org.acme.User currentUser} <1>
+
+User name: {currentUser.name}
+----
+<1> This parameter declaration overrides the declaration added by the global variable supplied by the `Globals#user()` method.
+
+
 [[native_executables]]
 === Native Executables
 

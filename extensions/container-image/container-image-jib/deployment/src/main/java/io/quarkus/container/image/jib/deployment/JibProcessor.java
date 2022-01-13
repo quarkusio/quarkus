@@ -82,6 +82,8 @@ public class JibProcessor {
     private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.10";
     private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10";
 
+    private static final String OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP = "io.opentelemetry.context.contextStorageProvider";
+
     @BuildStep
     public AvailableContainerImageExtensionBuildItem availability() {
         return new AvailableContainerImageExtensionBuildItem(JIB);
@@ -205,11 +207,20 @@ public class JibProcessor {
     private JibContainer containerize(ContainerImageConfig containerImageConfig,
             JibConfig jibConfig, ContainerImageInfoBuildItem containerImage, JibContainerBuilder jibContainerBuilder,
             boolean pushRequested) {
+
         Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, containerImage, pushRequested);
         for (String additionalTag : containerImage.getAdditionalTags()) {
             containerizer.withAdditionalTag(additionalTag);
         }
+        String previousContextStorageSysProp = null;
         try {
+            // Jib uses the Google HTTP Client under the hood which attempts to record traces via OpenCensus which is wired
+            // to delegate to OpenTelemetry.
+            // This can lead to problems with the Quarkus OpenTelemetry extension which expects Vert.x to be running,
+            // something that is not the case at build time, see https://github.com/quarkusio/quarkus/issues/22864.
+            previousContextStorageSysProp = System.setProperty(OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP,
+                    "default");
+
             log.info("Starting container image build");
             JibContainer container = jibContainerBuilder.containerize(containerizer);
             log.infof("%s container image %s (%s)\n",
@@ -219,6 +230,12 @@ public class JibProcessor {
             return container;
         } catch (Exception e) {
             throw new RuntimeException("Unable to create container image", e);
+        } finally {
+            if (previousContextStorageSysProp == null) {
+                System.clearProperty(OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP);
+            } else {
+                System.setProperty(OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP, previousContextStorageSysProp);
+            }
         }
     }
 

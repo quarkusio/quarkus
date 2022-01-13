@@ -7,7 +7,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
@@ -32,19 +31,16 @@ public class HttpAuthorizer {
 
     private static final Logger log = Logger.getLogger(HttpAuthorizer.class);
 
-    @Inject
-    HttpAuthenticator httpAuthenticator;
+    private final HttpAuthenticator httpAuthenticator;
+    private final IdentityProviderManager identityProviderManager;
+    private final AuthorizationController controller;
+    private final List<HttpSecurityPolicy> policies;
 
-    @Inject
-    IdentityProviderManager identityProviderManager;
-
-    @Inject
-    AuthorizationController controller;
-
-    final List<HttpSecurityPolicy> policies;
-
-    @Inject
-    HttpAuthorizer(Instance<HttpSecurityPolicy> installedPolicies) {
+    HttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
+            AuthorizationController controller, Instance<HttpSecurityPolicy> installedPolicies) {
+        this.httpAuthenticator = httpAuthenticator;
+        this.identityProviderManager = identityProviderManager;
+        this.controller = controller;
         policies = new ArrayList<>();
         for (HttpSecurityPolicy i : installedPolicies) {
             policies.add(i);

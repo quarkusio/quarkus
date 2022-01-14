@@ -15,6 +15,7 @@ import static io.quarkus.cache.deployment.CacheDeploymentConstants.MULTI;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.REGISTER_REST_CLIENT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.runtime.metrics.MetricsFactory.MICROMETER;
+import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -44,7 +45,6 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildIt
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
-import io.quarkus.cache.deployment.exception.UnknownCacheNameException;
 import io.quarkus.cache.deployment.exception.UnsupportedRepeatedAnnotationException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
@@ -102,7 +102,7 @@ class CacheProcessor {
         for (DotName bindingName : INTERCEPTOR_BINDINGS) {
             for (AnnotationInstance binding : combinedIndex.getIndex().getAnnotations(bindingName)) {
                 throwables.addAll(validateInterceptorBindingTarget(binding, binding.target()));
-                if (binding.target().kind() == Kind.METHOD) {
+                if (binding.target().kind() == METHOD) {
                     /*
                      * Cache names from the interceptor bindings placed on cache interceptors must not be collected to prevent
                      * the instantiation of a cache with an empty name.
@@ -124,7 +124,7 @@ class CacheProcessor {
                  * Client. Using repeated interceptor bindings on a method from a class annotated with @RegisterRestClient must
                  * therefore be forbidden.
                  */
-                if (container.target().kind() == Kind.METHOD) {
+                if (container.target().kind() == METHOD) {
                     MethodInfo methodInfo = container.target().asMethod();
                     if (methodInfo.declaringClass().classAnnotation(REGISTER_REST_CLIENT) != null) {
                         throwables.add(new UnsupportedRepeatedAnnotationException(methodInfo));
@@ -133,41 +133,23 @@ class CacheProcessor {
             }
         }
 
-        /*
-         * Before @CacheName can be validated, additional cache names provided by other extensions must be added to the cache
-         * names collection built above.
-         */
-        for (AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNames) {
-            names.add(additionalCacheName.getName());
+        // Let's also collect the cache names from the @CacheName annotations.
+        for (AnnotationInstance qualifier : combinedIndex.getIndex().getAnnotations(CACHE_NAME)) {
+            // The @CacheName annotation from CacheProducer must be ignored.
+            if (qualifier.target().kind() == METHOD) {
+                /*
+                 * This should only happen in CacheProducer. It'd be nice if we could forbid using @CacheName on a method in
+                 * any other class, but Arc throws an AmbiguousResolutionException before we get a chance to validate things
+                 * here.
+                 */
+            } else {
+                names.add(qualifier.value().asString());
+            }
         }
 
-        // @CacheName can now be validated.
-        for (AnnotationInstance qualifier : combinedIndex.getIndex().getAnnotations(CACHE_NAME)) {
-            String cacheName = qualifier.value().asString();
-            AnnotationTarget target = qualifier.target();
-            switch (target.kind()) {
-                case FIELD:
-                    if (!names.contains(cacheName)) {
-                        ClassInfo declaringClass = target.asField().declaringClass();
-                        throwables.add(new UnknownCacheNameException(declaringClass.name(), cacheName));
-                    }
-                    break;
-                case METHOD:
-                    /*
-                     * This should only happen in CacheProducer. It'd be nice if we could forbid using @CacheName in any other
-                     * class, but Arc throws an AmbiguousResolutionException before we get a chance to validate things here.
-                     */
-                    break;
-                case METHOD_PARAMETER:
-                    if (!names.contains(cacheName)) {
-                        ClassInfo declaringClass = target.asMethodParameter().method().declaringClass();
-                        throwables.add(new UnknownCacheNameException(declaringClass.name(), cacheName));
-                    }
-                    break;
-                default:
-                    // This should never be thrown.
-                    throw new DeploymentException("Unexpected @CacheName target: " + target.kind());
-            }
+        // Finally, additional cache names provided by other extensions must be added to the cache names collection.
+        for (AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNames) {
+            names.add(additionalCacheName.getName());
         }
 
         validationErrors.produce(new ValidationErrorBuildItem(throwables.toArray(new Throwable[0])));

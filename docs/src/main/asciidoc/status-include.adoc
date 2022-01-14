@@ -9,7 +9,7 @@ Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing
 endif::[]
 ifeval::["{extension-status}" == "preview"]
 In _preview_, backward compatibility and presence in the ecosystem is not guaranteed.
-Specific improvements might require to change configuration or APIs and plans to become _stable_ are under way.
+Specific improvements might require changing configuration or APIs, and plans to become _stable_ are under way.
 Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
 endif::[]
 ifeval::["{extension-status}" == "stable"]

@@ -1,9 +1,9 @@
 //usr/bin/env jbang "$0" "$@" ; exit $?
+//JAVA 11
+//JAVAC_OPTIONS -parameters
 //DEPS io.quarkus:quarkus-bom:999-MOCK@pom
 //DEPS io.quarkus:quarkus-picocli
 
-//JAVAC_OPTIONS -parameters
-//
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;

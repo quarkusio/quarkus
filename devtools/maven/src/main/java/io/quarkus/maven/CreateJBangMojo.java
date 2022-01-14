@@ -69,6 +69,9 @@ public class CreateJBangMojo extends AbstractMojo {
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
+    @Parameter(property = "javaVersion")
+    private String javaVersion;
+
     @Component
     private RepositorySystem repoSystem;
 
@@ -115,6 +118,7 @@ public class CreateJBangMojo extends AbstractMojo {
         final CreateJBangProject createJBangProject = new CreateJBangProject(QuarkusProject.of(projectDirPath, catalog,
                 codestartsResourceLoader, log, BuildTool.MAVEN))
                         .extensions(extensions)
+                        .javaTarget(javaVersion)
                         .setValue("noJBangWrapper", noJBangWrapper);
 
         boolean success;

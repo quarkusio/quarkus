@@ -1,11 +1,11 @@
 //usr/bin/env jbang "$0" "$@" ; exit $?
+//JAVA {java.version}
+//JAVAC_OPTIONS -parameters
 //DEPS {quarkus.bom.group-id}:{quarkus.bom.artifact-id}:{quarkus.bom.version}@pom
 {#for dep in dependencies}
 //DEPS {dep}
 {/for}
 
-//JAVAC_OPTIONS -parameters
-//
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;

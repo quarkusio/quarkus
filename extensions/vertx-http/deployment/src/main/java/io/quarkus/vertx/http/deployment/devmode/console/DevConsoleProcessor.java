@@ -372,7 +372,11 @@ public class DevConsoleProcessor {
                 if (i.isBodyHandlerRequired()) {
                     route.handler(BodyHandler.create());
                 }
-                route.handler(i.getHandler());
+                if (i.isBlockingHandler()) {
+                    route.blockingHandler(i.getHandler());
+                } else {
+                    route.handler(i.getHandler());
+                }
             }
         }
 
@@ -431,12 +435,15 @@ public class DevConsoleProcessor {
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             // otherwise this is handled in the setupDeploymentSideHandling method
             if (!i.isDeploymentSide()) {
-                routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
                                 "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
-                                new RuntimeDevConsoleRoute(i.getMethod()))
-                        .handler(i.getHandler())
-                        .build());
+                                new RuntimeDevConsoleRoute(i.getMethod()));
+                if (i.isBlockingHandler()) {
+                    builder.blockingRoute();
+                }
+                builder.handler(i.getHandler());
+                routeBuildItemBuildProducer.produce(builder.build());
             }
         }
 

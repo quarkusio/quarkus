@@ -813,6 +813,80 @@ See link:{hibernate-search-doc-prefix}#mapper-orm-schema-management-manager[this
 for more information.
 ====
 
+[[coordination]]
+== Coordination through outbox polling
+
+[CAUTION]
+====
+Coordination through outbox polling is considered preview.
+
+In _preview_, backward compatibility and presence in the ecosystem is not guaranteed.
+Specific improvements might require changing configuration or APIs, or even storage formats,
+and plans to become _stable_ are under way.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list]
+or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
+While it’s technically possible to use Hibernate Search and Elasticsearch in distributed applications,
+by default they suffer from
+link:{hibernate-search-doc-prefix}#architecture-examples-no-coordination-elasticsearch-pros-and-cons[a few limitations].
+
+These limitations are the result of Hibernate Search not coordinating between threads or application nodes by default.
+
+In order to get rid of these limitations, you can
+link:{hibernate-search-doc-prefix}#architecture-examples-outbox-polling-elasticsearch[use the `outbox-polling` coordination strategy].
+This strategy creates an outbox table in the database to push entity change events to,
+and relies on a background processor to consume these events and perform automatic indexing.
+
+To enable the `outbox-polling` coordination strategy, an additional extension is required:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="hibernate-search-orm-coordination-outbox-polling"
+----
+
+Once the extension is there, you will need to explicitly select the `outbox-polling` strategy
+by setting link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.coordination.strategy[`quarkus.hibernate-search-orm.coordination.strategy`]
+to `outbox-polling`.
+
+Finally, you will need to make sure that the Hibernate ORM entities added by Hibernate Search
+(to represent the outbox and agents) have corresponding tables/sequences in your database:
+
+* If you are just starting with your application
+and intend to xref:hibernate-orm.adoc#dev-mode[let Hibernate ORM generate your database schema],
+then no worries: the entities required by Hibernate Search will be included in the generated schema.
+* Otherwise, you must
+link:{hibernate-search-doc-prefix}#coordination-outbox-polling-schema[manually alter your schema to add the necessary tables/sequences].
+
+Once you are done with the above, you're ready to use Hibernate Search with an outbox.
+Don't change any code, and just start your application:
+it will automatically detect when multiple applications are connected to the same database,
+and coordinate the index updates accordingly.
+
+[NOTE]
+====
+Hibernate Search mostly behaves the same when using the `outbox-polling` coordination strategy
+as when not using it: application code (persisting entities, searching, etc.) should not require any change.
+
+However, there is one key difference: index updates are necessarily asynchronous;
+they are guaranteed to happen _eventually_, but not immediately.
+
+This means in particular that the configuration property
+link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy[`quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy`]
+cannot be set when using the `outbox-polling` coordination strategy:
+Hibernate Search will always behave as if this property was set to `write-sync` (the default).
+
+This behavior is consistent with Elasticsearch's
+https://www.elastic.co/guide/en/elasticsearch/reference/current/near-real-time.html[near-real-time search]
+and the recommended way of using Hibernate Search even when coordination is disabled.
+====
+
+For more information about coordination in Hibernate Search,
+see link:{hibernate-search-doc-prefix}#coordination[this section of the reference documentation].
+
+For more information about configuration options related to coordination,
+see <<configuration-reference-coordination-outbox-polling>>.
+
 [[aws-request-signing]]
 == [[configuration-reference-aws]] AWS request signing
 
@@ -872,3 +946,10 @@ for more information.
 ====
 
 :no-duration-note: true
+
+[[configuration-reference-coordination-outbox-polling]]
+=== Configuration of coordination with outbox polling
+
+NOTE: These configuration properties require an additional extension. See <<coordination>>.
+
+include::{generated-dir}/config/quarkus-hibernate-search-orm-coordination-outboxpolling.adoc[leveloffset=+1, opts=optional]

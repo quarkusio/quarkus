@@ -18,18 +18,34 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
 
     @Override
     public void handle(RestClientRequestContext context) throws Exception {
+        ClientRequestContextImpl requestContext = context.getClientRequestContext();
         ClientResponseContextImpl responseContext = new ClientResponseContextImpl(context);
         if (context.isCheckSuccessfulFamily()) {
-            if (Response.Status.Family.familyOf(context.getResponseStatus()) != Response.Status.Family.SUCCESSFUL) {
-                throw new WebClientApplicationException(context.getResponseStatus(), context.getResponseReasonPhrase());
+            int effectiveResponseStatus = determineEffectiveResponseStatus(context, requestContext);
+            if (Response.Status.Family.familyOf(effectiveResponseStatus) != Response.Status.Family.SUCCESSFUL) {
+                throw new WebClientApplicationException(effectiveResponseStatus, context.getResponseReasonPhrase());
             }
         }
-        ClientRequestContextImpl requestContext = context.getClientRequestContext();
+
         // the spec doesn't really say this, but the TCK checks that the abortWith entity ends up read
         // so we have to write it, but without filters/interceptors
-        if (requestContext != null && requestContext.getAbortedWith() != null) {
+        if (isAbortedWith(requestContext)) {
             setExistingEntity(requestContext.getAbortedWith(), responseContext, context);
         }
+    }
+
+    private int determineEffectiveResponseStatus(RestClientRequestContext context, ClientRequestContextImpl requestContext) {
+        int effectiveResponseStatus = context.getResponseStatus();
+        if (effectiveResponseStatus == 0) {
+            if (isAbortedWith(requestContext)) {
+                effectiveResponseStatus = requestContext.getAbortedWith().getStatus();
+            }
+        }
+        return effectiveResponseStatus;
+    }
+
+    private boolean isAbortedWith(ClientRequestContextImpl requestContext) {
+        return requestContext != null && requestContext.getAbortedWith() != null;
     }
 
     private void setExistingEntity(Response abortedWith, ClientResponseContextImpl responseContext,

@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.SessionScoped;
-import javax.enterprise.inject.Default;
 
 import org.hibernate.engine.jdbc.connections.spi.AbstractMultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
@@ -17,7 +16,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
-import io.quarkus.hibernate.orm.PersistenceUnit.PersistenceUnitLiteral;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 /**
@@ -107,20 +105,18 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
      * @return Current tenant resolver.
      */
     private static InstanceHandle<TenantResolver> tenantResolver(String persistenceUnitName) {
-        InstanceHandle<TenantResolver> resolverInstance;
-        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            resolverInstance = Arc.container().instance(TenantResolver.class, Default.Literal.INSTANCE);
-        } else {
-            resolverInstance = Arc.container().instance(TenantResolver.class,
-                    new PersistenceUnitLiteral(persistenceUnitName));
-        }
-        if (!resolverInstance.isAvailable()) {
+        InjectableInstance<TenantResolver> instance = PersistenceUnitUtil
+                .legacySingleExtensionInstanceForPersistenceUnit(
+                        TenantResolver.class, persistenceUnitName);
+
+        if (instance.isUnsatisfied()) {
             throw new IllegalStateException(String.format(Locale.ROOT,
                     "No instance of %1$s was found for persistence unit %2$s. "
                             + "You need to create an implementation for this interface to allow resolving the current tenant identifier.",
                     TenantResolver.class.getSimpleName(), persistenceUnitName));
         }
-        return resolverInstance;
+
+        return instance.getHandle();
     }
 
 }

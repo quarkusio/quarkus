@@ -196,9 +196,13 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String findQuery = PanacheJpaUtil.createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager(entityClass);
-        // FIXME: check for duplicate ORDER BY clause?
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
+            if (sort != null) {
+                throw new IllegalArgumentException(
+                        "Sort cannot be used with named query, add an \"order by\" clause to the named query \"" + namedQuery
+                                + "\" instead");
+            }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
             return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), params);
         }
@@ -212,9 +216,13 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String findQuery = PanacheJpaUtil.createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager(entityClass);
-        // FIXME: check for duplicate ORDER BY clause?
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
+            if (sort != null) {
+                throw new IllegalArgumentException(
+                        "Sort cannot be used with named query, add an \"order by\" clause to the named query \"" + namedQuery
+                                + "\" instead");
+            }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
             return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), params);
         }

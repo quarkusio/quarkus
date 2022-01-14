@@ -60,7 +60,6 @@
         <module>mutiny</module>
         <module>vertx</module>
         <module>netty</module>
-        <module>reactive-messaging-http</module>
         <module>reactive-streams-operators</module>
         <module>smallrye-reactive-messaging</module>
         <module>smallrye-reactive-messaging-kafka</module>
@@ -73,6 +72,7 @@
         <module>reactive-pg-client</module>
         <module>reactive-mysql-client</module>
         <module>reactive-mssql-client</module>
+        <module>reactive-oracle-client</module>
         <module>mailer</module>
         <module>grpc</module>
         <module>redis-client</module>
@@ -90,19 +90,12 @@
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-orm-elasticsearch</module>
-        <module>hibernate-search-orm-elasticsearch-aws</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
-        <module>jsch</module>
-        <module>jgit</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
-        <module>tika</module>
-        <module>neo4j</module>
         <module>mongodb-client</module>
-        <module>artemis-core</module>
-        <module>artemis-jms</module>
         <module>avro</module>
         <module>apicurio-registry-avro</module>
         <module>devservices</module>
@@ -137,6 +130,7 @@
         <module>oidc-client-reactive-filter</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
+        <module>credentials</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
@@ -152,8 +146,6 @@
         <module>amazon-lambda-http</module>
         <!-- AWS API Gateway REST API -->
         <module>amazon-lambda-rest</module>
-        <module>amazon-services</module>
-        <module>amazon-alexa</module>
         <module>azure-functions-http</module>
 
         <!-- New Frameworks -->
@@ -171,17 +163,10 @@
         <module>openshift-client</module>
         <module>kubernetes-service-binding</module>
 
-        <!-- Consul -->
-        <module>consul-config</module>
-
         <!-- Database migrations -->
         <module>flyway</module>
         <module>liquibase</module>
         <module>liquibase-mongodb</module>
-
-        <!-- Vault -->
-        <module>vault</module>
-        <module>credentials</module>
 
         <!-- GraphQL -->
         <module>vertx-graphql</module>
@@ -190,7 +175,6 @@
 
         <!-- Logging -->
         <module>logging-json</module>
-        <module>logging-sentry</module>
         <module>logging-gelf</module>
 
         <!-- Templating -->

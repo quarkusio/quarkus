@@ -25,7 +25,7 @@ public class CacheInterceptorTest {
         // We need a CaffeineCache instance to test the default key logic.
         CaffeineCacheInfo cacheInfo = new CaffeineCacheInfo();
         cacheInfo.name = "test-cache";
-        CaffeineCache cache = new CaffeineCacheImpl(cacheInfo);
+        CaffeineCache cache = new CaffeineCacheImpl(cacheInfo, false);
 
         DefaultCacheKey expectedKey = new DefaultCacheKey(cacheInfo.name);
         Object actualKey = getCacheKey(cache, Collections.emptyList(), new Object[] {});

@@ -3,7 +3,7 @@
 # https://github.com/quarkusio/quarkus-bot#triage-issues
 triage:
   discussions:
-    monitoredCategories: [ 33575230 ]
+    monitoredCategories: [33575230]
   rules:
     - labels: [area/amazon-lambda]
       title: "lambda"
@@ -522,5 +522,10 @@ triage:
       notify: [cescoffier]
       directories:
         - adr/
+    - labels: [area/context-propagation]
+      title: "(context propagation|context-propagation)"
+      notify: [FroMage, manovotn]
+      directories:
+        - extensions/smallrye-context-propagation
   qe:
     notify: [rsvoboda, mjurc]

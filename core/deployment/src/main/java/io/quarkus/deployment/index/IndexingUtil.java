@@ -7,10 +7,13 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -25,6 +28,9 @@ import org.jboss.jandex.UnsupportedVersion;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.util.IoUtil;
+import io.quarkus.paths.OpenPathTree;
+import io.quarkus.paths.PathVisit;
+import io.quarkus.paths.PathVisitor;
 import io.smallrye.common.io.jar.JarFiles;
 
 public class IndexingUtil {
@@ -48,6 +54,19 @@ public class IndexingUtil {
 
     public static Index indexJar(Path path, Set<String> removed) throws IOException {
         return indexJar(path.toFile(), removed);
+    }
+
+    public static Index indexTree(OpenPathTree tree, Set<String> removed) throws IOException {
+        if (removed == null) {
+            final Index i = tree.apply(JANDEX_INDEX, MetaInfJandexReader.getInstance());
+            if (i != null) {
+                return i;
+            }
+        }
+        final Indexer indexer = new Indexer();
+        final PathTreeIndexer treeIndexer = new PathTreeIndexer(indexer, removed);
+        tree.walk(treeIndexer);
+        return indexer.complete();
     }
 
     public static Index indexJar(File file, Set<String> removed) throws IOException {
@@ -181,4 +200,62 @@ public class IndexingUtil {
         }
     }
 
+    private static class PathTreeIndexer implements PathVisitor {
+
+        final Indexer indexer;
+        final Set<String> removed;
+
+        PathTreeIndexer(Indexer indexer, Set<String> removed) {
+            this.indexer = indexer;
+            this.removed = removed;
+        }
+
+        @Override
+        public void visitPath(PathVisit visit) {
+            final Path fileName = visit.getPath().getFileName();
+            if (fileName == null ||
+                    !fileName.toString().endsWith(".class") ||
+                    Files.isDirectory(visit.getPath()) ||
+                    removed != null && removed.contains(visit.getRelativePath("/"))) {
+                return;
+            }
+            try (InputStream inputStream = Files.newInputStream(visit.getPath())) {
+                indexer.index(inputStream);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+
+    private static class MetaInfJandexReader implements Function<PathVisit, Index> {
+        private static MetaInfJandexReader instance;
+
+        private static MetaInfJandexReader getInstance() {
+            return instance == null ? instance = new MetaInfJandexReader() : instance;
+        }
+
+        @Override
+        public Index apply(PathVisit visit) {
+            if (visit == null) {
+                return null;
+            }
+            try (InputStream in = Files.newInputStream(visit.getPath())) {
+                IndexReader reader = new IndexReader(in);
+                if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
+                    log.warnf(
+                            "Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency",
+                            visit.getPath());
+                    return null;
+                }
+                try {
+                    return reader.read();
+                } catch (UnsupportedVersion e) {
+                    throw new UnsupportedVersion(
+                            "Can't read Jandex index from " + visit.getPath() + ": " + e.getMessage());
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
 }

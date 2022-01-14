@@ -413,10 +413,8 @@ public class CheckForUpdatesMojo extends AbstractMojo {
         for (Extension e : extensions) {
             addOrigins(extOrigins, e);
         }
-        final OriginSelector os = new OriginSelector(extOrigins);
-        os.calculateCompatibleCombinations();
 
-        final OriginCombination recommendedCombination = os.getRecommendedCombination();
+        final OriginCombination recommendedCombination = OriginSelector.of(extOrigins).calculateRecommendedCombination();
         if (recommendedCombination == null) {
             final StringBuilder buf = new StringBuilder();
             buf.append("Failed to determine a compatible Quarkus version for the requested extensions: ");

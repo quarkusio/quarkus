@@ -22,12 +22,51 @@ In this guide, you will find an <<hello_world_example,introductory example>>, th
 
 NOTE: Qute is primarily designed as a Quarkus extension. It is possible to use it as a "standalone" library too. However, in such case some of the features are not available. In general, any feature mentioned under the <<quarkus_integration>> section is missing. You can find more information about the limitations and possibilities in the <<standalone>> section.
 
+[[the_simplest_example]]
+== The Simplest Example
+
+The easiest way to try Qute is to use the convenient `io.quarkus.qute.Qute` class and call one of its `fmt()` static methods that can be used to format simple messages:
+
+[source,java]
+----
+import io.quarkus.qute.Qute;
+
+Qute.fmt("Hello {}!", "Lucy"); <1>
+// => Hello Lucy!
+
+Qute.fmt("Hello {name} {surname ?: 'Default'}!", Map.of("name", "Andy")); <2>
+// => Hello Andy Default!
+
+Qute.fmt("<html>{header}</html>").contentType("text/html").data("header", "<h1>My header</h1>").render(); <3>
+// <html>&lt;h1&gt;Header&lt;/h1&gt;</html> <4>
+
+Qute.fmt("I am {#if ok}happy{#else}sad{/if}!", Map.of("ok", true)); <5>
+// => I am happy!
+----
+<1> The empty expression `{}` is a placeholder that is replaced with an index-based array accessor, i.e. `{data[0]}`.
+<2> You can provide a data map instead.
+<3> A builder-like API is available for more complex formatting requirements.
+<4> Note that for a "text/html" template the special chars are replaced with html entities by default.
+<5> You can use any <<basic-building-blocks,building block>> in the template. In this case, the <<if_section>> is used to render the appropriate part of the message based on the input data.
+
+TIP: In <<quarkus_integration,Quarkus>>, the engine used to format the messages is the same as the one injected by `@Inject Engine`. Therefore, you can make use of any Quarkus-specific integration feature such as <<template_extension_methods>>, <<injecting-beans-directly-in-templates>> or even <<type-safe-message-bundles>>.
+
+
+The format object returned by the `Qute.fmt(String)` method can be evaluated lazily and used e.g. as a log message:
+
+[source,java]
+----
+LOG.info(Qute.fmt("Hello {name}!").data("name", "Foo"));
+// => Hello Foo! and the message template is only evaluated if the log level INFO is used for the specific logger
+----
+
+NOTE: Please read the javadoc of the `io.quarkus.qute.Qute` class for more details. 
 
 [[hello_world_example]]
 == Hello World Example
 
-In this example, we'd like to demonstrate the basic workflow when working with Qute templates.
-Let's start with a simple hello world example.
+In this example, we would like to demonstrate the _basic workflow_ when working with Qute templates.
+Let's start with a simple "hello world" example.
 We will always need some *template contents*:
 
 .hello.html
@@ -57,33 +96,34 @@ Once we have an `Engine` instance we could parse the template contents:
 
 [source,java]
 ----
-Template helloTemplate = engine.parse(helloHtmlContent);
+Template hello = engine.parse(helloHtmlContent);
 ----
 
 TIP: In Quarkus, you can simply inject the template definition. The template is automatically parsed and cached - see <<quarkus_integration>>.
 
-Finally, we will create a *template instance*, set the data and render the output:
+Finally, create a *template instance*, set the data and render the output:
 
 [source,java]
 ----
 // Renders <html><p>Hello Jim!</p></html>
-helloTemplate.data("name", "Jim").render(); <1> <2>
+hello.data("name", "Jim").render(); <1> <2>
 ----
 <1> `Template.data(String, Object)` is a convenient method that creates a template instance and sets the data in one step.
 <2> `TemplateInstance.render()` triggers a synchronous rendering, i.e. the current thread is blocked until the rendering is finished. However, there are also asynchronous ways to trigger the rendering and consume the results. For example there is the `TemplateInstance.renderAsync()` method that returns `CompletionStage<String>` or `TemplateInstance.createMulti()` that returns Mutiny's `Multi<String>`.
 
 So the workflow is simple: 
 
-1. Create template contents (`hello.html`),
-2. Parse template definition (`io.quarkus.qute.Template`),
-3. Create template instance (`io.quarkus.qute.TemplateInstance`),
-4. Render output.
+1. Create the template contents (`hello.html`),
+2. Parse the template definition (`io.quarkus.qute.Template`),
+3. Create a template instance (`io.quarkus.qute.TemplateInstance`),
+4. Render the output.
 
-TIP: The `Engine` is able to cache the definitions so that it's not necessary to parse the contents again and again. In Quarkus, the caching is done automatically.
+TIP: The `Engine` is able to cache the template definitions so that it's not necessary to parse the contents again and again. In Quarkus, the caching is done automatically.
 
 [[core_features]]
 == Core Features
 
+[[basic-building-blocks]]
 === Basic Building Blocks
 
 The dynamic parts of a template include comments, expressions, sections and unparsed character data.
@@ -327,18 +367,8 @@ This could be useful to access data for which the key is overridden:
 If an expression does not specify a namespace the _current context object_ is derived from the position of the tag.
 By default, the current context object represents the data passed to the template instance.
 However, sections may change the current context object.
-A typical example is the `with` section that could be used to set the current context object in order to simplify the template structure:
+A typical example is the <<let_section,`let`>> section that can be used to define named local variables:
 
-[source,html]
-----
-{#with item}
-  <h1>{name}</h1>  <1>
-  <p>{description}</p>
-{/with}
-----
-<1> `name` is resolved against the `item`.
-
-Another built-in section that modifies the current context object is `let`/`set`:
 [source,html]
 ----
 {#let myParent=order.item.parent myPrice=order.price} <1>
@@ -737,7 +767,7 @@ You can also add any number of `else` blocks:
 ----
 
 [[when_section]]
-==== When/Switch Section
+==== When Section
 
 This section is similar to Java's `switch` or Kotlin's `when` constructs.
 It matches a _tested value_ against all blocks sequentially until a condition is satisfied.
@@ -826,6 +856,30 @@ The following operators are supported in `is`/`case` block conditions:
 
 |===
 
+[[let_section]]
+==== Let Section
+
+This section allows you to define named local variables:
+[source,html]
+----
+{#let myParent=order.item.parent isActive=false age=10} <1>
+  <h1>{myParent.name}</h1>
+  Is active: {isActive}
+  Age: {age}
+{/let} <2>
+----
+<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
+<2> Keep in mind that the variable is not available outside the `let` section that defines it.
+
+The section tag is also registered under the `set` alias:
+
+[source,html]
+----
+{#set myParent=item.parent price=item.price}
+  <h1>{myParent.name}</h1>
+  <p>Price: {price}
+{/set}
+----
 
 [[with_section]]
 ==== With Section
@@ -843,6 +897,21 @@ This could be useful to simplify the template structure:
 <1> The `name` will be resolved against the `item.parent`.
 <2> The `description` will be also resolved against the `item.parent`.
 
+[IMPORTANT]
+====
+Note that the `with` section should not be used in <<typesafe_templates>> or templates that define <<typesafe_expressions>>.
+The reason is that it prevents Qute from validating the nested expressions.
+If possible it should be replaced with the `{#let}` section which declares an explicit binding:
+
+[source,html]
+----
+{#let it=item.parent}
+  <h1>{it.name}</h1>
+  <p>{it.description}</p>
+{/let}
+----
+====
+
 This section might also come in handy when we'd like to avoid multiple expensive invocations:
 
 [source,html]
@@ -856,30 +925,6 @@ This section might also come in handy when we'd like to avoid multiple expensive
 {/with}
 ----
 <1> `this` is the result of `item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)`. The method is only invoked once even though the result may be used in multiple expressions.
-
-==== Let/Set Section
-
-This section allows you to define named local variables:
-[source,html]
-----
-{#let myParent=order.item.parent isActive=false age=10} <1>
-  <h1>{myParent.name}</h1>
-  Is active: {isActive}
-  Age: {age}
-{/let}
-----
-<1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
-
-The section tag is also registered under the `set` alias:
-
-[source,html]
-----
-{#set myParent=item.parent price=item.price}
-  <h1>{myParent.name}</h1>
-  <p>Price: {price}
-{/set}
-----
-
 
 [[include_helper]]
 ==== Include Section
@@ -957,8 +1002,8 @@ NOTE: The evaluated template is parsed and evaluated every time the section is e
 [[user_tags]]
 ==== User-defined Tags
 
-User-defined tags can be used to include a template and optionally pass some parameters.
-Let's suppose we have a template called `itemDetail.html`:
+User-defined tags can be used to include a tag template and optionally pass some parameters.
+Let's suppose we have a tag template called `itemDetail.html`:
 
 [source]
 ----
@@ -968,21 +1013,21 @@ Let's suppose we have a template called `itemDetail.html`:
 {/if}
 ----
 <1> `showImage` is a named parameter.
-<2> `it` is a special key that is replaced with the first unnamed param of the tag.
+<2> `it` is a special key that is replaced with the first unnamed parameter of the tag.
 <3> (optional) `nested-content` is a special key that will be replaced by the content of the tag.
 
-Now if we register this template under the name `itemDetail.html` and if we add a `UserTagSectionHelper` to the engine:
+In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically.
+For Qute standalone, you need to put the parsed template under the name `itemDetail.html` and register a relevant `UserTagSectionHelper` to the engine:
 
 [source,java]
 ----
 Engine engine = Engine.builder()
                    .addSectionHelper(new UserTagSectionHelper.Factory("itemDetail","itemDetail.html"))
                    .build();
+engine.putTemplate("itemDetail.html", engine.parse("..."));
 ----
 
-NOTE: In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically!
-
-We can include the tag like this:
+Then, we can call the tag like this:
 
 [source,html]
 ----
@@ -998,6 +1043,11 @@ We can include the tag like this:
 ----
 <1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
 <2> Tag content injected using the `nested-content` key in the tag template.
+
+By default, the tag template can reference data from the parent context.
+For example, the tag above could use the following expression `{items.size}`.
+However, sometimes it might be useful to disable this behavior and execute the tag as an _isolated_ template, i.e. without access to the context of the template that calls the tag.
+In this case, just add `_isolated` or `_isolated=true` argument to the call site, e.g. `{#itemDetail item showImage=true _isolated /}`.
 
 === Rendering Output
 
@@ -1063,10 +1113,11 @@ engineBuilder.addValueResolver(ValueResolver.builder()
 [[template-locator]]
 ==== Template Locator
 
-Manual registration is sometimes handy but it's also possible to register a template locator using `EngineBuilder.addLocator(Function<String, Optional<Reader>>)`.
+Manual registration is sometimes handy but it's also possible to register a template locator using `EngineBuilder.addLocator()`.
 This locator is used whenever the `Engine.getTemplate()` method is called and the engine has no template for a given id stored in the cache.
+The locator is responsible to use the correct character encoding when reading the contents of a template.
 
-NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically.
+NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically and the encoding set via `quarkus.qute.default-charset` (UTF-8 by default) is used.
 
 ==== Content Filters
 
@@ -1184,22 +1235,26 @@ class MyService {
 
 NOTE: When using `quarkus-resteasy-qute` the content negotiation is performed automatically. See <<resteasy_integration>>.
 
+[[injecting-beans-directly-in-templates]]
 === Injecting Beans Directly In Templates
 
-A CDI bean annotated with `@Named` can be referenced in any template through the `inject` namespace:
+A CDI bean annotated with `@Named` can be referenced in any template through `cdi` and/or `inject` namespaces:
 
 [source,html]
 ----
-{inject:foo.price} <1>
+{cdi:personService.findPerson(10).name} <1>
+{inject:foo.price} <2>
 ----
-<1> First, a bean with name `foo` is found and then used as the base object.
+<1> First, a bean with name `personService` is found and then used as the base object.
+<2> First, a bean with name `foo` is found and then used as the base object.
 
-All expressions using the `inject` namespace are validated during build.
-For the expression `inject:foo.price` the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist. 
+All expressions with `cdi` and `inject` namespaces are validated during build.
+For the expression `cdi:personService.findPerson(10).name` the implementation class of the injected bean must either declare the `findPerson` method or a matching <<template_extension_methods,template extension method>> must exist.
+For the expression `inject:foo.price` the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist.
 
 NOTE: A `ValueResolver` is also generated for all beans annotated with `@Named` so that it's possible to access its properties without reflection.
 
-TIP: If your application serves link:http-reference[HTTP requests] you can also inject the current `io.vertx.core.http.HttpServerRequest` via the `inject` namespace, e.g. `{inject:vertxRequest.getParam('foo')}`. 
+TIP: If your application serves xref:http-reference.adoc[HTTP requests] you can also inject the current `io.vertx.core.http.HttpServerRequest` via the `inject` namespace, e.g. `{inject:vertxRequest.getParam('foo')}`. 
 
 [[typesafe_expressions]]
 === Type-safe Expressions
@@ -1627,7 +1682,7 @@ class Item {
 
 ==== Accessing Static Fields and Methods
 
-If `@TemplateData#namespace()` is set to a non-empty value then a namespace resolver is automatically generated to access static fields and methods of the target class.
+If `@TemplateData#namespace()` is set to a non-empty value then a namespace resolver is automatically generated to access the public static fields and methods of the target class.
 By default, the namespace is the FQCN of the target class where dots and dollar signs are replaced by underscores.
 For example, the namespace for a class with name `org.acme.Foo` is `org_acme_Foo`.
 The static field `Foo.AGE` can be accessed via `{org_acme_Foo:AGE}`.
@@ -1635,26 +1690,144 @@ The static method `Foo.computeValue(int number)` can be accessed via `{org_acme_
  
 NOTE: A namespace can only consist of alphanumeric characters and underscores.
 
-.Enum Annotated With `@TemplateData`
+.Class Annotated With `@TemplateData`
 [source,java]
 ----
 package model;
 
 @TemplateData <1>
-public enum Status {
-    ON,
-    OFF
+public class Statuses {
+    public static final String ON = "on";
+    public static final String OFF = "off";
 }
 ----
 <1> A name resolver with the namespace `model_Status` is generated automatically.
 
-.Template Accessing Enum Constants
+.Template Accessing Class Constants
 [source,html]
 ----
 {#if machine.status == model_Status:ON}
   The machine is ON!
 {/if}
 ----
+
+==== Convenient Annotation For Enums
+
+There's also a convenient annotation to access enum constants: `@io.quarkus.qute.TemplateEnum`.
+This annotation is functionally equivalent to `@TemplateData(namespace = TemplateData.SIMPLENAME)`, i.e. a namespace resolver is automatically generated for the target enum and the simple name of the target enum is used as the namespace.
+
+.Enum Annotated With `@TemplateEnum`
+[source,java]
+----
+package model;
+
+@TemplateEnum <1>
+public enum Status {
+    ON,
+    OFF
+}
+----
+<1> A name resolver with the namespace `Status` is generated automatically.
+
+NOTE: `@TemplateEnum` declared on a non-enum class is ignored. Also if an enum also declares the `@TemplateData` annotation then the `@TemplateEnum` annotation is ignored.
+
+.Template Accessing Enum Constants
+[source,html]
+----
+{#if machine.status == Status:ON}
+  The machine is ON!
+{/if}
+----
+
+TIP: Quarkus detects possible namespace collisions and fails the build if a specific namespace is defined by multiple `@TemplateData` and/or `@TemplateEnum` annotations.
+
+[[global_variables]]
+=== Global Variables
+
+The `io.quarkus.qute.TemplateGlobal` annotation can be used to denote static fields and methods that supply _global variables_ which are accessible in any template.
+Internally, each global variable is added to the data map of any `TemplateInstance` via the `TemplateInstance#data(String, Object)` method.
+
+.Global Variables Definition
+[source,java]
+----
+enum Color { RED, GREEN, BLUE }
+
+@TemplateGlobal <1>
+public class Globals {
+    
+    static int age = 40;
+    
+    static Color[] myColors() {
+      return new Color[] { Color.RED, Color.BLUE };
+    }
+    
+    @TemplateGlobal(name = "currentUser") <2>
+    static String user() {
+       return "Mia";
+    }
+}
+----
+<1> If a class is annotated with `@TemplateGlobal` then every non-void non-private static method that declares no parameters and every non-private static field is considered a global variable. The name is defaulted, i.e. the name of the field/method is used.
+<2> Method-level annotations override the class-level annotation. In this particular case, the name is not defaulted but selected explicitly.
+
+.A Template Accessing Global Variables
+[source,html]
+----
+User: {currentUser} <1>
+Age:  {age} <2>
+Colors: {#each myColors}{it}{#if it_hasNext}, {/if}{/each} <3>
+----
+<1> `currentUser` resolves to `Globals#user()`.
+<2> `age` resolves to `Globals#age`.
+<3> `myColors` resolves to `Globals#myColors()`.
+
+NOTE: Note that global variables implicitly add <<typesafe_expressions, parameter declarations>> to all templates and so any expression that references a global variable is validated during build.
+
+.The Output
+[source,html]
+----
+User: Mia
+Age:  40
+Colors: RED, BLUE
+----
+
+==== Resolving Conflicts
+
+Global variables may conflict with regular data objects.
+<<typesafe_templates,Type-safe templates>> override the global variables automatically.
+For example, the following definition overrides the global variable supplied by the `Globals#user()` method:
+
+.Type-safe Template Definition
+[source,java]
+----
+import org.acme.User;
+
+@CheckedTemplate
+public class Templates {
+    static native TemplateInstance hello(User currentUser); <1>
+}
+----
+<1> `currentUser` conflicts with the global variable supplied by `Globals#user()`.
+
+So the corresponding template does not result in a validation error even though the `Globals#user()` method returns `java.lang.String` which does not have the `name` property:
+
+.`templates/hello.txt`
+[source,html]
+----
+User name: {currentUser.name} <1>
+----
+<1> `org.acme.User` has the `name` property.
+
+For other templates an explicit parameter declaration is needed:
+
+[source,html]
+----
+{@org.acme.User currentUser} <1>
+
+User name: {currentUser.name}
+----
+<1> This parameter declaration overrides the declaration added by the global variable supplied by the `Globals#user()` method.
+
 
 [[native_executables]]
 === Native Executables
@@ -1840,7 +2013,7 @@ NOTE: A warning message is logged for each _unused_ parameter.
 
 ==== Localization
 
-The default locale of the Java Virtual Machine used to *build the application* is used for the `@MessageBundle` interface by default.
+The default locale specified via the `quarkus.default-locale` config property is used for the `@MessageBundle` interface by default.
 However, the `io.quarkus.qute.i18n.MessageBundle#locale()` can be used to specify a custom locale.
 Additionally, there are two ways to define a localized bundle:
 
@@ -1898,8 +2071,9 @@ hello=Hello \
 ----
 Note that the line terminator is escaped with a backslash character `\` and white space at the start of the following line is ignored. I.e. `{msg:hello('Edgar')}` would be rendered as `Hello Edgar and good morning!`.
 
-Once we have the localized bundles defined we need a way to _select_ the correct bundle.
-If you use a message bundle expression in a template you'll have to specify the `locale` attribute of a template instance.
+Once we have the localized bundles defined we need a way to _select_ the correct bundle for a specific template instance, i.e. to specify the locale for all message bundle expressions in the template.
+By default, the locale specified via the `quarkus.default-locale` configuration property is used to select the bundle.
+Alternatively, you can specify the `locale` attribute of a template instance.
 
 .`locale` Attribute Example
 [source,java]

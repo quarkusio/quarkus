@@ -1,5 +1,5 @@
 ####
-# This Dockerfile is used in order to build a container that runs the Quarkus application in native (no JVM) mode
+# This Dockerfile is used in order to build a container that runs the Quarkus application in native (no JVM) mode.
 #
 # Before building the container image run:
 #

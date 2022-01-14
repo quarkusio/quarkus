@@ -1,15 +1,19 @@
 package io.quarkus.deployment.ide;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import io.quarkus.dev.console.DevConsoleManager;
+
 public enum Ide {
 
     // see for cli syntax of idea https://www.jetbrains.com/help/idea/opening-files-from-command-line.html
-    IDEA("idea", "--line %s", "--help"),
+    IDEA("idea", null, "--help"),
     ECLIPSE("eclipse", null, (String[]) null),
     VSCODE("code", null, "--version"),
     NETBEANS("netbeans", null, "--help");
@@ -82,6 +86,22 @@ public enum Ide {
 
     public void setMachineSpecificCommand(String machineSpecificCommand) {
         this.machineSpecificCommand = machineSpecificCommand;
+    }
+
+    /**
+     * Finds the location of a source file given the path from the source root
+     *
+     * @param fileName The file name
+     * @return The path or null if it could not be found
+     */
+    public static Path findSourceFile(String fileName) {
+        for (var i : DevConsoleManager.getHotReplacementContext().getSourcesDir()) {
+            Path resolved = i.resolve(fileName);
+            if (Files.exists(resolved)) {
+                return resolved;
+            }
+        }
+        return null;
     }
 
     @Override

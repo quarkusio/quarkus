@@ -66,6 +66,7 @@ open class KotlinPanacheFunctionalityTest {
     }
 
     @Test
+    @DisabledOnNativeImage
     fun entityManagerIsInjected() {
         assertNotNull(Dog.getEntityManager())
     }

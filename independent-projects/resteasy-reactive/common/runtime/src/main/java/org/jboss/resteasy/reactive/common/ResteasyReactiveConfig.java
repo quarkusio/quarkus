@@ -9,7 +9,15 @@ public class ResteasyReactiveConfig {
     private long inputBufferSize;
 
     /**
-     * By default we assume a default produced media type of "text/plain"
+     * The size of the output stream response buffer. If a response is larger than this and no content-length
+     * is provided then the request will be chunked.
+     *
+     * Larger values may give slight performance increases for large responses, at the expense of more memory usage.
+     */
+    private int outputBufferSize = 8192;
+
+    /**
+     * By default, we assume a default produced media type of "text/plain"
      * for String endpoint return types. If this is disabled, the default
      * produced media type will be "[text/plain, *&sol;*]" which is more
      * expensive due to negotiation.
@@ -27,8 +35,10 @@ public class ResteasyReactiveConfig {
     public ResteasyReactiveConfig() {
     }
 
-    public ResteasyReactiveConfig(long inputBufferSize, boolean singleDefaultProduces, boolean defaultProduces) {
+    public ResteasyReactiveConfig(long inputBufferSize, int outputBufferSize, boolean singleDefaultProduces,
+            boolean defaultProduces) {
         this.inputBufferSize = inputBufferSize;
+        this.outputBufferSize = outputBufferSize;
         this.singleDefaultProduces = singleDefaultProduces;
         this.defaultProduces = defaultProduces;
     }
@@ -39,6 +49,14 @@ public class ResteasyReactiveConfig {
 
     public void setInputBufferSize(long inputBufferSize) {
         this.inputBufferSize = inputBufferSize;
+    }
+
+    public int getOutputBufferSize() {
+        return outputBufferSize;
+    }
+
+    public void setOutputBufferSize(int outputBufferSize) {
+        this.outputBufferSize = outputBufferSize;
     }
 
     public boolean isSingleDefaultProduces() {

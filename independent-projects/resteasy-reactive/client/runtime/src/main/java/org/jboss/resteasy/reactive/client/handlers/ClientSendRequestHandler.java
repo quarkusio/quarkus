@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
+import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.ServiceInstance;
 import io.smallrye.stork.Stork;
@@ -19,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -26,6 +29,7 @@ import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Variant;
 import org.jboss.logging.Logger;
@@ -38,20 +42,26 @@ import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartResponseDecoder;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
+    public static final String CONTENT_TYPE = "Content-Type";
 
     private final boolean followRedirects;
     private final LoggingScope loggingScope;
     private final ClientLogger clientLogger;
+    private final Map<Class<?>, MultipartResponseData> multipartResponseDataMap;
 
-    public ClientSendRequestHandler(boolean followRedirects, LoggingScope loggingScope, ClientLogger logger) {
+    public ClientSendRequestHandler(boolean followRedirects, LoggingScope loggingScope, ClientLogger logger,
+            Map<Class<?>, MultipartResponseData> multipartResponseDataMap) {
         this.followRedirects = followRedirects;
         this.loggingScope = loggingScope;
         this.clientLogger = logger;
+        this.multipartResponseDataMap = multipartResponseDataMap;
     }
 
     @Override
@@ -147,7 +157,29 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                     reportFinish(System.nanoTime() - startTime, null, requestContext);
                                 }
                             }
-                            if (!requestContext.isRegisterBodyHandler()) {
+
+                            if (isResponseMultipart(requestContext)) {
+                                QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
+                                        clientResponse);
+
+                                clientResponse.handler(multipartDecoder::offer);
+
+                                clientResponse.endHandler(new Handler<>() {
+                                    @Override
+                                    public void handle(Void event) {
+                                        multipartDecoder.offer(LastHttpContent.EMPTY_LAST_CONTENT);
+
+                                        List<InterfaceHttpData> datas = multipartDecoder.getBodyHttpDatas();
+                                        requestContext.setResponseMultipartParts(datas);
+
+                                        if (loggingScope != LoggingScope.NONE) {
+                                            clientLogger.logResponse(clientResponse, false);
+                                        }
+
+                                        requestContext.resume();
+                                    }
+                                });
+                            } else if (!requestContext.isRegisterBodyHandler()) {
                                 clientResponse.pause();
                                 if (loggingScope != LoggingScope.NONE) {
                                     clientLogger.logResponse(clientResponse, false);
@@ -206,6 +238,19 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         });
     }
 
+    private boolean isResponseMultipart(RestClientRequestContext requestContext) {
+        MultivaluedMap<String, String> responseHeaders = requestContext.getResponseHeaders();
+        List<String> contentTypes = responseHeaders.get(CONTENT_TYPE);
+        if (contentTypes != null) {
+            for (String contentType : contentTypes) {
+                if (contentType.toLowerCase(Locale.ROOT).startsWith(MediaType.MULTIPART_FORM_DATA)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private void reportFinish(long timeInNs, Throwable throwable, RestClientRequestContext requestContext) {
         ServiceInstance serviceInstance = requestContext.getCallStatsCollector();
         if (serviceInstance != null) {
@@ -218,6 +263,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         URI uri = state.getUri();
         Object readTimeout = state.getConfiguration().getProperty(QuarkusRestClientProperties.READ_TIMEOUT);
         Uni<RequestOptions> requestOptions;
+        state.setMultipartResponsesData(multipartResponseDataMap);
         if (uri.getScheme().startsWith(Stork.STORK)) {
             boolean isHttps = "storks".equals(uri.getScheme());
             String serviceName = uri.getHost();
@@ -281,6 +327,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     "Multipart form upload expects an entity of type MultipartForm, got: " + state.getEntity().getEntity());
         }
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
+        updateRequestHeadersFromConfig(state, headerMap);
         QuarkusMultipartForm multipartForm = (QuarkusMultipartForm) state.getEntity().getEntity();
         multipartForm.preparePojos(state);
 
@@ -307,6 +354,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             RestClientRequestContext state)
             throws IOException {
         MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
+        updateRequestHeadersFromConfig(state, headerMap);
+
         Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
         Entity<?> entity = state.getEntity();
         if (entity != null) {
@@ -319,6 +368,15 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         // set the Vertx headers after we've run the interceptors because they can modify them
         setVertxHeaders(httpClientRequest, headerMap);
         return actualEntity;
+    }
+
+    private void updateRequestHeadersFromConfig(RestClientRequestContext state, MultivaluedMap<String, String> headerMap) {
+        Object staticHeaders = state.getConfiguration().getProperty(QuarkusRestClientProperties.STATIC_HEADERS);
+        if (staticHeaders instanceof Map) {
+            for (Map.Entry<String, String> entry : ((Map<String, String>) staticHeaders).entrySet()) {
+                headerMap.putSingle(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     private void setVertxHeaders(HttpClientRequest httpClientRequest, MultivaluedMap<String, String> headerMap) {

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.MessageBundles;
@@ -82,6 +83,9 @@ public class MessageBundleTest {
         assertEquals("There are 100 files on E.",
                 engine.parse("{msg:files(100,'E')}").render());
 
+        // Test the convenient Qute class
+        assertEquals("There are no files on C.", Qute.fmt("{msg:files(0,'C')}").render());
+        assertEquals("Hallo Welt!", Qute.fmt("{msg:hello}").attribute("locale", Locale.GERMAN).render());
     }
 
 }

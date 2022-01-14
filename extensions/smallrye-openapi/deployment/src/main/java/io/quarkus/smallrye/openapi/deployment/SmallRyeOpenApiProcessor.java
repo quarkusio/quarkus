@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -65,6 +64,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.paths.PathUtils;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
@@ -161,18 +161,37 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    List<HotDeploymentWatchedFileBuildItem> configFiles() {
-        return Stream.of(META_INF_OPENAPI_YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML,
-                META_INF_OPENAPI_YML, WEB_INF_CLASSES_META_INF_OPENAPI_YML,
-                META_INF_OPENAPI_JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON).map(HotDeploymentWatchedFileBuildItem::new)
-                .collect(Collectors.toList());
+    void configFiles(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles,
+            SmallRyeOpenApiConfig openApiConfig,
+            LaunchModeBuildItem launchMode,
+            OutputTargetBuildItem outputTargetBuildItem) throws IOException {
+
+        // Add any aditional directories if configured
+        if (launchMode.getLaunchMode().isDevOrTest() && openApiConfig.additionalDocsDirectory.isPresent()) {
+            List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
+            for (Path path : additionalStaticDocuments) {
+                // Scan all yaml and json files
+                List<String> filesInDir = getResourceFiles(path.toString(), outputTargetBuildItem.getOutputDirectory());
+                for (String possibleFile : filesInDir) {
+                    watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(possibleFile));
+                }
+            }
+        }
+
+        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(META_INF_OPENAPI_YAML));
+        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(WEB_INF_CLASSES_META_INF_OPENAPI_YAML));
+        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(META_INF_OPENAPI_YML));
+        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(WEB_INF_CLASSES_META_INF_OPENAPI_YML));
+        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(META_INF_OPENAPI_JSON));
+        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(WEB_INF_CLASSES_META_INF_OPENAPI_JSON));
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    RouteBuildItem handler(LaunchModeBuildItem launch,
+    void handler(LaunchModeBuildItem launch,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<RouteBuildItem> routes,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
@@ -209,13 +228,29 @@ public class SmallRyeOpenApiProcessor {
                 .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
 
         Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
-        return nonApplicationRootPathBuildItem.routeBuilder()
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(openApiConfig.path)
                 .routeConfigKey("quarkus.smallrye-openapi.path")
                 .handler(handler)
                 .displayOnNotFoundPage("Open API Schema document")
                 .blockingRoute()
-                .build();
+                .build());
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(openApiConfig.path + ".json")
+                .handler(handler)
+                .build());
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(openApiConfig.path + ".yaml")
+                .handler(handler)
+                .build());
+
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(openApiConfig.path + ".yml")
+                .handler(handler)
+                .build());
     }
 
     @BuildStep
@@ -258,7 +293,7 @@ public class SmallRyeOpenApiProcessor {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
                 MethodInfo method = ai.target().asMethod();
                 if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
-                    String ref = JandexUtil.createUniqueMethodReference(method);
+                    String ref = JandexUtil.createUniqueMethodReference(method.declaringClass(), method);
                     methodReferences.put(ref, List.of(ai.value().asStringArray()));
                 }
             }
@@ -267,7 +302,7 @@ public class SmallRyeOpenApiProcessor {
                 List<MethodInfo> methods = classInfo.methods();
                 for (MethodInfo method : methods) {
                     if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
-                        String ref = JandexUtil.createUniqueMethodReference(method);
+                        String ref = JandexUtil.createUniqueMethodReference(classInfo, method);
                         methodReferences.put(ref, List.of(ai.value().asStringArray()));
                     }
                 }
@@ -397,7 +432,7 @@ public class SmallRyeOpenApiProcessor {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
                 MethodInfo method = ai.target().asMethod();
                 if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
-                    String ref = JandexUtil.createUniqueMethodReference(method);
+                    String ref = JandexUtil.createUniqueMethodReference(method.declaringClass(), method);
                     methodReferences.put(ref, List.of(ai.value().asStringArray()));
                 }
             }
@@ -406,7 +441,7 @@ public class SmallRyeOpenApiProcessor {
                 List<MethodInfo> methods = classInfo.methods();
                 for (MethodInfo method : methods) {
                     if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
-                        String ref = JandexUtil.createUniqueMethodReference(method);
+                        String ref = JandexUtil.createUniqueMethodReference(classInfo, method);
                         methodReferences.put(ref, List.of(ai.value().asStringArray()));
                     }
                 }
@@ -427,20 +462,28 @@ public class SmallRyeOpenApiProcessor {
         for (AnnotationInstance ai : openapiAnnotations) {
             if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
                 MethodInfo method = ai.target().asMethod();
-                String ref = JandexUtil.createUniqueMethodReference(method);
                 if (Modifier.isInterface(method.declaringClass().flags())) {
                     Collection<ClassInfo> allKnownImplementors = apiFilteredIndexViewBuildItem.getIndex()
                             .getAllKnownImplementors(method.declaringClass().name());
                     for (ClassInfo impl : allKnownImplementors) {
-                        classNames.put(ref, impl.simpleName());
+                        MethodInfo implMethod = impl.method(method.name(), method.parameters().toArray(new Type[] {}));
+                        if (implMethod != null) {
+                            String implRef = JandexUtil.createUniqueMethodReference(impl, method);
+                            classNames.put(implRef, impl.simpleName());
+                        }
                     }
                 } else if (Modifier.isAbstract(method.declaringClass().flags())) {
                     Collection<ClassInfo> allKnownSubclasses = apiFilteredIndexViewBuildItem.getIndex()
                             .getAllKnownSubclasses(method.declaringClass().name());
                     for (ClassInfo impl : allKnownSubclasses) {
-                        classNames.put(ref, impl.simpleName());
+                        MethodInfo implMethod = impl.method(method.name(), method.parameters().toArray(new Type[] {}));
+                        if (implMethod != null) {
+                            String implRef = JandexUtil.createUniqueMethodReference(impl, method);
+                            classNames.put(implRef, impl.simpleName());
+                        }
                     }
                 } else {
+                    String ref = JandexUtil.createUniqueMethodReference(method.declaringClass(), method);
                     classNames.put(ref, method.declaringClass().simpleName());
                 }
             }
@@ -564,11 +607,12 @@ public class SmallRyeOpenApiProcessor {
             HttpRootPathBuildItem httpRootPathBuildItem,
             OutputTargetBuildItem out,
             SmallRyeOpenApiConfig openApiConfig,
-            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
+            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
+            OutputTargetBuildItem outputTargetBuildItem) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENAPI));
-        OpenAPI staticModel = generateStaticModel(openApiConfig);
+        OpenAPI staticModel = generateStaticModel(openApiConfig, outputTargetBuildItem.getOutputDirectory());
 
         OpenAPI annotationModel;
 
@@ -666,11 +710,11 @@ public class SmallRyeOpenApiProcessor {
         return false;
     }
 
-    private OpenAPI generateStaticModel(SmallRyeOpenApiConfig openApiConfig) throws IOException {
+    private OpenAPI generateStaticModel(SmallRyeOpenApiConfig openApiConfig, Path target) throws IOException {
         if (openApiConfig.ignoreStaticDocument) {
             return null;
         } else {
-            List<Result> results = findStaticModels(openApiConfig);
+            List<Result> results = findStaticModels(openApiConfig, target);
             if (!results.isEmpty()) {
                 OpenAPI mergedStaticModel = new OpenAPIImpl();
                 for (Result result : results) {
@@ -732,16 +776,16 @@ public class SmallRyeOpenApiProcessor {
         return scanners.toArray(new String[] {});
     }
 
-    private List<Result> findStaticModels(SmallRyeOpenApiConfig openApiConfig) {
+    private List<Result> findStaticModels(SmallRyeOpenApiConfig openApiConfig, Path target) {
         List<Result> results = new ArrayList<>();
 
         // First check for the file in both META-INF and WEB-INF/classes/META-INF
-        results = addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YAML);
-        results = addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
-        results = addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YML);
-        results = addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YML);
-        results = addStaticModelIfExist(results, Format.JSON, META_INF_OPENAPI_JSON);
-        results = addStaticModelIfExist(results, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
+        addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YAML);
+        addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
+        addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YML);
+        addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YML);
+        addStaticModelIfExist(results, Format.JSON, META_INF_OPENAPI_JSON);
+        addStaticModelIfExist(results, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
 
         // Add any aditional directories if configured
         if (openApiConfig.additionalDocsDirectory.isPresent()) {
@@ -749,9 +793,9 @@ public class SmallRyeOpenApiProcessor {
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
                 try {
-                    List<String> filesInDir = getResourceFiles(path.toString());
+                    List<String> filesInDir = getResourceFiles(PathUtils.asString(path, "/"), target);
                     for (String possibleModelFile : filesInDir) {
-                        results = addStaticModelIfExist(results, possibleModelFile);
+                        addStaticModelIfExist(results, possibleModelFile);
                     }
                 } catch (IOException ioe) {
                     ioe.printStackTrace();
@@ -762,18 +806,17 @@ public class SmallRyeOpenApiProcessor {
         return results;
     }
 
-    private List<Result> addStaticModelIfExist(List<Result> results, String path) {
+    private void addStaticModelIfExist(List<Result> results, String path) {
         if (path.endsWith(".json")) {
             // Scan a specific json file
-            results = addStaticModelIfExist(results, Format.JSON, path);
+            addStaticModelIfExist(results, Format.JSON, path);
         } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
             // Scan a specific yaml file
-            results = addStaticModelIfExist(results, Format.YAML, path);
+            addStaticModelIfExist(results, Format.YAML, path);
         }
-        return results;
     }
 
-    private List<Result> addStaticModelIfExist(List<Result> results, Format format, String path) {
+    private void addStaticModelIfExist(List<Result> results, Format format, String path) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         try (InputStream inputStream = cl.getResourceAsStream(path)) {
             if (inputStream != null) {
@@ -782,23 +825,32 @@ public class SmallRyeOpenApiProcessor {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-        return results;
     }
 
-    private List<String> getResourceFiles(String path) throws IOException {
+    private List<String> getResourceFiles(String pathName, Path target) throws IOException {
         List<String> filenames = new ArrayList<>();
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        try (InputStream inputStream = cl.getResourceAsStream(path)) {
-            if (inputStream != null) {
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
-                    String resource;
-                    while ((resource = br.readLine()) != null) {
-                        filenames.add(path + "/" + resource);
+        if (target == null) {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            try (InputStream inputStream = cl.getResourceAsStream(pathName)) {
+                if (inputStream != null) {
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+                        String resource;
+                        while ((resource = br.readLine()) != null) {
+                            filenames.add(pathName + "/" + resource);
+                        }
                     }
                 }
             }
-        }
+        } else {
+            Path classes = target.resolve("classes");
+            if (classes != null) {
+                Path path = classes.resolve(pathName);
 
+                return Files.list(path).map((t) -> {
+                    return pathName + "/" + t.getFileName().toString();
+                }).collect(Collectors.toList());
+            }
+        }
         return filenames;
     }
 

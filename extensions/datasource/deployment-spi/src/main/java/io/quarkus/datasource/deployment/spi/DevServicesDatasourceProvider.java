@@ -12,7 +12,9 @@ public interface DevServicesDatasourceProvider {
 
     RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
             Optional<String> datasourceName,
-            Optional<String> imageName, Map<String, String> additionalProperties,
+            Optional<String> imageName,
+            Map<String, String> containerProperties,
+            Map<String, String> additionalJdbcUrlProperties,
             OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout);
 
     default boolean isDockerRequired() {

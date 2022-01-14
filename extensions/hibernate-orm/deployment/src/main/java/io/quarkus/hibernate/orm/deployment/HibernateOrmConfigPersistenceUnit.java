@@ -14,6 +14,8 @@ import org.hibernate.engine.query.spi.QueryPlanCache;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigGroup
 public class HibernateOrmConfigPersistenceUnit {
@@ -23,11 +25,13 @@ public class HibernateOrmConfigPersistenceUnit {
      * <p>
      * If undefined, it will use the default datasource.
      */
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> datasource;
 
     /**
      * The packages in which the entities affected to this persistence unit are located.
      */
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<Set<String>> packages;
 
     /**
@@ -71,6 +75,7 @@ public class HibernateOrmConfigPersistenceUnit {
      */
     // @formatter:on
     @ConfigItem(defaultValueDocumentation = "import.sql in DEV, TEST ; no-file otherwise")
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> sqlLoadScript;
 
     /**
@@ -103,6 +108,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * Class name of the Hibernate PhysicalNamingStrategy implementation
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> physicalNamingStrategy;
 
     /**
@@ -111,6 +117,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * Class name of the Hibernate ImplicitNamingStrategy implementation
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> implicitNamingStrategy;
 
     /**
@@ -130,6 +137,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * @asciidoclet
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> metadataBuilderContributor;
 
     /**
@@ -139,6 +147,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * Pass `no-file` to force Hibernate ORM to ignore `META-INF/orm.xml`.
      */
     @ConfigItem(defaultValueDocumentation = "META-INF/orm.xml if it exists; no-file otherwise")
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<Set<String>> mappingFiles;
 
     /**
@@ -201,6 +210,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * @asciidoclet
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> multitenant;
 
     /**
@@ -208,6 +218,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * if not set.
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> multitenantSchemaDatasource;
 
     /**
@@ -259,6 +270,7 @@ public class HibernateOrmConfigPersistenceUnit {
         // TODO should it be dialects
         //TODO should it be shortcuts like "postgresql" "h2" etc
         @ConfigItem(name = ConfigItem.PARENT)
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> dialect;
 
         /**
@@ -269,6 +281,7 @@ public class HibernateOrmConfigPersistenceUnit {
          * @asciidoclet
          */
         @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> storageEngine;
 
         public boolean isAnyPropertySet() {
@@ -316,18 +329,6 @@ public class HibernateOrmConfigPersistenceUnit {
         private static final String DEFAULT_CHARSET = "UTF-8";
 
         /**
-         * The default catalog to use for the database objects.
-         */
-        @ConfigItem
-        public Optional<String> defaultCatalog;
-
-        /**
-         * The default schema to use for the database objects.
-         */
-        @ConfigItem
-        public Optional<String> defaultSchema;
-
-        /**
          * The charset of the database.
          * <p>
          * Used for DDL generation and also for the SQL import scripts.
@@ -342,9 +343,7 @@ public class HibernateOrmConfigPersistenceUnit {
         public boolean globallyQuotedIdentifiers;
 
         public boolean isAnyPropertySet() {
-            return defaultCatalog.isPresent()
-                    || defaultSchema.isPresent()
-                    || !DEFAULT_CHARSET.equals(charset.name())
+            return !DEFAULT_CHARSET.equals(charset.name())
                     || globallyQuotedIdentifiers;
         }
     }
@@ -356,6 +355,7 @@ public class HibernateOrmConfigPersistenceUnit {
          * The time zone pushed to the JDBC driver.
          */
         @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> timezone;
 
         /**

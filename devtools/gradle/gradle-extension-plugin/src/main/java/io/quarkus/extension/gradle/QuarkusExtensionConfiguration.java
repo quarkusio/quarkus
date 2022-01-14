@@ -6,6 +6,7 @@ import org.gradle.api.Project;
 
 public class QuarkusExtensionConfiguration {
 
+    private boolean disableValidation;
     private String deploymentArtifact;
     private String deploymentModule;
     private List<String> excludedArtifacts;
@@ -19,6 +20,14 @@ public class QuarkusExtensionConfiguration {
 
     public QuarkusExtensionConfiguration(Project project) {
         this.project = project;
+    }
+
+    public void setDisableValidation(boolean disableValidation) {
+        this.disableValidation = disableValidation;
+    }
+
+    public boolean isValidationDisabled() {
+        return disableValidation;
     }
 
     public String getDeploymentArtifact() {

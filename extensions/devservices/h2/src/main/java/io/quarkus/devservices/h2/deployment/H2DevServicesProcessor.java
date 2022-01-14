@@ -29,7 +29,8 @@ public class H2DevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.H2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    Optional<String> datasourceName, Optional<String> imageName,
+                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
                     OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort",
@@ -37,7 +38,7 @@ public class H2DevServicesProcessor {
                     tcpServer.start();
 
                     StringBuilder additionalArgs = new StringBuilder();
-                    for (Map.Entry<String, String> i : additionalProperties.entrySet()) {
+                    for (Map.Entry<String, String> i : additionalJdbcUrlProperties.entrySet()) {
                         additionalArgs.append(";");
                         additionalArgs.append(i.getKey());
                         additionalArgs.append("=");

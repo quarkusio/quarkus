@@ -27,14 +27,17 @@ public final class SectionBlock {
      */
     public final String label;
     /**
-     * An ordered map of parsed parameters.
+     * An unmodifiable ordered map of parsed parameters.
      */
     public final Map<String, String> parameters;
 
+    /**
+     * An unmodifiable ordered map of parameter expressions.
+     */
     public final Map<String, Expression> expressions;
 
     /**
-     * Section content.
+     * Section content - an immutable list of template nodes.
      */
     List<TemplateNode> nodes;
 
@@ -72,37 +75,55 @@ public final class SectionBlock {
 
     void optimizeNodes(Set<TemplateNode> nodesToRemove) {
         List<TemplateNode> effectiveNodes = new ArrayList<>();
+        boolean hasLineSeparator = false;
+        boolean nodeIgnored = false;
         for (TemplateNode node : nodes) {
             if (node instanceof SectionNode) {
                 effectiveNodes.add(node);
                 ((SectionNode) node).optimizeNodes(nodesToRemove);
-            } else if (node != Parser.COMMENT_NODE && !(node instanceof ParameterDeclarationNode)
-                    && (nodesToRemove.isEmpty() || !nodesToRemove.contains(node))) {
+            } else if (node == Parser.COMMENT_NODE || (node instanceof ParameterDeclarationNode)
+                    || nodesToRemove.contains(node)) {
                 // Ignore comments, param declarations and nodes for removal
-                effectiveNodes.add(node);
-            }
-        }
-        // Collapse adjacent text and line separator nodes
-        List<TemplateNode> finalNodes = new ArrayList<>();
-        List<TextNode> group = null;
-        for (TemplateNode node : effectiveNodes) {
-            if (node instanceof TextNode) {
-                if (group == null) {
-                    group = new ArrayList<>();
-                }
-                group.add((TextNode) node);
+                nodeIgnored = true;
             } else {
-                if (group != null) {
-                    collapseGroup(group, finalNodes);
-                    group = null;
+                effectiveNodes.add(node);
+                if (node instanceof LineSeparatorNode) {
+                    hasLineSeparator = true;
                 }
-                finalNodes.add(node);
             }
         }
-        if (group != null) {
-            collapseGroup(group, finalNodes);
+
+        if (!hasLineSeparator && !nodeIgnored) {
+            // No optimizations are possible
+            return;
         }
-        nodes = ImmutableList.copyOf(finalNodes);
+
+        if (hasLineSeparator) {
+            List<TemplateNode> finalNodes;
+            // Collapse adjacent text and line separator nodes
+            finalNodes = new ArrayList<>();
+            List<TextNode> textGroup = null;
+            for (TemplateNode node : effectiveNodes) {
+                if (node instanceof TextNode) {
+                    if (textGroup == null) {
+                        textGroup = new ArrayList<>();
+                    }
+                    textGroup.add((TextNode) node);
+                } else {
+                    if (textGroup != null) {
+                        collapseGroup(textGroup, finalNodes);
+                        textGroup = null;
+                    }
+                    finalNodes.add(node);
+                }
+            }
+            if (textGroup != null) {
+                collapseGroup(textGroup, finalNodes);
+            }
+            nodes = ImmutableList.copyOf(finalNodes);
+        } else if (nodeIgnored) {
+            nodes = ImmutableList.copyOf(effectiveNodes);
+        }
     }
 
     private void collapseGroup(List<TextNode> group, List<TemplateNode> finalNodes) {
@@ -128,17 +149,15 @@ public final class SectionBlock {
         private final String id;
         private Origin origin;
         private String label;
-        private final Map<String, String> parameters;
+        private Map<String, String> parameters;
         private final List<TemplateNode> nodes;
-        private final Map<String, Expression> expressions;
+        private Map<String, Expression> expressions;
         private final Function<String, Expression> expressionFun;
         private final Function<String, TemplateException> errorFun;
 
         public Builder(String id, Function<String, Expression> expressionFun, Function<String, TemplateException> errorFun) {
             this.id = id;
-            this.parameters = new LinkedHashMap<>();
             this.nodes = new ArrayList<>();
-            this.expressions = new LinkedHashMap<>();
             this.expressionFun = expressionFun;
             this.errorFun = errorFun;
         }
@@ -159,19 +178,25 @@ public final class SectionBlock {
         }
 
         SectionBlock.Builder addParameter(String name, String value) {
-            this.parameters.put(name, value);
+            if (parameters == null) {
+                parameters = new LinkedHashMap<>();
+            }
+            parameters.put(name, value);
             return this;
         }
 
         @Override
         public Expression addExpression(String param, String value) {
             Expression expression = expressionFun.apply(value);
+            if (expressions == null) {
+                expressions = new LinkedHashMap<>();
+            }
             expressions.put(param, expression);
             return expression;
         }
 
         public Map<String, String> getParameters() {
-            return Collections.unmodifiableMap(parameters);
+            return parameters == null ? Collections.emptyMap() : Collections.unmodifiableMap(parameters);
         }
 
         public String getLabel() {
@@ -184,6 +209,22 @@ public final class SectionBlock {
         }
 
         SectionBlock build() {
+            Map<String, String> parameters = this.parameters;
+            if (parameters == null) {
+                parameters = Collections.emptyMap();
+            } else if (parameters.size() == 1) {
+                parameters = Map.copyOf(parameters);
+            } else {
+                parameters = Collections.unmodifiableMap(parameters);
+            }
+            Map<String, Expression> expressions = this.expressions;
+            if (expressions == null) {
+                expressions = Collections.emptyMap();
+            } else if (expressions.size() == 1) {
+                expressions = Map.copyOf(expressions);
+            } else {
+                expressions = Collections.unmodifiableMap(expressions);
+            }
             return new SectionBlock(origin, id, label, parameters, expressions, nodes);
         }
     }

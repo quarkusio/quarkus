@@ -13,7 +13,6 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.util.IoUtils;
 
 public class QuarkusGradleUtils {
@@ -26,20 +25,6 @@ public class QuarkusGradleUtils {
             throw new IllegalArgumentException("The project does not include the Java plugin");
         }
         return javaConvention.getSourceSets().getByName(sourceSetName);
-    }
-
-    public static PathsCollection getOutputPaths(Project project) {
-        final SourceSet mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
-        final PathsCollection.Builder builder = PathsCollection.builder();
-        mainSourceSet.getOutput().getClassesDirs().filter(f -> f.exists()).forEach(f -> builder.add(f.toPath()));
-        final File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
-        if (resourcesDir != null && resourcesDir.exists()) {
-            final Path p = resourcesDir.toPath();
-            if (!builder.contains(p)) {
-                builder.add(p);
-            }
-        }
-        return builder.build();
     }
 
     public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean test) {

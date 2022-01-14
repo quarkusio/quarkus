@@ -42,7 +42,6 @@ import java.util.function.Supplier;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
@@ -128,8 +127,7 @@ public final class ExtensionLoader {
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType,
-            Consumer<ConfigBuilder> configCustomizer)
+            ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType)
             throws IOException, ClassNotFoundException {
         // populate with all known types
         List<Class<?>> roots = new ArrayList<>();
@@ -167,9 +165,6 @@ public final class ExtensionLoader {
             builder.withSources(ds1, ds2, platformConfigSource, pcs);
         }
 
-        if (configCustomizer != null) {
-            configCustomizer.accept(builder);
-        }
         final SmallRyeConfig src = builder.build();
 
         // install globally

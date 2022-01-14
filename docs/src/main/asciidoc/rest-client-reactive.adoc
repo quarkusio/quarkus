@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
 REST Client Reactive is a non-blocking counterpart of the RESTEasy REST Client.
 
-If your application uses a client and exposes REST endpoints, please use link:resteasy-reactive[RESTEasy Reactive]
+If your application uses a client and exposes REST endpoints, please use xref:resteasy-reactive.adoc[RESTEasy Reactive]
 for the server part.
 
 == Prerequisites
@@ -450,7 +450,7 @@ public interface ExtensionsService {
     // ...
 
     @GET
-    Uni<Set<Extension>> getByIdAsUni(@QueryParam("id") String id)
+    Uni<Set<Extension>> getByIdAsUni(@QueryParam("id") String id);
 }
 ----
 
@@ -470,7 +470,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 @Path("/extension")
-public class ExtensionsResource
+public class ExtensionsResource {
 
     @RestClient
     ExtensionsService extensionsService;
@@ -555,6 +555,12 @@ public interface ExtensionsService {
 <3> ... and a name of a method that should compute the value of the header. It can either be a static method or a default method in this interface
 <4> ... as well as a value from your application's configuration
 <5> ... or as a normal JAX-RS `@HeaderParam` annotated argument
+
+[NOTE]
+====
+When using Kotlin, if default methods are going to be leveraged, then the Kotlin compiler needs to be configured to use Java's default interface capabilities.
+See link:https://kotlinlang.org/docs/java-to-kotlin-interop.html#default-methods-in-interfaces[this] for more details.
+====
 
 A `ClientHeadersFactory` can look as follows:
 
@@ -648,7 +654,11 @@ org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Author
 
 == Multipart Form support
 
-Rest Client Reactive allows sending data as multipart forms. This way you can for example
+REST Client Reactive support multipart messages.
+
+=== Sending Multipart messages
+
+REST Client Reactive allows sending data as multipart forms. This way you can for example
 send files efficiently.
 
 To send data as a multipart form, you need to create a class that would encapsulate all the fields
@@ -656,7 +666,7 @@ to be sent, e.g.
 
 [source, java]
 ----
-class FormDto {
+public class FormDto {
     @FormParam("file")
     @PartType(MediaType.APPLICATION_OCTET_STREAM)
     public File file;
@@ -691,6 +701,75 @@ by specifying `quarkus.rest-client.multipart-post-encoder-mode` in your
 clients created with the `@RegisterRestClient` annotation.
 All the available modes are described in the link:https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html[Netty documentation]
 
+=== Receiving Multipart Messages
+REST Client Reactive also supports receiving multipart messages.
+As with sending, to parse a multipart response, you need to create a class that describes the response data, e.g.
+
+[source,java]
+----
+public class FormDto {
+    @RestForm // <1>
+    @PartType(MediaType.APPLICATION_OCTET_STREAM)
+    public File file;
+
+    @FormParam("otherField") // <2>
+    @PartType(MediaType.TEXT_PLAIN)
+    public String textProperty;
+}
+----
+<1> uses the shorthand `@RestForm` annotation to make a field as a part of a multipart form
+<2> the standard `@FormParam` can also be used. It allows to override the name of the multipart part.
+
+Then, create an interface method that corresponds to the call and make it return the `FormDto`:
+[source,java]
+----
+    @GET
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    @Path("/get-file")
+    FormDto data sendMultipart();
+----
+
+At the moment, multipart response support is subject to the following limitations:
+
+- files sent in multipart responses can only be parsed to `File`, `Path` and `FileDownload`
+- each field of the response type has to be annotated with `@PartType` - fields without this annotation are ignored
+
+REST Client Reactive needs to know the classes used as multipart return types upfront. If you have an interface method that produces `multipart/form-data`, the return type will be discovered automatically. However, if you intend to use the `ClientBuilder` API to parse a response as multipart, you need to annotate your DTO class with `@MultipartForm`.
+
+WARNING: The files you download are not automatically removed and can take up a lot of disk space. Consider removing the files when you are done working with them.
+
+== Proxy support
+REST Client Reactive supports sending requests through a proxy.
+It honors the JVM settings for it but also allows to specify both:
+
+* global client proxy settings, with `quarkus.rest-client.proxy-address`, `quarkus.rest-client.proxy-user`, `quarkus.rest-client.proxy-password`, `quarkus.rest-client.non-proxy-hosts`
+
+* per-client proxy settings, with `quarkus.rest-client.<my-client>.proxy-address`, etc. These are applied only to clients injected with CDI, that is the ones created with `@RegisterRestClient`
+
+If `proxy-address` is set on the client level, the client uses its specific proxy settings. No proxy settings are propagated from the global configuration or JVM properties.
+
+If `proxy-address` is not set for the client but is set on the global level, the client uses the global settings.
+Otherwise, the client uses the JVM settings.
+
+
+An example configuration for setting proxy:
+
+[source,properties]
+----
+# global proxy configuration is used for all clients
+quarkus.rest-client.proxy-address=localhost:8182
+quarkus.rest-client.proxy-user=<proxy user name>
+quarkus.rest-client.proxy-password=<proxy password>
+quarkus.rest-client.non-proxy-hosts=example.com
+
+# per-client configuration overrides the global settings for a specific client
+quarkus.rest-client.my-client.proxy-address=localhost:8183
+quarkus.rest-client.my-client.proxy-user=<proxy user name>
+quarkus.rest-client.my-client.proxy-password=<proxy password>
+quarkus.rest-client.my-client.url=...
+----
+
+NOTE: MicroProfile REST Client specification does not allow setting proxy credentials. In order to specify proxy user and proxy password programmatically, you need to cast your `RestClientBuilder` to `RestClientBuilderImpl`.
 
 == Package and run the application
 
@@ -702,10 +781,33 @@ You should see a JSON object containing some basic information about this extens
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
+== Logging traffic
+REST Client Reactive can log the requests it sends and the responses it receives.
+To enable logging, add the `quarkus.rest-client.logging.scope` property to your `application.properties` and set it to:
+
+* `request-response` to log the request and response contents, or
+* `all` to also enable low level logging of the underlying libraries.
+
+As HTTP messages can have large bodies, we limit the amount of body characters logged. The default limit is `100`, you can change it by specifying `quarkus.rest-client.logging.body-limit`.
+
+NOTE: REST Client Reactive is logging the traffic with level DEBUG and does not alter logger properties. You may need to adjust your logger configuration to use this feature.
+
+An example logging configuration:
+
+[source,properties]
+----
+quarkus.rest-client.logging.scope=request-response
+quarkus.rest-client.logging.body-limit=50
+
+quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
+----
+
+
+
 == Using a Mock HTTP Server for tests
 
 For tests, you can easily mock the HTTP server with Wiremock.
-The link:rest-client#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
+The xref:rest-client.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
 describes how to set it up in detail.
 
 == Known limitations

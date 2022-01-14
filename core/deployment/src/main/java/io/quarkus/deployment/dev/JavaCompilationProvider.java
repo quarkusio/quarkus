@@ -23,8 +23,8 @@ import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.gizmo.Gizmo;
+import io.quarkus.paths.PathCollection;
 
 public class JavaCompilationProvider implements CompilationProvider {
 
@@ -95,7 +95,7 @@ public class JavaCompilationProvider implements CompilationProvider {
     }
 
     @Override
-    public Path getSourcePath(Path classFilePath, PathsCollection sourcePaths, String classesPath) {
+    public Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath) {
         Path sourceFilePath = null;
         final RuntimeUpdatesClassVisitor visitor = new RuntimeUpdatesClassVisitor(sourcePaths, classesPath);
         try (final InputStream inputStream = Files.newInputStream(classFilePath)) {
@@ -140,11 +140,11 @@ public class JavaCompilationProvider implements CompilationProvider {
     }
 
     static class RuntimeUpdatesClassVisitor extends ClassVisitor {
-        private final PathsCollection sourcePaths;
+        private final PathCollection sourcePaths;
         private final String classesPath;
         private String sourceFile;
 
-        public RuntimeUpdatesClassVisitor(PathsCollection sourcePaths, String classesPath) {
+        public RuntimeUpdatesClassVisitor(PathCollection sourcePaths, String classesPath) {
             super(Gizmo.ASM_API_VERSION);
             this.sourcePaths = sourcePaths;
             this.classesPath = classesPath;
@@ -162,7 +162,7 @@ public class JavaCompilationProvider implements CompilationProvider {
                 sourceRelativeDir.append(classesDir.relativize(classFilePath.getParent()));
                 sourceRelativeDir.append(File.separator);
                 sourceRelativeDir.append(sourceFile);
-                final Path sourceFilePath = sourcesDir.resolve(Paths.get(sourceRelativeDir.toString()));
+                final Path sourceFilePath = sourcesDir.resolve(Path.of(sourceRelativeDir.toString()));
                 if (Files.exists(sourceFilePath)) {
                     return sourceFilePath;
                 }

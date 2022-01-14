@@ -173,7 +173,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>postgres:13.1</name>
+                                    <name>postgres:14.1</name>
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>

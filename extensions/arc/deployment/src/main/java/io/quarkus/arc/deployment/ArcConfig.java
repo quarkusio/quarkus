@@ -70,6 +70,16 @@ public class ArcConfig {
     public boolean transformUnproxyableClasses;
 
     /**
+     * If set to true, the build fails if a private method that is neither an observer nor a producer, is annotated with an
+     * interceptor
+     * binding.
+     * An example of this is the use of {@code Transactional} on a private method of a bean.
+     * If set to false, Quarkus simply logs a warning that the annotation will be ignored.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean failOnInterceptedPrivateMethod;
+
+    /**
      * The default naming strategy for {@link ConfigProperties.NamingStrategy}. The allowed values are determined
      * by that enum
      */

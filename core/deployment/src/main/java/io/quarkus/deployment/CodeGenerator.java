@@ -10,9 +10,9 @@ import java.util.ServiceLoader;
 import java.util.function.Consumer;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.PropertiesConfigSource;
@@ -25,7 +25,7 @@ public class CodeGenerator {
 
     // used by Gradle and Maven
     public static void initAndRun(ClassLoader classLoader,
-            PathsCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
+            PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
             String launchMode) throws CodeGenException {
         List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir, sourceRegistrar);
@@ -36,7 +36,7 @@ public class CodeGenerator {
     }
 
     public static List<CodeGenData> init(ClassLoader deploymentClassLoader,
-            PathsCollection sourceParentDirs,
+            PathCollection sourceParentDirs,
             Path generatedSourcesDir,
             Path buildDir,
             Consumer<Path> sourceRegistrar) throws CodeGenException {

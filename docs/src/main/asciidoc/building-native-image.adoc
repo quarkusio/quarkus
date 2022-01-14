@@ -13,7 +13,7 @@ This guide covers:
 * Packaging the native executable in a container
 * Debugging native executable
 
-This guide takes as input the application developed in the link:getting-started[Getting Started Guide].
+This guide takes as input the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
 == GraalVM
 
@@ -39,48 +39,26 @@ This means that it does not profit from a few small enhancements that Oracle hav
 This enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
 This is particularly important when it comes to conformance and security.
 
-* Mandrel is currently only recommended for building native executables that target Linux containerized environments.
-This means that Mandrel users should use containers to build their native executables.
-If you are building native executables for macOS or Windows target platforms,
+* Mandrel is recommended for building native executables that target Linux containerized environments.
+This means that Mandrel users are encouraged to use containers to build their native executables.
+If you are building native executables for macOS,
 you should consider using Oracle GraalVM instead,
-because Mandrel does not currently target these platforms.
-Building native executables directly on bare metal Linux is possible,
+because Mandrel does not currently target this platform.
+Building native executables directly on bare metal Linux or Windows is possible,
 with details available in the https://github.com/graalvm/mandrel/blob/default/README.md[Mandrel README]
 and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
-The prerequisites vary slightly depending on whether you are using Oracle GraalVM CE/EE or Mandrel.
+== Prerequisites
 
-[IMPORTANT]
-.Install the Java 11 version of GraalVM
-====
-While Oracle GraalVM is available for both Java 8 and Java 11 (Mandrel only supports Java 11), Quarkus only works with the Java 11 version.
-If you use the Oracle distribution, make sure to install the Java 11 version.
-====
-
-== Prerequisites for Mandrel
-
-To complete this guide using Mandrel, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11 installed with `JAVA_HOME` configured appropriately
-* A working container runtime (Docker, podman)
-* The code of the application developed in the link:getting-started[Getting Started Guide].
-
-Skip to <<#container-runtime,this section>> to continue with the guide for Mandrel,
-and follow the Mandrel-specific instructions in that section.
-
-== Prerequisites for Oracle GraalVM CE/EE
-
-To complete this guide, you need:
+To complete this guide using Oracle GraalVM CE/EE, you need:
 
 * less than 15 minutes
 * an IDE
 * JDK 11 installed with `JAVA_HOME` configured appropriately
 * A xref:configuring-c-development[working C development environment]
-* GraalVM version {graalvm-version} (be sure to install the Java 11 support) installed and xref:configuring-graalvm[configured appropriately]
+* Mandrel or Oracle GraalVM CE/EE version {graalvm-version} installed and xref:configuring-graalvm[configured appropriately]
 * A working container runtime (Docker, podman)
-* The code of the application developed in the link:getting-started[Getting Started Guide].
+* The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
 .Supporting native compilation in C
 [[configuring-c-development]]
@@ -116,10 +94,9 @@ If you cannot install GraalVM, you can use a multi-stage Docker build to run Mav
 
 Version {graalvm-version} is required. Using the community edition is enough.
 
-1. Install GraalVM (pick the java 11 version) if you haven't already. You have a few options for this:
-** Use platform-specific install tools like https://github.com/graalvm/homebrew-tap[homebrew], https://sdkman.io/jdks#Oracle[sdkman], or https://github.com/ScoopInstaller/Java[scoop].
-** Download the appropriate Community Edition archive from <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
-Make sure to download and install at Java 11 version.
+1. Install GraalVM if you haven't already. You have a few options for this:
+** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
+** Use platform-specific install tools like https://sdkman.io/jdks#Oracle[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
 [source,bash]
@@ -127,7 +104,7 @@ Make sure to download and install at Java 11 version.
 export GRAALVM_HOME=$HOME/Development/graalvm/
 ----
 +
-On macOS, point the variable to the `Home` sub-directory:
+On macOS (not supported by Mandrel), point the variable to the `Home` sub-directory:
 +
 [source,bash]
 ----
@@ -140,7 +117,7 @@ On Windows, you will have to go through the Control Panel to set your environmen
 ====
 Installing via scoop will do this for you.
 ====
-3. Install the `native-image` tool using `gu install`:
+3. (Only for Oracle GraalVM CE/EE) Install the `native-image` tool using `gu install`:
 +
 [source,bash]
 ----
@@ -332,7 +309,7 @@ to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.wait-time=300`.
 [WARNING]
 ====
 In the future, `@NativeImageTest` will be deprecated in favor of `@QuarkusIntegrationTest` which provides a superset of the testing
-capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationTest` can be found in the link:getting-started-testing#quarkus-integration-test[Testing Guide].
+capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationTest` can be found in the xref:getting-started-testing.adoc#quarkus-integration-test[Testing Guide].
 ====
 
 By default, native tests runs using the `prod` profile.
@@ -439,9 +416,9 @@ If one of those extensions is present, then creating a container image for the n
 * `quarkus.native.container-build=true` allows for creating a Linux executable without GraalVM being installed (and is only necessary if you don't have GraalVM installed locally or your local operating system is not Linux)
 * `quarkus.container-image.build=true` instructs Quarkus to create a container-image using the final application artifact (which is the native executable in this case)
 
-See the link:container-image[Container Image guide] for more details.
+See the xref:container-image.adoc[Container Image guide] for more details.
 
-=== Manually
+=== Manually using the micro base image
 
 You can run the application in a container using the JAR produced by the Quarkus Maven Plugin.
 However, in this section we focus on creating a container image using the produced native executable.
@@ -454,7 +431,7 @@ we will instruct the Maven build to produce an executable by leveraging a contai
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a container.
-The project generation has provided a `Dockerfile.native` in the `src/main/docker` directory with the following content:
+The project generation has provided a `Dockerfile.native-micro` in the `src/main/docker` directory with the following content:
 
 [source,dockerfile]
 ----
@@ -496,6 +473,23 @@ And finally, run it with:
 ----
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
+
+=== Manually using the minimal base image
+
+The project generation has also provided a `Dockerfile.native` in the `src/main/docker` directory with the following content:
+
+[source,dockerfile]
+----
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5
+WORKDIR /work/
+COPY target/*-runner /work/application
+RUN chmod 775 /work
+EXPOSE 8080
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+----
+
+The UBI minimal image is bigger than the micro one mentioned above.
+It contains more utilities such as the `microdnf` package manager.
 
 [#multistage-docker]
 === Using a multi-stage Docker build
@@ -545,7 +539,7 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 NOTE: This multi-stage Docker build copies the Maven wrapper from the host machine.
 The Maven wrapper (or the Gradle wrapper) is a convenient way to provide a specific version of Maven/Gradle.
 It avoids having to create a base image with Maven and Gradle.
-To provision the Maven Wrapper in your project, use: `mvn -N io.takari:maven:0.7.7:wrapper`.
+To provision the Maven Wrapper in your project, use: `mvn -N org.apache.maven.plugins:maven-wrapper-plugin:3.1.0:wrapper`.
 
 Save this file in `src/main/docker/Dockerfile.multistage` as it is not included in the getting started quickstart.
 
@@ -596,13 +590,13 @@ docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ====
 If you need SSL support in your native executable, you can easily include the necessary libraries in your Docker image.
 
-Please see link:native-and-ssl#working-with-containers[our Using SSL With Native Executables guide] for more information.
+Please see xref:native-and-ssl.adoc#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
 
 NOTE: To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel:$TAG AS build`.
 `$TAG` can be found on the https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[Quarkus Mandrel Images Tags page].
 
-=== Using a distroless base image
+=== Using a Distroless base image
 
 IMPORTANT: Distroless image support is experimental.
 
@@ -623,11 +617,11 @@ USER nonroot
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
-TIP: Projects generated with https://code.quarkus.io already have this Dockerfile in the `src/main/docker` directory.
-
 Quarkus provides the `quay.io/quarkus/quarkus-distroless-image:1.0` image.
 It contains the required packages to run a native executable and is only **9Mb**.
 Just add your application on top of this image, and you will get a tiny container image.
+
+Distroless images should not be used in production without rigorous testing.
 
 === Native executable compression
 
@@ -792,4 +786,4 @@ This guide covered the creation of a native (binary) executable for your applica
 It provides an application exhibiting a swift startup time and consuming less memory.
 However, there is much more.
 
-We recommend continuing the journey with the link:deploying-to-kubernetes[deployment to Kubernetes and OpenShift].
+We recommend continuing the journey with the xref:deploying-to-kubernetes.adoc[deployment to Kubernetes and OpenShift].

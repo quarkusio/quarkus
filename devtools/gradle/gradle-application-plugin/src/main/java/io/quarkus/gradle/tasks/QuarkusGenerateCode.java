@@ -28,8 +28,8 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.CodeGenerator;
+import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusGenerateCode extends QuarkusTask {
@@ -131,7 +131,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
                 }
 
                 initAndRun.get().invoke(null, deploymentClassLoader,
-                        PathsCollection.from(sourcesDirectories),
+                        PathList.from(sourcesDirectories),
                         paths.get(0),
                         buildDir,
                         sourceRegistrar,

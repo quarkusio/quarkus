@@ -1,15 +1,15 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 
 import java.io.Closeable;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.logging.Handler;
 
+import org.jboss.logmanager.LogContext;
+import org.jboss.logmanager.handlers.OutputStreamHandler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.bootstrap.app.StartupAction;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
@@ -35,8 +37,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     public static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
             .create("io.quarkus.test.main.jvm");
-
-    private static Map<String, String> devServicesProps;
 
     PrepareResult prepareResult;
     private static boolean hasPerTestResources;
@@ -93,7 +93,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     private LaunchResult doLaunch(ExtensionContext context, Class<? extends QuarkusTestProfile> selectedProfile,
             String[] arguments) throws Exception {
         ensurePrepared(context, selectedProfile);
-        QuarkusConsole.installRedirects();
         LogCapturingOutputFilter filter = new LogCapturingOutputFilter(prepareResult.curatedApplication, false, false,
                 () -> true);
         QuarkusConsole.addOutputFilter(filter);
@@ -131,6 +130,54 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         result = null;
     }
 
+    private static Handler ORIGINAL_QUARKUS_CONSOLE_HANDLER = null;
+    private static Handler REDIRECT_QUARKUS_CONSOLE_HANDLER = null;
+
+    private static void installLoggerRedirect() throws Exception {
+        var rootLogger = LogContext.getLogContext().getLogger("");
+
+        ORIGINAL_QUARKUS_CONSOLE_HANDLER = null;
+        REDIRECT_QUARKUS_CONSOLE_HANDLER = null;
+
+        for (var topLevelHandler : rootLogger.getHandlers()) {
+            if (topLevelHandler instanceof QuarkusDelayedHandler) {
+                ORIGINAL_QUARKUS_CONSOLE_HANDLER = topLevelHandler;
+                for (var h : ((QuarkusDelayedHandler) topLevelHandler).getHandlers()) {
+                    if (h instanceof org.jboss.logmanager.handlers.ConsoleHandler) {
+                        REDIRECT_QUARKUS_CONSOLE_HANDLER = new OutputStreamHandler(QuarkusConsole.REDIRECT_OUT,
+                                h.getFormatter());
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+
+        if (REDIRECT_QUARKUS_CONSOLE_HANDLER != null) {
+            rootLogger.removeHandler(ORIGINAL_QUARKUS_CONSOLE_HANDLER);
+            rootLogger.addHandler(REDIRECT_QUARKUS_CONSOLE_HANDLER);
+        }
+    }
+
+    private static void uninstallLoggerRedirect() throws Exception {
+        var rootLogger = LogContext.getLogContext().getLogger("");
+        if (REDIRECT_QUARKUS_CONSOLE_HANDLER != null) {
+            rootLogger.addHandler(ORIGINAL_QUARKUS_CONSOLE_HANDLER);
+            rootLogger.removeHandler(REDIRECT_QUARKUS_CONSOLE_HANDLER);
+        }
+    }
+
+    private void flushAllLoggers() {
+        Enumeration<String> loggerNames = org.jboss.logmanager.LogContext.getLogContext().getLoggerNames();
+        while (loggerNames != null && loggerNames.hasMoreElements()) {
+            String loggerName = loggerNames.nextElement();
+            var logger = org.jboss.logmanager.LogContext.getLogContext().getLogger(loggerName);
+            for (Handler h : logger.getHandlers()) {
+                h.flush();
+            }
+        }
+    }
+
     private int doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile, String[] arguments)
             throws Exception {
         TracingHandler.quarkusStarting();
@@ -138,6 +185,9 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         try {
             StartupAction startupAction = prepareResult.augmentAction.createInitialRuntimeApplication();
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
+            QuarkusConsole.installRedirects();
+            flushAllLoggers();
+            installLoggerRedirect();
 
             QuarkusTestProfile profileInstance = prepareResult.profileInstance;
 
@@ -149,15 +199,21 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
                             getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
                             profileInstance != null && profileInstance.disableGlobalTestResources(),
                             startupAction.getDevServicesProperties(), Optional.empty());
-            testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
+            testResourceManager.getClass().getMethod("init", String.class).invoke(testResourceManager,
+                    profile != null ? profile.getName() : null);
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
                     .invoke(testResourceManager);
             startupAction.overrideConfig(properties);
             hasPerTestResources = (boolean) testResourceManager.getClass().getMethod("hasPerTestResources")
                     .invoke(testResourceManager);
 
-            return startupAction.runMainClassBlocking(arguments);
+            var result = startupAction.runMainClassBlocking(arguments);
+            flushAllLoggers();
+            return result;
         } catch (Throwable e) {
+            if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+                activateLogging();
+            }
 
             try {
                 if (testResourceManager != null) {
@@ -168,6 +224,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             }
             throw e;
         } finally {
+            uninstallLoggerRedirect();
+            QuarkusConsole.uninstallRedirects();
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
@@ -226,8 +284,6 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
-        QuarkusConsole.installRedirects();
         currentTestClassStack.push(context.getRequiredTestClass());
-
     }
 }

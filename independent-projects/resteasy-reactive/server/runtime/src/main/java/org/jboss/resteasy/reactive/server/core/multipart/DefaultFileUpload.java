@@ -22,7 +22,7 @@ public class DefaultFileUpload implements FileUpload {
     }
 
     @Override
-    public Path uploadedFile() {
+    public Path filePath() {
         return fileUpload.getFileItem().getFile();
     }
 

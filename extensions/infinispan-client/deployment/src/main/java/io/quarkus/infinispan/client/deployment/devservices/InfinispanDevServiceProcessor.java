@@ -159,7 +159,8 @@ public class InfinispanDevServiceProcessor {
 
         Supplier<StartResult> defaultInfinispanServerSupplier = () -> {
             QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(devServicesConfig.port,
-                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null, useSharedNetwork);
+                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null, useSharedNetwork,
+                    devServicesConfig.artifacts);
             timeout.ifPresent(infinispanContainer::withStartupTimeout);
             infinispanContainer.start();
             String serverList = infinispanContainer.getHost() + ":" + infinispanContainer.getPort();
@@ -199,7 +200,8 @@ public class InfinispanDevServiceProcessor {
 
         private String hostName = null;
 
-        public QuarkusInfinispanContainer(OptionalInt fixedExposedPort, String serviceName, boolean useSharedNetwork) {
+        public QuarkusInfinispanContainer(OptionalInt fixedExposedPort, String serviceName, boolean useSharedNetwork,
+                Optional<List<String>> artifacts) {
             super();
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -208,6 +210,7 @@ public class InfinispanDevServiceProcessor {
             }
             withUser(DEFAULT_USERNAME);
             withPassword(InfinispanDevServiceProcessor.DEFAULT_PASSWORD);
+            artifacts.ifPresent(a -> withArtifacts(a.toArray(new String[0])));
         }
 
         @Override

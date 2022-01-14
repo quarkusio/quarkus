@@ -10,7 +10,9 @@ import static java.util.stream.Collectors.toSet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,7 +72,6 @@ import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
-import io.smallrye.config.SmallRyeConfig;
 
 public class ConfigGenerationBuildStep {
 
@@ -236,7 +237,7 @@ public class ConfigGenerationBuildStep {
     public void watchConfigFiles(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
         List<String> configWatchedFiles = new ArrayList<>();
 
-        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        Config config = ConfigProvider.getConfig();
         String userDir = System.getProperty("user.dir");
 
         // Main files
@@ -253,12 +254,13 @@ public class ConfigGenerationBuildStep {
         configWatchedFiles.add(
                 Paths.get(userDir, "config", String.format("application-%s.properties", profile)).toAbsolutePath().toString());
 
-        Optional<List<String>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, String.class);
+        Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
         optionalLocations.ifPresent(locations -> {
-            for (String location : locations) {
-                if (!Files.isDirectory(Paths.get(location))) {
-                    configWatchedFiles.add(location);
-                    configWatchedFiles.add(appendProfileToFilename(location, profile));
+            for (URI location : locations) {
+                Path path = location.getScheme() != null ? Paths.get(location) : Paths.get(location.getPath());
+                if (!Files.isDirectory(path)) {
+                    configWatchedFiles.add(path.toString());
+                    configWatchedFiles.add(appendProfileToFilename(path.toString(), profile));
                 }
             }
         });

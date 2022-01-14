@@ -11,11 +11,11 @@ include::./attributes.adoc[]
 :sectnumlevels: 4
 :toc:
 
-Quarkus DI solution (also called ArC) is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
-TIP: If you're new to CDI then we recommend you to read the link:cdi[Introduction to CDI] first. 
+TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first. 
 
 NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
@@ -24,7 +24,7 @@ NOTE: Most of the existing CDI code should work just fine but there are some sma
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
 However, Quarkus is using a *simplified bean discovery*.
-There is only single bean archive with the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
+There is only single bean archive with the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
 
 The bean archive is synthesized from:
 
@@ -34,7 +34,7 @@ The bean archive is synthesized from:
 * dependencies referenced by `quarkus.index-dependency` in `application.properties`,
 * and Quarkus integration code.
 
-Bean classes that don't have a http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
+Bean classes that don't have a https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
 This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
 In fact, the declaring bean classes are considered annotated with `@Dependent`. 
@@ -300,7 +300,7 @@ class MyBeanStarter {
 <1> The `AmazingService` is created during injection.
 <2> The `CoolService` is a normal scoped bean so we have to invoke a method upon the injected proxy to force the instantiation.
 
-* Annotate the bean with `@io.quarkus.runtime.Startup` as described in link:lifecycle#startup_annotation[Startup annotation]:
+* Annotate the bean with `@io.quarkus.runtime.Startup` as described in xref:lifecycle.adoc#startup_annotation[Startup annotation]:
 +
 [source,java]
 ----
@@ -318,7 +318,7 @@ public class EagerAppBean {
 1. For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
 2. The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
 
-NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the link:lifecycle[Application Initialization and Termination] guide.
+NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the xref:lifecycle.adoc[Application Initialization and Termination] guide.
 
 === Request Context Lifecycle
 
@@ -957,13 +957,56 @@ public class Processor {
 }
 ----
 
+=== Ignoring Class-Level Interceptor Bindings for Methods and Constructors
+
+If a managed bean declares interceptor binding annotations on the class level, the corresponding `@AroundInvoke` interceptors will apply to all business methods.
+Similarly, the corresponding `@AroundConstruct` interceptors will apply to the bean constructor.
+
+For example, suppose we have a logging interceptor with the `@Logged` binding annotation and a tracing interceptor with the `@Traced` binding annotation:
+
+[source, java]
+----
+@ApplicationScoped
+@Logged
+public class MyService {
+    public void doSomething() {
+        ...
+    }
+
+    @Traced
+    public void doSomethingElse() {
+        ...
+    }
+}
+----
+
+In this example, both `doSomething` and `doSomethingElse` will be intercepted by the hypothetical logging interceptor.
+Additionally, the `doSomethingElse` method will be intercepted by the hypothetical tracing interceptor.
+
+Now, if that `@Traced` interceptor also performed all the necessary logging, we'd like to skip the `@Logged` interceptor for this method, but keep it for all other methods.
+To achieve that, you can annotate the method with `@NoClassInterceptors`:
+
+[source, java]
+----
+@Traced
+@NoClassInterceptors
+public void doSomethingElse() {
+    ...
+}
+----
+
+The `@NoClassInterceptors` annotation may be put on methods and constructors and means that all class-level interceptors are ignored for these methods and constructors.
+In other words, if a method/constructor is annotated `@NoClassInterceptors`, then the only interceptors that will apply to this method/constructor are interceptors declared directly on the method/constructor.
+
+This annotation affects only business method interceptors (`@AroundInvoke`) and constructor lifecycle callback interceptors (`@AroundConstruct`).
+
 [[build_time_apis]]
 == Build Time Extensions
 
 Quarkus incorporates build-time optimizations in order to provide instant startup and low memory footprint.
 The downside of this approach is that CDI Portable Extensions cannot be supported.
-Nevertheless, most of the functionality can be achieved using Quarkus link:writing-extensions[extensions].
-See the link:cdi-integration[integration guide] for more information.
+Nevertheless, most of the functionality can be achieved using Quarkus xref:writing-extensions.adoc[extensions].
+See the xref:cdi-integration.adoc[integration guide] for more information.
 
 == Development Mode
 

@@ -42,6 +42,15 @@ public class DevServicesBuildTimeConfig {
     public Optional<String> imageName;
 
     /**
+     * Generic properties that are passed for additional container configuration.
+     * <p>
+     * Properties defined here are database specific and are interpreted specifically in each database dev service
+     * implementation.
+     */
+    @ConfigItem
+    public Map<String, String> containerProperties;
+
+    /**
      * Generic properties that are added to the database connection URL.
      */
     @ConfigItem

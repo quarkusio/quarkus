@@ -5,6 +5,7 @@ import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnota
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
@@ -117,9 +118,11 @@ public class ResteasyBuiltinsProcessor {
     void addStaticResourcesExceptionMapper(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ExceptionMapperRecorder recorder) {
         recorder.setStaticResourceRoots(applicationArchivesBuildItem.getAllApplicationArchives().stream()
-                .map(i -> i.getChildPath(META_INF_RESOURCES))
-                .filter(p -> p != null)
-                .map(p -> p.toAbsolutePath().toString())
+                .map(i -> i.apply(t -> {
+                    var p = t.getPath(META_INF_RESOURCES);
+                    return p == null ? null : p.toAbsolutePath().toString();
+                }))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet()));
     }
 

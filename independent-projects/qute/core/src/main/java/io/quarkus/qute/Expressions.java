@@ -100,7 +100,7 @@ public final class Expressions {
                 }
                 // Non-separator char
                 if (!literal) {
-                    if (splitConfig.isInfixNotationSupported() && brackets == 0 && c == ' ') {
+                    if (brackets == 0 && c == ' ' && splitConfig.isInfixNotationSupported()) {
                         // Not inside a virtual method
                         if (infix == 1) {
                             // The second space after the infix method

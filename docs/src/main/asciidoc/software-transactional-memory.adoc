@@ -238,4 +238,4 @@ aa.begin(); <2>
 Sharing a transaction between multiple services is possible but is currently
 an advanced use case only and the Narayana documentation should be consulted
 if this behaviour is required. In particular, STM does not yet support the features
-described in the link:context-propagation[Context Propagation guide].
+described in the xref:context-propagation.adoc[Context Propagation guide].

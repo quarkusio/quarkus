@@ -27,7 +27,7 @@ public class EscaperTest {
     public void testRawStringRevolver() {
 
         Escaper escaper = Escaper.builder().add('a', "A").build();
-        Engine engine = Engine.builder().addValueResolver(ValueResolvers.mapResolver())
+        Engine engine = Engine.builder().addValueResolver(ValueResolvers.mapperResolver())
                 .addValueResolver(ValueResolvers.rawResolver()).addResultMapper(new ResultMapper() {
 
                     @Override

@@ -27,7 +27,6 @@ import org.junit.platform.launcher.TestIdentifier;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
@@ -35,6 +34,7 @@ import io.quarkus.deployment.dev.QuarkusCompiler;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.testing.TestWatchedFiles;
+import io.quarkus.paths.PathList;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 
 public class TestSupport implements TestController {
@@ -162,12 +162,14 @@ public class TestSupport implements TestController {
 
                 try {
                     Set<Path> paths = new LinkedHashSet<>();
-                    paths.add(Paths.get(module.getTest().get().getClassesPath()));
-                    if (module.getTest().get().getResourcesOutputPath() != null) {
-                        paths.add(Paths.get(module.getTest().get().getResourcesOutputPath()));
-                    }
+                    module.getTest().ifPresent(test -> {
+                        paths.add(Paths.get(test.getClassesPath()));
+                        if (test.getResourcesOutputPath() != null) {
+                            paths.add(Paths.get(test.getResourcesOutputPath()));
+                        }
+                    });
                     if (mainModule) {
-                        paths.addAll(curatedApplication.getQuarkusBootstrap().getApplicationRoot().toList());
+                        curatedApplication.getQuarkusBootstrap().getApplicationRoot().forEach(paths::add);
                     } else {
                         paths.add(Paths.get(module.getMain().getClassesPath()));
                     }
@@ -187,7 +189,8 @@ public class TestSupport implements TestController {
                             .setAuxiliaryApplication(true)
                             .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
                             .setProjectRoot(Paths.get(module.getProjectDirectory()))
-                            .setApplicationRoot(PathsCollection.from(paths))
+                            .setApplicationRoot(PathList.from(paths))
+                            .clearLocalArtifacts() // we want to re-discover the local dependencies with test scope
                             .build()
                             .bootstrap();
                     if (mainModule) {

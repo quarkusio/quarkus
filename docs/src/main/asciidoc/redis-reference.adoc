@@ -1,0 +1,101 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Redis Reference Guide
+
+:extension-status: preview
+include::./attributes.adoc[]
+:numbered:
+:sectnums:
+
+[[custom_redis_commands]]
+== How to use custom Redis Commands
+
+As the list of commands which are supported out-of-box by both https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/RedisClient.java[`RedisClient`] and https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/reactive/ReactiveRedisClient.java[`ReactiveRedisClient`] depends on what is available in https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`], then there might be case when you need a command which is not (yet) available via https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`].
+
+In such case (if you don't want to wait for the new command to be supported in https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`]), you can implement it in either https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/RedisClient.java[`RedisClient`] or https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/reactive/ReactiveRedisClient.java[`ReactiveRedisClient`]. 
+In order to do so, you will need:
+
+- Generate a new `Command` based on the nodejs code available in https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`] repository:
+
+If you don't have a Redis service running locally, you can run Redis in a Docker container:
+[source,shell script]
+----
+docker run --name redis -p 7006:6379 -d redis
+----
+
+Next, while being in https://github.com/vert-x3/vertx-redis-client[`vertx-redis-client`] root folder execute:
+
+[source,shell script]
+----
+cd tools
+npm i
+npm start
+----
+
+The above sequence of commands should update the https://github.com/vert-x3/vertx-redis-client/blob/master/src/main/java/io/vertx/redis/client/Command.java[`Command.java`] file, so it includes all the possible commands supported by a particular Redis version.
+
+[source,java]
+----
+Command ZUNION = Command.create("zunion", -3, 0, 0, 0, false, true, true, false);
+----
+
+This definition is very important as we will have to use it in the service.
+Once we have this `Command` we can start to update the redis-client extension by:
+
+- Updating the https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/RedisClient.java[`RedisClient`] interface, i.e.:
+
+[source,java]
+----
+Response zunion(List<String> args);
+----
+
+- Updating the https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/runtime/RedisClientImpl.java[`RedisClientImpl`], i.e.:
+
+[source,java]
+----
+@Override
+public Response zunion(List<String> args) {
+    final io.vertx.mutiny.redis.client.Command ZUNION = Command.create("zunion", -3, 0, 0, 0, false, true, true, false);
+    final io.vertx.mutiny.redis.client.Request requestWithArgs = args.stream().reduce(
+            io.vertx.mutiny.redis.client.Request.cmd(ZUNION),
+            (request, s) -> request.arg(s),
+            (request, request2) -> request);
+
+    return await(mutinyRedis.send(requestWithArgs));
+}
+----
+
+- Updating the https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/reactive/ReactiveRedisClient.java[`ReactiveRedisClient`] interface, i.e.:
+
+[source,java]
+----
+Uni<Response> zunion(List<String> args);
+
+Response zunionAndAwait(List<String> args);
+----
+
+- Updating the https://github.com/quarkusio/quarkus/blob/main/extensions/redis-client/runtime/src/main/java/io/quarkus/redis/client/runtime/ReactiveRedisClientImpl.java[`ReactiveRedisClientImpl`], i.e.:
+
+[source,java]
+----
+@Override
+public Uni<Response> zunion(List<String> args) {
+    final Command ZUNION = Command.create("zunion", -3, 0, 0, 0, false, true, true, false);
+    final io.vertx.mutiny.redis.client.Request requestWithArgs = args.stream().reduce(
+            io.vertx.mutiny.redis.client.Request.cmd(ZUNION),
+            (request, s) -> request.arg(s),
+            (request, request2) -> request);
+
+    return mutinyRedis.send(requestWithArgs);
+}
+
+@Override
+public Response zunionAndAwait(List<String> args) {
+    return zunion(args).await().indefinitely();
+}
+----
+
+- Please note that it's using the `MutinyRedis` class which does asynchronous calls to Redis.

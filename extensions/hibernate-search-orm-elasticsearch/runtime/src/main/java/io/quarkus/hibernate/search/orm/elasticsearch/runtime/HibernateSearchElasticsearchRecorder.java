@@ -4,6 +4,7 @@ import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSea
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendIndexConfig;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -15,12 +16,14 @@ import javax.enterprise.inject.literal.NamedLiteral;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
+import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchBackendSettings;
 import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexSettings;
 import org.hibernate.search.engine.cfg.BackendSettings;
 import org.hibernate.search.engine.cfg.EngineSettings;
 import org.hibernate.search.mapper.orm.Search;
+import org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrationService;
 import org.hibernate.search.mapper.orm.bootstrap.spi.HibernateOrmIntegrationBooter;
 import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
@@ -45,7 +48,7 @@ public class HibernateSearchElasticsearchRecorder {
         return new HibernateSearchIntegrationStaticInitListener(buildTimeConfig);
     }
 
-    public HibernateOrmIntegrationStaticInitListener createDisabledListener() {
+    public HibernateOrmIntegrationStaticInitListener createDisabledStaticInitListener() {
         return new HibernateSearchIntegrationDisabledListener();
     }
 
@@ -56,10 +59,11 @@ public class HibernateSearchElasticsearchRecorder {
                 .isDefaultPersistenceUnit(persistenceUnitName)
                         ? runtimeConfig.defaultPersistenceUnit
                         : runtimeConfig.persistenceUnits.get(persistenceUnitName);
-        if (puConfig == null) {
-            return null;
-        }
         return new HibernateSearchIntegrationRuntimeInitListener(puConfig, integrationRuntimeInitListeners);
+    }
+
+    public HibernateOrmIntegrationRuntimeInitListener createDisabledRuntimeInitListener() {
+        return new HibernateSearchIntegrationRuntimeInitListener(null, Collections.emptyList());
     }
 
     public Supplier<SearchMapping> searchMappingSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
@@ -190,6 +194,9 @@ public class HibernateSearchElasticsearchRecorder {
 
         @Override
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
+            if (runtimeConfig == null) {
+                return;
+            }
             if (!runtimeConfig.enabled) {
                 addConfig(propertyCollector, HibernateOrmMapperSettings.ENABLED, false);
                 // Do not process other properties: Hibernate Search is disabled anyway.
@@ -288,6 +295,16 @@ public class HibernateSearchElasticsearchRecorder {
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
                     indexConfig.indexing.maxBulkSize);
+        }
+
+        @Override
+        public List<StandardServiceInitiator<?>> contributeServiceInitiators() {
+            return List.of(
+                    // One of the purposes of this service is to provide configuration to Hibernate Search,
+                    // so it absolutely must be updated with the runtime configuration.
+                    // The service must be initiated even if Hibernate Search is disabled,
+                    // because it's also responsible for determining that Hibernate Search is disabled.
+                    new HibernateSearchPreIntegrationService.Initiator());
         }
     }
 }

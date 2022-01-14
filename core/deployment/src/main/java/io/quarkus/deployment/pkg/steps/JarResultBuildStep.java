@@ -56,6 +56,7 @@ import io.quarkus.bootstrap.model.MutableJarApplicationModel;
 import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
 import io.quarkus.bootstrap.runner.SerializedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -85,6 +86,8 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathVisit;
+import io.quarkus.paths.PathVisitor;
 
 /**
  * This build step builds both the thin jars and uber jars.
@@ -103,36 +106,9 @@ import io.quarkus.maven.dependency.ResolvedDependency;
  */
 public class JarResultBuildStep {
 
-    private static final Collection<String> IGNORED_ENTRIES = Arrays.asList(
-            "META-INF/INDEX.LIST",
-            "META-INF/MANIFEST.MF",
-            "module-info.class",
-            "META-INF/LICENSE",
-            "META-INF/LICENSE.txt",
-            "META-INF/LICENSE.md",
-            "META-INF/LGPL-3.0.txt",
-            "META-INF/ASL-2.0.txt",
-            "META-INF/NOTICE",
-            "META-INF/NOTICE.txt",
-            "META-INF/NOTICE.md",
-            "META-INF/README",
-            "META-INF/README.txt",
-            "META-INF/README.md",
-            "META-INF/DEPENDENCIES",
-            "META-INF/DEPENDENCIES.txt",
-            "META-INF/beans.xml",
-            "META-INF/quarkus-config-roots.list",
-            "META-INF/quarkus-javadoc.properties",
-            "META-INF/quarkus-extension.properties",
-            "META-INF/quarkus-extension.json",
-            "META-INF/quarkus-extension.yaml",
-            "META-INF/quarkus-deployment-dependency.graph",
-            "META-INF/jandex.idx",
-            "META-INF/panache-archive.marker",
-            "META-INF/build.metadata", // present in the Red Hat Build of Quarkus
-            "LICENSE");
+    private static final Predicate<String> UBER_JAR_IGNORED_ENTRIES_PREDICATE = new IsEntryIgnoredForUberJarPredicate();
 
-    private static final Predicate<String> CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
+    private static final Predicate<String> UBER_JAR_CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
         @Override
         public boolean test(String path) {
             return "META-INF/io.netty.versions.properties".equals(path) ||
@@ -334,7 +310,7 @@ public class JarResultBuildStep {
             Path runnerJar) throws Exception {
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
 
-            log.info("Building fat jar: " + runnerJar);
+            log.info("Building uber jar: " + runnerJar);
 
             final Map<String, String> seen = new HashMap<>();
             final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
@@ -343,11 +319,19 @@ public class JarResultBuildStep {
                     .map(UberJarMergedResourceBuildItem::getPath)
                     .collect(Collectors.toSet());
             final Set<ArtifactKey> removed = getRemovedKeys(classLoadingConfig);
-            Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
-            packageConfig.userConfiguredIgnoredEntries.ifPresent(finalIgnoredEntries::addAll);
+
+            Set<String> ignoredEntries = new HashSet<>();
+            packageConfig.userConfiguredIgnoredEntries.ifPresent(ignoredEntries::addAll);
             ignoredResources.stream()
                     .map(UberJarIgnoredResourceBuildItem::getPath)
-                    .forEach(finalIgnoredEntries::add);
+                    .forEach(ignoredEntries::add);
+            Predicate<String> allIgnoredEntriesPredicate = new Predicate<String>() {
+                @Override
+                public boolean test(String path) {
+                    return UBER_JAR_IGNORED_ENTRIES_PREDICATE.test(path)
+                            || ignoredEntries.contains(path);
+                }
+            };
 
             final Collection<ResolvedDependency> appDeps = curateOutcomeBuildItem.getApplicationModel()
                     .getRuntimeDependencies();
@@ -380,12 +364,12 @@ public class JarResultBuildStep {
                         try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
                             for (final Path root : artifactFs.getRootDirectories()) {
                                 walkFileDependencyForDependency(root, runnerZipFs, seen, duplicateCatcher, concatenatedEntries,
-                                        finalIgnoredEntries, appDep, existingEntries, mergeResourcePaths);
+                                        allIgnoredEntriesPredicate, appDep, existingEntries, mergeResourcePaths);
                             }
                         }
                     } else {
                         walkFileDependencyForDependency(resolvedDep, runnerZipFs, seen, duplicateCatcher,
-                                concatenatedEntries, finalIgnoredEntries, appDep, existingEntries,
+                                concatenatedEntries, allIgnoredEntriesPredicate, appDep, existingEntries,
                                 mergeResourcePaths);
                     }
                 }
@@ -394,16 +378,14 @@ public class JarResultBuildStep {
             for (Map.Entry<String, Set<Dependency>> entry : duplicateCatcher.entrySet()) {
                 if (entry.getValue().size() > 1) {
                     if (explained.add(entry.getValue())) {
-                        if (!"module-info.class".endsWith(entry.getKey())) {
-                            log.warn("Dependencies with duplicate files detected. The dependencies " + entry.getValue()
-                                    + " contain duplicate files, e.g. " + entry.getKey());
-                        }
+                        log.warn("Dependencies with duplicate files detected. The dependencies " + entry.getValue()
+                                + " contain duplicate files, e.g. " + entry.getKey());
                     }
                 }
             }
             copyCommonContent(runnerZipFs, concatenatedEntries, applicationArchivesBuildItem, transformedClasses,
                     generatedClasses,
-                    generatedResources, seen, finalIgnoredEntries);
+                    generatedResources, seen, allIgnoredEntriesPredicate);
             // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
             // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
             // directory where N is an integer greater than 8, but we don't do that level of checks here but that
@@ -458,7 +440,7 @@ public class JarResultBuildStep {
 
     private void walkFileDependencyForDependency(Path root, FileSystem runnerZipFs, Map<String, String> seen,
             Map<String, Set<Dependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
-            Set<String> finalIgnoredEntries, Dependency appDep, Set<String> existingEntries,
+            Predicate<String> ignoredEntriesPredicate, Dependency appDep, Set<String> existingEntries,
             Set<String> mergeResourcePaths) throws IOException {
         final Path metaInfDir = root.resolve("META-INF");
         Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
@@ -489,12 +471,12 @@ public class JarResultBuildStep {
                             return FileVisitResult.CONTINUE;
                         }
                         if (!existingEntries.contains(relativePath)) {
-                            if (CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
+                            if (UBER_JAR_CONCATENATED_ENTRIES_PREDICATE.test(relativePath)
                                     || mergeResourcePaths.contains(relativePath)) {
                                 concatenatedEntries.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
                                         .add(Files.readAllBytes(file));
                                 return FileVisitResult.CONTINUE;
-                            } else if (!finalIgnoredEntries.contains(relativePath)) {
+                            } else if (!ignoredEntriesPredicate.test(relativePath)) {
                                 duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
                                         .add(appDep);
                                 if (!seen.containsKey(relativePath)) {
@@ -673,12 +655,10 @@ public class JarResultBuildStep {
         jars.add(runnerJar);
 
         if (!rebuild) {
-            Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
-            packageConfig.userConfiguredIgnoredEntries.ifPresent(finalIgnoredEntries::addAll);
+            Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
+
             try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
-                for (Path root : applicationArchivesBuildItem.getRootArchive().getRootDirectories()) {
-                    copyFiles(root, runnerZipFs, null, finalIgnoredEntries);
-                }
+                copyFiles(applicationArchivesBuildItem.getRootArchive(), runnerZipFs, null, ignoredEntriesPredicate);
             }
         }
         final Set<ArtifactKey> parentFirstKeys = getParentFirstKeys(curateOutcomeBuildItem, classLoadingConfig);
@@ -1141,12 +1121,12 @@ public class JarResultBuildStep {
 
         final Collection<ResolvedDependency> appDeps = curateOutcomeBuildItem.getApplicationModel()
                 .getRuntimeDependencies();
-        final Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
-        packageConfig.userConfiguredIgnoredEntries.ifPresent(finalIgnoredEntries::addAll);
+
+        Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
 
         final Set<ArtifactKey> removed = getRemovedKeys(classLoadingConfig);
         copyLibraryJars(runnerZipFs, outputTargetBuildItem, transformedClasses, libDir, classPath, appDeps, services,
-                finalIgnoredEntries, removed);
+                ignoredEntriesPredicate, removed);
 
         ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
@@ -1155,13 +1135,13 @@ public class JarResultBuildStep {
                 applicationInfo);
 
         copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, allClasses,
-                generatedResources, seen, finalIgnoredEntries);
+                generatedResources, seen, ignoredEntriesPredicate);
     }
 
     private void copyLibraryJars(FileSystem runnerZipFs, OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses, Path libDir,
             StringBuilder classPath, Collection<ResolvedDependency> appDeps, Map<String, List<byte[]>> services,
-            Set<String> ignoredEntries, Set<ArtifactKey> removedDependencies) throws IOException {
+            Predicate<String> ignoredEntriesPredicate, Set<ArtifactKey> removedDependencies) throws IOException {
 
         for (ResolvedDependency appDep : appDeps) {
 
@@ -1198,7 +1178,7 @@ public class JarResultBuildStep {
                                         throws IOException {
                                     final Path relativePath = resolvedDep.relativize(file);
                                     final String relativeUri = toUri(relativePath);
-                                    if (ignoredEntries.contains(relativeUri)) {
+                                    if (ignoredEntriesPredicate.test(relativeUri)) {
                                         return FileVisitResult.CONTINUE;
                                     }
                                     if (relativeUri.startsWith("META-INF/services/") && relativeUri.length() > 18) {
@@ -1223,7 +1203,7 @@ public class JarResultBuildStep {
             ApplicationArchivesBuildItem appArchives, TransformedClassesBuildItem transformedClassesBuildItem,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources, Map<String, String> seen,
-            Set<String> ignoredEntries)
+            Predicate<String> ignoredEntriesPredicate)
             throws IOException {
 
         //TODO: this is probably broken in gradle
@@ -1257,7 +1237,7 @@ public class JarResultBuildStep {
         }
 
         for (GeneratedResourceBuildItem i : generatedResources) {
-            if (ignoredEntries.contains(i.getName())) {
+            if (ignoredEntriesPredicate.test(i.getName())) {
                 continue;
             }
             Path target = runnerZipFs.getPath(i.getName());
@@ -1274,9 +1254,7 @@ public class JarResultBuildStep {
             }
         }
 
-        for (Path root : appArchives.getRootArchive().getRootDirectories()) {
-            copyFiles(root, runnerZipFs, concatenatedEntries, ignoredEntries);
-        }
+        copyFiles(appArchives.getRootArchive(), runnerZipFs, concatenatedEntries, ignoredEntriesPredicate);
 
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
             try (final OutputStream os = wrapForJDK8232879(
@@ -1393,51 +1371,53 @@ public class JarResultBuildStep {
     }
 
     /**
-     * Copy files from {@code dir} to {@code fs}, filtering out service providers into the given map.
+     * Copy files from {@code archive} to {@code fs}, filtering out service providers into the given map.
      *
-     * @param dir the source directory
+     * @param archive the root application archive
      * @param fs the destination filesystem
      * @param services the services map
      * @throws IOException if an error occurs
      */
-    private void copyFiles(Path dir, FileSystem fs, Map<String, List<byte[]>> services, Set<String> ignoredEntries)
-            throws IOException {
-        try (Stream<Path> fileTreeElements = Files.walk(dir)) {
-            fileTreeElements.forEach(new Consumer<Path>() {
-                @Override
-                public void accept(Path path) {
-                    final Path file = dir.relativize(path);
-                    final String relativePath = toUri(file);
-                    if (relativePath.isEmpty() || ignoredEntries.contains(relativePath)) {
-                        return;
-                    }
-                    try {
-                        if (Files.isDirectory(path)) {
-                            addDir(fs, relativePath);
-                        } else {
-                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18
-                                    && services != null) {
-                                final byte[] content;
-                                try {
-                                    content = Files.readAllBytes(path);
-                                } catch (IOException e) {
-                                    throw new UncheckedIOException(e);
-                                }
-                                services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
-                            } else if (!relativePath.equals("META-INF/INDEX.LIST")) {
-                                //TODO: auto generate INDEX.LIST
-                                //this may have implications for Camel though, as they change the layout
-                                //also this is only really relevant for the thin jar layout
-                                Path target = fs.getPath(relativePath);
-                                if (!Files.exists(target)) {
-                                    Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+    private void copyFiles(ApplicationArchive archive, FileSystem fs, Map<String, List<byte[]>> services,
+            Predicate<String> ignoredEntriesPredicate) throws IOException {
+        try {
+            archive.accept(tree -> {
+                tree.walk(new PathVisitor() {
+                    @Override
+                    public void visitPath(PathVisit visit) {
+                        final Path file = visit.getRoot().relativize(visit.getPath());
+                        final String relativePath = toUri(file);
+                        if (relativePath.isEmpty() || ignoredEntriesPredicate.test(relativePath)) {
+                            return;
+                        }
+                        try {
+                            if (Files.isDirectory(visit.getPath())) {
+                                addDir(fs, relativePath);
+                            } else {
+                                if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18
+                                        && services != null) {
+                                    final byte[] content;
+                                    try {
+                                        content = Files.readAllBytes(visit.getPath());
+                                    } catch (IOException e) {
+                                        throw new UncheckedIOException(e);
+                                    }
+                                    services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
+                                } else if (!relativePath.equals("META-INF/INDEX.LIST")) {
+                                    //TODO: auto generate INDEX.LIST
+                                    //this may have implications for Camel though, as they change the layout
+                                    //also this is only really relevant for the thin jar layout
+                                    Path target = fs.getPath(relativePath);
+                                    if (!Files.exists(target)) {
+                                        Files.copy(visit.getPath(), target, StandardCopyOption.REPLACE_EXISTING);
+                                    }
                                 }
                             }
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
                         }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
                     }
-                }
+                });
             });
         } catch (RuntimeException re) {
             final Throwable cause = re.getCause();
@@ -1446,6 +1426,7 @@ public class JarResultBuildStep {
             }
             throw re;
         }
+
     }
 
     private void addDir(FileSystem fs, final String relativePath)
@@ -1502,6 +1483,64 @@ public class JarResultBuildStep {
                 || s.endsWith(".DSA")
                 || s.endsWith(".RSA")
                 || s.endsWith(".EC");
+    }
+
+    private Predicate<String> getThinJarIgnoredEntriesPredicate(PackageConfig packageConfig) {
+        if (packageConfig.userConfiguredIgnoredEntries.isEmpty()) {
+            return new Predicate<String>() {
+                @Override
+                public boolean test(String path) {
+                    return false;
+                }
+            };
+        }
+
+        Set<String> ignoredEntries = new HashSet<>(packageConfig.userConfiguredIgnoredEntries.get());
+        Predicate<String> ignoredEntriesPredicate = new Predicate<String>() {
+            @Override
+            public boolean test(String path) {
+                return ignoredEntries.contains(path);
+            }
+        };
+        return ignoredEntriesPredicate;
+    }
+
+    private static class IsEntryIgnoredForUberJarPredicate implements Predicate<String> {
+
+        private static final Set<String> UBER_JAR_IGNORED_ENTRIES = Set.of(
+                "META-INF/INDEX.LIST",
+                "META-INF/MANIFEST.MF",
+                "module-info.class",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/LICENSE.md",
+                "META-INF/LGPL-3.0.txt",
+                "META-INF/ASL-2.0.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/NOTICE.md",
+                "META-INF/README",
+                "META-INF/README.txt",
+                "META-INF/README.md",
+                "META-INF/DEPENDENCIES",
+                "META-INF/DEPENDENCIES.txt",
+                "META-INF/beans.xml",
+                "META-INF/quarkus-config-roots.list",
+                "META-INF/quarkus-javadoc.properties",
+                "META-INF/quarkus-extension.properties",
+                "META-INF/quarkus-extension.json",
+                "META-INF/quarkus-extension.yaml",
+                "META-INF/quarkus-deployment-dependency.graph",
+                "META-INF/jandex.idx",
+                "META-INF/panache-archive.marker",
+                "META-INF/build.metadata", // present in the Red Hat Build of Quarkus
+                "LICENSE");
+
+        @Override
+        public boolean test(String path) {
+            return UBER_JAR_IGNORED_ENTRIES.contains(path)
+                    || path.endsWith("module-info.class");
+        }
     }
 
     private static class IsJsonFilePredicate implements BiPredicate<Path, BasicFileAttributes> {

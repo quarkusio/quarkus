@@ -442,5 +442,7 @@ public interface RedisClient {
 
     Response zscore(String arg0, String arg1);
 
+    Response zunion(List<String> args);
+
     Response zunionstore(List<String> args);
 }

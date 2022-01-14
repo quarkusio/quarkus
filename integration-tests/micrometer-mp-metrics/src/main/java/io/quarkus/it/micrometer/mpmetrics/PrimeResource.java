@@ -70,6 +70,8 @@ public class PrimeResource {
     }
 
     @Gauge(name = "highestPrimeNumberSoFar", unit = MetricUnits.NONE, description = "Highest prime number so far.")
+    @GET
+    @Path("/blabla") // make this a REST method just to verify that a gauge will still work on it
     public Long highestPrimeNumberSoFar() {
         return highestPrimeSoFar.get();
     }

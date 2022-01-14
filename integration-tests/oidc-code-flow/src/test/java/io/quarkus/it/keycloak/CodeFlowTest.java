@@ -78,6 +78,9 @@ public class CodeFlowTest {
             assertTrue(page.asText().contains("openid"));
             assertTrue(page.asText().contains("profile"));
 
+            Cookie sessionCookie = getSessionCookie(webClient, null);
+            assertNotNull(sessionCookie);
+
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -130,7 +133,7 @@ public class CodeFlowTest {
             assertNull(endpointLocationWithoutQueryUri.getRawQuery());
 
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
-            assertEquals("tenant-https", page.getBody().asText());
+            assertEquals("tenant-https:reauthenticated", page.getBody().asText());
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
             webClient.getCookieManager().clearCookies();
@@ -178,7 +181,7 @@ public class CodeFlowTest {
             assertEquals("a=b", endpointLocationWithoutQueryUri.getRawQuery());
 
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
-            assertEquals("tenant-https?a=b", page.getBody().asText());
+            assertEquals("tenant-https:reauthenticated?a=b", page.getBody().asText());
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
             webClient.getCookieManager().clearCookies();
@@ -941,7 +944,7 @@ public class CodeFlowTest {
     }
 
     private Cookie getStateCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_auth" + (tenantId == null ? "" : "_" + tenantId));
+        return webClient.getCookieManager().getCookie("q_auth" + (tenantId == null ? "_Default_test" : "_" + tenantId));
     }
 
     private String getStateCookieStateParam(WebClient webClient, String tenantId) {
@@ -954,15 +957,15 @@ public class CodeFlowTest {
     }
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
+        return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "_Default_test" : "_" + tenantId));
     }
 
     private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_session_at" + (tenantId == null ? "" : "_" + tenantId));
+        return webClient.getCookieManager().getCookie("q_session_at" + (tenantId == null ? "_Default_test" : "_" + tenantId));
     }
 
     private Cookie getSessionRtCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_session_rt" + (tenantId == null ? "" : "_" + tenantId));
+        return webClient.getCookieManager().getCookie("q_session_rt" + (tenantId == null ? "_Default_test" : "_" + tenantId));
     }
 
     private String getIdToken(Cookie sessionCookie) {

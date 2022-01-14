@@ -163,11 +163,7 @@ public class IoUtils {
     }
 
     public static void copy(OutputStream out, InputStream in) throws IOException {
-        byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-        int r;
-        while ((r = in.read(buffer)) > 0) {
-            out.write(buffer, 0, r);
-        }
+        in.transferTo(out);
     }
 
     public static void writeFile(Path file, String content) throws IOException {

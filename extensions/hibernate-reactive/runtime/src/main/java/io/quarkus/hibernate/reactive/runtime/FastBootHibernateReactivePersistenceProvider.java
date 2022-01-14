@@ -2,9 +2,11 @@ package io.quarkus.hibernate.reactive.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
@@ -12,12 +14,14 @@ import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.ProviderUtil;
 
+import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
+import org.hibernate.service.Service;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.jboss.logging.Logger;
@@ -183,8 +187,23 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             serviceRegistryBuilder.applySetting(key, value);
         });
 
+        Set<Class<?>> runtimeInitiatedServiceClasses = new HashSet<>();
+        for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
+                .getOrDefault(persistenceUnitName, Collections.emptyList())) {
+            Optional<HibernateOrmIntegrationRuntimeInitListener> listenerOptional = descriptor.getInitListener();
+            if (listenerOptional.isPresent()) {
+                for (StandardServiceInitiator<?> serviceInitiator : listenerOptional.get().contributeServiceInitiators()) {
+                    Class<? extends Service> serviceClass = serviceInitiator.getServiceInitiated();
+                    runtimeInitiatedServiceClasses.add(serviceClass);
+                    serviceRegistryBuilder.addInitiator(serviceInitiator);
+                }
+            }
+        }
+
         for (ProvidedService<?> providedService : rs.getProvidedServices()) {
-            serviceRegistryBuilder.addService(providedService);
+            if (!runtimeInitiatedServiceClasses.contains(providedService.getServiceRole())) {
+                serviceRegistryBuilder.addService(providedService);
+            }
         }
 
         StandardServiceRegistryImpl standardServiceRegistry = serviceRegistryBuilder.buildNewServiceRegistry();
@@ -256,6 +275,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         if (persistenceUnitConfig.database.generation.haltOnError) {
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
+
+        persistenceUnitConfig.database.defaultCatalog.ifPresent(
+                catalog -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_CATALOG, catalog));
+
+        persistenceUnitConfig.database.defaultSchema.ifPresent(
+                schema -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_SCHEMA, schema));
 
         // Logging
         if (persistenceUnitConfig.log.sql) {

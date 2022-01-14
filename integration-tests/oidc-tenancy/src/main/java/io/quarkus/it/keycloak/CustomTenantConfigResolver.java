@@ -9,6 +9,8 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -43,12 +45,19 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     OidcTenantConfig config = new OidcTenantConfig();
                     config.setTenantId("tenant-oidc");
                     String uri = context.request().absoluteURI();
+                    // authServerUri points to the JAX-RS `OidcResource`, root path is `/oidc`
                     String authServerUri = path.contains("tenant-opaque")
                             ? uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc")
                             : uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
                     config.setAuthServerUrl(authServerUri);
                     config.setClientId("client");
                     config.setAllowTokenIntrospectionCache(false);
+                    // auto-discovery in Quarkus is enabled but the OIDC server returns an empty document, set the required endpoints in the config
+                    // try the path relative to the authServerUri 
+                    config.setJwksPath("jwks");
+                    // try the absolute URI
+                    config.setIntrospectionPath(authServerUri + "/introspect");
+
                     return config;
                 } else if ("tenant-oidc-no-discovery".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();
@@ -84,7 +93,11 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     }
                     config.setIntrospectionPath("introspect");
                     config.setUserInfoPath("userinfo");
-                    config.setClientId("client");
+                    config.setClientId("client-introspection-only");
+                    Credentials creds = config.getCredentials();
+                    creds.clientSecret.setMethod(Credentials.Secret.Method.POST_JWT);
+                    creds.getJwt().setKeyFile("ecPrivateKey.pem");
+                    creds.getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
                     return config;
                 } else if ("tenant-oidc-no-opaque-token".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();

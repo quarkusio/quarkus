@@ -57,7 +57,7 @@ public class DefaultSerdeConfigTest {
             }
         };
         new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, Collections.emptyList(),
-                configs::add);
+                configs::add, null, null);
 
         assertThat(configs)
                 .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)

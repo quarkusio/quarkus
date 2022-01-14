@@ -1,7 +1,10 @@
 package io.quarkus.test.security.jwt;
 
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
@@ -55,7 +58,10 @@ public class JwtTestSecurityIdentityAugmentorProducer {
 
                 @Override
                 public Set<String> getClaimNames() {
-                    return null;
+                    if (jwtSecurity != null && jwtSecurity.claims() != null) {
+                        return Arrays.stream(jwtSecurity.claims()).map(Claim::key).collect(Collectors.toSet());
+                    }
+                    return Collections.emptySet();
                 }
 
             });

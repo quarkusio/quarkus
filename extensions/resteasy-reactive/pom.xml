@@ -25,8 +25,11 @@
         <module>jaxrs-client-reactive</module>
         <module>rest-client-reactive</module>
         <module>rest-client-reactive-jackson</module>
+        <module>rest-client-reactive-kotlin-serialization</module>
         <module>quarkus-resteasy-reactive-links</module>
         <module>quarkus-resteasy-reactive-kotlin</module>
+        <module>quarkus-resteasy-reactive-kotlin-serialization-common</module>
+        <module>quarkus-resteasy-reactive-kotlin-serialization</module>
     </modules>
 
 </project>

@@ -88,6 +88,7 @@ public class ResteasyServerCommonProcessor {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = "javax.ws.rs.Application";
+    private static final String MESSAGES_RESOURCE_BUNDLE = "messages";
 
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
@@ -181,8 +182,12 @@ public class ResteasyServerCommonProcessor {
 
     @BuildStep
     NativeImageConfigBuildItem config() {
+        if (Thread.currentThread().getContextClassLoader().getResource(MESSAGES_RESOURCE_BUNDLE) == null) {
+            return null;
+        }
+
         return NativeImageConfigBuildItem.builder()
-                .addResourceBundle("messages")
+                .addResourceBundle(MESSAGES_RESOURCE_BUNDLE)
                 .build();
     }
 
@@ -643,10 +648,6 @@ public class ResteasyServerCommonProcessor {
                 ServletConfigSource.class,
                 ServletContextConfigSource.class,
                 FilterConfigSource.class));
-
-        // Providers that are also beans are unremovable
-        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                b -> jaxrsProvidersToRegisterBuildItem.getProviders().contains(b.getBeanClass().toString())));
     }
 
     private static void generateDefaultConstructors(BuildProducer<BytecodeTransformerBuildItem> transformers,
@@ -998,7 +999,12 @@ public class ResteasyServerCommonProcessor {
                 throw new RuntimeException("More than one Application class: " + applications);
             }
             selectedAppClass = applicationClassInfo;
-            // FIXME: yell if there's more than one
+            if (selectedAppClass.annotations().containsKey(ResteasyDotNames.CDI_INJECT)) {
+                throw new RuntimeException(
+                        "Usage of '@Inject' is not allowed in 'javax.ws.rs.core.Application' classes. Offending class is '"
+                                + selectedAppClass.name() + "'");
+            }
+
             String applicationClass = applicationClassInfo.name().toString();
             try {
                 Class<?> appClass = Thread.currentThread().getContextClassLoader().loadClass(applicationClass);

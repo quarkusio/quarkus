@@ -175,6 +175,7 @@ public class ResteasyCommonProcessor {
     JaxrsProvidersToRegisterBuildItem setupProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             CombinedIndexBuildItem indexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems,
             List<RestClientBuildItem> restClients,
             ResteasyConfigBuildItem resteasyConfig,
@@ -260,8 +261,14 @@ public class ResteasyCommonProcessor {
                     "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
         }
 
-        return new JaxrsProvidersToRegisterBuildItem(
+        JaxrsProvidersToRegisterBuildItem result = new JaxrsProvidersToRegisterBuildItem(
                 providersToRegister, contributedProviders, annotatedProviders, useBuiltinProviders);
+
+        // Providers that are also beans are unremovable
+        unremovableBeans.produce(new UnremovableBeanBuildItem(
+                b -> result.getProviders().contains(b.getBeanClass().toString())));
+
+        return result;
     }
 
     private String mutinySupportNeeded(CombinedIndexBuildItem indexBuildItem) {

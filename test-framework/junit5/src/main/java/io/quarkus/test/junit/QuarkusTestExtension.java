@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 
 import java.io.Closeable;
@@ -23,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionException;
@@ -67,6 +69,7 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -74,6 +77,7 @@ import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
@@ -228,7 +232,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                             getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
                             profileInstance != null && profileInstance.disableGlobalTestResources(),
                             startupAction.getDevServicesProperties(), Optional.empty());
-            testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
+            testResourceManager.getClass().getMethod("init", String.class).invoke(testResourceManager,
+                    profile != null ? profile.getName() : null);
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
                     .invoke(testResourceManager);
             startupAction.overrideConfig(properties);
@@ -302,6 +307,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             ExtensionState state = new ExtensionState(testResourceManager, shutdownTask);
             return state;
         } catch (Throwable e) {
+            if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+                activateLogging();
+            }
 
             try {
                 if (testResourceManager != null) {
@@ -700,9 +708,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             old = setCCL(runningQuarkusApplication.getClassLoader());
         }
 
-        initTestState(extensionContext, state);
-        if (old != null) {
-            setCCL(old);
+        try {
+            initTestState(extensionContext, state);
+        } finally {
+            if (old != null) {
+                setCCL(old);
+            }
         }
         return result;
     }
@@ -760,8 +771,25 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             invocation.proceed();
             return;
         }
-        runExtensionMethod(invocationContext, extensionContext, true);
-        invocation.skip();
+
+        //as a convenience to the user we attach any exceptions from the server itself
+        //as supressed exceptions from the failure
+        //this makes it easy to see why your request has failed in the test output itself
+        //instead of needed to look in the log output
+        List<Throwable> serverExceptions = new CopyOnWriteArrayList<>();
+        ExceptionReporting.setListener(serverExceptions::add);
+        try {
+            runExtensionMethod(invocationContext, extensionContext, true);
+            invocation.skip();
+        } catch (Throwable t) {
+            for (var i : serverExceptions) {
+                t.addSuppressed(i);
+            }
+            throw t;
+        } finally {
+            ExceptionReporting.setListener(null);
+        }
+
     }
 
     @Override

@@ -16,6 +16,7 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.Configuration;
+import javax.ws.rs.ext.ParamConverterProvider;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -32,6 +33,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientLoggingConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 
@@ -46,13 +48,20 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private final ClientBuilderImpl clientBuilder = (ClientBuilderImpl) new ClientBuilderImpl()
             .withConfig(new ConfigurationImpl(RuntimeType.CLIENT));
     private final List<ResponseExceptionMapper<?>> exceptionMappers = new ArrayList<>();
+    private final List<ParamConverterProvider> paramConverterProviders = new ArrayList<>();
 
     private URI uri;
     private boolean followRedirects;
     private QueryParamStyle queryParamStyle;
 
+    private String proxyHost;
+    private Integer proxyPort;
+    private String proxyUser;
+    private String proxyPassword;
+    private String nonProxyHosts;
+
     @Override
-    public RestClientBuilder baseUrl(URL url) {
+    public RestClientBuilderImpl baseUrl(URL url) {
         try {
             this.uri = url.toURI();
         } catch (URISyntaxException e) {
@@ -62,62 +71,78 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
-    public RestClientBuilder connectTimeout(long timeout, TimeUnit timeUnit) {
+    public RestClientBuilderImpl connectTimeout(long timeout, TimeUnit timeUnit) {
         clientBuilder.connectTimeout(timeout, timeUnit);
         return this;
     }
 
     @Override
-    public RestClientBuilder readTimeout(long timeout, TimeUnit timeUnit) {
+    public RestClientBuilderImpl readTimeout(long timeout, TimeUnit timeUnit) {
         clientBuilder.readTimeout(timeout, timeUnit);
         return this;
     }
 
     @Override
-    public RestClientBuilder sslContext(SSLContext sslContext) {
+    public RestClientBuilderImpl sslContext(SSLContext sslContext) {
         clientBuilder.sslContext(sslContext);
         return this;
     }
 
     @Override
-    public RestClientBuilder trustStore(KeyStore trustStore) {
+    public RestClientBuilderImpl trustStore(KeyStore trustStore) {
         clientBuilder.trustStore(trustStore);
         return this;
     }
 
     @Override
-    public RestClientBuilder keyStore(KeyStore keyStore, String keystorePassword) {
+    public RestClientBuilderImpl keyStore(KeyStore keyStore, String keystorePassword) {
         clientBuilder.keyStore(keyStore, keystorePassword);
         return this;
     }
 
     @Override
-    public RestClientBuilder hostnameVerifier(HostnameVerifier hostnameVerifier) {
+    public RestClientBuilderImpl hostnameVerifier(HostnameVerifier hostnameVerifier) {
         clientBuilder.hostnameVerifier(hostnameVerifier);
         return this;
     }
 
     @Override
-    public RestClientBuilder followRedirects(final boolean follow) {
+    public RestClientBuilderImpl followRedirects(final boolean follow) {
         this.followRedirects = follow;
         return this;
     }
 
     @Override
-    public RestClientBuilder proxyAddress(final String proxyHost, final int proxyPort) {
+    public RestClientBuilderImpl proxyAddress(final String proxyHost, final int proxyPort) {
         if (proxyHost == null) {
             throw new IllegalArgumentException("proxyHost must not be null");
         }
-        if (proxyPort <= 0 || proxyPort > 65535) {
+        if ((proxyPort <= 0 || proxyPort > 65535) && !proxyHost.equals("none")) {
             throw new IllegalArgumentException("Invalid port number");
         }
+        this.proxyHost = proxyHost;
+        this.proxyPort = proxyPort;
 
-        clientBuilder.proxy(proxyHost, proxyPort);
+        return this;
+    }
+
+    public RestClientBuilderImpl proxyPassword(String proxyPassword) {
+        this.proxyPassword = proxyPassword;
+        return this;
+    }
+
+    public RestClientBuilderImpl proxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+        return this;
+    }
+
+    public RestClientBuilderImpl nonProxyHosts(String nonProxyHosts) {
+        this.nonProxyHosts = nonProxyHosts;
         return this;
     }
 
     @Override
-    public RestClientBuilder executorService(ExecutorService executor) {
+    public RestClientBuilderImpl executorService(ExecutorService executor) {
         throw new IllegalArgumentException("Specifying executor service is not supported. " +
                 "The underlying call in RestEasy Reactive is non-blocking, " +
                 "there is no reason to offload the call to a separate thread pool.");
@@ -129,13 +154,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
-    public RestClientBuilder property(String name, Object value) {
+    public RestClientBuilderImpl property(String name, Object value) {
         clientBuilder.property(name, value);
         return this;
     }
 
     @Override
-    public RestClientBuilder register(Class<?> componentClass) {
+    public RestClientBuilderImpl register(Class<?> componentClass) {
         Object bean = BeanGrabber.getBeanIfDefined(componentClass);
         if (bean != null) {
             registerMpSpecificProvider(bean);
@@ -148,7 +173,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
-    public RestClientBuilder register(Class<?> componentClass, int priority) {
+    public RestClientBuilderImpl register(Class<?> componentClass, int priority) {
         InstanceHandle<?> instance = Arc.container().instance(componentClass);
         if (instance.isAvailable()) {
             registerMpSpecificProvider(instance.get());
@@ -161,7 +186,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
-    public RestClientBuilder register(Class<?> componentClass, Class<?>... contracts) {
+    public RestClientBuilderImpl register(Class<?> componentClass, Class<?>... contracts) {
         InstanceHandle<?> instance = Arc.container().instance(componentClass);
         if (instance.isAvailable()) {
             registerMpSpecificProvider(instance.get());
@@ -174,7 +199,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
-    public RestClientBuilder register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
+    public RestClientBuilderImpl register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
         InstanceHandle<?> instance = Arc.container().instance(componentClass);
         if (instance.isAvailable()) {
             registerMpSpecificProvider(instance.get());
@@ -187,41 +212,42 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
-    public RestClientBuilder register(Object component) {
+    public RestClientBuilderImpl register(Object component) {
         registerMpSpecificProvider(component);
         clientBuilder.register(component);
         return this;
     }
 
     @Override
-    public RestClientBuilder register(Object component, int priority) {
+    public RestClientBuilderImpl register(Object component, int priority) {
         registerMpSpecificProvider(component);
         clientBuilder.register(component, priority);
         return this;
     }
 
     @Override
-    public RestClientBuilder register(Object component, Class<?>... contracts) {
+    public RestClientBuilderImpl register(Object component, Class<?>... contracts) {
         registerMpSpecificProvider(component);
         clientBuilder.register(component, contracts);
         return this;
     }
 
     @Override
-    public RestClientBuilder register(Object component, Map<Class<?>, Integer> contracts) {
+    public RestClientBuilderImpl register(Object component, Map<Class<?>, Integer> contracts) {
         registerMpSpecificProvider(component);
         clientBuilder.register(component, contracts);
         return this;
     }
 
     @Override
-    public RestClientBuilder baseUri(URI uri) {
+    public RestClientBuilderImpl baseUri(URI uri) {
         this.uri = uri;
         return this;
     }
 
     private void registerMpSpecificProvider(Class<?> componentClass) {
-        if (ResponseExceptionMapper.class.isAssignableFrom(componentClass)) {
+        if (ResponseExceptionMapper.class.isAssignableFrom(componentClass)
+                || ParamConverterProvider.class.isAssignableFrom(componentClass)) {
             try {
                 registerMpSpecificProvider(componentClass.getDeclaredConstructor().newInstance());
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -235,10 +261,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         if (component instanceof ResponseExceptionMapper) {
             exceptionMappers.add((ResponseExceptionMapper<?>) component);
         }
+        if (component instanceof ParamConverterProvider) {
+            paramConverterProviders.add((ParamConverterProvider) component);
+        }
     }
 
     @Override
-    public RestClientBuilder queryParamStyle(final QueryParamStyle style) {
+    public RestClientBuilderImpl queryParamStyle(final QueryParamStyle style) {
         queryParamStyle = style;
         return this;
     }
@@ -285,12 +314,35 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         clientBuilder.trustAll(trustAll);
 
+        if (proxyHost != null) {
+            configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts);
+        } else if (restClientsConfig.proxyAddress.isPresent()) {
+            HostAndPort globalProxy = ProxyAddressUtil.parseAddress(restClientsConfig.proxyAddress.get());
+            configureProxy(globalProxy.host, globalProxy.port, restClientsConfig.proxyUser.orElse(null),
+                    restClientsConfig.proxyPassword.orElse(null), restClientsConfig.nonProxyHosts.orElse(null));
+        }
         ClientImpl client = clientBuilder.build();
         WebTargetImpl target = (WebTargetImpl) client.target(uri);
+        target.setParamConverterProviders(paramConverterProviders);
         try {
             return target.proxy(aClass);
         } catch (InvalidRestClientDefinitionException e) {
             throw new RestClientDefinitionException(e);
+        }
+    }
+
+    private void configureProxy(String proxyHost, Integer proxyPort, String proxyUser, String proxyPassword,
+            String nonProxyHosts) {
+        if (proxyHost != null) {
+            clientBuilder.proxy(proxyHost, proxyPort);
+            if (proxyUser != null && proxyPassword != null) {
+                clientBuilder.proxyUser(proxyUser);
+                clientBuilder.proxyPassword(proxyPassword);
+            }
+
+            if (nonProxyHosts != null) {
+                clientBuilder.nonProxyHosts(nonProxyHosts);
+            }
         }
     }
 

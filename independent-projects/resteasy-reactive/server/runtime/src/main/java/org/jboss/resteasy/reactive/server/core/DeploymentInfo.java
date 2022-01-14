@@ -28,7 +28,7 @@ public class DeploymentInfo {
     private ParamConverterProviders paramConverterProviders;
     private Supplier<Application> applicationSupplier;
     private Function<Class<?>, BeanFactory<?>> factoryCreator;
-    private ResteasyReactiveConfig config;
+    private ResteasyReactiveConfig resteasyReactiveConfig;
     private Function<Object, Object> clientProxyUnwrapper;
     private String applicationPath;
     private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
@@ -143,12 +143,12 @@ public class DeploymentInfo {
         return this;
     }
 
-    public ResteasyReactiveConfig getConfig() {
-        return config;
+    public ResteasyReactiveConfig getResteasyReactiveConfig() {
+        return resteasyReactiveConfig;
     }
 
-    public DeploymentInfo setConfig(ResteasyReactiveConfig config) {
-        this.config = config;
+    public DeploymentInfo setResteasyReactiveConfig(ResteasyReactiveConfig resteasyReactiveConfig) {
+        this.resteasyReactiveConfig = resteasyReactiveConfig;
         return this;
     }
 

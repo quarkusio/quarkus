@@ -1,15 +1,15 @@
 package io.quarkus.deployment;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.jboss.jandex.IndexView;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathCollection;
 
 /**
@@ -84,33 +84,28 @@ public interface ApplicationArchive {
     ArtifactKey getKey();
 
     /**
+     * Applies a function to the content tree of the archive.
+     * 
+     * @param <T> result type of the function
+     * @param func function to apply
+     * @return the result of the function
+     */
+    <T> T apply(Function<OpenPathTree, T> func);
+
+    /**
+     * Accepts a consumer for the content tree of the archive.
+     * 
+     * @param func consumer
+     */
+    void accept(Consumer<OpenPathTree> func);
+
+    /**
      * Convenience method, returns the child path if it exists, otherwise null.
      *
      * @param path The child path
      * @return The child path, or null if it does not exist.
      */
     default Path getChildPath(String path) {
-        return getRootDirectories().resolveExistingOrNull(path);
-    }
-
-    /**
-     * Searches for the specified entry among the archive paths. If a root path appears to be a JAR,
-     * the entry will be searched among its entries. The first matched entry will be passed to the
-     * consumer along with its root path.
-     *
-     * @param path relative entry path
-     * @param consumer entry consumer
-     */
-    default void processEntry(String path, BiConsumer<Path, Path> consumer) {
-        final Iterator<Path> dirs = getRootDirectories().iterator();
-        final Iterator<Path> paths = getResolvedPaths().iterator();
-        while (dirs.hasNext()) {
-            final Path child = dirs.next().resolve(path);
-            if (Files.exists(child)) {
-                consumer.accept(child, paths.next());
-                return;
-            }
-            paths.next();
-        }
+        return apply(tree -> tree.getPath(path));
     }
 }

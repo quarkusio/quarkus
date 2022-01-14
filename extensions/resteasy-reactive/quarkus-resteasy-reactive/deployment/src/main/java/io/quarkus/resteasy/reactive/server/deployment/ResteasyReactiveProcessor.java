@@ -22,6 +22,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.ws.rs.Priorities;
@@ -46,6 +48,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceFeature;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
+import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
@@ -79,6 +82,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMetho
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
+import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -110,6 +114,7 @@ import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
@@ -148,15 +153,13 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationCompletionException;
-import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.UnauthorizedException;
+import io.quarkus.vertx.deployment.CopyVertxContextDataBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
@@ -165,10 +168,16 @@ public class ResteasyReactiveProcessor {
 
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
 
+    private static final Logger log = Logger.getLogger("io.quarkus.resteasy.reactive.server");
+
+    private static final Predicate<Object[]> isEmpty = array -> array == null || array.length == 0;
+
     private static final Set<DotName> CONTEXT_TYPES = Set.of(
             DotName.createSimple(HttpServerRequest.class.getName()),
             DotName.createSimple(HttpServerResponse.class.getName()),
             DotName.createSimple(RoutingContext.class.getName()));
+
+    private static final int SECURITY_EXCEPTION_MAPPERS_PRIORITY = Priorities.USER + 1;
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
@@ -216,7 +225,12 @@ public class ResteasyReactiveProcessor {
     @BuildStep
     void vertxIntegration(BuildProducer<MessageBodyWriterBuildItem> writerBuildItemBuildProducer) {
         writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerVertxBufferMessageBodyWriter.class.getName(),
-                Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER, true,
+                io.vertx.core.buffer.Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER,
+                true,
+                Priorities.USER));
+        writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerMutinyBufferMessageBodyWriter.class.getName(),
+                io.vertx.mutiny.core.buffer.Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD),
+                RuntimeType.SERVER, true,
                 Priorities.USER));
         writerBuildItemBuildProducer
                 .produce(new MessageBodyWriterBuildItem(ServerVertxAsyncFileMessageBodyWriter.class.getName(),
@@ -499,6 +513,7 @@ public class ResteasyReactiveProcessor {
                     bytecodeTransformerBuildItemBuildProducer));
             serverEndpointIndexer = serverEndpointIndexerBuilder.build();
 
+            Map<String, List<EndpointConfig>> allMethods = new HashMap<>();
             for (ClassInfo i : scannedResources.values()) {
                 Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(i, true);
                 if (endpoints.isPresent()) {
@@ -506,8 +521,14 @@ public class ResteasyReactiveProcessor {
                         endpoints.get().setFactory(new SingletonBeanFactory<>(i.name().toString()));
                     }
                     resourceClasses.add(endpoints.get());
+                    for (ResourceMethod rm : endpoints.get().getMethods()) {
+                        addResourceMethodByPath(allMethods, endpoints.get().getPath(), i, rm);
+                    }
                 }
             }
+
+            checkForDuplicateEndpoint(config, allMethods);
+
             //now index possible sub resources. These are all classes that have method annotations
             //that are not annotated @Path
             Deque<ClassInfo> toScan = new ArrayDeque<>();
@@ -637,7 +658,8 @@ public class ResteasyReactiveProcessor {
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             ContextResolversBuildItem contextResolversBuildItem,
             ResteasyReactiveServerConfig serverConfig,
-            LaunchModeBuildItem launchModeBuildItem)
+            LaunchModeBuildItem launchModeBuildItem,
+            List<CopyVertxContextDataBuildItem> copyVertxContextDataBuildItems)
             throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -726,7 +748,7 @@ public class ResteasyReactiveProcessor {
         Class<? extends Application> applicationClass = application == null ? Application.class : application.getClass();
         DeploymentInfo deploymentInfo = new DeploymentInfo()
                 .setInterceptors(interceptors.sort())
-                .setConfig(createRestReactiveConfig(config))
+                .setResteasyReactiveConfig(createRestReactiveConfig(config))
                 .setExceptionMapping(exceptionMapping)
                 .setCtxResolvers(contextResolvers)
                 .setFeatures(feats)
@@ -755,7 +777,8 @@ public class ResteasyReactiveProcessor {
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent);
+                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent,
+                copyVertxContextDataBuildItems.stream().map(CopyVertxContextDataBuildItem::getProperty).collect(toList()));
 
         quarkusRestDeploymentBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
@@ -779,11 +802,81 @@ public class ResteasyReactiveProcessor {
         }
     }
 
+    private void checkForDuplicateEndpoint(ResteasyReactiveConfig config, Map<String, List<EndpointConfig>> allMethods) {
+        String message = allMethods.values().stream()
+                .map(this::getDuplicateEndpointMessage)
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining());
+        if (message.length() > 0) {
+            if (config.failOnDuplicate) {
+                throw new ConfigurationError(message);
+            }
+            log.warning(message);
+        }
+    }
+
+    private void addResourceMethodByPath(Map<String, List<EndpointConfig>> allMethods, String path, ClassInfo info,
+            ResourceMethod rm) {
+        allMethods.computeIfAbsent(getEndpointClassifier(rm, path), key -> new ArrayList<>())
+                .addAll(getEndpointConfigs(path, info, rm));
+    }
+
+    private String getEndpointClassifier(ResourceMethod resourceMethod, String path) {
+        return resourceMethod.getHttpMethod() + " " + (path.equals("/") ? "" : path)
+                + resourceMethod.getPath();
+    }
+
+    private String getDuplicateEndpointMessage(List<EndpointConfig> endpoints) {
+        StringBuilder message = new StringBuilder();
+        if (endpoints.size() < 2) {
+            return null;
+        }
+        Map<String, List<EndpointConfig>> duplicatesByMimeTypes = endpoints.stream()
+                .collect(Collectors.groupingBy(EndpointConfig::toString));
+        for (Map.Entry<String, List<EndpointConfig>> duplicates : duplicatesByMimeTypes.entrySet()) {
+            if (duplicates.getValue().size() < 2) {
+                continue;
+            }
+            message.append(endpoints.get(0).getExposedEndpoint())
+                    .append(" is declared by :")
+                    .append(System.lineSeparator());
+            for (EndpointConfig config : duplicates.getValue()) {
+                message.append(config.toCompleteString())
+                        .append(System.lineSeparator());
+            }
+        }
+        return message.toString();
+    }
+
+    private List<EndpointConfig> getEndpointConfigs(String path, ClassInfo info, ResourceMethod rm) {
+        List<EndpointConfig> result = new ArrayList<>();
+        String exposingMethod = info.name().toString() + "#" + rm.getName();
+        if (isEmpty.test(rm.getConsumes()) && isEmpty.test(rm.getProduces()))
+            result.add(new EndpointConfig(path, rm.getHttpMethod(), null, null, exposingMethod));
+        else if (isEmpty.negate().test(rm.getConsumes()) && isEmpty.test(rm.getProduces())) {
+            for (String consume : rm.getConsumes()) {
+                result.add(new EndpointConfig(path, rm.getHttpMethod(), consume, null, exposingMethod));
+            }
+        } else if (isEmpty.test(rm.getConsumes()) && isEmpty.negate().test(rm.getProduces())) {
+            for (String produce : rm.getProduces()) {
+                result.add(new EndpointConfig(path, rm.getHttpMethod(), null, produce, exposingMethod));
+            }
+        } else {
+            for (String consume : rm.getConsumes()) {
+                for (String produce : rm.getProduces()) {
+                    result.add(new EndpointConfig(path, rm.getHttpMethod(), consume, produce, exposingMethod));
+                }
+            }
+        }
+        return result;
+    }
+
     private org.jboss.resteasy.reactive.common.ResteasyReactiveConfig createRestReactiveConfig(ResteasyReactiveConfig config) {
         Config mpConfig = ConfigProvider.getConfig();
 
         return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
                 getEffectivePropertyValue("input-buffer-size", config.inputBufferSize.asLongValue(), Long.class, mpConfig),
+                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize, Integer.class, mpConfig),
                 getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces, Boolean.class, mpConfig),
                 getEffectivePropertyValue("default-produces", config.defaultProduces, Boolean.class, mpConfig));
     }
@@ -814,23 +907,15 @@ public class ResteasyReactiveProcessor {
         exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
                 AuthenticationCompletionExceptionMapper.class.getName(),
                 AuthenticationCompletionException.class.getName(),
-                Priorities.USER, false));
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                AuthenticationFailedExceptionMapper.class.getName(),
-                AuthenticationFailedException.class.getName(),
-                Priorities.USER + 1, false));
+                SECURITY_EXCEPTION_MAPPERS_PRIORITY, false));
         exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
                 AuthenticationRedirectExceptionMapper.class.getName(),
                 AuthenticationRedirectException.class.getName(),
-                Priorities.USER, false));
+                SECURITY_EXCEPTION_MAPPERS_PRIORITY, false));
         exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
                 ForbiddenExceptionMapper.class.getName(),
                 ForbiddenException.class.getName(),
-                Priorities.USER + 1, false));
-        exceptionMapperBuildItemBuildProducer.produce(new ExceptionMapperBuildItem(
-                UnauthorizedExceptionMapper.class.getName(),
-                UnauthorizedException.class.getName(),
-                Priorities.USER + 1, false));
+                SECURITY_EXCEPTION_MAPPERS_PRIORITY, false));
     }
 
     @BuildStep

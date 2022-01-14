@@ -32,6 +32,7 @@ import org.objectweb.asm.ClassWriter;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.QuarkusClassVisitor;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -238,7 +239,7 @@ public class ClassTransformingBuildStep {
         if (packageConfig.writeTransformedBytecodeToBuildOutput && (launchMode.getLaunchMode() == LaunchMode.NORMAL)) {
             // the idea here is to write the transformed classes into the build tool's output directory to make core coverage work
 
-            for (Path path : archiveRoot.getRootDirs()) {
+            for (Path path : archiveRoot.getRootDirectories()) {
                 copyTransformedClasses(path, transformedClassesByJar.get(path));
             }
         }
@@ -292,7 +293,7 @@ public class ClassTransformingBuildStep {
             }
         }
         if (!removed.isEmpty()) {
-            log.warn("Could not removed configured resources from the following artifacts as they were not found in the model: "
+            log.warn("Could not remove configured resources from the following artifacts as they were not found in the model: "
                     + removed.keySet());
         }
     }
@@ -313,6 +314,9 @@ public class ClassTransformingBuildStep {
             ClassVisitor visitor = writer;
             for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
                 visitor = i.apply(className, visitor);
+                if (visitor instanceof QuarkusClassVisitor) {
+                    ((QuarkusClassVisitor) visitor).setOriginalClassReaderOptions(classReaderOptions);
+                }
             }
             cr.accept(visitor, classReaderOptions);
             data = writer.toByteArray();

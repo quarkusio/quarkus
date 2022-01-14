@@ -15,14 +15,15 @@ on:
         description: 'JDK distribution'
         required: true
         # make sure to keep the default of JDK_DIST in sync!
-        # use zulu until temurin dist is available
-        default: 'zulu'
+        # might need to use 'zulu' until 'temurin' dist is available
+        default: 'temurin'
 
 env:
   JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '18-ea' }}
-  JDK_DIST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkDistribution || 'zulu' }}
+  JDK_DIST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkDistribution || 'temurin' }}
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
+  MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
   JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
@@ -38,7 +39,6 @@ jobs:
     steps:
 
       - name: Set up JDK
-        # AdoptOpenJDK does not seem to provide EA builds, so use the standard action which provides a Zulu JDK
         uses: actions/setup-java@v2
         with:
           distribution: ${{ env.JDK_DIST }}

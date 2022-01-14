@@ -5,6 +5,8 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigGroup
 public class HibernateOrmRuntimeConfigPersistenceUnit {
@@ -45,8 +47,24 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
         @ConfigItem
         public HibernateOrmConfigPersistenceUnitDatabaseGeneration generation = new HibernateOrmConfigPersistenceUnitDatabaseGeneration();
 
+        /**
+         * The default catalog to use for the database objects.
+         */
+        @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
+        public Optional<String> defaultCatalog;
+
+        /**
+         * The default schema to use for the database objects.
+         */
+        @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
+        public Optional<String> defaultSchema;
+
         public boolean isAnyPropertySet() {
-            return generation.isAnyPropertySet();
+            return generation.isAnyPropertySet()
+                    || defaultCatalog.isPresent()
+                    || defaultSchema.isPresent();
         }
     }
 
@@ -78,6 +96,7 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
+        @ConvertWith(TrimmedStringConverter.class)
         public String generation = "none";
 
         /**
@@ -108,18 +127,21 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
+        @ConvertWith(TrimmedStringConverter.class)
         public String generation = "none";
 
         /**
          * Filename or URL where the database create DDL file should be generated.
          */
         @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> createTarget = Optional.empty();
 
         /**
          * Filename or URL where the database drop DDL file should be generated.
          */
         @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> dropTarget = Optional.empty();
 
         public boolean isAnyPropertySet() {

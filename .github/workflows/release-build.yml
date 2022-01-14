@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
     env:
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+      MAVEN_OPTS: -Xmx2560m
       JBANG_REPO: $HOME/release/repository
     steps:
       - uses: actions/checkout@v2
@@ -31,10 +31,10 @@ jobs:
           ./mvnw --settings .github/mvn-settings.xml \
             -B \
             -Prelease \
-            -Dmaven.test.skip=true \
             -DskipTests -DskipITs \
             -Ddokka \
             -Dmaven.repo.local=$HOME/release/repository \
+            -Dgpg.skip \
             clean install
       - name: Report
         if: always()

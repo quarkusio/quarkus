@@ -12,13 +12,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildExecutionBuilder;
@@ -46,7 +44,7 @@ public class QuarkusAugmentor {
 
     private final ClassLoader classLoader;
     private final ClassLoader deploymentClassLoader;
-    private final PathsCollection root;
+    private final PathCollection root;
     private final Set<Class<? extends BuildItem>> finalResults;
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
@@ -58,7 +56,6 @@ public class QuarkusAugmentor {
     private final Path targetDir;
     private final ApplicationModel effectiveModel;
     private final String baseName;
-    private final Consumer<ConfigBuilder> configCustomizer;
     private final boolean rebuild;
     private final boolean auxiliaryApplication;
     private final Optional<DevModeType> auxiliaryDevModeType;
@@ -77,7 +74,6 @@ public class QuarkusAugmentor {
         this.targetDir = builder.targetDir;
         this.effectiveModel = builder.effectiveModel;
         this.baseName = builder.baseName;
-        this.configCustomizer = builder.configCustomizer;
         this.deploymentClassLoader = builder.deploymentClassLoader;
         this.rebuild = builder.rebuild;
         this.devModeType = builder.devModeType;
@@ -107,7 +103,7 @@ public class QuarkusAugmentor {
             //in additional stuff from the deployment leaking in, this is unlikely but has a bit of a smell.
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
                     buildSystemProperties == null ? new Properties() : buildSystemProperties,
-                    effectiveModel, launchMode, devModeType, configCustomizer)
+                    effectiveModel, launchMode, devModeType)
                     .accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -193,7 +189,7 @@ public class QuarkusAugmentor {
         List<PathCollection> additionalApplicationArchives = new ArrayList<>();
         Collection<Path> excludedFromIndexing = Collections.emptySet();
         ClassLoader classLoader;
-        PathsCollection root;
+        PathCollection root;
         Path targetDir;
         Set<Class<? extends BuildItem>> finalResults = new HashSet<>();
         private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
@@ -203,7 +199,6 @@ public class QuarkusAugmentor {
 
         ApplicationModel effectiveModel;
         String baseName = "quarkus-application";
-        Consumer<ConfigBuilder> configCustomizer;
         ClassLoader deploymentClassLoader;
         DevModeType devModeType;
         boolean test;
@@ -274,7 +269,7 @@ public class QuarkusAugmentor {
             return this;
         }
 
-        public PathsCollection getRoot() {
+        public PathCollection getRoot() {
             return root;
         }
 
@@ -283,7 +278,7 @@ public class QuarkusAugmentor {
             return this;
         }
 
-        public Builder setRoot(PathsCollection root) {
+        public Builder setRoot(PathCollection root) {
             this.root = root;
             return this;
         }
@@ -340,11 +335,6 @@ public class QuarkusAugmentor {
 
         public Builder setDeploymentClassLoader(ClassLoader deploymentClassLoader) {
             this.deploymentClassLoader = deploymentClassLoader;
-            return this;
-        }
-
-        public Builder setConfigCustomizer(Consumer<ConfigBuilder> configCustomizer) {
-            this.configCustomizer = configCustomizer;
             return this;
         }
     }

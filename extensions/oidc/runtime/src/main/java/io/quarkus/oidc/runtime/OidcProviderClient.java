@@ -109,9 +109,14 @@ public class OidcProviderClient implements Closeable {
         if (clientSecretBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
         } else if (clientJwtKey != null) {
-            formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
-            formBody.add(OidcConstants.CLIENT_ASSERTION,
-                    OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey));
+            String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);
+            if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials)) {
+                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                formBody.add(OidcConstants.CLIENT_SECRET, jwt);
+            } else {
+                formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+                formBody.add(OidcConstants.CLIENT_ASSERTION, jwt);
+            }
         } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials)) {
             formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
             formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));

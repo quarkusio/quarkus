@@ -317,9 +317,13 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
                 .satisfies(checkContains("ENTRYPOINT [ \"java\", \"-jar\", \"/deployments/quarkus-run.jar\" ]"));
-        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./mvnw package -Pnative"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:1.0"))
+                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
+                .satisfies(checkContains("./mvnw package -Pnative"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
                 .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 
@@ -337,9 +341,13 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
                 .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
                 .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
-        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:1.0"))
+                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
+                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
                 .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 

@@ -591,7 +591,7 @@ When building native executables and using generic types, you might need to regi
 
 == Simplifying MongoDB with Panache
 
-The link:mongodb-panache[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in link:hibernate-orm-panache.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
+The xref:mongodb-panache.adoc[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
 == Connection Health Check
 
@@ -608,14 +608,14 @@ If you are using the `quarkus-micrometer` or `quarkus-smallrye-metrics` extensio
 This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enabled` property to `true` in your `application.properties`.
 
 So when you access the `/q/metrics` endpoint of your application you will have information about the connection pool status.
-When using link:smallrye-metrics[SmallRye Metrics], connection pool metrics will be available under the `vendor` scope.
+When using xref:smallrye-metrics.adoc[SmallRye Metrics], connection pool metrics will be available under the `vendor` scope.
 
 == Tracing
 
 If you are using the `quarkus-smallrye-opentracing` extension, `quarkus-mongodb-client` can register traces about the commands executed.
-This behavior must be enabled by setting the `quarkus.mongodb.tracing.enabled` property to `true` in your `application.properties` and adding the dependency `io.opentracing.contrib:opentracing-mongo-common` to your pom.xml (for more info read the link:opentracing#mongodb-client[OpenTracing - MongoDB client] section).
+This behavior must be enabled by setting the `quarkus.mongodb.tracing.enabled` property to `true` in your `application.properties` and adding the dependency `io.opentracing.contrib:opentracing-mongo-common` to your pom.xml (for more info read the xref:opentracing.adoc#mongodb-client[OpenTracing - MongoDB client] section).
 
-Read the link:opentracing[OpenTracing] guide, for how to configure OpenTracing and how to use the Jaeger tracer.
+Read the xref:opentracing.adoc[OpenTracing] guide, for how to configure OpenTracing and how to use the Jaeger tracer.
 
 == Testing helpers
 
@@ -626,7 +626,7 @@ To start a MongoDB database for your unit tests, Quarkus provides two `QuarkusTe
 
 To use them, you need to add the `io.quarkus:quarkus-test-mongodb` dependency to your pom.xml.
 
-For more information about the usage of a `QuarkusTestResourceLifecycleManager` please read link:getting-started-testing#quarkus-test-resource[Quarkus test resource].
+For more information about the usage of a `QuarkusTestResourceLifecycleManager` please read xref:getting-started-testing.adoc#quarkus-test-resource[Quarkus test resource].
 
 == The legacy client
 

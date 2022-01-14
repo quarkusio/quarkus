@@ -26,9 +26,34 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     }
 
     /**
+     * A factory may define {@code factory parameters} for the start tag of any section block. A factory {@link Parameter} has a
+     * name and optional default value. The default value is automatically assigned if no other value is set by a parser. A
+     * parameter may be optional. A non-optional parameter that has no value assigned results in a parser error.
+     * <p>
+     * A section block in a template defines the {@code actual parameters}:
      * 
-     * @return the info about the expected parameters
+     * <pre>
+     * {! The value is "item.isActive". The name is not defined. !}
+     * {#if item.isActive}{/}
+     * 
+     * {! The name is "age" and the value is "10". !}
+     * {#let age=10}{/}
+     * </pre>
+     * 
+     * The actual parameters are parsed taking the factory parameters into account:
+     * <ol>
+     * <li>Named actual params are processed first and the relevant values are assigned, e.g. the param with name {@code age}
+     * has the
+     * value {@code 10},</li>
+     * <li>Then, if the number of actual params is greater or equals to the number of factory params the values are set
+     * according to position of factory params,</li>
+     * <li>Otherwise, the values are set according to position but params with no default value take precedence.</li>
+     * <li>Finally, all unset parameters that define a default value are initialized with the default value.</li>
+     * </ol>
+     * 
+     * @return the factory parameters
      * @see #cacheFactoryConfig()
+     * @see BlockInfo#getParameters()
      */
     default ParametersInfo getParameters() {
         return ParametersInfo.EMPTY;
@@ -93,6 +118,11 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
         String getLabel();
 
+        /**
+         * Undeclared params with default values are included.
+         * 
+         * @return the map of parameters
+         */
         Map<String, String> getParameters();
 
         default String getParameter(String name) {
@@ -196,6 +226,10 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
     }
 
+    /**
+     * 
+     * @see Parameter
+     */
     public static final class ParametersInfo implements Iterable<List<Parameter>> {
 
         public static Builder builder() {
@@ -236,11 +270,15 @@ public interface SectionHelperFactory<T extends SectionHelper> {
             }
 
             public Builder addParameter(String name) {
-                return addParameter(SectionHelperFactory.MAIN_BLOCK_NAME, name, null);
+                return addParameter(Parameter.builder(name));
             }
 
             public Builder addParameter(String name, String defaultValue) {
-                return addParameter(SectionHelperFactory.MAIN_BLOCK_NAME, name, defaultValue);
+                return addParameter(Parameter.builder(name).defaultValue(defaultValue));
+            }
+
+            public Builder addParameter(Parameter.Builder param) {
+                return addParameter(param.build());
             }
 
             public Builder addParameter(Parameter param) {
@@ -248,7 +286,11 @@ public interface SectionHelperFactory<T extends SectionHelper> {
             }
 
             public Builder addParameter(String blockLabel, String name, String defaultValue) {
-                return addParameter(blockLabel, new Parameter(name, defaultValue, false));
+                return addParameter(blockLabel, Parameter.builder(name).defaultValue(defaultValue));
+            }
+
+            public Builder addParameter(String blockLabel, Parameter.Builder parameter) {
+                return addParameter(blockLabel, parameter.build());
             }
 
             public Builder addParameter(String blockLabel, Parameter parameter) {

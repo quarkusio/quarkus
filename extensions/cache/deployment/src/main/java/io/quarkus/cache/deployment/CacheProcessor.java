@@ -11,13 +11,17 @@ import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_RESULT;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTORS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_BINDINGS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_BINDING_CONTAINERS;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.MULTI;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.REGISTER_REST_CLIENT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.runtime.metrics.MetricsFactory.MICROMETER;
+import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -31,6 +35,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
@@ -40,7 +45,6 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildIt
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
-import io.quarkus.cache.deployment.exception.UnknownCacheNameException;
 import io.quarkus.cache.deployment.exception.UnsupportedRepeatedAnnotationException;
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
@@ -48,6 +52,9 @@ import io.quarkus.cache.runtime.CacheInvalidateInterceptor;
 import io.quarkus.cache.runtime.CacheResultInterceptor;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheBuildRecorder;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheInfo;
+import io.quarkus.cache.runtime.caffeine.metrics.MetricsInitializer;
+import io.quarkus.cache.runtime.caffeine.metrics.MicrometerMetricsInitializer;
+import io.quarkus.cache.runtime.caffeine.metrics.NoOpMetricsInitializer;
 import io.quarkus.cache.runtime.noop.NoOpCacheBuildRecorder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -56,8 +63,11 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 
 class CacheProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger(CacheProcessor.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -92,7 +102,7 @@ class CacheProcessor {
         for (DotName bindingName : INTERCEPTOR_BINDINGS) {
             for (AnnotationInstance binding : combinedIndex.getIndex().getAnnotations(bindingName)) {
                 throwables.addAll(validateInterceptorBindingTarget(binding, binding.target()));
-                if (binding.target().kind() == Kind.METHOD) {
+                if (binding.target().kind() == METHOD) {
                     /*
                      * Cache names from the interceptor bindings placed on cache interceptors must not be collected to prevent
                      * the instantiation of a cache with an empty name.
@@ -114,7 +124,7 @@ class CacheProcessor {
                  * Client. Using repeated interceptor bindings on a method from a class annotated with @RegisterRestClient must
                  * therefore be forbidden.
                  */
-                if (container.target().kind() == Kind.METHOD) {
+                if (container.target().kind() == METHOD) {
                     MethodInfo methodInfo = container.target().asMethod();
                     if (methodInfo.declaringClass().classAnnotation(REGISTER_REST_CLIENT) != null) {
                         throwables.add(new UnsupportedRepeatedAnnotationException(methodInfo));
@@ -123,41 +133,23 @@ class CacheProcessor {
             }
         }
 
-        /*
-         * Before @CacheName can be validated, additional cache names provided by other extensions must be added to the cache
-         * names collection built above.
-         */
-        for (AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNames) {
-            names.add(additionalCacheName.getName());
+        // Let's also collect the cache names from the @CacheName annotations.
+        for (AnnotationInstance qualifier : combinedIndex.getIndex().getAnnotations(CACHE_NAME)) {
+            // The @CacheName annotation from CacheProducer must be ignored.
+            if (qualifier.target().kind() == METHOD) {
+                /*
+                 * This should only happen in CacheProducer. It'd be nice if we could forbid using @CacheName on a method in
+                 * any other class, but Arc throws an AmbiguousResolutionException before we get a chance to validate things
+                 * here.
+                 */
+            } else {
+                names.add(qualifier.value().asString());
+            }
         }
 
-        // @CacheName can now be validated.
-        for (AnnotationInstance qualifier : combinedIndex.getIndex().getAnnotations(CACHE_NAME)) {
-            String cacheName = qualifier.value().asString();
-            AnnotationTarget target = qualifier.target();
-            switch (target.kind()) {
-                case FIELD:
-                    if (!names.contains(cacheName)) {
-                        ClassInfo declaringClass = target.asField().declaringClass();
-                        throwables.add(new UnknownCacheNameException(declaringClass.name(), cacheName));
-                    }
-                    break;
-                case METHOD:
-                    /*
-                     * This should only happen in CacheProducer. It'd be nice if we could forbid using @CacheName in any other
-                     * class, but Arc throws an AmbiguousResolutionException before we get a chance to validate things here.
-                     */
-                    break;
-                case METHOD_PARAMETER:
-                    if (!names.contains(cacheName)) {
-                        ClassInfo declaringClass = target.asMethodParameter().method().declaringClass();
-                        throwables.add(new UnknownCacheNameException(declaringClass.name(), cacheName));
-                    }
-                    break;
-                default:
-                    // This should never be thrown.
-                    throw new DeploymentException("Unexpected @CacheName target: " + target.kind());
-            }
+        // Finally, additional cache names provided by other extensions must be added to the cache names collection.
+        for (AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNames) {
+            names.add(additionalCacheName.getName());
         }
 
         validationErrors.produce(new ValidationErrorBuildItem(throwables.toArray(new Throwable[0])));
@@ -178,8 +170,13 @@ class CacheProcessor {
                 if (Modifier.isPrivate(methodInfo.flags())) {
                     throwables.add(new PrivateMethodTargetException(methodInfo, binding.name()));
                 }
-                if (CACHE_RESULT.equals(binding.name()) && methodInfo.returnType().kind() == Type.Kind.VOID) {
-                    throwables.add(new VoidReturnTypeTargetException(methodInfo));
+                if (CACHE_RESULT.equals(binding.name())) {
+                    if (methodInfo.returnType().kind() == Type.Kind.VOID) {
+                        throwables.add(new VoidReturnTypeTargetException(methodInfo));
+                    } else if (MULTI.equals(methodInfo.returnType().name())) {
+                        LOGGER.warnf("@CacheResult is not currently supported on a method returning %s [class=%s, method=%s]",
+                                MULTI, methodInfo.declaringClass().name(), methodInfo.name());
+                    }
                 }
                 break;
             default:
@@ -192,14 +189,16 @@ class CacheProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     SyntheticBeanBuildItem configureCacheManagerSyntheticBean(CacheNamesBuildItem cacheNames, CacheConfig config,
-            CaffeineCacheBuildRecorder caffeineRecorder, NoOpCacheBuildRecorder noOpRecorder) {
+            CaffeineCacheBuildRecorder caffeineRecorder, NoOpCacheBuildRecorder noOpRecorder,
+            Optional<MetricsCapabilityBuildItem> metricsCapability) {
 
         Supplier<CacheManager> cacheManagerSupplier;
         if (config.enabled) {
             switch (config.type) {
                 case CacheDeploymentConstants.CAFFEINE_CACHE_TYPE:
                     Set<CaffeineCacheInfo> cacheInfos = CaffeineCacheInfoBuilder.build(cacheNames.getNames(), config);
-                    cacheManagerSupplier = caffeineRecorder.getCacheManagerSupplier(cacheInfos);
+                    MetricsInitializer metricsInitializer = getMetricsInitializer(metricsCapability);
+                    cacheManagerSupplier = caffeineRecorder.getCacheManagerSupplier(cacheInfos, metricsInitializer);
                     break;
                 default:
                     throw new DeploymentException("Unknown cache type: " + config.type);
@@ -212,6 +211,13 @@ class CacheProcessor {
                 .scope(ApplicationScoped.class)
                 .supplier(cacheManagerSupplier)
                 .done();
+    }
+
+    private MetricsInitializer getMetricsInitializer(Optional<MetricsCapabilityBuildItem> metricsCapability) {
+        if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER)) {
+            return new MicrometerMetricsInitializer();
+        }
+        return new NoOpMetricsInitializer();
     }
 
     @BuildStep

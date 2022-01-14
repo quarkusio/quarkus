@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
@@ -14,6 +15,7 @@ import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSetResponseEntityRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.PreResponseFilterHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 class HandlerChain {
@@ -27,8 +29,9 @@ class HandlerChain {
 
     private ClientRestHandler preClientSendHandler = null;
 
-    public HandlerChain(boolean followRedirects, LoggingScope loggingScope, ClientLogger clientLogger) {
-        this.clientSendHandler = new ClientSendRequestHandler(followRedirects, loggingScope, clientLogger);
+    public HandlerChain(boolean followRedirects, LoggingScope loggingScope,
+            Map<Class<?>, MultipartResponseData> multipartData, ClientLogger clientLogger) {
+        this.clientSendHandler = new ClientSendRequestHandler(followRedirects, loggingScope, clientLogger, multipartData);
         this.clientSetResponseEntityRestHandler = new ClientSetResponseEntityRestHandler();
         this.clientResponseCompleteRestHandler = new ClientResponseCompleteRestHandler();
         this.clientErrorHandler = new ClientErrorHandler(loggingScope);

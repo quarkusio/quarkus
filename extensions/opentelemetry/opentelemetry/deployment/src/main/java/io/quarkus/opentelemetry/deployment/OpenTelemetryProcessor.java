@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -29,17 +30,27 @@ import io.quarkus.opentelemetry.runtime.OpenTelemetryProducer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
+import io.quarkus.opentelemetry.runtime.tracing.restclient.OpenTelemetryClientFilter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.deployment.CopyVertxContextDataBuildItem;
 
 public class OpenTelemetryProcessor {
-
     static class OpenTelemetryEnabled implements BooleanSupplier {
         OpenTelemetryConfig otelConfig;
 
         public boolean getAsBoolean() {
             return otelConfig.enabled;
+        }
+    }
+
+    static class RestClientAvailable implements BooleanSupplier {
+        private static final boolean IS_REST_CLIENT_AVAILABLE = isClassPresent("javax.ws.rs.client.ClientRequestFilter");
+
+        @Override
+        public boolean getAsBoolean() {
+            return IS_REST_CLIENT_AVAILABLE;
         }
     }
 
@@ -96,12 +107,21 @@ public class OpenTelemetryProcessor {
         }));
     }
 
+    @BuildStep(onlyIf = { OpenTelemetryEnabled.class, RestClientAvailable.class })
+    void registerProvider(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
+        additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
+    }
+
     @BuildStep(onlyIf = OpenTelemetryEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
-    void createOpenTelemetry(OpenTelemetryConfig openTelemetryConfig,
+    void createOpenTelemetry(
+            OpenTelemetryConfig openTelemetryConfig,
             OpenTelemetryRecorder recorder,
             Optional<TracerProviderBuildItem> tracerProviderBuildItem,
             LaunchModeBuildItem launchMode) {
+
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
             recorder.resetGlobalOpenTelemetryForDevMode();
         }
@@ -116,5 +136,19 @@ public class OpenTelemetryProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void storeVertxOnContextStorage(OpenTelemetryRecorder recorder, CoreVertxBuildItem vertx) {
         recorder.storeVertxOnContextStorage(vertx.getVertx());
+    }
+
+    @BuildStep
+    CopyVertxContextDataBuildItem copyVertxContextData() {
+        return new CopyVertxContextDataBuildItem(QuarkusContextStorage.ACTIVE_CONTEXT);
+    }
+
+    public static boolean isClassPresent(String classname) {
+        try {
+            Class.forName(classname, false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

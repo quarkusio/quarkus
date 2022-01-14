@@ -20,14 +20,18 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
+import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -39,6 +43,13 @@ public final class OidcUtils {
     public static final String USER_INFO_ATTRIBUTE = "userinfo";
     public static final String INTROSPECTION_ATTRIBUTE = "introspection";
     public static final String TENANT_ID_ATTRIBUTE = "tenant-id";
+    public static final String DEFAULT_TENANT_ID = "Default";
+    public static final String SESSION_COOKIE_NAME = "q_session";
+    public static final String STATE_COOKIE_NAME = "q_auth";
+    public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
+    static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
+    static final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
+
     /**
      * This pattern uses a positive lookahead to split an expression around the forward slashes
      * ignoring those which are located inside a pair of the double quotes.
@@ -228,6 +239,47 @@ public final class OidcUtils {
                 // At least check it is not a refresh token issued by Keycloak
                 throw new OIDCException("Refresh token can only be used with the refresh token grant");
             }
+        }
+    }
+
+    static Uni<Void> removeSessionCookie(RoutingContext context, OidcTenantConfig oidcConfig, String cookieName,
+            TokenStateManager tokenStateManager) {
+        String cookieValue = removeCookie(context, oidcConfig, cookieName);
+        if (cookieValue != null) {
+            return tokenStateManager.deleteTokens(context, oidcConfig, cookieValue,
+                    deleteTokensRequestContext);
+        } else {
+            return VOID_UNI;
+        }
+    }
+
+    static String removeCookie(RoutingContext context, OidcTenantConfig oidcConfig, String cookieName) {
+        ServerCookie cookie = (ServerCookie) context.cookieMap().get(cookieName);
+        String cookieValue = null;
+        if (cookie != null) {
+            cookieValue = cookie.getValue();
+            removeCookie(context, cookie, oidcConfig);
+        }
+        return cookieValue;
+    }
+
+    static void removeCookie(RoutingContext context, ServerCookie cookie, OidcTenantConfig oidcConfig) {
+        if (cookie != null) {
+            cookie.setValue("");
+            cookie.setMaxAge(0);
+            Authentication auth = oidcConfig.getAuthentication();
+            setCookiePath(context, auth, cookie);
+            if (auth.cookieDomain.isPresent()) {
+                cookie.setDomain(auth.cookieDomain.get());
+            }
+        }
+    }
+
+    static void setCookiePath(RoutingContext context, Authentication auth, ServerCookie cookie) {
+        if (auth.cookiePathHeader.isPresent() && context.request().headers().contains(auth.cookiePathHeader.get())) {
+            cookie.setPath(context.request().getHeader(auth.cookiePathHeader.get()));
+        } else {
+            cookie.setPath(auth.getCookiePath());
         }
     }
 }

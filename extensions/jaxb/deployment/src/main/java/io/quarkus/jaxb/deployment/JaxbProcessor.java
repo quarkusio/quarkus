@@ -1,6 +1,5 @@
 package io.quarkus.jaxb.deployment;
 
-import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -52,6 +51,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -276,10 +276,7 @@ class JaxbProcessor {
                 .produce(new NativeImageProxyDefinitionBuildItem("com.sun.xml.txw2.TypedXmlWriter"));
 
         for (JaxbFileRootBuildItem i : fileRoots) {
-            try (Stream<Path> stream = iterateResources(applicationArchivesBuildItem, i.getFileRoot())) {
-                stream.filter(p -> p.getFileName().toString().equals("jaxb.index"))
-                        .forEach(p1 -> handleJaxbFile(p1, resource, reflectiveClass));
-            }
+            iterateResources(applicationArchivesBuildItem, i.getFileRoot(), resource, reflectiveClass);
         }
     }
 
@@ -336,7 +333,7 @@ class JaxbProcessor {
         try {
             String path = p.toAbsolutePath().toString().substring(1);
             String pkg = p.toAbsolutePath().getParent().toString().substring(1)
-                    .replace(File.separator, ".") + ".";
+                    .replace(p.getFileSystem().getSeparator(), ".") + ".";
 
             resource.produce(new NativeImageResourceBuildItem(path));
 
@@ -357,12 +354,19 @@ class JaxbProcessor {
         }
     }
 
-    private Stream<Path> iterateResources(ApplicationArchivesBuildItem applicationArchivesBuildItem, String path) {
-        return applicationArchivesBuildItem.getAllApplicationArchives().stream()
-                .map(arch -> arch.getChildPath(path))
-                .filter(p -> p != null && Files.isDirectory(p))
-                .flatMap(JaxbProcessor::safeWalk)
-                .filter(Files::isRegularFile);
+    private void iterateResources(ApplicationArchivesBuildItem applicationArchivesBuildItem, String path,
+            BuildProducer<NativeImageResourceBuildItem> resource, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+            archive.accept(tree -> {
+                var arch = tree.getPath(path);
+                if (arch != null && Files.isDirectory(arch)) {
+                    JaxbProcessor.safeWalk(arch)
+                            .filter(Files::isRegularFile)
+                            .filter(p -> p.getFileName().toString().equals("jaxb.index"))
+                            .forEach(p1 -> handleJaxbFile(p1, resource, reflectiveClass));
+                }
+            });
+        }
     }
 
     public static Stream<Path> safeWalk(Path p) {

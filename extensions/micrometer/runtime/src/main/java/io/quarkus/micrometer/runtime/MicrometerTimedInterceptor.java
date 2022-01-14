@@ -18,6 +18,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.arc.ArcInvocationContext;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Functions;
 
 /**
  * Quarkus defined interceptor for types or methods annotated with {@link Timed @Timed}.
@@ -37,8 +39,8 @@ public class MicrometerTimedInterceptor {
     }
 
     @AroundInvoke
+    @SuppressWarnings("unchecked")
     Object timedMethod(ArcInvocationContext context) throws Exception {
-        final boolean stopWhenCompleted = CompletionStage.class.isAssignableFrom(context.getMethod().getReturnType());
         final List<Sample> samples = getSamples(context);
 
         if (samples.isEmpty()) {
@@ -46,17 +48,27 @@ public class MicrometerTimedInterceptor {
             return context.proceed();
         }
 
-        if (stopWhenCompleted) {
+        Class<?> returnType = context.getMethod().getReturnType();
+        if (TypesUtil.isCompletionStage(returnType)) {
             try {
                 return ((CompletionStage<?>) context.proceed()).whenComplete((result, throwable) -> {
-                    for (Sample sample : samples) {
-                        sample.stop(MicrometerRecorder.getExceptionTag(throwable));
-                    }
+                    stop(samples, MicrometerRecorder.getExceptionTag(throwable));
                 });
             } catch (Exception ex) {
-                for (Sample sample : samples) {
-                    sample.stop(MicrometerRecorder.getExceptionTag(ex));
-                }
+                stop(samples, MicrometerRecorder.getExceptionTag(ex));
+                throw ex;
+            }
+        } else if (TypesUtil.isUni(returnType)) {
+            try {
+                return ((Uni<Object>) context.proceed()).onTermination().invoke(
+                        new Functions.TriConsumer<>() {
+                            @Override
+                            public void accept(Object o, Throwable throwable, Boolean cancelled) {
+                                stop(samples, MicrometerRecorder.getExceptionTag(throwable));
+                            }
+                        });
+            } catch (Exception ex) {
+                stop(samples, MicrometerRecorder.getExceptionTag(ex));
                 throw ex;
             }
         }
@@ -68,9 +80,7 @@ public class MicrometerTimedInterceptor {
             exceptionClass = MicrometerRecorder.getExceptionTag(ex);
             throw ex;
         } finally {
-            for (Sample sample : samples) {
-                sample.stop(exceptionClass);
-            }
+            stop(samples, exceptionClass);
         }
     }
 
@@ -90,6 +100,12 @@ public class MicrometerTimedInterceptor {
             }
         }
         return samples;
+    }
+
+    private void stop(List<Sample> samples, String throwableClassName) {
+        for (int i = 0; i < samples.size(); i++) {
+            samples.get(i).stop(throwableClassName);
+        }
     }
 
     private void record(Timed timed, Timer.Sample sample, String exceptionClass, Tags timerTags) {
@@ -141,7 +157,7 @@ public class MicrometerTimedInterceptor {
         return Tags.of("class", className, "method", methodName);
     }
 
-    abstract class Sample {
+    abstract static class Sample {
 
         protected final Timed timed;
         protected final Tags commonTags;

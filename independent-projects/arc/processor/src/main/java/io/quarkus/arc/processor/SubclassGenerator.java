@@ -11,6 +11,7 @@ import io.quarkus.arc.Subclass;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.processor.BeanInfo.DecorationInfo;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
+import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -451,8 +452,13 @@ public class SubclassGenerator extends AbstractGenerator {
         MethodCreator constructor = delegateSubclass.getMethodCreator(Methods.INIT, "V",
                 constructorParameterTypes.toArray(new String[0]));
         int param = 0;
-        // Invoke super()
-        constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
+        if (delegateTypeIsInterface) {
+            // Invoke super()
+            constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
+        } else {
+            constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(delegateTypeClass.name().toString()),
+                    constructor.getThis());
+        }
         // Set fields
         if (subclassField != null) {
             constructor.writeInstanceField(
@@ -469,7 +475,7 @@ public class SubclassGenerator extends AbstractGenerator {
         // Identify the set of methods that should be delegated
         // Note that the delegate subclass must override ALL methods from the delegate type
         // This is not enough if the delegate type is parameterized 
-        List<MethodInfo> methods = new ArrayList<>();
+        Set<MethodKey> methods = new HashSet<>();
         Methods.addDelegateTypeMethods(index, delegateTypeClass, methods);
 
         // The delegate type can declare type parameters
@@ -488,7 +494,8 @@ public class SubclassGenerator extends AbstractGenerator {
             }
         }
 
-        for (MethodInfo method : methods) {
+        for (MethodKey m : methods) {
+            MethodInfo method = m.method;
             if (Methods.skipForDelegateSubclass(method)) {
                 continue;
             }

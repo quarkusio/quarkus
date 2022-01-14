@@ -19,10 +19,20 @@ public class CharsetConverter implements Converter<Charset>, Serializable {
 
     @Override
     public Charset convert(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmedCharset = value.trim();
+
+        if (trimmedCharset.isEmpty()) {
+            return null;
+        }
+
         try {
-            return Charset.forName(value);
+            return Charset.forName(trimmedCharset);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Unable to create Charset from: '" + value + "'", e);
+            throw new IllegalArgumentException("Unable to create Charset from: '" + trimmedCharset + "'", e);
         }
     }
 }

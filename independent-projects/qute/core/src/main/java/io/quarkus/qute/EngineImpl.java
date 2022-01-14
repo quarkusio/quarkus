@@ -1,15 +1,14 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.Parser.StringReader;
+import io.quarkus.qute.TemplateInstance.Initializer;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,10 +32,11 @@ class EngineImpl implements Engine {
     private final List<ResultMapper> resultMappers;
     private final AtomicLong idGenerator = new AtomicLong(0);
     private final List<ParserHook> parserHooks;
+    final List<TemplateInstance.Initializer> initializers;
     final boolean removeStandaloneLines;
 
     EngineImpl(EngineBuilder builder) {
-        this.sectionHelperFactories = Collections.unmodifiableMap(new HashMap<>(builder.sectionHelperFactories));
+        this.sectionHelperFactories = Map.copyOf(builder.sectionHelperFactories);
         this.valueResolvers = sort(builder.valueResolvers);
         this.namespaceResolvers = ImmutableList.<NamespaceResolver> builder()
                 .addAll(builder.namespaceResolvers).add(new TemplateImpl.DataNamespaceResolver()).build();
@@ -47,6 +47,7 @@ class EngineImpl implements Engine {
         this.sectionHelperFunc = builder.sectionHelperFunc;
         this.parserHooks = ImmutableList.copyOf(builder.parserHooks);
         this.removeStandaloneLines = builder.removeStandaloneLines;
+        this.initializers = ImmutableList.copyOf(builder.initializers);
     }
 
     @Override
@@ -124,6 +125,11 @@ class EngineImpl implements Engine {
     @Override
     public void removeTemplates(Predicate<String> test) {
         templates.keySet().removeIf(test);
+    }
+
+    @Override
+    public List<Initializer> getTemplateInstanceInitializers() {
+        return initializers;
     }
 
     String generateId() {

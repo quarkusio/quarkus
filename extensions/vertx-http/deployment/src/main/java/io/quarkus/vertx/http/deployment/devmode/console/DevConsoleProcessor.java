@@ -4,16 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.net.URISyntaxException;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -70,7 +66,6 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
@@ -93,12 +88,14 @@ import io.quarkus.qute.ValueResolvers;
 import io.quarkus.qute.Variant;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
+import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
@@ -235,6 +232,7 @@ public class DevConsoleProcessor {
         vertxOptions.getMetricsOptions().setEnabled(false);
         //Not good for development:
         vertxOptions.getFileSystemOptions().setFileCachingEnabled(false);
+        vertxOptions.getFileSystemOptions().setClassPathResolvingEnabled(false);
         VertxBuilder builder = new VertxBuilder(vertxOptions);
         builder.threadFactory(new VertxThreadFactory() {
             @Override
@@ -406,11 +404,20 @@ public class DevConsoleProcessor {
         Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem,
                 curateOutcomeBuildItem,
                 launchModeBuildItem,
-                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH);
+                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH, true, true);
 
+        List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations = new ArrayList<>();
+        webRootConfigurations.add(
+                new FileSystemStaticHandler.StaticWebRootConfiguration(devConsoleStaticResourcesDeploymentPath.toString(), ""));
+        for (Path resolvedPath : devConsoleResourcesArtifact.getResolvedPaths()) {
+            webRootConfigurations
+                    .add(new FileSystemStaticHandler.StaticWebRootConfiguration(resolvedPath.toString(),
+                            STATIC_RESOURCES_PATH));
+        }
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route("dev/resources/*")
-                .handler(recorder.devConsoleHandler(devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
+                .handler(recorder.fileSystemStaticHandler(
+                        webRootConfigurations, devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
                 .build());
 
         // Add the log stream
@@ -473,7 +480,7 @@ public class DevConsoleProcessor {
                 new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev", host, port)));
     }
 
-    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
+    public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
             String port) {
         if (path.startsWith("/q")) {
             path = np.resolvePath(path.substring(3));
@@ -707,51 +714,61 @@ public class DevConsoleProcessor {
 
     @BuildStep
     void collectTemplates(BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
+        final Enumeration<URL> devTemplateURLs;
         try {
-            ClassLoader classLoader = DevConsoleProcessor.class.getClassLoader();
-            Enumeration<URL> devTemplateURLs = classLoader.getResources("/dev-templates");
-            while (devTemplateURLs.hasMoreElements()) {
-                URL devTemplatesURL = devTemplateURLs.nextElement();
-                String devTemplatesURLStr = devTemplatesURL.toExternalForm();
-                if (devTemplatesURLStr.startsWith("jar:file:") && devTemplatesURLStr.endsWith("!/dev-templates")) {
-                    String jarPath = devTemplatesURLStr.substring(9, devTemplatesURLStr.length() - 15);
-                    if (File.separatorChar == '\\') {
-                        // on Windows this will be /C:/some/path, so turn it into C:\some\path
-                        jarPath = jarPath.substring(1).replace('/', '\\');
-                    }
-                    try (FileSystem fs = ZipUtils
-                            .newFileSystem(Paths.get(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name())), classLoader)) {
-                        scanTemplates(fs, null, fs.getRootDirectories(), devTemplatePaths);
-                    }
-                } else if ("file".equals(devTemplatesURL.getProtocol())) {
-                    // This can happen if you run an example app in dev mode 
-                    // and this app is part of a multi-module project which also declares the extension
-                    // Just try to locate the pom.properties file in the target/maven-archiver directory
-                    // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overriden
-                    Path classes = Paths.get(devTemplatesURL.toURI()).getParent();
-                    Path target = classes != null ? classes.getParent() : null;
-                    if (target != null) {
-                        Path mavenArchiver = target.resolve("maven-archiver");
-                        if (mavenArchiver.toFile().canRead()) {
-                            scanTemplates(null, mavenArchiver, Collections.singleton(classes), devTemplatePaths);
-                        }
-                    }
+            devTemplateURLs = DevConsoleProcessor.class.getClassLoader().getResources("/dev-templates");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        while (devTemplateURLs.hasMoreElements()) {
+            URL devTemplatesUrl = devTemplateURLs.nextElement();
+            ClassPathUtils.consumeAsPath(devTemplatesUrl, devTemplatesDir -> {
+                final Path classesDir = devTemplatesDir.getParent();
+                if (classesDir == null) {
+                    return;
                 }
-            }
-        } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException(e);
+                final Entry<String, String> entry = readPomPropertiesIfBuilt(devTemplatesUrl, classesDir);
+                if (entry == null) {
+                    return;
+                }
+                try {
+                    scanTemplates(entry, devTemplatesDir, devTemplatePaths);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
         }
     }
 
-    private void scanTemplates(FileSystem fs, Path pomPropertiesPath, Iterable<Path> rootDirectories,
+    private Entry<String, String> readPomPropertiesIfBuilt(URL devTemplatesURL, final Path classesDir) {
+        Entry<String, String> entry = null;
+        try {
+            if ("jar".equals(devTemplatesURL.getProtocol())) {
+                final Path metaInf = classesDir.resolve("META-INF").resolve("maven");
+                if (Files.exists(metaInf)) {
+                    entry = ArtifactInfoUtil.groupIdAndArtifactId(metaInf);
+                }
+            } else {
+                final Path rootDir = classesDir.getParent();
+                final Path mavenArchiver = rootDir == null ? null : rootDir.resolve("maven-archiver");
+                if (mavenArchiver == null || !mavenArchiver.toFile().canRead()) {
+                    // it's a module output dir and the Maven metadata hasn't been generated 
+                    return null;
+                }
+                entry = ArtifactInfoUtil.groupIdAndArtifactId(mavenArchiver);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        if (entry == null) {
+            throw new RuntimeException("Missing POM metadata in " + devTemplatesURL);
+        }
+        return entry;
+    }
+
+    private void scanTemplates(Entry<String, String> entry, Path devTemplatesPath,
             BuildProducer<DevTemplatePathBuildItem> devTemplatePaths)
             throws IOException {
-        Entry<String, String> entry = fs != null ? ArtifactInfoUtil.groupIdAndArtifactId(fs)
-                : ArtifactInfoUtil.groupIdAndArtifactId(pomPropertiesPath);
-        if (entry == null) {
-            throw new RuntimeException("Missing pom metadata [fileSystem: " + fs + ", rootDirectories: " + rootDirectories
-                    + ", pomPath: " + pomPropertiesPath + "]");
-        }
         String prefix;
         // don't move stuff for our "root" dev console artifact, since it includes the main template
         if (entry.getKey().equals("io.quarkus")
@@ -760,35 +777,34 @@ public class DevConsoleProcessor {
         else
             prefix = entry.getKey() + "." + entry.getValue() + "/";
 
-        for (Path root : rootDirectories) {
-            Path devTemplatesPath = root.resolve("dev-templates");
-            Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    if (dir.equals(root) || dir.toString().equals("/") || dir.startsWith(devTemplatesPath))
-                        return FileVisitResult.CONTINUE;
-                    return FileVisitResult.SKIP_SUBTREE;
+        final Path root = devTemplatesPath.getParent();
+        Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                if (dir.equals(root) || dir.toString().equals("/") || dir.startsWith(devTemplatesPath)) {
+                    return FileVisitResult.CONTINUE;
                 }
+                return FileVisitResult.SKIP_SUBTREE;
+            }
 
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    String contents = Files.readString(file);
-                    // don't move tags yet, since we don't know how to use them afterwards
-                    String relativePath = devTemplatesPath.relativize(file).toString();
-                    String correctedPath;
-                    if (File.separatorChar == '\\') {
-                        relativePath = relativePath.replace('\\', '/');
-                    }
-                    if (relativePath.startsWith(DevTemplatePathBuildItem.TAGS))
-                        correctedPath = relativePath;
-                    else
-                        correctedPath = prefix + relativePath;
-                    devTemplatePaths
-                            .produce(new DevTemplatePathBuildItem(correctedPath, contents));
-                    return super.visitFile(file, attrs);
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                String contents = Files.readString(file);
+                // don't move tags yet, since we don't know how to use them afterwards
+                String relativePath = devTemplatesPath.relativize(file).toString();
+                String correctedPath;
+                if (File.separatorChar == '\\') {
+                    relativePath = relativePath.replace('\\', '/');
                 }
-            });
-        }
+                if (relativePath.startsWith(DevTemplatePathBuildItem.TAGS))
+                    correctedPath = relativePath;
+                else
+                    correctedPath = prefix + relativePath;
+                devTemplatePaths
+                        .produce(new DevTemplatePathBuildItem(correctedPath, contents));
+                return super.visitFile(file, attrs);
+            }
+        });
     }
 
     public static class JavaDocResolver implements ValueResolver {
@@ -854,14 +870,12 @@ public class DevConsoleProcessor {
         private static final String[] SUPPORTED_LANGS = { "java", "kotlin" };
 
         private final Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem;
-        private final Path srcMainPath;
         private final boolean disable;
 
         public IdeInfoContextFunction(BuildSystemTargetBuildItem buildSystemTargetBuildItem,
                 Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
                 LaunchModeBuildItem launchModeBuildItem) {
             this.effectiveIdeBuildItem = effectiveIdeBuildItem;
-            srcMainPath = buildSystemTargetBuildItem.getOutputDirectory().getParent().resolve("src").resolve("main");
             disable = launchModeBuildItem.getDevModeType().orElse(DevModeType.LOCAL) != DevModeType.LOCAL;
         }
 
@@ -869,29 +883,41 @@ public class DevConsoleProcessor {
         public Object apply(EvalContext ctx) {
             String ctxName = ctx.getName();
 
+            List<Path> sourcesDir = DevConsoleManager.getHotReplacementContext().getSourcesDir();
             if (ctxName.equals("sourcePackages")) {
                 if (disable) {
                     return Collections.emptyList(); // we need this here because the result needs to be iterable
                 }
                 Map<String, List<String>> sourcePackagesByLang = new HashMap<>();
 
-                for (String lang : SUPPORTED_LANGS) {
-                    List<String> packages = sourcePackagesForLang(srcMainPath, lang);
+                for (Path sourcePaths : sourcesDir) {
+                    String lang = sourcePaths.getFileName().toString();
+                    List<String> packages = sourcePackagesForRoot(sourcePaths);
                     if (!packages.isEmpty()) {
                         sourcePackagesByLang.put(lang, packages);
                     }
                 }
                 return sourcePackagesByLang;
             }
+            if (ctxName.equals("locationPackages")) {
+                if (disable) {
+                    return Collections.emptyList(); // we need this here because the result needs to be iterable
+                }
+                Map<String, List<String>> sourcePackagesByDir = new HashMap<>();
 
+                for (Path sourcePaths : sourcesDir) {
+                    List<String> packages = sourcePackagesForRoot(sourcePaths);
+                    if (!packages.isEmpty()) {
+                        sourcePackagesByDir.put(sourcePaths.toAbsolutePath().toString(), packages);
+                    }
+                }
+                return sourcePackagesByDir;
+            }
             if (disable) { // all the other values are Strings
                 return EMPTY;
             }
 
             switch (ctxName) {
-                case "srcMainPath": {
-                    return srcMainPath.toAbsolutePath().toString().replace("\\", "/");
-                }
                 case "ideLinkType":
                     if (!effectiveIdeBuildItem.isPresent()) {
                         return "none";
@@ -920,8 +946,7 @@ public class DevConsoleProcessor {
          * <p>
          * TODO: this likely covers almost all typical use cases, but probably needs some tweaks for extreme corner cases
          */
-        private List<String> sourcePackagesForLang(Path srcMainPath, String lang) {
-            Path langPath = srcMainPath.resolve(lang);
+        private List<String> sourcePackagesForRoot(Path langPath) {
             if (!Files.exists(langPath)) {
                 return Collections.emptyList();
             }

@@ -12,12 +12,8 @@ import javax.interceptor.InvocationContext;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerBuilder;
-import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.extension.annotations.SpanAttribute;
 import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.annotation.support.MethodSpanAttributesExtractor;
@@ -34,7 +30,8 @@ public class WithSpanInterceptor {
     private final Instrumenter<MethodRequest, Void> instrumenter;
 
     public WithSpanInterceptor(final OpenTelemetry openTelemetry) {
-        InstrumenterBuilder<MethodRequest, Void> builder = Instrumenter.newBuilder(new OpenTelemetryInstrumenter(openTelemetry),
+        InstrumenterBuilder<MethodRequest, Void> builder = Instrumenter.builder(
+                openTelemetry,
                 INSTRUMENTATION_NAME,
                 new MethodRequestSpanNameExtractor());
 
@@ -81,42 +78,6 @@ public class WithSpanInterceptor {
             return SpanKind.INTERNAL;
         }
         return annotation.kind();
-    }
-
-    // To ignore the version and find our Tracer, because the version is hardcoded in the Instrumenter constructor.
-    private static final class OpenTelemetryInstrumenter implements OpenTelemetry {
-        private final OpenTelemetry openTelemetry;
-
-        public OpenTelemetryInstrumenter(final OpenTelemetry openTelemetry) {
-            this.openTelemetry = openTelemetry;
-        }
-
-        @Override
-        public TracerProvider getTracerProvider() {
-            return openTelemetry.getTracerProvider();
-        }
-
-        @Override
-        public Tracer getTracer(final String instrumentationName) {
-            return openTelemetry.getTracer(instrumentationName);
-        }
-
-        @Override
-        public Tracer getTracer(
-                final String instrumentationName,
-                final String instrumentationVersion) {
-            return openTelemetry.getTracer(instrumentationName);
-        }
-
-        @Override
-        public TracerBuilder tracerBuilder(final String instrumentationName) {
-            return openTelemetry.tracerBuilder(instrumentationName);
-        }
-
-        @Override
-        public ContextPropagators getPropagators() {
-            return openTelemetry.getPropagators();
-        }
     }
 
     private static final class MethodRequestSpanNameExtractor implements SpanNameExtractor<MethodRequest> {

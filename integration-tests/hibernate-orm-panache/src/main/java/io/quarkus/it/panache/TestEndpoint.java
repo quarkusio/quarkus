@@ -170,6 +170,8 @@ public class TestEndpoint {
         Assertions.assertEquals(person, persons.get(0));
         Assertions.assertEquals(1, Person.find("#Person.getByName", Parameters.with("name", "stef")).count());
         Assertions.assertThrows(PanacheQueryException.class, () -> Person.find("#Person.namedQueryNotFound").list());
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> Person.find("#Person.getByName", Sort.by("name"), Parameters.with("name", "stef")));
         NamedQueryEntity.find("#NamedQueryMappedSuperClass.getAll").list();
         NamedQueryEntity.find("#NamedQueryEntity.getAll").list();
         NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll1").list();
@@ -711,6 +713,8 @@ public class TestEndpoint {
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
         Assertions.assertThrows(PanacheQueryException.class, () -> personDao.find("#Person.namedQueryNotFound").list());
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> personDao.find("#Person.getByName", Sort.by("name"), Parameters.with("name", "stef")));
         namedQueryRepository.find("#NamedQueryMappedSuperClass.getAll").list();
         namedQueryRepository.find("#NamedQueryEntity.getAll").list();
         namedQueryWith2QueriesRepository.find("#NamedQueryWith2QueriesEntity.getAll1").list();

@@ -26,6 +26,7 @@ public class MariaDBDevServicesProcessor {
 
     public static final String TAG = "10.5.9";
     public static final Integer PORT = 3306;
+    public static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "TC_MY_CNF";
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMariaDB(
@@ -33,7 +34,8 @@ public class MariaDBDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MARIADB, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    Optional<String> datasourceName, Optional<String> imageName,
+                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusMariaDBContainer container = new QuarkusMariaDBContainer(imageName, fixedExposedPort,
                         !devServicesSharedNetworkBuildItem.isEmpty());
@@ -41,7 +43,12 @@ public class MariaDBDevServicesProcessor {
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
                         .withDatabaseName(datasourceName.orElse("default"));
-                additionalProperties.forEach(container::withUrlParam);
+
+                if (containerProperties.containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {
+                    container.withConfigurationOverride(containerProperties.get(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME));
+                }
+
+                additionalJdbcUrlProperties.forEach(container::withUrlParam);
                 container.start();
 
                 LOG.info("Dev Services for MariaDB started.");
@@ -67,7 +74,8 @@ public class MariaDBDevServicesProcessor {
         private String hostName = null;
 
         public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
-            super(DockerImageName.parse(imageName.orElse(MariaDBContainer.IMAGE + ":" + MariaDBDevServicesProcessor.TAG))
+            super(DockerImageName
+                    .parse(imageName.orElse("docker.io/" + MariaDBContainer.IMAGE + ":" + MariaDBDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(DockerImageName.parse(MariaDBContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

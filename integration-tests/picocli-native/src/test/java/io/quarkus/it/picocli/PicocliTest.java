@@ -36,6 +36,24 @@ public class PicocliTest {
     }
 
     @Test
+    public void testExcludeLogCapturing(QuarkusMainLauncher launcher) {
+        org.jboss.logging.Logger.getLogger("test").error("error");
+        LaunchResult result = launcher.launch("with-method-sub-command", "hello", "-n", "World!");
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.getOutput()).isEqualTo("Hello World!");
+    }
+
+    @Test
+    public void testIncludeLogCommand(QuarkusMainLauncher launcher) {
+        org.jboss.logging.Logger.getLogger("test").error("error");
+        LaunchResult result = launcher.launch("with-method-sub-command", "loggingHello", "-n", "World!");
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.getOutput()).contains("ERROR [io.qua.it.pic.WithMethodSubCommand] (main) Hello World!");
+        assertThat(result.getOutputStream().size()).isEqualTo(1);
+        assertThat(result.getOutput()).doesNotContain("ERROR [test] (main) error");
+    }
+
+    @Test
     @Launch({ "command-used-as-parent", "-p", "testValue", "child" })
     public void testParentCommand(LaunchResult result) {
         assertThat(result.getOutput()).isEqualTo("testValue");

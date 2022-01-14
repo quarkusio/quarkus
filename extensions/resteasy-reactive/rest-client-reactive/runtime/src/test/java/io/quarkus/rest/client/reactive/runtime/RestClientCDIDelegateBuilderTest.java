@@ -8,6 +8,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -19,7 +20,6 @@ import javax.ws.rs.client.ClientResponseFilter;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
@@ -70,9 +70,9 @@ public class RestClientCDIDelegateBuilderTest {
     }
 
     @Test
-    public void testQuarkusConfig() throws Exception {
+    public void testQuarkusConfig() {
         RestClientsConfig configRoot = createSampleConfiguration();
-        RestClientBuilder restClientBuilderMock = Mockito.mock(RestClientBuilder.class);
+        RestClientBuilderImpl restClientBuilderMock = Mockito.mock(RestClientBuilderImpl.class);
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",
@@ -91,6 +91,8 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_TTL, 30); // value in seconds
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 103);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MAX_REDIRECTS, 104);
+        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.SHARED, true);
+        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.NAME, "my-client");
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE,
                 HttpPostRequestEncoder.EncoderMode.HTML5);
     }
@@ -106,6 +108,9 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.readTimeout = Optional.of(101L);
         clientConfig.followRedirects = Optional.of(true);
         clientConfig.proxyAddress = Optional.of("localhost:1234");
+        clientConfig.proxyUser = Optional.of("admin");
+        clientConfig.proxyPassword = Optional.of("adm1n");
+        clientConfig.nonProxyHosts = Optional.empty();
         clientConfig.queryParamStyle = Optional.of(QueryParamStyle.COMMA_SEPARATED);
         clientConfig.trustStore = Optional.of(truststoreFile.getAbsolutePath());
         clientConfig.trustStorePassword = Optional.of("truststorePassword");
@@ -118,6 +123,9 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.connectionTTL = Optional.of(30000); // value in milliseconds
         clientConfig.connectionPoolSize = Optional.of(103);
         clientConfig.maxRedirects = Optional.of(104);
+        clientConfig.headers = Collections.emptyMap();
+        clientConfig.shared = Optional.of(true);
+        clientConfig.name = Optional.of("my-client");
 
         RestClientsConfig configRoot = new RestClientsConfig();
         configRoot.multipartPostEncoderMode = Optional.of("HTML5");

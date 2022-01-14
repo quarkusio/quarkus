@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -69,7 +70,7 @@ class SectionNode implements TemplateNode {
         SectionHelperFactory<?> factory;
         private EngineImpl engine;
 
-        public Builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
+        Builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
                 Function<String, TemplateException> errorFun) {
             this.helperName = helperName;
             this.origin = origin;
@@ -158,6 +159,12 @@ class SectionNode implements TemplateNode {
         @Override
         public ResolutionContext resolutionContext() {
             return resolutionContext;
+        }
+
+        @Override
+        public ResolutionContext newResolutionContext(Object data, Map<String, SectionBlock> extendingBlocks) {
+            return new ResolutionContextImpl(data, resolutionContext.getEvaluator(), extendingBlocks,
+                    resolutionContext::getAttribute);
         }
 
     }

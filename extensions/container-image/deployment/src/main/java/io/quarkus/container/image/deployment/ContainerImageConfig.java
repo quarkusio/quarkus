@@ -80,13 +80,13 @@ public class ContainerImageConfig {
      * Whether or not a image build will be performed.
      */
     @ConfigItem
-    public boolean build;
+    public Optional<Boolean> build;
 
     /**
      * Whether or not an image push will be performed.
      */
     @ConfigItem
-    public boolean push;
+    public Optional<Boolean> push;
 
     /**
      * The name of the container image extension to use (e.g. docker, jib, s2i).
@@ -94,6 +94,22 @@ public class ContainerImageConfig {
      */
     @ConfigItem
     public Optional<String> builder;
+
+    public boolean isBuildExplicitlyEnabled() {
+        return build.isPresent() && build.get();
+    }
+
+    public boolean isBuildExplicitlyDisabled() {
+        return build.isPresent() && !build.get();
+    }
+
+    public boolean isPushExplicitlyEnabled() {
+        return push.isPresent() && push.get();
+    }
+
+    public boolean isPushExplicitlyDisabled() {
+        return push.isPresent() && !push.get();
+    }
 
     /**
      * Since user.name which is default value can be uppercase and uppercase values are not allowed

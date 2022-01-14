@@ -20,10 +20,10 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.6.0</kotlin.version>
-        <dokka.version>1.6.0</dokka.version>
+        <kotlin.version>1.6.10</kotlin.version>
+        <dokka.version>1.6.10</dokka.version>
         <scala.version>2.12.13</scala.version>
-        <scala-maven-plugin.version>4.5.4</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.5.6</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
@@ -34,7 +34,7 @@
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- jandex maven plugin version -->
-        <jandex-maven-plugin.version>1.2.1</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>1.2.2</jandex-maven-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
@@ -42,14 +42,15 @@
         <graal-sdk.version-for-documentation>21.3.0</graal-sdk.version-for-documentation>
         <mandrel.version-for-documentation>21.3</mandrel.version-for-documentation>
 
-        <asciidoctorj.version>2.3.0</asciidoctorj.version>
+        <asciidoctorj.version>2.5.2</asciidoctorj.version>
         <htmlunit.version>2.40.0</htmlunit.version>
-        <javaparser-core.version>3.14.10</javaparser-core.version>
+        <javaparser-core.version>3.24.0</javaparser-core.version>
+        <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
-        <commonmark.version>0.18.0</commonmark.version>
+        <commonmark.version>0.18.1</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.5.0.Final</arquillian.version>
@@ -64,8 +65,8 @@
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.4</proposed-maven-version>
-        <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>7.3.1</gradle-wrapper.version>
+        <maven-wrapper.version>3.1.0</maven-wrapper.version>
+        <gradle-wrapper.version>7.3.3</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
 
@@ -78,18 +79,24 @@
         <elasticsearch-server.version>7.10.0</elasticsearch-server.version>
         <elasticsearch.image>docker.elastic.co/elasticsearch/elasticsearch-oss:${elasticsearch-server.version}</elasticsearch.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
+        <opensearch-server.version>1.2.3</opensearch-server.version>
+        <opensearch.image>opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
+        <opensearch.protocol>http</opensearch.protocol>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:15.0.2</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:16.0.0</keycloak.docker.image>
 
-        <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
+        <unboundid-ldap.version>6.0.3</unboundid-ldap.version>
 
         <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.0.0</wiremock-maven-plugin.version>
+
+        <!-- Artemis test dependencies -->
+        <artemis.version>2.20.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -98,18 +105,19 @@
 
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.38.0</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.38.1</docker-maven-plugin.version>
         <formatter-maven-plugin.version>2.17.1</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.6.2</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
 
-        <!-- Webjars -->
-        <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
-        <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
-        <webjar.jquery.version>3.5.1</webjar.jquery.version>
-        <webjar.codemirror.version>5.62.0</webjar.codemirror.version>
+        <!-- Webjars used by the Dev UI -->
+        <webjar.bootstrap.version>4.6.1</webjar.bootstrap.version>
+        <webjar.font-awesome.version>5.15.4</webjar.font-awesome.version>
+        <webjar.jquery.version>3.6.0</webjar.jquery.version>
+        <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
+        <!-- we don't add mermaid as a dependency as it brings a ton of things we don't use -->
         <webjar.mermaid.version>8.9.1</webjar.mermaid.version>
 
         <!-- revapi API check -->
@@ -186,6 +194,18 @@
                 <groupId>org.commonmark</groupId>
                 <artifactId>commonmark</artifactId>
                 <version>${commonmark.version}</version>
+            </dependency>
+
+            <!-- Extension processor -->
+            <dependency>
+                <groupId>org.jboss.jdeparser</groupId>
+                <artifactId>jdeparser</artifactId>
+                <version>${jdeparser.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.javaparser</groupId>
+                <artifactId>javaparser-core</artifactId>
+                <version>${javaparser-core.version}</version>
             </dependency>
 
             <!-- Miscellaneous -->
@@ -319,6 +339,60 @@
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Artemis test dependencies -->
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-server</artifactId>
+                <version>${artemis.version}</version>
+                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.geronimo.specs</groupId>
+                        <artifactId>geronimo-json_1.0_spec</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.johnzon</groupId>
+                        <artifactId>johnzon-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.logmanager</groupId>
+                        <artifactId>jboss-logmanager</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <!-- Excluding the API jar as the impl jar also contains the API -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-amqp-protocol</artifactId>
+                <version>${artemis.version}</version>
+                <!-- Force the test scope as we want to make sure this is not used outside of tests -->
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                       <groupId>org.apache.activemq</groupId>
+                       <artifactId>artemis-server</artifactId>
+                    </exclusion>
+                    <!-- Excluding the API jar as the impl jar also contains the API -->
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -505,6 +579,11 @@
                                             <exclude>org.slf4j:slf4j-jdk14</exclude>
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
+                                            <!-- Ban Logback implementations -->
+                                            <exclude>ch.qos.logback:logback-classic</exclude>
+                                            <exclude>ch.qos.logback:logback-core</exclude>
+                                            <exclude>ch.qos.logback:logback-access</exclude>
+                                            <exclude>ch.qos.logback:logback</exclude>
                                             <exclude>org.osgi:org.osgi.annotation.versioning</exclude>
                                             <!-- Ban Spring Dependencies (since we have our own jars)-->
                                             <exclude>org.springframework:spring-core</exclude>
@@ -524,6 +603,7 @@
                                             <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
                                             <!-- Includes its own copy of an old version of the servlet API-->
                                             <exclude>org.apache.tomcat.embed:tomcat-embed-core</exclude>
+                                            <exclude>org.jboss.modules:jboss-modules</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

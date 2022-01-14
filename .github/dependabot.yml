@@ -13,12 +13,11 @@ updates:
       - dependency-name: org.jboss:jboss-parent
       - dependency-name: org.jboss.resteasy:*
       - dependency-name: org.apache.activemq:*
-      - dependency-name: org.flywaydb:flyway-core
-      - dependency-name: org.liquibase:liquibase-core
-      - dependency-name: org.liquibase.ext:liquibase-mongodb
+      - dependency-name: org.flywaydb:*
+      - dependency-name: org.liquibase:*
+      - dependency-name: org.liquibase.ext:*
       - dependency-name: org.freemarker:freemarker
-      - dependency-name: org.eclipse.jgit:*
-      - dependency-name: io.fabric8:kubernetes-client-bom
+      - dependency-name: io.fabric8:*
       - dependency-name: org.apache.httpcomponents:*
       - dependency-name: org.quartz-scheduler:quartz
       - dependency-name: com.cronutils:cron-utils
@@ -26,9 +25,10 @@ updates:
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
       - dependency-name: com.vackosar.gitflowincrementalbuilder:gitflow-incremental-builder
-      - dependency-name: com.jcraft:jzlib
       - dependency-name: org.jboss.logging:*
       - dependency-name: org.jboss.logmanager:*
+      - dependency-name: org.apache.logging.log4j:*
+      - dependency-name: org.slf4j:*
       - dependency-name: org.ow2.asm:*
       - dependency-name: org.glassfish:jakarta-el
       - dependency-name: com.google.cloud.tools:jib-core
@@ -36,6 +36,7 @@ updates:
       - dependency-name: io.quarkus.gizmo:gizmo
       - dependency-name: io.quarkus.http:*
       - dependency-name: io.quarkus:quarkus-fs-util
+      - dependency-name: io.quarkus:quarkus-spring-*-api
       # Elytron
       - dependency-name: org.wildfly.security:wildfly-elytron
       - dependency-name: org.wildfly.security:wildfly-elytron-*
@@ -48,6 +49,9 @@ updates:
       # Kafka
       - dependency-name: org.apache.kafka:*
       - dependency-name: org.apache.zookeeper:zookeeper
+      - dependency-name: io.strimzi:kafka-oauth-client
+      - dependency-name: com.nimbusds:nimbus-jose-jwt
+      - dependency-name: io.apicurio:*
       # Scala
       - dependency-name: org.scala-lang:*
       - dependency-name: net.alchim31.maven:scala-maven-plugin
@@ -65,8 +69,6 @@ updates:
       - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
       # Swagger-UI
       - dependency-name: org.webjars:swagger-ui
-      # Tika
-      - dependency-name: org.apache.tika:tika-parsers
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Test dependencies
@@ -89,15 +91,13 @@ updates:
       - dependency-name: org.jboss.narayana.stm:stm
       # Agroal
       - dependency-name: io.agroal:*
-      #Jandex
+      # Jandex
       - dependency-name: org.jboss:jandex
       - dependency-name: org.jboss.jandex:jandex-maven-plugin
-      #Neo4j
-      - dependency-name: org.neo4j.driver:neo4j-java-driver
-      #WireMock
+      # WireMock
       - dependency-name: com.github.tomakehurst:wiremock-jre8
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
-      #Picocli
+      # Picocli
       - dependency-name: info.picocli:*
       # Caffeine
       - dependency-name: com.github.ben-manes.caffeine:caffeine
@@ -107,15 +107,13 @@ updates:
       # Yasson
       - dependency-name: org.eclipse:yasson
       # AWS
-      - dependency-name: software.amazon.awssdk:*
-      - dependency-name: com.amazon.alexa:*
       - dependency-name: com.amazonaws:*
       - dependency-name: com.amazonaws.serverless:*
       # Azure
       - dependency-name: com.microsoft.azure.functions:*
       # Apache Commons
       - dependency-name: commons-io:commons-io
-      - dependency-name: org.apache.commons:commons-lang3
+      - dependency-name: org.apache.commons:*
       - dependency-name: commons-codec:commons-codec
       # Micrometer
       - dependency-name: io.micrometer:micrometer-bom
@@ -123,7 +121,6 @@ updates:
       - dependency-name: org.bouncycastle:*
       # Logstash
       - dependency-name: biz.paluch.logging:logstash-gelf
-      - dependency-name: io.sentry:*
       # MongoDB
       - dependency-name: org.mongodb:*
       # Avro
@@ -148,7 +145,38 @@ updates:
       - dependency-name: org.eclipse.microprofile.openapi:microprofile-openapi-tck
       - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
+      # Dev UI web dependencies
+      - dependency-name: org.webjars:bootstrap
+      - dependency-name: org.webjars:font-awesome
+      - dependency-name: org.webjars:jquery
+      - dependency-name: org.webjars:codemirror
+      - dependency-name: org.webjars.npm:mermaid
+      # Elasticsearch - we do not update the high level client
+      - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
+      - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
+      # Others
+      - dependency-name: com.puppycrawl.tools:checkstyle
+      - dependency-name: com.google.cloud.functions:*
+      - dependency-name: com.google.errorprone:*
+      - dependency-name: com.google.http-client:*
+      - dependency-name: io.dekorate:servicebinding-annotations
+      - dependency-name: io.opentelemetry:*
+      - dependency-name: io.opentelemetry.*:*
+      - dependency-name: io.opentracing.contrib:*
+      - dependency-name: org.aesh:readline
+      - dependency-name: org.checkerframework:checker-qual
+      - dependency-name: org.jboss.metadata:jboss-metadata-web
+      - dependency-name: com.unboundid:unboundid-ldapsdk
+      - dependency-name: org.commonmark:commonmark
+      - dependency-name: org.asciidoctor:asciidoctorj
+      - dependency-name: com.github.javaparser:javaparser-core
+      - dependency-name: org.jboss.jdeparser:jdeparser
     ignore:
+      # this one cannot be upgraded due to the usage of proxies in new versions
+      # the proxy implements interfaces in a random order which causes issues
+      # https://github.com/quarkusio/quarkus/issues/18033
+      # https://github.com/opentracing-contrib/java-jdbc/issues/116
+      - dependency-name: io.opentracing.contrib:opentracing-jdbc
       - dependency-name: org.eclipse.microprofile.config:microprofile-config-tck
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck

@@ -292,4 +292,33 @@ public class HttpSecurityRecorder {
             }
         };
     }
+
+    /**
+     * This handler resolves the identity, and will be mapped to the post location. Otherwise
+     * for lazy auth the post will not be evaluated if there is no security rule for the post location.
+     */
+    public Handler<RoutingContext> formAuthPostHandler() {
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                Uni<SecurityIdentity> user = event.get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
+                user.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                    @Override
+                    public void onSubscribe(UniSubscription uniSubscription) {
+
+                    }
+
+                    @Override
+                    public void onItem(SecurityIdentity securityIdentity) {
+                        event.next();
+                    }
+
+                    @Override
+                    public void onFailure(Throwable throwable) {
+                        event.fail(throwable);
+                    }
+                });
+            }
+        };
+    }
 }

@@ -11,9 +11,12 @@ import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @RegisterRestClient(baseUri = "http://localhost:8081/invalid-endpoint") // should be overridden by application.properties
+@ClientHeaderParam(name = "suffix", value = "!!!") // should be overridden by application properties
+@ClientHeaderParam(name = "comma", value = ",")
 public interface HelloClientWithBaseUri {
     @POST
     @Consumes(MediaType.TEXT_PLAIN)

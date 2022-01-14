@@ -1,6 +1,9 @@
 package io.quarkus.it.keycloak;
 
+import java.security.PublicKey;
+
 import javax.annotation.PostConstruct;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -9,11 +12,17 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.auth.principal.DefaultJWTParser;
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.util.KeyUtils;
 
 @Path("oidc")
 public class OidcResource {
@@ -26,6 +35,7 @@ public class OidcResource {
     private volatile int jwkEndpointCallCount;
     private volatile int introspectionEndpointCallCount;
     private volatile int userInfoEndpointCallCount;
+    private volatile boolean enableDiscovery = true;
 
     @PostConstruct
     public void init() throws Exception {
@@ -39,13 +49,17 @@ public class OidcResource {
     @Produces("application/json")
     @Path(".well-known/openid-configuration")
     public String discovery() {
-        final String baseUri = ui.getBaseUriBuilder().path("oidc").build().toString();
-        return "{" +
-                "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
-                "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
-                "   \"userinfo_endpoint\":" + "\"" + baseUri + "/userinfo\"," +
-                "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
-                "  }";
+        if (enableDiscovery) {
+            final String baseUri = ui.getBaseUriBuilder().path("oidc").build().toString();
+            return "{" +
+                    "   \"token_endpoint\":" + "\"" + baseUri + "/token\"," +
+                    "   \"introspection_endpoint\":" + "\"" + baseUri + "/introspect\"," +
+                    "   \"userinfo_endpoint\":" + "\"" + baseUri + "/userinfo\"," +
+                    "   \"jwks_uri\":" + "\"" + baseUri + "/jwks\"" +
+                    "  }";
+        } else {
+            return "{}";
+        }
     }
 
     @GET
@@ -92,14 +106,27 @@ public class OidcResource {
     @POST
     @Produces("application/json")
     @Path("introspect")
-    public String introspect() {
+    public String introspect(@FormParam("client_secret") String secret) throws Exception {
         introspectionEndpointCallCount++;
+
+        String clientId = "undefined";
+        if (secret != null) {
+            // Secret is expected to be a JWT
+            PublicKey verificationKey = KeyUtils.readPublicKey("ecPublicKey.pem", SignatureAlgorithm.ES256);
+            JWTParser parser = new DefaultJWTParser();
+            // "client-introspection-only" is a client id, set as an issuer by default
+            JWTAuthContextInfo contextInfo = new JWTAuthContextInfo(verificationKey, "client-introspection-only");
+            contextInfo.setSignatureAlgorithm(SignatureAlgorithm.ES256);
+            JsonWebToken jwt = parser.parse(secret, contextInfo);
+            clientId = jwt.getIssuer();
+        }
 
         return "{" +
                 "   \"active\": " + introspection + "," +
                 "   \"scope\": \"user\"," +
                 "   \"email\": \"user@gmail.com\"," +
-                "   \"username\": \"alice\"" +
+                "   \"username\": \"alice\"," +
+                "   \"client_id\": \"" + clientId + "\"" +
                 "  }";
     }
 
@@ -159,6 +186,20 @@ public class OidcResource {
     public boolean disableIntrospection() {
         introspection = false;
         return introspection;
+    }
+
+    @POST
+    @Path("enable-discovery")
+    public boolean setDiscovery() {
+        enableDiscovery = true;
+        return enableDiscovery;
+    }
+
+    @POST
+    @Path("disable-discovery")
+    public boolean disableDiscovery() {
+        enableDiscovery = false;
+        return enableDiscovery;
     }
 
     @POST

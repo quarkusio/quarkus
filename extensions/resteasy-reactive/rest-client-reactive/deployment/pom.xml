@@ -24,6 +24,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-stork-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-config-deployment</artifactId>
+        </dependency>
         <!-- test dependencies: -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -38,6 +42,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit-pioneer</groupId>
+            <artifactId>junit-pioneer</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

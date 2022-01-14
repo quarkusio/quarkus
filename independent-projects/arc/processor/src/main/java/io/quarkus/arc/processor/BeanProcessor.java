@@ -69,6 +69,7 @@ public class BeanProcessor {
     private final boolean generateSources;
     private final boolean allowMocking;
     private final boolean transformUnproxyableClasses;
+    private final boolean failOnInterceptedPrivateMethod;
     private final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
     // This predicate is used to filter annotations for InjectionPoint metadata
@@ -86,6 +87,7 @@ public class BeanProcessor {
         this.generateSources = builder.generateSources;
         this.allowMocking = builder.allowMocking;
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
+        this.failOnInterceptedPrivateMethod = builder.failOnInterceptedPrivateMethod;
         this.suppressConditionGenerators = builder.suppressConditionGenerators;
 
         // Initialize all build processors
@@ -99,7 +101,7 @@ public class BeanProcessor {
         this.beanDeployment = new BeanDeployment(buildContext, builder);
 
         // Make it configurable if we find that the set of annotations needs to grow
-        this.injectionPointAnnotationsPredicate = annotationName -> !annotationName.equals(DotNames.DEPRECATED);
+        this.injectionPointAnnotationsPredicate = Predicate.not(DotNames.DEPRECATED::equals);
     }
 
     public ContextRegistrar.RegistrationContext registerCustomContexts() {
@@ -265,6 +267,10 @@ public class BeanProcessor {
         return beanDeployment;
     }
 
+    public Predicate<DotName> getInjectionPointAnnotationsPredicate() {
+        return injectionPointAnnotationsPredicate;
+    }
+
     public static class Builder {
 
         String name;
@@ -294,6 +300,7 @@ public class BeanProcessor {
         boolean generateSources;
         boolean jtaCapabilities;
         boolean transformUnproxyableClasses;
+        boolean failOnInterceptedPrivateMethod;
         boolean allowMocking;
 
         AlternativePriorities alternativePriorities;
@@ -325,6 +332,7 @@ public class BeanProcessor {
             generateSources = false;
             jtaCapabilities = false;
             transformUnproxyableClasses = false;
+            failOnInterceptedPrivateMethod = false;
             allowMocking = false;
 
             excludeTypes = new ArrayList<>();
@@ -497,6 +505,14 @@ public class BeanProcessor {
         public Builder setTransformUnproxyableClasses(boolean value) {
             this.transformUnproxyableClasses = value;
             return this;
+        }
+
+        /**
+         * If set to true, the build will fail if an annotation that would result in an interceptor being created (such as
+         * {@code @Transactional})
+         */
+        public void setFailOnInterceptedPrivateMethod(boolean failOnInterceptedPrivateMethod) {
+            this.failOnInterceptedPrivateMethod = failOnInterceptedPrivateMethod;
         }
 
         /**

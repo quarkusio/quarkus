@@ -489,7 +489,7 @@ public class ExtensionCatalogResolver {
 
         PlatformStream stream = null;
         int registryIndex = 0;
-        while (registryIndex < registries.size()) {
+        while (registryIndex < registries.size() && stream == null) {
             final RegistryExtensionResolver qer = registries.get(registryIndex++);
             final PlatformCatalog platforms = qer.resolvePlatformCatalog();
             if (platforms == null) {
@@ -508,8 +508,10 @@ public class ExtensionCatalogResolver {
                     continue;
                 }
                 stream = platform.getStream(streamId);
+                if (stream != null) {
+                    break;
+                }
             }
-            break;
         }
 
         if (stream == null) {

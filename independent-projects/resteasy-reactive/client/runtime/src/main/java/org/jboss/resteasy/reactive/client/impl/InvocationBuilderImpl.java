@@ -20,6 +20,7 @@ import javax.ws.rs.client.RxInvokerProvider;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -50,6 +51,9 @@ public class InvocationBuilderImpl implements Invocation.Builder {
         this.httpClient = httpClient;
         this.target = target;
         this.requestSpec = new RequestSpec(configuration);
+        if (restClient.getUserAgent() != null && !restClient.getUserAgent().isEmpty()) {
+            this.requestSpec.headers.header(HttpHeaders.USER_AGENT, restClient.getUserAgent());
+        }
         this.configuration = configuration;
         this.handlerChain = handlerChain;
         this.requestContext = requestContext;

@@ -36,7 +36,7 @@ public class CreateCli extends BaseCreateCommand {
     @CommandLine.ArgGroup(order = 3, heading = "%nBuild tool (Maven):%n")
     TargetBuildToolGroup targetBuildTool = new TargetBuildToolGroup();
 
-    @CommandLine.ArgGroup(order = 4, heading = "%nTarget language (Java):%n")
+    @CommandLine.ArgGroup(order = 4, exclusive = false, heading = "%nTarget language:%n")
     TargetLanguageGroup targetLanguage = new TargetLanguageGroup();
 
     @CommandLine.ArgGroup(order = 5, exclusive = false, heading = "%nCode Generation:%n")
@@ -60,7 +60,8 @@ public class CreateCli extends BaseCreateCommand {
             }
 
             BuildTool buildTool = targetBuildTool.getBuildTool(BuildTool.MAVEN);
-            SourceType sourceType = targetLanguage.getSourceType(buildTool, extensions, output);
+            SourceType sourceType = targetLanguage.getSourceType(spec, buildTool, extensions, output);
+            setJavaVersion(targetLanguage.getJavaVersion());
             setSourceTypeExtensions(extensions, sourceType);
             setCodegenOptions(codeGeneration);
 

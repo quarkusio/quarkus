@@ -67,6 +67,17 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
         assertContainsFile(response, "file", MediaType.APPLICATION_OCTET_STREAM, "lorem.txt");
     }
 
+    @Test
+    public void testWithNullFields() {
+        RestAssured
+                .given()
+                .get("/multipart/output/with-null-fields")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .log().all()
+                .statusCode(200); // should return 200 with no parts
+    }
+
     private void assertContainsFile(String response, String name, String contentType, String fileName) {
         String[] lines = response.split("--");
         assertThat(lines).anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_FILE_PART, name, fileName))

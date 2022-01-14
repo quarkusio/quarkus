@@ -37,7 +37,8 @@ public class OracleDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.ORACLE, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
+                    Optional<String> datasourceName, Optional<String> imageName,
+                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
                     OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 QuarkusOracleServerContainer container = new QuarkusOracleServerContainer(imageName, fixedExposedPort,
                         !devServicesSharedNetworkBuildItem.isEmpty());
@@ -45,7 +46,7 @@ public class OracleDevServicesProcessor {
                 container.withUsername(username.orElse(DEFAULT_DATABASE_USER))
                         .withPassword(password.orElse(DEFAULT_DATABASE_PASSWORD))
                         .withDatabaseName(datasourceName.orElse(DEFAULT_DATABASE_NAME));
-                additionalProperties.forEach(container::withUrlParam);
+                additionalJdbcUrlProperties.forEach(container::withUrlParam);
                 container.start();
 
                 LOG.info("Dev Services for Oracle started.");
@@ -73,7 +74,8 @@ public class OracleDevServicesProcessor {
         public QuarkusOracleServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName.orElse(OracleDevServicesProcessor.IMAGE + ":" + OracleDevServicesProcessor.TAG))
+                    .parse(imageName
+                            .orElse("docker.io/" + OracleDevServicesProcessor.IMAGE + ":" + OracleDevServicesProcessor.TAG))
                     .asCompatibleSubstituteFor(OracleDevServicesProcessor.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

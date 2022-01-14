@@ -27,7 +27,7 @@ To complete this guide, you need:
 * https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html[AWS CLI]
 * https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html[AWS SAM CLI], for local testing
 
-NOTE: For Gradle projects please <<gradle,see below>>, or for further reference consult the guide in the link:gradle-tooling[Gradle setup page].
+NOTE: For Gradle projects please <<gradle,see below>>, or for further reference consult the guide in the xref:gradle-tooling.adoc[Gradle setup page].
 
 == Getting Started
 
@@ -460,7 +460,7 @@ This is explicitly set in `manage.sh` `cmd_create()`. Whilst the native image po
 
 If your code makes HTTPS calls, such as to a micro-service (or AWS service), you will need to add configuration to the native image,
 as GraalVM will only include the dependencies when explicitly declared.  Quarkus, by default enables this functionality on extensions that implicitly require it.
-For further information, please consult the link:native-and-ssl[Quarkus SSL guide]
+For further information, please consult the xref:native-and-ssl.adoc[Quarkus SSL guide]
 
 Open src/main/resources/application.properties and add the following line to enable SSL in your native image.
 
@@ -562,7 +562,7 @@ For Maven, add the following to your `pom.xml`.
 ----
 
 NOTE: if you see `java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty` or similar SSL error, due to the current status of GraalVM,
-there is some additional work to bundle the `function.zip`, as below.  For more information, please see the link:native-and-ssl[Quarkus Native SSL Guide].
+there is some additional work to bundle the `function.zip`, as below.  For more information, please see the xref:native-and-ssl.adoc[Quarkus Native SSL Guide].
 
 == Additional requirements for client SSL
 
@@ -635,15 +635,17 @@ jar tvf target/function.zip
 
 == Amazon Alexa Integration
 
-To use Alexa with Quarkus native, please add the following extension.
+To use Alexa with Quarkus native, you need to use the https://github.com/quarkiverse/quarkus-amazon-alexa[Quarkus Amazon Alexa extension hosted at the Quarkiverse Hub].
 
 [source,xml]
 ----
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-amazon-alexa</artifactId>
-        </dependency>
+<dependency>
+    <groupId>io.quarkiverse.alexa</groupId>
+    <artifactId>quarkus-amazon-alexa</artifactId>
+    <version>${quarkus-amazon-alexa.version}</version> <1>
+</dependency>
 ----
+<1> Define the latest version of the extension in your POM file.
 
 Create your Alexa handler, as normal, by sub-classing the abstract `com.amazon.ask.SkillStreamHandler`, and add your request handler implementation.
 

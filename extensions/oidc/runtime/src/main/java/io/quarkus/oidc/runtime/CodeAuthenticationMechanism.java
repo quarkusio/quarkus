@@ -5,6 +5,7 @@ import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_R
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,58 +46,50 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     static final String AMP = "&";
     static final String EQ = "=";
+    static final String UNDERSCORE = "_";
     static final String COOKIE_DELIM = "|";
     static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
-    static final String SESSION_COOKIE_NAME = "q_session";
     static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
 
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
 
-    private static final String STATE_COOKIE_NAME = "q_auth";
-    private static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
-
     private final BlockingTaskRunner<String> createTokenStateRequestContext = new BlockingTaskRunner<String>();
     private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext = new BlockingTaskRunner<AuthorizationCodeTokens>();
-    private final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
-        return resolver.resolveConfig(context).chain(new Function<OidcTenantConfig, Uni<? extends SecurityIdentity>>() {
-            @Override
-            public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcTenantConfig) {
+            IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
+        final Cookie sessionCookie = context.request().getCookie(getSessionCookieName(oidcTenantConfig));
 
-                final Cookie sessionCookie = context.request().getCookie(getSessionCookieName(oidcTenantConfig));
+        // if session already established, try to re-authenticate
+        if (sessionCookie != null) {
+            context.put(OidcUtils.SESSION_COOKIE_NAME, sessionCookie.getName());
+            Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
+            return resolvedContext.onItem()
+                    .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
+                        @Override
+                        public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
+                            return reAuthenticate(sessionCookie, context, identityProviderManager, tenantContext);
+                        }
+                    });
+        }
 
-                // if session already established, try to re-authenticate
-                if (sessionCookie != null) {
-                    Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
-                    return resolvedContext.onItem()
-                            .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
-                                @Override
-                                public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                                    return reAuthenticate(sessionCookie, context, identityProviderManager, tenantContext);
-                                }
-                            });
-                }
+        final String code = context.request().getParam("code");
+        if (code == null) {
+            return Uni.createFrom().optional(Optional.empty());
+        }
 
-                final String code = context.request().getParam("code");
-                if (code == null) {
-                    return Uni.createFrom().optional(Optional.empty());
-                }
+        // start a new session by starting the code flow dance
+        Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
+        return resolvedContext.onItem()
+                .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
+                    @Override
+                    public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
+                        return performCodeFlow(identityProviderManager, context, tenantContext, code);
+                    }
+                });
 
-                // start a new session by starting the code flow dance
-                Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
-                return resolvedContext.onItem()
-                        .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
-                            @Override
-                            public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                                return performCodeFlow(identityProviderManager, context, tenantContext, code);
-                            }
-                        });
-            }
-        });
     }
 
     private Uni<SecurityIdentity> reAuthenticate(Cookie sessionCookie,
@@ -188,7 +181,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     public Uni<ChallengeData> getChallengeInternal(RoutingContext context, TenantConfigContext configContext) {
-        return removeSessionCookie(context, configContext, getSessionCookieName(configContext.oidcConfig))
+        return removeSessionCookie(context, configContext.oidcConfig)
                 .chain(new Function<Void, Uni<? extends ChallengeData>>() {
 
                     @Override
@@ -199,7 +192,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             return Uni.createFrom().item(new ChallengeData(499, "WWW-Authenticate", "OIDC"));
                         }
 
-                        StringBuilder codeFlowParams = new StringBuilder();
+                        StringBuilder codeFlowParams = new StringBuilder(168); // experimentally determined to be a good size for preventing resizing and not wasting space
 
                         // response_type
                         codeFlowParams.append(OidcConstants.CODE_FLOW_RESPONSE_TYPE).append(EQ)
@@ -210,8 +203,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 .append(OidcCommonUtils.urlEncode(configContext.oidcConfig.clientId.get()));
 
                         // scope
-                        List<String> scopes = new ArrayList<>();
+                        List<String> oidcConfigScopes = configContext.oidcConfig.getAuthentication().scopes.isPresent()
+                                ? configContext.oidcConfig.getAuthentication().scopes.get()
+                                : Collections.emptyList();
+                        List<String> scopes = new ArrayList<>(oidcConfigScopes.size() + 1);
                         scopes.add("openid");
+                        scopes.addAll(oidcConfigScopes);
                         configContext.oidcConfig.getAuthentication().scopes.ifPresent(scopes::addAll);
                         codeFlowParams.append(AMP).append(OidcConstants.TOKEN_SCOPE).append(EQ)
                                 .append(OidcCommonUtils.urlEncode(String.join(" ", scopes)));
@@ -271,7 +268,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         userPath = pair[1];
                     }
                 }
-                removeCookie(context, configContext, getStateCookieName(configContext));
+                OidcUtils.removeCookie(context, configContext.oidcConfig, stateCookie.getName());
             }
         } else {
             // State cookie must be available to minimize the risk of CSRF
@@ -371,7 +368,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             TenantConfigContext configContext,
             AuthorizationCodeTokens tokens,
             SecurityIdentity securityIdentity) {
-        return removeSessionCookie(context, configContext, getSessionCookieName(configContext.oidcConfig))
+        return removeSessionCookie(context, configContext.oidcConfig)
                 .chain(new Function<Void, Uni<? extends Void>>() {
 
                     @Override
@@ -458,7 +455,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String generatePostLogoutState(RoutingContext context, TenantConfigContext configContext) {
-        removeCookie(context, configContext, getPostLogoutCookieName(configContext));
+        OidcUtils.removeCookie(context, configContext.oidcConfig, getPostLogoutCookieName(configContext));
         return createCookie(context, configContext.oidcConfig, getPostLogoutCookieName(configContext),
                 UUID.randomUUID().toString(),
                 60 * 30).getValue();
@@ -472,20 +469,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         cookie.setMaxAge(maxAge);
         LOG.debugf(name + " cookie 'max-age' parameter is set to %d", maxAge);
         Authentication auth = oidcConfig.getAuthentication();
-        setCookiePath(context, auth, cookie);
+        OidcUtils.setCookiePath(context, auth, cookie);
         if (auth.cookieDomain.isPresent()) {
             cookie.setDomain(auth.getCookieDomain().get());
         }
         context.response().addCookie(cookie);
         return cookie;
-    }
-
-    static void setCookiePath(RoutingContext context, Authentication auth, ServerCookie cookie) {
-        if (auth.cookiePathHeader.isPresent() && context.request().headers().contains(auth.cookiePathHeader.get())) {
-            cookie.setPath(context.request().getHeader(auth.cookiePathHeader.get()));
-        } else {
-            cookie.setPath(auth.getCookiePath());
-        }
     }
 
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {
@@ -510,38 +499,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .append(forwardedPrefix)
                 .append(path)
                 .toString();
-    }
-
-    private Uni<Void> removeSessionCookie(RoutingContext context, TenantConfigContext configContext, String cookieName) {
-        String cookieValue = removeCookie(context, configContext, cookieName);
-        if (cookieValue != null) {
-            return resolver.getTokenStateManager().deleteTokens(context, configContext.oidcConfig, cookieValue,
-                    deleteTokensRequestContext);
-        } else {
-            return VOID_UNI;
-        }
-    }
-
-    private String removeCookie(RoutingContext context, TenantConfigContext configContext, String cookieName) {
-        ServerCookie cookie = (ServerCookie) context.cookieMap().get(cookieName);
-        String cookieValue = null;
-        if (cookie != null) {
-            cookieValue = cookie.getValue();
-            removeCookie(context, cookie, configContext.oidcConfig);
-        }
-        return cookieValue;
-    }
-
-    static void removeCookie(RoutingContext context, ServerCookie cookie, OidcTenantConfig oidcConfig) {
-        if (cookie != null) {
-            cookie.setValue("");
-            cookie.setMaxAge(0);
-            Authentication auth = oidcConfig.getAuthentication();
-            setCookiePath(context, auth, cookie);
-            if (auth.cookieDomain.isPresent()) {
-                cookie.setDomain(auth.cookieDomain.get());
-            }
-        }
     }
 
     private boolean isLogout(RoutingContext context, TenantConfigContext configContext) {
@@ -660,7 +617,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private Uni<Void> buildLogoutRedirectUriUni(RoutingContext context, TenantConfigContext configContext,
             String idToken) {
-        return removeSessionCookie(context, configContext, getSessionCookieName(configContext.oidcConfig))
+        return removeSessionCookie(context, configContext.oidcConfig)
                 .map(new Function<Void, Void>() {
                     @Override
                     public Void apply(Void t) {
@@ -670,23 +627,29 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private static String getStateCookieName(TenantConfigContext configContext) {
-        return STATE_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
+        return OidcUtils.STATE_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
     }
 
     private static String getPostLogoutCookieName(TenantConfigContext configContext) {
-        return POST_LOGOUT_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
+        return OidcUtils.POST_LOGOUT_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
     }
 
     private static String getSessionCookieName(OidcTenantConfig oidcConfig) {
-        return SESSION_COOKIE_NAME + getCookieSuffix(oidcConfig);
+        return OidcUtils.SESSION_COOKIE_NAME + getCookieSuffix(oidcConfig);
+    }
+
+    private Uni<Void> removeSessionCookie(RoutingContext context, OidcTenantConfig oidcConfig) {
+        String cookieName = getSessionCookieName(oidcConfig);
+        return OidcUtils.removeSessionCookie(context, oidcConfig, cookieName, resolver.getTokenStateManager());
     }
 
     static String getCookieSuffix(OidcTenantConfig oidcConfig) {
         String tenantId = oidcConfig.tenantId.get();
-        String tenantIdSuffix = !"Default".equals(tenantId) ? "_" + tenantId : "";
+        boolean cookieSuffixConfigured = oidcConfig.authentication.cookieSuffix.isPresent();
+        String tenantIdSuffix = (cookieSuffixConfigured || !"Default".equals(tenantId)) ? UNDERSCORE + tenantId : "";
 
-        return oidcConfig.authentication.cookieSuffix.isPresent()
-                ? (tenantIdSuffix + "_" + oidcConfig.authentication.cookieSuffix.get())
+        return cookieSuffixConfigured
+                ? (tenantIdSuffix + UNDERSCORE + oidcConfig.authentication.cookieSuffix.get())
                 : tenantIdSuffix;
     }
 }

@@ -20,8 +20,18 @@ public class KafkaConnectorTest {
     };
 
     @Test
-    public void test() {
+    public void testPeople() {
         await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/people").as(TYPE_REF).size(), 6));
+    }
+
+    @Test
+    public void testPets() {
+        await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/pets").as(TYPE_REF).size(), 3));
+    }
+
+    @Test
+    public void testFruits() {
+        await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/fruits").as(TYPE_REF).size(), 4));
     }
 
 }

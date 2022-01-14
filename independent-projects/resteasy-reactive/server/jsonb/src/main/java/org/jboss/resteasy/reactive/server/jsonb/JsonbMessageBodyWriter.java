@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import javax.inject.Inject;
 import javax.json.bind.Jsonb;
 import javax.ws.rs.WebApplicationException;
@@ -28,7 +29,7 @@ public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteable
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         JsonMessageBodyWriterUtil.setContentTypeIfNecessary(httpHeaders);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
-            entityStream.write(((String) o).getBytes());
+            entityStream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             json.toJson(o, type, entityStream);
         }
@@ -41,7 +42,7 @@ public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteable
         OutputStream originalStream = context.getOrCreateOutputStream();
         OutputStream stream = new NoopCloseAndFlushOutputStream(originalStream);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
-            stream.write(((String) o).getBytes());
+            stream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             json.toJson(o, stream);
         }

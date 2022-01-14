@@ -4,6 +4,8 @@ import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_REDIRECTS;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.NAME;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.SHARED;
 
 import io.netty.channel.EventLoopGroup;
 import io.vertx.core.AsyncResult;
@@ -84,13 +86,15 @@ public class ClientImpl implements Client {
     final HandlerChain handlerChain;
     final Vertx vertx;
     private final MultiQueryParamMode multiQueryParamMode;
+    private final String userAgent;
 
     public ClientImpl(HttpClientOptions options, ConfigurationImpl configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext, boolean followRedirects,
             MultiQueryParamMode multiQueryParamMode,
             LoggingScope loggingScope,
-            ClientLogger clientLogger) {
+            ClientLogger clientLogger, String userAgent) {
+        this.userAgent = userAgent;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
         // TODO: ssl context
         // TODO: hostnameVerifier
@@ -133,12 +137,24 @@ public class ClientImpl implements Client {
         if (connectionPoolSize == null) {
             connectionPoolSize = DEFAULT_CONNECTION_POOL_SIZE;
         } else {
-            log.debugf("Setting connectionPoolSize to %d s", connectionPoolSize);
+            log.debugf("Setting connectionPoolSize to %d", connectionPoolSize);
         }
         options.setMaxPoolSize((int) connectionPoolSize);
 
         if (loggingScope == LoggingScope.ALL) {
             options.setLogActivity(true);
+        }
+
+        Object name = configuration.getProperty(NAME);
+        if (name != null) {
+            log.debugf("Setting client name to %s", name);
+            options.setName((String) name);
+        }
+
+        Object shared = configuration.getProperty(SHARED);
+        if (shared != null && (boolean) shared) {
+            log.debugf("Sharing of the HTTP client '%s' enabled", options.getName());
+            options.setShared(true);
         }
 
         httpClient = this.vertx.createHttpClient(options);
@@ -151,7 +167,7 @@ public class ClientImpl implements Client {
             });
         }
 
-        handlerChain = new HandlerChain(followRedirects, loggingScope, clientLogger);
+        handlerChain = new HandlerChain(followRedirects, loggingScope, clientContext.getMultipartResponsesData(), clientLogger);
     }
 
     public ClientContext getClientContext() {
@@ -172,6 +188,10 @@ public class ClientImpl implements Client {
     void abortIfClosed() {
         if (isClosed)
             throw new IllegalStateException("Client is closed");
+    }
+
+    public String getUserAgent() {
+        return userAgent;
     }
 
     @Override

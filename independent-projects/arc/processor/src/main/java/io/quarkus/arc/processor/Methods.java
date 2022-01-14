@@ -17,6 +17,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.enterprise.inject.spi.DeploymentException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -41,10 +42,9 @@ final class Methods {
     public static final String INIT = "<init>";
     // static initializer
     public static final String CLINIT = "<clinit>";
-    // copied from java.lang.reflect.Modifier.SYNTHETIC
-    static final int SYNTHETIC = 0x00001000;
     // copied from java.lang.reflect.Modifier.BRIDGE
     static final int BRIDGE = 0x00000040;
+
     public static final String TO_STRING = "toString";
 
     private static final List<String> IGNORED_METHODS = initIgnoredMethods();
@@ -57,10 +57,6 @@ final class Methods {
     }
 
     private Methods() {
-    }
-
-    static boolean isSynthetic(MethodInfo method) {
-        return (method.flags() & SYNTHETIC) != 0;
     }
 
     static boolean isBridge(MethodInfo method) {
@@ -227,6 +223,11 @@ final class Methods {
 
     private static Set<AnnotationInstance> mergeBindings(BeanDeployment beanDeployment, ClassInfo classInfo,
             Set<AnnotationInstance> classLevelBindings, boolean ignoreMethodLevelBindings, MethodInfo method) {
+
+        if (beanDeployment.getAnnotation(method, DotNames.NO_CLASS_INTERCEPTORS) != null) {
+            classLevelBindings = Set.of();
+        }
+
         if (ignoreMethodLevelBindings) {
             return classLevelBindings;
         }
@@ -253,15 +254,23 @@ final class Methods {
             }
 
             if (Modifier.isPrivate(method.flags())
+                    && !Annotations.contains(methodAnnotations, DotNames.PRODUCES)
                     && !Annotations.contains(methodAnnotations, DotNames.OBSERVES)
                     && !Annotations.contains(methodAnnotations, DotNames.OBSERVES_ASYNC)) {
+                String message;
                 if (methodLevelBindings.size() == 1) {
-                    LOGGER.warnf("%s will have no effect on method %s.%s() because the method is private",
+                    message = String.format("%s will have no effect on method %s.%s() because the method is private",
                             methodLevelBindings.iterator().next(), classInfo.name(), method.name());
                 } else {
-                    LOGGER.warnf("Annotations %s will have no effect on method %s.%s() because the method is private",
+                    message = String.format(
+                            "Annotations %s will have no effect on method %s.%s() because the method is private",
                             methodLevelBindings.stream().map(AnnotationInstance::toString).collect(Collectors.joining(",")),
                             classInfo.name(), method.name());
+                }
+                if (beanDeployment.failOnInterceptedPrivateMethod) {
+                    throw new DeploymentException(message);
+                } else {
+                    LOGGER.warn(message);
                 }
             }
         }
@@ -416,13 +425,13 @@ final class Methods {
         }
     }
 
-    static void addDelegateTypeMethods(IndexView index, ClassInfo delegateTypeClass, List<MethodInfo> methods) {
+    static void addDelegateTypeMethods(IndexView index, ClassInfo delegateTypeClass, Set<MethodKey> methods) {
         if (delegateTypeClass != null) {
             for (MethodInfo method : delegateTypeClass.methods()) {
                 if (skipForDelegateSubclass(method)) {
                     continue;
                 }
-                methods.add(method);
+                methods.add(new MethodKey(method));
             }
             // Interfaces
             for (Type interfaceType : delegateTypeClass.interfaceTypes()) {

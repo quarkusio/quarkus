@@ -27,8 +27,8 @@ import java.lang.annotation.Target;
 public @interface MessageBundle {
 
     /**
-     * Constant value for {@link #locale()} indicating that the default locale of the Java Virtual Machine used to build the
-     * application should be used.
+     * Constant value for {@link #locale()} indicating that the default locale specified via the {@code quarkus.default-locale}
+     * config property should be used.
      */
     String DEFAULT_LOCALE = "<<default locale>>";
 

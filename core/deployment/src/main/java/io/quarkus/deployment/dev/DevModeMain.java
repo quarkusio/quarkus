@@ -22,14 +22,13 @@ import java.util.Properties;
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.util.ProcessUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.PathList;
 
 /**
  * The main entry point for the dev mojo execution
@@ -87,8 +86,8 @@ public class DevModeMain implements Closeable {
                     }
                 }
             }
-            final PathsCollection.Builder appRoots = PathsCollection.builder();
-            Path p = Paths.get(context.getApplicationRoot().getMain().getClassesPath());
+            final PathList.Builder appRoots = PathList.builder();
+            Path p = Path.of(context.getApplicationRoot().getMain().getClassesPath());
             if (Files.exists(p)) {
                 appRoots.add(p);
             }
@@ -116,20 +115,8 @@ public class DevModeMain implements Closeable {
             } else {
                 bootstrapBuilder.setProjectRoot(new File(".").toPath());
             }
-            for (AppArtifactKey i : context.getLocalArtifacts()) {
+            for (ArtifactKey i : context.getLocalArtifacts()) {
                 bootstrapBuilder.addLocalArtifact(i);
-            }
-
-            for (DevModeContext.ModuleInfo i : context.getAdditionalModules()) {
-                if (i.getMain().getClassesPath() != null) {
-                    Path classesPath = Paths.get(i.getMain().getClassesPath());
-                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(classesPath, true, false));
-                }
-                if (i.getMain().getResourcesOutputPath() != null
-                        && !i.getMain().getResourcesOutputPath().equals(i.getMain().getClassesPath())) {
-                    Path resourceOutputPath = Paths.get(i.getMain().getResourcesOutputPath());
-                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(resourceOutputPath, true, false));
-                }
             }
 
             linkDotEnvFile();

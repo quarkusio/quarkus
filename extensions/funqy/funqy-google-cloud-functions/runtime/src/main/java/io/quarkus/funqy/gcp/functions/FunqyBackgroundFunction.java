@@ -24,7 +24,7 @@ public class FunqyBackgroundFunction implements RawBackgroundFunction {
                 Thread.currentThread().setContextClassLoader(FunqyBackgroundFunction.class.getClassLoader());
                 Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
                 String[] args = {};
-                Application app = (Application) appClass.newInstance();
+                Application app = (Application) appClass.getConstructor().newInstance();
                 Runtime.getRuntime().addShutdownHook(new Thread() {
                     @Override
                     public void run() {

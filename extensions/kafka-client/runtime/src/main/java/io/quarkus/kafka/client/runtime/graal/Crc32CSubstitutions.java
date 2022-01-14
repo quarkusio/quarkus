@@ -10,14 +10,13 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.jdk.JDK11OrLater;
 
 /**
  * The following substitution replaces the usage of {@code MethodHandle} in {@code Java9ChecksumFactory} with a plain
  * constructor invocation when run under GraalVM. This is necessary because the native image generator does not support method
  * handles.
  */
-@TargetClass(value = Crc32C.class, innerClass = "Java9ChecksumFactory", onlyWith = JDK11OrLater.class)
+@TargetClass(value = Crc32C.class, innerClass = "Java9ChecksumFactory")
 final class Target_org_apache_kafka_common_utils_Crc32C_Java9ChecksumFactory {
 
     @Alias

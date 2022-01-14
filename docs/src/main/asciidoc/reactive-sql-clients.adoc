@@ -15,12 +15,22 @@ Currently, the following database servers are supported:
 * PostgreSQL
 * MariaDB/MySQL
 * Microsoft SQL Server
+* Oracle
+
+[NOTE]
+====
+The Reactive SQL Client for Oracle is considered _experimental_.
+
+In _experimental_ mode, early feedback is requested to mature the idea.
+There is no guarantee of stability nor long term presence in the platform until the solution matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
 
 In this guide, you will learn how to implement a simple CRUD application exposing data stored in *PostgreSQL* over a RESTful API.
 
 NOTE: Extension and connection pool class names for each client can be found at the bottom of this document.
 
-IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the link:vertx[Using Eclipse Vert.x] guide first.
+IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the xref:vertx.adoc[Using Eclipse Vert.x] guide first.
 
 The application shall manage fruit entities:
 
@@ -52,7 +62,7 @@ Do you need a ready-to-use PostgreSQL server to try out the examples?
 
 [source,bash]
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:10.5
+docker run -it --rm=true --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:14.1
 ----
 ====
 
@@ -159,7 +169,7 @@ public class FruitResource {
 Before we implement the REST endpoint and data management code, we need to setup the database schema.
 It would also be convenient to have some data inserted upfront.
 
-For production we would recommend to use something like the link:flyway[Flyway database migration tool].
+For production we would recommend to use something like the xref:flyway.adoc[Flyway database migration tool].
 But for development we can simply drop and create the tables on startup, and then insert a few fruits.
 
 [source,java]
@@ -481,6 +491,11 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 |`io.vertx.mutiny.mssqlclient.MSSQLPool`
 |`@p1`, `@p2`, etc.
 
+|Oracle
+|`quarkus-reactive-oracle-client`
+|`io.vertx.mutiny.oracleclient.OraclePool`
+|`?`
+
 |PostgreSQL
 |`quarkus-reactive-pg-client`
 |`io.vertx.mutiny.pgclient.PgPool`
@@ -641,7 +656,7 @@ MySQLPool additional2Client;
 
 The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
 
-First make sure that link:vertx-reference.adoc#native-transport[native transport support] is enabled.
+First make sure that xref:vertx-reference.adoc#native-transport[native transport support] is enabled.
 
 Then configure the database connection url.
 This step depends on the database type.
@@ -712,6 +727,10 @@ include::{generated-dir}/config/quarkus-reactive-mysql-client.adoc[opts=optional
 === Microsoft SQL Server
 
 include::{generated-dir}/config/quarkus-reactive-mssql-client.adoc[opts=optional, leveloffset=+1]
+
+=== Oracle
+
+include::{generated-dir}/config/quarkus-reactive-oracle-client.adoc[opts=optional, leveloffset=+1]
 
 === PostgreSQL
 

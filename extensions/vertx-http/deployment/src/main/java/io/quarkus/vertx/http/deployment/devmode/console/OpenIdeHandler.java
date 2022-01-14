@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.deployment.devmode.console;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,29 +33,32 @@ public class OpenIdeHandler extends DevConsolePostHandler {
     protected void dispatch(RoutingContext routingContext, MultiMap form) {
         String className = form.get("className");
         String lang = form.get("lang");
-        String srcMainPath = form.get("srcMainPath");
         String line = form.get("line");
 
-        if (isNullOrEmpty(className) || isNullOrEmpty(lang) || isNullOrEmpty(srcMainPath)) {
+        if (isNullOrEmpty(className) || isNullOrEmpty(lang)) {
             routingContext.fail(400);
         }
 
         if (ide != null) {
-            typicalProcessLaunch(routingContext, className, lang, srcMainPath, line, ide);
+            typicalProcessLaunch(routingContext, className, lang, line, ide);
         } else {
             log.debug("Unhandled IDE : " + ide);
             routingContext.fail(500);
         }
     }
 
-    private void typicalProcessLaunch(RoutingContext routingContext, String className, String lang, String srcMainPath,
+    private void typicalProcessLaunch(RoutingContext routingContext, String className, String lang,
             String line, Ide ide) {
-        String fileName = toFileName(className, lang, srcMainPath);
+        String fileName = toFileName(className, lang);
+        if (fileName == null) {
+            routingContext.fail(404);
+            return;
+        }
         List<String> args = ide.createFileOpeningArgs(fileName, line);
         launchInIDE(routingContext, ide, args);
     }
 
-    private String toFileName(String className, String lang, String srcMainPath) {
+    private String toFileName(String className, String lang) {
         String effectiveClassName = className;
         int dollarIndex = className.indexOf("$");
         if (dollarIndex > -1) {
@@ -62,9 +66,12 @@ public class OpenIdeHandler extends DevConsolePostHandler {
             // in order to use for conversion to the file name
             effectiveClassName = className.substring(0, dollarIndex);
         }
-        return srcMainPath + File.separator + lang + File.separator
-                + (effectiveClassName.replace('.', File.separatorChar) + "." + LANG_TO_EXT.get(lang));
-
+        String fileName = effectiveClassName.replace('.', File.separatorChar) + "." + LANG_TO_EXT.get(lang);
+        Path sourceFile = Ide.findSourceFile(fileName);
+        if (sourceFile == null) {
+            return null;
+        }
+        return sourceFile.toAbsolutePath().toString();
     }
 
     protected void launchInIDE(RoutingContext routingContext, Ide ide, List<String> args) {

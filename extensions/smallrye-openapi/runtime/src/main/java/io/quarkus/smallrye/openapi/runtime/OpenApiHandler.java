@@ -50,18 +50,28 @@ public class OpenApiHandler implements Handler<RoutingContext> {
             resp.headers().set("Allow", ALLOWED_METHODS);
             event.next();
         } else {
-            String accept = req.headers().get("Accept");
-
-            List<String> formatParams = event.queryParam(QUERY_PARAM_FORMAT);
-            String formatParam = formatParams.isEmpty() ? null : formatParams.get(0);
 
             // Default content type is YAML
             Format format = Format.YAML;
 
-            // Check Accept, then query parameter "format" for JSON; else use YAML.
-            if ((accept != null && accept.contains(Format.JSON.getMimeType())) ||
-                    ("JSON".equalsIgnoreCase(formatParam))) {
+            String path = event.normalizedPath();
+            // Content negotiation with file extension
+            if (path.endsWith(".json")) {
                 format = Format.JSON;
+            } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
+                format = Format.YAML;
+            } else {
+                // Content negotiation with Accept header    
+                String accept = req.headers().get("Accept");
+
+                List<String> formatParams = event.queryParam(QUERY_PARAM_FORMAT);
+                String formatParam = formatParams.isEmpty() ? null : formatParams.get(0);
+
+                // Check Accept, then query parameter "format" for JSON; else use YAML.
+                if ((accept != null && accept.contains(Format.JSON.getMimeType())) ||
+                        ("JSON".equalsIgnoreCase(formatParam))) {
+                    format = Format.JSON;
+                }
             }
 
             if (!corsEnabled) {

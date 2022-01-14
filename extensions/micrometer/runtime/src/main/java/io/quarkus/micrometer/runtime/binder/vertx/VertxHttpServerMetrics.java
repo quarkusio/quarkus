@@ -78,6 +78,9 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     public void requestRouted(HttpRequestMetric requestMetric, String route) {
         log.debugf("requestRouted %s %s", route, requestMetric);
         requestMetric.appendCurrentRoutePath(route);
+        if (route != null) {
+            requestMetric.request().context().putLocal("VertxRoute", route);
+        }
     }
 
     /**

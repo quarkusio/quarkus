@@ -93,7 +93,7 @@ public class SimpleTest {
     @Test
     public void testTernaryOperator() {
         Engine engine = Engine.builder()
-                .addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.trueResolver(),
+                .addValueResolvers(ValueResolvers.mapperResolver(), ValueResolvers.trueResolver(),
                         ValueResolvers.orResolver())
                 .build();
 
@@ -255,7 +255,7 @@ public class SimpleTest {
                 return super.getParameters();
             }
         };
-        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapResolver())
+        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapperResolver())
                 .build();
         assertEquals(":1:1",
                 engine.parse("{#if foo}:1{/if}{#if bar}:0{/if}{#if foo}:1{/if}")
@@ -278,7 +278,7 @@ public class SimpleTest {
                 return false;
             }
         };
-        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapResolver())
+        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapperResolver())
                 .build();
         assertEquals(":1:1",
                 engine.parse("{#if foo}:1{/if}{#if bar}:0{/if}{#if foo}:1{/if}")

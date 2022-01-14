@@ -959,7 +959,8 @@ public final class Beans {
                 List<StereotypeInfo> stereotypes) {
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
             for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
-                if (beanDeployment.isInheritedQualifier(qualifierAnnotation.name())) {
+                if (beanDeployment.isInheritedQualifier(qualifierAnnotation.name())
+                        && !Annotations.contains(qualifiers, qualifierAnnotation.name())) {
                     qualifiers.add(qualifierAnnotation);
                 }
             }
@@ -986,9 +987,9 @@ public final class Beans {
                     annotation = normalizedNamedQualifier(name, annotation);
                 }
             }
+            // Qualifiers
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
             for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
-                // Qualifiers
                 qualifiers.add(qualifierAnnotation);
             }
             // Treat the case when an additional bean defining annotation that is also a qualifier declares the default scope
@@ -1040,10 +1041,10 @@ public final class Beans {
             List<StereotypeInfo> stereotypes = new ArrayList<>();
             Collection<AnnotationInstance> annotations = beanDeployment.getAnnotations(beanClass);
 
-            processSuperClass(beanClass, beanDeployment, qualifiers, stereotypes);
             for (AnnotationInstance annotation : annotations) {
                 processAnnotation(annotation, beanClass, beanDeployment, qualifiers, stereotypes, scopes);
             }
+            processSuperClass(beanClass, beanDeployment, qualifiers, stereotypes);
 
             if (scopes.size() > 1) {
                 throw multipleScopesFound("Bean class " + beanClass, scopes);

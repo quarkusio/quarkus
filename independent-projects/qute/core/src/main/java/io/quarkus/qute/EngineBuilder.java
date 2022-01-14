@@ -10,6 +10,17 @@ import java.util.function.Supplier;
 
 /**
  * Builder for {@link Engine}.
+ * <p>
+ * If using Qute "standalone" you'll need to create an instance of the {@link Engine} first:
+ * 
+ * <pre>
+ * Engine engine = Engine.builder()
+ *         // add the default set of value resolvers and section helpers
+ *         .addDefaults()
+ *         .build();
+ * </pre>
+ * 
+ * This construct is not thread-safe and should not be reused.
  */
 public final class EngineBuilder {
 
@@ -18,6 +29,7 @@ public final class EngineBuilder {
     final List<NamespaceResolver> namespaceResolvers;
     final List<TemplateLocator> locators;
     final List<ResultMapper> resultMappers;
+    final List<TemplateInstance.Initializer> initializers;
     Function<String, SectionHelperFactory<?>> sectionHelperFunc;
     final List<ParserHook> parserHooks;
     boolean removeStandaloneLines;
@@ -31,6 +43,7 @@ public final class EngineBuilder {
         this.locators = new ArrayList<>();
         this.resultMappers = new ArrayList<>();
         this.parserHooks = new ArrayList<>();
+        this.initializers = new ArrayList<>();
         this.strictRendering = true;
         this.removeStandaloneLines = true;
         this.iterationMetadataPrefix = LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE;
@@ -82,9 +95,10 @@ public final class EngineBuilder {
     }
 
     /**
-     * Add the default value resolvers.
+     * Add the default set of value resolvers.
      * 
      * @return self
+     * @see #addValueResolver(ValueResolver)
      */
     public EngineBuilder addDefaultValueResolvers() {
         return addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.mapperResolver(),
@@ -94,10 +108,23 @@ public final class EngineBuilder {
                 ValueResolvers.arrayResolver());
     }
 
+    /**
+     * Add the default set of value resolvers and section helpers.
+     * 
+     * @return self
+     * @see #addValueResolver(ValueResolver)
+     * @see #addSectionHelper(SectionHelperFactory)
+     */
     public EngineBuilder addDefaults() {
         return addDefaultSectionHelpers().addDefaultValueResolvers();
     }
 
+    /**
+     * 
+     * @param resolver
+     * @return self
+     * @throws IllegalArgumentException if there is a resolver of the same priority for the given namespace
+     */
     public EngineBuilder addNamespaceResolver(NamespaceResolver resolver) {
         String namespace = Namespaces.requireValid(resolver.getNamespace());
         for (NamespaceResolver nsResolver : namespaceResolvers) {
@@ -125,6 +152,12 @@ public final class EngineBuilder {
         return this;
     }
 
+    /**
+     * 
+     * @param parserHook
+     * @return self
+     * @see ParserHelper
+     */
     public EngineBuilder addParserHook(ParserHook parserHook) {
         this.parserHooks.add(parserHook);
         return this;
@@ -140,6 +173,23 @@ public final class EngineBuilder {
         return this;
     }
 
+    /**
+     * 
+     * @param initializer
+     * @return self
+     */
+    public EngineBuilder addTemplateInstanceInitializer(TemplateInstance.Initializer initializer) {
+        this.initializers.add(initializer);
+        return this;
+    }
+
+    /**
+     * The function is used if no section helper registered via {@link #addSectionHelper(SectionHelperFactory)} matches a
+     * section name.
+     * 
+     * @param func
+     * @return self
+     */
     public EngineBuilder computeSectionHelper(Function<String, SectionHelperFactory<?>> func) {
         this.sectionHelperFunc = func;
         return this;

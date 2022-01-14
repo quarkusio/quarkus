@@ -32,7 +32,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * Note that only Redpanda images are supported.
      * See https://vectorized.io/docs/quick-start-docker/ and https://hub.docker.com/r/vectorized/redpanda
      */
-    @ConfigItem(defaultValue = "vectorized/redpanda:v21.5.5")
+    @ConfigItem(defaultValue = "docker.io/vectorized/redpanda:v21.11.2")
     public String imageName;
 
     /**
@@ -80,5 +80,11 @@ public class KafkaDevServicesBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "2S")
     public Duration topicPartitionsTimeout;
+
+    /**
+     * Allows configuring the Red Panda broker.
+     */
+    @ConfigItem
+    public RedPandaBuildTimeConfig redpanda;
 
 }

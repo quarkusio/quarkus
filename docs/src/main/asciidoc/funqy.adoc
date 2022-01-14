@@ -178,12 +178,12 @@ developers will be ok with that as many won't be using these REST/HTTP features 
 have to make the decision on what camp you are in.  Quarkus does support REST integration (through JAX-RS,
  Spring MVC, Vert.x Web, and Servlet) with
 various cloud/function providers, but there are some disadvantages of using that approach as well.  For example,
-if you want to do link:amazon-lambda-http[HTTP with AWS Lambda], this requires you to use the AWS API Gateway which may
+if you want to do xref:amazon-lambda-http.adoc[HTTP with AWS Lambda], this requires you to use the AWS API Gateway which may
 slow down deployment and cold start time or even cost you more.
 
 The purpose of Funqy is to allow you to write cross-provider functions so that you can move
 off of your current function provider if, for instance, they start charging you a lot more for their
 service.  Another reason you might not want to use Funqy is if you need access specific APIs of the
 target function environment.  For example, developers often want access to the AWS Context on
-Lambda.  In this case, we tell them they may be better off using the link:amazon-lambda[Quarkus Amazon Lambda] integration instead.
+Lambda.  In this case, we tell them they may be better off using the xref:amazon-lambda.adoc[Quarkus Amazon Lambda] integration instead.
 

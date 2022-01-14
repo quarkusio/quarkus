@@ -1,23 +1,26 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.ext.ParamConverterProvider;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
 
 public class ClientProxies {
 
-    final Map<Class<?>, Function<WebTarget, ?>> clientProxies;
+    final Map<Class<?>, BiFunction<WebTarget, List<ParamConverterProvider>, ?>> clientProxies;
     private final Map<Class<?>, String> failures;
 
-    public ClientProxies(Map<Class<?>, Function<WebTarget, ?>> clientProxies, Map<Class<?>, String> failures) {
+    public ClientProxies(Map<Class<?>, BiFunction<WebTarget, List<ParamConverterProvider>, ?>> clientProxies,
+            Map<Class<?>, String> failures) {
         this.clientProxies = clientProxies;
         this.failures = failures;
     }
 
-    public <T> T get(Class<?> clazz, WebTarget webTarget) {
-        Function<WebTarget, ?> function = clientProxies.get(clazz);
+    public <T> T get(Class<?> clazz, WebTarget webTarget, List<ParamConverterProvider> providers) {
+        BiFunction<WebTarget, List<ParamConverterProvider>, ?> function = clientProxies.get(clazz);
         if (function == null) {
             String failure = failures.get(clazz);
             if (failure != null) {
@@ -30,7 +33,7 @@ public class ClientProxies {
             }
         }
         //noinspection unchecked
-        return (T) function.apply(webTarget);
+        return (T) function.apply(webTarget, providers);
     }
 
     // for dev console

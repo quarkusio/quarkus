@@ -8,6 +8,7 @@ import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Results.NotFound;
+import io.quarkus.qute.TemplateInstance;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -91,6 +92,8 @@ public final class Descriptors {
             CompletionStage.class, EvalContext.class);
     public static final MethodDescriptor NOT_FOUND_FROM_EC = MethodDescriptor.ofMethod(NotFound.class, "from",
             NotFound.class, EvalContext.class);
+    public static final MethodDescriptor TEMPLATE_INSTANCE_DATA = MethodDescriptor.ofMethod(TemplateInstance.class, "data",
+            TemplateInstance.class, String.class, Object.class);
 
     public static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);

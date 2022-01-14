@@ -2,6 +2,7 @@ package io.quarkus.micrometer.runtime;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
@@ -12,6 +13,8 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.arc.ArcInvocationContext;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Functions;
 
 /**
  * Quarkus declared interceptor responsible for intercepting all methods
@@ -51,6 +54,7 @@ public class MicrometerCountedInterceptor {
      * @throws Throwable When the intercepted method throws one.
      */
     @AroundInvoke
+    @SuppressWarnings("unchecked")
     Object countedMethod(ArcInvocationContext context) throws Exception {
         MicrometerCounted counted = context.findIterceptorBinding(MicrometerCounted.class);
         if (counted == null) {
@@ -59,13 +63,27 @@ public class MicrometerCountedInterceptor {
         Method method = context.getMethod();
         Tags commonTags = getCommonTags(method.getDeclaringClass().getName(), method.getName());
 
-        // If we're working with a CompletionStage
-        final boolean stopWhenCompleted = CompletionStage.class.isAssignableFrom(method.getReturnType());
-        if (stopWhenCompleted) {
+        Class<?> returnType = method.getReturnType();
+        if (TypesUtil.isCompletionStage(returnType)) {
             try {
-                return ((CompletionStage<?>) context.proceed()).whenComplete((result, throwable) -> {
-                    recordCompletionResult(counted, commonTags, throwable);
+                return ((CompletionStage<?>) context.proceed()).whenComplete(new BiConsumer<Object, Throwable>() {
+                    @Override
+                    public void accept(Object o, Throwable throwable) {
+                        recordCompletionResult(counted, commonTags, throwable);
+                    }
                 });
+            } catch (Throwable e) {
+                record(counted, commonTags, e);
+            }
+        } else if (TypesUtil.isUni(returnType)) {
+            try {
+                return ((Uni<Object>) context.proceed()).onTermination().invoke(
+                        new Functions.TriConsumer<>() {
+                            @Override
+                            public void accept(Object o, Throwable throwable, Boolean cancelled) {
+                                recordCompletionResult(counted, commonTags, throwable);
+                            }
+                        });
             } catch (Throwable e) {
                 record(counted, commonTags, e);
             }

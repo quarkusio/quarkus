@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user-supplied configuration using https://github.com/dekorateio/dekorate/[dekorate].
 It currently supports generating resources for vanilla <<#kubernetes,Kubernetes>>, <<#openshift,OpenShift>> and <<#knative,Knative>>.
 Furthermore, Quarkus can deploy the application to a target Kubernetes cluster by applying the generated manifests to the target cluster's API Server.
-Finally, when either one of container image extensions is present (see the link:container-image[container image guide] for more details), Quarkus has the ability to create a container image and push it to a registry *before* deploying the application to the target platform.
+Finally, when either one of container image extensions is present (see the xref:container-imag.adoc[container image guide] for more details), Quarkus has the ability to create a container image and push it to a registry *before* deploying the application to the target platform.
 
 == Prerequisites
 
@@ -506,7 +506,7 @@ By default, the Kubernetes resources do not contain readiness and liveness probe
 ----
 
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
-More information about the health extension can be found in the relevant link:microprofile-health[guide].
+More information about the health extension can be found in the relevant xref:microprofile-health.adoc[guide].
 
 === Customizing the readiness probe:
 To set the initial delay of the probe to 20 seconds and the period to 45:
@@ -848,7 +848,7 @@ oc get route
 curl <route>/greeting
 ----
 
-See further information in link:deploying-to-openshift[Deploying to OpenShift].
+See further information in xref:deploying-to-openshift.adoc[Deploying to OpenShift].
 
 A description of OpenShift resources and customisable properties is given below alongside Kubernetes resources to show similarities where applicable.   This includes an alternative to  `oc new-app ...` above, i.e. `oc apply -f target/kubernetes/openshift.json` .
 
@@ -884,7 +884,7 @@ oc apply -f target/kubernetes/openshift.json
 ----
 
 
-NOTE: Quarkus also provides the link:deploying-to-openshift[OpenShift] extension. This extension is basically a wrapper around the Kubernetes extension and
+NOTE: Quarkus also provides the xref:deploying-to-openshift.adoc[OpenShift] extension. This extension is basically a wrapper around the Kubernetes extension and
 relieves OpenShift users of the necessity of setting the `deployment-target` property to `openshift`
 
 The OpenShift resources can be customized in a similar approach with Kubernetes.
@@ -1109,9 +1109,9 @@ This can be easily done with the command line:
 
 Building a container image is possible, using any of the 3 available `container-image` extensions:
 
-- link:container-image#docker[Docker]
-- link:container-image#jib[Jib]
-- link:container-image#s2i[s2i]
+- xref:container-image.adoc#docker[Docker]
+- xref:container-image.adoc#jib[Jib]
+- xref:container-image.adoc#s2i[s2i]
 
 Each time deployment is requested, a container image build will be implicitly triggered (no additional properties are required when the Kubernetes deployment has been enabled).
 

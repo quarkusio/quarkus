@@ -105,7 +105,6 @@ import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSContext;
-import javax.jms.Session;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -132,7 +131,7 @@ public class PriceProducer implements Runnable {
 
     @Override
     public void run() {
-        try (JMSContext context = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE)) {
+        try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
             context.createProducer().send(context.createQueue("prices"), Integer.toString(random.nextInt(100)));
         }
     }
@@ -159,7 +158,6 @@ import javax.jms.JMSConsumer;
 import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.Message;
-import javax.jms.Session;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -191,7 +189,7 @@ public class PriceConsumer implements Runnable {
 
     @Override
     public void run() {
-        try (JMSContext context = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE)) {
+        try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
             JMSConsumer consumer = context.createConsumer(context.createQueue("prices"));
             while (true) {
                 Message message = consumer.receive();
@@ -373,7 +371,7 @@ This creates a Maven project, with its pom.xml importing the quarkus-artemis-jms
 [source,xml]
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
+  <groupId>io.quarkiverse.artemis</groupId>
   <artifactId>quarkus-artemis-jms</artifactId>
 </dependency>
 ----
@@ -399,4 +397,5 @@ With the Artemis properties configured, you can resume the steps above from <<ge
 
 === Configuration Reference
 
-include::{generated-dir}/config/quarkus-artemis-core.adoc[opts=optional, leveloffset=+1]
+To know more about how to configure the Artemis JMS client, have a look at https://quarkiverse.github.io/quarkiverse-docs/quarkus-artemis/dev/index.html[the documentation of the extension].
+

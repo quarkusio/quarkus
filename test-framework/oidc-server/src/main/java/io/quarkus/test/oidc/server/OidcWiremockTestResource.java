@@ -152,15 +152,6 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                 .withStatus(302)
                                 .withTransformers("response-template")));
 
-        // Logout Request
-        server.stubFor(
-                get(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/end-session"))
-                        .willReturn(aResponse()
-                                .withHeader("Location",
-                                        "{{request.query.returnTo}}?clientId={{request.query.client_id}}")
-                                .withStatus(302)
-                                .withTransformers("response-template")));
-
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
         Map<String, String> conf = new HashMap<>();
         conf.put("keycloak.url", server.baseUrl() + "/auth");

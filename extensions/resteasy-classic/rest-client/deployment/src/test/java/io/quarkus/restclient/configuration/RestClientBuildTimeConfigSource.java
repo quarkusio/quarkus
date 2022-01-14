@@ -1,15 +1,28 @@
 package io.quarkus.restclient.configuration;
 
-import java.util.Collections;
+import static java.util.Collections.emptySet;
+
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.smallrye.config.common.MapBackedConfigSource;
 
+/**
+ * This simulates a build time only source to test the recording of configuration values. It is still discovered at
+ * runtime, but it doesn't return any configuration.
+ */
 public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
+    // Because getPropertyNames() is called during SmallRyeConfig init
+    private int propertyNamesCallCount = 0;
+
+    private static final Map<String, String> PROPERTIES = Map.of(
+            "io.quarkus.restclient.configuration.EchoClient/mp-rest/url", "http://nohost:${quarkus.http.test-port:8081}");
+
     public RestClientBuildTimeConfigSource() {
         super(RestClientBuildTimeConfigSource.class.getName(), new HashMap<>());
     }
@@ -21,7 +34,7 @@ public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
         }
 
         if (isBuildTime()) {
-            return "http://nohost:${quarkus.http.test-port:8081}";
+            return "http://nohost";
         }
 
         return null;
@@ -29,7 +42,12 @@ public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
 
     @Override
     public Set<String> getPropertyNames() {
-        return Collections.singleton("io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
+        if (propertyNamesCallCount > 0) {
+            return isBuildTime() ? PROPERTIES.keySet() : emptySet();
+        } else {
+            propertyNamesCallCount++;
+            return emptySet();
+        }
     }
 
     @Override
@@ -38,7 +56,9 @@ public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
     }
 
     private static boolean isBuildTime() {
-        for (ConfigSource configSource : ConfigProvider.getConfig().getConfigSources()) {
+        // We can only call this when the SmallRyeConfig is already initialized, or else we may get into a loop
+        Config config = ConfigProvider.getConfig();
+        for (ConfigSource configSource : config.getConfigSources()) {
             if (configSource.getClass().getSimpleName().equals("BuildTimeEnvConfigSource")) {
                 return true;
             }

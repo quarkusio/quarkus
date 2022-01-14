@@ -115,6 +115,10 @@ Refer to the associated documentation to learn how to use them.
 |`io.quarkus:quarkus-reactive-mysql-client` (extension)
 |https://quarkus.io/guides/reactive-sql-clients
 
+|Oracle Client
+|`io.quarkus:quarkus-reactive-oracle-client` (extension)
+|https://quarkus.io/guides/reactive-sql-clients
+
 |PostgreSQL Client
 |`io.quarkus:quarkus-reactive-pg-client` (extension)
 |https://quarkus.io/guides/reactive-sql-clients

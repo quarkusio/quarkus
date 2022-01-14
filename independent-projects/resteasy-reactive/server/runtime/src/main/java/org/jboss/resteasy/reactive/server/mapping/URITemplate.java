@@ -285,6 +285,16 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                     + pattern + "}";
         }
 
+        public String stringRepresentation() {
+            if (type == Type.LITERAL) {
+                return literalText;
+            } else if (type == Type.DEFAULT_REGEX) {
+                return "{" + name + "}";
+            } else {
+                return "{" + name + ":" + pattern.toString() + "}";
+            }
+        }
+
         @Override
         public void dump(int level) {
             indent(level);

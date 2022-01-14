@@ -1,6 +1,7 @@
 package io.quarkus.test.junit.util;
 
 import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST;
+import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_SECONDARY_ORDERER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -14,7 +15,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.ClassDescriptor;
+import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.ClassOrdererContext;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -92,13 +95,40 @@ class QuarkusTestProfileAwareClassOrdererTest {
         List<ClassDescriptor> input = Arrays.asList(quarkusTestDesc, nonQuarkusTestDesc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
-        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty());
+        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
         // prioritize unit tests
         when(contextMock.getConfigurationParameter(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST)).thenReturn(Optional.of("01_"));
 
         underTest.orderClasses(contextMock);
 
         assertThat(input).containsExactly(nonQuarkusTestDesc, quarkusTestDesc);
+    }
+
+    @Test
+    void secondaryOrderer() {
+        ClassDescriptor quarkusTest1Desc = quarkusDescriptorMock(Test01.class, null);
+        ClassDescriptor nonQuarkusTest1Desc = descriptorMock(Test09.class);
+        ClassDescriptor nonQuarkusTest2Desc = descriptorMock(Test10.class);
+        var orderMock = Mockito.mock(Order.class);
+        when(orderMock.value()).thenReturn(1);
+        when(nonQuarkusTest2Desc.findAnnotation(Order.class)).thenReturn(Optional.of(orderMock));
+        List<ClassDescriptor> input = Arrays.asList(
+                nonQuarkusTest1Desc,
+                nonQuarkusTest2Desc,
+                quarkusTest1Desc);
+        doReturn(input).when(contextMock).getClassDescriptors();
+
+        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
+        // change secondary orderer from ClassName to OrderAnnotation
+        when(contextMock.getConfigurationParameter(CFGKEY_SECONDARY_ORDERER))
+                .thenReturn(Optional.of(ClassOrderer.OrderAnnotation.class.getName()));
+
+        underTest.orderClasses(contextMock);
+
+        assertThat(input).containsExactly(
+                quarkusTest1Desc,
+                nonQuarkusTest2Desc,
+                nonQuarkusTest1Desc);
     }
 
     @Test
@@ -110,7 +140,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
 
         underTest = new QuarkusTestProfileAwareClassOrderer() {
             @Override
-            protected Optional<String> getCustomOrderKey(ClassDescriptor classDescriptor, ClassOrdererContext context) {
+            protected Optional<String> getCustomOrderKey(ClassDescriptor classDescriptor, ClassOrdererContext context,
+                    String secondaryOrderSuffix) {
                 return classDescriptor == quarkusTest2Desc ? Optional.of("00_first") : Optional.empty();
             }
         };
@@ -150,7 +181,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
     private static class Test01 {
     }
 
-    // this single made-up test class needs an actual annotation since the orderer will have do the meta-check directly because ClassDescriptor does not offer any details whether an annotation is directly annotated or meta-annotated
+    // this single made-up test class needs an actual annotation since the orderer will have to do the meta-check directly
+    // because ClassDescriptor does not offer any details whether an annotation is directly annotated or meta-annotated
     @QuarkusTestResource(Manager3.class)
     private static class Test02 {
     }

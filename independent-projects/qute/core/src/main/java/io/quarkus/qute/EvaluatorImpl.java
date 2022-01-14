@@ -41,6 +41,7 @@ class EvaluatorImpl implements Evaluator {
             } else {
                 // Sort by priority - higher priority wins
                 list.sort(Comparator.comparingInt(WithPriority::getPriority).reversed());
+                entry.setValue(List.copyOf(list));
             }
         }
         this.namespaceResolvers = namespaceResolversMap;
@@ -59,12 +60,12 @@ class EvaluatorImpl implements Evaluator {
                                 expression.getNamespace(), expression.toOriginalString(),
                                 expression.getOrigin().getTemplateId(), expression.getOrigin().getLine())));
             }
-            EvalContext context = new EvalContextImpl(false, null, parts.next(), resolutionContext);
+            EvalContext context = new EvalContextImpl(false, null, resolutionContext, parts.next());
             if (matching.size() == 1) {
                 // Very often a single matching resolver will be found
                 return matching.get(0).resolve(context).thenCompose(r -> {
                     if (parts.hasNext()) {
-                        return resolveReference(false, r, parts, resolutionContext, expression);
+                        return resolveReference(false, r, parts, resolutionContext, expression, 0);
                     } else {
                         return toCompletionStage(r);
                     }
@@ -78,7 +79,7 @@ class EvaluatorImpl implements Evaluator {
                 return expression.asLiteral();
             } else {
                 parts = expression.getParts().iterator();
-                return resolveReference(true, resolutionContext.getData(), parts, resolutionContext, expression);
+                return resolveReference(true, resolutionContext.getData(), parts, resolutionContext, expression, 0);
             }
         }
     }
@@ -97,7 +98,7 @@ class EvaluatorImpl implements Evaluator {
                     return Results.notFound(context);
                 }
             } else if (parts.hasNext()) {
-                return resolveReference(false, r, parts, resolutionContext, expression);
+                return resolveReference(false, r, parts, resolutionContext, expression, 0);
             } else {
                 return toCompletionStage(r);
             }
@@ -105,21 +106,21 @@ class EvaluatorImpl implements Evaluator {
     }
 
     private CompletionStage<Object> resolveReference(boolean tryParent, Object ref, Iterator<Part> parts,
-            ResolutionContext resolutionContext, final Expression expression) {
+            ResolutionContext resolutionContext, final Expression expression, int partIndex) {
         Part part = parts.next();
-        EvalContextImpl evalContext = new EvalContextImpl(tryParent, ref, part, resolutionContext);
+        EvalContextImpl evalContext = new EvalContextImpl(tryParent, ref, resolutionContext, part);
         if (!parts.hasNext()) {
             // The last part - no need to compose
-            return resolve(evalContext, null, true, expression, true);
+            return resolve(evalContext, null, true, expression, true, partIndex);
         } else {
             // Next part - no need to try the parent context/outer scope
-            return resolve(evalContext, null, true, expression, false)
-                    .thenCompose(r -> resolveReference(false, r, parts, resolutionContext, expression));
+            return resolve(evalContext, null, true, expression, false, partIndex)
+                    .thenCompose(r -> resolveReference(false, r, parts, resolutionContext, expression, partIndex + 1));
         }
     }
 
     private CompletionStage<Object> resolve(EvalContextImpl evalContext, Iterator<ValueResolver> resolvers,
-            boolean tryCachedResolver, final Expression expression, boolean isLastPart) {
+            boolean tryCachedResolver, final Expression expression, boolean isLastPart, int partIndex) {
 
         if (tryCachedResolver) {
             // Try the cached resolver first
@@ -127,7 +128,7 @@ class EvaluatorImpl implements Evaluator {
             if (cachedResolver != null && cachedResolver.appliesTo(evalContext)) {
                 return cachedResolver.resolve(evalContext).thenCompose(r -> {
                     if (Results.isNotFound(r)) {
-                        return resolve(evalContext, null, false, expression, isLastPart);
+                        return resolve(evalContext, null, false, expression, isLastPart, partIndex);
                     } else {
                         return toCompletionStage(r);
                     }
@@ -154,7 +155,7 @@ class EvaluatorImpl implements Evaluator {
                 return resolve(
                         new EvalContextImpl(true, parent.getData(), parent,
                                 evalContext.part),
-                        null, false, expression, isLastPart);
+                        null, false, expression, isLastPart, partIndex);
             }
             LOGGER.tracef("Unable to resolve %s", evalContext);
             Object notFound;
@@ -162,7 +163,24 @@ class EvaluatorImpl implements Evaluator {
                 // If the base is "not found" then just return it
                 notFound = evalContext.getBase();
             } else {
-                notFound = Results.NotFound.from(evalContext);
+                // If the next part matches the ValueResolvers.orResolver() we can just use the empty NotFound constant
+                // and avoid unnecessary allocations
+                // This optimization should be ok in 99% of cases, for the rest an incomplete NotFound is an acceptable loss 
+                Part nextPart = isLastPart ? null : expression.getParts().get(partIndex + 1);
+                if (nextPart != null
+                        // is virtual method with a single param
+                        && nextPart.isVirtualMethod()
+                        && nextPart.asVirtualMethod().getParameters().size() == 1
+                        // name has less than 3 chars
+                        && nextPart.getName().length() < 3
+                        // name is "?:", "or" or ":" 
+                        && (nextPart.getName().equals(ValueResolvers.ELVIS)
+                                || nextPart.getName().equals(ValueResolvers.OR)
+                                || nextPart.getName().equals(ValueResolvers.COLON))) {
+                    notFound = Results.NotFound.EMPTY;
+                } else {
+                    notFound = Results.NotFound.from(evalContext);
+                }
             }
             // If in strict mode then just throw an exception
             if (strictRendering && isLastPart) {
@@ -176,7 +194,7 @@ class EvaluatorImpl implements Evaluator {
         return applicableResolver.resolve(evalContext).thenCompose(r -> {
             if (Results.isNotFound(r)) {
                 // Result not found - try the next resolver
-                return resolve(evalContext, remainingResolvers, false, expression, isLastPart);
+                return resolve(evalContext, remainingResolvers, false, expression, isLastPart, partIndex);
             } else {
                 // Cache the first resolver where a result is found
                 evalContext.setCachedResolver(foundResolver);
@@ -217,10 +235,6 @@ class EvaluatorImpl implements Evaluator {
         final PartImpl part;
         final List<Expression> params;
         final String name;
-
-        EvalContextImpl(boolean tryParent, Object base, Part part, ResolutionContext resolutionContext) {
-            this(tryParent, base, resolutionContext, part);
-        }
 
         EvalContextImpl(boolean tryParent, Object base, ResolutionContext resolutionContext, Part part) {
             this.tryParent = tryParent;
@@ -266,6 +280,7 @@ class EvaluatorImpl implements Evaluator {
         }
 
         void setCachedResolver(ValueResolver valueResolver) {
+            // Non-atomic write is ok here
             part.cachedResolver = valueResolver;
         }
 

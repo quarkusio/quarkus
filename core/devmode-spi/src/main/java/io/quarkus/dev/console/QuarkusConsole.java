@@ -16,6 +16,8 @@ public abstract class QuarkusConsole {
     public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+    public static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
+    public static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux");
 
     /**
      * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
@@ -51,6 +53,9 @@ public abstract class QuarkusConsole {
     public final static PrintStream ORIGINAL_OUT = System.out;
     public final static PrintStream ORIGINAL_ERR = System.err;
 
+    public static PrintStream REDIRECT_OUT = null;
+    public static PrintStream REDIRECT_ERR = null;
+
     public synchronized static void installRedirects() {
         if (redirectsInstalled) {
             return;
@@ -60,8 +65,31 @@ public abstract class QuarkusConsole {
         //force console init
         //otherwise you can get a stack overflow as it sees the redirected output
         QuarkusConsole.INSTANCE.isInputSupported();
-        System.setOut(new RedirectPrintStream(false));
-        System.setErr(new RedirectPrintStream(true));
+        REDIRECT_OUT = new RedirectPrintStream(false);
+        REDIRECT_ERR = new RedirectPrintStream(true);
+        System.setOut(REDIRECT_OUT);
+        System.setErr(REDIRECT_ERR);
+    }
+
+    public synchronized static void uninstallRedirects() {
+        if (!redirectsInstalled) {
+            return;
+        }
+
+        if (REDIRECT_OUT != null) {
+            REDIRECT_OUT.flush();
+            REDIRECT_OUT.close();
+            REDIRECT_OUT = null;
+        }
+        if (REDIRECT_ERR != null) {
+            REDIRECT_ERR.flush();
+            REDIRECT_ERR.close();
+            REDIRECT_ERR = null;
+        }
+        System.setOut(ORIGINAL_OUT);
+        System.setErr(ORIGINAL_ERR);
+
+        redirectsInstalled = false;
     }
 
     public static boolean hasColorSupport() {
@@ -109,6 +137,10 @@ public abstract class QuarkusConsole {
 
     public abstract void write(boolean errorStream, byte[] buf, int off, int len);
 
+    public void exitCliMode() {
+        //noop for the non-aesh console
+    }
+
     protected String stripAnsiCodes(String s) {
         if (s == null) {
             return null;
@@ -143,4 +175,5 @@ public abstract class QuarkusConsole {
     public boolean isAnsiSupported() {
         return false;
     }
+
 }

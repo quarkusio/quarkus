@@ -44,7 +44,7 @@ You can reference to https://kiegroup.github.io/kogito-online/#/download[Busines
 * Eclipse
 
 To be able to make use of visual modelling of your processes, download Eclipse IDE and
-install from Market place Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
+install from Marketplace Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
 
 == Architecture
 
@@ -88,7 +88,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kogito-quickstart \
-    -Dextensions="kogito" \
+    -Dextensions="kogito,resteasy-jackson" \
     -DnoExamples
 cd kogito-quickstart
 ----
@@ -96,6 +96,7 @@ cd kogito-quickstart
 This command generates a Maven project, importing the `kogito` extension
 that comes with all needed dependencies and configuration to equip your application
 with business automation.
+It also imports the `resteasy-jackson` extension that is needed for Kogito to expose REST services.
 
 If you already have your Quarkus project configured, you can add the `kogito` extension
 to your project by running the following command in your project base directory:
@@ -478,3 +479,4 @@ Once the dependency is added to the project, decision tables in `xls` or `xlsx` 
 
 * https://kogito.kie.org[Kogito Website]
 * https://docs.jboss.org/kogito/release/latest/html_single[Kogito Documentation]
+* xref:kogito-dev-services.adoc[Kogito Dev Services]

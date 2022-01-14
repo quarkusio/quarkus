@@ -3,6 +3,8 @@ package io.quarkus.test.junit.util;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.ClassDescriptor;
 import org.junit.jupiter.api.ClassOrderer;
@@ -26,15 +28,19 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * after tests with profiles and Quarkus*Tests with only unrestricted resources are handled like tests without a profile (come
  * first).
  * <p/>
- * Internally, ordering is based on three prefixes that are prepended to the fully qualified name of the respective class, with
- * the fully qualified class name of the {@link io.quarkus.test.junit.QuarkusTestProfile QuarkusTestProfile} as an infix (if
- * present).
+ * Internally, ordering is based on prefixes that are prepended to a secondary order suffix (by default the fully qualified
+ * name of the respective test class), with the fully qualified class name of the
+ * {@link io.quarkus.test.junit.QuarkusTestProfile QuarkusTestProfile} as an infix (if present).
  * The default prefixes are defined by {@code DEFAULT_ORDER_PREFIX_*} and can be overridden in {@code junit-platform.properties}
  * via {@code CFGKEY_ORDER_PREFIX_*}, e.g. non-Quarkus tests can be run first (not last) by setting
  * {@link #CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST} to {@code 10_}.
  * <p/>
+ * The secondary order suffix can be changed via {@value #CFGKEY_SECONDARY_ORDERER}, e.g. a value of
+ * {@link org.junit.jupiter.api.ClassOrderer.ClassOrderer.Random} will order the test classes within one group randomly instead
+ * by class name.
+ * <p/>
  * {@link #getCustomOrderKey(ClassDescriptor, ClassOrdererContext)} can be overridden to provide a custom order number for a
- * given test class, e.g. based on {@link org.junit.jupiter.api.Tag}, class name or something else.
+ * given test class, e.g. based on {@link org.junit.jupiter.api.Tag} or something else.
  * <p/>
  * Limitations:
  * <ul>
@@ -53,6 +59,7 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "quarkus.test.orderer.prefix.quarkus-test-with-profile";
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "quarkus.test.orderer.prefix.quarkus-test-with-restricted-resource";
     static final String CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "quarkus.test.orderer.prefix.non-quarkus-test";
+    static final String CFGKEY_SECONDARY_ORDERER = "quarkus.test.orderer.secondary-orderer";
 
     @Override
     public void orderClasses(ClassOrdererContext context) {
@@ -73,27 +80,48 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
                 .getConfigurationParameter(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST)
                 .orElse(DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST);
 
-        context.getClassDescriptors().sort(Comparator.comparing(classDescriptor -> {
-            Optional<String> customOrderKey = getCustomOrderKey(classDescriptor, context);
+        // first pass: run secondary orderer first (!), which is easier than running it per "grouping"
+        buildSecondaryOrderer(context).orderClasses(context);
+        var classDecriptors = context.getClassDescriptors();
+        var firstPassIndexMap = IntStream.range(0, classDecriptors.size()).boxed()
+                .collect(Collectors.toMap(classDecriptors::get, i -> String.format("%06d", i)));
+
+        // second pass: apply the actual Quarkus aware ordering logic, using the first pass indices as order key suffixes
+        classDecriptors.sort(Comparator.comparing(classDescriptor -> {
+            var secondaryOrderSuffix = firstPassIndexMap.get(classDescriptor);
+            Optional<String> customOrderKey = getCustomOrderKey(classDescriptor, context, secondaryOrderSuffix)
+                    .or(() -> getCustomOrderKey(classDescriptor, context));
             if (customOrderKey.isPresent()) {
                 return customOrderKey.get();
             }
-            var testClassName = classDescriptor.getTestClass().getName();
             if (classDescriptor.isAnnotated(QuarkusTest.class)
                     || classDescriptor.isAnnotated(QuarkusIntegrationTest.class)
                     || classDescriptor.isAnnotated(QuarkusMainTest.class)) {
                 return classDescriptor.findAnnotation(TestProfile.class)
                         .map(TestProfile::value)
-                        .map(profileClass -> prefixQuarkusTestWithProfile + profileClass.getName() + "@" + testClassName)
+                        .map(profileClass -> prefixQuarkusTestWithProfile + profileClass.getName() + "@" + secondaryOrderSuffix)
                         .orElseGet(() -> {
                             var prefix = hasRestrictedResource(classDescriptor)
                                     ? prefixQuarkusTestWithRestrictedResource
                                     : prefixQuarkusTest;
-                            return prefix + testClassName;
+                            return prefix + secondaryOrderSuffix;
                         });
             }
-            return prefixNonQuarkusTest + testClassName;
+            return prefixNonQuarkusTest + secondaryOrderSuffix;
         }));
+    }
+
+    private ClassOrderer buildSecondaryOrderer(ClassOrdererContext context) {
+        return context.getConfigurationParameter(CFGKEY_SECONDARY_ORDERER)
+                .map(fqcn -> {
+                    try {
+                        return (ClassOrderer) Class.forName(fqcn).getDeclaredConstructor().newInstance();
+                    } catch (ReflectiveOperationException e) {
+                        throw new IllegalArgumentException(
+                                "Failed to instantiate " + fqcn + " (defined by " + CFGKEY_SECONDARY_ORDERER + ")", e);
+                    }
+                })
+                .orElseGet(ClassOrderer.ClassName::new);
     }
 
     private boolean hasRestrictedResource(ClassDescriptor classDescriptor) {
@@ -109,12 +137,27 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     /**
      * Template method that provides an optional custom order key for the given {@code classDescriptor}.
-     * 
+     *
      * @param classDescriptor the respective test class
      * @param context for config lookup
      * @return optional custom order key for the given test class
+     * @deprecated use {@link #getCustomOrderKey(ClassDescriptor, ClassOrdererContext, String)} instead
      */
+    @Deprecated(forRemoval = true)
     protected Optional<String> getCustomOrderKey(ClassDescriptor classDescriptor, ClassOrdererContext context) {
+        return Optional.empty();
+    }
+
+    /**
+     * Template method that provides an optional custom order key for the given {@code classDescriptor}.
+     *
+     * @param classDescriptor the respective test class
+     * @param context for config lookup
+     * @param secondaryOrderSuffix the secondary order suffix that was calculated by the secondary orderer
+     * @return optional custom order key for the given test class
+     */
+    protected Optional<String> getCustomOrderKey(ClassDescriptor classDescriptor, ClassOrdererContext context,
+            String secondaryOrderSuffix) {
         return Optional.empty();
     }
 }

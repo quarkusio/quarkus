@@ -41,6 +41,8 @@ import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
+import javax.xml.bind.JAXBElement;
+import javax.xml.namespace.QName;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
@@ -124,6 +126,8 @@ import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
+import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
+import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 import io.quarkus.hibernate.orm.runtime.devconsole.HibernateOrmDevConsoleCreateDDLSupplier;
@@ -603,6 +607,16 @@ public final class HibernateOrmProcessor {
                 QuarkusPersistenceUnitDefinition.Serialized.class,
                 QuarkusPersistenceUnitDefinition.Substitution.class);
 
+        if (hasXmlMappings(persistenceUnitDescriptorBuildItems)) {
+            //Make it possible to record JAXBElement as bytecode:
+            recorderContext.registerSubstitution(JAXBElement.class,
+                    JAXBElementSubstitution.Serialized.class,
+                    JAXBElementSubstitution.class);
+            recorderContext.registerSubstitution(QName.class,
+                    QNameSubstitution.Serialized.class,
+                    QNameSubstitution.class);
+        }
+
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses,
@@ -1038,12 +1052,6 @@ public final class HibernateOrmProcessor {
         //charset
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME,
                 persistenceUnitConfig.database.charset.name());
-
-        persistenceUnitConfig.database.defaultCatalog.ifPresent(
-                catalog -> descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
-
-        persistenceUnitConfig.database.defaultSchema.ifPresent(
-                schema -> descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
 
         if (persistenceUnitConfig.database.globallyQuotedIdentifiers) {
             descriptor.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");

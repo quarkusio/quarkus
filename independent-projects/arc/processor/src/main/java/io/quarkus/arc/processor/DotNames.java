@@ -7,6 +7,7 @@ import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.NoClassInterceptors;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.impl.ComputingCache;
@@ -126,6 +127,7 @@ public final class DotNames {
     public static final DotName ALL = create(All.class);
     public static final DotName IDENTIFIED = create(Identified.class);
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
+    public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

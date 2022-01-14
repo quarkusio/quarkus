@@ -9,8 +9,8 @@ include::./attributes.adoc[]
 
 You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You're at the right place.
 
-With this guide, you'll learn how to synchronize your entities to an Elasticsearch cluster in a heart beat with Hibernate Search.
-We will also explore how you can can query your Elasticsearch cluster using the Hibernate Search API.
+With this guide, you'll learn how to synchronize your entities to an Elasticsearch or OpenSearch cluster in a heartbeat with Hibernate Search.
+We will also explore how you can query your Elasticsearch or OpenSearch cluster using the Hibernate Search API.
 
 == Prerequisites
 
@@ -21,7 +21,7 @@ To complete this guide, you need:
 * JDK 11+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * Docker
-* link:building-native-image[GraalVM installed if you want to run in native mode]
+* xref:building-native-image.adoc[GraalVM installed if you want to run in native mode]
 
 == Architecture
 
@@ -569,6 +569,7 @@ quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <8
 <5> We need to tell Hibernate Search about the version of Elasticsearch we will use.
 It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
 Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
+Note that, for OpenSearch, you need to prefix the version with `opensearch:`; see <<opensearch>>.
 <6> We point to the custom `AnalysisConfigurer` which defines the configuration of our analyzers and normalizers.
 <7> Obviously, this is not for production: we drop and recreate the index every time we start the application.
 <8> This means that we wait for the entities to be searchable before considering a write complete.
@@ -624,7 +625,7 @@ docker run -it --rm=true --name elasticsearch_quarkus_test -p 9200:9200 -p 9300:
 
 [source,bash]
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgresql_quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:13.1
+docker run -it --rm=true --name postgresql_quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:14.1
 ----
 
 == Time to play with your application
@@ -638,13 +639,34 @@ You can now interact with your REST service:
 
 As you can see, all your updates are automatically synchronized to the Elasticsearch cluster.
 
+[[opensearch]]
+== OpenSearch compatibility
+
+Hibernate Search is compatible with both https://www.elastic.co/elasticsearch[Elasticsearch]
+and https://www.opensearch.org/[OpenSearch],
+but it assumes it is working with an Elasticsearch cluster by default.
+
+To have Hibernate Search work with an OpenSearch cluster instead,
+link:{hibernate-search-doc-prefix}#backend-elasticsearch-configuration-version[prefix the configured version with `opensearch:`],
+as shown below.
+
+[source,properties]
+----
+quarkus.hibernate-search-orm.elasticsearch.version=opensearch:1.2
+----
+
+All other configuration options and APIs are exactly the same as with Elasticsearch.
+
+You can find more information about compatible distributions and versions of Elasticsearch in
+link:{hibernate-search-doc-prefix}#getting-started-compatibility[this section of Hibernate Search's reference documentation].
+
 [[multiple-persistence-units]]
 == Multiple persistence units
 
 === Configuring multiple persistence units
 
 With the Hibernate ORM extension,
-link:hibernate-orm#multiple-persistence-units[you can set up multiple persistence units],
+xref:hibernate-orm.adoc#multiple-persistence-units[you can set up multiple persistence units],
 each with its own datasource and configuration.
 
 If you do declare multiple persistence units,
@@ -704,7 +726,7 @@ setting the Elasticsearch host for that persistence unit to `es2.mycompany.com:9
 
 For each persistence unit, Hibernate Search will only consider indexed entities that are attached to that persistence unit.
 Entities are attached to a persistence unit by
-link:hibernate-orm#multiple-persistence-units-attaching-model-classes[configuring the Hibernate ORM extension].
+xref:hibernate-orm.adoc#multiple-persistence-units-attaching-model-classes[configuring the Hibernate ORM extension].
 
 [[multiple-persistence-units-attaching-cdi]]
 == CDI integration
@@ -886,4 +908,4 @@ for more information.
 [[configuration-reference-aws]]
 === AWS Integration Configuration
 
-include::{generated-dir}/config/quarkus-hibernate-search-orm-elasticsearch-aws.adoc[leveloffset=+1, opts=optional]
+Please see link:{hibernate-search-orm-elasticsearch-aws-guide}#aws-configuration-reference[the documentation for the Hibernate Search ORM + Elasticsearch AWS extension].

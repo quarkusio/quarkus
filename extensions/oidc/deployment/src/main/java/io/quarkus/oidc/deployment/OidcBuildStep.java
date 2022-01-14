@@ -36,6 +36,7 @@ import io.quarkus.oidc.runtime.OidcConfigurationMetadataProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
+import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.runtime.TlsConfig;
@@ -87,7 +88,8 @@ public class OidcBuildStep {
                 .addBeanClass(OidcConfigurationMetadataProducer.class)
                 .addBeanClass(OidcIdentityProvider.class)
                 .addBeanClass(DefaultTenantConfigResolver.class)
-                .addBeanClass(DefaultTokenStateManager.class);
+                .addBeanClass(DefaultTokenStateManager.class)
+                .addBeanClass(OidcSessionImpl.class);
         additionalBeans.produce(builder.build());
     }
 

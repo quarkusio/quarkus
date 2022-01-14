@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-While users are encouraged to use link:security#standard-security-annotations[Java standard annotations for security authorizations], Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
+While users are encouraged to use xref:security.adoc#standard-security-annotations[Java standard annotations for security authorizations], Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Security annotations to define authorizations on RESTful services using roles.
 
@@ -78,7 +78,7 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
-For more information about `security-properties-file`, you can check out the guide of the link:security-properties[quarkus-elytron-security-properties-file] extension.
+For more information about `security-properties-file`, you can check out the guide of the xref:security-properties.adoc[quarkus-elytron-security-properties-file] extension.
 
 == GreetingController
 
@@ -167,7 +167,7 @@ public class GreetingController {
 ----
 
 The easiest way to setup users and roles for our example is to use the `security-properties-file` extension. This extension essentially allows users and roles to be defined in the main Quarkus configuration file - `application.properties`.
-For more information about this extension check link:security-properties[the associated guide].
+For more information about this extension check xref:security-properties.adoc[the associated guide].
 An example configuration would be the following:
 
 [source,properties]
@@ -240,7 +240,7 @@ HTTP ERROR 403
 
 == Run the application as a native executable
 
-You can of course create a native image using the instructions of the link:building-native-image[Building a native executable guide].
+You can of course create a native image using the instructions of the xref:building-native-image.adoc[Building a native executable guide].
 
 
 == Supported Spring Security functionalities
@@ -432,11 +432,11 @@ The following table shows how Spring Security annotations can be converted to JA
 
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-di[Quarkus - Extension for Spring DI]
-* link:spring-web[Quarkus - Extension for Spring Web]
-* link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
-* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
-* link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
-* link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
-* link:spring-cache[Quarkus - Extension for Spring Cache]
-* link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
+* xref:spring-di.adoc[Quarkus - Extension for Spring DI]
+* xref:spring-web.adoc[Quarkus - Extension for Spring Web]
+* xref:spring-data-jpa.adoc[Quarkus - Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
+* xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]

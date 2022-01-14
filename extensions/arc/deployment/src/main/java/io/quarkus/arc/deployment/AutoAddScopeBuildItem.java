@@ -1,6 +1,7 @@
 package io.quarkus.arc.deployment;
 
 import java.util.Collection;
+import java.util.function.BiConsumer;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -14,7 +15,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This build item can be used to turn a class that is not annotated with a CDI scope annotation into a bean, i.e. the default
- * scope annotation is added automatically if conditions are met.
+ * scope annotation is added automatically if all conditions are met.
  */
 public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
@@ -27,14 +28,19 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
     private final DotName defaultScope;
     private final boolean unremovable;
     private final String reason;
+    private final int priority;
+    private final BiConsumer<DotName, String> scopeAlreadyAdded;
 
     private AutoAddScopeBuildItem(MatchPredicate matchPredicate, boolean containerServicesRequired,
-            DotName defaultScope, boolean unremovable, String reason) {
+            DotName defaultScope, boolean unremovable, String reason, int priority,
+            BiConsumer<DotName, String> scopeAlreadyAdded) {
         this.matchPredicate = matchPredicate;
         this.containerServicesRequired = containerServicesRequired;
         this.defaultScope = defaultScope;
         this.unremovable = unremovable;
         this.reason = reason;
+        this.priority = priority;
+        this.scopeAlreadyAdded = scopeAlreadyAdded;
     }
 
     public boolean isContainerServicesRequired() {
@@ -50,7 +56,15 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
     }
 
     public String getReason() {
-        return reason != null ? ": " + reason : "";
+        return reason != null ? reason : "unknown";
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+
+    public BiConsumer<DotName, String> getScopeAlreadyAdded() {
+        return scopeAlreadyAdded;
     }
 
     public boolean test(ClassInfo clazz, Collection<AnnotationInstance> annotations, IndexView index) {
@@ -86,11 +100,14 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         private DotName defaultScope;
         private boolean unremovable;
         private String reason;
+        private int priority;
+        private BiConsumer<DotName, String> scopeAlreadyAdded;
 
         private Builder() {
             this.defaultScope = BuiltinScope.DEPENDENT.getName();
             this.unremovable = false;
             this.requiresContainerServices = false;
+            this.priority = 0;
         }
 
         /**
@@ -222,6 +239,32 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * Set the priority. The default priority is {@code 0}. An {@link AutoAddScopeBuildItem} with higher priority takes
+         * precedence.
+         * 
+         * @param priority
+         * @return self
+         */
+        public Builder priority(int priority) {
+            this.priority = priority;
+            return this;
+        }
+
+        /**
+         * If a scope was already added by another {@link AutoAddScopeBuildItem} then this consumer is used to handle this
+         * situation, i.e. log a warning or throw an exception. The first argument is the
+         * {@link AutoAddScopeBuildItem#getDefaultScope()} and the second argument is the
+         * {@link AutoAddScopeBuildItem#getReason()}.
+         * 
+         * @param consumer
+         * @return self
+         */
+        public Builder scopeAlreadyAdded(BiConsumer<DotName, String> consumer) {
+            this.scopeAlreadyAdded = consumer;
+            return this;
+        }
+
         private Builder and(MatchPredicate other) {
             if (matchPredicate == null) {
                 matchPredicate = other;
@@ -235,7 +278,8 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
             if (matchPredicate == null) {
                 throw new IllegalStateException("A matching predicate must be set!");
             }
-            return new AutoAddScopeBuildItem(matchPredicate, requiresContainerServices, defaultScope, unremovable, reason);
+            return new AutoAddScopeBuildItem(matchPredicate, requiresContainerServices, defaultScope, unremovable, reason,
+                    priority, scopeAlreadyAdded);
         }
     }
 

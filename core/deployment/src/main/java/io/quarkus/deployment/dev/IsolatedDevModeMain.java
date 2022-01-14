@@ -334,12 +334,18 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         fsWatchUtil.shutdown();
         try {
             stop();
+            if (RuntimeUpdatesProcessor.INSTANCE == null) {
+                throw new IllegalStateException(
+                        "Hot deployment of the application is not supported when updating the Quarkus version. The application needs to be stopped and dev mode started up again");
+            }
         } finally {
             try {
-                try {
-                    RuntimeUpdatesProcessor.INSTANCE.close();
-                } catch (IOException e) {
-                    log.error("Failed to close compiler", e);
+                if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                    try {
+                        RuntimeUpdatesProcessor.INSTANCE.close();
+                    } catch (IOException e) {
+                        log.error("Failed to close compiler", e);
+                    }
                 }
                 for (HotReplacementSetup i : hotReplacementSetups) {
                     i.close();

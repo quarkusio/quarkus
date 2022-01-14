@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 This guide explains how to use the RESTEasy REST Client in order to interact with REST APIs
 with very little effort.
 
-TIP: there is another guide if you need to write server link:rest-json[JSON REST APIs].
+TIP: there is another guide if you need to write server xref:rest-json.adoc[JSON REST APIs].
 
 == Prerequisites
 
@@ -601,7 +601,7 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 
 == REST Client and RESTEasy interactions
 
-In Quarkus, the REST Client extension and link:rest-json[the RESTEasy extension] share the same infrastructure.
+In Quarkus, the REST Client extension and xref:rest-json.adoc[the RESTEasy extension] share the same infrastructure.
 One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
 
 For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
@@ -639,7 +639,7 @@ values that Quarkus will use.
 
 [NOTE]
 ====
-For more details about `@QuarkusTestResource` refer to  link:getting-started-testing#quarkus-test-resource[this part of the documentation].
+For more details about `@QuarkusTestResource` refer to  xref:getting-started-testing.adoc#quarkus-test-resource[this part of the documentation].
 ====
 
 Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `WiremockExtensions` like so:

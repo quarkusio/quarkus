@@ -179,7 +179,8 @@ public class RuntimeDeploymentManager {
                     .getPreMatchContainerRequestFilters()
                     .entrySet()) {
                 preMatchHandlers
-                        .add(new ResourceRequestFilterHandler(entry.getValue(), true, entry.getKey().isNonBlockingRequired()));
+                        .add(new ResourceRequestFilterHandler(entry.getValue(), true, entry.getKey().isNonBlockingRequired(),
+                                entry.getKey().isReadBody()));
             }
         }
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
@@ -191,7 +192,7 @@ public class RuntimeDeploymentManager {
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
-                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404());
+                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404(), info.getResteasyReactiveConfig());
     }
 
     private void forEachMapperEntry(URITemplate path,

@@ -19,8 +19,8 @@ import javax.lang.model.SourceVersion;
 
 public class CreateProjectHelper {
 
-    private static final Set<String> JAVA_VERSIONS_LTS = Set.of("11", "17");
-    private static final String DEFAULT_JAVA_VERSION = "11";
+    public static final Set<String> JAVA_VERSIONS_LTS = Set.of("11", "17");
+    public static final String DEFAULT_JAVA_VERSION = "11";
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
     public static final String DEFAULT_GROUP_ID = "org.acme";

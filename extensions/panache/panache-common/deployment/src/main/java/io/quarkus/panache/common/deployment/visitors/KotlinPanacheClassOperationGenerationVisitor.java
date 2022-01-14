@@ -64,6 +64,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     public static final String NULLABLE_DESCRIPTOR = "Lorg/jetbrains/annotations/Nullable;";
     public static final ByteCodeType OBJECT = new ByteCodeType(Object.class);
     protected static final ByteCodeType CLASS = new ByteCodeType(Class.class);
+    private static final String CTOR_METHOD_NAME = "<init>";
     protected final Function<String, String> argMapper;
     protected final ClassInfo classInfo;
     protected final ByteCodeType entityUpperBound;
@@ -291,7 +292,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 .replace("java.util.List", "kotlin.collections.List")));
 
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/NullPointerException",
-                "<init>", "(Ljava/lang/String;)V", false);
+                CTOR_METHOD_NAME, "(Ljava/lang/String;)V", false);
         mv.visitInsn(ATHROW);
         mv.visitLabel(label);
         mv.visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[] { "java/lang/Object" });
@@ -537,6 +538,9 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         } else if (name.contains("$")) {
             //some agents such as jacoco add new methods, they generally have $ in the name
+            return super.visitMethod(access, name, descriptor, signature, exceptions);
+        } else if (name.equals(CTOR_METHOD_NAME)) {
+            //Arc can add no-args constructors to support intercepted beans
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         }
         return null;

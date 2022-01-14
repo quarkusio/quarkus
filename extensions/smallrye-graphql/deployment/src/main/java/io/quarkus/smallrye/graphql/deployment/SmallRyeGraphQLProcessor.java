@@ -199,10 +199,12 @@ public class SmallRyeGraphQLProcessor {
         Map<String, byte[]> modifiedClases = graphQLIndexBuildItem.getModifiedClases();
 
         for (Map.Entry<String, byte[]> kv : modifiedClases.entrySet()) {
-            try (ByteArrayInputStream bais = new ByteArrayInputStream(kv.getValue())) {
-                indexer.index(bais);
-            } catch (IOException ex) {
-                LOG.warn("Could not index [" + kv.getKey() + "] - " + ex.getMessage());
+            if (kv.getKey() != null && kv.getValue() != null) {
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(kv.getValue())) {
+                    indexer.index(bais);
+                } catch (IOException ex) {
+                    LOG.warn("Could not index [" + kv.getKey() + "] - " + ex.getMessage());
+                }
             }
         }
 
@@ -415,7 +417,7 @@ public class SmallRyeGraphQLProcessor {
             LaunchModeBuildItem launchMode,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
 
-        // User did not set this explisitly 
+        // User did not set this explicitly
         if (!graphQLConfig.printDataFetcherException.isPresent()) {
             if (launchMode.getLaunchMode().isDevOrTest()) {
                 systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.PRINT_DATAFETCHER_EXCEPTION, TRUE));

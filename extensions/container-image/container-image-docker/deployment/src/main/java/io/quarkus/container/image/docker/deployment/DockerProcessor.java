@@ -37,6 +37,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.util.ExecUtil;
 
@@ -70,8 +71,12 @@ public class DockerProcessor {
             @SuppressWarnings("unused") // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 
@@ -99,13 +104,18 @@ public class DockerProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             OutputTargetBuildItem out,
+            Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             PackageConfig packageConfig,
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
 
-        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
-                && !pushRequest.isPresent()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+            return;
+        }
+
+        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
+                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
             return;
         }
 
@@ -151,7 +161,7 @@ public class DockerProcessor {
             createAdditionalTags(containerImageInfo.getImage(), containerImageInfo.getAdditionalImageTags(), dockerConfig);
         }
 
-        if (pushRequested || containerImageConfig.push) {
+        if (pushRequested || containerImageConfig.isPushExplicitlyEnabled()) {
             String registry = "docker.io";
             if (!containerImageInfo.getRegistry().isPresent()) {
                 log.info("No container image registry was set, so 'docker.io' will be used");
@@ -194,6 +204,10 @@ public class DockerProcessor {
                 dockerArgs.add("--cache-from");
                 dockerArgs.add(String.join(",", cacheFrom));
             }
+        }
+        if (dockerConfig.network.isPresent()) {
+            dockerArgs.add("--network");
+            dockerArgs.add(dockerConfig.network.get());
         }
         dockerArgs.addAll(Arrays.asList("-t", image));
         dockerArgs.add(dockerfilePaths.getDockerExecutionPath().toAbsolutePath().toString());

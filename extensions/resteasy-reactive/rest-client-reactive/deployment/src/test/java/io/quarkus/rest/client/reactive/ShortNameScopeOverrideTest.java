@@ -36,6 +36,6 @@ public class ShortNameScopeOverrideTest {
 
     @Test
     void shouldConnect() {
-        assertThat(client.echo("Bob")).isEqualTo("hello, Bob");
+        assertThat(client.echo("Bob")).isEqualTo("hello, Bob!!!");
     }
 }

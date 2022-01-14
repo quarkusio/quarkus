@@ -492,6 +492,22 @@ public class BeanInfo implements InjectionTargetInfo {
         return packageName;
     }
 
+    public String getClientProxyPackageName() {
+        if (isProducerField() || isProducerMethod()) {
+            AnnotationTarget target = getTarget().get();
+            DotName typeName = target.kind() == Kind.FIELD ? target.asField().type().name()
+                    : target.asMethod().returnType().name();
+            String packageName = DotNames.packageName(typeName);
+            if (packageName.startsWith("java.")) {
+                // It is not possible to place a class in a JDK package
+                packageName = AbstractGenerator.DEFAULT_PACKAGE;
+            }
+            return packageName;
+        } else {
+            return getTargetPackageName();
+        }
+    }
+
     void validate(List<Throwable> errors, List<BeanDeploymentValidator> validators,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, Set<DotName> classesReceivingNoArgsCtor) {
         Beans.validateBean(this, errors, validators, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
@@ -662,7 +678,10 @@ public class BeanInfo implements InjectionTargetInfo {
             addConstructorLevelBindings(target.get().asClass(), constructorLevelBindings);
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.POST_CONSTRUCT);
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.PRE_DESTROY);
-            constructorLevelBindings.addAll(classLevelBindings);
+            MethodInfo interceptedConstructor = findInterceptedConstructor(target.get().asClass());
+            if (beanDeployment.getAnnotation(interceptedConstructor, DotNames.NO_CLASS_INTERCEPTORS) == null) {
+                constructorLevelBindings.addAll(classLevelBindings);
+            }
             putLifecycleInterceptors(lifecycleInterceptors, constructorLevelBindings, InterceptionType.AROUND_CONSTRUCT);
             return lifecycleInterceptors;
         } else {
@@ -693,14 +712,17 @@ public class BeanInfo implements InjectionTargetInfo {
         }
     }
 
-    private void addConstructorLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings) {
-        MethodInfo constructor;
+    private MethodInfo findInterceptedConstructor(ClassInfo clazz) {
         Optional<Injection> constructorWithInject = getConstructorInjection();
         if (constructorWithInject.isPresent()) {
-            constructor = constructorWithInject.get().target.asMethod();
+            return constructorWithInject.get().target.asMethod();
         } else {
-            constructor = classInfo.method(Methods.INIT);
+            return clazz.method(Methods.INIT);
         }
+    }
+
+    private void addConstructorLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings) {
+        MethodInfo constructor = findInterceptedConstructor(classInfo);
         if (constructor != null) {
             beanDeployment.getAnnotations(constructor).stream()
                     .flatMap(a -> beanDeployment.extractInterceptorBindings(a).stream())

@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.paths.PathCollection;
 
 public interface CompilationProvider extends Closeable {
 
@@ -23,7 +23,7 @@ public interface CompilationProvider extends Closeable {
 
     void compile(Set<File> files, Context context);
 
-    Path getSourcePath(Path classFilePath, PathsCollection sourcePaths, String classesPath);
+    Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath);
 
     @Override
     default void close() throws IOException {
@@ -58,7 +58,6 @@ public interface CompilationProvider extends Closeable {
                 String targetJvmVersion,
                 List<String> compilePluginArtifacts,
                 List<String> compilerPluginOptions) {
-
             this.name = name;
             this.classpath = classpath;
             this.projectDirectory = projectDirectory;

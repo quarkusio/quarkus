@@ -13,6 +13,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -23,8 +24,6 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 
@@ -43,7 +42,7 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey) {
-        this(jaxrsInterface, baseUriFromAnnotation, configKey, getConfigRoot());
+        this(jaxrsInterface, baseUriFromAnnotation, configKey, RestClientsConfig.getInstance());
     }
 
     RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey,
@@ -56,10 +55,14 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private T build() {
         RestClientBuilder builder = RestClientBuilder.newBuilder();
-        return build(builder);
+        if (!(builder instanceof RestClientBuilderImpl)) {
+            throw new IllegalStateException("Expected RestClientBuilder to be an instance of "
+                    + RestClientBuilderImpl.class.getName() + ", got " + builder.getClass().getName());
+        }
+        return build((RestClientBuilderImpl) builder);
     }
 
-    T build(RestClientBuilder builder) {
+    T build(RestClientBuilderImpl builder) {
         configureBaseUrl(builder);
         configureTimeouts(builder);
         configureProviders(builder);
@@ -67,6 +70,7 @@ public class RestClientCDIDelegateBuilder<T> {
         configureRedirects(builder);
         configureQueryParamStyle(builder);
         configureProxy(builder);
+        configureShared(builder);
         configureCustomProperties(builder);
         return builder.build(jaxrsInterface);
     }
@@ -92,29 +96,36 @@ public class RestClientCDIDelegateBuilder<T> {
             int connectionTTLSeconds = connectionTTL.get() / 1000;
             builder.property(QuarkusRestClientProperties.CONNECTION_TTL, connectionTTLSeconds);
         }
+
+        Map<String, String> headers = clientConfigByClassName().headers;
+        if (headers.isEmpty()) {
+            headers = clientConfigByConfigKey().headers;
+        }
+        if ((headers != null) && !headers.isEmpty()) {
+            builder.property(QuarkusRestClientProperties.STATIC_HEADERS, headers);
+        }
     }
 
-    private void configureProxy(RestClientBuilder builder) {
+    private void configureProxy(RestClientBuilderImpl builder) {
         Optional<String> maybeProxy = oneOf(clientConfigByClassName().proxyAddress,
                 clientConfigByConfigKey().proxyAddress);
-        if (maybeProxy.isPresent()) {
-            String proxyString = maybeProxy.get();
+        if (maybeProxy.isEmpty()) {
+            return;
+        }
 
-            int lastColonIndex = proxyString.lastIndexOf(':');
+        String proxyAddress = maybeProxy.get();
+        if (proxyAddress.equals("none")) {
+            builder.proxyAddress("none", 0);
+        } else {
+            ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(proxyAddress);
+            builder.proxyAddress(hostAndPort.host, hostAndPort.port);
 
-            if (lastColonIndex <= 0 || lastColonIndex == proxyString.length() - 1) {
-                throw new RuntimeException("Invalid proxy string. Expected <hostname>:<port>, found '" + proxyString + "'");
-            }
-
-            String host = proxyString.substring(0, lastColonIndex);
-            int port;
-            try {
-                port = Integer.parseInt(proxyString.substring(lastColonIndex + 1));
-            } catch (NumberFormatException e) {
-                throw new RuntimeException("Invalid proxy setting. The port is not a number in '" + proxyString + "'", e);
-            }
-
-            builder.proxyAddress(host, port);
+            oneOf(clientConfigByClassName().proxyUser, clientConfigByConfigKey().proxyUser)
+                    .ifPresent(builder::proxyUser);
+            oneOf(clientConfigByClassName().proxyPassword, clientConfigByConfigKey().proxyPassword)
+                    .ifPresent(builder::proxyPassword);
+            oneOf(clientConfigByClassName().nonProxyHosts, clientConfigByConfigKey().nonProxyHosts)
+                    .ifPresent(builder::nonProxyHosts);
         }
     }
 
@@ -138,6 +149,23 @@ public class RestClientCDIDelegateBuilder<T> {
                 clientConfigByConfigKey().followRedirects);
         if (maybeFollowRedirects.isPresent()) {
             builder.followRedirects(maybeFollowRedirects.get());
+        }
+    }
+
+    private void configureShared(RestClientBuilder builder) {
+        Optional<Boolean> shared = oneOf(clientConfigByClassName().shared,
+                clientConfigByConfigKey().shared);
+        if (shared.isPresent()) {
+            builder.property(QuarkusRestClientProperties.SHARED, shared.get());
+
+            if (shared.get()) {
+                // Name is only used if shared = true
+                Optional<String> name = oneOf(clientConfigByClassName().name,
+                        clientConfigByConfigKey().name);
+                if (name.isPresent()) {
+                    builder.property(QuarkusRestClientProperties.NAME, name.get());
+                }
+            }
         }
     }
 
@@ -321,15 +349,6 @@ public class RestClientCDIDelegateBuilder<T> {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
         }
-    }
-
-    private static RestClientsConfig getConfigRoot() {
-        InstanceHandle<RestClientsConfig> configHandle = Arc.container()
-                .instance(RestClientsConfig.class);
-        if (!configHandle.isAvailable()) {
-            throw new IllegalStateException("Unable to find the RestClientsConfig");
-        }
-        return configHandle.get();
     }
 
     private RestClientConfig clientConfigByConfigKey() {

@@ -73,7 +73,13 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                 closeBuildItem.addCloseTask(closeTask, true);
             }
 
-            String authServerUrl = getConfigProperty(AUTH_SERVER_URL_CONFIG_KEY);
+            String authServerUrl = null;
+            try {
+                authServerUrl = getConfigProperty(AUTH_SERVER_URL_CONFIG_KEY);
+            } catch (Exception ex) {
+                // It is not possible to initialize OIDC Dev Console UI without being able to access this property at the build time
+                return;
+            }
             JsonObject metadata = null;
             if (isDiscoveryEnabled()) {
                 metadata = discoverMetadata(authServerUrl);

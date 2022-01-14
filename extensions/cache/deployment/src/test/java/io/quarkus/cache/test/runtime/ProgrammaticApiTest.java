@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.enterprise.context.Dependent;
@@ -27,7 +28,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class ProgrammaticApiTest {
 
-    private static final String CACHE_NAME = "test-cache";
+    private static final String CACHE_NAME_1 = "test-cache-1";
+    private static final String CACHE_NAME_2 = "test-cache-2";
     private static final Object KEY_1 = new Object();
     private static final Object KEY_2 = new Object();
 
@@ -40,16 +42,21 @@ public class ProgrammaticApiTest {
     @Inject
     CacheManager cacheManager;
 
-    @CacheName(CACHE_NAME)
+    @CacheName(CACHE_NAME_1)
     Cache cache;
+
+    @CacheName(CACHE_NAME_2)
+    Cache anotherCache;
 
     @Test
     public void testInjection() {
-        assertTrue(cacheManager.getCacheNames().contains(CACHE_NAME));
+        assertTrue(cacheManager.getCacheNames().containsAll(List.of(CACHE_NAME_1, CACHE_NAME_2)));
         assertSame(CaffeineCacheImpl.class, cache.getClass());
-        assertSame(cache, cacheManager.getCache(CACHE_NAME).get());
+        assertSame(CaffeineCacheImpl.class, anotherCache.getClass());
+        assertSame(cache, cacheManager.getCache(CACHE_NAME_1).get());
         assertSame(cache, cachedService.getConstructorInjectedCache());
         assertSame(cache, cachedService.getMethodInjectedCache());
+        assertNotSame(cache, anotherCache);
     }
 
     @Test
@@ -146,7 +153,7 @@ public class ProgrammaticApiTest {
         Cache constructorInjectedCache;
         Cache methodInjectedCache;
 
-        public CachedService(@CacheName(CACHE_NAME) Cache cache) {
+        public CachedService(@CacheName(CACHE_NAME_1) Cache cache) {
             constructorInjectedCache = cache;
         }
 
@@ -159,20 +166,20 @@ public class ProgrammaticApiTest {
         }
 
         @Inject
-        public void setMethodInjectedCache(@CacheName(CACHE_NAME) Cache cache) {
+        public void setMethodInjectedCache(@CacheName(CACHE_NAME_1) Cache cache) {
             methodInjectedCache = cache;
         }
 
-        @CacheResult(cacheName = CACHE_NAME)
+        @CacheResult(cacheName = CACHE_NAME_1)
         public String cachedMethod(Object key) {
             return new String();
         }
 
-        @CacheInvalidate(cacheName = CACHE_NAME)
+        @CacheInvalidate(cacheName = CACHE_NAME_1)
         public void invalidate(Object key) {
         }
 
-        @CacheInvalidateAll(cacheName = CACHE_NAME)
+        @CacheInvalidateAll(cacheName = CACHE_NAME_1)
         public void invalidateAll() {
         }
     }

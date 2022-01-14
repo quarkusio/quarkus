@@ -102,6 +102,8 @@ public class BeanDeployment {
 
     final boolean transformUnproxyableClasses;
 
+    final boolean failOnInterceptedPrivateMethod;
+
     private final boolean jtaCapabilities;
 
     private final AlternativePriorities alternativePriorities;
@@ -190,6 +192,7 @@ public class BeanDeployment {
         this.beanResolver = new BeanResolverImpl(this);
         this.interceptorResolver = new InterceptorResolver(this);
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
+        this.failOnInterceptedPrivateMethod = builder.failOnInterceptedPrivateMethod;
         this.jtaCapabilities = builder.jtaCapabilities;
         this.alternativePriorities = builder.alternativePriorities;
     }
@@ -892,7 +895,7 @@ public class BeanDeployment {
 
             // non-inherited stuff:
             for (MethodInfo method : beanClass.methods()) {
-                if (Methods.isSynthetic(method)) {
+                if (method.isSynthetic()) {
                     continue;
                 }
                 if (annotationStore.getAnnotations(method).isEmpty()) {
@@ -919,7 +922,7 @@ public class BeanDeployment {
             while (aClass != null) {
                 for (MethodInfo method : aClass.methods()) {
                     Methods.MethodKey methodDescriptor = new Methods.MethodKey(method);
-                    if (Methods.isSynthetic(method) || Methods.isOverriden(methodDescriptor, methods)) {
+                    if (method.isSynthetic() || Methods.isOverriden(methodDescriptor, methods)) {
                         continue;
                     }
                     methods.add(methodDescriptor);

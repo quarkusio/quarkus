@@ -19,19 +19,29 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import io.quarkus.arc.Arc;
-import io.quarkus.opentelemetry.runtime.tracing.vertx.VertxTracingAdapter;
+import io.quarkus.opentelemetry.runtime.tracing.vertx.OpenTelemetryVertxMetricsFactory;
+import io.quarkus.opentelemetry.runtime.tracing.vertx.OpenTelemetryVertxTracingFactory;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.metrics.MetricsOptions;
+import io.vertx.core.tracing.TracingOptions;
 
 @Recorder
 public class TracerRecorder {
-    static VertxTracingAdapter vertxTracingAdapter = new VertxTracingAdapter();
-
     /* STATIC INIT */
-    public Consumer<VertxOptions> setVertxTracingOptions() {
-        return vertxOptions -> vertxOptions.setTracingOptions(vertxTracingAdapter);
+    public Consumer<VertxOptions> getVertxTracingOptions() {
+        TracingOptions tracingOptions = new TracingOptions()
+                .setFactory(new OpenTelemetryVertxTracingFactory());
+        return vertxOptions -> vertxOptions.setTracingOptions(tracingOptions);
+    }
+
+    public Consumer<VertxOptions> getVertxTracingMetricsOptions() {
+        MetricsOptions metricsOptions = new MetricsOptions()
+                .setEnabled(true)
+                .setFactory(new OpenTelemetryVertxMetricsFactory());
+        return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
     }
 
     /* STATIC INIT */
@@ -95,11 +105,6 @@ public class TracerRecorder {
     }
 
     /* RUNTIME INIT */
-    public void setupVertxTracer() {
-        vertxTracingAdapter.init();
-    }
-
-    /* RUNTIME INIT */
     public void setupResources(TracerRuntimeConfig config) {
         // Find all Resource instances
         Instance<Resource> allResources = CDI.current()
@@ -141,15 +146,6 @@ public class TracerRecorder {
         } else {
             // Define Sampler using config
             lateBoundSampler.setSamplerDelegate(TracerUtil.mapSampler(config.sampler, config.suppressNonApplicationUris));
-        }
-    }
-
-    public static boolean isClassPresent(String classname) {
-        try {
-            Class.forName(classname, false, Thread.currentThread().getContextClassLoader());
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
         }
     }
 }

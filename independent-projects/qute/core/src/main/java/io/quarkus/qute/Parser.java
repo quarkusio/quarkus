@@ -7,7 +7,6 @@ import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -22,8 +21,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
@@ -75,6 +76,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     private boolean ignoreContent;
     private AtomicInteger expressionIdGenerator;
     private final List<Function<String, String>> contentFilters;
+    private boolean hasLineSeparator;
 
     public Parser(EngineImpl engine, Reader reader, String templateId, String generatedId, Optional<Variant> variant) {
         this.engine = engine;
@@ -117,7 +119,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 .setEngine(engine)
                 .setHelperFactory(ROOT_SECTION_HELPER_FACTORY));
 
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         Reader r = reader;
 
         try {
@@ -163,8 +165,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
             }
             TemplateImpl template = new TemplateImpl(engine, root.build(), generatedId, variant);
 
-            Set<TemplateNode> nodesToRemove;
-            if (engine.removeStandaloneLines) {
+            Set<TemplateNode> nodesToRemove = Collections.emptySet();
+            if (hasLineSeparator && engine.removeStandaloneLines) {
                 nodesToRemove = new HashSet<>();
                 List<List<TemplateNode>> lines = readLines(template.root);
                 for (List<TemplateNode> line : lines) {
@@ -177,12 +179,13 @@ class Parser implements Function<String, Expression>, ParserHelper {
                         }
                     }
                 }
-            } else {
-                nodesToRemove = Collections.emptySet();
+                if (nodesToRemove.isEmpty()) {
+                    nodesToRemove = Collections.emptySet();
+                }
             }
             template.root.optimizeNodes(nodesToRemove);
 
-            LOGGER.tracef("Parsing finished in %s ms", System.currentTimeMillis() - start);
+            LOGGER.tracef("Parsing finished in %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
             return template;
 
         } catch (IOException e) {
@@ -255,6 +258,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
             state = State.TEXT;
             processCharacter(character);
         }
+        // Parsing of one-line templates can be optimized 
+        hasLineSeparator = true;
     }
 
     private void comment(char character) {
@@ -548,28 +553,15 @@ class Parser implements Function<String, Expression>, ParserHelper {
             }
         }
 
+        Predicate<String> included = params::containsKey;
         // Then process positional params
         if (actualSize < factoryParams.size()) {
             // The number of actual params is less than factory params
             // We need to choose the best fit for positional params
             for (String param : paramValues) {
-                Parameter found = null;
-                for (Parameter factoryParam : factoryParams) {
-                    // Prefer params with no default value
-                    if (factoryParam.defaultValue == null && !params.containsKey(factoryParam.name)) {
-                        found = factoryParam;
-                        params.put(factoryParam.name, param);
-                        break;
-                    }
-                }
-                if (found == null) {
-                    for (Parameter factoryParam : factoryParams) {
-                        if (!params.containsKey(factoryParam.name)) {
-                            found = factoryParam;
-                            params.put(factoryParam.name, param);
-                            break;
-                        }
-                    }
+                Parameter found = findFactoryParameter(param, factoryParams, included, true);
+                if (found != null) {
+                    params.put(found.name, param);
                 }
             }
         } else {
@@ -577,15 +569,10 @@ class Parser implements Function<String, Expression>, ParserHelper {
             int generatedIdx = 0;
             for (String param : paramValues) {
                 // Positional param
-                Parameter found = null;
-                for (Parameter factoryParam : factoryParams) {
-                    if (!params.containsKey(factoryParam.name)) {
-                        found = factoryParam;
-                        params.put(factoryParam.name, param);
-                        break;
-                    }
-                }
-                if (found == null) {
+                Parameter found = findFactoryParameter(param, factoryParams, included, false);
+                if (found != null) {
+                    params.put(found.name, param);
+                } else {
                     params.put("" + generatedIdx++, param);
                 }
             }
@@ -593,7 +580,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
         // Use the default values if needed
         factoryParams.stream()
-                .filter(Parameter::hasDefatulValue)
+                .filter(Parameter::hasDefaultValue)
                 .forEach(p -> params.putIfAbsent(p.name, p.defaultValue));
 
         // Find undeclared mandatory params
@@ -607,6 +594,24 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
 
         params.forEach(block::addParameter);
+    }
+
+    private Parameter findFactoryParameter(String paramValue, List<Parameter> factoryParams, Predicate<String> included,
+            boolean noDefaultValueTakesPrecedence) {
+        if (noDefaultValueTakesPrecedence) {
+            for (Parameter param : factoryParams) {
+                // Params with no default value take precedence
+                if (param.accepts(paramValue) && !param.hasDefaultValue() && !included.test(param.name)) {
+                    return param;
+                }
+            }
+        }
+        for (Parameter param : factoryParams) {
+            if (param.accepts(paramValue) && !included.test(param.name)) {
+                return param;
+            }
+        }
+        return null;
     }
 
     /**
@@ -640,6 +645,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
         boolean stringLiteral = false;
         short composite = 0;
+        byte brackets = 0;
         boolean space = false;
         List<String> parts = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
@@ -648,7 +654,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             char c = content.charAt(i);
             if (c == ' ') {
                 if (!space) {
-                    if (!stringLiteral && composite == 0) {
+                    if (!stringLiteral && composite == 0 && brackets == 0) {
                         if (buffer.length() > 0) {
                             parts.add(buffer.toString());
                             buffer = new StringBuilder();
@@ -669,6 +675,12 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 } else if (!stringLiteral
                         && isCompositeEnd(c) && composite > 0) {
                     composite--;
+                } else if (!stringLiteral
+                        && Parser.isLeftBracket(c)) {
+                    brackets++;
+                } else if (!stringLiteral
+                        && Parser.isRightBracket(c) && brackets > 0) {
+                    brackets--;
                 }
                 space = false;
                 buffer.append(c);
@@ -735,29 +747,26 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
         String namespace = null;
         int namespaceIdx = value.indexOf(NAMESPACE_SEPARATOR);
-        int spaceIdx = value.indexOf(' ');
-        int bracketIdx = value.indexOf('(');
+        int spaceIdx;
+        int bracketIdx;
 
         List<String> strParts;
         if (namespaceIdx != -1
                 // No space or colon before the space
-                && (spaceIdx == -1 || namespaceIdx < spaceIdx)
+                && ((spaceIdx = value.indexOf(' ')) == -1 || namespaceIdx < spaceIdx)
                 // No bracket or colon before the bracket
-                && (bracketIdx == -1 || namespaceIdx < bracketIdx)
+                && ((bracketIdx = value.indexOf('(')) == -1 || namespaceIdx < bracketIdx)
                 // No string literal
                 && !LiteralSupport.isStringLiteralSeparator(value.charAt(0))) {
             // Expression that starts with a namespace
             strParts = Expressions.splitParts(value.substring(namespaceIdx + 1, value.length()));
             namespace = value.substring(0, namespaceIdx);
         } else {
-            strParts = Expressions.splitParts(value);
-            if (strParts.size() == 1) {
-                String literal = strParts.get(0);
-                Object literalValue = LiteralSupport.getLiteralValue(literal);
-                if (!Results.isNotFound(literalValue)) {
-                    return ExpressionImpl.literal(idGenerator.get(), literal, literalValue, origin);
-                }
+            Object literalValue = LiteralSupport.getLiteralValue(value);
+            if (!Results.isNotFound(literalValue)) {
+                return ExpressionImpl.literal(idGenerator.get(), value, literalValue, origin);
             }
+            strParts = Expressions.splitParts(value);
         }
 
         if (strParts.isEmpty()) {
@@ -938,6 +947,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     private static String toString(Reader in)
             throws IOException {
+        if (in instanceof StringReader) {
+            return ((StringReader) in).str;
+        }
         StringBuilder out = new StringBuilder();
         CharBuffer buffer = CharBuffer.allocate(8192);
         while (in.read(buffer) != -1) {
@@ -946,6 +958,18 @@ class Parser implements Function<String, Expression>, ParserHelper {
             buffer.clear();
         }
         return out.toString();
+    }
+
+    static class StringReader extends java.io.StringReader {
+
+        // make the underlying string accessible
+        final String str;
+
+        public StringReader(String s) {
+            super(s);
+            this.str = s;
+        }
+
     }
 
     static class OriginImpl implements Origin {

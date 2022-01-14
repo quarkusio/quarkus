@@ -11,7 +11,7 @@ This guide shows how your Quarkus application can use Apache Kafka, http://avro.
 records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry].
 
 If you are not familiar with Kafka and Kafka in Quarkus in particular, consider
-first going through the link:kafka[Using Apache Kafka with Reactive Messaging] guide.
+first going through the xref:kafka.adoc[Using Apache Kafka with Reactive Messaging] guide.
 
 == Prerequisites
 
@@ -392,7 +392,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
   schema-registry:
-    image: apicurio/apicurio-registry-mem:2.1.3.Final
+    image: apicurio/apicurio-registry-mem:2.1.5.Final
     ports:
       - 8081:8080
     depends_on:
@@ -565,7 +565,7 @@ To run it, execute `mvn verify -Dnative`, or `mvn clean install -Dnative`
 
 === Manual setup
 
-If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio Registry instance manually, we would define a link:getting-started-testing#quarkus-test-resource[QuarkusTestResourceLifecycleManager].
+If we couldn't use Dev Services and wanted to start a Kafka broker and Apicurio Registry instance manually, we would define a xref:getting-started-testing.adoc#quarkus-test-resource[QuarkusTestResourceLifecycleManager].
 
 [source,xml]
 ----
@@ -607,7 +607,7 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
     @Override
     public Map<String, String> start() {
         kafka.start();
-        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.1.3.Final")
+        registry = new GenericContainer<>("apicurio/apicurio-registry-mem:2.1.5.Final")
                 .withExposedPorts(8080)
                 .withEnv("QUARKUS_PROFILE", "prod");
         registry.start();

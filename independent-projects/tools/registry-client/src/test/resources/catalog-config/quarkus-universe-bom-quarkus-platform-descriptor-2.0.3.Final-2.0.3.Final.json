@@ -1943,18 +1943,6 @@
     "artifact" : "io.quarkus:quarkus-reactive-db2-client::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
-    "name" : "Reactive HTTP and WebSocket Connector",
-    "description" : "Connect to HTTP or Web Socket and expose HTTP or Web Socket endpoints for Reactive Messaging",
-    "metadata" : {
-      "keywords" : [ "http-connector", "http", "websockets" ],
-      "categories" : [ "web", "reactive", "messaging" ],
-      "status" : "experimental",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "extension-dependencies" : [ "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-vertx-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-web", "io.quarkus:quarkus-vertx-http" ]
-    },
-    "artifact" : "io.quarkus:quarkus-reactive-messaging-http::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
     "name" : "Reactive MySQL client",
     "description" : "Connect to the MySQL database using the reactive pattern",
     "metadata" : {
@@ -7353,7 +7341,7 @@
         "gradle-plugin-version" : "2.0.3.Final",
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
-        "maven-wrapper-version" : "0.7.7",
+        "maven-wrapper-version" : "3.1.0",
         "gradle-wrapper-version" : "6.9"
       }
     },

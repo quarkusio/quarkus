@@ -21,10 +21,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
-import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.picocli.runtime.DefaultPicocliCommandLineFactory;
-import io.quarkus.picocli.runtime.PicocliConfigBuilder;
 import io.quarkus.picocli.runtime.PicocliRunner;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.annotations.QuarkusMain;
@@ -45,17 +42,6 @@ class PicocliProcessor {
     @BuildStep
     IndexDependencyBuildItem picocliIndexDependency() {
         return new IndexDependencyBuildItem("info.picocli", "picocli");
-    }
-
-    @BuildStep
-    void configBuilder(
-            PicocliDeploymentConfiguration configuration,
-            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
-            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
-        if (configuration.disableDefaultConfigSources) {
-            staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(PicocliConfigBuilder.class.getName()));
-            runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(PicocliConfigBuilder.class.getName()));
-        }
     }
 
     @BuildStep

@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -27,6 +28,14 @@ public interface SectionHelper {
          * @return the current resolution context
          */
         ResolutionContext resolutionContext();
+
+        /**
+         *
+         * @param data
+         * @param extendingBlocks
+         * @return a new resolution context
+         */
+        ResolutionContext newResolutionContext(Object data, Map<String, SectionBlock> extendingBlocks);
 
         /**
          * Execute the main block with the current resolution context.

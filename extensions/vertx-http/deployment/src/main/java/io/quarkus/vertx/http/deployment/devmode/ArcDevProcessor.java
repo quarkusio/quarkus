@@ -65,16 +65,16 @@ public class ArcDevProcessor {
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT, optional = true)
     DevConsoleRouteBuildItem eventsEndpoint(ArcDevRecorder recorder) {
-        return new DevConsoleRouteBuildItem("io.quarkus", "quarkus-arc", "events", "POST",
-                recorder.events());
+        return DevConsoleRouteBuildItem.builder().ga("io.quarkus", "quarkus-arc").path("events").method("POST")
+                .handler(recorder.events()).build();
     }
 
     // NOTE: we can't add this build step to the ArC extension as it would cause a cyclic dependency
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT, optional = true)
     DevConsoleRouteBuildItem invocationsEndpoint(ArcDevRecorder recorder) {
-        return new DevConsoleRouteBuildItem("io.quarkus", "quarkus-arc", "invocations", "POST",
-                recorder.invocations());
+        return DevConsoleRouteBuildItem.builder().ga("io.quarkus", "quarkus-arc").path("invocations").method("POST")
+                .handler(recorder.invocations()).build();
     }
 
 }

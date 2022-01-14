@@ -29,11 +29,16 @@ On Windows using Powershell:
 iex "& { $(iwr https://ps.jbang.dev) } app install --fresh --force quarkus@quarkusio"
 ----
 
-If `jbang` has already been installed, you can it directly:
+If `jbang` has already been installed, you can directly use it:
 [source,bash]
 ----
 # This can also be used to update to the latest version
 jbang app install --fresh --force quarkus@quarkusio
+----
+
+If you have built Quarkus locally, you can use that version:
+[source,bash]
+----
 # Use the latest (or locally built) snapshot (with qss as an alias)
 jbang app install --force --name qss ~/.m2/repository/io/quarkus/quarkus-cli/999-SNAPSHOT/quarkus-cli-999-SNAPSHOT-runner.jar
 ----
@@ -62,23 +67,32 @@ Use `--help` to display help information with all the available commands:
 [source,shell]
 ----
 quarkus --help
-Usage: quarkus [-ehV] [--verbose] [COMMAND]
-  -e, --errors    Display error messages.
-  -h, --help      Show this help message and exit.
-  -V, --version   Print version information and exit.
-      --verbose   Verbose mode.
+Usage: quarkus [-ehv] [--verbose] [-D=<String=String>]... [COMMAND]
+
+Options:
+  -D=<String=String>    Java properties
+  -e, --errors          Display error messages.
+  -h, --help            Show this help message and exit.
+  -v, --version         Print version information and exit.
+      --verbose         Verbose mode.
+
 Commands:
-  create           Create a new project.
-    app            Create a Quarkus application project.
-    cli            Create a Quarkus command-line project.
-  build            Build the current project.
-  dev              Run the current project in dev (live coding) mode.
-  extension, ext   List, add, and remove extensions of an existing project.
-    add            Add extension(s) to this project.
-    list, ls       List platforms and extensions for this project.
-    remove, rm     Remove extension(s) from this project.
-  completion       bash/zsh completion:  source <(quarkus completion)
-  version          Display version information
+  create                  Create a new project.
+    app                   Create a Quarkus application project.
+    cli                   Create a Quarkus command-line project.
+    extension             Create a Quarkus extension project
+  build                   Build the current project.
+  dev                     Run the current project in dev (live coding) mode.
+  extension, ext          Configure extensions of an existing project.
+    list, ls              List platforms and extensions.
+    categories, cat       List extension categories.
+    add                   Add extension(s) to this project.
+    remove, rm            Remove extension(s) from this project.
+  registry                Configure Quarkus registry client
+    list                  List enabled Quarkus registries
+    add                   Add a Quarkus extension registry
+    remove                Remove a Quarkus extension registry
+  version                 Display version information.
 ----
 
 [TIP]

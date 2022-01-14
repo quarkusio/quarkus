@@ -50,10 +50,20 @@ public class HelloWorldMain implements QuarkusApplication {
 
 === Contexts
 
-To get access to your application beans and services, be aware that
-a `@QuarkusMain` instance is an application scoped bean by default. It has access to singletons, application and dependent scoped beans. If you want to interact with beans that requires a request scope put a `@ActivateRequestContext` on your `run()` method.
+[sidebar]
+.Got a `ContextNotActiveException`?
+--
+A command mode application (like a CLI) is a bit different from say a HTTP service, there is a single call from the command line.
+So the notion of _request_ let alone multiple requests does not exist per se.
+Therefore request scope is not the default.
 
-This let `run()` have access to methods like `listAll()` and `query*` methods on a Panache Entity. Without it you will eventually get a `ContextNotActiveException` when accessing such classes/beans.
+To get access to your application beans and services, be aware that a `@QuarkusMain` instance is an application scoped bean by default.
+It has access to singletons, application and dependent scoped beans.
+
+If you want to interact with beans that requires a request scope, simply add the `@ActivateRequestContext` annotation on your `run()` method.
+This let `run()` have access to methods like `listAll()` and `query*` methods on a Panache Entity.
+Without it you will eventually get a `ContextNotActiveException` when accessing such classes/beans.
+--
 
 === Main method
 If we want to use a Java main to run the application main it would look like:

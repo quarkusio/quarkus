@@ -1,3 +1,7 @@
+#
+# Template GitLab CI to build jvm, native and native-distroless images.
+# Native image isn't build with Kaniko because there is an issue with usage of 'USER'.
+# 
 variables:
   {#if buildtool.cli == 'mvn'}
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
@@ -17,6 +21,10 @@ cache:
     - .gradle/wrapper
     - .gradle/caches
     {/if}
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 stages:
   - build
@@ -100,6 +108,23 @@ stages:
   script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf "%s:%s" "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')\" } } }" > /kaniko/.docker/config.json
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/src/main/docker/Dockerfile.jvm --destination $CI_REGISTRY_IMAGE:jvm
+
+
+🐳 native-deploy:
+  stage: deploy
+  {#if buildtool.cli == 'mvn'}
+  needs: ["📦 native-build-maven"]
+  {#else}
+  needs: ["📦 native-build-gradle"]
+  {/if}
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE/native:$CI_COMMIT_BRANCH -f $CI_PROJECT_DIR/src/main/docker/Dockerfile.native .
+    - docker push $CI_REGISTRY_IMAGE/native:$CI_COMMIT_BRANCH
+
 
 🐳 native-deploy-distroless:
   stage: deploy

@@ -55,7 +55,7 @@ public class HelloWorldMain implements QuarkusApplication {
 --
 A command mode application (like a CLI) is a bit different from say a HTTP service, there is a single call from the command line.
 So the notion of _request_ let alone multiple requests does not exist per se.
-So request scope is not the default.
+Therefore request scope is not the default.
 
 To get access to your application beans and services, be aware that a `@QuarkusMain` instance is an application scoped bean by default.
 It has access to singletons, application and dependent scoped beans.

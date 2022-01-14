@@ -60,7 +60,7 @@ So request scope is not the default.
 To get access to your application beans and services, be aware that a `@QuarkusMain` instance is an application scoped bean by default.
 It has access to singletons, application and dependent scoped beans.
 
-If you want to interact with beans that requires a request scope put a `@ActivateRequestContext` on your `run()` method.
+If you want to interact with beans that requires a request scope, simply add the `@ActivateRequestContext` annotation on your `run()` method.
 This let `run()` have access to methods like `listAll()` and `query*` methods on a Panache Entity.
 Without it you will eventually get a `ContextNotActiveException` when accessing such classes/beans.
 --

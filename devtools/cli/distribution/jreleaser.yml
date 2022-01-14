@@ -7,7 +7,8 @@ project:
   website: https://quarkus.io
   authors:
     - Quarkus Community
-  license: Apache-2
+  license: Apache-2.0
+  copyright: Quarkus contributors
   java:
     groupId: io.quarkus
     artifactId: quarkus-cli
@@ -24,6 +25,7 @@ release:
     tagName: "{{projectVersion}}"
     overwrite: false
     update: true
+    updateSections: [ ASSETS ]
     skipTag: true
     changelog:
       enabled: false
@@ -32,16 +34,27 @@ release:
 
 distributions:
   quarkus:
-    type: SINGLE_JAR
-    java:
-      mainClass: io.quarkus.cli.QuarkusCli
-    brew:
-      active: release
-      extraProperties:
-        javaSkip: true
+    type: JAVA_BINARY
+    executable: quarkus
+    executableExtension: bat
+    tags:
+      - quarkus
+      - cli
     artifacts:
-      - path: target/quarkus-cli-{{projectVersion}}-runner.jar
+      - path: target/quarkus-cli-{{projectVersion}}.zip
+      - path: target/quarkus-cli-{{projectVersion}}.tar.gz
 
+packagers:
+  #brew:
+  #  active: ALWAYS
+  #  extraProperties:
+  #    javaSkip: true
+  sdkman:
+    active: ALWAYS
+    continueOnError: false
+    connectTimeout: 20
+    readTimeout: 60
+    candidate: quarkus
 
 announce:
   enabled: false

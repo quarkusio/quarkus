@@ -69,6 +69,17 @@ public class ExpressionTest {
     }
 
     @Test
+    public void testInfixNotationRedundantSpace() throws InterruptedException, ExecutionException {
+        verify("name   or 'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name or    'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name  or   'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name  or  'John' or 1", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "1")));
+        verify("name  or  'John'  or  1", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "1")));
+    }
+
+    @Test
     public void testNestedVirtualMethods() {
         assertNestedVirtualMethod(ExpressionImpl.from("movie.findServices(movie.name,movie.toNumber(movie.getName))"));
         assertNestedVirtualMethod(ExpressionImpl.from("movie.findServices(movie.name, movie.toNumber(movie.getName) )"));

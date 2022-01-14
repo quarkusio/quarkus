@@ -357,6 +357,9 @@ public class StartupActionImpl implements StartupAction {
         }
         if (applicationClasses) {
             for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
+                if (i.isExcludeFromDevCL()) {
+                    continue;
+                }
                 data.put(i.getName(), i.getClassData());
             }
         }

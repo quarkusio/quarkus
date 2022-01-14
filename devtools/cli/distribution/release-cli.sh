@@ -6,27 +6,39 @@ then
     exit 1
 fi
 
-DIST_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-cd ${DIST_DIR}
+DIST_DIR="$( dirname "${BASH_SOURCE[0]}" )"
+pushd ${DIST_DIR}
 
-echo "Downloading CLI runner jar into ${DIST_DIR}/target"
-mkdir -p ${DIST_DIR}/target
+echo "Cleaning up target"
+rm -rf target
+mkdir -p target
 
-# Download the published runner jar & checksums (bail if it fails)
-curl -S -s -o ${DIST_DIR}/target/quarkus-cli-${VERSION}-runner.jar \
-    https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/${VERSION}/quarkus-cli-${VERSION}-runner.jar      || exit
-curl -S -s -o ${DIST_DIR}/target/quarkus-cli-${VERSION}-runner.jar.asc \
-    https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/${VERSION}/quarkus-cli-${VERSION}-runner.jar.asc  || exit
-curl -S -s -o ${DIST_DIR}/target/quarkus-cli-${VERSION}-runner.jar.md5 \
-    https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/${VERSION}/quarkus-cli-${VERSION}-runner.jar.md5  || exit
-curl -S -s -o ${DIST_DIR}/target/quarkus-cli-${VERSION}-runner.jar.sha1 \
-    https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/${VERSION}/quarkus-cli-${VERSION}-runner.jar.sha1 || exit
+JAVA_BINARY_DIR=quarkus-cli-${VERSION}
+RUNNER_JAR=quarkus-cli-${VERSION}-runner.jar
 
+echo "Copying java-binary structure to target/${JAVA_BINARY_DIR}"
+cp -ap java-binary target/${JAVA_BINARY_DIR}
+sed -i.bak "s/__RUNNER_JAR__/${RUNNER_JAR}/" target/${JAVA_BINARY_DIR}/bin/quarkus
+sed -i.bak "s/__RUNNER_JAR__/${RUNNER_JAR}/" target/${JAVA_BINARY_DIR}/bin/quarkus.bat
+rm -f target/${JAVA_BINARY_DIR}/bin/*.bak
+
+echo "Downloading CLI runner jar into target/${JAVA_BINARY_DIR}/lib/"
+
+mkdir target/${JAVA_BINARY_DIR}/lib
+curl -S -s -o target/${JAVA_BINARY_DIR}/lib/${RUNNER_JAR} \
+    https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/${VERSION}/${RUNNER_JAR} || exit
+
+echo "Creating archives"
+pushd target
+zip -r ${JAVA_BINARY_DIR}.zip ${JAVA_BINARY_DIR}
+tar -zcf ${JAVA_BINARY_DIR}.tar.gz ${JAVA_BINARY_DIR}
+popd
 
 export JRELEASER_PROJECT_VERSION=${VERSION}
 export JRELEASER_BRANCH=main
 
-# TODO: Snapshot release --git-root-search support
-jbang jreleaser-snapshot@jreleaser full-release -y \
+jbang jreleaser@jreleaser full-release \
   --git-root-search \
   -od target
+
+popd

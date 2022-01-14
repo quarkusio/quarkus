@@ -4,6 +4,7 @@ import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.BootstrapUtils;
@@ -15,6 +16,8 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,12 +48,20 @@ public class IDELauncherImpl implements Closeable {
                 final ApplicationModel quarkusModel = BuildToolHelper.enableGradleAppModelForDevMode(classesDir);
                 context.put(BootstrapConstants.SERIALIZED_APP_MODEL, BootstrapUtils.serializeAppModel(quarkusModel, false));
 
-                final Path launchingModulePath = quarkusModel.getApplicationModule().getMainSources().getSourceDirs().iterator()
+                ArtifactSources mainSources = quarkusModel.getApplicationModule().getMainSources();
+
+                final Path launchingModulePath = mainSources.getSourceDirs().iterator()
                         .next().getOutputDir();
+
+                List<Path> applicationRoots = new ArrayList<>();
+                applicationRoots.add(launchingModulePath);
+                for (SourceDir resourceDir : mainSources.getResourceDirs()) {
+                    applicationRoots.add(resourceDir.getOutputDir());
+                }
 
                 // Gradle uses a different output directory for classes, we override the one used by the IDE
                 builder.setProjectRoot(launchingModulePath)
-                        .setApplicationRoot(launchingModulePath)
+                        .setApplicationRoot(PathsCollection.from(applicationRoots))
                         .setTargetDirectory(quarkusModel.getApplicationModule().getBuildDir().toPath());
 
                 for (ResolvedDependency dep : quarkusModel.getDependencies()) {

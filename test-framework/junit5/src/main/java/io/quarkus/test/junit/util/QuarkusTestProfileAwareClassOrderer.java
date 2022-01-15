@@ -55,10 +55,22 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
     protected static final String DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "45_";
     protected static final String DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST = "60_";
 
-    static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST = "quarkus.test.orderer.prefix.quarkus-test";
-    static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "quarkus.test.orderer.prefix.quarkus-test-with-profile";
+    static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST = "junit.quarkus.orderer.prefix.quarkus-test";
+    @Deprecated
+    static final String _CFGKEY_ORDER_PREFIX_QUARKUS_TEST = "quarkus.test.orderer.prefix.quarkus-test";
+
+    static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "junit.quarkus.orderer.prefix.quarkus-test-with-profile";
+    @Deprecated
+    static final String _CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "quarkus.test.orderer.prefix.quarkus-test-with-profile";
+
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "quarkus.test.orderer.prefix.quarkus-test-with-restricted-resource";
+    @Deprecated
+    static final String _CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "junit.quarkus.orderer.prefix.quarkus-test-with-restricted-resource";
+
     static final String CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "quarkus.test.orderer.prefix.non-quarkus-test";
+    @Deprecated
+    static final String _CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "junit.quarkus.orderer.prefix.non-quarkus-test";
+
     static final String CFGKEY_SECONDARY_ORDERER = "quarkus.test.orderer.secondary-orderer";
 
     @Override
@@ -67,18 +79,26 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
         if (context.getClassDescriptors().size() <= 1 || context.getClassDescriptors().get(0).isAnnotated(Nested.class)) {
             return;
         }
-        var prefixQuarkusTest = context
-                .getConfigurationParameter(CFGKEY_ORDER_PREFIX_QUARKUS_TEST)
-                .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_TEST);
-        var prefixQuarkusTestWithProfile = context
-                .getConfigurationParameter(CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE)
-                .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE);
-        var prefixQuarkusTestWithRestrictedResource = context
-                .getConfigurationParameter(CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES)
-                .orElse(DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES);
-        var prefixNonQuarkusTest = context
-                .getConfigurationParameter(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST)
-                .orElse(DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST);
+        var prefixQuarkusTest = getConfigParam(
+                CFGKEY_ORDER_PREFIX_QUARKUS_TEST,
+                _CFGKEY_ORDER_PREFIX_QUARKUS_TEST,
+                DEFAULT_ORDER_PREFIX_QUARKUS_TEST,
+                context);
+        var prefixQuarkusTestWithProfile = getConfigParam(
+                CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE,
+                _CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE,
+                DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE,
+                context);
+        var prefixQuarkusTestWithRestrictedResource = getConfigParam(
+                CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES,
+                _CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES,
+                DEFAULT_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES,
+                context);
+        var prefixNonQuarkusTest = getConfigParam(
+                CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST,
+                _CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST,
+                DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST,
+                context);
 
         // first pass: run secondary orderer first (!), which is easier than running it per "grouping"
         buildSecondaryOrderer(context).orderClasses(context);
@@ -109,6 +129,19 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
             }
             return prefixNonQuarkusTest + secondaryOrderSuffix;
         }));
+    }
+
+    private String getConfigParam(String key, String deprecatedKey, String fallbackValue, ClassOrdererContext context) {
+        return context.getConfigurationParameter(key)
+                .orElseGet(() -> {
+                    Optional<String> value = context.getConfigurationParameter(deprecatedKey);
+                    if (value.isPresent()) {
+                        System.out.printf("Config key %s is deprecated, please use %s instead.%n", deprecatedKey, key);
+                        return value.orElseThrow();
+                    } else {
+                        return fallbackValue;
+                    }
+                });
     }
 
     private ClassOrderer buildSecondaryOrderer(ClassOrdererContext context) {

@@ -2,6 +2,7 @@ package io.quarkus.test.junit.util;
 
 import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST;
 import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer.CFGKEY_SECONDARY_ORDERER;
+import static io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer._CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -98,6 +99,23 @@ class QuarkusTestProfileAwareClassOrdererTest {
         when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
         // prioritize unit tests
         when(contextMock.getConfigurationParameter(CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST)).thenReturn(Optional.of("01_"));
+
+        underTest.orderClasses(contextMock);
+
+        assertThat(input).containsExactly(nonQuarkusTestDesc, quarkusTestDesc);
+    }
+
+    @Test
+    @Deprecated
+    void configuredPrefix_deprecated() {
+        ClassDescriptor quarkusTestDesc = quarkusDescriptorMock(Test01.class, null);
+        ClassDescriptor nonQuarkusTestDesc = descriptorMock(Test03.class);
+        List<ClassDescriptor> input = Arrays.asList(quarkusTestDesc, nonQuarkusTestDesc);
+        doReturn(input).when(contextMock).getClassDescriptors();
+
+        when(contextMock.getConfigurationParameter(anyString())).thenReturn(Optional.empty()); // for strict stubbing
+        // prioritize unit tests
+        when(contextMock.getConfigurationParameter(_CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST)).thenReturn(Optional.of("01_"));
 
         underTest.orderClasses(contextMock);
 

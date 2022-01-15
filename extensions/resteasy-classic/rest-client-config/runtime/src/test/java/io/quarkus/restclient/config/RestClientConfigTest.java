@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
@@ -13,12 +11,27 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.config.ConfigLogging;
 import io.smallrye.config.PropertiesConfigSource;
 
 public class RestClientConfigTest {
+
+    private static ClassLoader classLoader;
+    private static ConfigProviderResolver configProviderResolver;
+
+    @BeforeAll
+    public static void initConfig() {
+        classLoader = Thread.currentThread().getContextClassLoader();
+        configProviderResolver = ConfigProviderResolver.instance();
+    }
+
+    @AfterEach
+    public void releaseConfig() {
+        configProviderResolver.releaseConfig(configProviderResolver.getConfig());
+    }
 
     @Test
     public void testLoadRestClientConfig() throws IOException {
@@ -62,27 +75,10 @@ public class RestClientConfigTest {
     }
 
     private static void setupMPConfig() throws IOException {
-        ConfigProviderResolver resolver = ConfigProviderResolver.instance();
-        ConfigBuilder configBuilder = resolver.getBuilder();
+        ConfigBuilder configBuilder = configProviderResolver.getBuilder();
         URL propertyFile = RestClientConfigTest.class.getClassLoader().getResource("application.properties");
         assertThat(propertyFile).isNotNull();
         configBuilder.withSources(new PropertiesConfigSource(propertyFile));
-        resolver.registerConfig(configBuilder.build(), getContextClassLoader());
-    }
-
-    static ClassLoader getContextClassLoader() {
-        if (System.getSecurityManager() == null) {
-            return Thread.currentThread().getContextClassLoader();
-        } else {
-            return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) () -> {
-                ClassLoader tccl = null;
-                try {
-                    tccl = Thread.currentThread().getContextClassLoader();
-                } catch (SecurityException ex) {
-                    ConfigLogging.log.failedToRetrieveClassloader(ex);
-                }
-                return tccl;
-            });
-        }
+        configProviderResolver.registerConfig(configBuilder.build(), classLoader);
     }
 }

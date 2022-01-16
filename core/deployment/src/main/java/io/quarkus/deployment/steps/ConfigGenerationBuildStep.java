@@ -72,7 +72,6 @@ import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
-import io.smallrye.config.SmallRyeConfig;
 
 public class ConfigGenerationBuildStep {
 
@@ -238,7 +237,7 @@ public class ConfigGenerationBuildStep {
     public void watchConfigFiles(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
         List<String> configWatchedFiles = new ArrayList<>();
 
-        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        Config config = ConfigProvider.getConfig();
         String userDir = System.getProperty("user.dir");
 
         // Main files
@@ -260,8 +259,8 @@ public class ConfigGenerationBuildStep {
             for (URI location : locations) {
                 Path path = location.getScheme() != null ? Paths.get(location) : Paths.get(location.getPath());
                 if (!Files.isDirectory(path)) {
-                    configWatchedFiles.add(location.toString());
-                    configWatchedFiles.add(appendProfileToFilename(location.toString(), profile));
+                    configWatchedFiles.add(path.toString());
+                    configWatchedFiles.add(appendProfileToFilename(path.toString(), profile));
                 }
             }
         });

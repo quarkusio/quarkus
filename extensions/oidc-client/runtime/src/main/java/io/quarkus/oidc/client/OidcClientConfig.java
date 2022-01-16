@@ -241,4 +241,12 @@ public class OidcClientConfig extends OidcCommonConfig {
     public void setAbsoluteExpiresIn(boolean absoluteExpiresIn) {
         this.absoluteExpiresIn = absoluteExpiresIn;
     }
+
+    public void setGrant(Grant grant) {
+        this.grant = grant;
+    }
+
+    public Grant getGrant() {
+        return grant;
+    }
 }

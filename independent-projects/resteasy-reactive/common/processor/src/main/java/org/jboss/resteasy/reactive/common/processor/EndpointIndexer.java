@@ -237,7 +237,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (!path.startsWith("/")) {
                     path = "/" + path;
                 }
-                clazz.setPath(path);
+                clazz.setPath(sanitizePath(path));
             }
             if (factoryCreator != null) {
                 clazz.setFactory((BeanFactory<Object>) factoryCreator.apply(classInfo.name().toString()));
@@ -277,6 +277,36 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             throw new RuntimeException(e);
         }
+    }
+
+    private String sanitizePath(String path) {
+        // this simply replaces the whitespace characters (not part of a path variable) with %20
+        // TODO: this might have to be more complex, URL encoding maybe?
+        boolean inVariable = false;
+        StringBuilder replaced = null;
+        for (int i = 0; i < path.length(); i++) {
+            char c = path.charAt(i);
+            if ((c == ' ') && (!inVariable)) {
+                if (replaced == null) {
+                    replaced = new StringBuilder(path.length() + 2);
+                    replaced.append(path, 0, i);
+                }
+                replaced.append("%20");
+                continue;
+            }
+            if (replaced != null) {
+                replaced.append(c);
+            }
+            if (c == '{') {
+                inVariable = true;
+            } else if (c == '}') {
+                inVariable = false;
+            }
+        }
+        if (replaced == null) {
+            return path;
+        }
+        return replaced.toString();
     }
 
     protected abstract METHOD createResourceMethod(MethodInfo info, ClassInfo actualEndpointClass,
@@ -576,7 +606,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             ResourceMethod method = createResourceMethod(currentMethodInfo, actualEndpointInfo, methodContext)
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
-                    .setPath(methodPath)
+                    .setPath(sanitizePath(methodPath))
                     .setConsumes(consumes)
                     .setProduces(produces)
                     .setNameBindingNames(nameBindingNames)

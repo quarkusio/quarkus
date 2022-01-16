@@ -59,7 +59,7 @@
         <jackson.version>2.13.1</jackson.version>
         <smallrye-stork.version>1.0.0.Alpha7</smallrye-stork.version>
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
-        <yasson.version>2.0.2</yasson.version>
+        <yasson.version>1.0.11</yasson.version>
         <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
         <awaitility.version>4.1.1</awaitility.version>
         <smallrye-mutiny-vertx-core.version>2.18.0</smallrye-mutiny-vertx-core.version>

@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -26,13 +25,10 @@ public class JPAConfig {
 
     private static final Logger LOGGER = Logger.getLogger(JPAConfig.class.getName());
 
-    private final Map<String, Set<String>> entityPersistenceUnitMapping;
-
     private final Map<String, LazyPersistenceUnit> persistenceUnits;
 
     @Inject
     public JPAConfig(JPAConfigSupport jpaConfigSupport) {
-        this.entityPersistenceUnitMapping = Collections.unmodifiableMap(jpaConfigSupport.entityPersistenceUnitMapping);
 
         Map<String, LazyPersistenceUnit> persistenceUnitsBuilder = new HashMap<>();
         for (String persistenceUnitName : jpaConfigSupport.persistenceUnitNames) {
@@ -99,13 +95,6 @@ public class JPAConfig {
      */
     public Set<String> getPersistenceUnits() {
         return persistenceUnits.keySet();
-    }
-
-    /**
-     * Returns the set of persistence units an entity is attached to.
-     */
-    public Set<String> getPersistenceUnitsForEntity(String entityClass) {
-        return entityPersistenceUnitMapping.getOrDefault(entityClass, Collections.emptySet());
     }
 
     /**

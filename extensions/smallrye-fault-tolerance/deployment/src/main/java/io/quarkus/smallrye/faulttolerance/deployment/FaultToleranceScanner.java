@@ -84,6 +84,11 @@ final class FaultToleranceScanner {
                 // synthetic methods can't be intercepted
                 continue;
             }
+            if (annotationStore.hasAnnotation(method, io.quarkus.arc.processor.DotNames.NO_CLASS_INTERCEPTORS)
+                    && !annotationStore.hasAnyAnnotation(method, DotNames.FT_ANNOTATIONS)) {
+                // methods annotated @NoClassInterceptors and not annotated with an interceptor binding are not intercepted
+                continue;
+            }
 
             action.accept(method);
         }

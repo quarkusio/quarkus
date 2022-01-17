@@ -93,6 +93,21 @@ public class BasicTest {
     }
 
     @Test
+    void shouldApplyInterfaceLevelInterceptorBinding() {
+        for (int i = 0; i < 2; i++) {
+            RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance-on-interface")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("ClientWebApplicationException"));
+        }
+
+        RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance-on-interface")
+                .then()
+                .statusCode(200)
+                .body(equalTo("CircuitBreakerOpenException"));
+    }
+
+    @Test
     void shouldCreateClientSpans() {
         // Reset captured traces
         RestAssured.given().when().get("/export-clear").then().statusCode(200);

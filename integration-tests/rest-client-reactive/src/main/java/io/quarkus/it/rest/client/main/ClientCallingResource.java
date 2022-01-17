@@ -41,6 +41,9 @@ public class ClientCallingResource {
     @RestClient
     FaultToleranceClient faultToleranceClient;
 
+    @RestClient
+    FaultToleranceOnInterfaceClient faultToleranceOnInterfaceClient;
+
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
 
@@ -138,6 +141,16 @@ public class ClientCallingResource {
 
         router.route("/call-with-fault-tolerance").blockingHandler(rc -> {
             rc.end(faultToleranceClient.helloWithFallback());
+        });
+
+        router.route("/call-with-fault-tolerance-on-interface").blockingHandler(rc -> {
+            String exception = "";
+            try {
+                faultToleranceOnInterfaceClient.hello();
+            } catch (Exception e) {
+                exception = e.getClass().getSimpleName();
+            }
+            rc.end(exception);
         });
     }
 

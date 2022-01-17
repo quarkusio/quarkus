@@ -5,6 +5,7 @@ import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.compu
 import io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartCatalog;
 import io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartProjectInput;
 import io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartProjectInputBuilder;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.LegacySupport;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -38,6 +39,7 @@ public class CreateJBangProjectCommandHandler implements QuarkusCommandHandler {
         final QuarkusJBangCodestartProjectInputBuilder builder = QuarkusJBangCodestartProjectInput.builder()
                 .addExtensions(extensionsToAdd)
                 .setNoJBangWrapper(noWrapper)
+                .addData(LegacySupport.convertFromLegacy(invocation.getValues()))
                 .putData("quarkus.version", invocation.getExtensionsCatalog().getQuarkusCoreVersion());
 
         if (catalog.getBom() != null) {

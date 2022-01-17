@@ -472,7 +472,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         for (Path i : changedClassResults.changedClasses) {
                             byte[] bytes = Files.readAllBytes(i);
                             String name = indexer.index(new ByteArrayInputStream(bytes)).name().toString();
-                            defs[index++] = new ClassDefinition(Thread.currentThread().getContextClassLoader().loadClass(name),
+                            defs[index++] = new ClassDefinition(
+                                    Thread.currentThread().getContextClassLoader().loadClass(name),
                                     classTransformers.apply(name, bytes));
                         }
                         Index current = indexer.complete();

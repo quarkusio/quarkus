@@ -86,7 +86,7 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
-                arcContainer, creator.loadClass(repositoryClassName), creator.newArray(Annotation.class, 0));
+                arcContainer, creator.loadClassFromTCCL(repositoryClassName), creator.newArray(Annotation.class, 0));
         ResultHandle instance = creator.invokeInterfaceMethod(
                 ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
 

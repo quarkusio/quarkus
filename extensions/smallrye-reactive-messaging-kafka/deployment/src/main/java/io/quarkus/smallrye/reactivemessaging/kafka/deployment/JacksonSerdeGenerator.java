@@ -45,7 +45,8 @@ public class JacksonSerdeGenerator {
                 .superClass(ObjectMapperDeserializer.class).build();
         MethodCreator constructor = creator.getMethodCreator("<init>", void.class);
         MethodDescriptor superConstructor = MethodDescriptor.ofConstructor(ObjectMapperDeserializer.class, Class.class);
-        constructor.invokeSpecialMethod(superConstructor, constructor.getThis(), constructor.loadClass(type.name().toString()));
+        constructor.invokeSpecialMethod(superConstructor, constructor.getThis(),
+                constructor.loadClassFromTCCL(type.name().toString()));
         constructor.returnValue(null);
         constructor.close();
         creator.close();

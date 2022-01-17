@@ -129,7 +129,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     public AugmentAction createAugmentor(String functionName, Map<String, Object> props) {
         try {
             Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
-            Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader().loadClass(functionName)
+            Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader()
+                    .loadClass(functionName)
                     .getDeclaredConstructor()
                     .newInstance();
             List<?> res = function.apply(props);

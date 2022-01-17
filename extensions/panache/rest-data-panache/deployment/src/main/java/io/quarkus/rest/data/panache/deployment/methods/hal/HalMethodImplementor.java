@@ -41,7 +41,7 @@ abstract class HalMethodImplementor extends StandardMethodImplementor {
             String collectionName) {
         return creator.newInstance(
                 MethodDescriptor.ofConstructor(HalCollectionWrapper.class, Collection.class, Class.class, String.class),
-                entities, creator.loadClass(entityType),
+                entities, creator.loadClassFromTCCL(entityType),
                 creator.load(collectionName));
     }
 }

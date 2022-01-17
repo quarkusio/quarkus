@@ -220,14 +220,14 @@ public class ProxyFactory<T> {
                     if (methodInfo.getParameterCount() > 0) {
                         Parameter[] methodInfoParameters = methodInfo.getParameters();
                         for (int i = 0; i < methodInfo.getParameterCount(); i++) {
-                            ResultHandle paramClass = mc.loadClass(methodInfoParameters[i].getType());
+                            ResultHandle paramClass = mc.loadClassFromTCCL(methodInfoParameters[i].getType());
                             mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
                         }
                     }
                     ResultHandle method = mc.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class,
                                     Class[].class),
-                            mc.loadClass(methodInfo.getDeclaringClass()), mc.load(methodInfo.getName()),
+                            mc.loadClassFromTCCL(methodInfo.getDeclaringClass()), mc.load(methodInfo.getName()),
                             getDeclaredMethodParamsArray);
 
                     // result = invocationHandler.invoke(...)

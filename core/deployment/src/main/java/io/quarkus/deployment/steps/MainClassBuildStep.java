@@ -414,7 +414,7 @@ public class MainClassBuildStep {
         MethodCreator mv = file.getMethodCreator("main", void.class, String[].class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
         mv.invokeStaticMethod(MethodDescriptor.ofMethod(Quarkus.class, "run", void.class, Class.class, String[].class),
-                mv.loadClass(quarkusApplicationClassName),
+                mv.loadClassFromTCCL(quarkusApplicationClassName),
                 mv.getMethodParam(0));
         mv.returnValue(null);
         file.close();

@@ -734,7 +734,7 @@ public final class HibernateOrmProcessor {
                 .scope(Singleton.class)
                 .unremovable()
                 .supplier(recorder.jpaConfigSupportSupplier(
-                        new JPAConfigSupport(persistenceUnitNames, entityPersistenceUnitMapping)))
+                        new JPAConfigSupport(persistenceUnitNames)))
                 .done());
     }
 

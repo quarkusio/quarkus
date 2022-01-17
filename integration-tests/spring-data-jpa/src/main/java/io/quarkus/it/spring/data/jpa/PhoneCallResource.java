@@ -8,6 +8,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 
+import io.quarkus.it.spring.data.jpa.PhoneCall.CallAgent;
+
 @Path("/phonecall")
 public class PhoneCallResource {
 
@@ -33,5 +35,12 @@ public class PhoneCallResource {
     @Produces("application/json")
     public Set<PhoneNumberId> allIds() {
         return repository.findAllIds();
+    }
+
+    @Path("call-agents")
+    @GET
+    @Produces("application/json")
+    public Set<CallAgent> allCallAgents() {
+        return repository.findAllCallAgents();
     }
 }

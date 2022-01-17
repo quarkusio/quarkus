@@ -1,6 +1,7 @@
 package io.quarkus.it.spring.data.jpa;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -27,5 +28,25 @@ public class PhoneNumberId implements Serializable {
 
     public String getNumber() {
         return number;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(areaCode, number);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        PhoneNumberId other = (PhoneNumberId) obj;
+        return Objects.equals(areaCode, other.areaCode) && Objects.equals(number, other.number);
     }
 }

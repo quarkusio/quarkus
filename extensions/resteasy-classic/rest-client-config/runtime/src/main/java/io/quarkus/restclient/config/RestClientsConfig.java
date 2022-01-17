@@ -95,6 +95,20 @@ public class RestClientsConfig {
 
     public RestClientLoggingConfig logging;
 
+    /**
+     * Global default connect timeout for automatically generated REST Clients. The attribute specifies a timeout
+     * in milliseconds that a client should wait to connect to the remote endpoint.
+     */
+    @ConfigItem(defaultValue = "15000", defaultValueDocumentation = "15000 ms")
+    public Long connectTimeout;
+
+    /**
+     * Global default read timeout for automatically generated REST Clients. The attribute specifies a timeout
+     * in milliseconds that a client should wait for a response from the remote endpoint.
+     */
+    @ConfigItem(defaultValue = "30000", defaultValueDocumentation = "30000 ms")
+    public Long readTimeout;
+
     public RestClientConfig getClientConfig(String configKey) {
         if (configKey == null) {
             return RestClientConfig.EMPTY;

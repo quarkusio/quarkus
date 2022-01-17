@@ -99,6 +99,23 @@ public class RestClientBaseTest {
         Mockito.verify(restClientBuilderMock).property("resteasy.connectionPoolSize", 103);
     }
 
+    @Test
+    public void testGlobalTimeouts() {
+        RestClientsConfig configRoot = new RestClientsConfig();
+        configRoot.connectTimeout = 5000L;
+        configRoot.readTimeout = 10000L;
+        RestClientBuilder restClientBuilderMock = Mockito.mock(RestClientBuilder.class);
+        RestClientBase restClientBase = new RestClientBase(TestClient.class,
+                "http://localhost:8080",
+                "test-client",
+                null,
+                configRoot);
+        restClientBase.configureTimeouts(restClientBuilderMock);
+
+        Mockito.verify(restClientBuilderMock).connectTimeout(5000, TimeUnit.MILLISECONDS);
+        Mockito.verify(restClientBuilderMock).readTimeout(10000, TimeUnit.MILLISECONDS);
+    }
+
     /**
      * This method creates a Quarkus style configuration object (which would normally be created based on the MP config
      * properties, but it's easier to instantiate it directly here).

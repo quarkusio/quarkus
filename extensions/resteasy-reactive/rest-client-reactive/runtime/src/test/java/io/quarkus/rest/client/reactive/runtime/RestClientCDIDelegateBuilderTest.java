@@ -97,6 +97,22 @@ public class RestClientCDIDelegateBuilderTest {
                 HttpPostRequestEncoder.EncoderMode.HTML5);
     }
 
+    @Test
+    public void testGlobalTimeouts() {
+        RestClientsConfig configRoot = new RestClientsConfig();
+        configRoot.connectTimeout = 5000L;
+        configRoot.readTimeout = 10000L;
+        configRoot.multipartPostEncoderMode = Optional.empty();
+        RestClientBuilderImpl restClientBuilderMock = Mockito.mock(RestClientBuilderImpl.class);
+        new RestClientCDIDelegateBuilder<>(TestClient.class,
+                "http://localhost:8080",
+                "test-client",
+                configRoot).build(restClientBuilderMock);
+
+        Mockito.verify(restClientBuilderMock).connectTimeout(5000, TimeUnit.MILLISECONDS);
+        Mockito.verify(restClientBuilderMock).readTimeout(10000, TimeUnit.MILLISECONDS);
+    }
+
     private static RestClientsConfig createSampleConfiguration() {
         RestClientConfig clientConfig = new RestClientConfig();
         clientConfig.url = Optional.of("http://localhost");

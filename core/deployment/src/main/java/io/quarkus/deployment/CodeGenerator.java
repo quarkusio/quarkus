@@ -92,7 +92,11 @@ public class CodeGenerator {
 
             final PropertiesConfigSource pcs = new PropertiesConfigSource(properties, "Build system");
 
+            // Discovered Config classes may cause issues here, because this goal runs before compile
             final SmallRyeConfig config = ConfigUtils.configBuilder(false, false, launchMode)
+                    .setAddDiscoveredSources(false)
+                    .setAddDiscoveredInterceptors(false)
+                    .setAddDiscoveredConverters(false)
                     .withProfile(launchMode.getDefaultProfile())
                     .withSources(pcs)
                     .build();

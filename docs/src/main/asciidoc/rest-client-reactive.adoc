@@ -276,6 +276,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
@@ -286,7 +287,7 @@ public class ExtensionsResource {
 
     public ExtensionsResource() {
         extensionsService = RestClientBuilder.newBuilder()
-            .baseUri("https://stage.code.quarkus.io/api")
+            .baseUri(URI.create("https://stage.code.quarkus.io/api"))
             .build(ExtensionsService.class);
     }
 

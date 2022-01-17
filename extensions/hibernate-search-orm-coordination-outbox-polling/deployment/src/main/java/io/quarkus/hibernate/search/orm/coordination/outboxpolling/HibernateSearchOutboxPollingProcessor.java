@@ -1,5 +1,8 @@
 package io.quarkus.hibernate.search.orm.coordination.outboxpolling;
 
+import static io.quarkus.hibernate.search.orm.coordination.outboxpolling.HibernateSearchOutboxPollingClasses.AVRO_GENERATED_CLASSES;
+import static io.quarkus.hibernate.search.orm.coordination.outboxpolling.HibernateSearchOutboxPollingClasses.JPA_MODEL_CLASSES;
+
 import java.util.List;
 
 import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
@@ -8,6 +11,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingRecorder;
 import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem;
@@ -17,6 +23,21 @@ import io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchIntegrationS
 class HibernateSearchOutboxPollingProcessor {
 
     private static final String HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING = "Hibernate Search ORM - Coordination - Outbox polling";
+
+    @BuildStep
+    void registerIndexedClasses() {
+    }
+
+    @BuildStep
+    void registerInternalModel(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(AVRO_GENERATED_CLASSES.toArray(new String[0])));
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, JPA_MODEL_CLASSES.toArray(new String[0])));
+        for (String className : JPA_MODEL_CLASSES) {
+            additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className));
+        }
+    }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)

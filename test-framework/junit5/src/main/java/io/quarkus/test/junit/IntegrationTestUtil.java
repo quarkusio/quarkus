@@ -353,7 +353,16 @@ public final class IntegrationTestUtil {
     static void activateLogging() {
         // calling this method of the Recorder essentially sets up logging and configures most things
         // based on the provided configuration
-        LoggingSetupRecorder.handleFailedStart();
+
+        //we need to run this from the TCCL, as we want to activate it from
+        //inside the isolated CL, if one exists
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try {
+            Class<?> lrs = cl.loadClass(LoggingSetupRecorder.class.getName());
+            lrs.getDeclaredMethod("handleFailedStart").invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {

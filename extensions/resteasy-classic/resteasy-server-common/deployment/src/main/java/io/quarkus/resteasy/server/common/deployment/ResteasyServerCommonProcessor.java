@@ -56,12 +56,14 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
@@ -181,14 +183,14 @@ public class ResteasyServerCommonProcessor {
     }
 
     @BuildStep
-    NativeImageConfigBuildItem config() {
-        if (Thread.currentThread().getContextClassLoader().getResource(MESSAGES_RESOURCE_BUNDLE) == null) {
-            return null;
+    NativeImageResourceBundleBuildItem optionalResourceBundle() {
+        for (ClassPathElement cpe : QuarkusClassLoader.getElements(MESSAGES_RESOURCE_BUNDLE, false)) {
+            if (cpe.isRuntime()) {
+                return new NativeImageResourceBundleBuildItem(MESSAGES_RESOURCE_BUNDLE);
+            }
         }
 
-        return NativeImageConfigBuildItem.builder()
-                .addResourceBundle(MESSAGES_RESOURCE_BUNDLE)
-                .build();
+        return null;
     }
 
     @BuildStep

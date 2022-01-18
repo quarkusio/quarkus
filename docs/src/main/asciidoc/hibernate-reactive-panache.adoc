@@ -670,6 +670,13 @@ public Uni<Void> create(Person person){
 }
 ----
 
+The `@ReactiveTransactional` annotation will also work for testing.
+This means that changes done during the test will be propagated to the database.
+If you want any changes made to be rolled back at the end of
+the test you can use the `io.quarkus.test.TestReactiveTransaction` annotation.
+This will run the test method in a transaction, but roll it back once the test method is
+complete to revert any database changes.
+
 == Lock management
 
 Panache provides direct support for database locking with your entity/repository, using `findById(Object, LockModeType)` or `find().withLock(LockModeType)`.

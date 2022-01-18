@@ -31,6 +31,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AllowJNDIBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
@@ -50,6 +51,7 @@ import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
+import io.quarkus.deployment.naming.NamingConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
@@ -75,6 +77,7 @@ import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.appcds.AppCDSUtil;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.naming.DisabledInitialContextManager;
 import io.quarkus.runtime.util.StepTiming;
 
 public class MainClassBuildStep {
@@ -110,7 +113,9 @@ public class MainClassBuildStep {
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReloadBuildItem,
             ApplicationInfoBuildItem applicationInfo,
-            Optional<AppCDSRequestedBuildItem> appCDSRequested) {
+            List<AllowJNDIBuildItem> allowJNDIBuildItems,
+            Optional<AppCDSRequestedBuildItem> appCDSRequested,
+            NamingConfig namingConfig) {
 
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(Application.APP_CLASS_NAME));
 
@@ -134,6 +139,9 @@ public class MainClassBuildStep {
 
         MethodCreator mv = file.getMethodCreator("<clinit>", void.class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+        if (!namingConfig.enableJndi && allowJNDIBuildItems.isEmpty()) {
+            mv.invokeStaticMethod(MethodDescriptor.ofMethod(DisabledInitialContextManager.class, "register", void.class));
+        }
 
         //very first thing is to set system props (for build time)
         for (SystemPropertyBuildItem i : properties) {

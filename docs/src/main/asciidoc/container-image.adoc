@@ -12,6 +12,7 @@ Quarkus provides extensions for building (and pushing) container images. Current
 - <<#jib,Jib>>
 - <<#docker,Docker>>
 - <<#s2i,S2I>>
+- <<#buildpack,Buildpack>>
 
 == Container Image extensions
 
@@ -96,6 +97,38 @@ To use this feature, add the following extension to your project.
 
 S2I builds require creating a `BuildConfig` and two `ImageStream` resources, one for the builder image and one for the output image.
 The creation of such objects is being taken care of by the Quarkus Kubernetes extension.
+
+
+[#buildpack]
+=== Buildpack
+
+The extension `quarkus-container-image-buildpack` is using the buildpacks in order to perfrom container image builds. 
+Under the hood buildpacks will use a docker daemon for the actual build. While buildpacks support alternatives to docker, this extension will only work with docker.
+
+Additionally, the user will have to configure which build image to use (no default image is provided). For example:
+
+[source,properties]
+----
+quarkus.buildpack.jvm-builder-image=<jvm builder image>
+----
+
+or for native:
+
+
+[source,properties]
+----
+quarkus.buildpack.jvm-builder-image=<native builder image>
+----
+
+
+
+To use this feature, add the following extension to your project.
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="container-image-buildpack"
+----
+
 
 == Building
 

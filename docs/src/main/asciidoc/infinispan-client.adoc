@@ -45,8 +45,8 @@ This command adds the following dependency to your `pom.xml`:
 Open the `application.properties` file in the `src/main/resources` directory with any text editor.
 
 Note that Infinispan documentation refers to a `hotrod-client.properties` file.
-You can configure the Infinispan client with either properties file but `hotrod-client.properties` always takes
-priority over `application.properties`.
+You can configure the Infinispan client with either properties file but `application.properties` always takes
+priority over `hotrod-client.properties`.
 
 Additionally, you cannot update configuration properties at runtime.
 If you modify `application.properties` or `hotrod-client.properties`, you must rebuild the application before those changes take effect.

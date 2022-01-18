@@ -2,6 +2,7 @@ package io.quarkus.smallrye.graphql.deployment;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -11,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,22 +35,17 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.util.WebJarUtil;
-import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -60,7 +57,9 @@ import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
+import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
@@ -95,10 +94,9 @@ public class SmallRyeGraphQLProcessor {
     private static final String FALSE = "false";
 
     // For the UI
-    private static final String GRAPHQL_UI_WEBJAR_GROUP_ID = "io.smallrye";
-    private static final String GRAPHQL_UI_WEBJAR_ARTIFACT_ID = "smallrye-graphql-ui-graphiql";
-    private static final String GRAPHQL_UI_WEBJAR_PREFIX = "META-INF/resources/graphql-ui/";
-    private static final String GRAPHQL_UI_FINAL_DESTINATION = "META-INF/graphql-ui-files";
+    private static final GACT GRAPHQL_UI_WEBJAR_ARTIFACT_KEY = new GACT("io.smallrye", "smallrye-graphql-ui-graphiql", null,
+            "jar");
+    private static final String GRAPHQL_UI_WEBJAR_STATIC_RESOURCES_PATH = "META-INF/resources/graphql-ui/";
     private static final String FILE_TO_UPDATE = "render.js";
     private static final String LINE_TO_UPDATE = "const api = '";
     private static final String LINE_FORMAT = LINE_TO_UPDATE + "%s';";
@@ -520,16 +518,11 @@ public class SmallRyeGraphQLProcessor {
 
     @BuildStep
     void getGraphqlUiFinalDestination(
-            BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResourceProducer,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageDisplayableEndpointProducer,
-            BuildProducer<SmallRyeGraphQLBuildItem> smallRyeGraphQLBuildProducer,
             HttpRootPathBuildItem httpRootPath,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchMode,
             SmallRyeGraphQLConfig graphQLConfig,
-            LiveReloadBuildItem liveReloadBuildItem) throws Exception {
+            BuildProducer<WebJarBuildItem> webJarBuildProducer) {
 
         if (shouldInclude(launchMode, graphQLConfig)) {
 
@@ -542,58 +535,31 @@ public class SmallRyeGraphQLProcessor {
             String graphQLPath = httpRootPath.resolvePath(graphQLConfig.rootPath);
             String graphQLUiPath = nonApplicationRootPathBuildItem.resolvePath(graphQLConfig.ui.rootPath);
 
-            ResolvedDependency artifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, GRAPHQL_UI_WEBJAR_GROUP_ID,
-                    GRAPHQL_UI_WEBJAR_ARTIFACT_ID);
-            if (launchMode.getLaunchMode().isDevOrTest()) {
-                Path tempPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem, curateOutcomeBuildItem, launchMode,
-                        artifact,
-                        GRAPHQL_UI_WEBJAR_PREFIX);
-                WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLPath, LINE_TO_UPDATE, LINE_FORMAT);
-                WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), graphQLUiPath,
-                        UI_LINE_TO_UPDATE, UI_LINE_FORMAT);
-                WebJarUtil.updateUrl(tempPath.resolve(FILE_TO_UPDATE), nonApplicationRootPathBuildItem.resolvePath("dev"),
-                        LOGO_LINE_TO_UPDATE, LOGO_LINE_FORMAT);
+            webJarBuildProducer.produce(
+                    WebJarBuildItem.builder().artifactKey(GRAPHQL_UI_WEBJAR_ARTIFACT_KEY) //
+                            .root(GRAPHQL_UI_WEBJAR_STATIC_RESOURCES_PATH) //
+                            .filter(new WebJarResourcesFilter() {
+                                @Override
+                                public FilterResult apply(String fileName, InputStream file) throws IOException {
+                                    if (fileName.endsWith(FILE_TO_UPDATE)) {
+                                        String content = new String(file.readAllBytes(), StandardCharsets.UTF_8);
+                                        content = updateUrl(content, graphQLPath, LINE_TO_UPDATE,
+                                                LINE_FORMAT);
+                                        content = updateUrl(content, graphQLUiPath,
+                                                UI_LINE_TO_UPDATE,
+                                                UI_LINE_FORMAT);
+                                        content = updateUrl(content, graphQLUiPath,
+                                                LOGO_LINE_TO_UPDATE,
+                                                LOGO_LINE_FORMAT);
 
-                smallRyeGraphQLBuildProducer
-                        .produce(new SmallRyeGraphQLBuildItem(tempPath.toAbsolutePath().toString(), graphQLUiPath));
+                                        return new FilterResult(
+                                                new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), true);
+                                    }
 
-                // Handle live reload of branding files
-                if (liveReloadBuildItem.isLiveReload() && !liveReloadBuildItem.getChangedResources().isEmpty()) {
-                    WebJarUtil.hotReloadBrandingChanges(curateOutcomeBuildItem, launchMode, artifact,
-                            liveReloadBuildItem.getChangedResources());
-                }
-            } else {
-                Map<String, byte[]> files = WebJarUtil.copyResourcesForProduction(curateOutcomeBuildItem, artifact,
-                        GRAPHQL_UI_WEBJAR_PREFIX);
-
-                for (Map.Entry<String, byte[]> file : files.entrySet()) {
-
-                    String fileName = file.getKey();
-                    byte[] content = file.getValue();
-                    if (fileName.endsWith(FILE_TO_UPDATE)) {
-                        content = WebJarUtil
-                                .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLPath, LINE_TO_UPDATE,
-                                        LINE_FORMAT)
-                                .getBytes(StandardCharsets.UTF_8);
-                        content = WebJarUtil
-                                .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLUiPath,
-                                        UI_LINE_TO_UPDATE,
-                                        UI_LINE_FORMAT)
-                                .getBytes(StandardCharsets.UTF_8);
-                        content = WebJarUtil
-                                .updateUrl(new String(content, StandardCharsets.UTF_8), graphQLUiPath,
-                                        LOGO_LINE_TO_UPDATE,
-                                        LOGO_LINE_FORMAT)
-                                .getBytes(StandardCharsets.UTF_8);
-                    }
-                    fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + fileName;
-
-                    generatedResourceProducer.produce(new GeneratedResourceBuildItem(fileName, content));
-                    nativeImageResourceProducer.produce(new NativeImageResourceBuildItem(fileName));
-                }
-
-                smallRyeGraphQLBuildProducer.produce(new SmallRyeGraphQLBuildItem(GRAPHQL_UI_FINAL_DESTINATION, graphQLUiPath));
-            }
+                                    return new FilterResult(file, false);
+                                }
+                            })
+                            .build());
         }
     }
 
@@ -603,14 +569,24 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<RouteBuildItem> routeProducer,
             SmallRyeGraphQLRecorder recorder,
             SmallRyeGraphQLRuntimeConfig runtimeConfig,
-            SmallRyeGraphQLBuildItem smallRyeGraphQLBuildItem,
             LaunchModeBuildItem launchMode,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            SmallRyeGraphQLConfig graphQLConfig) throws Exception {
+            SmallRyeGraphQLConfig graphQLConfig,
+            WebJarResultsBuildItem webJarResultsBuildItem,
+            BuildProducer<SmallRyeGraphQLBuildItem> smallRyeGraphQLBuildProducer) {
+
+        WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(GRAPHQL_UI_WEBJAR_ARTIFACT_KEY);
+        if (result == null) {
+            return;
+        }
 
         if (shouldInclude(launchMode, graphQLConfig)) {
-            Handler<RoutingContext> handler = recorder.uiHandler(smallRyeGraphQLBuildItem.getGraphqlUiFinalDestination(),
-                    smallRyeGraphQLBuildItem.getGraphqlUiPath(), runtimeConfig);
+            String graphQLUiPath = nonApplicationRootPathBuildItem.resolvePath(graphQLConfig.ui.rootPath);
+            smallRyeGraphQLBuildProducer
+                    .produce(new SmallRyeGraphQLBuildItem(result.getFinalDestination(), graphQLUiPath));
+
+            Handler<RoutingContext> handler = recorder.uiHandler(result.getFinalDestination(),
+                    graphQLUiPath, runtimeConfig);
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(graphQLConfig.ui.rootPath)
                     .displayOnNotFoundPage("GraphQL UI")
@@ -628,5 +604,19 @@ public class SmallRyeGraphQLProcessor {
 
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SmallRyeGraphQLConfig graphQLConfig) {
         return launchMode.getLaunchMode().isDevOrTest() || graphQLConfig.ui.alwaysInclude;
+    }
+
+    private String updateUrl(String original, String path, String lineStartsWith, String format) {
+        try (Scanner scanner = new Scanner(original)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                if (line.trim().startsWith(lineStartsWith)) {
+                    String newLine = String.format(format, path);
+                    return original.replace(line.trim(), newLine);
+                }
+            }
+        }
+
+        return original;
     }
 }

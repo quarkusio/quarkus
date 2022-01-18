@@ -1,6 +1,9 @@
 package io.quarkus.mongodb.runtime;
 
+import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -42,4 +45,37 @@ public class MongodbConfig {
      */
     @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, MongoClientConfig> mongoClientConfigs;
+
+    /**
+     * The default DNS resolver used to handle {@code mongo+srv://} urls cannot be used in a native executable.
+     * This option enables a fallback to use Vert.x to resolve the server names instead of JNDI.
+     *
+     * <strong>IMPORTANT:</strong> The resolution may be different in JVM mode (using the default (JNDI-based) DNS resolver,
+     * and in native mode. This feature is experimental.
+     */
+    @ConfigItem(name = "native.dns.use-vertx-dns-resolver", defaultValue = "false")
+    public boolean useVertxDnsResolverInNativeMode;
+
+    /**
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server.
+     * If the server is not set, it tries to read the first {@code nameserver} from {@code /etc/resolv.conf} (if the
+     * file exists), otherwise fallback to the default.
+     */
+    @ConfigItem(name = "native.dns.server-host")
+    public Optional<String> dnsServerInNativeMode;
+
+    /**
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server port.
+     * If not set, uses the system DNS resolver.
+     */
+    @ConfigItem(name = "native.dns.server-port", defaultValue = "53")
+    public OptionalInt dnsServerPortInNativeMode;
+
+    // mongo.dns.lookup-timeout
+    /**
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
+     * duration.
+     */
+    @ConfigItem(name = "native.dns.lookup-timeout", defaultValue = "5s")
+    public Duration dnsLookupTimeoutInNativeMode;
 }

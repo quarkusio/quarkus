@@ -119,4 +119,18 @@ public class DataSourceReactiveRuntimeConfig {
      */
     @ConfigItem(defaultValueDocumentation = "no timeout")
     public Optional<Duration> idleTimeout = Optional.empty();
+
+    /**
+     * Set to true to share the pool among datasources.
+     * There can be multiple shared pools distinguished by <name>name</name>, when no specific name is set,
+     * the <code>__vertx.DEFAULT</code> name is used.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean shared;
+
+    /**
+     * Set the pool name, used when the pool is shared among datasources, otherwise ignored.
+     */
+    @ConfigItem
+    public Optional<String> name;
 }

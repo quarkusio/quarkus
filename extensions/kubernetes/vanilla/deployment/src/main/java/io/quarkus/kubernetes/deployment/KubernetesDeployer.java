@@ -45,6 +45,7 @@ import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesOptionalResourceDefinitionBuildItem;
 
 public class KubernetesDeployer {
 
@@ -79,6 +80,7 @@ public class KubernetesDeployer {
             OutputTargetBuildItem outputTarget,
             OpenshiftConfig openshiftConfig,
             ApplicationInfoBuildItem applicationInfo,
+            List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions,
             BuildProducer<DeploymentResultBuildItem> deploymentResult,
             // needed to ensure that this step runs after the container image has been built
             @SuppressWarnings("unused") List<ArtifactResultBuildItem> artifactResults) {
@@ -102,7 +104,7 @@ public class KubernetesDeployer {
         final KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
         deploymentResult
                 .produce(deploy(selectedDeploymentTarget.get().getEntry(), client, outputTarget.getOutputDirectory(),
-                        openshiftConfig, applicationInfo));
+                        openshiftConfig, applicationInfo, optionalResourceDefinitions));
     }
 
     /**
@@ -178,7 +180,8 @@ public class KubernetesDeployer {
 
     private DeploymentResultBuildItem deploy(DeploymentTargetEntry deploymentTarget,
             KubernetesClient client, Path outputDir,
-            OpenshiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo) {
+            OpenshiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo,
+            List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
                 + " in namespace: " + namespace + ".");
@@ -193,7 +196,19 @@ public class KubernetesDeployer {
                     r.delete();
                     r.waitUntilCondition(Objects::isNull, 10, TimeUnit.SECONDS);
                 }
-                r.createOrReplace();
+                try {
+                    r.createOrReplace();
+                } catch (Exception e) {
+                    if (e instanceof InterruptedException) {
+                        throw e;
+                    } else if (isOptional(optionalResourceDefinitions, i)) {
+                        log.warn("Failed to apply: " + i.getKind() + " " + i.getMetadata().getName()
+                                + ", possilby due to missing a CRD apiVersion: " + i.getApiVersion() + " and kind: "
+                                + i.getKind() + ".");
+                    } else {
+                        throw e;
+                    }
+                }
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
 
@@ -233,6 +248,12 @@ public class KubernetesDeployer {
                 break;
             }
         }
+    }
+
+    private static boolean isOptional(List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions,
+            HasMetadata resource) {
+        return optionalResourceDefinitions.stream()
+                .anyMatch(t -> t.getApiVersion().equals(resource.getApiVersion()) && t.getKind().equals(resource.getKind()));
     }
 
     private static boolean shouldDeleteExisting(DeploymentTargetEntry deploymentTarget, HasMetadata resource) {

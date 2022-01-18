@@ -8,11 +8,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.kubernetes.service.binding.spi.ServiceBindingQualifierBuildItem;
 import io.quarkus.kubernetes.service.binding.spi.ServiceBindingRequirementBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesOptionalResourceDefinitionBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 
 /***
@@ -50,12 +52,20 @@ public class ServiceBindingProcessor {
 
     protected static final Map<String, String> DEFAULTS = new HashMap<>();
 
+    private static final String KIND = "ServiceBinding";
+    private static final String API_VERSION = "binding.operators.coreos.com/v1alpha1";
+
     static {
         DEFAULTS.put("postgresql", "PostgresCluster.postgres-operator.crunchydata.com/v1beta1");
         DEFAULTS.put("mysql", "PerconaXtraDBCluster.pxc.percona.com/v1-9-0");
         DEFAULTS.put("redis", "Redis.redis.redis.opstreelabs.in/v1beta1");
         DEFAULTS.put("mongodb", "PerconaServerMongoDB.psmdb.percona.com/v1-9-0");
         DEFAULTS.put("kafka", "Kafka.kafka.strimzi.io/v1beta2");
+    }
+
+    @BuildStep
+    public void registerServiceBindingAsOptional(BuildProducer<KubernetesOptionalResourceDefinitionBuildItem> optionalKinds) {
+        optionalKinds.produce(new KubernetesOptionalResourceDefinitionBuildItem(API_VERSION, KIND));
     }
 
     @BuildStep

@@ -1572,7 +1572,7 @@ TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 * `mod`: Modulo operation
 ** `{#if counter.mod(5) == 0}`
 
-==== Strings
+===== Strings
 
 * `fmt` or `format`: format the string instance via `java.lang.String.format()`
 ** `{myStr.fmt("arg1","arg2")}`
@@ -1616,7 +1616,7 @@ TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 ** `{time:format(myDate,'d MMM uuuu', myLocale)}`
 
 * `time:format(dateTime,pattern,locale,timeZone)`: Formats temporal objects from the `java.time` package, `java.util.Date`, `java.util.Calendar` and `java.lang.Number`
-** `{time:format(myDate,'d MMM uuuu',myTimeZoneId)}`
+** `{time:format(myDate,'d MMM uuuu',myLocale,myTimeZoneId)}`
 
 [[template_data]]
 === @TemplateData

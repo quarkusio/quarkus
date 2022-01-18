@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.search.orm.elasticsearch;
 
-import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.GSON_CLASSES;
 import static io.quarkus.hibernate.search.orm.elasticsearch.HibernateSearchClasses.INDEXED;
 
 import java.util.ArrayList;
@@ -14,11 +13,11 @@ import java.util.Set;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
+import org.hibernate.search.backend.elasticsearch.gson.spi.GsonClasses;
 import org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrategy;
 import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -237,7 +236,7 @@ class HibernateSearchElasticsearchProcessor {
     }
 
     private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        String[] reflectiveClasses = GSON_CLASSES.stream().map(DotName::toString).toArray(String[]::new);
+        String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));
     }
 }

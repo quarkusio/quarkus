@@ -48,7 +48,6 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
@@ -60,13 +59,12 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
-import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
-import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
@@ -93,6 +91,8 @@ import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
@@ -123,7 +123,9 @@ public class DevConsoleProcessor {
 
     private static final Logger log = Logger.getLogger(DevConsoleProcessor.class);
 
-    private static final String STATIC_RESOURCES_PATH = "dev-static/";
+    private static final GACT DEVCONSOLE_WEBJAR_ARTIFACT_KEY = new GACT("io.quarkus", "quarkus-vertx-http-deployment", null,
+            "jar");
+    private static final String DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH = "dev-static/";
     private static final Object EMPTY = new Object();
 
     // FIXME: config, take from Qute?
@@ -383,6 +385,18 @@ public class DevConsoleProcessor {
         return null;
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public WebJarBuildItem setupWebJar(
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return null;
+        }
+        return WebJarBuildItem.builder().artifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY) //
+                .root(DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH) //
+                .onlyCopyNonArtifactFiles(true) //
+                .build();
+    }
+
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(LoggingSetupBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -390,38 +404,32 @@ public class DevConsoleProcessor {
             DevConsoleRecorder recorder,
             LogStreamRecorder logStreamRecorder,
             List<DevConsoleRouteBuildItem> routes,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
             HistoryHandlerBuildItem historyHandlerBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
             ShutdownContextBuildItem shutdownContext,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
-            LiveReloadBuildItem liveReloadBuildItem) throws IOException {
-        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            WebJarResultsBuildItem webJarResultsBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+
+        WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY);
+
+        if (result == null) {
             return;
         }
 
-        // Add the static resources
-        ResolvedDependency devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
-                "quarkus-vertx-http-deployment");
-
-        Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem,
-                curateOutcomeBuildItem,
-                launchModeBuildItem,
-                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH, true, true);
-
         List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations = new ArrayList<>();
         webRootConfigurations.add(
-                new FileSystemStaticHandler.StaticWebRootConfiguration(devConsoleStaticResourcesDeploymentPath.toString(), ""));
-        for (Path resolvedPath : devConsoleResourcesArtifact.getResolvedPaths()) {
+                new FileSystemStaticHandler.StaticWebRootConfiguration(result.getFinalDestination(),
+                        ""));
+        for (Path resolvedPath : result.getDependency().getResolvedPaths()) {
             webRootConfigurations
                     .add(new FileSystemStaticHandler.StaticWebRootConfiguration(resolvedPath.toString(),
-                            STATIC_RESOURCES_PATH));
+                            DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH));
         }
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route("dev/resources/*")
                 .handler(recorder.fileSystemStaticHandler(
-                        webRootConfigurations, devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
+                        webRootConfigurations, shutdownContext))
                 .build());
 
         // Add the log stream

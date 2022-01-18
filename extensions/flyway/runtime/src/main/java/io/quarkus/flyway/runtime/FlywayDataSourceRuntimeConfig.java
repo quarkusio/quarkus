@@ -80,6 +80,13 @@ public final class FlywayDataSourceRuntimeConfig {
     public Optional<String> repeatableSqlMigrationPrefix = Optional.empty();
 
     /**
+     * <code>true</code> to batch SQL statements while executing Flyway migrations, <code>false</code> otherwise.
+     *
+     */
+    @ConfigItem
+    public boolean batch;
+
+    /**
      * true to execute Flyway clean command automatically when the application starts, false otherwise.
      *
      */

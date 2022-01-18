@@ -29,6 +29,7 @@ import javax.persistence.Inheritance;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.persistence.Transient;
 import javax.persistence.Version;
 
 import org.jboss.jandex.DotName;
@@ -93,6 +94,7 @@ public final class DotNames {
     public static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());;
     public static final DotName JPA_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
     public static final DotName JPA_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
+    public static final DotName JPA_TRANSIENT = DotName.createSimple(Transient.class.getName());
     public static final DotName VOID = DotName.createSimple(void.class.getName());
     public static final DotName LONG = DotName.createSimple(Long.class.getName());
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());

@@ -38,6 +38,9 @@ class FlywayCreator {
         if (flywayRuntimeConfig.connectRetries.isPresent()) {
             configure.connectRetries(flywayRuntimeConfig.connectRetries.getAsInt());
         }
+        if (flywayRuntimeConfig.defaultSchema.isPresent()) {
+            configure.defaultSchema(flywayRuntimeConfig.defaultSchema.get());
+        }
         if (flywayRuntimeConfig.schemas.isPresent()) {
             configure.schemas(flywayRuntimeConfig.schemas.get().toArray(EMPTY_ARRAY));
         }

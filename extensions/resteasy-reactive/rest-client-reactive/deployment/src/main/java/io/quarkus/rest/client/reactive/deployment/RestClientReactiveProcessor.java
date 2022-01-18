@@ -1,6 +1,7 @@
 package io.quarkus.rest.client.reactive.deployment;
 
 import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_EXCEPTION_MAPPER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
@@ -56,6 +57,7 @@ import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -64,6 +66,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.AsmUtil;
@@ -219,6 +222,7 @@ class RestClientReactiveProcessor {
     @BuildStep
     void registerProvidersFromAnnotations(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             RestClientReactiveConfig clientConfig) {
         String annotationRegisteredProvidersImpl = AnnotationRegisteredProviders.class.getName() + "Implementation";
@@ -277,6 +281,19 @@ class RestClientReactiveProcessor {
                 }
             }
 
+            Map<String, ClientExceptionMapperHandler.Result> ifaceToGeneratedMapper = new HashMap<>();
+            ClientExceptionMapperHandler clientExceptionMapperHandler = new ClientExceptionMapperHandler(
+                    new GeneratedClassGizmoAdaptor(generatedClasses, true));
+            for (AnnotationInstance instance : index.getAnnotations(CLIENT_EXCEPTION_MAPPER)) {
+                ClientExceptionMapperHandler.Result result = clientExceptionMapperHandler
+                        .generateResponseExceptionMapper(instance);
+                if (ifaceToGeneratedMapper.containsKey(result.interfaceName)) {
+                    throw new IllegalStateException("Only a single instance of '" + CLIENT_EXCEPTION_MAPPER
+                            + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
+                }
+                ifaceToGeneratedMapper.put(result.interfaceName, result);
+            }
+
             for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
                 ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
                 for (AnnotationInstance value : annotationsForClass.getValue()) {
@@ -292,10 +309,28 @@ class RestClientReactiveProcessor {
                     constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(className),
                             constructor.load(priority));
                 }
+                String ifaceName = annotationsForClass.getKey();
+                if (ifaceToGeneratedMapper.containsKey(ifaceName)) {
+                    // remove the interface from the generated mapper since it's going to be handled now
+                    // the remaining entries will be handled later
+                    ClientExceptionMapperHandler.Result result = ifaceToGeneratedMapper.remove(ifaceName);
+                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(result.generatedClassName),
+                            constructor.load(result.priority));
+                }
                 constructor.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
                                 Map.class),
-                        constructor.getThis(), constructor.load(annotationsForClass.getKey()), map);
+                        constructor.getThis(), constructor.load(ifaceName), map);
+            }
+            // add the remaining generated mappers
+            for (Map.Entry<String, ClientExceptionMapperHandler.Result> entry : ifaceToGeneratedMapper.entrySet()) {
+                ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(entry.getValue().generatedClassName),
+                        constructor.load(entry.getValue().priority));
+                constructor.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
+                                Map.class),
+                        constructor.getThis(), constructor.load(entry.getKey()), map);
             }
 
             constructor.returnValue(null);

@@ -17,10 +17,44 @@ include::./status-include.adoc[]
 
 You can install the Quarkus CLI via:
 
+* <<homebrew,Homebrew>>
 * <<jbang,JBang>>
 * <<sdkman,SDKMAN!>>
 
-More alternatives such as https://brew.sh[Homebrew] will be made available soon.
+More alternatives such as https://chocolatey.org[Chocolatey] will be made available soon.
+
+[[homebrew]]
+=== Installing with Homebrew
+
+https://brew.sh[Homebrew] is a package manager for macOS (and Linux).
+
+You can use Homebrew to install (and update) the Quarkus CLI.
+
+[NOTE]
+====
+Make sure you have a JDK installed before installing the Quarkus CLI.
+We haven't added an explicit dependency as we wanted to make sure you could use your preferred JDK version.
+
+You can install a JDK with `brew install openjdk` for Java 17 or `brew install openjdk@11` for Java 11.
+====
+
+To install the Quarkus CLI using Homebrew, run the following command:
+
+[source,shell]
+----
+brew install quarkusio/tap/quarkus
+----
+
+It will install the latest version of the Quarkus CLI.
+This command can also be used to update the Quarkus CLI.
+
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
+
+[source,shell,subs=attributes+]
+----
+quarkus --version
+{quarkus-version}
+----
 
 [[jbang]]
 === Installing with JBang

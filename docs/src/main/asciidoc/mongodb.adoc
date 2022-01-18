@@ -695,7 +695,7 @@ As indicated in the property name, it uses Vert.x to retrieve the DNS records.
 By default, it tries to read the first `nameserver` from `/etc/resolv.conf`, if this file exists.
 You can also configure your DNS server:
 
-[source properties]
+[source,properties]
 ----
 quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
 quarkus.mongodb.native.dns.server-host=10.0.0.1
@@ -704,7 +704,7 @@ quarkus.mongodb.native.dns.server-port=53 # 53 is the default port
 
 Also, you can configure the lookup timeout using:
 
-[source properties]
+[source,properties]
 ----
 quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
 quarkus.mongodb.native.dns.lookup-timeout=10s # the default is 5s

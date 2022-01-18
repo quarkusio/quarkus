@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
-import io.smallrye.stork.ServiceInstance;
+import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;

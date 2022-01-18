@@ -21,6 +21,6 @@ public class SlowWiremockServer extends WiremockBase {
         server.stubFor(WireMock.get("/hello")
                 .willReturn(aResponse().withFixedDelay(1000)
                         .withBody(SLOW_RESPONSE).withStatus(200)));
-        return Map.of("stork.hello-service.service-discovery.2", "localhost:8767");
+        return Map.of("slow-service", "localhost:8767");
     }
 }

@@ -167,7 +167,7 @@ public class ServerEndpointIndexer
         InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
                 actualEndpointInfo,
                 existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
-        if (injectableBean.getFieldExtractorsCount() == 0) {
+        if ((injectableBean.getFieldExtractorsCount() == 0) && !injectableBean.isInjectionRequired()) {
             throw new DeploymentException(String.format("No annotations found on fields at '%s'. "
                     + "Annotations like `@QueryParam` should be used in fields, not in methods.",
                     beanParamClassInfo.name()));
@@ -288,7 +288,7 @@ public class ServerEndpointIndexer
 
         currentInjectableBean.setFieldExtractorsCount(fieldExtractors.size());
 
-        if (!fieldExtractors.isEmpty() && fieldInjectionHandler != null) {
+        if ((fieldInjectionHandler != null) && (!fieldExtractors.isEmpty() || superTypeIsInjectable)) {
             fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable);
         }
         currentInjectableBean.setInjectionRequired(!fieldExtractors.isEmpty() || superTypeIsInjectable);

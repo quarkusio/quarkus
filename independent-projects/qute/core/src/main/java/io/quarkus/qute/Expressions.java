@@ -100,10 +100,20 @@ public final class Expressions {
                 }
                 // Non-separator char
                 if (!literal) {
+                    // Not inside a string/type literal
                     if (brackets == 0 && c == ' ' && splitConfig.isInfixNotationSupported()) {
-                        // Not inside a virtual method
-                        if (infix == 1) {
-                            // The second space after the infix method
+                        // Infix supported, blank space and not inside a virtual method
+                        if (separator == 0
+                                && (buffer.length() == 0 || buffer.charAt(buffer.length() - 1) == '(')) {
+                            // Skip redundant blank space:
+                            // 1. before the infix method
+                            // foo  or bar
+                            // ----^
+                            // 2. before an infix method parameter
+                            // foo or  bar
+                            // -------^
+                        } else if (infix == 1) {
+                            // The space after the infix method
                             // foo or bar
                             // ------^
                             buffer.append(LEFT_BRACKET);

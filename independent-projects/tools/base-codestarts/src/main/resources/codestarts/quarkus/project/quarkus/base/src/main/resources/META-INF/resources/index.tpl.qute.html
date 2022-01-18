@@ -59,6 +59,16 @@
         p {
             padding: .15rem 0;
             margin: 0;
+            line-height: 1.3rem;
+        }
+
+        a {
+            text-decoration: underline;
+            color: #1259A5;
+        }
+
+        a:hover, a:active {
+            color: #c00;
         }
 
         .grid {
@@ -126,6 +136,10 @@
             list-style-type: none;
             padding: 0;
             margin: 0;
+        }
+
+        .appdetails ul li {
+            margin-bottom: 0.2rem;
         }
 
         .appdetails h5 {
@@ -264,11 +278,11 @@
     <div class="grid">
         <div class="left-column">
             <h1>You just made a Quarkus application.</h1>
-            <h4>Try running Quarkus Dev and <a href="/q/dev/">Dev UI</a> to view your installed extensions.</h4>
-            <p>This page is served by Quarkus. The source is in <code>src/main/resources/{config.file-name}</code>.</p>
-            <p>Your static assets are located in <code>src/main/resources/META-INF/resources</code>.</p>
+            <h4>Visit <a href="/q/dev/">Dev UI</a> to view your installed extensions.</h4>
+            <p>This page is served by Quarkus. The source code for this page is in <code>src/main/resources/META-INF/resources/index.html</code>.</p>
             <p>Configure your application in <code>src/main/resources/{config.file-name}</code>.</p>
             <p>Play with the provided code located in <code>{language.dir.code}</code>.</p>
+            <p>Your static assets are located in <code>src/main/resources/META-INF/resources/</code>.</p>
 
             <div class="provided-code">
                 <h3>These extensions were used in the creation of this project:</h3>

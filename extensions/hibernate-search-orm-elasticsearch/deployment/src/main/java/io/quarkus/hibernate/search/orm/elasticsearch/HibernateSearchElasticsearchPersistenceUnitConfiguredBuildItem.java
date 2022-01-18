@@ -7,14 +7,16 @@ public final class HibernateSearchElasticsearchPersistenceUnitConfiguredBuildIte
 
     private final String persistenceUnitName;
     private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
+    private final boolean defaultBackendIsUsed;
 
     public HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(String persistenceUnitName,
-            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig) {
+            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig, boolean defaultBackendIsUsed) {
         if (persistenceUnitName == null) {
             throw new IllegalArgumentException("persistenceUnitName cannot be null");
         }
         this.persistenceUnitName = persistenceUnitName;
         this.buildTimeConfig = buildTimeConfig;
+        this.defaultBackendIsUsed = defaultBackendIsUsed;
     }
 
     public String getPersistenceUnitName() {
@@ -23,6 +25,10 @@ public final class HibernateSearchElasticsearchPersistenceUnitConfiguredBuildIte
 
     public HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit getBuildTimeConfig() {
         return buildTimeConfig;
+    }
+
+    public boolean isDefaultBackendUsed() {
+        return defaultBackendIsUsed;
     }
 
     @Override

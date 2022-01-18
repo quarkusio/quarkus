@@ -14,7 +14,7 @@ public final class HibernateSearchOutboxPollingConfigUtil {
 
     public static <T> void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String tenantId,
             String configPath, T value) {
-        String key = coordinationKey(tenantId, configPath);
+        String key = HibernateOrmMapperOutboxPollingSettings.coordinationKey(tenantId, configPath);
         propertyCollector.accept(key, value);
     }
 
@@ -31,18 +31,8 @@ public final class HibernateSearchOutboxPollingConfigUtil {
     public static <T> void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String tenantId,
             String configPath, T value, Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
         if (shouldBeAdded.apply(value)) {
-            propertyCollector.accept(coordinationKey(tenantId, configPath),
+            propertyCollector.accept(HibernateOrmMapperOutboxPollingSettings.coordinationKey(tenantId, configPath),
                     getValue.apply(value));
-        }
-    }
-
-    private static String coordinationKey(String tenantId, String configPath) {
-        if (tenantId == null) {
-            return HibernateOrmMapperOutboxPollingSettings.PREFIX
-                    + HibernateOrmMapperOutboxPollingSettings.Radicals.COORDINATION_PREFIX
-                    + configPath;
-        } else {
-            return HibernateOrmMapperOutboxPollingSettings.coordinationKey(tenantId, configPath);
         }
     }
 

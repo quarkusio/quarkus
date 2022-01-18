@@ -1,11 +1,9 @@
 package io.quarkus.hibernate.search.orm.coordination.outboxpolling;
 
-import static io.quarkus.hibernate.search.orm.coordination.outboxpolling.HibernateSearchOutboxPollingClasses.AVRO_GENERATED_CLASSES;
-import static io.quarkus.hibernate.search.orm.coordination.outboxpolling.HibernateSearchOutboxPollingClasses.JPA_MODEL_CLASSES;
-
 import java.util.List;
 
 import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
+import org.hibernate.search.mapper.orm.coordination.outboxpolling.mapping.spi.HibernateOrmMapperOutboxPollingClasses;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -32,9 +30,11 @@ class HibernateSearchOutboxPollingProcessor {
     void registerInternalModel(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
-        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(AVRO_GENERATED_CLASSES.toArray(new String[0])));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, JPA_MODEL_CLASSES.toArray(new String[0])));
-        for (String className : JPA_MODEL_CLASSES) {
+        String[] avroTypes = HibernateOrmMapperOutboxPollingClasses.avroTypes().toArray(String[]::new);
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(avroTypes));
+        String[] hibernateOrmTypes = HibernateOrmMapperOutboxPollingClasses.hibernateOrmTypes().toArray(String[]::new);
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, hibernateOrmTypes));
+        for (String className : hibernateOrmTypes) {
             additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className));
         }
     }

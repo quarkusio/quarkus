@@ -182,6 +182,8 @@ public class DefaultTenantConfigResolver {
                 if (oidcConfig == null) {
                     //shouldn't happen, but guard against it anyway
                     oidcConfig = Uni.createFrom().nullItem();
+                } else {
+                    oidcConfig = oidcConfig.onItem().transform(cfg -> OidcUtils.resolveProviderConfig(cfg));
                 }
                 context.put(CURRENT_DYNAMIC_TENANT_CONFIG, oidcConfig);
             }

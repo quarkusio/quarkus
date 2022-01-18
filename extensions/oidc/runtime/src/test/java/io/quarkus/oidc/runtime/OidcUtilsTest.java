@@ -21,10 +21,220 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.OidcTenantConfig.Provider;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.json.JsonObject;
 
 public class OidcUtilsTest {
+
+    @Test
+    public void testAcceptGitHubProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GITHUB));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertFalse(config.isDiscoveryEnabled().get());
+        assertEquals("https://github.com/login/oauth", config.getAuthServerUrl().get());
+        assertEquals("authorize", config.getAuthorizationPath().get());
+        assertEquals("access_token", config.getTokenPath().get());
+        assertEquals("https://api.github.com/user", config.getUserInfoPath().get());
+
+        assertFalse(config.authentication.idTokenRequired.get());
+        assertTrue(config.authentication.userInfoRequired.get());
+        assertEquals(List.of("user:email"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testOverrideGitHubProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setDiscoveryEnabled(true);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.setAuthorizationPath("authorization");
+        tenant.setTokenPath("tokens");
+        tenant.setUserInfoPath("userinfo");
+
+        tenant.authentication.setIdTokenRequired(true);
+        tenant.authentication.setUserInfoRequired(false);
+        tenant.authentication.setScopes(List.of("write"));
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GITHUB));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertTrue(config.isDiscoveryEnabled().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals("authorization", config.getAuthorizationPath().get());
+        assertEquals("tokens", config.getTokenPath().get());
+        assertEquals("userinfo", config.getUserInfoPath().get());
+
+        assertTrue(config.authentication.idTokenRequired.get());
+        assertFalse(config.authentication.userInfoRequired.get());
+        assertEquals(List.of("write"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testAcceptFacebookProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertFalse(config.isDiscoveryEnabled().get());
+        assertEquals("https://www.facebook.com", config.getAuthServerUrl().get());
+        assertEquals("https://facebook.com/dialog/oauth/", config.getAuthorizationPath().get());
+        assertEquals("https://www.facebook.com/.well-known/oauth/openid/jwks/", config.getJwksPath().get());
+        assertEquals("https://graph.facebook.com/v12.0/oauth/access_token", config.getTokenPath().get());
+        assertEquals("https://graph.facebook.com/me/?fields=id,name,email,first_name,last_name",
+                config.getUserInfoPath().get());
+
+        assertFalse(config.authentication.idTokenRequired.get());
+        assertTrue(config.authentication.userInfoRequired.get());
+        assertEquals(List.of("email", "public_profile"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testOverrideFacebookProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setDiscoveryEnabled(true);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.setAuthorizationPath("authorization");
+        tenant.setJwksPath("jwks");
+        tenant.setTokenPath("tokens");
+        tenant.setUserInfoPath("userinfo");
+
+        tenant.authentication.setIdTokenRequired(true);
+        tenant.authentication.setUserInfoRequired(false);
+        tenant.authentication.setScopes(List.of("write"));
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertTrue(config.isDiscoveryEnabled().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals("authorization", config.getAuthorizationPath().get());
+        assertEquals("jwks", config.getJwksPath().get());
+        assertEquals("tokens", config.getTokenPath().get());
+        assertEquals("userinfo", config.getUserInfoPath().get());
+
+        assertTrue(config.authentication.idTokenRequired.get());
+        assertFalse(config.authentication.userInfoRequired.get());
+        assertEquals(List.of("write"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testAcceptGoogleProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GOOGLE));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals("https://accounts.google.com", config.getAuthServerUrl().get());
+        assertEquals(List.of("openid", "email", "profile"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testOverrideGoogleProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.authentication.setScopes(List.of("write"));
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GOOGLE));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals(List.of("write"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testAcceptMicrosoftProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MICROSOFT));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals("https://login.microsoftonline.com/common/v2.0", config.getAuthServerUrl().get());
+        assertEquals(List.of("openid", "email", "profile"), config.authentication.scopes.get());
+        assertEquals("any", config.getToken().getIssuer().get());
+    }
+
+    @Test
+    public void testOverrideMicrosoftProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.getToken().setIssuer("http://localhost/wiremock");
+        tenant.authentication.setScopes(List.of("write"));
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MICROSOFT));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals(List.of("write"), config.authentication.scopes.get());
+        assertEquals("http://localhost/wiremock", config.getToken().getIssuer().get());
+    }
+
+    @Test
+    public void testAcceptAppleProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.APPLE));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals("https://appleid.apple.com/", config.getAuthServerUrl().get());
+        assertEquals(List.of("openid", "email", "name"), config.authentication.scopes.get());
+        assertEquals(Method.POST_JWT, config.credentials.clientSecret.method.get());
+        assertEquals("https://appleid.apple.com/", config.credentials.jwt.audience.get());
+        assertEquals(SignatureAlgorithm.ES256.getAlgorithm(), config.credentials.jwt.signatureAlgorithm.get());
+    }
+
+    @Test
+    public void testOverrideAppleProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.authentication.setScopes(List.of("write"));
+
+        tenant.credentials.clientSecret.setMethod(Method.POST);
+        tenant.credentials.jwt.setAudience("http://localhost/audience");
+        tenant.credentials.jwt.setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.APPLE));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals(List.of("write"), config.authentication.scopes.get());
+
+        assertEquals(Method.POST, config.credentials.clientSecret.method.get());
+        assertEquals("http://localhost/audience", config.credentials.jwt.audience.get());
+        assertEquals(SignatureAlgorithm.ES256.getAlgorithm(), config.credentials.jwt.signatureAlgorithm.get());
+    }
 
     @Test
     public void testCorrectTokenType() throws Exception {

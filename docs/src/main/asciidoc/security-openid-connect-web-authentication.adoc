@@ -666,7 +666,7 @@ If the `OAuth2` provider supports the introspection endpoint then you may be abl
 
 Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quarkus-oidc` can be integrated with the providers such as `GitHib`.
 
-Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want tp consider caching `UserInfo` data, see <<token-introspection-userinfo-cache,Token Introspection and UserInfo Cache> for more details.
+Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see <<token-introspection-userinfo-cache,Token Introspection and UserInfo Cache> for more details.
 
 Also, OAuth2 servers may not support a well-known configuration endpoint in which case the discovery has to be disabled and the authorization, token, and introspection and/or userinfo endpoint paths have to be configured manually.
 
@@ -674,29 +674,16 @@ Here is how you can integrate `quarkus-oidc` with `GitHub` after you have link:h
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=https://github.com/login/oauth
-quarkus.oidc.discovery-enabled=false
-quarkus.oidc.authorization-path=authorize
-quarkus.oidc.token-path=access_token
-quarkus.oidc.user-info-path=https://api.github.com/user
+quarkus.oidc.provider=github
+quarkus.oidc.client-id=github_app_clientid
+quarkus.oidc.credentials.secret=github_app_clientsecret
 
-# See https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
-quarkus.oidc.authentication.scopes=user:email
-
-# Make sure a user info is required
-quarkus.oidc.authentication.user-info-required=true
+# user:email scope is requested by default, use 'quarkus.oidc.authentication.scopes' to request differrent scopes such as `read:user`.
+# See https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps for more information.
 
 # Consider enabling UserInfo Cache 
 # quarkus.oidc.token-cache.max-size=1000
 # quarkus.oidc.token-cache.time-to-live=5M
-
-# Allow the code flow responses without ID tokens
-quarkus.oidc.authentication.id-token-required=false
-
-quarkus.oidc.application-type=web-app
-
-quarkus.oidc.client-id=github_app_clientid
-quarkus.oidc.credentials.secret=github_app_clientsecret
 ----
 
 This is all what is needed for an endpoint like this one to return the currently authenticated user's profile with `GET http://localhost:8080/github/userinfo` and access it as the individual `UserInfo` properties:
@@ -831,8 +818,7 @@ and configure Google OIDC properties:
 
 [source, properties]
 ----
-quarkus.oidc.auth-server-url=https://accounts.google.com
-quarkus.oidc.application-type=web-app
+quarkus.oidc.provider=google
 quarkus.oidc.client-id={GOOGLE_CLIENT_ID}
 quarkus.oidc.credentials.secret={GOOGLE_CLIENT_SECRET}
 quarkus.oidc.token.issuer=https://accounts.google.com
@@ -1001,12 +987,14 @@ Apple OpenID Connect Provider uses a `client_secret_post` method where a secret 
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=${apple.url}
-quarkus.oidc.client-id=${apple.client-id}
-quarkus.oidc.credentials.client-secret.method=post-jwt
+# Apple provider configuration sets a 'client_secret_post_jwt' authentication method
+quarkus.oidc.provider=apple
 
+quarkus.oidc.client-id=${apple.client-id}
 quarkus.oidc.credentials.jwt.key-file=ecPrivateKey.pem
-quarkus.oidc.credentials.jwt.signature-algorithm=ES256
+quarkus.oidc.credentials.jwt.token-key-id=${apple.key-id}
+# Apple provider configuration sets ES256 signature algorithm
+
 quarkus.oidc.credentials.jwt.subject=${apple.subject}
 quarkus.oidc.credentials.jwt.issuer=${apple.issuer}
 ----

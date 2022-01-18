@@ -112,7 +112,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             vertxContext.put(CODE_ACCESS_TOKEN_RESULT, codeAccessTokenResult);
         }
 
-        Uni<UserInfo> userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired()
+        Uni<UserInfo> userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)
                 ? getUserInfoUni(vertxContext, request, resolvedContext)
                 : NULL_USER_INFO_UNI;
 

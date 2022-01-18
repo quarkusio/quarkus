@@ -86,13 +86,7 @@ In the generated project, also add the following dependencies:
 ----
 <dependency>
   <groupId>io.smallrye.stork</groupId>
-  <artifactId>smallrye-stork-service-discovery-consul</artifactId>
-  <version>{stork-version}</version>
-</dependency>
-<dependency>
-  <groupId>io.smallrye.stork</groupId>
-  <artifactId>smallrye-stork-load-balancer-round-robin</artifactId>
-  <version>{stork-version}</version>
+  <artifactId>stork-service-discovery-consul</artifactId>
 </dependency>
 <dependency>
   <groupId>io.smallrye.reactive</groupId>
@@ -100,9 +94,8 @@ In the generated project, also add the following dependencies:
 </dependency>
 ----
 
-`smallrye-stork-service-discovery-consul` provides an implementation of service discovery for Consul.
-`smallrye-stork-load-balancer-round-robin` provides a round-robin service selection.
-Finally, `smallrye-mutiny-vertx-consul-client` is a Consul client which we will use to register our services in Consul.
+`stork-service-discovery-consul` provides an implementation of service discovery for Consul.
+`smallrye-mutiny-vertx-consul-client` is a Consul client which we will use to register our services in Consul.
 
 == The Blue and Red services
 

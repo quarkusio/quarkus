@@ -12,17 +12,17 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.stork.SmallRyeStorkRecorder;
 import io.smallrye.stork.microprofile.MicroProfileConfigProvider;
-import io.smallrye.stork.spi.LoadBalancerProvider;
-import io.smallrye.stork.spi.ServiceDiscoveryProvider;
+import io.smallrye.stork.spi.internal.LoadBalancerLoader;
+import io.smallrye.stork.spi.internal.ServiceDiscoveryLoader;
 
 public class SmallRyeStorkProcessor {
 
     @BuildStep
     void registerServiceProviders(BuildProducer<ServiceProviderBuildItem> services) {
-        services.produce(new ServiceProviderBuildItem(io.smallrye.stork.config.ConfigProvider.class.getName(),
+        services.produce(new ServiceProviderBuildItem(io.smallrye.stork.spi.config.ConfigProvider.class.getName(),
                 MicroProfileConfigProvider.class.getName()));
 
-        for (Class<?> providerClass : asList(LoadBalancerProvider.class, ServiceDiscoveryProvider.class)) {
+        for (Class<?> providerClass : asList(LoadBalancerLoader.class, ServiceDiscoveryLoader.class)) {
             services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(providerClass.getName()));
         }
     }

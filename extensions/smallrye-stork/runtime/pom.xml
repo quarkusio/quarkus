@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.smallrye.stork</groupId>
-            <artifactId>smallrye-stork-microprofile-config</artifactId>
+            <artifactId>stork-microprofile-config</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

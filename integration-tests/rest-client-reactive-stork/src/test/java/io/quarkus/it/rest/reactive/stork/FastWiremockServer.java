@@ -20,6 +20,6 @@ public class FastWiremockServer extends WiremockBase {
     protected Map<String, String> initWireMock(WireMockServer server) {
         server.stubFor(WireMock.get("/hello")
                 .willReturn(aResponse().withBody(FAST_RESPONSE).withStatus(200)));
-        return Map.of("stork.hello-service.service-discovery.1", "localhost:8766");
+        return Map.of("fast-service", "localhost:8766");
     }
 }

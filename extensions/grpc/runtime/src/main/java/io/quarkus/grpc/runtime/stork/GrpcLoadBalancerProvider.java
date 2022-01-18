@@ -22,8 +22,8 @@ import io.grpc.LoadBalancerProvider;
 import io.grpc.NameResolver;
 import io.grpc.Status;
 import io.grpc.internal.JsonUtil;
-import io.smallrye.stork.ServiceInstance;
 import io.smallrye.stork.Stork;
+import io.smallrye.stork.api.ServiceInstance;
 
 public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
     private static final Logger log = Logger.getLogger(GrpcLoadBalancerProvider.class);
@@ -170,7 +170,7 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
         }
 
         private ServiceInstance pickServerInstance() {
-            io.smallrye.stork.LoadBalancer lb = Stork.getInstance().getService(serviceName).getLoadBalancer();
+            io.smallrye.stork.api.LoadBalancer lb = Stork.getInstance().getService(serviceName).getLoadBalancer();
 
             Set<ServiceInstance> toChooseFrom = this.activeServerInstances;
             if (activeServerInstances.isEmpty()) {

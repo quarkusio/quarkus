@@ -34,7 +34,7 @@ To use this feature, add the following dependency to your project:
 ----
 <dependency>
     <groupId>io.smallrye.stork</groupId>
-    <artifactId>smallrye-stork-service-discovery-kubernetes</artifactId>
+    <artifactId>stork-service-discovery-kubernetes</artifactId>
 </dependency>
 ----
 
@@ -52,22 +52,25 @@ Instead of using the Kubernetes Service IP directly and let Kubernetes handle th
 == Implementing a custom service discovery
 
 Stork is extensible, and you can implement your own service discovery mechanism.
-Stork uses the SPI mechanism for loading implementations matching the Service Discovery Provider interface.
 
 === Dependency
-To implement your Service Discovery Provider, make sure your project depends on:
+To implement your Service Discovery Provider, make sure your project depends on Core and Configuration Generator. The former brings classes necessary to implement custom discovery, the latter contains an annotation processor that generates classes needed by Stork.
 
 [source, xml]
 ----
 <dependency>
     <groupI>io.smallrye.stork</groupI>
-    <artifactId>smallrye-stork-api</artifactId>
+    <artifactId>stork-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-configuration-generator</artifactId>
+    <!-- provided scope is sufficient for the annotation processor -->
+    <scope>provided</scope>
 </dependency>
 ----
 
 === Implementing a service discovery provider
-
-Stork uses the SPI mechanism for loading implementations matching the Service Discovery Provider interface during its initialization.
 
 The custom provider is a factory that creates an `io.smallrye.stork.ServiceDiscovery` instance for each configured service using this service discovery provider.
 A type, for example, `acme` identifies each provider.
@@ -84,55 +87,62 @@ The first step consists of implementing the `io.smallrye.stork.spi.ServiceDiscov
 ----
 package examples;
 
-import io.smallrye.stork.ServiceDiscovery;
-import io.smallrye.stork.config.ServiceConfig;
-import io.smallrye.stork.config.ServiceDiscoveryConfig;
+import io.smallrye.stork.api.ServiceDiscovery;
+import io.smallrye.stork.api.config.ServiceConfig;
+import io.smallrye.stork.api.config.ServiceDiscoveryAttribute;
+import io.smallrye.stork.api.config.ServiceDiscoveryType;
+import io.smallrye.stork.spi.StorkInfrastructure;
 import io.smallrye.stork.spi.ServiceDiscoveryProvider;
 
-public class AcmeServiceDiscoveryProvider implements ServiceDiscoveryProvider {
-    @Override
-    public String type() {
-        return "acme";
-    }
+@ServiceDiscoveryType("acme") // <1>
+@ServiceDiscoveryAttribute(name = "host",
+        description = "Host name of the service discovery server.", required = true) // <2>
+@ServiceDiscoveryAttribute(name = "port",
+        description = "Hort of the service discovery server.", required = false)
+public class AcmeServiceDiscoveryProvider // <3>
+        implements ServiceDiscoveryProvider<AcmeServiceDiscoveryProviderConfiguration> {
 
+    // <4>
     @Override
-    public ServiceDiscovery createServiceDiscovery(ServiceDiscoveryConfig config,
-            String serviceName,
-            ServiceConfig serviceConfig) {
-        return new AcmeServiceDiscovery(config.parameters());
+    public ServiceDiscovery createServiceDiscovery(AcmeServiceDiscoveryProviderConfiguration config,
+                                                   String serviceName,
+                                                   ServiceConfig serviceConfig,
+                                                   StorkInfrastructure storkInfrastructure) {
+        return new AcmeServiceDiscovery(config);
     }
 }
 ----
 
 This implementation is straightforward.
-The type method returns the service discovery provider identifier.
-The `createServiceDiscovery` method is the factory method.
-It receives the instance configuration (a map constructed from all `stork.my-service.service-discovery.attr=value` properties)
 
-Then, obviously, we need to implement the ServiceDiscovery interface:
+<1> `@ServiceDiscoveryType` annotation defines the type of the service discovery provider. For each `ServiceDiscoveryProvider` annotated with this annotation, a configuration class will be generated. The name of the configuration class is constructed by appending `Configuration` to the name of the provider.
+<2> Use `@ServiceDiscoveryAttribute` to define configuration properties for services configured with this service discovery provider. Configuration properties are gathered from all properties of a form: `stork.my-service.service-discovery.attr=value`.
+<3> The provider needs to implement `ServiceDiscoveryType` typed by the configuration class.
+<4> `createServiceDiscovery` method is the factory method. It receives the configuration and access to the name of the service and available infrastructure.
+
+Then, we need to implement the `ServiceDiscovery` interface:
 
 [source, java]
 ----
 package examples;
 
-import io.smallrye.mutiny.Uni;
-import io.smallrye.stork.DefaultServiceInstance;
-import io.smallrye.stork.ServiceDiscovery;
-import io.smallrye.stork.ServiceInstance;
-import io.smallrye.stork.spi.ServiceInstanceIds;
-
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.stork.api.ServiceDiscovery;
+import io.smallrye.stork.api.ServiceInstance;
+import io.smallrye.stork.impl.DefaultServiceInstance;
+import io.smallrye.stork.utils.ServiceInstanceIds;
 
 public class AcmeServiceDiscovery implements ServiceDiscovery {
 
     private final String host;
     private final int port;
 
-    public AcmeServiceDiscovery(Map<String, String> configuration) {
-        this.host = configuration.get("host");
-        this.port = Integer.parseInt(configuration.get("port"));
+    public AcmeServiceDiscovery(AcmeServiceDiscoveryProviderConfiguration configuration) {
+        this.host = configuration.getHost();
+        this.port = Integer.parseInt(configuration.getPort());
     }
 
     @Override
@@ -152,13 +162,6 @@ Typically, instead of creating a service instance with values from the configura
 That's why the method returns a `Uni`.
 Most of the time, the lookup is a remote operation.
 
-The final step is to declare our `ServiceDiscoveryProvider` in the `META-INF/services/io.smallrye.stork.spi.ServiceDiscoveryProvider` file:
-
-[source, text]
-----
-examples.AcmeServiceDiscoveryProvider
-----
-
 === Using your service discovery
 
 In the project using it, don't forget to add the dependency on the module providing your implementation.
@@ -176,88 +179,97 @@ Then, Stork will use your implementation to locate the `my-service` service.
 == Implementing a custom service selection / load-balancer
 
 Stork is extensible, and you can implement your own service selection (load-balancer) mechanism.
-Stork uses the SPI mechanism for loading implementations matching the Load Balancer Provider interface.
 
 === Dependency
-To implement your Load Balancer Provider, make sure your project depends on:
+To implement your Load Balancer Provider, make sure your project depends on Core and Configuration Generator. The former brings classes necessary to implement custom load balancer, the latter contains an annotation processor that generates classes needed by Stork.
 
 [source, xml]
 ----
 <dependency>
     <groupI>io.smallrye.stork</groupI>
-    <artifactId>smallrye-stork-api</artifactId>
+    <artifactId>stork-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-configuration-generator</artifactId>
+    <!-- provided scope is sufficient for the annotation processor -->
+    <scope>provided</scope>
 </dependency>
 ----
 
 === Implementing a load balancer provider
 
-Stork uses the SPI mechanism for loading implementations matching the Load Balancer Provider interface during its initialization.
+Load balancer implementation consists of three elements:
 
-The custom provider is a factory that creates an `io.smallrye.stork.LoadBalancer` instance for each configured service using this load balancer provider.
-A type identifies each provider.
-You will use that type in the configuration to reference the load-balancer provider you want for each service:
+- `LoadBalancer` which is responsible for selecting service instances for a single Stork service
+- `LoadBalancerProvider` which creates instances of `LoadBalancer` for a given load balancer _type_
+- `LoadBalancerProviderConfiguration` which is a configuration for the load balancer
+
+
+A _type_, for example, `acme`, identifies each provider.
+This _type_ is used in the configuration to reference the provider:
 
 [source, properties]
 ----
 stork.my-service.load-balancer=acme
 ----
 
-The first step consists of implementing the `io.smallrye.stork.spi.LoadBalancerProvider` interface:
-
+Similarly to `ServiceDiscoveryProvider, a `LoadBalancerProvider` implementation needs to be annotated with `@LoadBalancerType` that defines the _type_.
+Any configuration properties that the provider expects should be defined with `@LoadBalancerAttribute` annotations placed on the provider.
 [source, java]
 ----
 package examples;
 
-import io.smallrye.stork.LoadBalancer;
-import io.smallrye.stork.ServiceDiscovery;
-import io.smallrye.stork.config.LoadBalancerConfig;
-import io.smallrye.stork.config.ServiceDiscoveryConfig;
+import io.smallrye.stork.api.LoadBalancer;
+import io.smallrye.stork.api.ServiceDiscovery;
+import io.smallrye.stork.api.config.LoadBalancerAttribute;
+import io.smallrye.stork.api.config.LoadBalancerType;
 import io.smallrye.stork.spi.LoadBalancerProvider;
-import io.smallrye.stork.spi.ServiceDiscoveryProvider;
 
-public class AcmeLoadBalancerProvider implements LoadBalance
-rProvider {
-    @Override
-    public String type() {
-        return "acme";
-    }
+@LoadBalancerType("acme")
+@LoadBalancerAttribute(name = "my-attribute",
+        description = "Attribute that alters the behavior of the LoadBalancer")
+public class AcmeLoadBalancerProvider implements
+        LoadBalancerProvider<AcmeLoadBalancerProviderConfiguration> {
 
     @Override
-    public LoadBalancer createLoadBalancer(LoadBalancerConfig config, ServiceDiscovery serviceDiscovery) {
+    public LoadBalancer createLoadBalancer(AcmeLoadBalancerProviderConfiguration config,
+                                           ServiceDiscovery serviceDiscovery) {
         return new AcmeLoadBalancer(config);
     }
 }
 ----
 
-This implementation is straightforward.
-The type method returns the load balancer provider identifier.
-The `createLoadBalancer` method is the factory method.
-It receives the instance configuration (a map constructed from all `stork.my-service.load-balancer.attr=value` properties)
+Note, that similarly to the `ServiceDiscoveryProvider`, the `LoadBalancerProvider` interface takes a configuration class as a parameter. This configuration class is generated automatically by the _Configuration Generator_.
+Its name is created by appending `Configuration` to the name of the provider class.
 
-Then, obviously, we need to implement the `LoadBalancer` interface:
+The next step is to implement the `LoadBalancer` interface:
 
 [source, java]
 ----
 package examples;
 
-import io.smallrye.stork.LoadBalancer;
-import io.smallrye.stork.ServiceInstance;
-import io.smallrye.stork.config.LoadBalancerConfig;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
+
+import io.smallrye.stork.api.LoadBalancer;
+import io.smallrye.stork.api.NoServiceInstanceFoundException;
+import io.smallrye.stork.api.ServiceInstance;
 
 public class AcmeLoadBalancer implements LoadBalancer {
 
     private final Random random;
 
-    public AcmeLoadBalancer(LoadBalancerConfig config) {
+    public AcmeLoadBalancer(AcmeLoadBalancerProviderConfiguration config) {
         random = new Random();
     }
 
     @Override
     public ServiceInstance selectServiceInstance(Collection<ServiceInstance> serviceInstances) {
+        if (serviceInstances.isEmpty()) {
+            throw new NoServiceInstanceFoundException("No services found.");
+        }
         int index = random.nextInt(serviceInstances.size());
         return new ArrayList<>(serviceInstances).get(index);
     }
@@ -266,7 +278,6 @@ public class AcmeLoadBalancer implements LoadBalancer {
 
 Again, this implementation is simplistic and just picks a random instance from the received list.
 
-The final step is to declare our `LoadBalancerProvider` in the `META-INF/services/io.smallrye.stork.spi.LoadBalancerProvider` file:
 
 [source, text]
 ----

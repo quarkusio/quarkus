@@ -21,10 +21,10 @@ import io.grpc.NameResolver;
 import io.grpc.NameResolverProvider;
 import io.grpc.Status;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.stork.Service;
-import io.smallrye.stork.ServiceDiscovery;
-import io.smallrye.stork.ServiceInstance;
 import io.smallrye.stork.Stork;
+import io.smallrye.stork.api.Service;
+import io.smallrye.stork.api.ServiceDiscovery;
+import io.smallrye.stork.api.ServiceInstance;
 
 /**
  * for gRPC, the service instance id must be immutable.

@@ -121,8 +121,8 @@ public class MultiplePersistenceUnitsCdiTest {
     @ActivateRequestContext
     public void testPU2Session() {
         PU2Entity entity = new PU2Entity("someText");
-        inTransaction(() -> pu1Session.toEntityManager().persist(entity));
-        inTransaction(() -> assertThat(pu1Session.search(PU2Entity.class)
+        inTransaction(() -> pu2Session.toEntityManager().persist(entity));
+        inTransaction(() -> assertThat(pu2Session.search(PU2Entity.class)
                 .where(f -> f.matchAll())
                 .fetchHits(20))
                         .hasSize(1)

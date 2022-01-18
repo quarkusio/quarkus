@@ -19,7 +19,7 @@ This reference guide takes as input the application developed in the xref:gettin
 Debugging Quarkus native executables experience is best done within a Linux environment.
 Root access is not needed except to install packages required to run some debug steps,
 or to enable `perf` to gather events at the kernel.
-Debugging in MacOS and Windows environments also works in a container environment (see <<macwindows,FAQ entry>>).
+Debugging in macOS and Windows environments also works in a container environment (see <<macwindows,FAQ entry>>).
 
 These are the packages you'll need on your Linux environment to run through the different debugging sections:
 
@@ -34,7 +34,7 @@ sudo apt install binutils gdb perf
 Aside from system level packages, you'll need:
 
 * JDK 11 installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.8.1+
+* Apache Maven {maven-version}
 * A working container runtime (Docker, podman)
 * The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
@@ -1186,10 +1186,10 @@ including what is a pointer field vs a primitive field, this information cannot 
 This is because it has no idea what constitutes a root pointer nor how to recursively trace pointers from those roots.
 
 [[macwindows]]
-=== Can I follow these examples if I’m running MacOS or Windows?
+=== Can I follow these examples if I’m running macOS or Windows?
 
 The ideal environment for trying out these debugging examples is Linux.
-All examples, except for profiling and debugging native crashes, can also be executed natively in either MacOS or Windows.
+All examples, except for profiling and debugging native crashes, can also be executed natively in either macOS or Windows.
 If you are in either of these two platforms, you can run all the steps (including native crash debugging and profiling) within a Linux container.
 The following `Dockerfile` shows what a Linux container requires in order to follow the examples:
 

@@ -66,14 +66,17 @@ public class MavenProjectBuildFile extends BuildFile {
     }
 
     public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,
-            Properties projectProps, MavenArtifactResolver mvnResolver, MessageWriter log,
+            Properties projectProps, MavenArtifactResolver artifactResolver, MessageWriter log,
             Supplier<String> defaultQuarkusVersion) throws RegistryResolutionException {
-        return getProject(projectPom, projectModel, projectDir, projectProps, mvnResolver, mvnResolver, log,
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                ? QuarkusProjectHelper.getCatalogResolver(artifactResolver, log)
+                : ExtensionCatalogResolver.empty();
+        return getProject(projectPom, projectModel, projectDir, projectProps, artifactResolver, catalogResolver, log,
                 defaultQuarkusVersion);
     }
 
     public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,
-            Properties projectProps, MavenArtifactResolver artifactResolver, MavenArtifactResolver catalogArtifactResolver,
+            Properties projectProps, MavenArtifactResolver artifactResolver, ExtensionCatalogResolver catalogResolver,
             MessageWriter log, Supplier<String> defaultQuarkusVersion) throws RegistryResolutionException {
         final List<ArtifactCoords> managedDeps;
         final Supplier<List<ArtifactCoords>> deps;
@@ -94,9 +97,6 @@ public class MavenProjectBuildFile extends BuildFile {
         }
 
         final ExtensionCatalog extensionCatalog;
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? QuarkusProjectHelper.getCatalogResolver(catalogArtifactResolver, log)
-                : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {
                 if (!importedPlatforms.isEmpty()) {

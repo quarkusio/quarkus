@@ -944,6 +944,12 @@ public class MockGreetingServiceTest {
 ----
 <1> Since we configured `greetingService` as a mock, the `GreetingResource` which uses the `GreetingService` bean, we get the mocked response instead of the response of the regular `GreetingService` bean
 
+By default the `@InjectMock` annotation can be used for any normal CDI scoped bean (e.g. `@ApplicationScoped`, `@RequestScoped`).
+Mocking `@Singleton` beans can be performed by setting the `convertScopes` property to true (such as `@InjectMock(convertScopes = true`).
+This will convert the `@Singleton` bean to an `@ApplicationScoped` bean for the test.
+
+This is considered an advanced option and should only be performed if you fully understand the consequences of changing the scope of the bean.
+
 ==== Using Spies instead of Mocks with `@InjectSpy`
 
 Building on the features provided by `InjectMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for spying on the beans supported by `QuarkusMock`.

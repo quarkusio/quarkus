@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.dev.console.DevConsoleManager;
 
 public enum Ide {
@@ -17,6 +19,8 @@ public enum Ide {
     ECLIPSE("eclipse", List.of("--launcher.openFile", "{fileName}:{lineNumber}"), Collections.emptyList()),
     VSCODE("code", List.of("--goto", "{fileName}:{lineNumber}"), List.of("--version")),
     NETBEANS("netbeans", Collections.emptyList(), List.of("--help"));
+
+    private static final Logger log = Logger.getLogger(Ide.class);
 
     private final String defaultCommand;
     private final List<String> markerArgs;
@@ -54,6 +58,7 @@ public enum Ide {
                     List<String> command = new ArrayList<>(1 + markerArgs.size());
                     command.add(defaultCommand);
                     command.addAll(markerArgs);
+                    log.debugf("Checking if IDE available with %s", command);
                     new ProcessBuilder(command).redirectError(ProcessBuilder.Redirect.DISCARD.file())
                             .redirectOutput(ProcessBuilder.Redirect.DISCARD.file()).start()
                             .waitFor(10,

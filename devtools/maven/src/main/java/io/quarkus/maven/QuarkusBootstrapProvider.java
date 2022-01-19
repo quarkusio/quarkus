@@ -120,6 +120,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             try {
                 return MavenArtifactResolver.builder()
                         .setWorkspaceDiscovery(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
+                        .setCurrentProject(mojo.mavenProject().getFile().toString())
                         .setPreferPomsFromWorkspace(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
                         .setRepositorySystem(repoSystem)
                         .setRepositorySystemSession(mojo.repositorySystemSession())

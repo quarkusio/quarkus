@@ -955,7 +955,9 @@ public class DevMojo extends AbstractMojo {
                     .setRepositorySystem(repoSystem)
                     .setRemoteRepositories(repos)
                     .setRemoteRepositoryManager(remoteRepositoryManager)
-                    .setWorkspaceDiscovery(true);
+                    .setWorkspaceDiscovery(true)
+                    .setPreferPomsFromWorkspace(true)
+                    .setCurrentProject(project.getFile().toString());
 
             // if it already exists, it may be a reload triggered by a change in a POM
             // in which case we should not be using the original Maven session

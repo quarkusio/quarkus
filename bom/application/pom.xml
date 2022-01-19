@@ -200,6 +200,7 @@
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.9.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.15.2</strimzi-oauth.nimbus.version>
+        <java-buildpack-client.version>0.0.4</java-buildpack-client.version>
     </properties>
 
     <dependencyManagement>
@@ -2208,6 +2209,16 @@
                 <artifactId>quarkus-azure-functions-http-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-container-image-buildpack</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-container-image-buildpack-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>            
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-container-image-docker</artifactId>
@@ -5067,6 +5078,13 @@
                 <artifactId>qute-generator</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <!-- Buildpacks Container Extension -->
+            <dependency>
+                <groupId>dev.snowdrop</groupId>
+                <artifactId>buildpack-client</artifactId>
+                <version>${java-buildpack-client.version}</version>
+            </dependency>   
 
             <!-- Jib -->
             <dependency>

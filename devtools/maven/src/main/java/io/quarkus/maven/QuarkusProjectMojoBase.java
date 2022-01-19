@@ -95,7 +95,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null) {
             try {
                 quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(), baseDir(),
-                        project.getModel().getProperties(), artifactResolver(), catalogArtifactResolver(), getMessageWriter(),
+                        project.getModel().getProperties(), artifactResolver(), getExtensionCatalogResolver(),
+                        getMessageWriter(),
                         null);
             } catch (RegistryResolutionException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus Maven extension manager", e);
@@ -120,9 +121,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     }
 
     private ExtensionCatalog resolveExtensionCatalog() throws MojoExecutionException {
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? getExtensionCatalogResolver()
-                : ExtensionCatalogResolver.empty();
+        final ExtensionCatalogResolver catalogResolver = getExtensionCatalogResolver();
         if (catalogResolver.hasRegistries()) {
             try {
                 return catalogResolver.resolveExtensionCatalog(getImportedPlatforms());
@@ -136,7 +135,9 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     protected ExtensionCatalogResolver getExtensionCatalogResolver() throws MojoExecutionException {
         if (catalogResolver == null) {
             try {
-                catalogResolver = QuarkusProjectHelper.getCatalogResolver(catalogArtifactResolver(), getMessageWriter());
+                catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                        ? QuarkusProjectHelper.getCatalogResolver(catalogArtifactResolver(), getMessageWriter())
+                        : ExtensionCatalogResolver.empty();
             } catch (RegistryResolutionException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus extension resolver", e);
             }
@@ -149,6 +150,11 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
             if (project.getFile() == null) {
                 if (bomGroupId == null && bomArtifactId == null && bomVersion == null) {
                     return Collections.emptyList();
+                }
+                final ExtensionCatalogResolver catalogResolver = getExtensionCatalogResolver();
+                if (!catalogResolver.hasRegistries()) {
+                    throw new MojoExecutionException(
+                            "Couldn't resolve the Quarkus platform catalog since none of the Quarkus extension registries are available");
                 }
                 if (bomGroupId == null) {
                     bomGroupId = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID;

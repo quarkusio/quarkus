@@ -55,6 +55,9 @@ public class QuarkusUpdate extends QuarkusPlatformTask {
 
     @TaskAction
     public void logUpdates() {
+
+        getProject().getLogger().warn(getName() + " is experimental, its options and output might change in future versions");
+
         final QuarkusProject quarkusProject = getQuarkusProject(false);
         final Map<String, Object> params = new HashMap<>();
         try {

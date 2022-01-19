@@ -13,7 +13,7 @@ import io.quarkus.dev.console.DevConsoleManager;
 public enum Ide {
 
     // see for cli syntax of idea https://www.jetbrains.com/help/idea/opening-files-from-command-line.html
-    IDEA("idea", Collections.emptyList(), List.of("--help")),
+    IDEA("idea", List.of("--line", "{lineNumber}", "{fileName}"), List.of("--help")),
     ECLIPSE("eclipse", Collections.emptyList(), Collections.emptyList()),
     VSCODE("code", List.of("--goto", "{fileName}:{lineNumber}"), List.of("--version")),
     NETBEANS("netbeans", Collections.emptyList(), List.of("--help"));

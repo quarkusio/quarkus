@@ -241,9 +241,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                     configurations.maybeCreate(NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME)
                             .extendsFrom(configurations.findByName(JavaPlugin.TEST_RUNTIME_ONLY_CONFIGURATION_NAME));
 
-                    Task testNative = tasks.create(TEST_NATIVE_TASK_NAME, QuarkusTestNative.class);
-                    testNative.dependsOn(quarkusBuild);
-                    testNative.setShouldRunAfter(Collections.singletonList(tasks.findByName(JavaPlugin.TEST_TASK_NAME)));
+                    tasks.register(TEST_NATIVE_TASK_NAME, QuarkusTestNative.class, testNative -> {
+                        testNative.dependsOn(quarkusBuild);
+                        testNative.setShouldRunAfter(Collections.singletonList(tasks.findByName(JavaPlugin.TEST_TASK_NAME)));
+                    });
 
                     tasks.withType(Test.class).forEach(configureTestTask);
                     tasks.withType(Test.class).whenTaskAdded(configureTestTask::accept);

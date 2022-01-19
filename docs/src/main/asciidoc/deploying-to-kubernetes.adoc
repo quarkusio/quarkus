@@ -1321,6 +1321,98 @@ NOTE: Advanced, features (e.g. `ServiceBiniding` mappings) are not yet supported
 
 Here is the list of: link:https://github.com/redhat-developer/service-binding-operator#known-bindable-operators[Known bindable Operators].
 
+=== Automatic service binding
+
+To simplify the user experience as much as possible, the `quarkus-kubernetes-service-binding` extension, can automatically generate a `ServiceBinding` resource, when it detects that the application needs to access external services that are provided by known bindalbe Operators (operators known to be supported by the Service Binding Operator). At the moment this functionality is limited to the following operators:
+
+.Service autobinding
+|====
+|            | Operator                                                                                     | Api Version                               | Kind                 |
+| postgresql | link:https://operatorhub.io/operator/postgresql[CrunchyData Postgres]                        | postgres-operator.crunchydata.com/v1beta1 | PostgresCluster      |
+| mysql      | link:https://operatorhub.io/operator/percona-xtradb-cluster-operator[Percona XtraDB Cluster] | pxc.percona.com/v1-9-0                    | PerconaXtraDBCluster |
+| mongo      | link:https://operatorhub.io/operator/percona-server-mongodb-operator[Percona Mongo]          | psmdb.percona.com/v1-9-0                  | PerconaServerMongoDB |
+|====
+
+
+==== Automatic datasource binding
+
+For traditional databases, automatic binding is initated whenever a datasource is configured. For example:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql
+----
+
+When the above configuration is provided and `quarkus-datasource`, `quarkus-jdbc-postgresql`, `quarkus-kubernetes` and `quarkus-kubernetes-service-binding` extensions are added to the application, then a `ServiceBinding` for `postgresql` will be generated.
+The generated `ServiceBinding` will bind to kubernetes resource with `apiVersion` and `kind` that matches the `postgresql` operator (see the table above) and `name` equal to `postgresql`. Since, the configured datasource is unamed, the `db-kind` is used.
+
+[source,yaml]
+----
+  services:
+  - apiVersion: postgres-operator.crunchydata.com/v1beta1
+    kind: PostgresCluster
+    name: postgresql
+----
+
+For named datasources, the name of the datasource is used instead:
+
+[source,properties]
+----
+quarkus.datasource.fruits-db.db-kind=postgresql
+----
+
+The `service` in the generated `ServiceBinding` will look like:
+
+[source,yaml]
+----
+  services:
+  - apiVersion: postgres-operator.crunchydata.com/v1beta1
+    kind: PostgresCluster
+    name: fruits-db
+----
+
+Similarly, if mysql is used:
+
+[source,properties]
+----
+quarkus.datasource.fruits-db.db-kind=mysql
+----
+
+The generated `service` will be:
+
+[source,yaml]
+----
+  services:
+  - apiVersion: pxc.percona.com/v1-9-0
+    kind: PerconaXtraDBCluster
+    name: fruits-db
+----
+
+==== Customizing automatic bindings
+
+There are cases where customization upon the generated `ServiceBinding` may be needed. For example, the target resource name does not match the datasource name, or a non default operator needs to be used.
+For such cases, it's possible to use the `quarkus.kubernetes-service-binding.services.<service key>.` properties and specify as service key the name of the service.
+The `service key` is usually the name of the service (e.g. the name of the datasource, or the name of the mongo client etc). When this value is not available the kind is used instead (e.g. postgresql, mysql, mongo etc).
+To avoid conflicts (e.g. having different kind of services named the same) the `service key` maybe be prefixed with the kind (e.g. postgresql-persondb).
+
+The example below shows how to customize the `apiVersion` of the `PostgresCluster` resource:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql
+quarkus.kubernetes-service-binding.services.postgresql.api-version=postgres-operator.crunchydata.com/v1beta2
+----
+
+Or in case that we have a named datasource:
+
+[source,properties]
+----
+quarkus.datasource.fruits-db.db-kind=postgresql
+quarkus.kubernetes-service-binding.services.fruits-db.api-version=postgres-operator.crunchydata.com/v1beta2
+----
+
+In the former example the `db-kind`(`postgresql`) was used as service key, while in the latest case, the datasource name was used instead.
+
 
 [TIP]
 ====

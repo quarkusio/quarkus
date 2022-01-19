@@ -1,4 +1,3 @@
-
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,24 +12,27 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.dekorate.servicebinding.model.ServiceBinding;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.openshift.api.model.DeploymentConfig;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithServiceBindingTest {
+public class KubernetesWithAutoMysqlBindingTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-with-service-binding")
+            .setApplicationName("kubernetes-with-auto-mysql-binding")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-service-binding.properties")
+            .withConfigurationResource("kubernetes-with-auto-mysql-binding.properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(
-                    Arrays.asList(new AppArtifact("io.quarkus", "quarkus-openshift", Version.getVersion()),
+                    Arrays.asList(
+                            new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
+                            new AppArtifact("io.quarkus", "quarkus-jdbc-mysql", Version.getVersion()),
+                            new AppArtifact("io.quarkus", "quarkus-datasource", Version.getVersion()),
                             new AppArtifact("io.quarkus", "quarkus-kubernetes-service-binding", Version.getVersion())));
 
     @ProdBuildResults
@@ -40,15 +42,21 @@ public class OpenshiftWithServiceBindingTest {
     public void assertGeneratedResources() throws IOException {
         final Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
         assertThat(kubernetesDir)
-                .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.json"))
-                .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"));
-        List<HasMetadata> kubernetesList = DeserializationUtil
-                .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
+                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.json"))
+                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
 
-        assertThat(kubernetesList).filteredOn(i -> "DeploymentConfig".equals(i.getKind())).singleElement().satisfies(i -> {
-            assertThat(i).isInstanceOfSatisfying(DeploymentConfig.class, d -> {
+        List<HasMetadata> kubernetesList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
+
+        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
+            assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("openshift-with-service-binding");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-mysql-binding");
+                });
+                assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                    assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
+                        assertThat(t.getSpec()).satisfies(podSpec -> {
+                        });
+                    });
                 });
             });
         });
@@ -56,20 +64,20 @@ public class OpenshiftWithServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("openshift-with-service-binding-my-db");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-auto-mysql-binding-mysql");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {
-                        assertThat(a.getGroup()).isEqualTo("apps.openshift.io");
+                        assertThat(a.getGroup()).isEqualTo("apps");
                         assertThat(a.getVersion()).isEqualTo("v1");
-                        assertThat(a.getKind()).isEqualTo("DeploymentConfig");
+                        assertThat(a.getKind()).isEqualTo("Deployment");
                     });
 
                     assertThat(spec.getServices()).hasOnlyOneElementSatisfying(service -> {
-                        assertThat(service.getGroup()).isEqualTo("apps");
-                        assertThat(service.getVersion()).isEqualTo("v1");
-                        assertThat(service.getKind()).isEqualTo("Deployment");
-                        assertThat(service.getName()).isEqualTo("my-postgres");
+                        assertThat(service.getGroup()).isEqualTo("pxc.percona.com");
+                        assertThat(service.getVersion()).isEqualTo("v1-9-0");
+                        assertThat(service.getKind()).isEqualTo("PerconaXtraDBCluster");
+                        assertThat(service.getName()).isEqualTo("mysql");
                     });
                 });
             });

@@ -1,4 +1,3 @@
-
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,17 +19,20 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithServiceBindingTest {
+public class KubernetesWithSemiAutoPostgresBindingTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-service-binding")
+            .setApplicationName("kubernetes-with-semi-auto-postgres-binding")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-with-service-binding.properties")
+            .withConfigurationResource("kubernetes-with-semi-auto-postgres-binding.properties")
             .setLogFileName("k8s.log")
             .setForcedDependencies(
-                    Arrays.asList(new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
+                    Arrays.asList(
+                            new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
+                            new AppArtifact("io.quarkus", "quarkus-jdbc-postgresql", Version.getVersion()),
+                            new AppArtifact("io.quarkus", "quarkus-datasource", Version.getVersion()),
                             new AppArtifact("io.quarkus", "quarkus-kubernetes-service-binding", Version.getVersion())));
 
     @ProdBuildResults
@@ -48,7 +50,7 @@ public class KubernetesWithServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-service-binding");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-semi-auto-postgres-binding");
                 });
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
@@ -62,7 +64,7 @@ public class KubernetesWithServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-service-binding-my-db");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-semi-auto-postgres-binding-postgresql");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {
@@ -72,10 +74,10 @@ public class KubernetesWithServiceBindingTest {
                     });
 
                     assertThat(spec.getServices()).hasOnlyOneElementSatisfying(service -> {
-                        assertThat(service.getGroup()).isEqualTo("apps");
-                        assertThat(service.getVersion()).isEqualTo("v1");
-                        assertThat(service.getKind()).isEqualTo("Deployment");
-                        assertThat(service.getName()).isEqualTo("my-postgres");
+                        assertThat(service.getGroup()).isEqualTo("my.custom-operator.com");
+                        assertThat(service.getVersion()).isEqualTo("v1alpha1");
+                        assertThat(service.getKind()).isEqualTo("Postgres");
+                        assertThat(service.getName()).isEqualTo("postgresql");
                     });
                 });
             });

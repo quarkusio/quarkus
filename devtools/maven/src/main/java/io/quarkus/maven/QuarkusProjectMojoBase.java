@@ -95,7 +95,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null) {
             try {
                 quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(), baseDir(),
-                        project.getModel().getProperties(), artifactResolver(), getMessageWriter(), null);
+                        project.getModel().getProperties(), artifactResolver(), catalogArtifactResolver(), getMessageWriter(),
+                        null);
             } catch (RegistryResolutionException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus Maven extension manager", e);
             }
@@ -129,13 +130,13 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                 throw new MojoExecutionException("Failed to resolve the Quarkus extension catalog", e);
             }
         }
-        return ToolsUtils.mergePlatforms(collectImportedPlatforms(), artifactResolver());
+        return ToolsUtils.mergePlatforms(collectImportedPlatforms(), catalogArtifactResolver());
     }
 
     protected ExtensionCatalogResolver getExtensionCatalogResolver() throws MojoExecutionException {
         if (catalogResolver == null) {
             try {
-                catalogResolver = QuarkusProjectHelper.getCatalogResolver(artifactResolver(), getMessageWriter());
+                catalogResolver = QuarkusProjectHelper.getCatalogResolver(catalogArtifactResolver(), getMessageWriter());
             } catch (RegistryResolutionException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus extension resolver", e);
             }
@@ -166,21 +167,26 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         return importedPlatforms;
     }
 
-    private MavenArtifactResolver artifactResolver() throws MojoExecutionException {
-        if (artifactResolver == null) {
-            try {
-                artifactResolver = MavenArtifactResolver.builder()
-                        .setRepositorySystem(repoSystem)
-                        .setRepositorySystemSession(
-                                getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
-                        .setRemoteRepositories(repos)
-                        .setRemoteRepositoryManager(remoteRepositoryManager)
-                        .build();
-            } catch (BootstrapMavenException e) {
-                throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
-            }
-        }
+    protected MavenArtifactResolver catalogArtifactResolver() throws MojoExecutionException {
         return artifactResolver;
+    }
+
+    protected MavenArtifactResolver artifactResolver() throws MojoExecutionException {
+        return artifactResolver == null ? artifactResolver = initArtifactResolver() : artifactResolver;
+    }
+
+    protected MavenArtifactResolver initArtifactResolver() throws MojoExecutionException {
+        try {
+            return MavenArtifactResolver.builder()
+                    .setRepositorySystem(repoSystem)
+                    .setRepositorySystemSession(
+                            getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
+                    .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepositoryManager)
+                    .build();
+        } catch (BootstrapMavenException e) {
+            throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
+        }
     }
 
     private List<ArtifactCoords> collectImportedPlatforms()

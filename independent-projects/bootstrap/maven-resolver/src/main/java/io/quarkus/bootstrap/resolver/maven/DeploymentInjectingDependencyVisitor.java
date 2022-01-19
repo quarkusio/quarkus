@@ -208,6 +208,9 @@ public class DeploymentInjectingDependencyVisitor {
                 }
                 if (extDep != null) {
                     newRtDep.setRuntimeExtensionArtifact();
+                    if (collectingTopExtensionRuntimeNodes) {
+                        newRtDep.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
+                    }
                 }
                 appBuilder.addDependency(newRtDep.build());
             }

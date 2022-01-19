@@ -34,6 +34,8 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public abstract class QuarkusPlatformTask extends QuarkusTask {
 
+    private volatile ExtensionCatalogResolver catalogResolver;
+
     QuarkusPlatformTask(String description) {
         super(description);
     }
@@ -41,13 +43,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     private ExtensionCatalog extensionsCatalog(boolean limitExtensionsToImportedPlatforms, MessageWriter log) {
         final List<ArtifactCoords> platforms = importedPlatforms();
         ExtensionCatalogResolver catalogResolver;
-        try {
-            catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                    ? QuarkusProjectHelper.getCatalogResolver(log)
-                    : ExtensionCatalogResolver.empty();
-        } catch (RegistryResolutionException e) {
-            throw new RuntimeException("Failed to initialize Quarkus extension catalog resolver", e);
-        }
+        catalogResolver = getExtensionCatalogResolver(log);
         if (catalogResolver.hasRegistries() && !limitExtensionsToImportedPlatforms) {
             try {
                 return catalogResolver.resolveExtensionCatalog(platforms);
@@ -56,6 +52,19 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
             }
         }
         return ToolsUtils.mergePlatforms(platforms, extension().getAppModelResolver());
+    }
+
+    protected ExtensionCatalogResolver getExtensionCatalogResolver(MessageWriter log) {
+        if (catalogResolver == null) {
+            try {
+                catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                        ? QuarkusProjectHelper.getCatalogResolver(log)
+                        : ExtensionCatalogResolver.empty();
+            } catch (RegistryResolutionException e) {
+                throw new RuntimeException("Failed to initialize Quarkus extension catalog resolver", e);
+            }
+        }
+        return catalogResolver;
     }
 
     protected List<ArtifactCoords> importedPlatforms() {

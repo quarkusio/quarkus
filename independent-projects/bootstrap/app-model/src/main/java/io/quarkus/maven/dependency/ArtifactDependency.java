@@ -14,8 +14,15 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
 
     public ArtifactDependency(String groupId, String artifactId, String classifier, String type, String version) {
         super(groupId, artifactId, classifier, type, version);
-        this.scope = "copmpile";
+        this.scope = "compile";
         flags = 0;
+    }
+
+    public ArtifactDependency(String groupId, String artifactId, String classifier, String type, String version, String scope,
+            boolean optional) {
+        super(groupId, artifactId, classifier, type, version);
+        this.scope = scope;
+        flags = optional ? DependencyFlags.OPTIONAL : 0;
     }
 
     public ArtifactDependency(ArtifactCoords coords, int... flags) {
@@ -79,7 +86,7 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
             return true;
         if (!super.equals(obj))
             return false;
-        if (getClass() != obj.getClass())
+        if (!(obj instanceof ArtifactDependency))
             return false;
         ArtifactDependency other = (ArtifactDependency) obj;
         return flags == other.flags && Objects.equals(scope, other.scope);
@@ -87,6 +94,6 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
 
     @Override
     public String toString() {
-        return "[" + toGACTVString() + " " + scope + "]";
+        return "[" + toGACTVString() + " " + scope + " " + flags + "]";
     }
 }

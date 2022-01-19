@@ -80,6 +80,13 @@ If JBang has already been installed, you can directly use it:
 jbang app install --fresh --force quarkus@quarkusio
 ----
 
+If you want to use a specific version, you can directly target a version:
+[source,bash]
+----
+# Create an alias in order to use a specific version
+jbang app install --name qs2.2.5 io.quarkus:quarkus-cli:2.2.5.Final:runner
+----
+
 If you have built Quarkus locally, you can use that version:
 [source,bash]
 ----

@@ -661,6 +661,21 @@ only. When deploying to production, consider using the vanilla Kubernetes manife
 NOTE: If the assumptions the Minikube extension makes don't fit your workflow, nothing prevents you from using the regular Kubernetes extension to generate Kubernetes manifests
 and apply those to your Minikube cluster.
 
+=== Deploying to Kind
+https://kind.sigs.k8s.io/[Kind] is an other popular tool used as a Kubernetes cluster for development purposes. To make the deployment to Kind
+experience as frictionless as possible, Quarkus provides the `quarkus-kind` extension. This extension can be added to a project like so:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kind</artifactId>
+</dependency>
+----
+
+The purpose of this extension is to generate Kubernetes manifests (`kind.yaml` and `kind.json`) that are tailored to Kind and also to automate the process of loading images to the cluster
+when performing container image builds. The tailor made manifests will be pretty similar (they share the same rules) with Minikube (see above).
+
 == Tuning the generated resources using application.properties
 
 The Kubernetes extension allows tuning the generated manifest, using the `application.properties` file.

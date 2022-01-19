@@ -1,10 +1,10 @@
-package io.quarkus.minikube.deployment;
+package io.quarkus.kind.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
+import static io.quarkus.kubernetes.deployment.Constants.KIND;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
-import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
 import java.util.ArrayList;
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -19,7 +20,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.util.ExecUtil;
 import io.quarkus.kubernetes.deployment.AddPortToKubernetesConfig;
 import io.quarkus.kubernetes.deployment.DevClusterHelper;
 import io.quarkus.kubernetes.deployment.KubernetesCommonHelper;
@@ -40,18 +43,17 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
-public class MinikubeProcessor {
+public class KindProcessor {
 
-    public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
-    private static final int MINIKUBE_PRIORITY = DEFAULT_PRIORITY + 20;
+    private static final int KIND_PRIORITY = DEFAULT_PRIORITY + 30;
 
     @BuildStep
-    public void checkMinikube(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+    public void checkKind(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         deploymentTargets.produce(
-                new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
-                        MINIKUBE_PRIORITY, true));
+                new KubernetesDeploymentTargetBuildItem(KIND, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
+                        KIND_PRIORITY, true));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(
@@ -61,7 +63,7 @@ public class MinikubeProcessor {
     @BuildStep
     public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
         config.getAnnotations().forEach((k, v) -> {
-            annotations.produce(new KubernetesAnnotationBuildItem(k, v, MINIKUBE));
+            annotations.produce(new KubernetesAnnotationBuildItem(k, v, KIND));
         });
     }
 
@@ -69,7 +71,7 @@ public class MinikubeProcessor {
     public void createLabels(KubernetesConfig config, BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
         config.getLabels().forEach((k, v) -> {
-            labels.produce(new KubernetesLabelBuildItem(k, v, MINIKUBE));
+            labels.produce(new KubernetesLabelBuildItem(k, v, KIND));
             imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
         });
     }
@@ -78,8 +80,8 @@ public class MinikubeProcessor {
     public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config,
             List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
-        KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
-            result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(value)));
+        KubernetesCommonHelper.combinePorts(ports, config).entrySet().forEach(e -> {
+            result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(e.getValue())));
         });
         return result;
     }
@@ -103,8 +105,19 @@ public class MinikubeProcessor {
             List<KubernetesRoleBindingBuildItem> roleBindings,
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
-        return DevClusterHelper.createDecorators(MINIKUBE, applicationInfo, outputTarget, config, packageConfig,
+        return DevClusterHelper.createDecorators(KIND, applicationInfo, outputTarget, config, packageConfig,
                 metricsConfiguration, annotations, labels, envs, baseImage, image, command, ports, livenessPath, readinessPath,
                 roles, roleBindings, customProjectRoot);
+    }
+
+    @BuildStep
+    public void postBuild(ContainerImageInfoBuildItem image, List<ContainerImageBuilderBuildItem> builders,
+            @SuppressWarnings("unused") BuildProducer<ArtifactResultBuildItem> artifactResults) {
+        boolean isLoadSupported = builders.stream().anyMatch(b -> b.getBuilder().equals("docker")
+                || b.getBuilder().equals("jib")
+                || b.getBuilder().equals("buildpack"));
+        if (isLoadSupported) {
+            ExecUtil.exec("kind", "load", "docker-image", image.getImage());
+        }
     }
 }

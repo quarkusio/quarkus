@@ -49,6 +49,7 @@ import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
@@ -131,7 +132,8 @@ public class JibProcessor {
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
             Optional<AppCDSResultBuildItem> appCDSResult,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
         Boolean buildContainerImage = containerImageConfig.isBuildExplicitlyEnabled()
                 || (buildRequest.isPresent() && !containerImageConfig.isBuildExplicitlyDisabled());
@@ -167,6 +169,7 @@ public class JibProcessor {
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
                 Map.of("container-image", container.getTargetImage().toString(), "pull-required",
                         pushContainerImage.toString())));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(JIB));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, JibBuild.class, NativeBuild.class })
@@ -178,7 +181,8 @@ public class JibProcessor {
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
             Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
         Boolean buildContainerImage = containerImageConfig.isBuildExplicitlyEnabled()
                 || (buildRequest.isPresent() && !containerImageConfig.isBuildExplicitlyDisabled());
@@ -207,6 +211,7 @@ public class JibProcessor {
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
                 Map.of("container-image", container.getTargetImage().toString(), "pull-required",
                         pushContainerImage.toString())));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(JIB));
     }
 
     private JibContainer containerize(ContainerImageConfig containerImageConfig,

@@ -25,6 +25,7 @@ import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.IsDockerWorking;
@@ -69,6 +70,7 @@ public class DockerProcessor {
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             @SuppressWarnings("unused") Optional<AppCDSResultBuildItem> appCDSResult, // ensure docker build will be performed after AppCDS creation
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
             @SuppressWarnings("unused") // used to ensure that the jar has been built
             JarBuildItem jar) {
@@ -110,6 +112,7 @@ public class DockerProcessor {
         // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
                 Map.of("container-image", builtContainerImage, "pull-required", "false")));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(DOCKER));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
@@ -121,6 +124,7 @@ public class DockerProcessor {
             OutputTargetBuildItem out,
             Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
@@ -153,6 +157,8 @@ public class DockerProcessor {
         // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
                 Map.of("container-image", builtContainerImage, "pull-required", "false")));
+
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(DOCKER));
     }
 
     private String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,

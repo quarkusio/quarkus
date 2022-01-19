@@ -64,8 +64,6 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
                 installable = false;
                 // check if any format was specified
                 boolean formatSpecified = format.isSpecified();
-                // show origins by default
-                format.useOriginsUnlessSpecified();
 
                 if (runMode.isDryRun()) {
                     return dryRunList(spec.commandLine().getHelp(), null);

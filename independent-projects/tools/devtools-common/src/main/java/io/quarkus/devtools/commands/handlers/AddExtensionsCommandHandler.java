@@ -76,7 +76,7 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
             StringBuilder sb = new StringBuilder();
             sb.append(ERROR_ICON + " Multiple extensions matching '").append(m.getKeyword()).append("'");
             m.getExtensions()
-                    .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
+                    .forEach(extension -> sb.append(System.lineSeparator()).append("     - ")
                             .append(extension.managementKey()));
             sb.append(System.lineSeparator())
                     .append("     Be more specific e.g using the exact name or the full GAV.");

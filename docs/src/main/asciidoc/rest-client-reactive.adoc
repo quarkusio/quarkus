@@ -653,6 +653,61 @@ public interface ExtensionsService {
 org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Authorization
 ----
 
+== Exception handling
+
+The MicroProfile REST Client specification introduces the `org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper` whose purpose is to convert an HTTP response to an exception.
+
+A simple example of implementing such a `ResponseExceptionMapper` for the `ExtensionsService` discussed above, could be:
+
+[source, java]
+----
+public interface MyResponseExceptionMapper implements ResponseExceptionMapper<RuntimeException> {
+
+    RuntimeException toThrowable(Response response) {
+        if (response.getStatus() == 500) {
+            throw new RuntimeException("The remote service responded with HTTP 500");
+        }
+        return null;
+    }
+}
+----
+
+`ResponseExceptionMapper` also defines the `getPriority` method which is used in order to determine the priority with which `ResponseExceptionMapper` implementations will be called (implementations with a lower value for `getPriority` will be invoked first).
+If `toThrowable` returns an exception, then that exception will be thrown. If `null` is returned, the next implementation of `ResponseExceptionMapper` in the chain will be called (if there is any).
+
+The class as written above, would not be automatically be used by any REST Client. To make it available to every REST Client of the application, the class needs to be annotated with `@Provider` (as long as `quarkus.rest-client-reactive.provider-autodiscovery` is not set to `false`).
+Alternatively, if the exception handling class should only apply to specific REST Client interfaces, you can either annotate the interfaces with `@RegisterProvider(MyResponseExceptionMapper.class)`, or register it using configuration using the `providers` property of the proper `quarkus.rest-client` configuration group.
+
+=== Using @ClientExceptionMapper
+
+A simpler way to convert HTTP response codes of 400 or above is to use the `@ClientExceptionMapper` annotation.
+
+For the `ExtensionsService` REST Client interface defined above, an example use of `@ClientExceptionMapper` would be:
+
+[source, java]
+----
+@Path("/extensions")
+@RegisterRestClient
+public interface ExtensionsService {
+
+    @GET
+    Set<Extension> getById(@QueryParam("id") String id);
+
+    @GET
+    CompletionStage<Set<Extension>> getByIdAsync(@QueryParam("id") String id);
+
+    @ClientExceptionMapper
+    static RuntimeException toException(Response response) {
+        if (response.getStatus() == 500) {
+            throw new RuntimeException("The remote service responded with HTTP 500");
+        }
+        return null;
+    }
+}
+----
+
+Naturally this handling is per REST Client. `@ClientExceptionMapper` uses the default priority if the `priority` attribute is not set and the normal rules of invoking all handlers in turn apply.
+
 == Multipart Form support
 
 REST Client Reactive support multipart messages.

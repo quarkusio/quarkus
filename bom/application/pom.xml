@@ -90,8 +90,8 @@
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <hibernate-orm.version>5.6.1.Final</hibernate-orm.version>
-        <hibernate-reactive.version>1.1.0.Final</hibernate-reactive.version>
+        <hibernate-orm.version>5.6.3.Final</hibernate-orm.version>
+        <hibernate-reactive.version>1.1.2.Final</hibernate-reactive.version>
         <hibernate-validator.version>6.2.1.Final</hibernate-validator.version>
         <hibernate-search.version>6.0.8.Final</hibernate-search.version>
         <narayana.version>5.12.4.Final</narayana.version>
@@ -152,7 +152,7 @@
         <awaitility.version>4.1.1</awaitility.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
         <flyway.version>8.1.0</flyway.version>
-        <yasson.version>1.0.10</yasson.version>
+        <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.6.2</liquibase.version>
         <liquibase-mongodb.version>4.6.2</liquibase-mongodb.version>
         <snakeyaml.version>1.29</snakeyaml.version>

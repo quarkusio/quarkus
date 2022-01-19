@@ -80,8 +80,11 @@ public enum Ide {
             return Collections.singletonList(fileName);
         }
 
+        // we don't know the syntax for opening a file at a given line
+        // so we just open the file
         if (lineNumberArgs.isEmpty()) {
-            return Collections.singletonList(fileName + ":" + line);
+            log.debug("No syntax provided for opening the file at a given line for this IDE so we will just open the file");
+            return Collections.singletonList(fileName);
         }
 
         return lineNumberArgs.stream()

@@ -156,6 +156,7 @@ public class ConsoleProcessor {
                     List<String> command = new ArrayList<>();
                     command.add(effectiveCommand);
                     command.addAll(args);
+                    log.debugf("Opening IDE with %s", command);
                     new ProcessBuilder(command).redirectOutput(ProcessBuilder.Redirect.DISCARD)
                             .redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(10,
                                     TimeUnit.SECONDS);

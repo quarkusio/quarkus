@@ -31,6 +31,20 @@ class ClientExceptionMapperHandler {
         this.classOutput = classOutput;
     }
 
+    /**
+     * Generates an implementation of {@link ResponseExceptionMapper} that looks something like:
+     *
+     * <pre>
+     * {@code
+     *  public class SomeService_map_ResponseExceptionMapper_a8fb70beeef2a54b80151484d109618eed381626 implements ResponseExceptionMapper {
+     *      public Throwable toThrowable(Response var1) {
+     *          // simply call the static method of interface
+     *          return SomeService.map(var1);
+     *      }
+     *
+     * }
+     * </pre>
+     */
     Result generateResponseExceptionMapper(AnnotationInstance instance) {
         if (!DotNames.CLIENT_EXCEPTION_MAPPER.equals(instance.name())) {
             throw new IllegalArgumentException(

@@ -15,8 +15,6 @@
 
     <properties>
         <oracledb.url>jdbc:oracle:thin:@localhost:1521/XE</oracledb.url>
-        <!-- See https://hub.docker.com/r/gvenzl/oracle-xe -->
-        <oracle.image>gvenzl/oracle-xe:21.3.0-slim</oracle.image>
     </properties>
 
     <dependencies>

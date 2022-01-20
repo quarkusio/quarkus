@@ -14,7 +14,6 @@
     <description>Hibernate Reactive related tests running with the PostgreSQL database</description>
 
     <properties>
-        <postgres.image>postgres:14.1</postgres.image>
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
     </properties>
 

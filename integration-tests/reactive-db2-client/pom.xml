@@ -16,7 +16,6 @@
 
     <properties>
         <reactive-db2.url>vertx-reactive:db2://localhost:50000/hreact</reactive-db2.url>
-        <db2.image>ibmcom/db2:11.5.5.0</db2.image>
     </properties>
 
     <dependencies>

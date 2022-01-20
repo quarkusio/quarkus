@@ -240,6 +240,9 @@ quarkus.mongodb.connection-string = mongodb://localhost:27017
 
 If you need more configuration properties, there is a full list at the end of this guide.
 
+WARNING: By default Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to log4shell.
+Because the `mongo+srv` protocol often used to connect to MongoDB requires JNDI, this protection is automatically disabled when using the MongoDB client extension.
+
 [[dev-services]]
 === Dev Services (Configuration Free Databases)
 
@@ -663,9 +666,7 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 
 [WARNING]
 ====
-Currently, Quarkus doesn't support the `mongodb+srv` protocol in native mode.
-
-link:https://docs.mongodb.com/manual/core/security-client-side-encryption/[Client-Side Field Level Encryption] is also not supported in native mode.
+Currently, Quarkus doesn't support link:https://docs.mongodb.com/manual/core/security-client-side-encryption/[Client-Side Field Level Encryption] in native mode.
 ====
 
 [TIP]

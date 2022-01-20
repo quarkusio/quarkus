@@ -128,9 +128,11 @@ public class ClassPathUtils {
                 throw new RuntimeException("Failed to create a URL for '" + file.substring(0, exclam) + "'", e);
             }
             try (FileSystem jarFs = ZipUtils.newFileSystem(jar)) {
-                Path localPath = jarFs.getPath("/");
+                Path localPath;
                 if (exclam >= 0) {
-                    localPath = localPath.resolve(file.substring(exclam + 1));
+                    localPath = jarFs.getPath(file.substring(exclam + 1));
+                } else {
+                    localPath = jarFs.getPath("/");
                 }
                 return function.apply(localPath);
             } catch (IOException e) {

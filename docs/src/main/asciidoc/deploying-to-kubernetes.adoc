@@ -1126,7 +1126,11 @@ At the moment no additional options are provided for further customization.
 == Using existing resources
 
 Sometimes it's desirable to either provide additional resources (e.g. a ConfigMap, a Secret, a Deployment for a database etc) or provide custom ones that will be used as a `base` for the generation process.
-Those resources can be added under `src/main/kubernetes` directory and can be named after the target environment (e.g. kubernetes.json, openshift.json, knative.json, or the yml equivalents). Each of these files may contain one or more Kubernetes resources.
+Those resources can be added under `src/main/kubernetes` directory and can be named after the target environment (e.g. kubernetes.json, openshift.json, knative.json, or the yml equivalents). The correlation between provided and generated files is done by file name.
+So, a `kubernetes.json`/`kubernetes.yml` file added in `src/main/kubernetes` will only affect the generated `kubernetes.json`/`kubernetes.yml`. An `openshift.json`/`openshift.yml` file added in `src/main/kubernetes` will only affect the generated `openshift.json`/`openshift.yml`. 
+A `knative.json`/`knative.yml` file added in `src/main/kubernetes` will only affect the generated `knative.json`/`knative.yml` and so on. The provided file may be either in json or yaml format and may contain one or more resources. These resources will end up in both generated formats (json and yaml). For example, a secret added in `src/main/kubernetes/kubernetes.yml` will be added to both the generated `kubernetes.yml` and `kubernetes.json`.
+
+Note: At the time of writing there is no mechanism in place that allows a one to many relationship between provided and generated files. Minikube is not an exception to the rule above, so if you want to customize the generated minikube manifests, the file placed under `src/main/kubernetes` will have to be named `minikube.json` or `minikube.yml` (naming it `kubernetes.yml` or `kubernetes.json` will result in having only the generated `kubernetes.yml` and `kubernetes.json` affected).
 
 Any resource found will be added in the generated manifests. Global modifications (e.g. labels, annotations etc) will also be applied to those resources.
 If one of the provided resources has the same name as one of the generated ones, then the generated resource will be created on top of the provided resource, respecting existing content when possible (e.g. existing labels, annotations, environment variables, mounts, replicas etc).

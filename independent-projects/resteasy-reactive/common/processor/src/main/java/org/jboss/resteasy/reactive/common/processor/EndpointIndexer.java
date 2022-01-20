@@ -553,9 +553,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
 
-            Type nonAsyncReturnType = getNonAsyncReturnType(methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
+            Type methodContextReturnTypeOrReturnType = methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
                     ? (Type) methodContext.get(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
-                    : currentMethodInfo.returnType());
+                    : currentMethodInfo.returnType();
+            Type nonAsyncReturnType = getNonAsyncReturnType(methodContextReturnTypeOrReturnType);
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
             String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
@@ -622,7 +623,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             toClassName(currentMethodInfo.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?
                     .setReturnType(
-                            determineReturnType(currentMethodInfo, typeArgMapper, currentClassInfo, actualEndpointInfo, index));
+                            determineReturnType(methodContextReturnTypeOrReturnType, typeArgMapper, currentClassInfo,
+                                    actualEndpointInfo, index));
 
             if (httpMethod == null) {
                 handleClientSubResource(method, currentMethodInfo, index);
@@ -686,13 +688,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return true;
     }
 
-    private String determineReturnType(MethodInfo info, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
+    private String determineReturnType(Type returnType, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, IndexView index) {
-        Type type = info.returnType();
-        if (type.kind() == Type.Kind.TYPE_VARIABLE) {
-            type = resolveTypeVariable(type.asTypeVariable(), currentClassInfo, actualEndpointInfo, index);
+        if (returnType.kind() == Type.Kind.TYPE_VARIABLE) {
+            returnType = resolveTypeVariable(returnType.asTypeVariable(), currentClassInfo, actualEndpointInfo, index);
         }
-        return AsmUtil.getSignature(type, typeArgMapper);
+        return AsmUtil.getSignature(returnType, typeArgMapper);
     }
 
     protected abstract boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters,

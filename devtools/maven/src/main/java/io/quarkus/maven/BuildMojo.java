@@ -117,6 +117,7 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                 System.setProperty(PACKAGE_TYPE_PROP, packageType);
                 propertiesToClear.add(PACKAGE_TYPE_PROP);
             }
+
             if (!propertiesToClear.isEmpty() && mavenSession().getRequest().getDegreeOfConcurrency() > 1) {
                 getLog().warn("*****************************************************************");
                 getLog().warn("* Your build is requesting parallel execution, but the project  *");
@@ -127,7 +128,6 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                 getLog().warn("*****************************************************************");
             }
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
-
                 AugmentAction action = curatedApplication.createAugmentor();
                 AugmentResult result = action.createProductionApplication();
 
@@ -179,5 +179,4 @@ public class BuildMojo extends QuarkusBootstrapMojo {
         super.setLog(log);
         MojoLogger.delegate = log;
     }
-
 }

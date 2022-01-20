@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +33,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
@@ -42,6 +44,9 @@ import io.smallrye.common.expression.Expression;
 
 @Component(role = QuarkusBootstrapProvider.class, instantiationStrategy = "singleton")
 public class QuarkusBootstrapProvider implements Closeable {
+
+    private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
+    private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
 
     @Requirement(role = RepositorySystem.class, optional = false)
     protected RepositorySystem repoSystem;
@@ -153,6 +158,17 @@ public class QuarkusBootstrapProvider implements Closeable {
             effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
 
+            for (Map.Entry<String, String> attribute : mojo.manifestEntries().entrySet()) {
+                effectiveProperties.put(toManifestAttributeKey(attribute.getKey()),
+                        attribute.getValue());
+            }
+            for (ManifestSection section : mojo.manifestSections()) {
+                for (Map.Entry<String, String> attribute : section.getManifestEntries().entrySet()) {
+                    effectiveProperties
+                            .put(toManifestSectionAttributeKey(section.getName(), attribute.getKey()), attribute.getValue());
+                }
+            }
+
             // Add other properties that may be required for expansion
             for (Object value : effectiveProperties.values()) {
                 for (String reference : Expression.compile((String) value, LENIENT_SYNTAX, NO_TRIM).getReferencedStrings()) {
@@ -211,6 +227,25 @@ public class QuarkusBootstrapProvider implements Closeable {
             } catch (BootstrapException e) {
                 throw new MojoExecutionException("Failed to bootstrap the application", e);
             }
+        }
+
+        private String toManifestAttributeKey(String key) throws MojoExecutionException {
+            if (key.contains("\"")) {
+                throw new MojoExecutionException("Manifest entry name " + key + " is invalid. \" characters are not allowed.");
+            }
+            return String.format("%s.\"%s\"", MANIFEST_ATTRIBUTES_PROPERTY_PREFIX, key);
+        }
+
+        private String toManifestSectionAttributeKey(String section, String key) throws MojoExecutionException {
+            if (section.contains("\"")) {
+                throw new MojoExecutionException(
+                        "Manifest section name " + section + " is invalid. \" characters are not allowed.");
+            }
+            if (key.contains("\"")) {
+                throw new MojoExecutionException("Manifest entry name " + key + " is invalid. \" characters are not allowed.");
+            }
+            return String.format("%s.\"%s\".\"%s\"", MANIFEST_SECTIONS_PROPERTY_PREFIX, section,
+                    key);
         }
 
         protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)

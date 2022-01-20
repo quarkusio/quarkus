@@ -44,10 +44,13 @@ public class GreetingResource {
 
     }
 
+    @Context
+    com.amazonaws.services.lambda.runtime.Context ctx;
+
     @GET
     @Path("context")
     @Produces(MediaType.TEXT_PLAIN)
-    public void context(@Context com.amazonaws.services.lambda.runtime.Context ctx) {
+    public void context() {
         if (ctx == null)
             throw new RuntimeException();
         if (ctx.getAwsRequestId() == null)
@@ -57,19 +60,19 @@ public class GreetingResource {
     @GET
     @Path("proxyRequestContext")
     @Produces(MediaType.TEXT_PLAIN)
-    public void proxyRequestContext(@Context APIGatewayV2HTTPEvent ctx) {
-        if (ctx == null || ctx.getRequestContext().getHttp().getMethod() == null)
+    public void proxyRequestContext(@Context APIGatewayV2HTTPEvent event) {
+        if (event == null)
             throw new RuntimeException();
     }
 
     @Inject
-    APIGatewayV2HTTPEvent event;
+    APIGatewayV2HTTPEvent injectEvent;
 
     @GET
     @Path("inject-event")
     @Produces(MediaType.TEXT_PLAIN)
     public void injectEvent() {
-        if (event == null)
+        if (injectEvent == null)
             throw new RuntimeException();
     }
 

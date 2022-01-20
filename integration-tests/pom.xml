@@ -225,6 +225,7 @@
                 <module>amazon-lambda-http</module>
                 <module>amazon-lambda-rest</module>
                 <module>amazon-lambda-http-resteasy</module>
+                <module>amazon-lambda-http-resteasy-reactive</module>
                 <module>container-image</module>
                 <module>kubernetes</module>
                 <module>kubernetes-client</module>

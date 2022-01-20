@@ -302,7 +302,7 @@ HTTP response messages and the `sam.yaml` file must configure the API Gateway to
 == Injectable AWS Context Variables
 
 If you are using RESTEasy and JAX-RS, you can inject various AWS Context variables into your JAX-RS resource classes
-using the JAX-RS `@Context` annotation.
+using the JAX-RS `@Context` annotation or anywhere else with the CDI `@Inject` annotation.
 
 For the AWS HTTP API you can inject the AWS variables `com.amazonaws.services.lambda.runtime.Context` and
 `com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent`.  Here is an example:

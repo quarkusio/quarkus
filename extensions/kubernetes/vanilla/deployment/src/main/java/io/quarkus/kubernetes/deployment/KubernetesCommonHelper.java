@@ -75,6 +75,7 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class KubernetesCommonHelper {
 
+    private static final String ANY = null;
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
     private static final String[] PROMETHEUS_ANNOTATION_TARGETS = { "Service",
             "Deployment", "DeploymentConfig" };
@@ -366,7 +367,7 @@ public class KubernetesCommonHelper {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
         config.getMounts().entrySet().forEach(e -> {
-            result.add(new DecoratorBuildItem(target, new AddMountDecorator(MountConverter.convert(e))));
+            result.add(new DecoratorBuildItem(target, new AddMountDecorator(ANY, name, MountConverter.convert(e))));
         });
 
         config.getSecretVolumes().entrySet().forEach(e -> {

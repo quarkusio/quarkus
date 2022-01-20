@@ -80,11 +80,20 @@ public final class OidcUtils {
         if (tokens.countTokens() != 1) {
             return null;
         }
+        return decodeAsJsonObject(encodedContent);
+    }
+
+    private static JsonObject decodeAsJsonObject(String encodedContent) {
         try {
             return new JsonObject(new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8));
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    public static JsonObject decodeJwtHeaders(String jwt) {
+        StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        return decodeAsJsonObject(tokens.nextToken());
     }
 
     public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {

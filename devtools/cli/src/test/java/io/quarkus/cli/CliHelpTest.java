@@ -197,4 +197,77 @@ public class CliHelpTest {
         writer.info(MessageIcons.NOK_ICON + " info");
         writer.debug("debug");
     }
+
+    @Test
+    @Order(90)
+    public void testImageHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(92)
+    public void testImageBuildHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(93)
+    public void testImageBuildDockerHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", "docker", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(94)
+    public void testImageBuildJibHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", "jib", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(95)
+    public void testImageBuildOpenshiftHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "build", "openshift", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(96)
+    public void testImagePushHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(97)
+    public void testImagePushDockerHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "docker", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(98)
+    public void testImagePushJibHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "jib", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
+    @Test
+    @Order(99)
+    public void testImagePushOpenshiftHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "image", "push", "openshift", "--help");
+        result.echoSystemOut();
+        assertThat(result.stdout).contains("Usage");
+    }
+
 }

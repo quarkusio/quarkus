@@ -612,7 +612,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private boolean isForceHttps(TenantConfigContext configContext) {
-        return configContext.oidcConfig.authentication.forceRedirectHttpsScheme;
+        return configContext.oidcConfig.authentication.forceRedirectHttpsScheme.orElse(false);
     }
 
     private Uni<Void> buildLogoutRedirectUriUni(RoutingContext context, TenantConfigContext configContext,

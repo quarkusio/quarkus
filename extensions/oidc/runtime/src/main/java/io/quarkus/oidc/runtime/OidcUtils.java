@@ -335,6 +335,9 @@ public final class OidcUtils {
         if (tenant.authentication.scopes.isEmpty()) {
             tenant.authentication.scopes = provider.authentication.scopes;
         }
+        if (tenant.authentication.forceRedirectHttpsScheme.isEmpty()) {
+            tenant.authentication.forceRedirectHttpsScheme = provider.authentication.forceRedirectHttpsScheme;
+        }
 
         // credentials
         if (tenant.credentials.clientSecret.method.isEmpty()) {

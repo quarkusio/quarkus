@@ -94,12 +94,9 @@ public class OidcUtilsTest {
         assertEquals("https://facebook.com/dialog/oauth/", config.getAuthorizationPath().get());
         assertEquals("https://www.facebook.com/.well-known/oauth/openid/jwks/", config.getJwksPath().get());
         assertEquals("https://graph.facebook.com/v12.0/oauth/access_token", config.getTokenPath().get());
-        assertEquals("https://graph.facebook.com/me/?fields=id,name,email,first_name,last_name",
-                config.getUserInfoPath().get());
 
-        assertFalse(config.authentication.idTokenRequired.get());
-        assertTrue(config.authentication.userInfoRequired.get());
         assertEquals(List.of("email", "public_profile"), config.authentication.scopes.get());
+        assertTrue(config.authentication.forceRedirectHttpsScheme.get());
     }
 
     @Test
@@ -113,11 +110,9 @@ public class OidcUtilsTest {
         tenant.setAuthorizationPath("authorization");
         tenant.setJwksPath("jwks");
         tenant.setTokenPath("tokens");
-        tenant.setUserInfoPath("userinfo");
 
-        tenant.authentication.setIdTokenRequired(true);
-        tenant.authentication.setUserInfoRequired(false);
         tenant.authentication.setScopes(List.of("write"));
+        tenant.authentication.setForceRedirectHttpsScheme(false);
 
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
 
@@ -126,12 +121,10 @@ public class OidcUtilsTest {
         assertTrue(config.isDiscoveryEnabled().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("authorization", config.getAuthorizationPath().get());
+        assertFalse(config.getAuthentication().isForceRedirectHttpsScheme().get());
         assertEquals("jwks", config.getJwksPath().get());
         assertEquals("tokens", config.getTokenPath().get());
-        assertEquals("userinfo", config.getUserInfoPath().get());
 
-        assertTrue(config.authentication.idTokenRequired.get());
-        assertFalse(config.authentication.userInfoRequired.get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
     }
 
@@ -186,6 +179,7 @@ public class OidcUtilsTest {
         tenant.setAuthServerUrl("http://localhost/wiremock");
         tenant.getToken().setIssuer("http://localhost/wiremock");
         tenant.authentication.setScopes(List.of("write"));
+        tenant.authentication.setForceRedirectHttpsScheme(false);
 
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MICROSOFT));
 
@@ -194,6 +188,7 @@ public class OidcUtilsTest {
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
         assertEquals("http://localhost/wiremock", config.getToken().getIssuer().get());
+        assertFalse(config.authentication.forceRedirectHttpsScheme.get());
     }
 
     @Test
@@ -209,6 +204,7 @@ public class OidcUtilsTest {
         assertEquals(Method.POST_JWT, config.credentials.clientSecret.method.get());
         assertEquals("https://appleid.apple.com/", config.credentials.jwt.audience.get());
         assertEquals(SignatureAlgorithm.ES256.getAlgorithm(), config.credentials.jwt.signatureAlgorithm.get());
+        assertTrue(config.authentication.forceRedirectHttpsScheme.get());
     }
 
     @Test

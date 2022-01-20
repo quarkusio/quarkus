@@ -24,6 +24,39 @@ open class ResourceTest {
     }
 
     @Test
+    fun testSuspendGet() {
+        given()
+            .`when`().get("/suspend")
+            .then()
+            .statusCode(200)
+            .body(`is`(
+                """
+                    {
+                      "name": "Jim Halpert",
+                      "defaulted": "hi there!"
+                    }""".trimIndent()
+            ))
+    }
+
+    @Test
+    fun testSuspendGetList() {
+        given()
+            .`when`().get("/suspendList")
+            .then()
+            .statusCode(200)
+            .body(`is`(
+                """
+[
+  {
+    "name": "Jim Halpert",
+    "defaulted": "hi there!"
+  }
+]
+""".trimIndent()
+            ))
+    }
+
+    @Test
     fun testPost() {
         given()
             .body("{\"name\":\"Pam Beasley\"}")

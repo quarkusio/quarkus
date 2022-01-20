@@ -17,6 +17,18 @@ class GreetingResource {
         return Person("Jim Halpert")
     }
 
+    @Path("suspend")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    suspend fun suspendHello(): Person {
+        return Person("Jim Halpert")
+    }
+
+    @Path("suspendList")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    suspend fun suspendHelloList() = listOf(Person("Jim Halpert"))
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

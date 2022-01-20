@@ -293,16 +293,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             builder.addBannedElement(new MemoryClassPathElement(banned, true));
 
             for (ResolvedDependency dependency : appModel.getDependencies()) {
-                if (!dependency.isRuntimeCp() ||
-                        isHotReloadable(dependency, hotReloadPaths) ||
-                        configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
-                    continue;
-                }
-                if (!flatTestClassPath && dependency.isReloadable()
-                        && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
-                    if (dependency.getType().equals(ArtifactCoords.TYPE_JAR)) {
-                        builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromDependency(dependency)));
-                    }
+                if (!dependency.isRuntimeCp()
+                        || isHotReloadable(dependency, hotReloadPaths)
+                        || configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())
+                        || !flatTestClassPath && dependency.isReloadable()
+                                && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
                     continue;
                 }
 

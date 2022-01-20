@@ -4,6 +4,7 @@ import static io.quarkus.deployment.Feature.GRPC_SERVER;
 import static io.quarkus.grpc.deployment.GrpcDotNames.BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
+import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 import static java.util.Arrays.asList;
 
 import java.lang.reflect.Modifier;
@@ -384,6 +385,11 @@ public class GrpcServerProcessor {
         // let's gather all the non-abstract, non-global interceptors, from these we'll filter out ones used per-service ones
         // the rest, if anything stays, should be logged as problematic
         Set<String> superfluousInterceptors = new HashSet<>(interceptors.nonGlobalInterceptors);
+
+        // Remove the metrics interceptors
+        for (String MICROMETER_INTERCEPTOR : MICROMETER_INTERCEPTORS) {
+            superfluousInterceptors.remove(MICROMETER_INTERCEPTOR);
+        }
 
         List<AnnotationInstance> found = new ArrayList<>(index.getAnnotations(GrpcDotNames.REGISTER_INTERCEPTOR));
         for (AnnotationInstance annotation : index.getAnnotations(GrpcDotNames.REGISTER_INTERCEPTORS)) {

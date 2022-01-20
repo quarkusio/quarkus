@@ -7,7 +7,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.Test;
 
-import javax.enterprise.inject.Any;
 import javax.inject.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class MyReactiveMessagingApplicationTest {
 
     @Inject
-    @Any
     MyReactiveMessagingApplication application;
 
     @Test

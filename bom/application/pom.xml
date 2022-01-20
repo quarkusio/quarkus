@@ -108,7 +108,7 @@
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>1.18.2.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>1.18.3.Final</wildfly-elytron.version>
         <jboss-threads.version>3.4.2.Final</jboss-threads.version>
         <vertx.version>4.2.2</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>

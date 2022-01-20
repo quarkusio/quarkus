@@ -45,6 +45,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.AllowJNDIBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -71,6 +72,12 @@ public class MongoClientProcessor {
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
 
     private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
+
+    @BuildStep
+    AllowJNDIBuildItem enableJndi() {
+        //unfortunately mongo+srv protocol needs JNDI
+        return new AllowJNDIBuildItem();
+    }
 
     @BuildStep
     AdditionalIndexedClassesBuildItem includeBsonTypesToIndex() {

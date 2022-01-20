@@ -18,7 +18,6 @@ public class GraphQLClientConfig {
 
     /**
      * HTTP headers to add when communicating with the target GraphQL service.
-     * Right now, this only works for the dynamic client.
      */
     @ConfigItem(name = "header")
     public Map<String, String> headers;

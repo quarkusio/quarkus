@@ -10,7 +10,7 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
-import org.jboss.resteasy.reactive.RestSseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.smallrye.common.annotation.Blocking;
@@ -43,7 +43,7 @@ public class SseResource {
     @Path("json")
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @RestSseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public void sseJson(Sse sse, SseEventSink sink) throws IOException {
         if (sink == null) {
             throw new IllegalStateException("No client connected.");
@@ -60,7 +60,7 @@ public class SseResource {
     @Path("blocking/json")
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @RestSseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public void blockingSseJson(Sse sse, SseEventSink sink) throws IOException {
         if (sink == null) {
             throw new IllegalStateException("No client connected.");
@@ -94,7 +94,7 @@ public class SseResource {
     @Path("json/multi")
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @RestSseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiJson() {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));
     }
@@ -109,7 +109,7 @@ public class SseResource {
     @Path("ndjson/multi")
     @GET
     @Produces(RestMediaType.APPLICATION_NDJSON)
-    @RestSseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiNdJson() {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));
     }
@@ -117,7 +117,7 @@ public class SseResource {
     @Path("stream-json/multi")
     @GET
     @Produces(RestMediaType.APPLICATION_STREAM_JSON)
-    @RestSseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiStreamJson() {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));
     }

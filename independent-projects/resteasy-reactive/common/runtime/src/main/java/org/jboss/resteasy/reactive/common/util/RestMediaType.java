@@ -5,14 +5,14 @@ import javax.ws.rs.core.MediaType;
 /**
  * Extended media types in Resteasy Reactive.
  */
-public final class RestMediaType {
+public class RestMediaType extends MediaType {
 
     public static final String APPLICATION_NDJSON = "application/x-ndjson";
-    public static final MediaType APPLICATION_NDJSON_TYPE = new MediaType("application", "x-ndjson");
+    public static final RestMediaType APPLICATION_NDJSON_TYPE = new RestMediaType("application", "x-ndjson");
     public static final String APPLICATION_STREAM_JSON = "application/stream+json";
-    public static final MediaType APPLICATION_STREAM_JSON_TYPE = new MediaType("application", "stream+json");
+    public static final RestMediaType APPLICATION_STREAM_JSON_TYPE = new RestMediaType("application", "stream+json");
 
-    private RestMediaType() {
-
+    public RestMediaType(String type, String subtype) {
+        super(type, subtype);
     }
 }

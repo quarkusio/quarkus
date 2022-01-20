@@ -49,6 +49,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_SSE_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_STREAM_ELEMENT_TYPE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
@@ -329,15 +330,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         String[] classProduces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, CONSUMES));
 
-        String classSseElementType = null;
-        AnnotationInstance classSseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentClassInfo,
-                REST_SSE_ELEMENT_TYPE);
-        if (classSseElementTypeAnnotation != null) {
-            classSseElementType = classSseElementTypeAnnotation.value().asString();
-        }
+        String classStreamElementType = getStreamAnnotationValue(currentClassInfo);
 
         BasicResourceClassInfo basicResourceClassInfo = new BasicResourceClassInfo(resourceClassPath, classProduces,
-                classConsumes, pathParameters, classSseElementType);
+                classConsumes, pathParameters, classStreamElementType);
 
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
 
@@ -564,19 +560,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             produces = applyDefaultProduces(produces, nonAsyncReturnType);
             produces = addDefaultCharsets(produces);
 
-            String sseElementType = basicResourceClassInfo.getSseElementType();
-            AnnotationInstance sseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentMethodInfo,
-                    REST_SSE_ELEMENT_TYPE);
-            if (sseElementTypeAnnotation != null) {
-                sseElementType = sseElementTypeAnnotation.value().asString();
+            String streamElementType = basicResourceClassInfo.getStreamElementType();
+            String streamElementTypeInMethod = getStreamAnnotationValue(currentMethodInfo);
+            if (streamElementTypeInMethod != null) {
+                streamElementType = streamElementTypeInMethod;
             }
+
             boolean returnsMultipart = false;
             if (produces != null && produces.length == 1) {
-                if (sseElementType == null && MediaType.SERVER_SENT_EVENTS.equals(produces[0])) {
+                if (streamElementType == null && MediaType.SERVER_SENT_EVENTS.equals(produces[0])) {
                     // Handle server sent events responses
                     String[] defaultProducesForType = applyAdditionalDefaults(nonAsyncReturnType);
                     if (defaultProducesForType.length == 1) {
-                        sseElementType = defaultProducesForType[0];
+                        streamElementType = defaultProducesForType[0];
                     }
                 } else if (MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
                     // Handle multipart form data responses
@@ -615,7 +611,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setBlocking(blocking)
                     .setSuspended(suspended)
                     .setSse(sse)
-                    .setSseElementType(sseElementType)
+                    .setStreamElementType(streamElementType)
                     .setFormParamRequired(formParamRequired)
                     .setMultipart(multipart)
                     .setParameters(methodParameters)
@@ -644,6 +640,25 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected void handleClientSubResource(ResourceMethod resourceMethod, MethodInfo method, IndexView index) {
 
+    }
+
+    private String getStreamAnnotationValue(AnnotationTarget target) {
+        String value = getAnnotationValueAsString(target, REST_STREAM_ELEMENT_TYPE);
+        if (value == null) {
+            value = getAnnotationValueAsString(target, REST_SSE_ELEMENT_TYPE);
+        }
+
+        return value;
+    }
+
+    private String getAnnotationValueAsString(AnnotationTarget target, DotName annotationType) {
+        String value = null;
+        AnnotationInstance annotation = getAnnotationStore().getAnnotation(target, annotationType);
+        if (annotation != null) {
+            value = annotation.value().asString();
+        }
+
+        return value;
     }
 
     private boolean isBlocking(MethodInfo info, BlockingDefault defaultValue) {
@@ -1375,15 +1390,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private final String[] produces;
         private final String[] consumes;
         private final Set<String> pathParameters;
-        private final String sseElementType;
+        private final String streamElementType;
 
         public BasicResourceClassInfo(String path, String[] produces, String[] consumes, Set<String> pathParameters,
-                String sseElementType) {
+                String streamElementType) {
             this.path = path;
             this.produces = produces;
             this.consumes = consumes;
             this.pathParameters = pathParameters;
-            this.sseElementType = sseElementType;
+            this.streamElementType = streamElementType;
         }
 
         public String getPath() {
@@ -1402,8 +1417,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return pathParameters;
         }
 
-        public String getSseElementType() {
-            return sseElementType;
+        public String getStreamElementType() {
+            return streamElementType;
         }
     }
 

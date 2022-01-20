@@ -32,7 +32,7 @@ public class RuntimeResource {
     private final ResteasyReactiveResourceInfo lazyMethod;
     private final Map<String, Integer> pathParameterIndexes;
     private final Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score;
-    private final MediaType sseElementType;
+    private final MediaType streamElementType;
     private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
@@ -42,7 +42,7 @@ public class RuntimeResource {
             Class<?>[] parameterTypes,
             Type returnType, boolean blocking, Class<?> resourceClass, ResteasyReactiveResourceInfo lazyMethod,
             Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score,
-            MediaType sseElementType,
+            MediaType streamElementType,
             Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers) {
         this.httpMethod = httpMethod;
         this.path = path;
@@ -60,7 +60,7 @@ public class RuntimeResource {
         this.lazyMethod = lazyMethod;
         this.pathParameterIndexes = pathParameterIndexes;
         this.score = score;
-        this.sseElementType = sseElementType;
+        this.streamElementType = streamElementType;
         this.classExceptionMappers = classExceptionMappers;
     }
 
@@ -120,13 +120,13 @@ public class RuntimeResource {
         return new ResteasyReactiveSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
     }
 
-    public MediaType getSseElementType() {
-        return sseElementType;
+    public MediaType getStreamElementType() {
+        return streamElementType;
     }
 
     /**
      * The @Path that is present on the class itself
-     * 
+     *
      * @return
      */
     public URITemplate getClassPath() {

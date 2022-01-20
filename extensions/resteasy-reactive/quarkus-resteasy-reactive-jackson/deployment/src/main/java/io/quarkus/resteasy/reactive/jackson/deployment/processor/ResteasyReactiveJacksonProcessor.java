@@ -23,6 +23,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.jboss.resteasy.reactive.server.util.MethodId;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -137,15 +138,18 @@ public class ResteasyReactiveJacksonProcessor {
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(getJacksonMessageBodyWriter(applicationNeedsSpecialJacksonFeatures),
                         Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON,
+                                RestMediaType.APPLICATION_STREAM_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(VertxJsonArrayMessageBodyWriter.class.getName(),
                         JsonArray.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON,
+                                RestMediaType.APPLICATION_STREAM_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(VertxJsonObjectMessageBodyWriter.class.getName(),
                         JsonObject.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON,
+                                RestMediaType.APPLICATION_STREAM_JSON)));
     }
 
     private String getJacksonMessageBodyWriter(boolean applicationNeedsSpecialJacksonFeatures) {

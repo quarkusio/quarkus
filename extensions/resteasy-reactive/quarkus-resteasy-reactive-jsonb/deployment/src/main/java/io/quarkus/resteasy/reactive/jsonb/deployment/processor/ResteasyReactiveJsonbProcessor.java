@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.jboss.resteasy.reactive.server.jsonb.JsonbMessageBodyReader;
 import org.jboss.resteasy.reactive.server.jsonb.JsonbMessageBodyWriter;
 
@@ -53,7 +54,7 @@ public class ResteasyReactiveJsonbProcessor {
         additionalReaders.produce(new MessageBodyReaderBuildItem(JsonbMessageBodyReader.class.getName(), Object.class.getName(),
                 Collections.singletonList(MediaType.APPLICATION_JSON)));
         additionalWriters.produce(new MessageBodyWriterBuildItem(JsonbMessageBodyWriter.class.getName(), Object.class.getName(),
-                Collections.singletonList(MediaType.APPLICATION_JSON)));
+                List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON, RestMediaType.APPLICATION_STREAM_JSON)));
     }
 
     @BuildStep

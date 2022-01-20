@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.jsonb.deployment.test.sse;
+package io.quarkus.resteasy.reactive.jackson.deployment.test.sse;
 
 import java.io.IOException;
 
@@ -21,7 +21,7 @@ public class SseResource {
 
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    public void sse(Sse sse, SseEventSink sink) throws IOException {
+    public void sse(Sse sse, SseEventSink sink) {
         if (sink == null) {
             throw new IllegalStateException("No client connected.");
         }

@@ -50,6 +50,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 
 import org.apache.http.entity.ContentType;
@@ -131,6 +132,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -898,8 +900,22 @@ public class JaxrsClientReactiveProcessor {
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
                             formParams = createIfAbsent(methodCreator, formParams);
-                            methodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
-                                    methodCreator.load(param.name), methodCreator.getMethodParam(paramIdx));
+                            ResultHandle convertedFormParam = methodCreator.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class, Object.class,
+                                            Class.class),
+                                    methodCreator.getThis(), methodCreator.getMethodParam(paramIdx),
+                                    methodCreator.loadClass(param.type));
+                            ResultHandle isString = methodCreator.instanceOf(convertedFormParam, String.class);
+                            BranchResult isStringBranch = methodCreator.ifTrue(isString);
+                            isStringBranch.falseBranch().throwException(IllegalStateException.class,
+                                    "Form parameter '" + param.name
+                                            + "' could not be converted to 'String' for REST Client interface '"
+                                            + restClientInterface.getClassName() + "'. A proper implementation of '"
+                                            + ParamConverter.class.getName() + "' needs to be returned by a '"
+                                            + ParamConverterProvider.class.getName()
+                                            + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
+                            isStringBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                                    methodCreator.load(param.name), convertedFormParam);
                         } else if (param.parameterType == ParameterType.MULTI_PART_FORM) {
                             if (multipartForm != null) {
                                 throw new IllegalArgumentException("MultipartForm data set twice for method "

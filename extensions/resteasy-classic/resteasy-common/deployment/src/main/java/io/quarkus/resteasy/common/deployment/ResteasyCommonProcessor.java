@@ -531,8 +531,10 @@ public class ResteasyCommonProcessor {
             AnnotationInstance mediaTypeClassAnnotationInstance = methodTarget.declaringClass()
                     .classAnnotation(mediaTypeAnnotation);
             if (mediaTypeClassAnnotationInstance != null) {
-                if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
-                        mediaTypeClassAnnotationInstance.value().asStringArray(), methodTarget)) {
+                AnnotationValue mediaTypeClassValue = mediaTypeClassAnnotationInstance.value();
+                if ((mediaTypeClassValue != null)
+                        && collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
+                                mediaTypeClassValue.asStringArray(), methodTarget)) {
                     return true;
                 }
                 return false;

@@ -5,6 +5,7 @@ import static io.quarkus.grpc.deployment.GrpcDotNames.GLOBAL_INTERCEPTOR;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
@@ -12,6 +13,10 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 final class GrpcInterceptors {
+
+    static final List<String> MICROMETER_INTERCEPTORS = List.of(
+            "io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor",
+            "io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor");
 
     final Set<String> globalInterceptors;
     final Set<String> nonGlobalInterceptors;

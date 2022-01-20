@@ -25,7 +25,7 @@ public class MyReactiveMessagingApplication {
 
     /**
      * Consume the message from the "words-in" channel, uppercase it and send it to the uppercase channel.
-     * Messages comes from the broker.
+     * Messages come from the broker.
      **/
     @Incoming("words-in")
     @Outgoing("uppercase")

@@ -17,6 +17,8 @@ import java.util.stream.Stream;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.ImageConfiguration;
+import io.dekorate.kubernetes.config.ImageConfigurationBuilder;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
@@ -27,6 +29,7 @@ import io.dekorate.project.Project;
 import io.dekorate.s2i.config.S2iBuildConfig;
 import io.dekorate.s2i.config.S2iBuildConfigBuilder;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
+import io.dekorate.s2i.decorator.AddDockerImageStreamResourceDecorator;
 import io.dekorate.utils.Labels;
 import io.fabric8.kubernetes.client.Config;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
@@ -252,6 +255,14 @@ public class OpenshiftProcessor {
                 && !capabilities.isPresent("io.quarkus.openshift")
                 && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
             result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator()));
+            ImageConfiguration imageConfiguration = new ImageConfigurationBuilder()
+                    .build();
+
+            image.ifPresent(i -> {
+                String repo = i.getRegistry().map(reg -> reg + "/" + i.getRepository()).orElse(i.getRepository());
+                result.add(new DecoratorBuildItem(OPENSHIFT,
+                        new AddDockerImageStreamResourceDecorator(imageConfiguration, repo)));
+            });
         }
 
         return result;

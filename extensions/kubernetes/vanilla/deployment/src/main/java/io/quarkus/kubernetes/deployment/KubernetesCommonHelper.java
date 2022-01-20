@@ -330,7 +330,7 @@ public class KubernetesCommonHelper {
         config.getAppSecret().ifPresent(s -> {
             result.add(new DecoratorBuildItem(target, new AddSecretVolumeDecorator(new SecretVolumeBuilder()
                     .withSecretName(s)
-                    .withNewVolumeName("app-secret")
+                    .withVolumeName("app-secret")
                     .build())));
             result.add(new DecoratorBuildItem(target, new AddMountDecorator(new MountBuilder()
                     .withName("app-secret")
@@ -342,7 +342,7 @@ public class KubernetesCommonHelper {
         config.getAppConfigMap().ifPresent(s -> {
             result.add(new DecoratorBuildItem(target, new AddConfigMapVolumeDecorator(new ConfigMapVolumeBuilder()
                     .withConfigMapName(s)
-                    .withNewVolumeName("app-config-map")
+                    .withVolumeName("app-config-map")
                     .build())));
             result.add(new DecoratorBuildItem(target, new AddMountDecorator(new MountBuilder()
                     .withName("app-config-map")

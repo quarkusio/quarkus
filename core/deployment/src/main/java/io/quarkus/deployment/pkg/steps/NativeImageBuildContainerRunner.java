@@ -46,15 +46,15 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
             // we pull the docker image in order to give users an indication of which step the process is at
             // it's not strictly necessary we do this, however if we don't the subsequent version command
             // will appear to block and no output will be shown
-            log.info("Checking image status " + nativeConfig.builderImage);
+            log.info("Checking image status " + nativeConfig.getEffectiveBuilderImage());
             Process pullProcess = null;
             try {
                 final ProcessBuilder pb = new ProcessBuilder(
-                        Arrays.asList(containerRuntime.getExecutableName(), "pull", nativeConfig.builderImage));
+                        Arrays.asList(containerRuntime.getExecutableName(), "pull", nativeConfig.getEffectiveBuilderImage()));
                 pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
                 pullProcess.waitFor();
             } catch (IOException | InterruptedException e) {
-                throw new RuntimeException("Failed to pull builder image " + nativeConfig.builderImage, e);
+                throw new RuntimeException("Failed to pull builder image " + nativeConfig.getEffectiveBuilderImage(), e);
             } finally {
                 if (pullProcess != null) {
                     pullProcess.destroy();
@@ -121,7 +121,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
     protected String[] buildCommand(String dockerCmd, List<String> containerRuntimeArgs, List<String> command) {
         return Stream
                 .of(Stream.of(containerRuntime.getExecutableName()), Stream.of(dockerCmd), Stream.of(baseContainerRuntimeArgs),
-                        containerRuntimeArgs.stream(), Stream.of(nativeConfig.builderImage), command.stream())
+                        containerRuntimeArgs.stream(), Stream.of(nativeConfig.getEffectiveBuilderImage()), command.stream())
                 .flatMap(Function.identity()).toArray(String[]::new);
     }
 

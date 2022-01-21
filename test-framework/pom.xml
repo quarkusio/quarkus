@@ -28,6 +28,7 @@
         <module>junit5-properties</module>
         <module>junit5</module>
         <module>junit5-mockito</module>
+        <module>junit5-mockito-config</module>
         <module>junit5-vertx</module>
         <module>amazon-lambda</module>
         <module>arquillian</module>

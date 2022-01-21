@@ -274,7 +274,7 @@ public class OidcCommonUtils {
                     key = ks.getKey(creds.jwt.keyId.get(), creds.jwt.keyPassword.toCharArray());
                 }
             } catch (Exception ex) {
-                throw new ConfigurationException("Key can not be loaded");
+                throw new ConfigurationException("Key can not be loaded", ex);
             }
             if (key == null) {
                 throw new ConfigurationException("Key is null");

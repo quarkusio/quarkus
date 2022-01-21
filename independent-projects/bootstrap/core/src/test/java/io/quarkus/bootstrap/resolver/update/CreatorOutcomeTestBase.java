@@ -42,7 +42,8 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
                 .setApplicationRoot(applicationRoot)
                 .setProjectRoot(applicationRoot)
                 .setTargetDirectory(outputDir)
-                .setAppModelResolver(resolver);
+                .setAppModelResolver(resolver)
+                .setTest(isBootstrapForTestMode());
 
         if (createWorkspace) {
             System.setProperty("basedir", ws.toAbsolutePath().toString());

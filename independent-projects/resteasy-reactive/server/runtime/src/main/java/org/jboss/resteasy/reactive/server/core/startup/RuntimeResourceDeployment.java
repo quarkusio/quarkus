@@ -134,9 +134,9 @@ public class RuntimeResourceDeployment {
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
-        MediaType sseElementType = null;
-        if (method.getSseElementType() != null) {
-            sseElementType = MediaType.valueOf(method.getSseElementType());
+        MediaType streamElementType = null;
+        if (method.getStreamElementType() != null) {
+            streamElementType = MediaType.valueOf(method.getStreamElementType());
         }
         List<MediaType> consumesMediaTypes;
         if (method.getConsumes() == null) {
@@ -467,7 +467,8 @@ public class RuntimeResourceDeployment {
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
-                pathParameterIndexes, info.isDevelopmentMode() ? score : null, sseElementType, clazz.resourceExceptionMapper());
+                pathParameterIndexes, info.isDevelopmentMode() ? score : null, streamElementType,
+                clazz.resourceExceptionMapper());
     }
 
     private void addResponseHandler(ServerResourceMethod method, List<ServerRestHandler> handlers) {

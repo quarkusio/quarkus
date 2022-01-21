@@ -708,7 +708,7 @@ https://html.spec.whatwg.org/multipage/server-sent-events.html[Server-Sent Event
 by just annotating your endpoint method with 
 link:{jaxrsapi}/javax/ws/rs/Produces.html[`@Produces(MediaType.SERVER_SENT_EVENTS)`]
 and specifying that each element should be <<json,serialised to JSON>> with 
-`@RestSseElementType(MediaType.APPLICATION_JSON)`.
+`@RestStreamElementType(MediaType.APPLICATION_JSON)`.
 
 [source,java]
 ----
@@ -720,7 +720,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.RestSseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -739,7 +739,7 @@ public class Endpoint {
     // Send the stream over SSE
     @Produces(MediaType.SERVER_SENT_EVENTS)
     // Each element will be sent as JSON
-    @RestSseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Book> stream() {
         return books;
     }

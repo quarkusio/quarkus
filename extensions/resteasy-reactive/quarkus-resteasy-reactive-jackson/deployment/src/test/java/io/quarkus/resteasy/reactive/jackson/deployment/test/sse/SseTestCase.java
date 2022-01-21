@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.jsonb.deployment.test.sse;
+package io.quarkus.resteasy.reactive.jackson.deployment.test.sse;
 
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +24,8 @@ import javax.ws.rs.sse.SseEventSource;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -38,7 +40,7 @@ public class SseTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SseResource.class, Message.class));
 
     @Test

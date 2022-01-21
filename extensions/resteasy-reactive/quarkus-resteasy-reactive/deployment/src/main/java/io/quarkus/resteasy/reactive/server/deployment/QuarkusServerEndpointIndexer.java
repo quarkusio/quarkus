@@ -182,7 +182,7 @@ public class QuarkusServerEndpointIndexer
     }
 
     private boolean hasJson(ServerResourceMethod method) {
-        return hasJson(method.getProduces()) || hasJson(method.getConsumes()) || isJson(method.getSseElementType());
+        return hasJson(method.getProduces()) || hasJson(method.getConsumes()) || isJson(method.getStreamElementType());
     }
 
     private boolean hasJson(String[] types) {

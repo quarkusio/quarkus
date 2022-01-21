@@ -117,7 +117,7 @@ public class SseUtil extends CommonSseUtil {
         Object entity = event.getData();
         Class<?> entityClass = event.getType();
         Type entityType = event.getGenericType();
-        MediaType mediaType = eventMediaType != null ? eventMediaType : context.getTarget().getSseElementType();
+        MediaType mediaType = eventMediaType != null ? eventMediaType : context.getTarget().getStreamElementType();
         if (mediaType == null) {
             mediaType = MediaType.TEXT_PLAIN_TYPE;
         }
@@ -156,8 +156,8 @@ public class SseUtil extends CommonSseUtil {
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
             response.setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.SERVER_SENT_EVENTS);
-            if (context.getTarget().getSseElementType() != null) {
-                response.setResponseHeader(SSE_CONTENT_TYPE, context.getTarget().getSseElementType().toString());
+            if (context.getTarget().getStreamElementType() != null) {
+                response.setResponseHeader(SSE_CONTENT_TYPE, context.getTarget().getStreamElementType().toString());
             }
             response.setChunked(true);
             for (int i = 0; i < customizers.size(); i++) {

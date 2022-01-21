@@ -1,7 +1,7 @@
 package io.quarkus.it.keycloak;
 
-import static io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager.getAccessToken;
-import static io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager.getRefreshToken;
+import static io.quarkus.it.keycloak.KeycloakXTestResourceLifecycleManager.getAccessToken;
+import static io.quarkus.it.keycloak.KeycloakXTestResourceLifecycleManager.getRefreshToken;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -14,14 +14,13 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusTest
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@QuarkusTestResource(KeycloakXTestResourceLifecycleManager.class)
 public class BearerTokenAuthorizationTest {
 
     @Test

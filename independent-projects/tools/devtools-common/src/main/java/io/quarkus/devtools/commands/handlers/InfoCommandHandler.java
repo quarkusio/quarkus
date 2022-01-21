@@ -127,72 +127,93 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
         if (perModule) {
             final ModuleState mainModule = projectState.getMainModule();
             final Path baseDir = mainModule.getModuleDir();
-            recommendationsAvailable |= logModuleInfo(mainModule, baseDir, log, rectify);
+            recommendationsAvailable |= logModuleInfo(projectState, mainModule, baseDir, log, rectify);
             for (ModuleState module : projectState.getModules()) {
                 if (!module.isMain()) {
-                    recommendationsAvailable |= logModuleInfo(module, baseDir, log, rectify);
+                    recommendationsAvailable |= logModuleInfo(projectState, module, baseDir, log, rectify);
                 }
             }
         } else {
             for (ExtensionProvider provider : projectState.getExtensionProviders()) {
-                if (provider.getExtensions().isEmpty()) {
-                    continue;
+                if (provider.isPlatform()) {
+                    recommendationsAvailable = logProvidedExtensions(provider, rectify, log, recommendationsAvailable);
                 }
-                log.info("Extensions from " + provider.getKey() + ":");
-                for (TopExtensionDependency dep : provider.getExtensions()) {
-                    final StringBuilder sb = new StringBuilder();
-                    if (dep.isPlatformExtension()) {
-                        if (rectify) {
-                            if (dep.isNonRecommendedVersion()) {
-                                sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                        UpdateCommandHandler.UPDATE, ""));
-                            } else {
-                                sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
-                            }
-                            sb.append(dep.getArtifact().getGroupId()).append(':')
-                                    .append(dep.getArtifact().getArtifactId());
-                            if (!dep.getArtifact().getClassifier().isEmpty()) {
-                                sb.append(':').append(dep.getArtifact().getClassifier());
-                            }
-                            if (dep.isNonRecommendedVersion()) {
-                                sb.append(':').append(dep.getArtifact().getVersion());
-                                if (rectify) {
-                                    sb.append(" -> remove version (managed)");
-                                }
-                                recommendationsAvailable = true;
-                            }
-                        } else {
-                            sb.append("  ").append(dep.getArtifact().getGroupId()).append(':')
-                                    .append(dep.getArtifact().getArtifactId());
-                            if (!dep.getArtifact().getClassifier().isEmpty()) {
-                                sb.append(':').append(dep.getArtifact().getClassifier());
-                            }
-                            if (dep.isNonRecommendedVersion()) {
-                                sb.append(':').append(dep.getArtifact().getVersion());
-                                sb.append(" | misaligned");
-                                recommendationsAvailable = true;
-                            }
-                        }
-                    } else {
-                        sb.append("  ").append(dep.getArtifact().getGroupId()).append(':')
-                                .append(dep.getArtifact().getArtifactId());
-                        if (!dep.getArtifact().getClassifier().isEmpty()) {
-                            sb.append(':').append(dep.getArtifact().getClassifier());
-                        }
-                        sb.append(':').append(dep.getArtifact().getVersion());
-                    }
-                    if (dep.isTransitive()) {
-                        sb.append(" | transitive");
-                    }
-                    log.info(sb.toString());
+            }
+            for (ExtensionProvider provider : projectState.getExtensionProviders()) {
+                if (!provider.isPlatform()) {
+                    recommendationsAvailable = logProvidedExtensions(provider, rectify, log, recommendationsAvailable);
                 }
-                log.info("");
             }
         }
         return recommendationsAvailable;
     }
 
-    private static boolean logModuleInfo(ModuleState module, Path baseDir, MessageWriter log, boolean rectify) {
+    private static boolean logProvidedExtensions(ExtensionProvider provider, boolean rectify, MessageWriter log,
+            boolean recommendationsAvailable) {
+        if (provider.getExtensions().isEmpty()) {
+            return recommendationsAvailable;
+        }
+        log.info("Extensions from " + provider.getKey() + ":");
+        final StringBuilder sb = new StringBuilder();
+        for (TopExtensionDependency dep : provider.getExtensions()) {
+            sb.setLength(0);
+            recommendationsAvailable = logExtensionInfo(dep, rectify, sb, recommendationsAvailable);
+            log.info(sb.toString());
+        }
+        log.info("");
+        return recommendationsAvailable;
+    }
+
+    private static boolean logExtensionInfo(TopExtensionDependency dep, boolean rectify, StringBuilder sb,
+            boolean recommendationsAvailable) {
+        if (dep.isPlatformExtension()) {
+            if (rectify) {
+                if (dep.isNonRecommendedVersion()) {
+                    sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                            UpdateCommandHandler.UPDATE, ""));
+                } else {
+                    sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
+                }
+                sb.append(dep.getArtifact().getGroupId()).append(':')
+                        .append(dep.getArtifact().getArtifactId());
+                if (!dep.getArtifact().getClassifier().isEmpty()) {
+                    sb.append(':').append(dep.getArtifact().getClassifier());
+                }
+                if (dep.isNonRecommendedVersion()) {
+                    sb.append(':').append(dep.getArtifact().getVersion());
+                    if (rectify) {
+                        sb.append(" -> remove version (managed)");
+                    }
+                    recommendationsAvailable = true;
+                }
+            } else {
+                sb.append("  ").append(dep.getArtifact().getGroupId()).append(':')
+                        .append(dep.getArtifact().getArtifactId());
+                if (!dep.getArtifact().getClassifier().isEmpty()) {
+                    sb.append(':').append(dep.getArtifact().getClassifier());
+                }
+                if (dep.isNonRecommendedVersion()) {
+                    sb.append(':').append(dep.getArtifact().getVersion());
+                    sb.append(" | misaligned");
+                    recommendationsAvailable = true;
+                }
+            }
+        } else {
+            if (rectify) {
+                sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
+            } else {
+                sb.append("  ");
+            }
+            sb.append(dep.getArtifact().toCompactCoords());
+        }
+        if (dep.isTransitive()) {
+            sb.append(" | transitive");
+        }
+        return recommendationsAvailable;
+    }
+
+    private static boolean logModuleInfo(ProjectState project, ModuleState module, Path baseDir, MessageWriter log,
+            boolean rectify) {
         if (module.getExtensions().isEmpty() && module.getPlatformBoms().isEmpty() && !module.isMain()) {
             return false;
         }
@@ -230,57 +251,39 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
             for (TopExtensionDependency dep : module.getExtensions()) {
                 extDepsByProvider.computeIfAbsent(dep.getProviderKey(), k -> new ArrayList<>()).add(dep);
             }
-            for (Map.Entry<String, List<TopExtensionDependency>> provider : extDepsByProvider.entrySet()) {
-                log.info("  Extensions from " + provider.getKey() + ":");
-                for (TopExtensionDependency dep : provider.getValue()) {
-                    sb.setLength(0);
-                    sb.append("  ");
-                    if (dep.isPlatformExtension()) {
-                        if (rectify) {
-                            if (dep.isNonRecommendedVersion()) {
-                                sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                                        UpdateCommandHandler.UPDATE, ""));
-                            } else {
-                                sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
-                            }
-                            sb.append(dep.getArtifact().getGroupId()).append(':')
-                                    .append(dep.getArtifact().getArtifactId());
-                            if (!dep.getArtifact().getClassifier().isEmpty()) {
-                                sb.append(':').append(dep.getArtifact().getClassifier());
-                            }
-                            if (dep.isNonRecommendedVersion()) {
-                                sb.append(':').append(dep.getArtifact().getVersion());
-                                if (rectify) {
-                                    sb.append(" -> remove version (managed)");
-                                }
-                                recommendationsAvailable = true;
-                            }
-                        } else {
-                            sb.append("  ").append(dep.getArtifact().getGroupId()).append(':')
-                                    .append(dep.getArtifact().getArtifactId());
-                            if (!dep.getArtifact().getClassifier().isEmpty()) {
-                                sb.append(':').append(dep.getArtifact().getClassifier());
-                            }
-                            if (dep.isNonRecommendedVersion()) {
-                                sb.append(':').append(dep.getArtifact().getVersion());
-                                sb.append(" | misaligned");
-                                recommendationsAvailable = true;
-                            }
-                        }
-                    } else {
-                        if (rectify) {
-                            sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, "", ""));
-                        } else {
-                            sb.append("  ");
-                        }
-                        sb.append(dep.getArtifact().toCompactCoords());
-                    }
-                    if (dep.isTransitive()) {
-                        sb.append(" | transitive");
-                    }
-                    log.info(sb.toString());
+            for (ExtensionProvider provider : project.getExtensionProviders()) {
+                if (!provider.isPlatform()) {
+                    continue;
                 }
-                log.info("");
+                final List<TopExtensionDependency> extList = extDepsByProvider.getOrDefault(provider.getKey(),
+                        Collections.emptyList());
+                if (!extList.isEmpty()) {
+                    log.info("  Extensions from " + provider.getKey() + ":");
+                    for (TopExtensionDependency dep : extList) {
+                        sb.setLength(0);
+                        sb.append("  ");
+                        recommendationsAvailable = logExtensionInfo(dep, rectify, sb, recommendationsAvailable);
+                        log.info(sb.toString());
+                    }
+                    log.info("");
+                }
+            }
+            for (ExtensionProvider provider : project.getExtensionProviders()) {
+                if (provider.isPlatform()) {
+                    continue;
+                }
+                final List<TopExtensionDependency> extList = extDepsByProvider.getOrDefault(provider.getKey(),
+                        Collections.emptyList());
+                if (!extList.isEmpty()) {
+                    log.info("  Extensions from " + provider.getKey() + ":");
+                    for (TopExtensionDependency dep : extList) {
+                        sb.setLength(0);
+                        sb.append("  ");
+                        recommendationsAvailable = logExtensionInfo(dep, rectify, sb, recommendationsAvailable);
+                        log.info(sb.toString());
+                    }
+                    log.info("");
+                }
             }
         }
         return recommendationsAvailable;
@@ -294,7 +297,7 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
             return projectBuilder.build();
         }
 
-        final Map<String, ExtensionProvider.Builder> extProviderBuilders = new HashMap<>(importedPlatformBoms.size());
+        final Map<String, ExtensionProvider.Builder> extProviderBuilders = new LinkedHashMap<>(importedPlatformBoms.size());
         importedPlatformBoms.forEach(bom -> {
             projectBuilder.addPlatformBom(bom);
             extProviderBuilders.put(ExtensionProvider.key(bom, true),
@@ -393,7 +396,18 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
         }
 
         boolean isToBeImported() {
-            return recommended != null;
+            return imported == null && recommended != null;
+        }
+
+        ArtifactCoords getRecommendedCoords() {
+            return recommended == null ? imported : recommended;
+        }
+
+        String getRecommendedProviderKey() {
+            if (recommended != null) {
+                return ExtensionProvider.key(recommended, true);
+            }
+            return ExtensionProvider.key(imported, true);
         }
     }
 }

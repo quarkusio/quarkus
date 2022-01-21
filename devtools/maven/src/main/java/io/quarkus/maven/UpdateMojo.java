@@ -35,6 +35,12 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     boolean rectify;
 
     @Override
+    protected void validateParameters() throws MojoExecutionException {
+        getLog().warn("quarkus:update goal is experimental, its options and output might change in future versions");
+        super.validateParameters();
+    }
+
+    @Override
     protected void processProjectState(QuarkusProject quarkusProject) throws MojoExecutionException {
 
         final Map<String, Object> params = new HashMap<>();

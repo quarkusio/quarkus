@@ -142,6 +142,7 @@ import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -313,6 +314,19 @@ public class ResteasyReactiveProcessor {
         Set<String> beanParams = resourceScanningResultBuildItem.get().getResult()
                 .getBeanParams();
         unremoveableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(new String[0])));
+    }
+
+    @BuildStep
+    public void additionalAsyncTypeMethodScanners(List<NonBlockingReturnTypeBuildItem> buildItems,
+            BuildProducer<MethodScannerBuildItem> producer) {
+        for (NonBlockingReturnTypeBuildItem bi : buildItems) {
+            producer.produce(new MethodScannerBuildItem(new MethodScanner() {
+                @Override
+                public boolean isMethodSignatureAsync(MethodInfo info) {
+                    return info.returnType().name().equals(bi.getType());
+                }
+            }));
+        }
     }
 
     @BuildStep

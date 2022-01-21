@@ -80,6 +80,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.processor.beanparam.BeanParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.ClientBeanParamInfo;
 import org.jboss.resteasy.reactive.client.processor.beanparam.CookieParamItem;
+import org.jboss.resteasy.reactive.client.processor.beanparam.FormParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.HeaderParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.Item;
 import org.jboss.resteasy.reactive.client.processor.beanparam.PathParamItem;
@@ -851,11 +852,13 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                            addBeanParamData(methodCreator, handleBeanParamMethod,
+                            formParams = addBeanParamData(methodCreator, handleBeanParamMethod,
                                     invocationBuilderRef, beanParam.getItems(),
                                     methodCreator.getMethodParam(paramIdx), methodTarget, index,
+                                    restClientInterface.getClassName(),
                                     methodCreator.getThis(),
-                                    handleBeanParamMethod.getThis());
+                                    handleBeanParamMethod.getThis(),
+                                    formParams);
 
                             handleBeanParamMethod.returnValue(invocationBuilderRef);
                             invocationBuilderEnrichers.put(handleBeanParamDescriptor, methodCreator.getMethodParam(paramIdx));
@@ -900,22 +903,8 @@ public class JaxrsClientReactiveProcessor {
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
                             formParams = createIfAbsent(methodCreator, formParams);
-                            ResultHandle convertedFormParam = methodCreator.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class, Object.class,
-                                            Class.class),
-                                    methodCreator.getThis(), methodCreator.getMethodParam(paramIdx),
-                                    methodCreator.loadClass(param.type));
-                            ResultHandle isString = methodCreator.instanceOf(convertedFormParam, String.class);
-                            BranchResult isStringBranch = methodCreator.ifTrue(isString);
-                            isStringBranch.falseBranch().throwException(IllegalStateException.class,
-                                    "Form parameter '" + param.name
-                                            + "' could not be converted to 'String' for REST Client interface '"
-                                            + restClientInterface.getClassName() + "'. A proper implementation of '"
-                                            + ParamConverter.class.getName() + "' needs to be returned by a '"
-                                            + ParamConverterProvider.class.getName()
-                                            + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
-                            isStringBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
-                                    methodCreator.load(param.name), convertedFormParam);
+                            addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx), param.type,
+                                    restClientInterface.getClassName(), methodCreator.getThis(), formParams);
                         } else if (param.parameterType == ParameterType.MULTI_PART_FORM) {
                             if (multipartForm != null) {
                                 throw new IllegalArgumentException("MultipartForm data set twice for method "
@@ -1142,12 +1131,14 @@ public class JaxrsClientReactiveProcessor {
                         AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                 .createVariable(Invocation.Builder.class);
                         handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                        addBeanParamData(subMethodCreator, handleBeanParamMethod,
+                        formParams = addBeanParamData(subMethodCreator, handleBeanParamMethod,
                                 invocationBuilderRef, beanParam.getItems(),
                                 paramValue, methodTarget, index,
+                                interfaceClass.name().toString(),
                                 subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                 handleBeanParamMethod.readInstanceField(clientField,
-                                        handleBeanParamMethod.getThis()));
+                                        handleBeanParamMethod.getThis()),
+                                formParams);
 
                         handleBeanParamMethod.returnValue(invocationBuilderRef);
                         invocationBuilderEnrichers.put(handleBeanParamDescriptor, paramValue);
@@ -1235,12 +1226,14 @@ public class JaxrsClientReactiveProcessor {
                         AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                 .createVariable(Invocation.Builder.class);
                         handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                        addBeanParamData(subMethodCreator, handleBeanParamMethod,
+                        formParams = addBeanParamData(subMethodCreator, handleBeanParamMethod,
                                 invocationBuilderRef, beanParam.getItems(),
                                 subMethodCreator.getMethodParam(paramIdx), methodTarget, index,
+                                interfaceClass.name().toString(),
                                 subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                 handleBeanParamMethod.readInstanceField(clientField,
-                                        handleBeanParamMethod.getThis()));
+                                        handleBeanParamMethod.getThis()),
+                                formParams);
 
                         handleBeanParamMethod.returnValue(invocationBuilderRef);
                         invocationBuilderEnrichers.put(handleBeanParamDescriptor,
@@ -2114,15 +2107,39 @@ public class JaxrsClientReactiveProcessor {
         return maybeMethod;
     }
 
-    private void addBeanParamData(BytecodeCreator methodCreator,
+    private AssignableResultHandle addBeanParamData(MethodCreator methodCreator,
             BytecodeCreator invocationBuilderEnricher, // Invocation.Builder executePut$$enrichInvocationBuilder${noOfBeanParam}(Invocation.Builder)
             AssignableResultHandle invocationBuilder,
             List<Item> beanParamItems,
             ResultHandle param,
             AssignableResultHandle target, // can only be used in the current method, not in `invocationBuilderEnricher`
             IndexView index,
+            String restClientInterfaceClassName,
             ResultHandle client,
-            ResultHandle invocationEnricherClient) { // this client or containing client if this is a sub-client
+            ResultHandle invocationEnricherClient, // this client or containing client if this is a sub-client
+            AssignableResultHandle formParams) {
+        // Form params collector must be initialized at method root level before any inner blocks that may use it
+        if (areFormParamsDefinedIn(beanParamItems)) {
+            formParams = createIfAbsent(methodCreator, formParams);
+        }
+
+        addSubBeanParamData(methodCreator, invocationBuilderEnricher, invocationBuilder, beanParamItems, param, target,
+                index, restClientInterfaceClassName, client, invocationEnricherClient, formParams);
+
+        return formParams;
+    }
+
+    private void addSubBeanParamData(BytecodeCreator methodCreator,
+            BytecodeCreator invocationBuilderEnricher, // Invocation.Builder executePut$$enrichInvocationBuilder${noOfBeanParam}(Invocation.Builder)
+            AssignableResultHandle invocationBuilder,
+            List<Item> beanParamItems,
+            ResultHandle param,
+            AssignableResultHandle target, // can only be used in the current method, not in `invocationBuilderEnricher`
+            IndexView index,
+            String restClientInterfaceClassName,
+            ResultHandle client,
+            ResultHandle invocationEnricherClient, // this client or containing client if this is a sub-client
+            AssignableResultHandle formParams) {
         BytecodeCreator creator = methodCreator.ifNotNull(param).trueBranch();
         BytecodeCreator invoEnricher = invocationBuilderEnricher.ifNotNull(invocationBuilderEnricher.getMethodParam(1))
                 .trueBranch();
@@ -2131,8 +2148,9 @@ public class JaxrsClientReactiveProcessor {
                 case BEAN_PARAM:
                     BeanParamItem beanParamItem = (BeanParamItem) item;
                     ResultHandle beanParamElementHandle = beanParamItem.extract(creator, param);
-                    addBeanParamData(creator, invoEnricher, invocationBuilder, beanParamItem.items(),
-                            beanParamElementHandle, target, index, client, invocationEnricherClient);
+                    addSubBeanParamData(creator, invoEnricher, invocationBuilder, beanParamItem.items(),
+                            beanParamElementHandle, target, index, restClientInterfaceClassName, client,
+                            invocationEnricherClient, formParams);
                     break;
                 case QUERY_PARAM:
                     QueryParamItem queryParam = (QueryParamItem) item;
@@ -2162,10 +2180,31 @@ public class JaxrsClientReactiveProcessor {
                             pathParam.getPathParamName(),
                             pathParam.extract(creator, param), pathParam.getParamType(), client);
                     break;
+                case FORM_PARAM:
+                    FormParamItem formParam = (FormParamItem) item;
+                    addFormParam(creator, formParam.getFormParamName(), formParam.extract(creator, param),
+                            formParam.getParamType(), restClientInterfaceClassName, client, formParams);
+                    break;
                 default:
-                    throw new IllegalStateException("Unimplemented"); // TODO form params, etc
+                    throw new IllegalStateException("Unimplemented");
             }
         }
+    }
+
+    private boolean areFormParamsDefinedIn(List<Item> beanParamItems) {
+        for (Item item : beanParamItems) {
+            switch (item.type()) {
+                case FORM_PARAM:
+                    return true;
+                case BEAN_PARAM:
+                    if (areFormParamsDefinedIn(((BeanParamItem) item).items())) {
+                        return true;
+                    }
+                    break;
+            }
+        }
+
+        return false;
     }
 
     // takes a result handle to target as one of the parameters, returns a result handle to a modified target
@@ -2248,6 +2287,26 @@ public class JaxrsClientReactiveProcessor {
                 methodCreator.invokeInterfaceMethod(WEB_TARGET_RESOLVE_TEMPLATE_METHOD,
                         methodTarget,
                         methodCreator.load(paramName), handle));
+    }
+
+    private void addFormParam(BytecodeCreator methodCreator, String paramName, ResultHandle formParamHandle,
+            String parameterType, String restClientInterfaceClassName,
+            ResultHandle client, AssignableResultHandle formParams) {
+        ResultHandle convertedFormParam = methodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class, Object.class, Class.class),
+                client, formParamHandle,
+                methodCreator.loadClass(parameterType));
+        ResultHandle isString = methodCreator.instanceOf(convertedFormParam, String.class);
+        BranchResult isStringBranch = methodCreator.ifTrue(isString);
+        isStringBranch.falseBranch().throwException(IllegalStateException.class,
+                "Form parameter '" + paramName
+                        + "' could not be converted to 'String' for REST Client interface '"
+                        + restClientInterfaceClassName + "'. A proper implementation of '"
+                        + ParamConverter.class.getName() + "' needs to be returned by a '"
+                        + ParamConverterProvider.class.getName()
+                        + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
+        isStringBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                methodCreator.load(paramName), convertedFormParam);
     }
 
     private void addCookieParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

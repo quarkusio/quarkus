@@ -16,7 +16,6 @@
 
     <properties>
         <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521:XE</reactive-oracledb.url>
-        <oracle.image>gvenzl/oracle-xe:21.3.0-slim</oracle.image>
     </properties>
 
     <dependencies>

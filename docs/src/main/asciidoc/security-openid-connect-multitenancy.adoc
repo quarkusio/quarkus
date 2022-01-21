@@ -345,6 +345,53 @@ You should be redirected again to the login page at Keycloak. However, now you a
 In both cases, if the user is successfully authenticated, the landing page will show the user's name and e-mail. Even though
 user `alice` exists in both tenants, for the application they are distinct users belonging to different realms/tenants.
 
+== Resolving Tenant Identifiers with Annotations
+
+You can use the annotations and CDI interceptors for resolving the tenant identifiers as an alternative to using
+`quarkus.oidc.TenantResolver`. This can be done by setting the value for the key `OidcUtils.TENANT_ID_ATTRIBUTE` on
+the current `RoutingContext`.
+
+Assuming your application supports two OIDC tenants (`hr`, and default) first you need to define one
+annotation per tenant ID other than default:
+
+[NOTE]
+====
+Proactive HTTP authentication needs to be disabled (`quarkus.http.auth.proactive=false`) for this to work. See
+xref:security-built-in-authentication.adoc#proactive-authentication[Proactive Authentication] section for further details.
+====
+
+[source,java]
+----
+@Inherited
+@InterceptorBinding
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.TYPE})
+public @interface HrTenant {
+}
+----
+
+Next, you'll need one interceptor for each of those annotations:
+
+[source,java]
+----
+@Interceptor
+@HrTenant
+public class HrTenantInterceptor {
+    @Inject
+    RoutingContext routingContext;
+
+    @AroundInvoke
+    Object setTenant(InvocationContext context) throws Exception {
+        routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, "hr");
+        return context.proceed();
+    }
+}
+----
+
+Now all methods and classes carrying `@HrTenant` will be authenticated using the OIDC provider configured by
+`quarkus.oidc.hr.auth-server-url`, while all other classes and methods will still be authenticated using the default
+OIDC provider.
+
 == Programmatically Resolving Tenants Configuration
 
 If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple

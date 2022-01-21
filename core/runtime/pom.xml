@@ -170,6 +170,7 @@
                         <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
                         <parentFirstArtifact>org.jacoco:org.jacoco.agent:runtime</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-junit5-mockito-config</parentFirstArtifact>
 
                         <!-- RestAssured uses groovy, which seems to do some things with soft references that
                         prevent the ClassLoader from being GC'ed, see https://github.com/quarkusio/quarkus/issues/12498 -->

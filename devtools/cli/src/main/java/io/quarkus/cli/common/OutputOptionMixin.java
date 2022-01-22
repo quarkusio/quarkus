@@ -125,13 +125,13 @@ public class OutputOptionMixin implements MessageWriter {
     @Override
     public void debug(String msg) {
         if (isVerbose()) {
-            out().println(colorScheme().ansi().new Text("[DEBUG] " + msg, colorScheme()));
+            out().println(colorScheme().ansi().new Text("@|faint [DEBUG] " + msg + "|@", colorScheme()));
         }
     }
 
     @Override
     public void warn(String msg) {
-        out().println(colorScheme().ansi().new Text(WARN_ICON + " " + msg, colorScheme()));
+        out().println(colorScheme().ansi().new Text("@|yellow " + WARN_ICON + " " + msg + "|@", colorScheme()));
     }
 
     // CommandLine must be passed in (forwarded commands)

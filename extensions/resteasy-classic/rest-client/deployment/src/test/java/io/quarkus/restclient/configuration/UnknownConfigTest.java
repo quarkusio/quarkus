@@ -1,12 +1,11 @@
 package io.quarkus.restclient.configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Set;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.logging.LogRecord;
 
 import javax.inject.Inject;
 
@@ -23,11 +22,9 @@ public class UnknownConfigTest {
             .withApplicationRoot((jar) -> jar
                     .addAsResource("restclient-config-test-application.properties", "application.properties"))
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
-            .assertLogRecords(logRecords -> {
-                Set<String> properties = logRecords.stream().flatMap(
-                        logRecord -> Stream.of(logRecord.getParameters())).map(Object::toString).collect(Collectors.toSet());
-                assertEquals(0, properties.size(), "Expected 0 warnings");
-            });
+            .assertLogRecords(logRecords -> assertFalse(logRecords.stream()
+                    .map(LogRecord::getMessage)
+                    .anyMatch(message -> message.startsWith("Unrecognized configuration key"))));
 
     @Inject
     RestClientsConfig restClientsConfig;

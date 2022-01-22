@@ -49,7 +49,7 @@ Add the following dependencies to your project:
     </dependency>
     <dependency>
         <groupId>com.blazebit</groupId>
-        <artifactId>blaze-persistence-integration-hibernate-5.4</artifactId>
+        <artifactId>blaze-persistence-integration-hibernate-5.6</artifactId>
         <scope>runtime</scope>
     </dependency>
 </dependencies>
@@ -218,6 +218,25 @@ When no property is set, the Blaze-Persistence defaults apply.
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
 include::quarkus-blaze-persistence.adoc[opts=optional, leveloffset=+2]
+
+Apart from these configuration options, further configuration and customization can be applied by observing a `CriteriaBuilderConfiguration` or `EntityViewConfiguration` events and applying customizations on these objects. The various customization use cases can be found in the link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#quarkus-customization[Quarkus section of the entity-view documentation].
+
+[source,java]
+.Example CriteriaBuilderConfiguration and EntityViewConfiguration observing
+----
+@ApplicationScoped
+public class BlazePersistenceConfigurer {
+
+    public void configure(@Observes CriteriaBuilderConfiguration config) {
+        config.setProperty("...", "...");
+    }
+    
+    public void configure(@Observes EntityViewConfiguration config) {
+        // Register custom BasicUserType or register type test values
+        config.registerBasicUserType(MyClass.class, MyClassBasicUserType.class);
+    }
+}
+----
 
 == Limitations
 

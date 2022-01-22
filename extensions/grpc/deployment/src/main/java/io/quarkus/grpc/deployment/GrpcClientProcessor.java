@@ -5,6 +5,7 @@ import static io.quarkus.grpc.deployment.GrpcDotNames.ADD_BLOCKING_CLIENT_INTERC
 import static io.quarkus.grpc.deployment.GrpcDotNames.CONFIGURE_STUB;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CREATE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RETRIEVE_CHANNEL_METHOD;
+import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 import static io.quarkus.grpc.deployment.ResourceRegistrationUtils.registerResourcesForProperties;
 
 import java.util.ArrayList;
@@ -358,6 +359,11 @@ public class GrpcClientProcessor {
         // Let's gather all the non-abstract, non-global interceptors, from these we'll filter out ones used per-service ones
         // The rest, if anything stays, should be logged as problematic
         Set<String> superfluousInterceptors = new HashSet<>(interceptors.nonGlobalInterceptors);
+
+        // Remove the metrics interceptors
+        for (String MICROMETER_INTERCEPTOR : MICROMETER_INTERCEPTORS) {
+            superfluousInterceptors.remove(MICROMETER_INTERCEPTOR);
+        }
 
         List<AnnotationInstance> found = new ArrayList<>(index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR));
         for (AnnotationInstance annotation : index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR_LIST)) {

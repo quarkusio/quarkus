@@ -74,7 +74,7 @@ final class QuarkusCommandHandlers {
                     return null;
                 }
                 sb.append(ERROR_ICON + " Multiple extensions matching '").append(query).append("'");
-                candidates.forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
+                candidates.forEach(extension -> sb.append(System.lineSeparator()).append("     - ")
                         .append(extension.managementKey()));
                 sb.append(System.lineSeparator())
                         .append("     try using the exact name or the full GAV (group id, artifact id, and version).");

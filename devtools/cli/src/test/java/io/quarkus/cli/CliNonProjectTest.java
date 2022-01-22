@@ -61,7 +61,8 @@ public class CliNonProjectTest {
     @Test
     public void testListPlatformExtensions() throws Exception {
         // List extensions of a specified platform version
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "list", "-P=io.quarkus:quarkus-bom:2.0.0.CR3", "-e");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "list", "-P=io.quarkus:quarkus-bom:2.0.0.CR3", "-e",
+                "--origins");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("Jackson"),

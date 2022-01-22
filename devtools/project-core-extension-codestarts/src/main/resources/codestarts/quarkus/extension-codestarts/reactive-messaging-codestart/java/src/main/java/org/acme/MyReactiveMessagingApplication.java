@@ -12,23 +12,31 @@ import java.util.stream.Stream;
 public class MyReactiveMessagingApplication {
 
     @Inject
-    @Channel("source-out")
+    @Channel("words-out")
     Emitter<String> emitter;
 
-    /** Sends message to the source channel, can be used from a JAX-RS resource or any bean of your application **/
+    /**
+     * Sends message to the "words-out" channel, can be used from a JAX-RS resource or any bean of your application.
+     * Messages are sent to the broker.
+     **/
     void onStart(@Observes StartupEvent ev) {
         Stream.of("Hello", "with", "SmallRye", "reactive", "message").forEach(string -> emitter.send(string));
     }
 
-    /** Consume the message from the source channel, uppercase it and send it to the uppercase channel **/
-    @Incoming("source-in")
-    @Outgoing("uppercase-out")
+    /**
+     * Consume the message from the "words-in" channel, uppercase it and send it to the uppercase channel.
+     * Messages come from the broker.
+     **/
+    @Incoming("words-in")
+    @Outgoing("uppercase")
     public Message<String> toUpperCase(Message<String> message) {
         return message.withPayload(message.getPayload().toUpperCase());
     }
 
-    /** Consume the uppercase channel and print the message **/
-    @Incoming("uppercase-in")
+    /**
+     * Consume the uppercase channel (in-memory) and print the messages.
+     **/
+    @Incoming("uppercase")
     public void sink(String word) {
         System.out.println(">> " + word);
     }

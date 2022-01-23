@@ -573,7 +573,7 @@ public class SmallRyeGraphQLProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeGraphQLConfig graphQLConfig,
             WebJarResultsBuildItem webJarResultsBuildItem,
-            BuildProducer<SmallRyeGraphQLBuildItem> smallRyeGraphQLBuildProducer) {
+            BuildProducer<SmallRyeGraphQLBuildItem> smallRyeGraphQLBuildProducer, ShutdownContextBuildItem shutdownContext) {
 
         WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(GRAPHQL_UI_WEBJAR_ARTIFACT_KEY);
         if (result == null) {
@@ -586,7 +586,7 @@ public class SmallRyeGraphQLProcessor {
                     .produce(new SmallRyeGraphQLBuildItem(result.getFinalDestination(), graphQLUiPath));
 
             Handler<RoutingContext> handler = recorder.uiHandler(result.getFinalDestination(),
-                    graphQLUiPath, runtimeConfig);
+                    graphQLUiPath, result.getWebRootConfigurations(), runtimeConfig, shutdownContext);
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(graphQLConfig.ui.rootPath)
                     .displayOnNotFoundPage("GraphQL UI")

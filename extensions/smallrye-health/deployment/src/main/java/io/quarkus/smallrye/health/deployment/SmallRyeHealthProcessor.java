@@ -47,6 +47,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -449,7 +450,7 @@ class SmallRyeHealthProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchMode,
             SmallRyeHealthConfig healthConfig,
-            BuildProducer<SmallRyeHealthBuildItem> smallryeHealthBuildProducer) {
+            BuildProducer<SmallRyeHealthBuildItem> smallryeHealthBuildProducer, ShutdownContextBuildItem shutdownContext) {
 
         WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(HEALTH_UI_WEBJAR_ARTIFACT_KEY);
         if (result == null) {
@@ -462,7 +463,7 @@ class SmallRyeHealthProcessor {
                     .produce(new SmallRyeHealthBuildItem(result.getFinalDestination(), healthUiPath));
 
             Handler<RoutingContext> handler = recorder.uiHandler(result.getFinalDestination(),
-                    healthUiPath, runtimeConfig);
+                    healthUiPath, result.getWebRootConfigurations(), runtimeConfig, shutdownContext);
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(healthConfig.ui.rootPath)
                     .displayOnNotFoundPage("Health UI")

@@ -1,4 +1,4 @@
-package io.quarkus.swaggerui.runtime;
+package io.quarkus.vertx.http.runtime.webjar;
 
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -6,7 +6,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Handling static when disabled
  */
-public class SwaggerUiNotFoundHandler implements Handler<RoutingContext> {
+public class WebJarNotFoundHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {

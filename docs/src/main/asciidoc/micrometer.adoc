@@ -18,12 +18,7 @@ IMPORTANT: Micrometer is the recommended approach to metrics for Quarkus.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -60,16 +55,9 @@ For this example, we'll use the Prometheus registry.
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=micrometer-quickstart \
-    -DclassName="org.acme.micrometer.ExampleResource" \
-    -Dpath="/" \
-    -Dextensions="resteasy,micrometer-registry-prometheus"
-cd micrometer-quickstart
-----
+:create-app-artifact-id: micrometer-quickstart
+:create-app-extensions: resteasy,micrometer-registry-prometheus
+include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
 This extension will load the core `micrometer` extension as well as additional library dependencies required to support
@@ -78,19 +66,24 @@ prometheus.
 If you already have your Quarkus project configured, you can add the `micrometer-registry-prometheus` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="micrometer-registry-prometheus"
-----
+:add-extension-extensions: micrometer-registry-prometheus
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
 ----
 
 == Writing the application
@@ -163,14 +156,16 @@ observes the size of a list:
     }
 ----
 
-Note that even numbers are added to the list, and odd numbers remove an element from the list. Try the following
-sequence and look for `example_list_size` in the plain text output:
+Note that even numbers are added to the list, and odd numbers remove an element from the list.
+
+Start your application in dev mode:
+
+include::includes/devtools/dev.adoc[]
+
+Then try the following sequence and look for `example_list_size` in the plain text output:
 
 [source,shell]
 ----
-# Compile and run the app in dev mode:
-./mvnw compile quarkus:dev
-
 curl http://localhost:8080/example/gauge/1
 curl http://localhost:8080/example/gauge/2
 curl http://localhost:8080/example/gauge/4
@@ -287,11 +282,14 @@ or an even number, and so on. Try the following sequence and look for `example_p
 output. Note that the `_total` suffix is added when Micrometer applies Prometheus naming conventions to
 `example.prime.number`, the originally specified counter name.
 
+If you did not leave Quarkus running in dev mode, start it again:
+
+include::includes/devtools/dev.adoc[]
+
+Then execute the following sequence:
+
 [source,shell]
 ----
-# If you did not leave quarkus running in dev mode, start it again:
-./mvnw compile quarkus:dev
-
 curl http://localhost:8080/example/prime/-1
 curl http://localhost:8080/example/prime/0
 curl http://localhost:8080/example/prime/1
@@ -338,11 +336,14 @@ visiting the prime endpoint a few more times, look in the plain text output for 
 `example_prime_number_test_seconds_count`, `example_prime_number_test_seconds_sum`, and
 `example_prime_number_test_seconds_max`.
 
+If you did not leave Quarkus running in dev mode, start it again:
+
+include::includes/devtools/dev.adoc[]
+
+Then execute the following sequence:
+
 [source,shell]
 ----
-# If you did not leave quarkus running in dev mode, start it again:
-./mvnw compile quarkus:dev
-
 curl http://localhost:8080/example/prime/256
 curl http://localhost:8080/q/metrics
 curl http://localhost:8080/example/prime/7919
@@ -472,18 +473,26 @@ https://github.com/quarkiverse/quarkiverse-micrometer-registry[Quarkiverse exten
 To use the Micrometer StackDriver MeterRegistry, for example, you would use the
 `quarkus-micrometer-registry-stackdriver` extension:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-    <groupId>io.quarkiverse.micrometer.registry</groupId>
+    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-micrometer-registry-stackdriver</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-micrometer-registry-stackdriver")
 ----
 
 If the Micrometer registry you would like to use does not yet have an associated extension,
 use the `quarkus-micrometer` extension and bring in the packaged MeterRegistry dependency directly:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -493,6 +502,13 @@ use the `quarkus-micrometer` extension and bring in the packaged MeterRegistry d
     <groupId>com.acme</groupId>
     <artifactId>custom-micrometer-registry</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-micrometer")
+implementation("com.acme:custom-micrometer-registry")
 ----
 
 You will then need to specify your own provider to configure and initialize the
@@ -558,14 +574,21 @@ public MeterFilter renameApplicationMeters() {
 }
 ----
 
-Ensure the following dependency is present in your `pom.xml` file if you require the Microprofile Metrics API:
+Ensure the following dependency is present in your build file if you require the MicroProfile Metrics API:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>org.eclipse.microprofile.metrics</groupId>
-  <artifactId>microprofile-metrics-api</artifactId>
+    <groupId>org.eclipse.microprofile.metrics</groupId>
+    <artifactId>microprofile-metrics-api</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.eclipse.microprofile.metrics:microprofile-metrics-api")
 ----
 
 NOTE: The MP Metrics API compatibility layer will be moved to a different extension in the future.

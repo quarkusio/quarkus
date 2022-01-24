@@ -38,21 +38,26 @@ Add the following dependencies to your project:
   - `blaze-persistence-integration-jaxrs` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[JAX-RS]
 
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .Example dependencies using Maven
 ----
-<dependencies>
-    <!-- Blaze-Persistence specific dependencies -->
-    <dependency>
-        <groupId>com.blazebit</groupId>
-        <artifactId>blaze-persistence-integration-quarkus</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>com.blazebit</groupId>
-        <artifactId>blaze-persistence-integration-hibernate-5.6</artifactId>
-        <scope>runtime</scope>
-    </dependency>
-</dependencies>
+<!-- Blaze-Persistence specific dependencies -->
+<dependency>
+    <groupId>com.blazebit</groupId>
+    <artifactId>blaze-persistence-integration-quarkus</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.blazebit</groupId>
+    <artifactId>blaze-persistence-integration-hibernate-5.6</artifactId>
+    <scope>runtime</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.Using Gradle
+----
+implementation("com.blazebit:blaze-persistence-integration-quarkus")
+runtimeOnly("com.blazebit:blaze-persistence-integration-hibernate-5.6")
 ----
 
 The use in native images requires a dependency on the entity view annotation processor that may be extracted into a separate `native` profile:

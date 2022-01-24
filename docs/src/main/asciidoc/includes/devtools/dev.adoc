@@ -1,0 +1,36 @@
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+.CLI
+----
+ifdef::dev-additional-parameters[]
+quarkus dev {dev-additional-parameters}
+endif::[]
+ifndef::dev-additional-parameters[]
+quarkus dev
+endif::[]
+----
+ifdef::devtools-wrapped[+]
+ifndef::devtools-no-maven[]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+----
+ifdef::dev-additional-parameters[]
+./mvnw quarkus:dev {dev-additional-parameters}
+endif::[]
+ifndef::dev-additional-parameters[]
+./mvnw quarkus:dev
+endif::[]
+----
+endif::[]
+ifdef::devtools-wrapped[+]
+ifndef::devtools-no-gradle[]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+ifdef::dev-additional-parameters[]
+./gradlew --console=plain quarkusDev {dev-additional-parameters}
+endif::[]
+ifndef::dev-additional-parameters[]
+./gradlew --console=plain quarkusDev
+endif::[]
+----
+endif::[]

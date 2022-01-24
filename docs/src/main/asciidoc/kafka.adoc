@@ -39,14 +39,13 @@ For a quick start take a look at xref:kafka-reactive-getting-started.adoc[Gettin
 
 You can add the `smallrye-reactive-messaging-kafka` extensions to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-reactive-messaging-kafka"
-----
+:add-extension-extensions: smallrye-reactive-messaging-kafka
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -54,9 +53,15 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
+----
+
 [NOTE]
 ====
-The extension includes `kafka-clients` version 3.0.0 as a transitive dependency and is compatible with Kafka brokers version 2.x.
+The extension includes `kafka-clients` version 3.1.0 as a transitive dependency and is compatible with Kafka brokers version 2.x.
 ====
 
 == Configuring Smallrye Kafka Connector
@@ -1304,12 +1309,19 @@ public class ListOfFruitDeserializer extends ObjectMapperDeserializer<List<Fruit
 
 First, you need to include the `quarkus-jsonb` extension.
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-jsonb</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-jsonb")
 ----
 
 There is an existing `JsonbSerializer` that can be used to serialize all data objects via JSON-B.
@@ -1544,12 +1556,19 @@ In native mode, Snappy is disabled by default as the use of Snappy requires embe
 If your Kafka broker uses OAuth as authentication mechanism, you need to configure the Kafka consumer to enable this authentication process.
 First, add the following dependency to your application:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.strimzi</groupId>
     <artifactId>kafka-oauth-client</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.strimzi:kafka-oauth-client")
 ----
 
 This dependency provides the callback handler required to handle the OAuth workflow.
@@ -1605,13 +1624,20 @@ public class BeverageProcessor {
 
 First, add the following test dependency to your application:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.smallrye.reactive</groupId>
     <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.smallrye.reactive:smallrye-reactive-messaging-in-memory")
 ----
 
 Then, create a Quarkus Test Resource as follows:

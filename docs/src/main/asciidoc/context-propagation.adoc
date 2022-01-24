@@ -39,24 +39,28 @@ the `quarkus-smallrye-context-propagation` extension to enable context propagati
 
 In other words, add the following dependencies to your `pom.xml`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <!-- Mutiny and RestEasy support extensions if not already included -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-mutiny</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-mutiny</artifactId>
-    </dependency>
-    <!-- Context Propagation extension -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-smallrye-context-propagation</artifactId>
-    </dependency>
-</dependencies>
+<!-- RESTEasy support extensions if not already included -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-mutiny</artifactId>
+</dependency>
+<!-- Context Propagation extension -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-context-propagation</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// RESTEasy support extensions if not already included
+implementation("io.quarkus:quarkus-resteasy-mutiny")
+// Context Propagation extension
+implementation("io.quarkus:quarkus-smallrye-context-propagation")
 ----
 
 With this, you will get context propagation for ArC, RESTEasy and transactions, if you are using them.
@@ -268,35 +272,6 @@ You can also inject a custom-built `ThreadContext` using the https://javadoc.io/
                     .select().first(3);
         }
     }
-----
-
-
-== Adding support for RxJava2
-
-You need to include the following modules to get RxJava2 support:
-
-[source,xml]
-----
-<dependencies>
-    <!-- Automatic context propagation for RxJava2 -->
-    <dependency>
-        <groupId>io.smallrye</groupId>
-        <artifactId>smallrye-context-propagation-propagators-rxjava2</artifactId>
-    </dependency>
-    <!-- 
-    Required if you want transactions extended to the end of methods returning
-    an RxJava2 type.
-     -->
-    <dependency>
-        <groupId>io.smallrye.reactive</groupId>
-        <artifactId>smallrye-reactive-converter-rxjava2</artifactId>
-    </dependency>
-    <!-- Required if you return RxJava2 types from your REST endpoints -->
-    <dependency>
-        <groupId>org.jboss.resteasy</groupId>
-        <artifactId>resteasy-rxjava2</artifactId>
-    </dependency>
-</dependencies>
 ----
 
 == Context Propagation for CDI

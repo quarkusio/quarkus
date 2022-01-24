@@ -16,12 +16,7 @@ include::./status-include.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 10 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 NB: For Gradle project setup please see below, and for further reference consult the guide in the xref:gradle-tooling.adoc[Gradle setup page].
 
@@ -29,38 +24,32 @@ NB: For Gradle project setup please see below, and for further reference consult
 
 First, we need a new Kotlin project. This can be done using the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-kotlin-quickstart \
-    -DclassName="org.acme.rest.GreetingResource" \
-    -Dpath="/greeting" \
-    -Dextensions="resteasy-reactive,kotlin,resteasy-reactive-jackson"
-cd rest-kotlin-quickstart
-----
+:create-app-artifact-id: rest-kotlin-quickstart
+:create-app-extensions: kotlin,resteasy-reactive-jackson
+:create-app-code:
+include::includes/devtools/create-app.adoc[]
 
 When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly
-configured to work with Kotlin. Furthermore  the `org.acme.rest.GreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
-The addition of `resteasy-jackson` in the extension list results in importing the RESTEasy/JAX-RS and Jackson extensions.
+configured to work with Kotlin. Furthermore  the `org.acme.ReactiveGreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
+The addition of `resteasy-reactive-jackson` in the extension list results in importing the RESTEasy Reactive and Jackson extensions.
 
-`GreetingResource.kt` looks like this:
+`ReactiveGreetingResource.kt` looks like this:
 
 [source,kotlin]
 ----
-package org.acme.rest
+package org.acme
 
 import javax.ws.rs.GET
 import javax.ws.rs.Path
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
-@Path("/greeting")
-class GreetingResource {
+@Path("/hello")
+class ReactiveGreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    fun hello() = "hello"
+    fun hello() = "Hello RESTEasy Reactive"
 }
 ----
 
@@ -75,7 +64,7 @@ package org.acme.rest
 data class Greeting(val message: String = "")
 ----
 
-We also update the `GreetingResource.kt` like so:
+We also update the `ReactiveGreetingResource.kt` like so:
 
 [source,kotlin]
 ----
@@ -83,7 +72,7 @@ import javax.ws.rs.GET
 import javax.ws.rs.Path
 import javax.ws.rs.core.MediaType
 
-@Path("/greeting")
+@Path("/hello")
 class GreetingResource {
 
     @GET
@@ -91,21 +80,21 @@ class GreetingResource {
 }
 ----
 
-With these changes in place the `/greeting` endpoint will reply with a JSON object instead of a simple String.
+With these changes in place the `/hello` endpoint will reply with a JSON object instead of a simple String.
 
-To make the test pass, we also need to update `GreetingResourceTest.kt` like so:
+To make the test pass, we also need to update `ReactiveGreetingResourceTest.kt` like so:
 
 [source,kotlin]
 ----
 import org.hamcrest.Matchers.equalTo
 
 @QuarkusTest
-class GreetingResourceTest {
+class ReactiveGreetingResourceTest {
 
     @Test
     fun testHelloEndpoint() {
         given()
-          .`when`().get("/greeting")
+          .`when`().get("/hello")
           .then()
              .statusCode(200)
              .body("message", equalTo("hello"))
@@ -315,24 +304,34 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 Quarkus provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
 code and immediately see their changes reflected.
 
-To see this feature in action, first execute: `./mvnw compile quarkus:dev`
+To see this feature in action, first execute:
 
-When executing an HTTP GET request against `http://localhost:8080/greeting`, you see a JSON message with the value `hello` as its `message` field.
+include::includes/devtools/dev.adoc[]
 
-Now using your favorite editor or IDE, update `GreetingResource.kt` and change the `hello` method to the following:
+When executing an HTTP GET request against `http://localhost:8080/hello`, you see a JSON message with the value `hello` as its `message` field.
+
+Now using your favorite editor or IDE, update `ReactiveGreetingResource.kt` and change the `hello` method to the following:
 
 [source,kotlin]
 ----
 fun hello() = Greeting("hi")
 ----
 
-When you now execute an HTTP GET request against `http://localhost:8080/greeting`, you should see a JSON message with the value `hi` as its `message` field.
+When you now execute an HTTP GET request against `http://localhost:8080/hello`, you should see a JSON message with the value `hi` as its `message` field.
 
 One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other. We hope to alleviate this limitation in the future.
 
 == Packaging the application
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file. You can also build the native executable using `./mvnw package -Pnative`, or `./gradlew buildNative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+and executed with `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also build the native executable using:
+
+include::includes/devtools/build-native.adoc[]
 
 == Kotlin and Jackson
 
@@ -447,7 +446,7 @@ class GreetingService {
 }
 
 @Path("/")
-class GreetingResource {
+class ReactiveGreetingResource {
 
     @Inject
     @field: Default // <1> 
@@ -455,7 +454,7 @@ class GreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    @Path("/greeting/{name}")
+    @Path("/hello/{name}")
     fun greeting(@PathParam("name") name: String): String {
         return service.greeting(name)
     }
@@ -484,13 +483,13 @@ class GreetingService {
 }
 
 @Path("/")
-class GreetingResource(
+class ReactiveGreetingResource(
     private val service: GreetingService
 ) {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    @Path("/greeting/{name}")
+    @Path("/hello/{name}")
     fun greeting(@PathParam("name") name: String): String {
         return service.greeting(name)
     }

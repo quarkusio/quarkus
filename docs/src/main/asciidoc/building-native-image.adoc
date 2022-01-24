@@ -50,14 +50,10 @@ and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
 == Prerequisites
 
-To complete this guide using Oracle GraalVM CE/EE, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11 installed with `JAVA_HOME` configured appropriately
+:prerequisites-docker:
+:prerequisites-graalvm-mandatory:
+include::includes/devtools/prerequisites.adoc[]
 * A xref:configuring-c-development[working C development environment]
-* Mandrel or Oracle GraalVM CE/EE version {graalvm-version} installed and xref:configuring-graalvm[configured appropriately]
-* A working container runtime (Docker, podman)
 * The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
 .Supporting native compilation in C
@@ -199,7 +195,9 @@ We use a profile because, you will see very soon, packaging the native executabl
 just pass -Dquarkus.package.type=native as a property on the command line, however it is better to use a profile as
 this allows native image tests to also be run.
 
-Create a native executable using: `./mvnw package -Pnative`.
+Create a native executable using:
+
+include::includes/devtools/build-native.adoc[]
 
 [[graal-and-windows]]
 [NOTE]
@@ -369,22 +367,24 @@ to install as little software as possible).
 To this end, Quarkus provides a very convenient way of creating a native Linux executable by leveraging a container runtime such as Docker or podman.
 The easiest way of accomplishing this task is to execute:
 
-[source,bash]
-----
-./mvnw package -Pnative -Dquarkus.native.container-build=true
-----
+include::includes/devtools/build-native-container.adoc[]
 
 [TIP]
 ====
 By default Quarkus automatically detects the container runtime.
 If you want to explicitely select the container runtime, you can do it with:
-[source,bash]
-----
-# Docker
-./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.container-runtime=docker
-# Podman
-./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.container-runtime=podman
-----
+
+For Docker:
+
+:build-additional-parameters: -Dquarkus.native.container-runtime=docker
+include::includes/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
+
+For podman:
+
+:build-additional-parameters: -Dquarkus.native.container-runtime=podman
+include::includes/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
 
 These are normal Quarkus config properties, so if you always want to build in a container
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
@@ -405,10 +405,10 @@ The reason for this is that the local build driver invoked through `-Dquarkus.na
 [TIP]
 ====
 Building with Mandrel requires a custom builder image parameter to be passed additionally:
-[source,bash,subs=attributes+]
-----
-./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
-----
+
+:build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
+include::includes/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
 
 Please note that the above command points to a floating tag.
 It is highly recommended to use the floating tag,

@@ -21,7 +21,7 @@ import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 @Singleton
 public class GraphQLClientConfigurationMergerBean {
 
-    GraphQLClientsConfiguration upstreamConfiguration;
+    GraphQLClientsConfiguration upstreamConfigs;
 
     @Inject
     GraphQLClientsConfig quarkusConfiguration;
@@ -31,7 +31,7 @@ public class GraphQLClientConfigurationMergerBean {
 
     @PostConstruct
     void enhanceGraphQLConfiguration() {
-        upstreamConfiguration = GraphQLClientsConfiguration.getInstance();
+        upstreamConfigs = GraphQLClientsConfiguration.getInstance();
         for (Map.Entry<String, GraphQLClientConfig> client : quarkusConfiguration.clients.entrySet()) {
             // the raw config key provided in the config, this might be a short class name,
             // so translate that into the fully qualified name if applicable
@@ -44,30 +44,27 @@ public class GraphQLClientConfigurationMergerBean {
 
             GraphQLClientConfig quarkusConfig = client.getValue();
             // if SmallRye configuration does not contain this client, simply use it
-            if (upstreamConfiguration.getClient(configKey) == null) {
-                GraphQLClientConfiguration transformed = new GraphQLClientConfiguration();
-                transformed.setHeaders(quarkusConfig.headers);
-                quarkusConfig.url.ifPresent(transformed::setUrl);
-                transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols.orElse(new ArrayList<>()));
-                upstreamConfiguration.addClient(configKey, transformed);
+            GraphQLClientConfiguration upstreamConfig = upstreamConfigs.getClient(configKey);
+            if (upstreamConfig == null) {
+                GraphQLClientConfiguration transformed = toSmallRyeNativeConfiguration(quarkusConfig);
+                upstreamConfigs.addClient(configKey, transformed);
             } else {
-                // if SmallRye configuration already contains this client, override it with the Quarkus configuration
-                GraphQLClientConfiguration upstreamConfig = upstreamConfiguration.getClient(configKey);
-                quarkusConfig.url.ifPresent(upstreamConfig::setUrl);
-                // merge the headers
-                if (quarkusConfig.headers != null) {
-                    upstreamConfig.getHeaders().putAll(quarkusConfig.headers);
-                }
-                if (quarkusConfig.subprotocols.isPresent()) {
-                    if (upstreamConfig.getWebsocketSubprotocols() != null) {
-                        upstreamConfig.getWebsocketSubprotocols().addAll(quarkusConfig.subprotocols.get());
-                    } else {
-                        upstreamConfig.setWebsocketSubprotocols(quarkusConfig.subprotocols.get());
-                    }
-                }
+                // if SmallRye configuration already contains this client, enhance it with the Quarkus configuration
+                upstreamConfig.merge(toSmallRyeNativeConfiguration(quarkusConfig));
             }
         }
 
+    }
+
+    // translates a Quarkus `GraphQLClientConfig` configuration object to `GraphQLClientConfiguration` which is understood
+    // by SmallRye GraphQL
+    private GraphQLClientConfiguration toSmallRyeNativeConfiguration(GraphQLClientConfig quarkusConfig) {
+        GraphQLClientConfiguration transformed = new GraphQLClientConfiguration();
+        transformed.setHeaders(quarkusConfig.headers);
+        quarkusConfig.url.ifPresent(transformed::setUrl);
+        transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols.orElse(new ArrayList<>()));
+        // TODO: SSL config
+        return transformed;
     }
 
     public void nothing() {

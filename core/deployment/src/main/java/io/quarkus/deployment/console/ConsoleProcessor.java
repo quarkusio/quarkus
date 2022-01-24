@@ -188,4 +188,24 @@ public class ConsoleProcessor {
             return CommandResult.SUCCESS;
         }
     }
+
+    @BuildStep
+    ConsoleCommandBuildItem helpCommand() {
+        return new ConsoleCommandBuildItem(new HelpCommand());
+    }
+
+    @CommandDefinition(name = "help", description = "Displays the command list", aliases = { "h" })
+    public static class HelpCommand implements Command {
+
+        @Override
+        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+            commandInvocation.getShell().writeln("The following commands are available, run them with -h for more info:\n");
+            for (var c : ConsoleCliManager.commands) {
+                commandInvocation.getShell().writeln(
+                        c.getParser().getProcessedCommand().name() + "\t" + c.getParser().getProcessedCommand().description());
+            }
+
+            return CommandResult.SUCCESS;
+        }
+    }
 }

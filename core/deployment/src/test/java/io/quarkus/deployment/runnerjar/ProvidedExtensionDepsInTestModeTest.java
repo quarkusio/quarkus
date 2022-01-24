@@ -13,7 +13,12 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACTV;
 
-public class ProvidedExtensionDepsTest extends ExecutableOutputOutcomeTestBase {
+public class ProvidedExtensionDepsInTestModeTest extends ExecutableOutputOutcomeTestBase {
+
+    @Override
+    protected boolean isBootstrapForTestMode() {
+        return true;
+    }
 
     @Override
     protected TsArtifact modelApp() {
@@ -36,9 +41,11 @@ public class ProvidedExtensionDepsTest extends ExecutableOutputOutcomeTestBase {
                 .addDependency(new TsDependency(extAOptionalDeploymentDep, "provided"));
 
         final TsQuarkusExt extB = new TsQuarkusExt("ext-b");
+        addToExpectedLib(extB.getRuntime());
         this.install(extB);
 
         final TsArtifact someProvidedDep = TsArtifact.jar("some-provided-dep");
+        addToExpectedLib(someProvidedDep);
 
         return TsArtifact.jar("app")
                 .addManagedDependency(platformDescriptor())
@@ -54,6 +61,8 @@ public class ProvidedExtensionDepsTest extends ExecutableOutputOutcomeTestBase {
         expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile",
                 DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"), "compile",
+                DependencyFlags.DEPLOYMENT_CP));
+        expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-b-deployment", "1"), "provided",
                 DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, deploymentDeps);
     }

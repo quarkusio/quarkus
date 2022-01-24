@@ -41,6 +41,16 @@ public class BouncyCastleTestCase {
     }
 
     @Test
+    public void testGenerateEcDsaKeyPair() {
+        RestAssured.given()
+                .when()
+                .get("/jca/generateEcDsaKeyPair")
+                .then()
+                .statusCode(200)
+                .body(equalTo("success"));
+    }
+
+    @Test
     public void testGenerateRsaKeyPair() {
         RestAssured.given()
                 .when()
@@ -48,6 +58,16 @@ public class BouncyCastleTestCase {
                 .then()
                 .statusCode(200)
                 .body(equalTo("success"));
+    }
+
+    @Test
+    public void testAesCbcPKCS7PaddingCipher() {
+        RestAssured.given()
+                .when()
+                .get("/jca/checkAesCbcPKCS7PaddingCipher")
+                .then()
+                .statusCode(200)
+                .body(equalTo("AES/CBC/PKCS7Padding"));
     }
 
     @Test

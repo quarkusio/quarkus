@@ -16,8 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-
 import org.awaitility.core.ThrowingRunnable;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -41,9 +39,6 @@ public class BouncyCastleFipsJsseTestCase {
     @TestHTTPResource(ssl = true)
     URL url;
 
-    @Inject
-    Vertx vertx;
-
     @Test
     public void testListProviders() throws Exception {
         doTestListProviders();
@@ -51,12 +46,17 @@ public class BouncyCastleFipsJsseTestCase {
     }
 
     protected void doTestListProviders() throws Exception {
-        WebClientOptions options = createWebClientOptions();
-        WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
-        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/jsse/listProviders").send().await()
-                .indefinitely();
-        String providers = resp.bodyAsString();
-        assertTrue(providers.contains("BCFIPS,BCJSSE"));
+        Vertx vertx = Vertx.vertx();
+        try {
+            WebClientOptions options = createWebClientOptions();
+            WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/jsse/listProviders").send().await()
+                    .indefinitely();
+            String providers = resp.bodyAsString();
+            assertTrue(providers.contains("BCFIPS,BCJSSE"));
+        } finally {
+            vertx.close();
+        }
     }
 
     private WebClientOptions createWebClientOptions() throws Exception {

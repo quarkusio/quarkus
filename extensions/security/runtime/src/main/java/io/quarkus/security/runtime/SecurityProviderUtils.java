@@ -24,7 +24,9 @@ public final class SecurityProviderUtils {
 
     public static void addProvider(Provider provider) {
         try {
-            Security.addProvider(provider);
+            if (Security.getProvider(provider.getName()) == null) {
+                Security.addProvider(provider);
+            }
         } catch (Exception t) {
             final String errorMessage = String.format("Security provider %s can not be added", provider.getName());
             throw new ConfigurationException(errorMessage, t);
@@ -33,7 +35,9 @@ public final class SecurityProviderUtils {
 
     public static void insertProvider(Provider provider, int index) {
         try {
-            Security.insertProviderAt(provider, index);
+            if (Security.getProvider(provider.getName()) == null) {
+                Security.insertProviderAt(provider, index);
+            }
         } catch (Exception t) {
             final String errorMessage = String.format("Security provider %s can not be inserted", provider.getName());
             throw new ConfigurationException(errorMessage, t);

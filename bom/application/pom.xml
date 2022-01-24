@@ -165,7 +165,7 @@
         <proton-j.version>0.33.10</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.11.2</kubernetes-client.version>
+        <kubernetes-client.version>5.12.0</kubernetes-client.version>
         <flapdoodle.mongo.version>3.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
@@ -386,7 +386,7 @@
                 <version>${kotlin.coroutine.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>            
+            </dependency>
 
             <!-- Quarkus core -->
 
@@ -2218,7 +2218,7 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-container-image-buildpack-deployment</artifactId>
                 <version>${project.version}</version>
-            </dependency>            
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-container-image-docker</artifactId>
@@ -5089,7 +5089,7 @@
                 <groupId>dev.snowdrop</groupId>
                 <artifactId>buildpack-client</artifactId>
                 <version>${java-buildpack-client.version}</version>
-            </dependency>   
+            </dependency>
 
             <!-- Jib -->
             <dependency>

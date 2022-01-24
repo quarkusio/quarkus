@@ -1,4 +1,4 @@
-package io.logging.socket.deployment;
+package io.quarkus.logging.socket.deployment;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;

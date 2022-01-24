@@ -35,21 +35,30 @@ In your `pom.xml`, add the following dependencies:
 * the Liquibase extension
 * your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <!-- Liquibase specific dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-liquibase</artifactId>
-    </dependency>
+<!-- Liquibase specific dependencies -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-liquibase</artifactId>
+</dependency>
 
-    <!-- JDBC driver dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jdbc-postgresql</artifactId>
-    </dependency>
-</dependencies>
+<!-- JDBC driver dependencies -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// Liquibase specific dependencies
+implementation("io.quarkus:quarkus-liquibase")
+
+// JDBC driver dependencies
+implementation("io.quarkus:quarkus-jdbc-postgresql")
 ----
 
 Liquibase support relies on the Quarkus datasource config.

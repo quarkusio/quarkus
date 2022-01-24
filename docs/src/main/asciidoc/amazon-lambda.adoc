@@ -18,11 +18,8 @@ bring up your Quarkus lambda project in dev or test mode and code on your projec
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 30 minutes
-* JDK 11 (AWS requires JDK 1.8 or 11)
-* Apache Maven {maven-version}
+:prerequisites-time: 30 minutes
+include::includes/devtools/prerequisites.adoc[]
 * https://aws.amazon.com[An Amazon AWS account]
 * https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html[AWS CLI]
 * https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html[AWS SAM CLI], for local testing
@@ -112,17 +109,9 @@ create, update, delete, and invoke your lambdas for pure Java and native deploym
 
 == Build and Deploy
 
-Build the project using maven.
+Build the project:
 
-[source,bash,subs=attributes+]
-----
-./mvnw clean package
-----
-
-or, if using Gradle:
-----
-./gradlew clean assemble
-----
+include::includes/devtools/build.adoc[]
 
 This will compile and package your code.
 
@@ -241,33 +230,15 @@ sh target/manage.sh update
 If you want a lower memory footprint and faster initialization times for your lambda, you can compile your Java
 code to a native executable.  Just make sure to rebuild your project with the `-Pnative` switch.
 
-For Linux hosts execute:
+For Linux hosts, execute:
 
-[source,bash,subs=attributes+]
-----
-mvn package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
-or, if using Gradle:
-[source,bash,subs=attributes+]
-----
-./gradlew build -Dquarkus.package.type=native
-----
+NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing Quarkus to use a docker build as Amazon
+Lambda requires linux binaries.  You can do this by passing this property to your build:
+`-Dquarkus.native.container-build=true`. This requires you to have Docker installed locally, however.
 
-NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing quarkus to use a docker build as Amazon
-Lambda requires linux binaries.  You can do this by passing this property to your Maven build:
-`-Dquarkus.native.container-build=true`, or for Gradle: `--docker-build=true`.  This requires you to have docker installed locally, however.
-
-[source,bash,subs=attributes+]
-----
-./mvnw clean install -Pnative -Dquarkus.native.container-build=true 
-----
-
-or, if using Gradle:
-[source,bash,subs=attributes+]
-----
-./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
-----
+include::includes/devtools/build-native-container.adoc[]
 
 Either of these commands will compile and create a native executable image.  It also generates a zip file `target/function.zip`.
 This zip file contains your native executable image renamed to `bootstrap`.  This is a requirement of the AWS Lambda
@@ -334,10 +305,10 @@ While running in Quarkus Dev Mode, you can feed events to it by doing an HTTP PO
 The mock event server will receive the events and your lambda will be invoked.  You can perform live coding on your lambda
 and changes will automatically be recompiled and available the next invocation you make.  Here's an example:
 
+include::includes/devtools/dev.adoc[]
+
 [source,bash]
 ----
-$ mvn clean quarkus:dev
-
 $ curl -d "{\"name\":\"John\"}" -X POST http://localhost:8080
 ----
 
@@ -472,7 +443,8 @@ quarkus.ssl.native=true
 [[aws-sdk-v2]]
 == Using the AWS Java SDK v2
 
-NOTE: Quarkus now has extensions for DynamoDB, S3, SNS and SQS (more coming). Please check those guides on how to use the various AWS Services with Quarkus, as opposed to wiring manually like below.
+NOTE: Quarkus now has extensions for DynamoDB, S3, SNS and SQS (more coming).
+Please check link:{amazon-services-guide}[those guides] on how to use the various AWS Services with Quarkus, as opposed to wiring manually like below.
 
 With minimal integration, it is possible to leverage the AWS Java SDK v2,
 which can be used to invoke services such as SQS, SNS, S3 and DynamoDB.
@@ -556,7 +528,6 @@ For Maven, add the following to your `pom.xml`.
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>commons-logging-jboss-logging</artifactId>
-            <version>1.0.0.Final</version>
         </dependency>
     </dependencies>
 ----
@@ -566,7 +537,7 @@ there is some additional work to bundle the `function.zip`, as below.  For more 
 
 == Additional requirements for client SSL
 
-The native executable requires some additional steps to enable client ssl that S3 and other aws libraries need.
+The native executable requires some additional steps to enable client SSL that S3 and other AWS libraries need.
 
 1. A custom `bootstrap` script
 2. `libsunec.so` must be added to `function.zip`

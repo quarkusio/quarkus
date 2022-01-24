@@ -16,19 +16,24 @@ Quarkus includes the `kubernetes-config` extension which allows developers to us
 Once you have your Quarkus project configured you can add the `kubernetes-config` extension
 by running the following command in your project base directory.
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="kubernetes-config"
-----
+:add-extension-extensions: kubernetes-config
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-kubernetes-config</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kubernetes-config")
 ----
 
 == Usage

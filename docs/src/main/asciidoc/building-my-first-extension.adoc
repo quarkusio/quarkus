@@ -23,12 +23,9 @@ Keep in mind it's not representative of the power of moving things to build time
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 30 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+:prerequisites-time: 30 minutes
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
 
 == Basic Concepts
 

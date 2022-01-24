@@ -29,12 +29,8 @@ This guide covers:
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
 
 [TIP]
 .Verify Maven is using the Java you expect
@@ -75,43 +71,27 @@ The easiest way to create a new Quarkus project is to open a terminal and run th
 
 For Linux & MacOS users
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=getting-started \
-    -DclassName="org.acme.getting.started.GreetingResource" \
-    -Dpath="/hello"
-cd getting-started
-----
+:create-app-artifact-id: getting-started
+:create-app-extensions: resteasy
+:create-app-code:
+include::includes/devtools/create-app.adoc[]
 
 For Windows users
 
-- If using cmd , (don't use backward slash `\`)
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started -DclassName="org.acme.getting.started.GreetingResource" -Dpath="/hello"
-----
-
-- If using Powershell , wrap `-D` parameters in double quotes
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started" "-DclassName=org.acme.getting.started.GreetingResource" "-Dpath=/hello"
-----
+- If using cmd , (don't use backward slash `\` and put everything on the same line)
+- If using Powershell , wrap `-D` parameters in double quotes e.g. `"-DprojectArtifactId=getting-started"`
 
 It generates the following in  `./getting-started`:
 
 * the Maven structure
-* an `org.acme.getting.started.GreetingResource` resource exposed on `/hello`
+* an `org.acme.GreetingResource` resource exposed on `/hello`
 * an associated unit test
 * a landing page that is accessible on `http://localhost:8080` after starting the application
 * example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
 * the application configuration file
 
 Once generated, look at the `pom.xml`.
-You will find the import of the Quarkus BOM, allowing you to omit the version on the different Quarkus dependencies.
+You will find the import of the Quarkus BOM, allowing you to omit the version of the different Quarkus dependencies.
 In addition, you can see the `quarkus-maven-plugin` responsible of the packaging of the application and also providing the development mode.
 
 [source,xml,subs=attributes+]
@@ -149,23 +129,35 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
 </build>
 ----
 
+In a Gradle project, you would find a similar setup:
+
+* the Quarkus Gradle plugin
+* an `enforcedPlatform` directive for the Quarkus BOM
+
 If we focus on the dependencies section, you can see the extension allowing the development of REST applications:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy</artifactId>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy")
 ----
 
 === The JAX-RS resources
 
-During the project creation, the `src/main/java/org/acme/getting/started/GreetingResource.java` file has been created with the following content:
+During the project creation, the `src/main/java/org/acme/GreetingResource.java` file has been created with the following content:
 
 [source,java]
 ----
-package org.acme.getting.started;
+package org.acme;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -178,12 +170,12 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello";
+        return "Hello RESTEasy";
     }
 }
 ----
 
-It's a very simple REST endpoint, returning "hello" to requests on "/hello".
+It's a very simple REST endpoint, returning "Hello RESTEasy" to requests on "/hello".
 
 [TIP]
 .Differences with vanilla JAX-RS
@@ -194,23 +186,23 @@ of the resource is created and not one per request. You can configure this using
 
 == Running the application
 
-Now we are ready to run our application.
-Use: `./mvnw compile quarkus:dev`:
+Now we are ready to run our application:
+
+include::includes/devtools/dev.adoc[]
 
 [source,shell]
 ----
-$ ./mvnw compile quarkus:dev
 [INFO] --------------------< org.acme:getting-started >---------------------
 [INFO] Building getting-started 1.0.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO]
 [INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ getting-started ---
 [INFO] Using 'UTF-8' encoding to copy filtered resources.
-[INFO] skip non existing resourceDirectory /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/src/main/resources
+[INFO] skip non existing resourceDirectory <path>/getting-started/src/main/resources
 [INFO]
 [INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ getting-started ---
 [INFO] Changes detected - recompiling the module!
-[INFO] Compiling 2 source files to /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/target/classes
+[INFO] Compiling 2 source files to <path>/getting-started/target/classes
 [INFO]
 [INFO] --- quarkus-maven-plugin:<version>:dev (default-cli) @ getting-started ---
 Listening for transport dt_socket at address: 5005
@@ -246,11 +238,11 @@ Quarkus only implements a subset of the CDI features and comes with non-standard
 ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
 
 Let's modify the application and add a companion bean.
-Create the `src/main/java/org/acme/getting/started/GreetingService.java` file with the following content:
+Create the `src/main/java/org/acme/GreetingService.java` file with the following content:
 
 [source, java]
 ----
-package org.acme.getting.started;
+package org.acme;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -268,7 +260,7 @@ Edit the `GreetingResource` class to inject the `GreetingService` and create a n
 
 [source, java]
 ----
-package org.acme.getting.started;
+package org.acme;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -299,7 +291,12 @@ public class GreetingResource {
 }
 ----
 
-If you stopped the application, restart the application with `./mvnw compile quarkus:dev`.
+If you stopped the application
+(keep in mind you don't have to do it, changes will be automatically deployed by our live reload feature),
+restart the application with:
+
+include::includes/devtools/dev.adoc[]
+
 Then check that the endpoint returns `hello quarkus` as expected:
 
 [source,shell,subs=attributes+]
@@ -308,11 +305,9 @@ $ curl -w "\n" http://localhost:8080/hello/greeting/quarkus
 hello quarkus
 ----
 
-
-
 == Development Mode
 
-`quarkus:dev` runs Quarkus in development mode. This enables hot deployment with background compilation, which means
+`quarkus:dev` runs Quarkus in development mode. This enables live reload with background compilation, which means
 that when you modify your Java files and/or your resource files and refresh your browser, these changes will automatically take effect.
 This works too for resource files like the configuration property file.
 Refreshing the browser triggers a scan of the workspace, and if any changes are detected, the Java files are recompiled
@@ -326,9 +321,10 @@ can pass `-Dsuspend` on the command line. If you don't want the debugger at all 
 
 All right, so far so good, but wouldn't it be better with a few tests, just in case.
 
-In the generated `pom.xml` file, you can see 2 test dependencies:
+In the generated build file, you can see 2 test dependencies:
 
-[source,xml,subs=attributes+]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -342,9 +338,16 @@ In the generated `pom.xml` file, you can see 2 test dependencies:
 </dependency>
 ----
 
-Quarkus supports https://junit.org/junit5/[Junit 5] tests.
-Because of this, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must
-be set, as the default version does not support Junit 5:
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-junit5")
+testImplementation("io.rest-assured:rest-assured")
+----
+
+Quarkus supports https://junit.org/junit5/[JUnit 5] tests.
+
+Because of this, in the case of Maven, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must be set, as the default version does not support JUnit 5:
 
 [source,xml,subs=attributes+]
 ----
@@ -360,15 +363,15 @@ be set, as the default version does not support Junit 5:
 </plugin>
 ----
 
-We also set the `java.util.logging` system property to make sure tests will use the correct logmanager and `maven.home` to ensure that custom configuration
+We also set the `java.util.logging` system property to make sure tests will use the correct log manager and `maven.home` to ensure that custom configuration
 from `${maven.home}/conf/settings.xml` is applied (if any).
 
 The generated project contains a simple test.
-Edit the `src/test/java/org/acme/getting/started/GreetingResourceTest.java` to match the following content:
+Edit the `src/test/java/org/acme/GreetingResourceTest.java` to match the following content:
 
 [source,java]
 ----
-package org.acme.getting.started;
+package org.acme;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -451,7 +454,10 @@ Be sure to read the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] secti
 
 == Packaging and run the application
 
-The application is packaged using `./mvnw package`.
+The application is packaged using:
+
+include::includes/devtools/build.adoc[]
+
 It produces several outputs in `/target`:
 
 * `getting-started-1.0.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular

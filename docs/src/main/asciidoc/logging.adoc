@@ -110,17 +110,24 @@ NOTE: The logger instances are cached internally. Therefore, a logger injected e
 link:https://logging.apache.org/log4j/2.x/[Log4j] is a logging implementation: it contains a logging backend and a logging facade.
 Quarkus uses the JBoss Log Manager backend, so you will need to include the `log4j2-jboss-logmanager` library to route Log4j logs to JBoss Log Manager.
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-    <dependency>
-      <groupId>org.jboss.logmanager</groupId>
-      <artifactId>log4j2-jboss-logmanager</artifactId> <1>
-    </dependency>
+<dependency>
+    <groupId>org.jboss.logmanager</groupId>
+    <artifactId>log4j2-jboss-logmanager</artifactId> <1>
+</dependency>
 ----
+<1> This is the library needed for Log4j version 2; if you use the legacy Log4j version 1 you need to use `log4j-jboss-logmanager` instead.
 
-<1> This is the library needed for Log4J version 2; if you use the legacy Log4J version 1 you need to use `log4j-jboss-logmanager` instead.
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.jboss.logmanager:log4j2-jboss-logmanager") <1>
+----
+<1> This is the library needed for Log4j version 2; if you use the legacy Log4j version 1 you need to use `log4j-jboss-logmanager` instead.
 
-You can then use the Log4J API inside your application.
+You can then use the Log4j API inside your application.
 
 WARNING: Do not include any Log4j dependencies. The `log4j2-jboss-logmanager` library includes what's needed to use Log4j as a logging facade.
 
@@ -255,19 +262,22 @@ later analysis.
 [id="json-logging"]
 ==== JSON Logging Format
 
-In order to configure the JSON logging format, the `quarkus-logging-json` extension may be employed.  Add this extension to your
-application POM as the following snippet illustrates.
+In order to configure the JSON logging format, the `quarkus-logging-json` extension may be employed.
+Add this extension to your build file as the following snippet illustrates:
 
-.Modifications to POM file to add the JSON logging extension
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-  <dependencies>
-    <!-- ... your other dependencies are here ... -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-logging-json</artifactId>
-    </dependency>
-  </dependencies>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-logging-json</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-logging-json")
 ----
 
 The presence of this extension will, by default, replace the output format configuration from the console configuration.
@@ -417,7 +427,7 @@ See also: <<getting-started-testing.adoc#test-from-ide,Running `@QuarkusTest` fr
 
 Quarkus relies on the JBoss Logging library for all the logging requirements.
 
-If you are using libraries that have dependencies on other logging libraries such as Apache Commons Logging, Log4j or Slf4j, you need to exclude them from the dependencies and use one of the adapters provided by JBoss Logging.
+If you are using libraries that have dependencies on other logging libraries such as Apache Commons Logging, Log4j or SLF4J, you need to exclude them from the dependencies and use one of the adapters provided by JBoss Logging.
 
 This is especially important when building native executables as you could encounter issues similar to the following when compiling the native executable:
 
@@ -429,9 +439,12 @@ Caused by java.lang.ClassNotFoundException: org.apache.commons.logging.impl.LogF
 This is due to the logging implementation not being included in the native executable.
 Using the JBoss Logging adapters will solve this problem.
 
-These adapters are available for most of the common Open Source logging components, such as Apache Commons Logging:
+These adapters are available for most of the common Open Source logging components.
 
-[source, xml]
+Apache Commons Logging:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.jboss.logging</groupId>
@@ -439,9 +452,16 @@ These adapters are available for most of the common Open Source logging componen
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.jboss.logging:commons-logging-jboss-logging")
+----
+
 Log4j:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.jboss.logmanager</groupId>
@@ -449,9 +469,16 @@ Log4j:
 </dependency>
 ----
 
-Log4j2:
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.jboss.logmanager:log4j-jboss-logmanager")
+----
 
-[source, xml]
+Log4j 2:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.jboss.logmanager</groupId>
@@ -459,14 +486,27 @@ Log4j2:
 </dependency>
 ----
 
-And Slf4j:
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.jboss.logmanager:log4j2-jboss-logmanager")
+----
 
-[source, xml]
+And SLF4J:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.jboss.slf4j</groupId>
     <artifactId>slf4j-jboss-logmanager</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.jboss.slf4j:slf4j-jboss-logmanager")
 ----
 
 NOTE: This is not needed for libraries that are dependencies of a Quarkus extension as the extension will take care of this for you.

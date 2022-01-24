@@ -26,10 +26,8 @@ when all that is needed is the ability to push to a container image registry.
 
 To use this feature, add the following extension to your project:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="container-image-jib"
-----
+:add-extension-extensions: container-image-jib
+include::includes/devtools/extension-add.adoc[]
 
 WARNING: In situations where all that is needed to build a container image and no push to a registry is necessary (essentially by having set `quarkus.container-image.build=true` and left `quarkus.container-image.push` unset - it defaults to `false`), then this extension creates a container image and registers
 it with the Docker daemon. This means that although Docker isn't used to build the image, it is nevertheless necessary. Also note that using this mode, the built container image *will*
@@ -75,10 +73,8 @@ The extension `quarkus-container-image-docker` is using the Docker binary and th
 
 To use this feature, add the following extension to your project.
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="container-image-docker"
-----
+:add-extension-extensions: container-image-docker
+include::includes/devtools/extension-add.adoc[]
 
 [#s2i]
 === S2I
@@ -90,10 +86,8 @@ The benefit of this approach, is that it can be combined with OpenShift's `Deplo
 
 To use this feature, add the following extension to your project.
 
-[source,xml]
-----
-./mvnw quarkus:add-extension -Dextensions="container-image-s2i"
-----
+:add-extension-extensions: container-image-s2i
+include::includes/devtools/extension-add.adoc[]
 
 S2I builds require creating a `BuildConfig` and two `ImageStream` resources, one for the builder image and one for the output image.
 The creation of such objects is being taken care of by the Quarkus Kubernetes extension.
@@ -102,8 +96,9 @@ The creation of such objects is being taken care of by the Quarkus Kubernetes ex
 [#buildpack]
 === Buildpack
 
-The extension `quarkus-container-image-buildpack` is using the buildpacks in order to perfrom container image builds. 
-Under the hood buildpacks will use a docker daemon for the actual build. While buildpacks support alternatives to docker, this extension will only work with docker.
+The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds. 
+Under the hood buildpacks will use a Docker daemon for the actual build.
+While buildpacks support alternatives to Docker, this extension will only work with Docker.
 
 Additionally, the user will have to configure which build image to use (no default image is provided). For example:
 
@@ -114,30 +109,23 @@ quarkus.buildpack.jvm-builder-image=<jvm builder image>
 
 or for native:
 
-
 [source,properties]
 ----
 quarkus.buildpack.jvm-builder-image=<native builder image>
 ----
 
-
-
 To use this feature, add the following extension to your project.
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="container-image-buildpack"
-----
-
+:add-extension-extensions: container-image-buildpack
+include::includes/devtools/extension-add.adoc[]
 
 == Building
 
 To build a container image for your project, `quarkus.container-image.build=true` needs to be set using any of the ways that Quarkus supports.
 
-[source,bash,subs=attributes+]
-----
-./mvnw clean package -Dquarkus.container-image.build=true
-----
+:build-additional-parameters: -Dquarkus.container-image.build=true
+include::includes/devtools/build.adoc[]
+:!build-additional-parameters:
 
 NOTE: If you ever want to build a native container image and already have an existing native image you can set `-Dquarkus.native.reuse-existing=true` and the native image build will not be re-run.
 
@@ -145,10 +133,9 @@ NOTE: If you ever want to build a native container image and already have an exi
 
 To push a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.
 
-[source,bash,subs=attributes+]
-----
-./mvnw clean package -Dquarkus.container-image.push=true
-----
+:build-additional-parameters: -Dquarkus.container-image.push=true
+include::includes/devtools/build.adoc[]
+:!build-additional-parameters:
 
 NOTE: If no registry is set (using `quarkus.container-image.registry`) then `docker.io` will be used as the default.
 

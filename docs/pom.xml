@@ -2727,6 +2727,7 @@
                         <quickstarts-tree-url>${quickstarts-base-url}/tree/main</quickstarts-tree-url>
 
                         <!-- Quarkiverse documentation links -->
+                        <amazon-services-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-amazon-services/dev/index.html</amazon-services-guide>
                         <config-consul-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-config-extensions/dev/consul.html</config-consul-guide>
                         <hibernate-search-orm-elasticsearch-aws-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-hibernate-search-extras/dev/index.html</hibernate-search-orm-elasticsearch-aws-guide>
                         <neo4j-guide>https://quarkiverse.github.io/quarkiverse-docs/quarkus-neo4j/dev/index.html</neo4j-guide>

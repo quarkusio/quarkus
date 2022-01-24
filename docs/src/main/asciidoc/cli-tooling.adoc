@@ -17,59 +17,31 @@ include::./status-include.adoc[]
 
 You can install the Quarkus CLI via:
 
-* <<homebrew,Homebrew>>
-* <<jbang,JBang>>
-* <<sdkman,SDKMAN!>>
+* <<jbang,JBang>> for Linux, OSX and Windows (no java required)
+* <<sdkman,SDKMAN!>> for Linux and OSX (java required)
+* <<homebrew,Homebrew>> for OSX (java required)
 
 More alternatives such as https://chocolatey.org[Chocolatey] will be made available soon.
 
-[[homebrew]]
-=== Installing with Homebrew
-
-https://brew.sh[Homebrew] is a package manager for macOS (and Linux).
-
-You can use Homebrew to install (and update) the Quarkus CLI.
-
-[NOTE]
-====
-Make sure you have a JDK installed before installing the Quarkus CLI.
-We haven't added an explicit dependency as we wanted to make sure you could use your preferred JDK version.
-
-You can install a JDK with `brew install openjdk` for Java 17 or `brew install openjdk@11` for Java 11.
-====
-
-To install the Quarkus CLI using Homebrew, run the following command:
-
-[source,shell]
-----
-brew install quarkusio/tap/quarkus
-----
-
-It will install the latest version of the Quarkus CLI.
-This command can also be used to update the Quarkus CLI.
-
-Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
-
-[source,shell,subs=attributes+]
-----
-quarkus --version
-{quarkus-version}
-----
 
 [[jbang]]
 === Installing with JBang
 
-The Quarkus CLI is currently available as a jar installable using https://jbang.dev[JBang]. 
+The Quarkus CLI is available as a jar installable using https://jbang.dev[JBang]. 
+
+JBang will use your existing Java or install one for you if needed.
 
 On Linux, macOS, and Windows (using WSL or bash compatible shell like Cygwin or MinGW)
 [source,bash]
 ----
+curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/
 curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio
 ----
 
 On Windows using Powershell:
 [source,powershell]
 ----
+iex "& { $(iwr https://ps.jbang.dev) } trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/"
 iex "& { $(iwr https://ps.jbang.dev) } app install --fresh --force quarkus@quarkusio"
 ----
 
@@ -134,6 +106,39 @@ sdk install quarkus
 
 It will install the latest version of the Quarkus CLI.
 SDKMAN! will let you know when new versions are available so updates will be straightforward.
+
+[[homebrew]]
+=== Installing with Homebrew
+
+https://brew.sh[Homebrew] is a package manager for macOS (and Linux).
+
+You can use Homebrew to install (and update) the Quarkus CLI.
+
+[NOTE]
+====
+Make sure you have a JDK installed before installing the Quarkus CLI.
+We haven't added an explicit dependency as we wanted to make sure you could use your preferred JDK version.
+
+You can install a JDK with `brew install openjdk` for Java 17 or `brew install openjdk@11` for Java 11.
+====
+
+To install the Quarkus CLI using Homebrew, run the following command:
+
+[source,shell]
+----
+brew install quarkusio/tap/quarkus
+----
+
+It will install the latest version of the Quarkus CLI.
+This command can also be used to update the Quarkus CLI.
+
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
+
+[source,shell,subs=attributes+]
+----
+quarkus --version
+{quarkus-version}
+----
 
 Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
 

@@ -978,7 +978,6 @@ quarkus.oidc.credentials.jwt.subject=custom-subject
 quarkus.oidc.credentials.jwt.issuer=custom-issuer
 ----
 
-
 ==== Apple POST JWT
 
 Apple OpenID Connect Provider uses a `client_secret_post` method where a secret is a JWT produced with a `private_key_jwt` authentication method but with Apple account specific issuer and subject claims.
@@ -997,6 +996,31 @@ quarkus.oidc.credentials.jwt.token-key-id=${apple.key-id}
 
 quarkus.oidc.credentials.jwt.subject=${apple.subject}
 quarkus.oidc.credentials.jwt.issuer=${apple.issuer}
+----
+
+==== Mutual TLS
+
+Some OpenID Connect Providers may require that a client is authenticated as part of the `Mutual TLS` (`MTLS`) authentication process.
+
+`quarkus-oidc` can be configured as follows to support `MTLS`:
+
+[source,properties]
+----
+quarkus.oidc.tls.verification=certificate-validation
+
+# Keystore configuration
+quarkus.oidc.tls.key-store-file=client-keystore.jks
+quarkus.oidc.tls.key-store-password=${key-store-password}
+
+# Add more keystore properties if needed:
+#quarkus.oidc.tls.key-store-alias=keyAlias
+#quarkus.oidc.tls.key-store-alias-password=keyAliasPassword
+
+# Truststore configuration
+quarkus.oidc.tls.trust-store-file=client-truststore.jks
+quarkus.oidc.tls.trust-store-password=${trust-store-password}
+# Add more truststore properties if needed:
+#quarkus.oidc.tls.trust-store-alias=certAlias
 ----
 
 [[integration-testing]]

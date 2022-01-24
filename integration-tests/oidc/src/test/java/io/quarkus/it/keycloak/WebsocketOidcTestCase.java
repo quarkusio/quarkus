@@ -1,6 +1,6 @@
 package io.quarkus.it.keycloak;
 
-import static io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager.getAccessToken;
+import static io.quarkus.it.keycloak.KeycloakXTestResourceLifecycleManager.getAccessToken;
 
 import java.net.URI;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -18,11 +18,10 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.quarkus.websockets.BearerTokenClientEndpointConfigurator;
 
 @QuarkusTest
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@QuarkusTestResource(KeycloakXTestResourceLifecycleManager.class)
 public class WebsocketOidcTestCase {
 
     @TestHTTPResource("secured-hello")

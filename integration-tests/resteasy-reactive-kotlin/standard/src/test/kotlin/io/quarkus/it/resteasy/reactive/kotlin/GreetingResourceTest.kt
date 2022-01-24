@@ -3,6 +3,9 @@ package io.quarkus.it.resteasy.reactive.kotlin
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
+import io.restassured.module.kotlin.extensions.Given
+import io.restassured.module.kotlin.extensions.Then
+import io.restassured.module.kotlin.extensions.When
 import org.hamcrest.CoreMatchers
 import org.junit.jupiter.api.Test
 
@@ -11,21 +14,25 @@ class GreetingResourceTest {
 
     @Test
     fun testDataClassAndCustomFilters() {
-        RestAssured.given()
-                .`when`()["/greeting"]
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("message", CoreMatchers.`is`("hello foo bar"))
-                .header("method", "testSuspend")
+        When {
+            get("/greeting")
+        } Then {
+            statusCode(200)
+            contentType(ContentType.JSON)
+            body("message", CoreMatchers.`is`("hello foo bar"))
+            header("method", "testSuspend")
+        }
     }
 
     @Test
     fun testAbortingCustomFilters() {
-        RestAssured.given().header("abort", "true")
-                .`when`()["/greeting"]
-                .then()
-                .statusCode(204)
+        Given {
+            header("abort", "true")
+        } When {
+            get("/greeting")
+        } Then {
+            statusCode(204)
+        }
     }
 
     @Test

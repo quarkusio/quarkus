@@ -254,9 +254,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
 
-            final boolean flatTestClassPath = quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST
-                    && quarkusBootstrap.isFlatClassPath();
-            if (flatTestClassPath) {
+            if (quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST && quarkusBootstrap.isFlatClassPath()) {
                 //in test mode we have everything in the base class loader
                 //there is no need to restart so there is no need for an additional CL
 
@@ -295,12 +293,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             for (ResolvedDependency dependency : appModel.getDependencies()) {
                 if (!dependency.isRuntimeCp()
                         || isHotReloadable(dependency, hotReloadPaths)
-                        || configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())
-                        || !flatTestClassPath && dependency.isReloadable()
-                                && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
+                        || configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
                     continue;
                 }
-
                 if (configuredClassLoading.removedArtifacts.contains(dependency.getKey())) {
                     processCpElement(dependency, builder::addBannedElement);
                 } else {
@@ -346,8 +341,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (ResolvedDependency dependency : appModel.getDependencies()) {
             if (dependency.isRuntimeCp() &&
                     dependency.getType().equals(ArtifactCoords.TYPE_JAR) &&
-                    (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
+                    configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
         }
@@ -384,8 +378,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (ResolvedDependency dependency : appModel.getDependencies()) {
             if (dependency.isRuntimeCp() &&
                     dependency.getType().equals(ArtifactCoords.TYPE_JAR) &&
-                    (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
-                            configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
+                    configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
             }
         }

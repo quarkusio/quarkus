@@ -167,6 +167,14 @@ public class CliHelpTest {
         Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
     }
 
+    @Test
+    @Order(51)
+    public void testGenkeyHelp() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "genkey", "--help");
+        result.echoSystemOut();
+        Assertions.assertTrue(result.stdout.contains("Usage"), "Help output should show usage instructions");
+    }
+
     @Order(60)
     @Test
     public void testGenerateCompletionHelp() throws Exception {

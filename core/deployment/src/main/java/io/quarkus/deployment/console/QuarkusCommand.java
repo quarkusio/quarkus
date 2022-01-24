@@ -10,11 +10,18 @@ import io.quarkus.dev.console.QuarkusConsole;
 
 public abstract class QuarkusCommand implements Command {
 
-    @Option(shortName = 'd', hasValue = false)
+    @Option(shortName = 'd', hasValue = false, description = "Return to the application after the command has run")
     public boolean done;
+
+    @Option(shortName = 'h', hasValue = false, overrideRequired = true)
+    public boolean help;
 
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        if (help) {
+            commandInvocation.getShell().write(commandInvocation.getHelpInfo());
+            return CommandResult.SUCCESS;
+        }
         var result = doExecute(commandInvocation);
         if (done) {
             QuarkusConsole.INSTANCE.exitCliMode();

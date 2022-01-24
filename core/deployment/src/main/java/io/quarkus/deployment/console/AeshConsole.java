@@ -70,6 +70,7 @@ public class AeshConsole extends QuarkusConsole {
     private final StatusLine prompt;
 
     private volatile boolean pauseOutput;
+    private volatile boolean firstConsoleRun = true;
     private DelegateConnection delegateConnection;
     private ReadlineConsole aeshConsole;
 
@@ -528,8 +529,14 @@ public class AeshConsole extends QuarkusConsole {
             pauseOutput = true;
             delegateConnection = new DelegateConnection(connection);
             connection.write(ALTERNATE_SCREEN_BUFFER);
+            if (firstConsoleRun) {
+                connection.write(
+                        "You are now in Quarkus Terminal. Your app is still running. Use `help` or tab completion to explore, `quit` or `q` to return to your application.\n");
+                firstConsoleRun = false;
+            }
             AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
             ConsoleCliManager.commands.forEach(commandBuilder::command);
+
             CommandRegistry registry = commandBuilder
                     .create();
             Settings settings = SettingsBuilder

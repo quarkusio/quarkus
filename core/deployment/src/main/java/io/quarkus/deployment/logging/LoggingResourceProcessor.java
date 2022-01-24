@@ -525,6 +525,9 @@ public final class LoggingResourceProcessor {
     @GroupCommandDefinition(name = "log", description = "Logging Commands")
     public static class LogCommand implements GroupCommand {
 
+        @Option(shortName = 'h', hasValue = false, overrideRequired = true)
+        public boolean help;
+
         @Override
         public List<Command> getCommands() {
             return List.of(new SetLogLevelCommand());
@@ -532,6 +535,7 @@ public final class LoggingResourceProcessor {
 
         @Override
         public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+            commandInvocation.getShell().writeln(commandInvocation.getHelpInfo());
             return CommandResult.SUCCESS;
         }
     }
@@ -539,10 +543,10 @@ public final class LoggingResourceProcessor {
     @CommandDefinition(name = "set-level", description = "Sets the log level for a logger")
     public static class SetLogLevelCommand extends QuarkusCommand {
 
-        @Option(required = true, completer = LoggerCompleter.class)
+        @Option(required = true, completer = LoggerCompleter.class, description = "The logger to modify")
         private String logger;
 
-        @Option(required = true, completer = LevelCompleter.class)
+        @Option(required = true, completer = LevelCompleter.class, description = "The log level")
         private String level;
 
         @Override

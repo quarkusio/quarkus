@@ -18,7 +18,7 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "categories", aliases = "cat", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List extension categories.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
+@CommandLine.Command(name = "categories", aliases = "cat", header = "List extension categories.")
 public class ProjectExtensionsCategories extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Mixin

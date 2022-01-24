@@ -15,7 +15,7 @@ import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 
-@CommandLine.Command(name = "dev", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in dev (live coding) mode.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "dev", showEndOfOptionsDelimiterInUsageHelp = true, header = "Run the current project in dev (live coding) mode.")
 public class Dev extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nDev Mode options:%n")

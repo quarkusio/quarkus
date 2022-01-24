@@ -18,7 +18,7 @@ import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "extension", sortOptions = false, mixinStandardHelpOptions = false, showDefaultValues = true, header = "Create a Quarkus extension project", description = "%n"
+@CommandLine.Command(name = "extension", header = "Create a Quarkus extension project", description = "%n"
         + "Quarkus extensions are built from multiple modules: runtime, deployment, integration-test and "
         + "docs. This command will generate a Maven multi-module project in a directory called EXTENSION-ID "
         + "by applying naming conventions to the specified EXTENSION-ID.", footer = { "%nDefault Naming conventions%n",
@@ -65,7 +65,7 @@ import picocli.CommandLine;
                 "    artifact:\torg.acme:hello-world-docs:1.0.0-SNAPSHOT",
                 "    name:\tHello World - Documentation",
                 "%nGenerated classes will use 'HelloWorld' as a class name prefix."
-        }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+        })
 public class CreateExtension extends BaseCreateCommand {
 
     @CommandLine.Spec

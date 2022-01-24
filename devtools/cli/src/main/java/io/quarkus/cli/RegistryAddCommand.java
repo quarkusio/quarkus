@@ -10,8 +10,8 @@ import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistryConfig;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Add a Quarkus extension registry", description = "%n"
-        + "This command will add a Quarkus extension registry to the registry client configuration unless it's already present.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "add", header = "Add a Quarkus extension registry", description = "%n"
+        + "This command will add a Quarkus extension registry to the registry client configuration unless it's already present.")
 public class RegistryAddCommand extends BaseRegistryCommand {
 
     @CommandLine.Parameters(arity = "1..*", split = ",", paramLabel = "REGISTRY-ID[,REGISTRY-ID]", description = "Registry ID to add to the registry client configuration%n"

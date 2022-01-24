@@ -6,6 +6,7 @@ import static org.wildfly.common.os.Process.getProcessName;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -25,17 +26,21 @@ import java.util.logging.LogRecord;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
+import org.jboss.logmanager.formatters.JsonFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.formatters.StructuredFormatter;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
 import org.jboss.logmanager.handlers.PeriodicRotatingFileHandler;
 import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
 import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
+import org.jboss.logmanager.handlers.SocketHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
@@ -157,6 +162,13 @@ public class LoggingSetupRecorder {
             final Handler syslogHandler = configureSyslogHandler(config.syslog, errorManager, cleanupFiler);
             if (syslogHandler != null) {
                 handlers.add(syslogHandler);
+            }
+        }
+
+        if (config.socket.enable) {
+            final Handler socketHandler = configureSocketHandler(config.socket, errorManager, cleanupFiler);
+            if (socketHandler != null) {
+                handlers.add(socketHandler);
             }
         }
 
@@ -346,6 +358,16 @@ public class LoggingSetupRecorder {
             final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter);
             if (syslogHandler != null) {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
+            }
+        }
+        for (Entry<String, SocketConfig> socketConfigEntry : config.socketHandlers.entrySet()) {
+            SocketConfig namedSocketConfig = socketConfigEntry.getValue();
+            if (!namedSocketConfig.enable) {
+                continue;
+            }
+            final Handler socketHandler = configureSocketHandler(namedSocketConfig, errorManager, cleanupFilter);
+            if (socketHandler != null) {
+                addToNamedHandlers(namedHandlers, socketHandler, socketConfigEntry.getKey());
             }
         }
         return namedHandlers;
@@ -546,6 +568,78 @@ public class LoggingSetupRecorder {
         }
     }
 
+    private static Handler configureSocketHandler(final SocketConfig config,
+            final ErrorManager errorManager,
+            final LogCleanupFilter logCleanupFilter) {
+        try {
+            final SocketHandler handler = new SocketHandler(config.endpoint.getHostString(), config.endpoint.getPort());
+            handler.setProtocol(config.protocol);
+            handler.setBlockOnReconnect(config.blockOnReconnect);
+            handler.setLevel(config.level);
+            switch (config.formatter) {
+                case "json":
+                    handler.setFormatter(createJsonFormatter(config.keyoverrides, config.additionalField, errorManager));
+                    break;
+                case "pattern":
+                    handler.setFormatter(new PatternFormatter(config.format));
+                    break;
+                default:
+                    errorManager.error("Unexpected formatter type, expected are: json, pattern", null,
+                            ErrorManager.GENERIC_FAILURE);
+                    return null;
+            }
+            handler.setErrorManager(errorManager);
+            handler.setFilter(logCleanupFilter);
+            if (config.async.enable) {
+                return createAsyncHandler(config.async, config.level, handler);
+            }
+            return handler;
+        } catch (IOException e) {
+            errorManager.error("Failed to create socket handler", e, ErrorManager.OPEN_FAILURE);
+            return null;
+        }
+    }
+
+    private static JsonFormatter createJsonFormatter(String keyOverrides,
+            Map<String, SocketConfig.AdditionalFieldConfig> additionalField, ErrorManager errorManager) {
+        Map<StructuredFormatter.Key, String> keyOverrideMap = null;
+        if (!keyOverrides.equals("<NA>")) {
+            keyOverrideMap = new HashMap<>();
+            for (String pair : keyOverrides.split(",")) {
+                String[] split = pair.split("=", 2);
+                if (split.length == 2) {
+                    StructuredFormatter.Key key = translateToKey(split[0], errorManager);
+                    if (key != null) {
+                        keyOverrideMap.put(key, split[1]);
+                    }
+                } else {
+                    errorManager.error(
+                            "Key override pair '" + pair + "' is invalid, key and value should be separated by = character",
+                            null, ErrorManager.GENERIC_FAILURE);
+                }
+            }
+        }
+        if (!additionalField.isEmpty()) {
+            Map<String, String> additionalFields = new HashMap<>();
+            for (Map.Entry<String, SocketConfig.AdditionalFieldConfig> field : additionalField.entrySet()) {
+                additionalFields.put(field.getKey(), field.getValue().value);
+            }
+            return new CustomFieldsJsonFormatter(keyOverrideMap, additionalFields);
+        }
+        return new JsonFormatter(keyOverrideMap);
+    }
+
+    private static StructuredFormatter.Key translateToKey(String name, ErrorManager errorManager) {
+        try {
+            return StructuredFormatter.Key.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            errorManager.error(
+                    "Invalid key: " + name + ". Valid values are: " + Arrays.toString(StructuredFormatter.Key.values()), e,
+                    ErrorManager.GENERIC_FAILURE);
+            return null;
+        }
+    }
+
     private static AsyncHandler createAsyncHandler(AsyncConfig asyncConfig, Level level, Handler handler) {
         final AsyncHandler asyncHandler = new AsyncHandler(asyncConfig.queueLength);
         asyncHandler.setOverflowAction(asyncConfig.overflow);
@@ -601,5 +695,24 @@ public class LoggingSetupRecorder {
             handler.setErrorManager(errorManager);
             handler.setFilter(new LogCleanupFilter(filterElements));
         }
+    }
+
+    public static class CustomFieldsJsonFormatter extends JsonFormatter {
+        public Map<String, String> additionalFields;
+
+        public CustomFieldsJsonFormatter(Map<Key, String> keyOverrides, Map<String, String> additionalFields) {
+            super(keyOverrides);
+            this.additionalFields = additionalFields;
+        }
+
+        @Override
+        protected void after(Generator generator, ExtLogRecord record) throws Exception {
+            super.after(generator, record);
+            if (!additionalFields.isEmpty()) {
+                for (Map.Entry<String, String> entry : additionalFields.entrySet())
+                    generator.add(entry.getKey(), entry.getValue());
+            }
+        }
+
     }
 }

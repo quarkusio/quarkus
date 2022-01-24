@@ -97,9 +97,13 @@ public final class OidcUtils {
     }
 
     public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {
-        // If the user configured a specific path - check and enforce a claim at this path exists
+        // If the user configured specific paths - check and enforce the claims at these paths exist
         if (rolesConfig.getRoleClaimPath().isPresent()) {
-            return findClaimWithRoles(rolesConfig, rolesConfig.getRoleClaimPath().get(), json);
+            List<String> roles = new LinkedList<>();
+            for (String roleClaimPath : rolesConfig.getRoleClaimPath().get()) {
+                roles.addAll(findClaimWithRoles(rolesConfig, roleClaimPath, json));
+            }
+            return roles;
         }
 
         // Check 'groups' next

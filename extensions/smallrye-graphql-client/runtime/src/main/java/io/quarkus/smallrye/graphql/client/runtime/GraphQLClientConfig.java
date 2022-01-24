@@ -35,4 +35,40 @@ public class GraphQLClientConfig {
     @ConfigItem
     public Optional<List<String>> subprotocols;
 
+    /**
+     * The trust store location. Can point to either a classpath resource or a file.
+     */
+    @ConfigItem
+    public Optional<String> trustStore;
+
+    /**
+     * The trust store password.
+     */
+    @ConfigItem
+    public Optional<String> trustStorePassword;
+
+    /**
+     * The type of the trust store. Defaults to "JKS".
+     */
+    @ConfigItem
+    public Optional<String> trustStoreType;
+
+    /**
+     * The key store location. Can point to either a classpath resource or a file.
+     */
+    @ConfigItem
+    public Optional<String> keyStore;
+
+    /**
+     * The key store password.
+     */
+    @ConfigItem
+    public Optional<String> keyStorePassword;
+
+    /**
+     * The type of the key store. Defaults to "JKS".
+     */
+    @ConfigItem
+    public Optional<String> keyStoreType;
+
 }

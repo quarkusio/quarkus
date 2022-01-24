@@ -63,7 +63,12 @@ public class GraphQLClientConfigurationMergerBean {
         transformed.setHeaders(quarkusConfig.headers);
         quarkusConfig.url.ifPresent(transformed::setUrl);
         transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols.orElse(new ArrayList<>()));
-        // TODO: SSL config
+        quarkusConfig.keyStore.ifPresent(transformed::setKeyStore);
+        quarkusConfig.keyStoreType.ifPresent(transformed::setKeyStoreType);
+        quarkusConfig.keyStorePassword.ifPresent(transformed::setKeyStorePassword);
+        quarkusConfig.trustStore.ifPresent(transformed::setTrustStore);
+        quarkusConfig.trustStoreType.ifPresent(transformed::setTrustStoreType);
+        quarkusConfig.trustStorePassword.ifPresent(transformed::setTrustStorePassword);
         return transformed;
     }
 

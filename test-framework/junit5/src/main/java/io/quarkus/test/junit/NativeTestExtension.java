@@ -218,6 +218,7 @@ public class NativeTestExtension
 
     @Override
     public void postProcessTestInstance(Object testInstance, ExtensionContext context) {
+        ensureStarted(context);
         if (!failedBoot) {
             doProcessTestInstance(testInstance, context);
         }

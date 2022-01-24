@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Locale;
@@ -50,9 +51,21 @@ public class MessageBundleTest {
     Engine engine;
 
     @Test
-    public void testMessages() {
+    public void testMessageBundles() {
         assertEquals("Hello Jachym!", MessageBundles.get(AppMessages.class).hello_name("Jachym"));
         assertEquals("Hello you guy!", MessageBundles.get(AppMessages.class, Localized.Literal.of("cs")).helloWithIfSection(1));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> MessageBundles.get(String.class))
+                .withMessage(
+                        "Not a message bundle interface: java.lang.String");
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> MessageBundles.get(Engine.class))
+                .withMessage(
+                        "Message bundle interface must be annotated either with @MessageBundle or with @Localized: io.quarkus.qute.Engine");
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> MessageBundles.get(AppMessages.class, Localized.Literal.of("hu")))
+                .withMessage(
+                        "Unable to obtain a message bundle for interface [io.quarkus.qute.deployment.i18n.AppMessages] and locale [hu]");
     }
 
     @Test

@@ -1333,15 +1333,22 @@ public class JarResultBuildStep {
         Files.createDirectories(manifestPath.getParent());
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
+
+        if (config.manifest.attributes.size() > 0) {
+            for (Map.Entry<String, String> attribute : config.manifest.attributes.entrySet()) {
+                attributes.putValue(attribute.getKey(), attribute.getValue());
+            }
+        }
         if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
             log.warn(
-                    "Your MANIFEST.MF already defined a CLASS_PATH entry. Quarkus has overwritten this existing entry.");
+                    "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
         }
         attributes.put(Attributes.Name.CLASS_PATH, classPath);
         if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
             String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
             if (!mainClassName.equals(existingMainClass)) {
-                log.warn("Your MANIFEST.MF already defined a MAIN_CLASS entry. Quarkus has overwritten your existing entry.");
+                log.warn(
+                        "A MAIN_CLASS entry was already defined in your MANIFEST.MF or using the property quarkus.package.manifest.attributes.\"Main-Class\". Quarkus has overwritten your existing entry.");
             }
         }
         attributes.put(Attributes.Name.MAIN_CLASS, mainClassName);

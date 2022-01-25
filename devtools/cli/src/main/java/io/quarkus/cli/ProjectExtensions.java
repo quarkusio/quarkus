@@ -10,11 +10,11 @@ import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
 @CommandLine.Command(name = "extension", aliases = {
-        "ext" }, sortOptions = false, mixinStandardHelpOptions = false, header = "Configure extensions of an existing project.", subcommands = {
+        "ext" }, header = "Configure extensions of an existing project.", subcommands = {
                 ProjectExtensionsList.class,
                 ProjectExtensionsCategories.class,
                 ProjectExtensionsAdd.class,
-                ProjectExtensionsRemove.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n")
+                ProjectExtensionsRemove.class })
 public class ProjectExtensions implements Callable<Integer> {
 
     @CommandLine.Mixin(name = "output")

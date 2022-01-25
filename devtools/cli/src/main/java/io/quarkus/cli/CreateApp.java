@@ -17,11 +17,11 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.codegen.SourceType;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "app", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Create a Quarkus application project.", description = "%n"
+@CommandLine.Command(name = "app", header = "Create a Quarkus application project.", description = "%n"
         + "This command will create a Java project in a new ARTIFACT-ID directory", footer = { "%n"
                 + "For example (using default values), a new Java project will be created in a 'code-with-quarkus' directory; "
                 + "it will use Maven to build an artifact with GROUP-ID='org.acme', ARTIFACT-ID='code-with-quarkus', and VERSION='1.0.0-SNAPSHOT'."
-                + "%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+                + "%n" })
 public class CreateApp extends BaseCreateCommand {
     @CommandLine.Mixin
     TargetGAVGroup gav = new TargetGAVGroup();

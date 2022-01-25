@@ -95,7 +95,6 @@ import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
-import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
@@ -393,7 +392,6 @@ public class DevConsoleProcessor {
         }
         return WebJarBuildItem.builder().artifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY) //
                 .root(DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH) //
-                .onlyCopyNonArtifactFiles(true) //
                 .build();
     }
 
@@ -417,19 +415,10 @@ public class DevConsoleProcessor {
             return;
         }
 
-        List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations = new ArrayList<>();
-        webRootConfigurations.add(
-                new FileSystemStaticHandler.StaticWebRootConfiguration(result.getFinalDestination(),
-                        ""));
-        for (Path resolvedPath : result.getDependency().getResolvedPaths()) {
-            webRootConfigurations
-                    .add(new FileSystemStaticHandler.StaticWebRootConfiguration(resolvedPath.toString(),
-                            DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH));
-        }
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route("dev/resources/*")
                 .handler(recorder.fileSystemStaticHandler(
-                        webRootConfigurations, shutdownContext))
+                        result.getWebRootConfigurations(), shutdownContext))
                 .build());
 
         // Add the log stream

@@ -25,6 +25,7 @@ public abstract class AbstractLambdaPollLoop {
     private final ObjectReader cognitoIdReader;
     private final ObjectReader clientCtxReader;
     private final LaunchMode launchMode;
+    private static final String LAMBDA_TRACE_HEADER_PROP = "com.amazonaws.xray.traceHeader";
 
     public AbstractLambdaPollLoop(ObjectMapper objectMapper, ObjectReader cognitoIdReader, ObjectReader clientCtxReader,
             LaunchMode launchMode) {
@@ -102,7 +103,9 @@ public abstract class AbstractLambdaPollLoop {
                                     }
                                 }
                                 String traceId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
-                                TraceId.setTraceId(traceId);
+                                if (traceId != null) {
+                                    System.setProperty(LAMBDA_TRACE_HEADER_PROP, traceId);
+                                }
                                 URL url = AmazonLambdaApi.invocationResponse(baseUrl, requestId);
                                 if (isStream()) {
                                     HttpURLConnection responseConnection = responseStream(url);

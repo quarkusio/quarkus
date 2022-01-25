@@ -26,6 +26,7 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -162,7 +163,8 @@ public class SwaggerUiProcessor {
             SwaggerUiRuntimeConfig runtimeConfig,
             LaunchModeBuildItem launchMode,
             SwaggerUiConfig swaggerUiConfig,
-            BuildProducer<SwaggerUiBuildItem> swaggerUiBuildProducer) {
+            BuildProducer<SwaggerUiBuildItem> swaggerUiBuildProducer,
+            ShutdownContextBuildItem shutdownContext) {
 
         WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(SWAGGER_UI_WEBJAR_ARTIFACT_KEY);
         if (result == null) {
@@ -174,8 +176,8 @@ public class SwaggerUiProcessor {
             swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(result.getFinalDestination(), swaggerUiPath));
 
             Handler<RoutingContext> handler = recorder.handler(result.getFinalDestination(),
-                    swaggerUiPath,
-                    runtimeConfig);
+                    swaggerUiPath, result.getWebRootConfigurations(),
+                    runtimeConfig, shutdownContext);
 
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(swaggerUiConfig.path)

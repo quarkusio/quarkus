@@ -104,11 +104,13 @@ public class RequestMapper<T> {
                 params[paramCount] = null;
             }
             boolean fullMatch = matchPos == pathLength;
-            if (!prefixAllowed && !fullMatch) {
+            boolean doPrefixMatch = false;
+            if (!fullMatch) {
                 //according to the spec every template ends with (/.*)?
-                prefixAllowed = path.charAt(matchPos) == '/' && matchPos == pathLength - 1;
+                doPrefixMatch = (matchPos == 1 || path.charAt(matchPos) == '/') //matchPos == 1 corresponds to '/' as a root level match
+                        && (prefixAllowed || matchPos == pathLength - 1); //if prefix is allowed, or the remainder is only a trailing /
             }
-            if (matched && (fullMatch || prefixAllowed)) {
+            if (matched && (fullMatch || doPrefixMatch)) {
                 String remaining;
                 if (fullMatch) {
                     remaining = "";

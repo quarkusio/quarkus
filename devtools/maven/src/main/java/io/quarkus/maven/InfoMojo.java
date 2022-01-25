@@ -21,6 +21,12 @@ import io.quarkus.devtools.project.QuarkusProject;
 public class InfoMojo extends QuarkusProjectStateMojoBase {
 
     @Override
+    protected void validateParameters() throws MojoExecutionException {
+        getLog().warn("quarkus:info goal is experimental, its options and output may change in future versions");
+        super.validateParameters();
+    }
+
+    @Override
     protected void processProjectState(QuarkusProject quarkusProject) throws MojoExecutionException {
 
         final Map<String, Object> params = new HashMap<>();

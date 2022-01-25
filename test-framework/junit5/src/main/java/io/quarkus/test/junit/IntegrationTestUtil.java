@@ -4,7 +4,6 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLo
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -468,12 +467,12 @@ public final class IntegrationTestUtil {
             final CodeSource codeSource = testClass.getProtectionDomain().getCodeSource();
             if (codeSource != null) {
                 URL codeSourceLocation = codeSource.getLocation();
-                File artifactPropertiesDirectory = determineBuildOutputDirectory(codeSourceLocation);
+                Path artifactPropertiesDirectory = determineBuildOutputDirectory(codeSourceLocation);
                 if (artifactPropertiesDirectory == null) {
                     throw new IllegalStateException(
                             "Unable to determine the output of the Quarkus build. Consider setting the 'build.output.directory' system property.");
                 }
-                result = artifactPropertiesDirectory.toPath();
+                result = artifactPropertiesDirectory;
             }
         }
         if (result == null) {
@@ -487,24 +486,37 @@ public final class IntegrationTestUtil {
         return result;
     }
 
-    private static File determineBuildOutputDirectory(final URL url) {
+    private static Path determineBuildOutputDirectory(final URL url) {
         if (url == null) {
             return null;
         }
-        if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
-            //we have the maven test classes dir
-            return toPath(url).getParent().toFile();
-        } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
-            //we have the gradle test classes dir, build/classes/java/test
-            return toPath(url).getParent().getParent().getParent().toFile();
-        } else if (url.getProtocol().equals("file") && url.getPath().contains("/target/surefire/")) {
-            //this will make mvn failsafe:integration-test work
-            String path = url.getPath();
-            int index = path.lastIndexOf("/target/");
-            try {
-                return Paths.get(new URI("file:" + (path.substring(0, index) + "/target/"))).toFile();
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
+        if (url.getProtocol().equals("file")) {
+            if (url.getPath().endsWith("test-classes/")) {
+                // we have the maven test classes dir
+                return toPath(url).getParent();
+            } else if (url.getPath().endsWith("test/")) {
+                // we have the gradle test classes dir, build/classes/java/test
+                return toPath(url).getParent().getParent().getParent();
+            } else if (url.getPath().contains("/target/surefire/")) {
+                // this will make mvn failsafe:integration-test work
+                String path = url.getPath();
+                int index = path.lastIndexOf("/target/");
+                try {
+                    return Paths.get(new URI("file:" + (path.substring(0, index) + "/target/")));
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (url.getPath().endsWith("-tests.jar")) {
+                // integration platform test
+                final Path baseDir = Path.of("").normalize().toAbsolutePath();
+                Path outputDir = baseDir.resolve("target");
+                if (Files.exists(outputDir)) {
+                    return outputDir;
+                }
+                outputDir = baseDir.resolve("build");
+                if (Files.exists(outputDir)) {
+                    return outputDir;
+                }
             }
         }
         return null;

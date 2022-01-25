@@ -66,7 +66,7 @@ public final class WebJarBuildItem extends MultiBuildItem {
         private String root;
         private WebJarResourcesFilter filter;
         private boolean useDefaultQuarkusBranding = true;
-        private boolean onlyCopyNonArtifactFiles;
+        private boolean onlyCopyNonArtifactFiles = true;
 
         public Builder artifactKey(GACT artifactKey) {
             this.artifactKey = artifactKey;

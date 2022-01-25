@@ -613,6 +613,10 @@ public class BeanDeployment {
         return annotationStore.getAnnotation(target, name);
     }
 
+    public boolean hasAnnotation(AnnotationTarget target, DotName name) {
+        return annotationStore.hasAnnotation(target, name);
+    }
+
     Map<ScopeInfo, Function<MethodCreator, ResultHandle>> getCustomContexts() {
         return customContexts;
     }

@@ -121,7 +121,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * When analysis is configured both through an analysis configurer and these custom settings, the behavior is undefined;
          * it should not be relied upon.
          *
-         * See https://docs.jboss.org/hibernate/search/6.1/reference/en-US/html_single/#_custom_index_settings[this section of the reference documentation]
+         * See https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#backend-elasticsearch-configuration-index-settings[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -138,7 +138,7 @@ public class HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * The file does not need to (and generally shouldn't) contain the full mapping:
          * Hibernate Search will automatically inject missing properties (index fields) in the given mapping.
          *
-         * See https://docs.jboss.org/hibernate/search/6.1/reference/en-US/html_single/#_custom_index_mapping[this section of the reference documentation]
+         * See https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#backend-elasticsearch-mapping-custom[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet

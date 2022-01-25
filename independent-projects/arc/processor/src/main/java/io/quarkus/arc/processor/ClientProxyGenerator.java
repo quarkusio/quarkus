@@ -78,16 +78,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
     Collection<Resource> generate(BeanInfo bean, String beanClassName,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
 
-        DotName testedName;
-        // For producers we need to test the produced type
-        if (bean.isProducerField()) {
-            testedName = bean.getTarget().get().asField().type().name();
-        } else if (bean.isProducerMethod()) {
-            testedName = bean.getTarget().get().asMethod().returnType().name();
-        } else {
-            testedName = bean.getBeanClass();
-        }
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(testedName),
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
                 generateSources);
 
         ProviderType providerType = new ProviderType(bean.getProviderType());

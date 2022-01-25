@@ -8,6 +8,7 @@ openssl req -x509 -new -newkey rsa:2048 -nodes -keyout ca.key -out ca.pem \
   -config ca-openssl.cnf -days 3650 -extensions v3_req
 ```
 
+
 When prompted for certificate information, everything is default.
 
 Client is issued by CA:

@@ -106,6 +106,22 @@ public final class Annotations {
     }
 
     /**
+     *
+     * @param beanDeployment
+     * @param method
+     * @return collection of annotations present on all parameters of given method
+     */
+    public static Set<AnnotationInstance> getParameterAnnotations(BeanDeployment beanDeployment, MethodInfo method) {
+        Set<AnnotationInstance> annotations = new HashSet<>();
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(method)) {
+            if (Kind.METHOD_PARAMETER == annotation.target().kind()) {
+                annotations.add(annotation);
+            }
+        }
+        return annotations;
+    }
+
+    /**
      * 
      * @param beanDeployment
      * @param method

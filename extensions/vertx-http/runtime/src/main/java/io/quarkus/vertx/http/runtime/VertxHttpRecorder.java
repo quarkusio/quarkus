@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -50,6 +51,7 @@ import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
+import io.quarkus.runtime.QuarkusBindException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -547,7 +549,19 @@ public class VertxHttpRecorder {
             @Override
             public void handle(AsyncResult<String> event) {
                 if (event.failed()) {
-                    futureResult.completeExceptionally(event.cause());
+                    Throwable effectiveCause = event.cause();
+                    if (effectiveCause instanceof BindException) {
+                        if ((sslConfig == null) && (httpServerOptions != null)) {
+                            effectiveCause = new QuarkusBindException(httpServerOptions.getPort());
+                        } else if ((httpConfiguration.insecureRequests == InsecureRequests.DISABLED) && (sslConfig != null)) {
+                            effectiveCause = new QuarkusBindException(sslConfig.getPort());
+                        } else if ((sslConfig != null) && (httpConfiguration.insecureRequests == InsecureRequests.ENABLED)
+                                && (httpServerOptions != null)) {
+                            effectiveCause = new QuarkusBindException(
+                                    List.of(httpServerOptions.getPort(), sslConfig.getPort()));
+                        }
+                    }
+                    futureResult.completeExceptionally(effectiveCause);
                 } else {
                     futureResult.complete(event.result());
                 }

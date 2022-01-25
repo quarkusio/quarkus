@@ -104,6 +104,9 @@ public class RestClientCDIDelegateBuilder<T> {
         if ((headers != null) && !headers.isEmpty()) {
             builder.property(QuarkusRestClientProperties.STATIC_HEADERS, headers);
         }
+
+        builder.property(QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES,
+                configRoot.disableContextualErrorMessages);
     }
 
     private void configureProxy(RestClientBuilderImpl builder) {

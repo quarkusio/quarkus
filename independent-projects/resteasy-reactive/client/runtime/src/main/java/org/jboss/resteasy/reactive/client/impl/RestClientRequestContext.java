@@ -34,6 +34,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
@@ -139,9 +140,9 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         // each invocation gets a new set of properties based on the JAX-RS invoker
         this.properties = new HashMap<>(properties);
 
-        // this isn't a real configuration option because it's only really used to pass the TCKs
         disableContextualErrorMessages = Boolean
-                .parseBoolean(System.getProperty("quarkus.rest-client.disable-contextual-error-messages", "false"));
+                .parseBoolean(System.getProperty("quarkus.rest-client.disable-contextual-error-messages", "false"))
+                || getBooleanProperty(QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES, false);
     }
 
     public void abort() {
@@ -475,5 +476,20 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public void setMultipartResponsesData(Map<Class<?>, MultipartResponseData> multipartResponsesData) {
         this.multipartResponsesData = multipartResponsesData;
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private Boolean getBooleanProperty(String name, Boolean defaultValue) {
+        Object value = configuration.getProperty(name);
+        if (value != null) {
+            if (value instanceof Boolean) {
+                return (Boolean) value;
+            } else if (value instanceof String) {
+                return Boolean.parseBoolean((String) value);
+            } else {
+                log.warnf("Property '%s' is expected to be of type Boolean. Got '%s'.", name, value.getClass().getSimpleName());
+            }
+        }
+        return defaultValue;
     }
 }

@@ -1793,7 +1793,7 @@ public class BeanGenerator extends AbstractGenerator {
 
     private String getProxyTypeName(BeanInfo bean, String baseName) {
         StringBuilder proxyTypeName = new StringBuilder();
-        proxyTypeName.append(bean.getClientProxyPackageName());
+        proxyTypeName.append(bean.getTargetPackageName());
         if (proxyTypeName.length() > 0) {
             proxyTypeName.append(".");
         }

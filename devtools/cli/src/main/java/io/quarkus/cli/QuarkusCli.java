@@ -58,7 +58,23 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
+        output.info("%n@|bold Quarkus CLI|@ version %s", Version.clientVersion());
+        output.info("");
+        output.info("Create Quarkus projects with Maven, Gradle, or JBang.");
+        output.info("Manage extensions and source registries.");
+        output.info("");
+        output.info("Create: @|bold quarkus create|@");
+        output.info("@|italic Iterate|@: @|bold quarkus dev|@");
+        output.info("Build and test: @|bold quarkus build|@");
+        output.info("");
+        output.info("Find more information at https://quarkus.io");
+        output.info("If you have questions, check https://github.com/quarkusio/quarkus/discussions");
+
         spec.commandLine().usage(output.out());
+
+        output.info("");
+        output.info("Use \"quarkus <command> --help\" for more information about a given command.");
+
         return spec.exitCodeOnUsageHelp();
     }
 

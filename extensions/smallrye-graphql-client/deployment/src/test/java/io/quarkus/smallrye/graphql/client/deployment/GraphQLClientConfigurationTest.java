@@ -12,10 +12,10 @@ import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
 import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 
 /**
- * Verify that SSL configuration through `quarkus.*` propeties is correctly taken into account
+ * Verify that various configuration through `quarkus.*` propeties is correctly taken into account
  * for GraphQL clients.
  */
-public class GraphQLClientSSLConfigurationTest {
+public class GraphQLClientConfigurationTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -28,12 +28,17 @@ public class GraphQLClientSSLConfigurationTest {
                                             "quarkus.smallrye-graphql-client.client1.key-store-type=PKCS12\n" +
                                             "quarkus.smallrye-graphql-client.client1.trust-store=classpath:my.truststore\n" +
                                             "quarkus.smallrye-graphql-client.client1.trust-store-password=secret2\n" +
-                                            "quarkus.smallrye-graphql-client.client1.trust-store-type=JKS\n"),
+                                            "quarkus.smallrye-graphql-client.client1.trust-store-type=JKS\n" +
+                                            "quarkus.smallrye-graphql-client.client1.proxy-host=myproxy\n" +
+                                            "quarkus.smallrye-graphql-client.client1.proxy-port=1234\n" +
+                                            "quarkus.smallrye-graphql-client.client1.proxy-username=dave\n" +
+                                            "quarkus.smallrye-graphql-client.client1.proxy-password=secret\n" +
+                                            "quarkus.smallrye-graphql-client.client1.max-redirects=6\n"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
-    public void checkConfiguration() {
+    public void checkSslConfiguration() {
         GraphQLClientConfiguration config = GraphQLClientsConfiguration.getInstance().getClient("client1");
         assertEquals("classpath:my.keystore", config.getKeyStore());
         assertEquals("secret", config.getKeyStorePassword());
@@ -41,5 +46,20 @@ public class GraphQLClientSSLConfigurationTest {
         assertEquals("classpath:my.truststore", config.getTrustStore());
         assertEquals("secret2", config.getTrustStorePassword());
         assertEquals("JKS", config.getTrustStoreType());
+    }
+
+    @Test
+    public void checkProxyConfiguration() {
+        GraphQLClientConfiguration config = GraphQLClientsConfiguration.getInstance().getClient("client1");
+        assertEquals("myproxy", config.getProxyHost());
+        assertEquals(1234, config.getProxyPort());
+        assertEquals("dave", config.getProxyUsername());
+        assertEquals("secret", config.getProxyPassword());
+    }
+
+    @Test
+    public void checkMaxRedirects() {
+        GraphQLClientConfiguration config = GraphQLClientsConfiguration.getInstance().getClient("client1");
+        assertEquals(6, config.getMaxRedirects());
     }
 }

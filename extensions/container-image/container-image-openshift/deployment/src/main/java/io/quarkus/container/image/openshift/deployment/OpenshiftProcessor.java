@@ -56,6 +56,7 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -118,6 +119,7 @@ public class OpenshiftProcessor {
             OutputTargetBuildItem out,
             PackageConfig packageConfig,
             JarBuildItem jarBuildItem,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             BuildProducer<DecoratorBuildItem> decorator,
             BuildProducer<KubernetesEnvBuildItem> envProducer,
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
@@ -126,9 +128,11 @@ public class OpenshiftProcessor {
         OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
         String outputJarFileName = jarBuildItem.getPath().getFileName().toString();
         String jarFileName = config.jarFileName.orElse(outputJarFileName);
+        String baseJvmImage = config.baseJvmImage
+                .orElse(OpenshiftConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
 
-        builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseJvmImage));
-        Optional<OpenshiftBaseJavaImage> baseImage = OpenshiftBaseJavaImage.findMatching(config.baseJvmImage);
+        builderImageProducer.produce(new BaseImageInfoBuildItem(baseJvmImage));
+        Optional<OpenshiftBaseJavaImage> baseImage = OpenshiftBaseJavaImage.findMatching(baseJvmImage);
 
         if (config.buildStrategy == BuildStrategy.BINARY) {
             // Jar directory priorities:

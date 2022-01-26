@@ -91,7 +91,7 @@ To send logs to Graylog, you first need to launch the components that compose th
 - Elasticsearch
 - Graylog
 
-You can do this via the following docker-compose file that you can launch via `docker-compose run -d`:
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----
@@ -172,7 +172,7 @@ Finally, launch the components that compose the Elastic Stack:
 - Logstash
 - Kibana
 
-You can do this via the following docker-compose file that you can launch via `docker-compose run -d`:
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----
@@ -261,7 +261,7 @@ Finally, launch the components that compose the EFK Stack:
 - Fluentd
 - Kibana
 
-You can do this via the following docker-compose file that you can launch via `docker-compose run -d`:
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----
@@ -347,7 +347,7 @@ Then, launch the components that compose the EFK Stack:
 - Fluentd
 - Kibana
 
-You can do this via the following docker-compose file that you can launch via `docker-compose run -d`:
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----

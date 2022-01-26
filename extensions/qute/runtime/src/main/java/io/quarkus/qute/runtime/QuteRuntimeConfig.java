@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import io.quarkus.qute.Results;
 import io.quarkus.qute.TemplateException;
+import io.quarkus.qute.TemplateInstance;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -39,6 +40,19 @@ public class QuteRuntimeConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean strictRendering;
+
+    /**
+     * The global rendering timeout in milliseconds. It is used if no {@code timeout} template instance attribute is set.
+     */
+    @ConfigItem(defaultValue = "10000")
+    public long timeout;
+
+    /**
+     * If set to {@code true} then the timeout should also be used for asynchronous rendering methods, such as
+     * {@link TemplateInstance#createUni()} and {@link TemplateInstance#renderAsync()}.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useAsyncTimeout;
 
     public enum PropertyNotFoundStrategy {
         /**

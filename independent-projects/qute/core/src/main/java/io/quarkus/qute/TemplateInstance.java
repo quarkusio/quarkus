@@ -14,6 +14,8 @@ public interface TemplateInstance {
 
     /**
      * Attribute key - the timeout for {@link #render()} in milliseconds.
+     * 
+     * @see #getTimeout()
      */
     String TIMEOUT = "timeout";
 
@@ -103,6 +105,13 @@ public interface TemplateInstance {
      * @return a completion stage that is completed once the rendering finished
      */
     CompletionStage<Void> consume(Consumer<String> consumer);
+
+    /**
+     * 
+     * @return the timeout
+     * @see TemplateInstance#TIMEOUT
+     */
+    long getTimeout();
 
     /**
      * This component can be used to initialize a template instance, i.e. the data and attributes.

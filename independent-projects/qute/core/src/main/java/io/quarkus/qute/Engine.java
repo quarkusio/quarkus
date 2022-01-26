@@ -140,4 +140,18 @@ public interface Engine {
      */
     public List<TemplateInstance.Initializer> getTemplateInstanceInitializers();
 
+    /**
+     * The global rendering timeout in milliseconds. It is used if no {@code timeout} instance attribute is set.
+     * 
+     * @return the global rendering timeout
+     * @see TemplateInstance#TIMEOUT
+     */
+    public long getTimeout();
+
+    /**
+     * 
+     * @return {@code true} if the timeout should also used for asynchronous rendering methods
+     */
+    public boolean useAsyncTimeout();
+
 }

@@ -35,6 +35,8 @@ public final class EngineBuilder {
     boolean removeStandaloneLines;
     boolean strictRendering;
     String iterationMetadataPrefix;
+    long timeout;
+    boolean useAsyncTimeout;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -47,6 +49,8 @@ public final class EngineBuilder {
         this.strictRendering = true;
         this.removeStandaloneLines = true;
         this.iterationMetadataPrefix = LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE;
+        this.timeout = 10_000;
+        this.useAsyncTimeout = true;
     }
 
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {
@@ -243,6 +247,29 @@ public final class EngineBuilder {
                     + "] is not a valid iteration metadata prefix. The value can only consist of alphanumeric characters and underscores.");
         }
         this.iterationMetadataPrefix = prefix;
+        return this;
+    }
+
+    /**
+     * The global rendering timeout.
+     * 
+     * @param value Timeout in milliseconds
+     * @return self
+     */
+    public EngineBuilder timeout(long value) {
+        this.timeout = value;
+        return this;
+    }
+
+    /**
+     * If set to {@code true} the timeout (either global or set via the {@code timeout} instance attribute) is also used for
+     * asynchronous rendering methods, such as {@link TemplateInstance#createUni()} and {@link TemplateInstance#renderAsync()}.
+     * 
+     * @param value
+     * @return self
+     */
+    public EngineBuilder useAsyncTimeout(boolean value) {
+        this.useAsyncTimeout = value;
         return this;
     }
 

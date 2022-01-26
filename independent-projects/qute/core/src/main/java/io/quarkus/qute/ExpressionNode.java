@@ -4,29 +4,40 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import org.jboss.logging.Logger;
 
 /**
  * This node holds a single expression such as {@code foo.bar}.
  */
 class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<ResultNode>> {
 
+    private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
+
     final ExpressionImpl expression;
     private final Engine engine;
     private final Origin origin;
+    private final boolean traceLevel;
 
     public ExpressionNode(ExpressionImpl expression, Engine engine, Origin origin) {
         this.expression = expression;
         this.engine = engine;
         this.origin = origin;
+        this.traceLevel = LOG.isTraceEnabled();
     }
 
     @Override
     public CompletionStage<ResultNode> resolve(ResolutionContext context) {
+        if (traceLevel) {
+            LOG.tracef("Resolve {%s} started: %s", expression.toOriginalString(), expression.getOrigin());
+        }
         return context.evaluate(expression).thenCompose(this);
     }
 
     @Override
     public CompletionStage<ResultNode> apply(Object result) {
+        if (traceLevel) {
+            LOG.tracef("Resolve {%s} completed: %s", expression.toOriginalString(), expression.getOrigin());
+        }
         if (result instanceof ResultNode) {
             return CompletedStage.of((ResultNode) result);
         } else if (result instanceof CompletionStage) {

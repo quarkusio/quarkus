@@ -9,8 +9,10 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathList;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -126,7 +128,8 @@ public class JBangDevModeLauncherImpl implements Closeable {
                     BootstrapMavenContext.config().setCurrentProject(currentProject));
             final MavenArtifactResolver mvnResolver = new MavenArtifactResolver(mvnCtx);
             builder.setMavenArtifactResolver(mvnResolver);
-            currentProject.getAppArtifact("jar").setPath(targetClasses);
+            ((ResolvedArtifactDependency) currentProject.getAppArtifact(ArtifactCoords.TYPE_JAR))
+                    .setResolvedPaths(PathList.of(targetClasses));
 
             final CuratedApplication curatedApp = builder.build().bootstrap();
             final Object appInstance = curatedApp.runInAugmentClassLoader("io.quarkus.deployment.dev.IDEDevModeMain", context);

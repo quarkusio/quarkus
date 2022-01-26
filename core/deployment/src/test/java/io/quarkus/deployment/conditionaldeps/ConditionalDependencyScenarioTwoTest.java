@@ -9,16 +9,16 @@ import java.util.stream.Collectors;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.deployment.runnerjar.ExecutableOutputOutcomeTestBase;
+import io.quarkus.deployment.runnerjar.BootstrapFromOriginalJarTestBase;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACTV;
 
-public class ConditionalDependencyScenarioTwoTest extends ExecutableOutputOutcomeTestBase {
+public class ConditionalDependencyScenarioTwoTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         // dependencies
         // f -> g -> h?(i,j) -> k -> t

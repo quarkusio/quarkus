@@ -6,6 +6,10 @@ import java.nio.file.Path;
 
 public interface SourceDir {
 
+    static SourceDir of(Path src, Path dest) {
+        return new DefaultSourceDir(src, dest);
+    }
+
     Path getDir();
 
     PathTree getSourceTree();

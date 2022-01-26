@@ -48,6 +48,10 @@ public class TsArtifact {
         return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_JAR, version);
     }
 
+    public static TsArtifact pom(String groupId, String artifactId, String version) {
+        return new TsArtifact(groupId, artifactId, EMPTY, TYPE_POM, version);
+    }
+
     public interface ContentProvider {
         Path getPath(Path workDir) throws IOException;
     }

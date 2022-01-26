@@ -5,6 +5,8 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,7 +16,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
@@ -29,10 +30,10 @@ import org.eclipse.aether.repository.WorkspaceRepository;
  */
 public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, ProjectModuleResolver {
 
-    private final Map<AppArtifactKey, LocalProject> projects = new HashMap<>();
+    private final Map<ArtifactKey, LocalProject> projects = new HashMap<>();
 
     private final WorkspaceRepository wsRepo = new WorkspaceRepository();
-    private AppArtifactKey lastFindVersionsKey;
+    private ArtifactKey lastFindVersionsKey;
     private List<String> lastFindVersions;
     private long lastModified;
     private int id = 1;
@@ -54,10 +55,10 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
     }
 
     public LocalProject getProject(String groupId, String artifactId) {
-        return getProject(new AppArtifactKey(groupId, artifactId));
+        return getProject(new GACT(groupId, artifactId));
     }
 
-    public LocalProject getProject(AppArtifactKey key) {
+    public LocalProject getProject(ArtifactKey key) {
         return projects.get(key);
     }
 
@@ -84,7 +85,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
         return null;
     }
 
-    public Map<AppArtifactKey, LocalProject> getProjects() {
+    public Map<ArtifactKey, LocalProject> getProjects() {
         return projects;
     }
 
@@ -124,7 +125,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, 
             return path.toFile();
         }
 
-        if (!Objects.equals(artifact.getClassifier(), lp.getAppArtifact().getClassifier())) {
+        if (!artifact.getClassifier().isEmpty()) {
             if ("tests".equals(artifact.getClassifier())) {
                 //special classifier used for test jars
                 path = lp.getTestClassesDir();

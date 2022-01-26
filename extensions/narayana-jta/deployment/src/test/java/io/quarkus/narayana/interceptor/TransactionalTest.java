@@ -23,7 +23,7 @@ public class TransactionalTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TransactionalTest.TransactionalBean.class, TestXAResource.class,
-                            TxAssertionData.class, TestException.class))
+                            TxAssertionData.class, TestException.class, AnnotatedTestException.class, AnnotatedError.class))
             .addClassLoaderEventListener(ClassLoaderLimiter.builder()
                     .neverLoadedRuntimeClassName("javax.xml.stream.XMLInputFactory").build());
 
@@ -96,6 +96,32 @@ public class TransactionalTest {
         assertTransactionInactive();
         Assertions.assertEquals(0, txAssertionData.getCommit());
         Assertions.assertEquals(1, txAssertionData.getRollback());
+    }
+
+    @Test
+    public void transactionalThrowAnnotatedApplicationException() {
+        assertTransactionInactive();
+        try {
+            testTransactionalBean.executeTransactionalThrowException(AnnotatedTestException.class);
+            Assertions.fail("Expecting TestException to be thrown and the execution does not reach this point");
+        } catch (Throwable expected) {
+        }
+        assertTransactionInactive();
+        Assertions.assertEquals(0, txAssertionData.getCommit());
+        Assertions.assertEquals(1, txAssertionData.getRollback());
+    }
+
+    @Test
+    public void transactionalThrowAnnotatedError() {
+        assertTransactionInactive();
+        try {
+            testTransactionalBean.executeTransactionalThrowException(AnnotatedError.class);
+            Assertions.fail("Expecting Error to be thrown and the execution does not reach this point");
+        } catch (Throwable expected) {
+        }
+        assertTransactionInactive();
+        Assertions.assertEquals(1, txAssertionData.getCommit());
+        Assertions.assertEquals(0, txAssertionData.getRollback());
     }
 
     @Test

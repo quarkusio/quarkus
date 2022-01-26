@@ -6,6 +6,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.kubernetes.deployment.OpenshiftConfig;
+import io.quarkus.kubernetes.deployment.OpenshiftConfig.DeploymentResourceKind;
 import io.quarkus.kubernetes.deployment.ResourceNameUtil;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
@@ -17,17 +18,15 @@ public class OpenshiftProcessor {
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
 
-        String kind = config.getDepoymentResourceKind();
-        String group = config.getDepoymentResourceGroup();
-        String version = config.getDepoymentResourceVersion();
-
+        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind();
         deploymentTargets
                 .produce(
-                        new KubernetesDeploymentTargetBuildItem(OPENSHIFT, kind, group,
-                                version, true));
+                        new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.kind,
+                                deploymentResourceKind.apiGroup,
+                                deploymentResourceKind.apiVersion, true));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, group,
-                version, kind, name));
+        resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, deploymentResourceKind.apiGroup,
+                deploymentResourceKind.apiVersion, deploymentResourceKind.kind, name));
     }
 }

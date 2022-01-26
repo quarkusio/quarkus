@@ -16,6 +16,7 @@ import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -32,9 +33,9 @@ public class OpenshiftConfig implements PlatformConfiguration {
         DeploymentConfig(DEPLOYMENT_CONFIG, DEPLOYMENT_CONFIG_GROUP, DEPLOYMENT_CONFIG_VERSION),
         StatefulSet(STATEFULSET, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION);
 
-        final String kind;
-        final String apiGroup;
-        final String apiVersion;
+        public final String kind;
+        public final String apiGroup;
+        public final String apiVersion;
 
         DeploymentResourceKind(String kind, String apiGroup, String apiVersion) {
             this.kind = kind;
@@ -55,8 +56,8 @@ public class OpenshiftConfig implements PlatformConfiguration {
      * The kind of the deployment resource to use.
      * Supported values are 'Deployment' and 'DeploymentConfig' defaulting to the later.
      */
-    @ConfigItem(defaultValue = "DeploymentConfig")
-    DeploymentResourceKind deploymentKind;
+    @ConfigItem
+    Optional<DeploymentResourceKind> deploymentKind;
 
     /**
      * The name of the group this component belongs too
@@ -505,15 +506,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return Optional.of(route);
     }
 
-    public String getDepoymentResourceGroup() {
-        return deploymentKind.apiGroup;
+    public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig) {
+        return containerImageConfig.builder.map(b -> b.equals("openshfit") || b.equals("s2i")).orElse(false);
     }
 
-    public String getDepoymentResourceVersion() {
-        return deploymentKind.apiVersion;
-    }
-
-    public String getDepoymentResourceKind() {
-        return deploymentKind.kind;
+    public DeploymentResourceKind getDeploymentResourceKind() {
+        return deploymentKind.orElse(DeploymentResourceKind.DeploymentConfig);
     }
 }

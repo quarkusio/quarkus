@@ -31,7 +31,6 @@ import io.dekorate.s2i.config.S2iBuildConfigBuilder;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
 import io.dekorate.s2i.decorator.AddDockerImageStreamResourceDecorator;
 import io.dekorate.utils.Labels;
-import io.fabric8.kubernetes.client.Config;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
@@ -66,6 +65,7 @@ public class OpenshiftProcessor {
 
     private static final int OPENSHIFT_PRIORITY = DEFAULT_PRIORITY;
     private static final String OPENSHIFT_INTERNAL_REGISTRY = "image-registry.openshift-image-registry.svc:5000";
+    private static final String DOCKERIO_REGISTRY = "docker.io";
 
     @BuildStep
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, OpenshiftConfig config,
@@ -73,30 +73,34 @@ public class OpenshiftProcessor {
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         List<String> targets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         boolean openshiftEnabled = targets.contains(OPENSHIFT);
-        String kind = config.getDepoymentResourceKind();
-        String group = config.getDepoymentResourceGroup();
-        String version = config.getDepoymentResourceVersion();
 
-        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(OPENSHIFT, kind, group, version, OPENSHIFT_PRIORITY,
-                openshiftEnabled));
+        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind();
+        deploymentTargets.produce(
+                new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.kind, deploymentResourceKind.apiGroup,
+                        deploymentResourceKind.apiVersion, OPENSHIFT_PRIORITY, openshiftEnabled));
         if (openshiftEnabled) {
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, group,
-                    version, kind, name));
+            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, deploymentResourceKind.apiGroup,
+                    deploymentResourceKind.apiVersion, deploymentResourceKind.kind, name));
         }
     }
 
     @BuildStep
     public void populateInternalRegistry(OpenshiftConfig openshiftConfig, ContainerImageConfig containerImageConfig,
             BuildProducer<FallbackContainerImageRegistryBuildItem> containerImageRegistry) {
-        if (openshiftConfig.deploymentKind == DeploymentResourceKind.Deployment && !containerImageConfig.registry.isPresent()) {
-            containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(OPENSHIFT_INTERNAL_REGISTRY));
 
-            // Images stored in internal openshift registry use the following patttern:
-            // 'image-registry.openshift-image-registry.svc:5000/{{ project name}}/{{ image name }}: {{image version }}.
-            // So, we need warn users if group does not match currently selected project. 
-            String group = containerImageConfig.group.orElse(null);
-            Config config = Config.autoConfigure(null);
+        if (!containerImageConfig.registry.isPresent()) {
+            DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind();
+            if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
+                if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig)) {
+                    // Images stored in internal openshift registry use the following patttern:
+                    // 'image-registry.openshift-image-registry.svc:5000/{{ project name}}/{{ image name }}: {{image version }}.
+                    // So, we need warn users if group does not match currently selected project. 
+                    containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(OPENSHIFT_INTERNAL_REGISTRY));
+                } else {
+                    containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(DOCKERIO_REGISTRY));
+                }
+            }
         }
     }
 
@@ -148,6 +152,8 @@ public class OpenshiftProcessor {
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             OpenshiftConfig config,
+            ContainerImageConfig containerImageConfig,
+            Optional<FallbackContainerImageRegistryBuildItem> fallbackRegistry,
             PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Capabilities capabilities,
@@ -188,7 +194,8 @@ public class OpenshiftProcessor {
             result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapKeySelectorDecorator()));
         }
 
-        switch (config.deploymentKind) {
+        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind();
+        switch (deploymentResourceKind) {
             case Deployment:
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentConfigResourceDecorator(name)));
                 result.add(new DecoratorBuildItem(OPENSHIFT, new AddDeploymentResourceDecorator(name, config)));
@@ -230,8 +237,11 @@ public class OpenshiftProcessor {
             if (!DEFAULT_S2I_IMAGE_NAME.equals(builderImageName)) {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME)));
             }
-            result.add(new DecoratorBuildItem(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig)));
-            result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyBuilderImageDecorator(name, builderImage)));
+
+            if (containerImageConfig.builder.isEmpty() || config.isOpenshiftBuildEnabled(containerImageConfig)) {
+                result.add(new DecoratorBuildItem(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig)));
+                result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyBuilderImageDecorator(name, builderImage)));
+            }
         });
 
         if (!config.addVersionToLabelSelectors) {
@@ -250,21 +260,22 @@ public class OpenshiftProcessor {
                 .findFirst().orElse(DEFAULT_HTTP_PORT);
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyHttpGetActionPortDecorator(name, name, port)));
 
-        // Handle non-s2i
-        if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
-                && !capabilities.isPresent("io.quarkus.openshift")
-                && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
-            result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator()));
-            ImageConfiguration imageConfiguration = new ImageConfigurationBuilder()
-                    .build();
-
+        // Handle non-openshift builds
+        if (deploymentResourceKind == DeploymentResourceKind.DeploymentConfig
+                && !OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig)) {
             image.ifPresent(i -> {
-                String repo = i.getRegistry().map(reg -> reg + "/" + i.getRepository()).orElse(i.getRepository());
+                String registry = containerImageConfig.registry
+                        .orElse(fallbackRegistry.map(f -> f.getRegistry()).orElse("docker.io"));
+                String repositoryWithRegistry = registry + "/" + i.getRepository();
+                ImageConfiguration imageConfiguration = new ImageConfigurationBuilder()
+                        .withName(name)
+                        .withRegistry(registry)
+                        .build();
+
                 result.add(new DecoratorBuildItem(OPENSHIFT,
-                        new AddDockerImageStreamResourceDecorator(imageConfiguration, repo)));
+                        new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry)));
             });
         }
-
         return result;
     }
 }

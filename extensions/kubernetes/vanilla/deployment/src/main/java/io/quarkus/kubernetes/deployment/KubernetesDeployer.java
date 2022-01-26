@@ -24,12 +24,16 @@ import org.jboss.logging.Logger;
 
 import io.dekorate.utils.Clients;
 import io.dekorate.utils.Serialization;
+import io.fabric8.kubernetes.api.model.APIResourceList;
+import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesList;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
+import io.fabric8.kubernetes.client.utils.ApiVersionUtil;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
@@ -191,22 +195,41 @@ public class KubernetesDeployer {
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
             list.getItems().stream().filter(distinctByResourceKey()).forEach(i -> {
-                final var r = client.resource(i).inNamespace(namespace);
-                if (shouldDeleteExisting(deploymentTarget, i)) {
-                    r.delete();
-                    r.waitUntilCondition(Objects::isNull, 10, TimeUnit.SECONDS);
-                }
-                try {
-                    r.createOrReplace();
-                } catch (Exception e) {
-                    if (e instanceof InterruptedException) {
-                        throw e;
-                    } else if (isOptional(optionalResourceDefinitions, i)) {
-                        log.warn("Failed to apply: " + i.getKind() + " " + i.getMetadata().getName()
-                                + ", possilby due to missing a CRD apiVersion: " + i.getApiVersion() + " and kind: "
-                                + i.getKind() + ".");
-                    } else {
-                        throw e;
+                if (i instanceof GenericKubernetesResource) {
+                    GenericKubernetesResource genericResource = (GenericKubernetesResource) i;
+                    ResourceDefinitionContext context = getGenericResourceContext(client, genericResource)
+                            .orElseThrow(() -> new IllegalStateException("Could not retrieve API resource information for:"
+                                    + i.getApiVersion() + " " + i.getKind() + ". Is the CRD for the resource available?"));
+
+                    client.genericKubernetesResources(context).withName(i.getMetadata().getName())
+                            .createOrReplace(genericResource);
+                } else {
+                    final var r = client.resource(i);
+                    if (shouldDeleteExisting(deploymentTarget, i)) {
+                        r.delete();
+                        try {
+                            r.waitUntilCondition(Objects::isNull, 10, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            if (e instanceof InterruptedException) {
+                                throw e;
+                            }
+                            //This is something that should not really happen. it's not a fatal condition so let's just log.
+                            log.warn("Failed to wait for the deletion of: " + i.getApiVersion() + " " + i.getKind() + " "
+                                    + i.getMetadata().getName() + ". Is the resource waitable?");
+                        }
+                    }
+                    try {
+                        r.createOrReplace();
+                    } catch (Exception e) {
+                        if (e instanceof InterruptedException) {
+                            throw e;
+                        } else if (isOptional(optionalResourceDefinitions, i)) {
+                            log.warn("Failed to apply: " + i.getKind() + " " + i.getMetadata().getName()
+                                    + ", possilby due to missing a CRD apiVersion: " + i.getApiVersion() + " and kind: "
+                                    + i.getKind() + ".");
+                        } else {
+                            throw e;
+                        }
                     }
                 }
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
@@ -248,6 +271,32 @@ public class KubernetesDeployer {
                 break;
             }
         }
+    }
+
+    /**
+     * Obtain everything the APIResourceList from the server and extract all the info we need in order to know how to create /
+     * delete the specified generic resource.
+     * 
+     * @param client the client instance to use to query the server.
+     * @param resource the generic resource.
+     * @return an optional {@link ResourceDefinitionContext} with the resource info or empty if resource could not be matched.
+     */
+    private static Optional<ResourceDefinitionContext> getGenericResourceContext(KubernetesClient client,
+            GenericKubernetesResource resource) {
+        APIResourceList apiResourceList = client.getApiResources(resource.getApiVersion());
+        if (apiResourceList == null || apiResourceList.getResources() == null || apiResourceList.getResources().isEmpty()) {
+            return Optional.empty();
+        }
+        return client.getApiResources(resource.getApiVersion()).getResources().stream()
+                .filter(r -> r.getKind().equals(resource.getKind()))
+                .map(r -> new ResourceDefinitionContext.Builder()
+                        .withGroup(ApiVersionUtil.trimGroup(resource.getApiVersion()))
+                        .withVersion(ApiVersionUtil.trimVersion(resource.getApiVersion()))
+                        .withKind(r.getKind())
+                        .withNamespaced(r.getNamespaced())
+                        .withPlural(r.getName())
+                        .build())
+                .findFirst();
     }
 
     private static boolean isOptional(List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions,

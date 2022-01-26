@@ -35,6 +35,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -90,6 +91,7 @@ public class JunitTestRunner {
     public static final DotName TEST_FACTORY = DotName.createSimple(TestFactory.class.getName());
     public static final DotName TEST_TEMPLATE = DotName.createSimple(TestTemplate.class.getName());
     public static final DotName TESTABLE = DotName.createSimple(Testable.class.getName());
+    public static final DotName NESTED = DotName.createSimple(Nested.class.getName());
     private final long runId;
     private final DevModeContext.ModuleInfo moduleInfo;
     private final DevModeContext devModeContext;
@@ -542,10 +544,18 @@ public class JunitTestRunner {
         }
         Set<DotName> allTestAnnotations = collectTestAnnotations(index);
         Set<DotName> allTestClasses = new HashSet<>();
+        Map<DotName, DotName> enclosingClasses = new HashMap<>();
         for (DotName annotation : allTestAnnotations) {
             for (AnnotationInstance instance : index.getAnnotations(annotation)) {
                 if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
-                    allTestClasses.add(instance.target().asMethod().declaringClass().name());
+                    ClassInfo classInfo = instance.target().asMethod().declaringClass();
+                    allTestClasses.add(classInfo.name());
+                    if (classInfo.classAnnotation(NESTED) != null) {
+                        var enclosing = classInfo.enclosingClass();
+                        if (enclosing != null) {
+                            enclosingClasses.put(classInfo.name(), enclosing);
+                        }
+                    }
                 }
             }
         }
@@ -556,6 +566,16 @@ public class JunitTestRunner {
             String name = testClass.toString();
             if (integrationTestClasses.contains(name) || quarkusTestClasses.contains(name)) {
                 continue;
+            }
+            var enclosing = enclosingClasses.get(testClass);
+            if (enclosing != null) {
+                if (integrationTestClasses.contains(enclosing.toString())) {
+                    integrationTestClasses.add(name);
+                    continue;
+                } else if (quarkusTestClasses.contains(enclosing.toString())) {
+                    quarkusTestClasses.add(name);
+                    continue;
+                }
             }
             ClassInfo clazz = index.getClassByName(testClass);
             if (Modifier.isAbstract(clazz.flags())) {

@@ -13,11 +13,11 @@ link:https://hibernate.org/reactive/[Hibernate Reactive] is a reactive API for H
 and a reactive style of interaction with the database.
 
 [NOTE]
-----
+====
 Hibernate Reactive works with the same annotations and most of the configuration described in the
 xref:quarkus-hibernate-orm.adoc[Hibernate ORM guide]. This guide will only focus on what's specific
 for Hibernate Reactive.
-----
+====
 
 == Solution
 
@@ -168,7 +168,7 @@ The configuration properties listed here allow you to override such defaults, an
 Hibernate Reactive uses the same properties you would use for Hibernate ORM. You will notice that some properties
 contain `jdbc` in the name but there is not JDBC in Hibernate Reactive, these are simply legacy property names.
 
-include::{generated-dir}/config/quarkus-orm-reactive.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 
 [TIP]
 ====

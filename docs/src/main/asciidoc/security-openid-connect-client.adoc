@@ -635,6 +635,31 @@ quarkus.oidc-client.credentials.jwt.subject=${apple.subject}
 quarkus.oidc-client.credentials.jwt.issuer=${apple.issuer}
 ----
 
+==== Mutual TLS
+
+Some OpenID Connect Providers may require that a client is authenticated as part of the `Mutual TLS` (`MTLS`) authentication process.
+
+`quarkus-oidc-client` can be configured as follows to support `MTLS`:
+
+[source,properties]
+----
+quarkus.oidc.tls.verification=certificate-validation
+
+# Keystore configuration
+quarkus.oidc.client.tls.key-store-file=client-keystore.jks
+quarkus.oidc.client.tls.key-store-password=${key-store-password}
+
+# Add more keystore properties if needed:
+#quarkus.oidc.client.tls.key-store-alias=keyAlias
+#quarkus.oidc.client.tls.key-store-alias-password=keyAliasPassword
+
+# Truststore configuration
+quarkus.oidc.client.tls.trust-store-file=client-truststore.jks
+quarkus.oidc.client.tls.trust-store-password=${trust-store-password}
+# Add more truststore properties if needed:
+#quarkus.oidc.client.tls.trust-store-alias=certAlias
+----
+
 [[integration-testing-oidc-client]]
 === Testing
 

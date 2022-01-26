@@ -34,6 +34,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -42,6 +43,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -275,11 +277,12 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
-    public void translateSmallRyeConfigValues(SmallRyeHealthConfig healthConfig,
+    public void processSmallRyeHealthConfigValues(SmallRyeHealthConfig healthConfig,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
         if (healthConfig.contextPropagation) {
             systemProperties.produce(new SystemPropertyBuildItem("io.smallrye.health.context.propagation", "true"));
         }
+        systemProperties.produce(new SystemPropertyBuildItem("io.smallrye.health.delayChecksInitializations", "true"));
     }
 
     @BuildStep(onlyIf = OpenAPIIncluded.class)
@@ -476,6 +479,16 @@ class SmallRyeHealthProcessor {
                     .handler(handler)
                     .build());
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    void processSmallRyeHealthRuntimeConfig(
+            SmallRyeHealthRecorder recorder,
+            SmallRyeHealthRuntimeConfig runtimeConfig) {
+
+        recorder.processSmallRyeHealthRuntimeConfiguration(runtimeConfig);
     }
 
     // Replace health URL in static files

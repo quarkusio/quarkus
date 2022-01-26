@@ -1,8 +1,10 @@
 package io.quarkus.hibernate.validator.runtime.jaxrs;
 
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Singleton;
 import javax.ws.rs.core.HttpHeaders;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.DefaultBean;
 
 @Singleton
@@ -18,11 +20,14 @@ public class ResteasyReactiveContextLocaleResolver extends AbstractLocaleResolve
 
     @Override
     protected HttpHeaders getHeaders() {
-        try {
-            headers.getLength(); // this forces the creation of the actual object which will fail if there is no request in flight
-            return headers;
-        } catch (IllegalStateException e) {
-            return null;
+        if (Arc.container().getActiveContext(RequestScoped.class) != null) { // only try to obtain headers if there is a request scope
+            try {
+                headers.getLength(); // this forces the creation of the actual object which will fail if there is no request in flight
+                return headers;
+            } catch (IllegalStateException ignored) {
+
+            }
         }
+        return null;
     }
 }

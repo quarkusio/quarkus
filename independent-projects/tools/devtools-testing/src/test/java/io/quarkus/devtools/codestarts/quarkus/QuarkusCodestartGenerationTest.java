@@ -6,6 +6,7 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.Quarku
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapshot;
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
+import static io.quarkus.devtools.testing.SnapshotTesting.checkNotContains;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.devtools.project.BuildTool;
@@ -277,15 +278,17 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10"))//TODO: make a teste to java17
-                .satisfies(checkContains("ENTRYPOINT [ \"java\", \"-jar\", \"/deployments/quarkus-run.jar\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.11"))//TODO: make a teste to java17
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkNotContains("ENTRYPOINT"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.11"))
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
-                .satisfies(checkContains("ENTRYPOINT [ \"java\", \"-jar\", \"/deployments/quarkus-run.jar\" ]"));
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkNotContains("ENTRYPOINT"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./mvnw package -Pnative"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:1.0"))

@@ -292,6 +292,10 @@ public class SnapshotTesting {
         return (p) -> assertThat(getTextContent(p)).contains(s);
     }
 
+    public static Consumer<Path> checkNotContains(String s) {
+        return (p) -> assertThat(getTextContent(p)).doesNotContainIgnoringCase(s);
+    }
+
     public static Consumer<Path> checkMatches(String regex) {
         return (p) -> assertThat(getTextContent(p)).matches(regex);
     }

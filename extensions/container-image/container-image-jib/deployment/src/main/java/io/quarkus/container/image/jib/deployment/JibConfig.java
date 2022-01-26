@@ -15,9 +15,9 @@ public class JibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.10}
+     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17:1.11}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11:1.11} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;

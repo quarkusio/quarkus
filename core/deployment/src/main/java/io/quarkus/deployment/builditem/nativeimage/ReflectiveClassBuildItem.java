@@ -192,12 +192,13 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         public Builder serialization(boolean serialize) {
-            this.serialization = serialization;
+            this.serialization = serialize;
             return this;
         }
 
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, weak, className);
+            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, weak, serialization,
+                    className);
         }
     }
 }

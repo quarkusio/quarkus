@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
  */
 public class MutableJarApplicationModel implements Serializable {
 
+    private static final long serialVersionUID = 2046278141713688084L;
+
     private final String baseName;
     private final SerializedDep appArtifact;
 

@@ -41,6 +41,8 @@ import java.util.stream.Collectors;
  */
 public class CuratedApplication implements Serializable, AutoCloseable {
 
+    private static final long serialVersionUID = 7816596453653911149L;
+
     private static final String AUGMENTOR = "io.quarkus.runner.bootstrap.AugmentActionImpl";
 
     /**

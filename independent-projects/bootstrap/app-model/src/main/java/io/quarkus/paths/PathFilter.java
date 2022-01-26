@@ -10,6 +10,8 @@ import java.util.regex.Pattern;
 
 public class PathFilter implements Serializable {
 
+    private static final long serialVersionUID = -5712472676677054175L;
+
     public static boolean isVisible(PathFilter filter, String path) {
         if (filter == null) {
             return true;

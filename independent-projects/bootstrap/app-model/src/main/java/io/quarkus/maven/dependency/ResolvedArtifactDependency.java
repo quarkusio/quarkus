@@ -10,6 +10,8 @@ import java.util.Objects;
 
 public class ResolvedArtifactDependency extends ArtifactDependency implements ResolvableDependency, Serializable {
 
+    private static final long serialVersionUID = 4038042391733012566L;
+
     private PathCollection paths;
     private WorkspaceModule module;
     private volatile transient PathTree contentTree;

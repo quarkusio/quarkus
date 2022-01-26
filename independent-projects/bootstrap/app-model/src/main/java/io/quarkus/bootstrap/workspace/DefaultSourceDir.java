@@ -12,6 +12,7 @@ import java.util.Objects;
 
 public class DefaultSourceDir implements SourceDir, Serializable {
 
+    private static final long serialVersionUID = 6544177650615687691L;
     private final PathTree srcTree;
     private final PathTree outputTree;
     private final Map<Object, Object> data;

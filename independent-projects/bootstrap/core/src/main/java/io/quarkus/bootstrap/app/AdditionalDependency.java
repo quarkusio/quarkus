@@ -17,6 +17,8 @@ import java.nio.file.Path;
  */
 public class AdditionalDependency implements Serializable {
 
+    private static final long serialVersionUID = -6987195473010677257L;
+
     /**
      * The path to the application archive
      */

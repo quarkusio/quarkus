@@ -9,6 +9,8 @@ import java.util.List;
 
 public class PlatformInfo implements Serializable {
 
+    private static final long serialVersionUID = 7143227956636416934L;
+
     private final String key;
     private final List<PlatformStreamInfo> streams = new ArrayList<>(1); // most of the time there will be only one
 

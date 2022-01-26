@@ -5,6 +5,8 @@ import java.util.Objects;
 
 public class GACTV implements ArtifactCoords, Serializable {
 
+    private static final long serialVersionUID = -8362130311897578173L;
+
     public static GACTV fromString(String str) {
         return new GACTV(split(str, new String[5]));
     }

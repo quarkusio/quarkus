@@ -14,6 +14,8 @@ import java.util.Map;
 
 public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
 
+    private static final long serialVersionUID = 6906903256002107806L;
+
     public static final String MAIN = "";
     public static final String TEST = "tests";
 

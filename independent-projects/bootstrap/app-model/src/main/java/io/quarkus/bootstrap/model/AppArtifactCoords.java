@@ -13,6 +13,8 @@ import java.util.Objects;
  */
 public class AppArtifactCoords implements ArtifactCoords, Serializable {
 
+    private static final long serialVersionUID = -4401898149727779844L;
+
     public static final String TYPE_JAR = "jar";
     public static final String TYPE_POM = "pom";
 

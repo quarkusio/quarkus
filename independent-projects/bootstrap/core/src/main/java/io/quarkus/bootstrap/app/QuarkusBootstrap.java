@@ -40,6 +40,8 @@ import java.util.Set;
  */
 public class QuarkusBootstrap implements Serializable {
 
+    private static final long serialVersionUID = -3400622859354530408L;
+
     /**
      * The root of the application, where the application classes live.
      */

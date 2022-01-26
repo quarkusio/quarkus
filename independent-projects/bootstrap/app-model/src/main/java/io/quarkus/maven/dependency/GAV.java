@@ -6,6 +6,8 @@ import java.util.Objects;
 
 public class GAV implements WorkspaceModuleId, Serializable {
 
+    private static final long serialVersionUID = -1110768961345248967L;
+
     private final String groupId;
     private final String artifactId;
     private final String version;

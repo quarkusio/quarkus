@@ -7,6 +7,8 @@ import java.util.Objects;
 
 public class CapabilityContract implements ExtensionCapabilities, Serializable {
 
+    private static final long serialVersionUID = -2817736967526011849L;
+
     public static CapabilityContract providesCapabilities(String extension, String commaSeparatedList) {
         final List<String> list = Arrays.asList(commaSeparatedList.split("\\s*,\\s*"));
         for (String provided : list) {

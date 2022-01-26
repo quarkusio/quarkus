@@ -152,21 +152,21 @@ public final class Types {
         } else if (Kind.PRIMITIVE.equals(type.kind())) {
             switch (type.asPrimitiveType().primitive()) {
                 case INT:
-                    return creator.loadClass(int.class);
+                    return creator.loadClassFromTCCL(int.class);
                 case LONG:
-                    return creator.loadClass(long.class);
+                    return creator.loadClassFromTCCL(long.class);
                 case BOOLEAN:
-                    return creator.loadClass(boolean.class);
+                    return creator.loadClassFromTCCL(boolean.class);
                 case BYTE:
-                    return creator.loadClass(byte.class);
+                    return creator.loadClassFromTCCL(byte.class);
                 case CHAR:
-                    return creator.loadClass(char.class);
+                    return creator.loadClassFromTCCL(char.class);
                 case DOUBLE:
-                    return creator.loadClass(double.class);
+                    return creator.loadClassFromTCCL(double.class);
                 case FLOAT:
-                    return creator.loadClass(float.class);
+                    return creator.loadClassFromTCCL(float.class);
                 case SHORT:
-                    return creator.loadClass(short.class);
+                    return creator.loadClassFromTCCL(short.class);
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + type);
             }

@@ -268,7 +268,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
 
     private ResultHandle controllerAdviceInstance(MethodCreator toResponse) {
         if (isResteasyClassic) {
-            ResultHandle controllerAdviceClass = toResponse.loadClass(declaringClassName);
+            ResultHandle controllerAdviceClass = toResponse.loadClassFromTCCL(declaringClassName);
 
             ResultHandle container = toResponse
                     .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
@@ -292,7 +292,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
         ResultHandle instance = methodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                         Annotation[].class),
-                container, methodCreator.loadClass(beanClassName), methodCreator.loadNull());
+                container, methodCreator.loadClassFromTCCL(beanClassName), methodCreator.loadNull());
         return methodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                 instance);

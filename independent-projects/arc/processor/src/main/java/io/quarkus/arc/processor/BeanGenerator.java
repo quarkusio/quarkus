@@ -205,7 +205,7 @@ public class BeanGenerator extends AbstractGenerator {
                     valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Double.class, double.class),
                             constructor.load(((Double) entry.getValue()).doubleValue()));
                 } else if (entry.getValue() instanceof Class) {
-                    valHandle = constructor.loadClass((Class<?>) entry.getValue());
+                    valHandle = constructor.loadClassFromTCCL((Class<?>) entry.getValue());
                 } else if (entry.getValue() instanceof Boolean) {
                     valHandle = constructor.load((Boolean) entry.getValue());
                 }
@@ -756,7 +756,7 @@ public class BeanGenerator extends AbstractGenerator {
             int stereotypesIndex = 0;
             for (StereotypeInfo stereotype : bean.getStereotypes()) {
                 constructor.writeArrayValue(stereotypesArray, constructor.load(stereotypesIndex++),
-                        constructor.loadClass(stereotype.getTarget().name().toString()));
+                        constructor.loadClassFromTCCL(stereotype.getTarget().name().toString()));
             }
             constructor.writeInstanceField(
                     FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_STEREOTYPES, Set.class.getName()),
@@ -795,7 +795,7 @@ public class BeanGenerator extends AbstractGenerator {
                                 callback.declaringClass().name(), callback.name()));
                         reflectionRegistration.registerMethod(callback);
                         destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                                destroy.loadClass(callback.declaringClass().name().toString()),
+                                destroy.loadClassFromTCCL(callback.declaringClass().name().toString()),
                                 destroy.load(callback.name()), destroy.newArray(Class.class, destroy.load(0)),
                                 destroy.getMethodParam(0),
                                 destroy.newArray(Object.class, destroy.load(0)));
@@ -862,12 +862,12 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle argsArray = destroy.newArray(Object.class, destroy.load(referenceHandles.length));
                 for (int i = 0; i < referenceHandles.length; i++) {
                     destroy.writeArrayValue(paramTypesArray, i,
-                            destroy.loadClass(disposerMethod.parameters().get(i).name().toString()));
+                            destroy.loadClassFromTCCL(disposerMethod.parameters().get(i).name().toString()));
                     destroy.writeArrayValue(argsArray, i, referenceHandles[i]);
                 }
                 reflectionRegistration.registerMethod(disposerMethod);
                 destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        destroy.loadClass(disposerMethod.declaringClass().name().toString()),
+                        destroy.loadClassFromTCCL(disposerMethod.declaringClass().name().toString()),
                         destroy.load(disposerMethod.name()), paramTypesArray, declaringProviderInstanceHandle, argsArray);
             } else {
                 destroy.invokeVirtualMethod(MethodDescriptor.of(disposerMethod), declaringProviderInstanceHandle,
@@ -1039,12 +1039,12 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle argsArray = creator.newArray(Object.class, creator.load(providerHandles.size()));
                 for (int i = 0; i < injectionPoints.size(); i++) {
                     creator.writeArrayValue(paramTypesArray, i,
-                            creator.loadClass(injectionPoints.get(i).getType().name().toString()));
+                            creator.loadClassFromTCCL(injectionPoints.get(i).getType().name().toString()));
                     creator.writeArrayValue(argsArray, i, providerHandles.get(i));
                 }
                 registration.registerMethod(constructor);
                 return creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_NEW_INSTANCE,
-                        creator.loadClass(constructor.declaringClass().name().toString()),
+                        creator.loadClassFromTCCL(constructor.declaringClass().name().toString()),
                         paramTypesArray, argsArray);
             } else {
                 // new SimpleBean(foo)
@@ -1067,7 +1067,8 @@ public class BeanGenerator extends AbstractGenerator {
 
                 registration.registerMethod(noArgsConstructor);
                 return creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_NEW_INSTANCE,
-                        creator.loadClass(noArgsConstructor.declaringClass().name().toString()), paramTypesArray, argsArray);
+                        creator.loadClassFromTCCL(noArgsConstructor.declaringClass().name().toString()), paramTypesArray,
+                        argsArray);
             } else {
                 // new SimpleBean()
                 return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName));
@@ -1114,7 +1115,8 @@ public class BeanGenerator extends AbstractGenerator {
                     String.format("Producer field %s#%s", producerField.declaringClass().name(), producerField.name()));
             reflectionRegistration.registerField(producerField);
             create.assign(instanceHandle, create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_READ_FIELD,
-                    create.loadClass(producerField.declaringClass().name().toString()), create.load(producerField.name()),
+                    create.loadClassFromTCCL(producerField.declaringClass().name().toString()),
+                    create.load(producerField.name()),
                     declaringProviderInstanceHandle));
         } else {
             ResultHandle readFieldHandle;
@@ -1203,12 +1205,13 @@ public class BeanGenerator extends AbstractGenerator {
             ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
             for (int i = 0; i < referenceHandles.length; i++) {
                 create.writeArrayValue(paramTypesArray, i,
-                        create.loadClass(producerMethod.parameters().get(i).name().toString()));
+                        create.loadClassFromTCCL(producerMethod.parameters().get(i).name().toString()));
                 create.writeArrayValue(argsArray, i, referenceHandles[i]);
             }
             reflectionRegistration.registerMethod(producerMethod);
             create.assign(instanceHandle, create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                    create.loadClass(producerMethod.declaringClass().name().toString()), create.load(producerMethod.name()),
+                    create.loadClassFromTCCL(producerMethod.declaringClass().name().toString()),
+                    create.load(producerMethod.name()),
                     paramTypesArray,
                     declaringProviderInstanceHandle,
                     argsArray));
@@ -1354,10 +1357,10 @@ public class BeanGenerator extends AbstractGenerator {
                     paramTypes.add(injectionPoint.getType().name().toString());
                 }
                 ResultHandle[] paramsHandles = new ResultHandle[2];
-                paramsHandles[0] = create.loadClass(providerType.className());
+                paramsHandles[0] = create.loadClassFromTCCL(providerType.className());
                 ResultHandle paramsArray = create.newArray(Class.class, create.load(paramTypes.size()));
                 for (ListIterator<String> iterator = paramTypes.listIterator(); iterator.hasNext();) {
-                    create.writeArrayValue(paramsArray, iterator.nextIndex(), create.loadClass(iterator.next()));
+                    create.writeArrayValue(paramsArray, iterator.nextIndex(), create.loadClassFromTCCL(iterator.next()));
                 }
                 paramsHandles[1] = paramsArray;
                 constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
@@ -1366,7 +1369,7 @@ public class BeanGenerator extends AbstractGenerator {
             } else {
                 // constructor = Reflections.findConstructor(Foo.class)
                 ResultHandle[] paramsHandles = new ResultHandle[2];
-                paramsHandles[0] = create.loadClass(providerType.className());
+                paramsHandles[0] = create.loadClassFromTCCL(providerType.className());
                 paramsHandles[1] = create.newArray(Class.class, create.load(0));
                 constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
                         paramsHandles);
@@ -1453,7 +1456,7 @@ public class BeanGenerator extends AbstractGenerator {
                 }
                 reflectionRegistration.registerField(injectedField);
                 tryBlock.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD,
-                        tryBlock.loadClass(injectedField.declaringClass().name().toString()),
+                        tryBlock.loadClassFromTCCL(injectedField.declaringClass().name().toString()),
                         tryBlock.load(injectedField.name()), instanceHandle, referenceHandle);
 
             } else {
@@ -1500,12 +1503,12 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
                 for (int i = 0; i < referenceHandles.length; i++) {
                     create.writeArrayValue(paramTypesArray, i,
-                            create.loadClass(initializerMethod.parameters().get(i).name().toString()));
+                            create.loadClassFromTCCL(initializerMethod.parameters().get(i).name().toString()));
                     create.writeArrayValue(argsArray, i, referenceHandles[i]);
                 }
                 reflectionRegistration.registerMethod(initializerMethod);
                 create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        create.loadClass(initializerMethod.declaringClass().name().toString()),
+                        create.loadClassFromTCCL(initializerMethod.declaringClass().name().toString()),
                         create.load(methodInjection.target.asMethod().name()),
                         paramTypesArray, instanceHandle, argsArray);
 
@@ -1562,7 +1565,7 @@ public class BeanGenerator extends AbstractGenerator {
                     }
                     reflectionRegistration.registerMethod(callback);
                     create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                            create.loadClass(callback.declaringClass().name().toString()),
+                            create.loadClassFromTCCL(callback.declaringClass().name().toString()),
                             create.load(callback.name()), create.newArray(Class.class, create.load(0)), instanceHandle,
                             create.newArray(Object.class, create.load(0)));
                 } else {
@@ -1658,7 +1661,7 @@ public class BeanGenerator extends AbstractGenerator {
      */
     protected void implementGetScope(BeanInfo bean, ClassCreator beanCreator) {
         MethodCreator getScope = beanCreator.getMethodCreator("getScope", Class.class).setModifiers(ACC_PUBLIC);
-        getScope.returnValue(getScope.loadClass(bean.getScope().getDotName().toString()));
+        getScope.returnValue(getScope.loadClassFromTCCL(bean.getScope().getDotName().toString()));
     }
 
     /**
@@ -1758,7 +1761,7 @@ public class BeanGenerator extends AbstractGenerator {
 
     protected void implementGetBeanClass(BeanInfo bean, ClassCreator beanCreator) {
         MethodCreator getBeanClass = beanCreator.getMethodCreator("getBeanClass", Class.class).setModifiers(ACC_PUBLIC);
-        getBeanClass.returnValue(getBeanClass.loadClass(bean.getBeanClass().toString()));
+        getBeanClass.returnValue(getBeanClass.loadClassFromTCCL(bean.getBeanClass().toString()));
     }
 
     protected void implementGetName(BeanInfo bean, ClassCreator beanCreator) {
@@ -1848,7 +1851,7 @@ public class BeanGenerator extends AbstractGenerator {
         if (Kind.FIELD.equals(injectionPoint.getTarget().kind())) {
             FieldInfo field = injectionPoint.getTarget().asField();
             javaMemberHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_FIELD,
-                    constructor.loadClass(field.declaringClass().name().toString()),
+                    constructor.loadClassFromTCCL(field.declaringClass().name().toString()),
                     constructor.load(field.name()));
             reflectionRegistration.registerField(field);
         } else {
@@ -1857,11 +1860,11 @@ public class BeanGenerator extends AbstractGenerator {
             if (method.name().equals(Methods.INIT)) {
                 // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)
                 ResultHandle[] paramsHandles = new ResultHandle[2];
-                paramsHandles[0] = constructor.loadClass(method.declaringClass().name().toString());
+                paramsHandles[0] = constructor.loadClassFromTCCL(method.declaringClass().name().toString());
                 ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parameters().size()));
                 for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
                     constructor.writeArrayValue(paramsArray, iterator.nextIndex(),
-                            constructor.loadClass(iterator.next().name().toString()));
+                            constructor.loadClassFromTCCL(iterator.next().name().toString()));
                 }
                 paramsHandles[1] = paramsArray;
                 javaMemberHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
@@ -1869,12 +1872,12 @@ public class BeanGenerator extends AbstractGenerator {
             } else {
                 // Reflections.findMethod(org.foo.SimpleBean.class,"foo",java.lang.String.class)
                 ResultHandle[] paramsHandles = new ResultHandle[3];
-                paramsHandles[0] = constructor.loadClass(method.declaringClass().name().toString());
+                paramsHandles[0] = constructor.loadClassFromTCCL(method.declaringClass().name().toString());
                 paramsHandles[1] = constructor.load(method.name());
                 ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parameters().size()));
                 for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
                     constructor.writeArrayValue(paramsArray, iterator.nextIndex(),
-                            constructor.loadClass(iterator.next().name().toString()));
+                            constructor.loadClassFromTCCL(iterator.next().name().toString()));
                 }
                 paramsHandles[2] = paramsArray;
                 javaMemberHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD, paramsHandles);

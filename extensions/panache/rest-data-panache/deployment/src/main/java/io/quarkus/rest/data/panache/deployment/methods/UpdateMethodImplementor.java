@@ -178,7 +178,7 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
-                arcContainer, creator.loadClass(UpdateExecutor.class), creator.newArray(Annotation.class, 0));
+                arcContainer, creator.loadClassFromTCCL(UpdateExecutor.class), creator.newArray(Annotation.class, 0));
         ResultHandle instance = creator.invokeInterfaceMethod(
                 ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
 

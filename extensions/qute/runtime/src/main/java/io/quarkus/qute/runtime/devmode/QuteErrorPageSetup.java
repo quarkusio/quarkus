@@ -229,7 +229,8 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
     private int getLineCharacterStart(Object origin) {
         int lineCharacter = 0;
         try {
-            Method getLineCharacter = origin.getClass().getClassLoader().loadClass(ORIGIN).getMethod("getLineCharacterStart");
+            Method getLineCharacter = origin.getClass().getClassLoader().loadClass(ORIGIN)
+                    .getMethod("getLineCharacterStart");
             lineCharacter = (int) getLineCharacter.invoke(origin);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalAccessException
                 | IllegalArgumentException | InvocationTargetException e) {

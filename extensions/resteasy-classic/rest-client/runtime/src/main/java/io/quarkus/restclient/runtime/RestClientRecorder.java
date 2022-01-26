@@ -63,7 +63,8 @@ public class RestClientRecorder {
         for (String providerToRegister : providersToRegister) {
             try {
                 providerFactory
-                        .registerProvider(Thread.currentThread().getContextClassLoader().loadClass(providerToRegister.trim()),
+                        .registerProvider(
+                                Thread.currentThread().getContextClassLoader().loadClass(providerToRegister.trim()),
                                 isBuiltIn);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unable to find class for provider " + providerToRegister, e);

@@ -100,7 +100,7 @@ public class SpringDataRepositoryCreator {
                 ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(Object.class, "<init>", void.class), ctor.getThis());
                 // initialize the entityClass field
                 ctor.writeInstanceField(entityClassFieldCreator.getFieldDescriptor(), ctor.getThis(),
-                        ctor.loadClass(entityTypeStr));
+                        ctor.loadClassFromTCCL(entityTypeStr));
                 ctor.returnValue(null);
             }
 

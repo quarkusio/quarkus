@@ -293,13 +293,13 @@ public class InterceptedStaticMethodsProcessor {
 
         // 2. Method method = Reflections.findMethod(...)
         ResultHandle[] paramsHandles = new ResultHandle[3];
-        paramsHandles[0] = init.loadClass(method.declaringClass().name().toString());
+        paramsHandles[0] = init.loadClassFromTCCL(method.declaringClass().name().toString());
         paramsHandles[1] = init.load(method.name());
         if (!method.parameters().isEmpty()) {
             ResultHandle paramsArray = init.newArray(Class.class, init.load(method.parameters().size()));
             for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
                 init.writeArrayValue(paramsArray, iterator.nextIndex(),
-                        init.loadClass(iterator.next().name().toString()));
+                        init.loadClassFromTCCL(iterator.next().name().toString()));
             }
             paramsHandles[2] = paramsArray;
         } else {

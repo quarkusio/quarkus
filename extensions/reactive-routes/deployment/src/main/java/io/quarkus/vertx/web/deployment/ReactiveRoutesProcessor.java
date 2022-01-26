@@ -725,7 +725,7 @@ class ReactiveRoutesProcessor {
                 ResultHandle failureClass = invoke.invokeVirtualMethod(Methods.GET_CLASS, failure);
                 BytecodeCreator failureTypeIsNotAssignable = invoke
                         .ifFalse(invoke.invokeVirtualMethod(Methods.IS_ASSIGNABLE_FROM,
-                                invoke.loadClass(failureType.name().toString()), failureClass))
+                                invoke.loadClassFromTCCL(failureType.name().toString()), failureClass))
                         .trueBranch();
                 failureTypeIsNotAssignable.invokeInterfaceMethod(Methods.NEXT, routingContext);
                 failureTypeIsNotAssignable.returnValue(null);
@@ -1424,7 +1424,7 @@ class ReactiveRoutesProcessor {
                                 BytecodeCreator bodyNotNull = bodyIfNotNull.trueBranch();
                                 bodyNotNull.assign(ret, bodyNotNull.invokeVirtualMethod(Methods.JSON_OBJECT_MAP_TO,
                                         bodyAsJson,
-                                        invoke.loadClass(paramType.name().toString())));
+                                        bodyNotNull.loadClassFromTCCL(paramType.name().toString())));
                                 BytecodeCreator bodyNull = bodyIfNotNull.falseBranch();
                                 bodyNull.assign(ret, bodyNull.loadNull());
                                 return ret;

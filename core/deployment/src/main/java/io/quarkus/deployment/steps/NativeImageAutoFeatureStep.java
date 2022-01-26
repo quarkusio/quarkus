@@ -56,7 +56,7 @@ import io.quarkus.runtime.graal.WeakReflection;
 
 public class NativeImageAutoFeatureStep {
 
-    private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
+    private static final String GRAAL_AUTOFEATURE = "io.quarkus.runner.AutoFeature";
     private static final MethodDescriptor VERSION_CURRENT = ofMethod(Version.class, "getCurrent", Version.class);
     private static final MethodDescriptor VERSION_COMPARE_TO = ofMethod(Version.class, "compareTo", int.class, int[].class);
 
@@ -152,14 +152,14 @@ public class NativeImageAutoFeatureStep {
         }
 
         ResultHandle imageSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                overallCatch.loadClass("org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport"));
+                overallCatch.loadClassFromTCCL("org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport"));
         overallCatch.invokeInterfaceMethod(BUILD_TIME_INITIALIZATION,
                 imageSingleton,
                 overallCatch.load(""), // empty string means everything
                 overallCatch.load("Quarkus build time init default"));
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
-            ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
+            ResultHandle thisClass = overallCatch.loadClassFromTCCL(GRAAL_AUTOFEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
             ResultHandle classes = overallCatch.newArray(Class.class,
@@ -191,7 +191,7 @@ public class NativeImageAutoFeatureStep {
 
         // hack in reinitialization of process info classes
         if (!runtimeReinitializedClassBuildItems.isEmpty()) {
-            ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
+            ResultHandle thisClass = overallCatch.loadClassFromTCCL(GRAAL_AUTOFEATURE);
             ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
             ResultHandle quarkus = overallCatch.load("Quarkus");
@@ -208,7 +208,7 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!proxies.isEmpty()) {
-            ResultHandle proxySupportClass = overallCatch.loadClass(DYNAMIC_PROXY_REGISTRY);
+            ResultHandle proxySupportClass = overallCatch.loadClassFromTCCL(DYNAMIC_PROXY_REGISTRY);
             ResultHandle proxySupport = overallCatch.invokeStaticMethod(
                     IMAGE_SINGLETONS_LOOKUP,
                     proxySupportClass);
@@ -229,7 +229,7 @@ public class NativeImageAutoFeatureStep {
         /* Resource includes and excludes */
         if (!resourcePatterns.isEmpty()) {
             ResultHandle resourcesRegistrySingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                    overallCatch.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"));
+                    overallCatch.loadClassFromTCCL("com.oracle.svm.core.configure.ResourcesRegistry"));
             TryBlock tc = overallCatch.tryBlock();
 
             ResultHandle currentThread = tc.invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
@@ -250,7 +250,7 @@ public class NativeImageAutoFeatureStep {
                     greaterThan21_2.load("org.graalvm.nativeimage.impl.ConfigurationCondition"),
                     greaterThan21_2.load(false), tccl);
             greaterThan21_2.writeArrayValue(argTypes, 0, configurationConditionClass);
-            greaterThan21_2.writeArrayValue(argTypes, 1, greaterThan21_2.loadClass(String.class));
+            greaterThan21_2.writeArrayValue(argTypes, 1, greaterThan21_2.loadClassFromTCCL(String.class));
             greaterThan21_2.assign(resourcesArgTypes, argTypes);
             ResultHandle args = greaterThan21_2.newArray(Object.class, greaterThan21_2.load(2));
             ResultHandle alwaysTrueMethod = greaterThan21_2.invokeStaticMethod(LOOKUP_METHOD,
@@ -267,17 +267,17 @@ public class NativeImageAutoFeatureStep {
             /* GraalVM < 21.3 */
             BytecodeCreator smallerThan21_3 = graalVm21_3Test.falseBranch();
             argTypes = smallerThan21_3.newArray(Class.class, smallerThan21_3.load(1));
-            smallerThan21_3.writeArrayValue(argTypes, 0, smallerThan21_3.loadClass(String.class));
+            smallerThan21_3.writeArrayValue(argTypes, 0, smallerThan21_3.loadClassFromTCCL(String.class));
             smallerThan21_3.assign(resourcesArgTypes, argTypes);
             args = smallerThan21_3.newArray(Object.class, smallerThan21_3.load(1));
             smallerThan21_3.assign(resourcesArgs, args);
             smallerThan21_3.assign(argsIndex, smallerThan21_3.load(0));
 
             ResultHandle ignoreResourcesMethod = tc.invokeStaticMethod(LOOKUP_METHOD,
-                    tc.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"),
+                    tc.loadClassFromTCCL("com.oracle.svm.core.configure.ResourcesRegistry"),
                     tc.load("ignoreResources"), resourcesArgTypes);
             ResultHandle addResourcesMethod = tc.invokeStaticMethod(LOOKUP_METHOD,
-                    tc.loadClass("com.oracle.svm.core.configure.ResourcesRegistry"),
+                    tc.loadClassFromTCCL("com.oracle.svm.core.configure.ResourcesRegistry"),
                     tc.load("addResources"), resourcesArgTypes);
 
             for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {
@@ -303,20 +303,20 @@ public class NativeImageAutoFeatureStep {
             AssignableResultHandle registerMethod = overallCatch.createVariable(Method.class);
             AssignableResultHandle locClass = overallCatch.createVariable(Class.class);
             TryBlock locTryBlock = overallCatch.tryBlock();
-            ResultHandle legacyLocClass = locTryBlock.loadClass(LEGACY_LOCALIZATION_FEATURE);
+            ResultHandle legacyLocClass = locTryBlock.loadClassFromTCCL(LEGACY_LOCALIZATION_FEATURE);
             locTryBlock.assign(locClass, legacyLocClass);
 
-            ResultHandle legacyParams = locTryBlock.marshalAsArray(Class.class, locTryBlock.loadClass(String.class));
+            ResultHandle legacyParams = locTryBlock.marshalAsArray(Class.class, locTryBlock.loadClassFromTCCL(String.class));
             ResultHandle legacyRegisterMethod = locTryBlock.invokeVirtualMethod(
                     ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), legacyLocClass,
                     locTryBlock.load("addBundleToCache"), legacyParams);
             locTryBlock.assign(registerMethod, legacyRegisterMethod);
 
-            CatchBlockCreator locCatchBlock = locTryBlock.addCatch(NoClassDefFoundError.class);
-            ResultHandle newLocClass = locCatchBlock.loadClass(LOCALIZATION_FEATURE);
+            CatchBlockCreator locCatchBlock = locTryBlock.addCatch(ClassNotFoundException.class);
+            ResultHandle newLocClass = locCatchBlock.loadClassFromTCCL(LOCALIZATION_FEATURE);
             locCatchBlock.assign(locClass, newLocClass);
 
-            ResultHandle newParams = locCatchBlock.marshalAsArray(Class.class, locCatchBlock.loadClass(String.class));
+            ResultHandle newParams = locCatchBlock.marshalAsArray(Class.class, locCatchBlock.loadClassFromTCCL(String.class));
             ResultHandle newRegisterMethod = locCatchBlock.invokeVirtualMethod(
                     ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), newLocClass,
                     locCatchBlock.load("prepareBundle"), newParams);
@@ -402,7 +402,7 @@ public class NativeImageAutoFeatureStep {
                         ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
                         for (int i = 0; i < ctor.getParams().length; ++i) {
                             String type = ctor.getParams()[i];
-                            tc.writeArrayValue(paramArray, i, tc.loadClass(type));
+                            tc.writeArrayValue(paramArray, i, tc.loadClassFromTCCL(type));
                         }
                         ResultHandle fhandle = tc.invokeVirtualMethod(
                                 ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz,
@@ -423,7 +423,7 @@ public class NativeImageAutoFeatureStep {
                         ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
                         for (int i = 0; i < method.getParams().length; ++i) {
                             String type = method.getParams()[i];
-                            tc.writeArrayValue(paramArray, i, tc.loadClass(type));
+                            tc.writeArrayValue(paramArray, i, tc.loadClassFromTCCL(type));
                         }
                         ResultHandle fhandle = tc.invokeVirtualMethod(
                                 ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz,
@@ -527,7 +527,7 @@ public class NativeImageAutoFeatureStep {
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);
         print.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), print.getCaughtException());
 
-        beforeAn.loadClass("io.quarkus.runner.ApplicationImpl");
+        beforeAn.loadClassFromTCCL("io.quarkus.runner.ApplicationImpl");
         beforeAn.returnValue(null);
 
         file.close();
@@ -540,7 +540,7 @@ public class NativeImageAutoFeatureStep {
         TryBlock requiredCatch = requiredFeatures.tryBlock();
 
         ResultHandle serializationFeatureClass = requiredCatch
-                .loadClass("com.oracle.svm.reflect.serialize.hosted.SerializationFeature");
+                .loadClassFromTCCL("com.oracle.svm.reflect.serialize.hosted.SerializationFeature");
         ResultHandle requiredFeaturesList = requiredCatch.invokeStaticMethod(
                 ofMethod("java.util.Collections", "singletonList", List.class, Object.class),
                 serializationFeatureClass);
@@ -569,7 +569,7 @@ public class NativeImageAutoFeatureStep {
                 greaterThan21_3.load("org.graalvm.nativeimage.hosted.RuntimeSerialization"),
                 greaterThan21_3.load(false), tccl);
         ResultHandle registerArgTypes = greaterThan21_3.newArray(Class.class, greaterThan21_3.load(1));
-        greaterThan21_3.writeArrayValue(registerArgTypes, 0, greaterThan21_3.loadClass(Class[].class));
+        greaterThan21_3.writeArrayValue(registerArgTypes, 0, greaterThan21_3.loadClassFromTCCL(Class[].class));
         ResultHandle registerLookupMethod = greaterThan21_3.invokeStaticMethod(LOOKUP_METHOD, runtimeSerializationClass,
                 greaterThan21_3.load("register"), registerArgTypes);
         ResultHandle registerArgs = greaterThan21_3.newArray(Object.class, greaterThan21_3.load(1));
@@ -592,8 +592,8 @@ public class NativeImageAutoFeatureStep {
                 serializationRegistryClass);
 
         ResultHandle addReflectionsLookupArgs = tc.newArray(Class.class, tc.load(2));
-        tc.writeArrayValue(addReflectionsLookupArgs, 0, tc.loadClass(Class.class));
-        tc.writeArrayValue(addReflectionsLookupArgs, 1, tc.loadClass(Class.class));
+        tc.writeArrayValue(addReflectionsLookupArgs, 0, tc.loadClassFromTCCL(Class.class));
+        tc.writeArrayValue(addReflectionsLookupArgs, 1, tc.loadClassFromTCCL(Class.class));
         ResultHandle addReflectionsLookupMethod = tc.invokeStaticMethod(LOOKUP_METHOD, addReflectionsClass,
                 tc.load("addReflections"), addReflectionsLookupArgs);
 
@@ -616,7 +616,8 @@ public class NativeImageAutoFeatureStep {
         ifIsExternalizable.writeArrayValue(array1, 0, classClass);
 
         ResultHandle externalizableLookupMethod = ifIsExternalizable.invokeStaticMethod(LOOKUP_METHOD,
-                ifIsExternalizable.loadClass(ObjectStreamClass.class), ifIsExternalizable.load("getExternalizableConstructor"),
+                ifIsExternalizable.loadClassFromTCCL(ObjectStreamClass.class),
+                ifIsExternalizable.load("getExternalizableConstructor"),
                 array1);
 
         ResultHandle array2 = ifIsExternalizable.newArray(Object.class, tc.load(1));
@@ -665,7 +666,7 @@ public class NativeImageAutoFeatureStep {
                 newSerializationConstructor);
 
         ResultHandle getConstructorAccessor = tc.invokeStaticMethod(
-                LOOKUP_METHOD, tc.loadClass(Constructor.class), tc.load("getConstructorAccessor"),
+                LOOKUP_METHOD, tc.loadClassFromTCCL(Constructor.class), tc.load("getConstructorAccessor"),
                 tc.newArray(Class.class, tc.load(0)));
 
         ResultHandle accessor = tc.invokeVirtualMethod(

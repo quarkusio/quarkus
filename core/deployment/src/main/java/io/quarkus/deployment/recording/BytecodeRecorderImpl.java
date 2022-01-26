@@ -789,7 +789,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return new DeferredParameter() {
                     @Override
                     ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
-                        return method.loadClass((Class) param);
+                        return method.loadClassFromTCCL((Class) param);
                     }
                 };
             }
@@ -1766,7 +1766,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         retValue = valueMethod.load(value.asChar());
                         break;
                     case CLASS:
-                        retValue = valueMethod.loadClass(value.asClass().toString());
+                        retValue = valueMethod.loadClassFromTCCL(value.asClass().toString());
                         break;
                     case ARRAY:
                         retValue = arrayValue(value, valueMethod, method, annotationClass);
@@ -1793,7 +1793,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 Type[] classArray = value.asClassArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(classArray.length));
                 for (int i = 0; i < classArray.length; i++) {
-                    valueMethod.writeArrayValue(retValue, i, valueMethod.loadClass(classArray[i].name().toString()));
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.loadClassFromTCCL(classArray[i].name().toString()));
                 }
                 break;
             case STRING:

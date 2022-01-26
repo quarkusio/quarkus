@@ -648,7 +648,7 @@ public final class RunTimeConfigurationGenerator {
                 FieldDescriptor fd = convertersByType.get(type);
                 if (fd == null) {
                     // it's an unknown
-                    final ResultHandle clazzHandle = converterSetup.loadClass(additionalType);
+                    final ResultHandle clazzHandle = converterSetup.loadClassFromTCCL(additionalType);
                     fd = FieldDescriptor.of(cc.getClassName(), "conv$" + converterIndex++, Converter.class);
                     ResultHandle converter = converterSetup.invokeVirtualMethod(SRC_GET_CONVERTER, clinitConfig, clazzHandle);
                     cc.getFieldCreator(fd).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
@@ -664,10 +664,10 @@ public final class RunTimeConfigurationGenerator {
                     final Class<?> type = entry.getValue();
                     if (bootstrapConfigSetupNeeded()) {
                         readBootstrapConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, bootstrapBuilder,
-                                readBootstrapConfig.loadClass(type),
+                                readBootstrapConfig.loadClassFromTCCL(type),
                                 readBootstrapConfig.load(100), readBootstrapConfig.readStaticField(descriptor));
                     }
-                    readConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, runTimeBuilder, readConfig.loadClass(type),
+                    readConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, runTimeBuilder, readConfig.loadClassFromTCCL(type),
                             readConfig.load(100), readConfig.readStaticField(descriptor));
                 }
             }
@@ -1596,12 +1596,12 @@ public final class RunTimeConfigurationGenerator {
                     // TODO: temporary until type param inference is in
                     if (convertWith == HyphenateEnumConverter.class.asSubclass(Converter.class)) {
                         converter = converterSetup.newInstance(MethodDescriptor.ofConstructor(convertWith, Class.class),
-                                converterSetup.loadClass(type.getLeafType()));
+                                converterSetup.loadClassFromTCCL(type.getLeafType()));
                     } else {
                         converter = converterSetup.newInstance(MethodDescriptor.ofConstructor(convertWith));
                     }
                 } else {
-                    final ResultHandle clazzHandle = converterSetup.loadClass(leaf.getLeafType());
+                    final ResultHandle clazzHandle = converterSetup.loadClassFromTCCL(leaf.getLeafType());
                     converter = converterSetup.invokeVirtualMethod(SRC_GET_CONVERTER, clinitConfig, clazzHandle);
                     storeConverter = true;
                 }
@@ -1610,7 +1610,7 @@ public final class RunTimeConfigurationGenerator {
                 final ResultHandle nestedConv = instanceCache
                         .get(getOrCreateConverterInstance(field, arrayOf.getElementType()));
                 converter = converterSetup.invokeStaticMethod(CONVS_NEW_ARRAY_CONVERTER, nestedConv,
-                        converterSetup.loadClass(arrayOf.getArrayType()));
+                        converterSetup.loadClassFromTCCL(arrayOf.getArrayType()));
             } else if (type instanceof CollectionOf) {
                 final CollectionOf collectionOf = (CollectionOf) type;
                 final ResultHandle nestedConv = instanceCache

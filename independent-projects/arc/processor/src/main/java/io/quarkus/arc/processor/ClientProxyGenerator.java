@@ -210,7 +210,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 ResultHandle paramTypesArray = forward.newArray(Class.class, forward.load(method.parameters().size()));
                 int idx = 0;
                 for (Type param : method.parameters()) {
-                    forward.writeArrayValue(paramTypesArray, idx++, forward.loadClass(param.name().toString()));
+                    forward.writeArrayValue(paramTypesArray, idx++, forward.loadClassFromTCCL(param.name().toString()));
                 }
                 ResultHandle argsArray = forward.newArray(Object.class, forward.load(params.length));
                 idx = 0;
@@ -219,7 +219,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 }
                 reflectionRegistration.registerMethod(method);
                 ret = forward.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        forward.loadClass(method.declaringClass().name().toString()),
+                        forward.loadClassFromTCCL(method.declaringClass().name().toString()),
                         forward.load(method.name()), paramTypesArray, delegate, argsArray);
             } else {
                 // make sure we do not use the original method descriptor as it could point to

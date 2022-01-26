@@ -104,7 +104,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 ResultHandle instanceHandle = constructor.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                                 Annotation[].class),
-                        containerHandle, constructor.loadClass(headersFactoryClass),
+                        containerHandle, constructor.loadClassFromTCCL(headersFactoryClass),
                         constructor.newArray(Annotation.class, 0));
                 clientHeadersFactory = constructor
                         .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
@@ -264,12 +264,12 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
     private FieldDescriptor createJavaMethodField(ClassCreator classCreator, MethodCreator clinit,
             ClassInfo interfaceClass, MethodInfo method, int methodIndex) {
-        ResultHandle interfaceClassHandle = clinit.loadClass(interfaceClass.toString());
+        ResultHandle interfaceClassHandle = clinit.loadClassFromTCCL(interfaceClass.toString());
 
         ResultHandle parameterArray = clinit.newArray(Class.class, method.parameters().size());
         for (int i = 0; i < method.parameters().size(); i++) {
             String parameterClass = method.parameters().get(i).name().toString();
-            clinit.writeArrayValue(parameterArray, i, clinit.loadClass(parameterClass));
+            clinit.writeArrayValue(parameterArray, i, clinit.loadClassFromTCCL(parameterClass));
         }
 
         ResultHandle javaMethodHandle = clinit.invokeVirtualMethod(

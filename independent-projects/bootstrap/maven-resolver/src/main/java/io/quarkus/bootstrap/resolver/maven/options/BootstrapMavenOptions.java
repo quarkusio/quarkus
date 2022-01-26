@@ -238,7 +238,8 @@ public class BootstrapMavenOptions {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> invokeParser(ClassLoader cl, String[] args) throws ClassNotFoundException {
         try {
-            final Class<?> parserCls = cl.loadClass("io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptionsParser");
+            final Class<?> parserCls = cl
+                    .loadClass("io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptionsParser");
             final Method parseMethod = parserCls.getMethod("parse", String[].class);
             return (Map<String, Object>) parseMethod.invoke(null, (Object) args);
         } catch (ClassNotFoundException e) {

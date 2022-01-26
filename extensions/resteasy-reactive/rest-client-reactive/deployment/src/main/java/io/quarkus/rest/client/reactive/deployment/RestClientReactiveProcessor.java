@@ -276,7 +276,7 @@ class RestClientReactiveProcessor {
                             MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
                                     void.class, Class.class,
                                     int.class),
-                            constructor.getThis(), constructor.loadClass(providerClass.name().toString()),
+                            constructor.getThis(), constructor.loadClassFromTCCL(providerClass.name().toString()),
                             constructor.load(priority));
                 }
             }
@@ -306,7 +306,7 @@ class RestClientReactiveProcessor {
                         priority = priorityAnnotationValue.asInt();
                     }
 
-                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(className),
+                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClassFromTCCL(className),
                             constructor.load(priority));
                 }
                 String ifaceName = annotationsForClass.getKey();
@@ -461,7 +461,7 @@ class RestClientReactiveProcessor {
                             MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
                                     String.class),
                             constructor.getThis(),
-                            constructor.loadClass(jaxrsInterface.toString()),
+                            constructor.loadClassFromTCCL(jaxrsInterface.toString()),
                             baseUriHandle,
                             configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull());
                     constructor.returnValue(null);

@@ -375,13 +375,13 @@ class QuarkusSecurityJpaProcessor {
             ResultHandle session = methodCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(EntityManager.class, "unwrap", Object.class, Class.class),
                     methodCreator.getMethodParam(0),
-                    methodCreator.loadClass(Session.class));
+                    methodCreator.loadClassFromTCCL(Session.class));
             // SimpleNaturalIdLoadAccess<PlainUserEntity> naturalIdLoadAccess = session.bySimpleNaturalId(PlainUserEntity.class);
             ResultHandle naturalIdLoadAccess = methodCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(Session.class, "bySimpleNaturalId",
                             SimpleNaturalIdLoadAccess.class, Class.class),
                     methodCreator.checkCast(session, Session.class),
-                    methodCreator.loadClass(jpaSecurityDefinition.annotatedClass.name().toString()));
+                    methodCreator.loadClassFromTCCL(jpaSecurityDefinition.annotatedClass.name().toString()));
             // PlainUserEntity user = naturalIdLoadAccess.load(request.getUsername());
             user = methodCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(SimpleNaturalIdLoadAccess.class, "load",

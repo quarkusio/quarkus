@@ -124,14 +124,14 @@ public final class MultipartPopulatorGenerator {
      *     private static MediaType status_mediaType;
      *
      *     static {
-     *         map_type = DeploymentUtils.loadClass("java.util.Map");
+     *         map_type = DeploymentUtils.loadClassFromTCCL("java.util.Map");
      *         map_genericType = TypeSignatureParser.parse("Ljava/util/Map<Ljava/lang/String;Ljava/lang/String;>;");
      *         map_mediaType = MediaType.valueOf("application/json");
-     *         Class var0 = DeploymentUtils.loadClass("org.acme.getting.started.Person");
+     *         Class var0 = DeploymentUtils.loadClassFromTCCL("org.acme.getting.started.Person");
      *         person_type = var0;
      *         person_genericType = var0;
      *         person_mediaType = MediaType.valueOf("application/json");
-     *         Class var1 = DeploymentUtils.loadClass("org.acme.getting.started.Status");
+     *         Class var1 = DeploymentUtils.loadClassFromTCCL("org.acme.getting.started.Status");
      *         status_type = var1;
      *         status_genericType = var1;
      *         status_mediaType = MediaType.valueOf("text/plain");

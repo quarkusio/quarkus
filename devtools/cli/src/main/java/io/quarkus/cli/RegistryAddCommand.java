@@ -1,5 +1,7 @@
 package io.quarkus.cli;
 
+import static io.quarkus.registry.Constants.DEFAULT_REGISTRY_ID;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,7 +50,16 @@ public class RegistryAddCommand extends BaseRegistryCommand {
         if (persist) {
             output.printText("Configured registries:");
             for (RegistryConfig rc : config.getRegistries()) {
-                output.printText("- " + rc.getId());
+                if (!existingConfig && config.getRegistries().size() == 1
+                        && !rc.getId().equals(DEFAULT_REGISTRY_ID)) {
+                    output.warn(
+                            rc.getId() + " is the only registry configured in the config file.\n" + rc.getId()
+                                    + " replaced the Default registry: "
+                                    + DEFAULT_REGISTRY_ID);
+                } else {
+                    output.printText("- " + rc.getId());
+                }
+
             }
             if (configYaml != null) {
                 config.persist(configYaml);

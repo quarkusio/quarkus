@@ -6,9 +6,6 @@ import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
-import io.quarkus.bootstrap.resolver.update.VersionUpdate;
-import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
@@ -82,9 +79,6 @@ public class QuarkusBootstrap implements Serializable {
     private final ClassLoader baseClassLoader;
     private final AppModelResolver appModelResolver;
 
-    private final VersionUpdateNumber versionUpdateNumber;
-    private final VersionUpdate versionUpdate;
-    private final DependenciesOrigin dependenciesOrigin;
     private final ResolvedDependency appArtifact;
     private final boolean isolateDeployment;
     private final MavenArtifactResolver mavenArtifactResolver;
@@ -116,9 +110,6 @@ public class QuarkusBootstrap implements Serializable {
         this.targetDirectory = builder.targetDirectory;
         this.appModelResolver = builder.appModelResolver;
         this.assertionsEnabled = builder.assertionsEnabled;
-        this.versionUpdate = builder.versionUpdate;
-        this.versionUpdateNumber = builder.versionUpdateNumber;
-        this.dependenciesOrigin = builder.dependenciesOrigin;
         this.appArtifact = builder.appArtifact;
         this.isolateDeployment = builder.isolateDeployment;
         this.additionalDeploymentArchives = builder.additionalDeploymentArchives;
@@ -143,21 +134,11 @@ public class QuarkusBootstrap implements Serializable {
         if (existingModel != null) {
             return new CuratedApplication(this, new CurationResult(existingModel), classLoadingConfig);
         }
-        //first we check for updates
-        if (mode != Mode.PROD) {
-            if (versionUpdate != VersionUpdate.NONE) {
-                throw new BootstrapException(
-                        "updates are only supported for PROD mode for existing files, not for dev or test");
-            }
-        }
 
         BootstrapAppModelFactory appModelFactory = BootstrapAppModelFactory.newInstance()
                 .setOffline(offline)
                 .setMavenArtifactResolver(mavenArtifactResolver)
                 .setBootstrapAppModelResolver(appModelResolver)
-                .setVersionUpdate(versionUpdate)
-                .setVersionUpdateNumber(versionUpdateNumber)
-                .setDependenciesOrigin(dependenciesOrigin)
                 .setLocalProjectsDiscovery(localProjectDiscovery)
                 .setAppArtifact(appArtifact)
                 .setManagingProject(managingProject)
@@ -349,9 +330,6 @@ public class QuarkusBootstrap implements Serializable {
                 .setTargetDirectory(targetDirectory)
                 .setAppModelResolver(appModelResolver)
                 .setAssertionsEnabled(assertionsEnabled)
-                .setVersionUpdateNumber(versionUpdateNumber)
-                .setVersionUpdate(versionUpdate)
-                .setDependenciesOrigin(dependenciesOrigin)
                 .setIsolateDeployment(isolateDeployment)
                 .setMavenArtifactResolver(mavenArtifactResolver)
                 .setManagingProject(managingProject)
@@ -402,9 +380,6 @@ public class QuarkusBootstrap implements Serializable {
         Path targetDirectory;
         AppModelResolver appModelResolver;
         boolean assertionsEnabled = inheritedAssertionsEnabled();
-        VersionUpdateNumber versionUpdateNumber = VersionUpdateNumber.MICRO;
-        VersionUpdate versionUpdate = VersionUpdate.NONE;
-        DependenciesOrigin dependenciesOrigin;
         ResolvedDependency appArtifact;
         boolean isolateDeployment;
         MavenArtifactResolver mavenArtifactResolver;
@@ -517,21 +492,6 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setAppModelResolver(AppModelResolver appModelResolver) {
             this.appModelResolver = appModelResolver;
-            return this;
-        }
-
-        public Builder setVersionUpdateNumber(VersionUpdateNumber versionUpdateNumber) {
-            this.versionUpdateNumber = versionUpdateNumber;
-            return this;
-        }
-
-        public Builder setVersionUpdate(VersionUpdate versionUpdate) {
-            this.versionUpdate = versionUpdate;
-            return this;
-        }
-
-        public Builder setDependenciesOrigin(DependenciesOrigin dependenciesOrigin) {
-            this.dependenciesOrigin = dependenciesOrigin;
             return this;
         }
 

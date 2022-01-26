@@ -5,7 +5,8 @@ import java.util.Objects;
 
 public class ArtifactDependency extends GACTV implements Dependency, Serializable {
 
-    public static ArtifactDependency of(String groupId, String artifactId, String version) {
+    @Deprecated(forRemoval = true)
+    public static Dependency of(String groupId, String artifactId, String version) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_JAR, version);
     }
 

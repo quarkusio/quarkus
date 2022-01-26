@@ -10,7 +10,6 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
@@ -18,7 +17,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,14 +90,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     public QuarkusBootstrap getQuarkusBootstrap() {
         return quarkusBootstrap;
-    }
-
-    public boolean hasUpdatedDeps() {
-        return curationResult.hasUpdatedDeps();
-    }
-
-    public Collection<Dependency> getUpdatedDeps() {
-        return curationResult.getUpdatedDependencies();
     }
 
     public Object runInAugmentClassLoader(String consumerName, Map<String, Object> params) {

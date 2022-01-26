@@ -5,9 +5,15 @@ import io.quarkus.paths.EmptyPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathTree;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 
 public interface WorkspaceModule {
+
+    static Mutable builder() {
+        return DefaultWorkspaceModule.builder();
+    }
 
     WorkspaceModuleId getId();
 
@@ -48,4 +54,33 @@ public interface WorkspaceModule {
     Collection<Dependency> getDirectDependencyConstraints();
 
     Collection<Dependency> getDirectDependencies();
+
+    Mutable mutable();
+
+    interface Mutable extends WorkspaceModule {
+
+        Mutable setModuleId(WorkspaceModuleId moduleId);
+
+        Mutable setModuleDir(Path moduleDir);
+
+        Mutable setBuildDir(Path buildDir);
+
+        Mutable setBuildFile(Path buildFile);
+
+        Mutable addDependencyConstraint(Dependency constraint);
+
+        Mutable setDependencyConstraints(List<Dependency> constraints);
+
+        Mutable addDependency(Dependency dep);
+
+        Mutable setDependencies(List<Dependency> deps);
+
+        Mutable addArtifactSources(ArtifactSources sources);
+
+        WorkspaceModule build();
+
+        default Mutable mutable() {
+            return this;
+        }
+    }
 }

@@ -13,7 +13,7 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACTV;
 
-public class ProvidedExtensionDepsInTestModeTest extends ExecutableOutputOutcomeTestBase {
+public class ProvidedExtensionDepsInTestModeTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
     protected boolean isBootstrapForTestMode() {
@@ -21,7 +21,7 @@ public class ProvidedExtensionDepsInTestModeTest extends ExecutableOutputOutcome
     }
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsArtifact extADep = TsArtifact.jar("ext-a-dep");
         addToExpectedLib(extADep);

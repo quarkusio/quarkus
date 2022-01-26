@@ -82,4 +82,8 @@ public class ModuleState {
     public Collection<TopExtensionDependency> getExtensions() {
         return directExtDeps.values();
     }
+
+    public boolean hasExtension(ArtifactKey key) {
+        return directExtDeps.containsKey(key);
+    }
 }

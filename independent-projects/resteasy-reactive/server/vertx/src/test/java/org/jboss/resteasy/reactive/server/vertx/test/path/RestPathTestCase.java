@@ -24,8 +24,9 @@ public class RestPathTestCase {
     @Test
     public void testRestPath() {
         RestAssured.basePath = "/";
-        RestAssured.when().get("/foo/hello").then().statusCode(200).body(Matchers.is("hello"));
         RestAssured.when().get("/foo/hello/nested").then().statusCode(200).body(Matchers.is("world hello"));
+        RestAssured.when().get("/foo/helloX").then().statusCode(404);
+        RestAssured.when().get("/foo/hello").then().statusCode(200).body(Matchers.is("hello"));
     }
 
     @Test

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.URL;
 
 import javax.enterprise.event.Observes;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestContext;
@@ -13,6 +14,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,6 +26,10 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 public class ClientRequestFilterAbortWithTestCase {
+
+    private static final int ABORT_WITH_STATUS = 999;
+    private static final String ABORT_WITH_REASON_PHRASE = "ABORTED";
+    private static final String ABORT_WITH_ENTITY = "ABORT_ENTITY";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -47,8 +53,27 @@ public class ClientRequestFilterAbortWithTestCase {
 
     @Test
     public void test() {
-        Response response = client.target(url.toExternalForm() + "/hello").request().get();
-        assertEquals(999, response.getStatus());
+        // test with specified response type
+        // a non-null response type will ensure that RestClientRequestContext.checkSuccessfulFamily is true
+        WebApplicationException thrown = Assertions.assertThrows(WebApplicationException.class,
+                () -> client.target(targetUrl()).request().get(String.class));
+
+        assertResponseStatusFor(thrown.getResponse());
+
+        // test with unspecified response type
+        Response response = client.target(targetUrl()).request().get();
+        assertResponseStatusFor(response);
+        // entity only propagated with unspecified response type
+        assertEquals(ABORT_WITH_ENTITY, response.readEntity(String.class));
+    }
+
+    private String targetUrl() {
+        return url.toExternalForm() + "/hello";
+    }
+
+    private void assertResponseStatusFor(Response response) {
+        assertEquals(ABORT_WITH_STATUS, response.getStatus());
+        assertEquals(ABORT_WITH_REASON_PHRASE, response.getStatusInfo().getReasonPhrase());
     }
 
     public static class Endpoint {
@@ -68,7 +93,8 @@ public class ClientRequestFilterAbortWithTestCase {
 
         @Override
         public void filter(ClientRequestContext requestContext) {
-            requestContext.abortWith(Response.status(999).build());
+            requestContext
+                    .abortWith(Response.status(ABORT_WITH_STATUS, ABORT_WITH_REASON_PHRASE).entity(ABORT_WITH_ENTITY).build());
         }
     }
 }

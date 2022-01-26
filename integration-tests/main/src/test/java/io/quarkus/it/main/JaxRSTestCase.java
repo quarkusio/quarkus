@@ -15,6 +15,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.rest.TestResource;
+import io.quarkus.it.rest.TestResourceWithVariable;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
@@ -277,5 +278,16 @@ public class JaxRSTestCase {
                 .body(containsString("<settings><foo bar=\"0\"/></settings>"),
                         containsString("<settings><foo bar=\"1\"/></settings>"),
                         containsString("<settings><foo bar=\"2\"/></settings>"));
+    }
+
+    @Test
+    @TestHTTPEndpoint(TestResourceWithVariable.class)
+    public void testPathVariable() {
+        RestAssured.given()
+                .pathParam("name", "yolo")
+                .when().get()
+                .then()
+                .statusCode(200)
+                .body(is("hello yolo"));
     }
 }

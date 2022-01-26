@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
 import io.quarkus.amazon.lambda.deployment.LambdaUtil;
 import io.quarkus.amazon.lambda.deployment.ProvidedAmazonLambdaHandlerBuildItem;
+import io.quarkus.amazon.lambda.http.AwsHttpContextProducers;
 import io.quarkus.amazon.lambda.http.DefaultLambdaIdentityProvider;
 import io.quarkus.amazon.lambda.http.LambdaHttpAuthenticationMechanism;
 import io.quarkus.amazon.lambda.http.LambdaHttpHandler;
@@ -27,15 +28,22 @@ public class AmazonLambdaHttpProcessor {
     private static final Logger log = Logger.getLogger(AmazonLambdaHttpProcessor.class);
 
     @BuildStep
+    public void setupCDI(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
+        builder.addBeanClasses(AwsHttpContextProducers.class);
+        additionalBeans.produce(builder.build());
+    }
+
+    @BuildStep
     public void setupSecurity(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             LambdaHttpBuildTimeConfig config) {
         if (!config.enableSecurity)
             return;
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
-
-        builder.addBeanClass(LambdaHttpAuthenticationMechanism.class)
-                .addBeanClass(DefaultLambdaIdentityProvider.class);
+        builder.addBeanClasses(LambdaHttpAuthenticationMechanism.class,
+                DefaultLambdaIdentityProvider.class,
+                AwsHttpContextProducers.class);
         additionalBeans.produce(builder.build());
     }
 

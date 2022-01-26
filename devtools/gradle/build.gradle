@@ -1,5 +1,5 @@
 plugins {
-    id 'com.gradle.plugin-publish' version '0.19.0' apply false
+    id 'com.gradle.plugin-publish' version '0.20.0' apply false
 }
 
 subprojects {

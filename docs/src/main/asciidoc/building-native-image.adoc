@@ -220,6 +220,15 @@ cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\
 In addition to the regular files, the build also produces `target/getting-started-1.0.0-SNAPSHOT-runner`.
 You can run it using: `./target/getting-started-1.0.0-SNAPSHOT-runner`.
 
+[[graal-package-preview]]
+[NOTE]
+.Java preview features
+====
+Java code that relies on preview features requires special attention.
+To produce a native executable, this means that the `--enable-preview` flag needs to be passed to the underlying native image invocation.
+You can do so by prepending the flag with `-J` and passing it as additional native build argument: `-Dquarkus.native.additional-build-args=-J--enable-preview`.
+====
+
 == Testing the native executable
 
 Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file.
@@ -318,6 +327,15 @@ For example, in your `application.properties` file, add: `quarkus.test.native-im
 Alternatively, you can run your tests with: `./mvnw verify -Pnative -Dquarkus.test.native-image-profile=test`.
 However, don't forget that when the native executable is built the `prod` profile is enabled.
 So, the profile you enable this way must be compatible with the produced executable.
+
+[[graal-test-preview]]
+[NOTE]
+.Java preview features
+====
+Java code that relies on preview features requires special attention.
+To test a native executable, this means that the `--enable-preview` flag needs to be passed to the Surefire plugin.
+Adding `<argLine>--enable-preview</argLine>` to its `configuration` section is one way to do so.
+====
 
 === Excluding tests when running as a native executable
 

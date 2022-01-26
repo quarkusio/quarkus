@@ -458,7 +458,40 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         + " for test method " + context.getRequiredTestMethod());
             }
         }
+        if (endpointPath != null) {
+            if (endpointPath.indexOf(':') != -1) {
+                return sanitizeEndpointPath(endpointPath);
+            }
+        }
+
         return endpointPath;
+    }
+
+    /**
+     * Remove any sort of regex restrictions from "variables in the path"
+     */
+    private static String sanitizeEndpointPath(String path) {
+        int openBrackets = 0;
+        boolean inRegex = false;
+        StringBuilder replaced = new StringBuilder(path.length() - 1);
+        for (int i = 0; i < path.length(); i++) {
+            char c = path.charAt(i);
+            if (c == '{') {
+                openBrackets++;
+            } else if (c == '}') {
+                openBrackets--;
+                if (openBrackets == 0) {
+                    inRegex = false;
+                }
+            } else if ((c == ':') && (openBrackets > 0)) {
+                inRegex = true;
+            }
+            if (!inRegex) {
+                replaced.append(c);
+            }
+
+        }
+        return replaced.toString();
     }
 
     @Override

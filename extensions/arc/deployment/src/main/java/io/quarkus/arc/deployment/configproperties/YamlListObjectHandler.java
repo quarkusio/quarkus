@@ -105,7 +105,7 @@ class YamlListObjectHandler {
                                 wrapperClassName.replace('.', '/')))
                 .build()) {
             MethodCreator getClazz = cc.getMethodCreator("getClazz", Class.class).setModifiers(Modifier.PROTECTED);
-            getClazz.returnValue(getClazz.loadClass(wrapperClassName));
+            getClazz.returnValue(getClazz.loadClassFromTCCL(wrapperClassName));
 
             // generate the getFieldNameMap method by searching for fields annotated with @ConfigProperty
             List<AnnotationInstance> configPropertyInstances = classInfo.annotations().get(DotNames.CONFIG_PROPERTY);

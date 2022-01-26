@@ -42,9 +42,10 @@ final class Methods {
     public static final String INIT = "<init>";
     // static initializer
     public static final String CLINIT = "<clinit>";
+    // copied from java.lang.reflect.Modifier.SYNTHETIC
+    static final int SYNTHETIC = 0x00001000;
     // copied from java.lang.reflect.Modifier.BRIDGE
     static final int BRIDGE = 0x00000040;
-
     public static final String TO_STRING = "toString";
 
     private static final List<String> IGNORED_METHODS = initIgnoredMethods();
@@ -57,6 +58,10 @@ final class Methods {
     }
 
     private Methods() {
+    }
+
+    static boolean isSynthetic(MethodInfo method) {
+        return (method.flags() & SYNTHETIC) != 0;
     }
 
     static boolean isBridge(MethodInfo method) {

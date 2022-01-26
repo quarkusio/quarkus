@@ -370,7 +370,7 @@ The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is 
 
 SecurityIdentity roles can be mapped from the verified JWT access tokens as follows:
 
-* If `quarkus.oidc.roles.role-claim-path` property is set and a matching array or string claim is found then the roles are extracted from this claim.
+* If `quarkus.oidc.roles.role-claim-path` property is set and matching array or string claims are found then the roles are extracted from these claims.
   For example, `customroles`, `customroles/array`, `scope`, `"http://namespace-qualified-custom-claim"/roles`, `"http://namespace-qualified-roles"`, etc.
 * If `groups` claim is available then its value is used
 * If `realm_access/roles` or `resource_access/client_id/roles` (where `client_id` is the value of the `quarkus.oidc.client-id` property) claim is available then its value is used.

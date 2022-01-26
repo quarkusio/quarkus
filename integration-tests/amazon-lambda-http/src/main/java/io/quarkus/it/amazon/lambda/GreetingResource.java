@@ -1,5 +1,6 @@
 package io.quarkus.it.amazon.lambda;
 
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -57,7 +58,18 @@ public class GreetingResource {
     @Path("proxyRequestContext")
     @Produces(MediaType.TEXT_PLAIN)
     public void proxyRequestContext(@Context APIGatewayV2HTTPEvent ctx) {
-        if (ctx == null)
+        if (ctx == null || ctx.getRequestContext().getHttp().getMethod() == null)
+            throw new RuntimeException();
+    }
+
+    @Inject
+    APIGatewayV2HTTPEvent event;
+
+    @GET
+    @Path("inject-event")
+    @Produces(MediaType.TEXT_PLAIN)
+    public void injectEvent() {
+        if (event == null)
             throw new RuntimeException();
     }
 

@@ -20,6 +20,8 @@ import io.quarkus.registry.catalog.selection.OriginCombination;
 import io.quarkus.registry.catalog.selection.OriginPreference;
 import io.quarkus.registry.catalog.selection.OriginSelector;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,7 +80,7 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
         }
         final ProjectState recommendedState = resolveRecommendedState(currentState, recommendedCatalog, log);
         if (currentState == recommendedState) {
-            log.info("No recommended updates found");
+            log.info("The project is up-to-date");
             return;
         }
 
@@ -99,16 +101,18 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
         for (ArtifactCoords c : recommendedState.getPlatformBoms()) {
             final PlatformInfo importInfo = platformImports.computeIfAbsent(c.getKey(), k -> new PlatformInfo());
             importInfo.recommended = c;
-            if (importInfo.isImported()) {
-                importVersionUpdates.add(importInfo);
-            } else {
+            if (importInfo.isToBeImported()) {
                 newImports.add(importInfo);
+            } else if (importInfo.isVersionUpdateRecommended()) {
+                importVersionUpdates.add(importInfo);
             }
         }
 
         log.info("");
-        final boolean importsToBeRemoved = importVersionUpdates.size() + newImports.size() < platformImports.size();
-        if (!importVersionUpdates.isEmpty() || !newImports.isEmpty() || importsToBeRemoved) {
+        final boolean importsToBeRemoved = platformImports.values().stream().filter(p -> p.recommended == null).findFirst()
+                .isPresent();
+        final boolean platformUpdatesAvailable = !importVersionUpdates.isEmpty() || !newImports.isEmpty() || importsToBeRemoved;
+        if (platformUpdatesAvailable) {
             log.info("Recommended Quarkus platform BOM updates:");
             if (!importVersionUpdates.isEmpty()) {
                 for (PlatformInfo importInfo : importVersionUpdates) {
@@ -134,9 +138,9 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
             log.info("");
         }
 
-        final Map<ArtifactKey, ExtensionInfo> extensionInfo = new LinkedHashMap<>(currentState.getExtensions().size());
+        final ExtensionMap extensionInfo = new ExtensionMap(currentState.getExtensions().size());
         for (TopExtensionDependency dep : currentState.getExtensions()) {
-            extensionInfo.put(dep.getKey(), new ExtensionInfo(dep));
+            extensionInfo.add(new ExtensionInfo(dep));
         }
         for (TopExtensionDependency dep : recommendedState.getExtensions()) {
             final ExtensionInfo info = extensionInfo.get(dep.getKey());
@@ -144,44 +148,93 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
                 info.recommendedDep = dep;
             }
         }
-        final Map<ArtifactCoords, List<ArtifactCoords>> versionedManagedExtensions = new LinkedHashMap<>(0);
+        final Map<String, List<ExtensionInfo>> versionedManagedExtensions = new LinkedHashMap<>(0);
+        final Map<String, List<ArtifactCoords>> removedExtensions = new LinkedHashMap<>(0);
+        final Map<String, List<ArtifactCoords>> addedExtensions = new LinkedHashMap<>(0);
         final Map<String, List<ExtensionInfo>> nonPlatformExtensionUpdates = new LinkedHashMap<>();
         for (ExtensionInfo info : extensionInfo.values()) {
-            if (info.getRecommendedDependency() == null) {
+            if (!info.isUpdateRecommended()) {
                 continue;
             }
-            if (info.getRecommendedDependency().isPlatformExtension()) {
+            if (!info.currentDep.getKey().equals(info.getRecommendedDependency().getKey())) {
+                if (info.currentDep.isPlatformExtension()) {
+                    removedExtensions.computeIfAbsent(info.currentDep.getProviderKey(), k -> new ArrayList<>())
+                            .add(info.currentDep.getArtifact());
+                } else {
+                    nonPlatformExtensionUpdates.computeIfAbsent(info.currentDep.getProviderKey(), k -> new ArrayList<>())
+                            .add(info);
+                }
+                if (info.getRecommendedDependency().isPlatformExtension()) {
+                    addedExtensions.computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>())
+                            .add(info.getRecommendedDependency().getArtifact());
+                } else {
+                    nonPlatformExtensionUpdates
+                            .computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>())
+                            .add(info);
+                }
+            } else if (info.getRecommendedDependency().isPlatformExtension()) {
                 if (info.currentDep.isNonRecommendedVersion()) {
                     versionedManagedExtensions
-                            .computeIfAbsent(info.getRecommendedDependency().getOrigin().getBom(), k -> new ArrayList<>())
-                            .add(info.currentDep.getArtifact());
+                            .computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>())
+                            .add(info);
                 }
             } else if (!info.currentDep.getVersion().equals(info.getRecommendedDependency().getVersion())) {
-                nonPlatformExtensionUpdates.computeIfAbsent(info.currentDep.getProviderKey(), k -> new ArrayList<>()).add(info);
+                nonPlatformExtensionUpdates
+                        .computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>()).add(info);
             }
         }
 
-        if (!versionedManagedExtensions.isEmpty()) {
-            for (Map.Entry<ArtifactCoords, List<ArtifactCoords>> origin : versionedManagedExtensions.entrySet()) {
-                log.info("Extensions from " + origin.getKey().toCompactCoords() + ":");
-                for (ArtifactCoords c : origin.getValue()) {
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                            UpdateCommandHandler.UPDATE, c.toCompactCoords()));
-                    sb.append(" -> remove version (managed)");
-                    log.info(sb.toString());
-                }
-                log.info("");
+        if (versionedManagedExtensions.isEmpty()
+                && removedExtensions.isEmpty()
+                && addedExtensions.isEmpty()
+                && nonPlatformExtensionUpdates.isEmpty()) {
+            if (!platformUpdatesAvailable) {
+                log.info("The project is up-to-date");
             }
+            return;
+        }
+
+        for (PlatformInfo platform : platformImports.values()) {
+            final String provider = platform.getRecommendedProviderKey();
+            if (!versionedManagedExtensions.containsKey(provider)
+                    && !removedExtensions.containsKey(provider)
+                    && !addedExtensions.containsKey(provider)) {
+                continue;
+            }
+            log.info("Extensions from " + platform.getRecommendedProviderKey() + ":");
+            for (ExtensionInfo e : versionedManagedExtensions.getOrDefault(provider, Collections.emptyList())) {
+                final StringBuilder sb = new StringBuilder();
+                sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                        UpdateCommandHandler.UPDATE, e.currentDep.getArtifact().toCompactCoords()));
+                sb.append(" -> remove version (managed)");
+                log.info(sb.toString());
+            }
+            for (ArtifactCoords e : addedExtensions.getOrDefault(provider, Collections.emptyList())) {
+                log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateCommandHandler.ADD,
+                        e.getKey().toGacString()));
+            }
+            for (ArtifactCoords e : removedExtensions.getOrDefault(provider, Collections.emptyList())) {
+                log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT, UpdateCommandHandler.REMOVE,
+                        e.getKey().toGacString()));
+            }
+            log.info("");
         }
 
         if (!nonPlatformExtensionUpdates.isEmpty()) {
             for (Map.Entry<String, List<ExtensionInfo>> provider : nonPlatformExtensionUpdates.entrySet()) {
                 log.info("Extensions from " + provider.getKey() + ":");
                 for (ExtensionInfo info : provider.getValue()) {
-                    log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
-                            UpdateCommandHandler.UPDATE, info.currentDep.getArtifact().toCompactCoords() + " -> "
-                                    + info.getRecommendedDependency().getVersion()));
+                    if (info.currentDep.isPlatformExtension()) {
+                        log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateCommandHandler.ADD, info.getRecommendedDependency().getArtifact().toCompactCoords()));
+                    } else if (info.getRecommendedDependency().isPlatformExtension()) {
+                        log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateCommandHandler.REMOVE, info.currentDep.getArtifact().toCompactCoords()));
+                    } else {
+                        log.info(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
+                                UpdateCommandHandler.UPDATE, info.currentDep.getArtifact().toCompactCoords() + " -> "
+                                        + info.getRecommendedDependency().getVersion()));
+                    }
                 }
                 log.info("");
             }
@@ -197,28 +250,30 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
             return currentState;
         }
 
-        final Map<ArtifactKey, ExtensionInfo> extensionInfo = new HashMap<>();
+        final ExtensionMap extensionInfo = new ExtensionMap();
         for (TopExtensionDependency dep : currentState.getExtensions()) {
-            extensionInfo.put(dep.getKey(), new ExtensionInfo(dep));
+            extensionInfo.add(new ExtensionInfo(dep));
         }
 
         for (Extension e : latestCatalog.getExtensions()) {
             final ExtensionInfo candidate = extensionInfo.get(e.getArtifact().getKey());
-            if (candidate != null) {
+            if (candidate != null && candidate.latestMetadata == null) {
+                // if the latestMetadata has already been initialized, it's already the preferred one
+                // that could happen if an artifact has relocated
                 candidate.latestMetadata = e;
             }
         }
 
-        final List<ArtifactCoords> unknownExtensions = new ArrayList<>(0);
+        final List<ExtensionInfo> unknownExtensions = new ArrayList<>(0);
         final List<Extension> updateCandidates = new ArrayList<>(extensionInfo.size());
-        final Map<String, Map<ArtifactKey, ExtensionInfo>> updateCandidatesByOrigin = new HashMap<>();
+        final Map<String, ExtensionMap> updateCandidatesByOrigin = new HashMap<>();
         for (ExtensionInfo i : extensionInfo.values()) {
             if (i.latestMetadata == null) {
-                unknownExtensions.add(i.currentDep.getArtifact());
+                unknownExtensions.add(i);
             } else {
                 updateCandidates.add(i.latestMetadata);
                 for (ExtensionOrigin o : i.latestMetadata.getOrigins()) {
-                    updateCandidatesByOrigin.computeIfAbsent(o.getId(), k -> new HashMap<>()).put(i.currentDep.getKey(), i);
+                    updateCandidatesByOrigin.computeIfAbsent(o.getId(), k -> new ExtensionMap()).add(i);
                 }
             }
         }
@@ -229,8 +284,8 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
 
         if (!unknownExtensions.isEmpty()) {
             log.warn(
-                    "The following extensions may be incompatible with the recommended updates because the configured Quarkus registries did not provide any compatibility information for them in the context of the currently recommended Quarkus platforms:");
-            unknownExtensions.forEach(e -> log.warn(" " + e.getKey().toGacString()));
+                    "The configured Quarkus registries did not provide any compatibility information for the following extensions in the context of the currently recommended Quarkus platforms:");
+            unknownExtensions.forEach(e -> log.warn(" " + e.currentDep.getArtifact().toCompactCoords()));
         }
 
         final List<ExtensionCatalog> recommendedOrigins;
@@ -243,11 +298,11 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
 
         int collectedUpdates = 0;
         for (ExtensionCatalog recommendedOrigin : recommendedOrigins) {
-            final Map<ArtifactKey, ExtensionInfo> candidates = updateCandidatesByOrigin.get(recommendedOrigin.getId());
+            final ExtensionMap candidates = updateCandidatesByOrigin.get(recommendedOrigin.getId());
             for (Extension e : recommendedOrigin.getExtensions()) {
                 final ExtensionInfo info = candidates.get(e.getArtifact().getKey());
                 if (info != null && info.recommendedMetadata == null) {
-                    info.recommendedMetadata = e;
+                    info.setRecommendedMetadata(e);
                     if (++collectedUpdates == updateCandidates.size()) {
                         break;
                     }
@@ -300,6 +355,12 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
             this.currentDep = currentDep;
         }
 
+        void setRecommendedMetadata(Extension e) {
+            this.recommendedMetadata = e;
+            if (!currentDep.getArtifact().getKey().equals(e.getArtifact().getKey())) {
+            }
+        }
+
         Extension getRecommendedMetadata() {
             if (recommendedMetadata != null) {
                 return recommendedMetadata;
@@ -322,6 +383,10 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
                     .setCatalogMetadata(recommendedMetadata)
                     .setTransitive(currentDep.isTransitive())
                     .build();
+        }
+
+        boolean isUpdateRecommended() {
+            return getRecommendedDependency() != currentDep;
         }
     }
 
@@ -363,6 +428,53 @@ public class UpdateCommandHandler implements QuarkusCommandHandler {
         }
         if (eoBuilder != null) {
             extOrigins.add(eoBuilder.build());
+        }
+    }
+
+    private static class ExtensionMap {
+        final Map<String, List<ExtensionInfo>> extensionInfo;
+        final List<ExtensionInfo> list = new ArrayList<>();
+
+        ExtensionMap() {
+            this.extensionInfo = new LinkedHashMap<>();
+        }
+
+        ExtensionMap(int size) {
+            this.extensionInfo = new LinkedHashMap<>(size);
+        }
+
+        void add(ExtensionInfo e) {
+            extensionInfo.put(e.currentDep.getArtifact().getArtifactId(), Collections.singletonList(e));
+            list.add(e);
+        }
+
+        ExtensionInfo get(ArtifactKey key) {
+            final List<ExtensionInfo> list = extensionInfo.get(key.getArtifactId());
+            if (list == null || list.isEmpty()) {
+                return null;
+            }
+            if (list.size() == 1) {
+                return list.get(0);
+            }
+            for (ExtensionInfo e : list) {
+                if (e.currentDep.getKey().equals(key)
+                        || e.getRecommendedDependency() != null && e.getRecommendedDependency().getKey().equals(key)) {
+                    return e;
+                }
+            }
+            throw new IllegalArgumentException(key + " isn't found in the extension map");
+        }
+
+        Collection<ExtensionInfo> values() {
+            return list;
+        }
+
+        int size() {
+            return extensionInfo.size();
+        }
+
+        boolean isEmpty() {
+            return extensionInfo.isEmpty();
         }
     }
 }

@@ -78,22 +78,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
     Collection<Resource> generate(BeanInfo bean, String beanClassName,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
 
-        DotName testedName;
-        // For producers we need to test the produced type
-        if (bean.isProducerField()) {
-            testedName = bean.getTarget().get().asField().type().name();
-        } else if (bean.isProducerMethod()) {
-            testedName = bean.getTarget().get().asMethod().returnType().name();
-        } else {
-            testedName = bean.getBeanClass();
-        }
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(testedName),
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
                 generateSources);
 
         ProviderType providerType = new ProviderType(bean.getProviderType());
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String baseName = getBaseName(bean, beanClassName);
-        String targetPackage = bean.getClientProxyPackageName();
+        String targetPackage = bean.getTargetPackageName();
         String generatedName = generatedNameFromTarget(targetPackage, baseName, CLIENT_PROXY_SUFFIX);
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
@@ -219,7 +210,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 ResultHandle paramTypesArray = forward.newArray(Class.class, forward.load(method.parameters().size()));
                 int idx = 0;
                 for (Type param : method.parameters()) {
-                    forward.writeArrayValue(paramTypesArray, idx++, forward.loadClass(param.name().toString()));
+                    forward.writeArrayValue(paramTypesArray, idx++, forward.loadClassFromTCCL(param.name().toString()));
                 }
                 ResultHandle argsArray = forward.newArray(Object.class, forward.load(params.length));
                 idx = 0;
@@ -228,7 +219,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 }
                 reflectionRegistration.registerMethod(method);
                 ret = forward.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        forward.loadClass(method.declaringClass().name().toString()),
+                        forward.loadClassFromTCCL(method.declaringClass().name().toString()),
                         forward.load(method.name()), paramTypesArray, delegate, argsArray);
             } else {
                 // make sure we do not use the original method descriptor as it could point to

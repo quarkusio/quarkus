@@ -142,6 +142,7 @@ import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -316,6 +317,19 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
+    public void additionalAsyncTypeMethodScanners(List<NonBlockingReturnTypeBuildItem> buildItems,
+            BuildProducer<MethodScannerBuildItem> producer) {
+        for (NonBlockingReturnTypeBuildItem bi : buildItems) {
+            producer.produce(new MethodScannerBuildItem(new MethodScanner() {
+                @Override
+                public boolean isMethodSignatureAsync(MethodInfo info) {
+                    return info.returnType().name().equals(bi.getType());
+                }
+            }));
+        }
+    }
+
+    @BuildStep
     //note useIdentityComparisonForParameters=false
     //resteasy can generate lots of small collections with similar values as part of its metadata gathering
     //this allows multiple objects to be compressed into a single object at runtime
@@ -339,7 +353,8 @@ public class ResteasyReactiveProcessor {
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
             List<MethodScannerBuildItem> methodScanners,
-            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems)
+            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
+            Capabilities capabilities)
             throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -390,77 +405,68 @@ public class ResteasyReactiveProcessor {
             BiConsumer<String, BiFunction<String, ClassVisitor, ClassVisitor>> transformationConsumer = (name,
                     function) -> bytecodeTransformerBuildItemBuildProducer
                             .produce(new BytecodeTransformerBuildItem(name, function));
-            QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder()
-                    .addMethodScanners(
-                            methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
-                    .setIndex(index)
-                    .addContextTypes(CONTEXT_TYPES)
-                    .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
-                    .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
-                    .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
-                    .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
-                    .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
-                    .setExistingConverters(existingConverters)
-                    .setScannedResourcePaths(scannedResourcePaths)
-                    .setConfig(createRestReactiveConfig(config))
-                    .setAdditionalReaders(additionalReaders)
-                    .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
-                    .setInjectableBeans(injectableBeans)
-                    .setAdditionalWriters(additionalWriters)
-                    .setDefaultBlocking(appResult.getBlockingDefault())
-                    .setApplicationScanningResult(appResult)
-                    .setMultipartParameterIndexerExtension(
-                            new GeneratedMultipartParamIndexerExtension(transformationConsumer, classOutput))
-                    .setMultipartReturnTypeIndexerExtension(
-                            new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput))
-                    .setFieldInjectionIndexerExtension(
-                            new TransformedFieldInjectionIndexerExtension(transformationConsumer, false, (field) -> {
-                                initConverters.invokeStaticMethod(MethodDescriptor.ofMethod(field.getInjectedClassName(),
-                                        field.getMethodName(),
-                                        void.class, Deployment.class),
-                                        initConverters.getMethodParam(0));
-                            }))
-                    .setConverterSupplierIndexerExtension(new GeneratedConverterIndexerExtension(
-                            (name) -> new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
-                                    applicationClassPredicate.test(name))))
-                    .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
-                    .setClassLevelExceptionMappers(
-                            classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
-                                    : Collections.emptyMap())
-                    .setResourceMethodCallback(new Consumer<>() {
-                        @Override
-                        public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
-                            MethodInfo method = entry.getMethodInfo();
+            QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder(
+                    capabilities)
+                            .addMethodScanners(
+                                    methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
+                            .setIndex(index)
+                            .addContextTypes(CONTEXT_TYPES)
+                            .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
+                            .setEndpointInvokerFactory(
+                                    new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
+                            .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
+                            .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
+                            .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
+                            .setExistingConverters(existingConverters)
+                            .setScannedResourcePaths(scannedResourcePaths)
+                            .setConfig(createRestReactiveConfig(config))
+                            .setAdditionalReaders(additionalReaders)
+                            .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
+                            .setInjectableBeans(injectableBeans)
+                            .setAdditionalWriters(additionalWriters)
+                            .setDefaultBlocking(appResult.getBlockingDefault())
+                            .setApplicationScanningResult(appResult)
+                            .setMultipartParameterIndexerExtension(
+                                    new GeneratedMultipartParamIndexerExtension(transformationConsumer, classOutput))
+                            .setMultipartReturnTypeIndexerExtension(
+                                    new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput))
+                            .setFieldInjectionIndexerExtension(
+                                    new TransformedFieldInjectionIndexerExtension(transformationConsumer, false, (field) -> {
+                                        initConverters.invokeStaticMethod(
+                                                MethodDescriptor.ofMethod(field.getInjectedClassName(),
+                                                        field.getMethodName(),
+                                                        void.class, Deployment.class),
+                                                initConverters.getMethodParam(0));
+                                    }))
+                            .setConverterSupplierIndexerExtension(new GeneratedConverterIndexerExtension(
+                                    (name) -> new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
+                                            applicationClassPredicate.test(name))))
+                            .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
+                            .setClassLevelExceptionMappers(
+                                    classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
+                                            : Collections.emptyMap())
+                            .setResourceMethodCallback(new Consumer<>() {
+                                @Override
+                                public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
+                                    MethodInfo method = entry.getMethodInfo();
 
-                            resourceMethodEntries.add(new ResteasyReactiveResourceMethodEntriesBuildItem.Entry(
-                                    entry.getBasicResourceClassInfo(), method,
-                                    entry.getActualEndpointInfo(), entry.getResourceMethod()));
+                                    resourceMethodEntries.add(new ResteasyReactiveResourceMethodEntriesBuildItem.Entry(
+                                            entry.getBasicResourceClassInfo(), method,
+                                            entry.getActualEndpointInfo(), entry.getResourceMethod()));
 
-                            String source = ResteasyReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
-                                    + "[" + method + "]";
+                                    String source = ResteasyReactiveProcessor.class.getSimpleName() + " > "
+                                            + method.declaringClass()
+                                            + "[" + method + "]";
 
-                            ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
-                                    entry.getActualEndpointInfo(), index, c -> c);
-                            if (classInfoWithSecurity != null) {
-                                reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false,
-                                        entry.getActualEndpointInfo().name().toString()));
-                            }
+                                    ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
+                                            entry.getActualEndpointInfo(), index, c -> c);
+                                    if (classInfoWithSecurity != null) {
+                                        reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false,
+                                                entry.getActualEndpointInfo().name().toString()));
+                                    }
 
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                    .type(method.returnType())
-                                    .index(index)
-                                    .ignoreTypePredicate(QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                                    .ignoreFieldPredicate(QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                                    .ignoreMethodPredicate(
-                                            QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                    .source(source)
-                                    .build());
-
-                            for (short i = 0; i < method.parameters().size(); i++) {
-                                Type parameterType = method.parameters().get(i);
-                                if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
                                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                            .type(parameterType)
+                                            .type(method.returnType())
                                             .index(index)
                                             .ignoreTypePredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
@@ -470,24 +476,39 @@ public class ResteasyReactiveProcessor {
                                                     QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                             .source(source)
                                             .build());
-                                }
-                            }
-                        }
 
-                        private boolean hasAnnotation(MethodInfo method, short paramPosition, DotName annotation) {
-                            for (AnnotationInstance annotationInstance : method.annotations()) {
-                                AnnotationTarget target = annotationInstance.target();
-                                if (target != null && target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER
-                                        && target.asMethodParameter().position() == paramPosition
-                                        && annotationInstance.name().equals(annotation)) {
-                                    return true;
+                                    for (short i = 0; i < method.parameters().size(); i++) {
+                                        Type parameterType = method.parameters().get(i);
+                                        if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
+                                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                                    .type(parameterType)
+                                                    .index(index)
+                                                    .ignoreTypePredicate(
+                                                            QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                                    .ignoreFieldPredicate(
+                                                            QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                                    .ignoreMethodPredicate(
+                                                            QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                                    .source(source)
+                                                    .build());
+                                        }
+                                    }
                                 }
-                            }
-                            return false;
-                        }
-                    })
-                    .setResteasyReactiveRecorder(recorder)
-                    .setApplicationClassPredicate(applicationClassPredicate);
+
+                                private boolean hasAnnotation(MethodInfo method, short paramPosition, DotName annotation) {
+                                    for (AnnotationInstance annotationInstance : method.annotations()) {
+                                        AnnotationTarget target = annotationInstance.target();
+                                        if (target != null && target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER
+                                                && target.asMethodParameter().position() == paramPosition
+                                                && annotationInstance.name().equals(annotation)) {
+                                            return true;
+                                        }
+                                    }
+                                    return false;
+                                }
+                            })
+                            .setResteasyReactiveRecorder(recorder)
+                            .setApplicationClassPredicate(applicationClassPredicate);
 
             if (!serverDefaultProducesHandlers.isEmpty()) {
                 List<DefaultProducesHandler> handlers = new ArrayList<>(serverDefaultProducesHandlers.size());

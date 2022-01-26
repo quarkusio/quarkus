@@ -183,12 +183,13 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             managedDeps = managingDescr.getManagedDependencies();
             managedRepos = mvn.newResolutionRepositories(managingDescr.getRepositories());
         }
-        List<String> excludedScopes = new ArrayList<>();
-        if (!test) {
-            excludedScopes.add("test");
-        }
-        if (!devmode) {
-            excludedScopes.add("provided");
+        final List<String> excludedScopes;
+        if (test) {
+            excludedScopes = Collections.emptyList();
+        } else if (devmode) {
+            excludedScopes = Collections.singletonList("test");
+        } else {
+            excludedScopes = List.of("provided", "test");
         }
 
         final ResolvedDependency appArtifact = resolve(coords, mvnArtifact, managedRepos);

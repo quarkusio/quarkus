@@ -57,6 +57,11 @@ packagers:
     connectTimeout: 20
     readTimeout: 60
     candidate: quarkus
+  chocolatey:
+    active: ALWAYS
+    continueOnError: true
+    remoteBuild: true
+    iconUrl: https://quarkus.io/assets/images/chocolatey-app-icon.png
 
 announce:
   sdkman:

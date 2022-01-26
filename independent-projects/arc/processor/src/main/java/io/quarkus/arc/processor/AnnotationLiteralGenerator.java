@@ -184,12 +184,12 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                 ResultHandle array = staticConstructor.newArray(returnTypeName, clazzArray.length);
                 for (int i = 0; i < clazzArray.length; ++i) {
                     staticConstructor.writeArrayValue(array, staticConstructor.load(i),
-                            staticConstructor.loadClass(clazzArray[i].name().toString()));
+                            staticConstructor.loadClassFromTCCL(clazzArray[i].name().toString()));
                 }
                 staticConstructor.writeStaticField(fieldCreator.getFieldDescriptor(), array);
             } else {
                 staticConstructor.writeStaticField(fieldCreator.getFieldDescriptor(),
-                        staticConstructor.loadClass(defaultValue.asClass().name().toString()));
+                        staticConstructor.loadClassFromTCCL(defaultValue.asClass().name().toString()));
 
             }
         }
@@ -239,7 +239,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                             FieldDescriptor.of(literalClassName, defaultValueStaticFieldName(method),
                                     method.returnType().name().toString()));
                 } else {
-                    retValue = valueMethod.loadClass(value.asClass().toString());
+                    retValue = valueMethod.loadClassFromTCCL(value.asClass().toString());
                 }
                 break;
             case ARRAY:
@@ -271,7 +271,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                     Type[] classArray = value.asClassArray();
                     retValue = valueMethod.newArray(componentType(method), valueMethod.load(classArray.length));
                     for (int i = 0; i < classArray.length; i++) {
-                        valueMethod.writeArrayValue(retValue, i, valueMethod.loadClass(classArray[i].name()
+                        valueMethod.writeArrayValue(retValue, i, valueMethod.loadClassFromTCCL(classArray[i].name()
                                 .toString()));
                     }
                 }

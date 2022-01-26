@@ -50,6 +50,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 
 import org.apache.http.entity.ContentType;
@@ -131,6 +132,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -527,11 +529,11 @@ public class JaxrsClientReactiveProcessor {
         } else if (type.kind() == CLASS) {
             genericType = ctor.newInstance(
                     MethodDescriptor.ofConstructor(GenericType.class, java.lang.reflect.Type.class),
-                    ctor.loadClass(type.asClassType().name().toString()));
+                    ctor.loadClassFromTCCL(type.asClassType().name().toString()));
         } else if (type.kind() == ARRAY) {
             genericType = ctor.newInstance(
                     MethodDescriptor.ofConstructor(GenericType.class, java.lang.reflect.Type.class),
-                    ctor.loadClass(type.asArrayType().name().toString()));
+                    ctor.loadClassFromTCCL(type.asArrayType().name().toString()));
         } else if (type.kind() == PRIMITIVE) {
             throw new IllegalArgumentException("Primitive types are not supported for multipart response mapping. " +
                     "Please use a wrapper class instead");
@@ -898,8 +900,22 @@ public class JaxrsClientReactiveProcessor {
                             invocationBuilderEnrichers.put(handleHeaderDescriptor, methodCreator.getMethodParam(paramIdx));
                         } else if (param.parameterType == ParameterType.FORM) {
                             formParams = createIfAbsent(methodCreator, formParams);
-                            methodCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
-                                    methodCreator.load(param.name), methodCreator.getMethodParam(paramIdx));
+                            ResultHandle convertedFormParam = methodCreator.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class, Object.class,
+                                            Class.class),
+                                    methodCreator.getThis(), methodCreator.getMethodParam(paramIdx),
+                                    methodCreator.loadClass(param.type));
+                            ResultHandle isString = methodCreator.instanceOf(convertedFormParam, String.class);
+                            BranchResult isStringBranch = methodCreator.ifTrue(isString);
+                            isStringBranch.falseBranch().throwException(IllegalStateException.class,
+                                    "Form parameter '" + param.name
+                                            + "' could not be converted to 'String' for REST Client interface '"
+                                            + restClientInterface.getClassName() + "'. A proper implementation of '"
+                                            + ParamConverter.class.getName() + "' needs to be returned by a '"
+                                            + ParamConverterProvider.class.getName()
+                                            + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
+                            isStringBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                                    methodCreator.load(param.name), convertedFormParam);
                         } else if (param.parameterType == ParameterType.MULTI_PART_FORM) {
                             if (multipartForm != null) {
                                 throw new IllegalArgumentException("MultipartForm data set twice for method "
@@ -1504,7 +1520,7 @@ public class JaxrsClientReactiveProcessor {
                 methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "entity",
                         QuarkusMultipartForm.class, String.class, Object.class, String.class, Class.class),
                         multipartForm, methodCreator.load(field.name()), fieldValue, methodCreator.load(partType),
-                        methodCreator.loadClass(field.type().name().toString())));
+                        methodCreator.loadClassFromTCCL(field.type().name().toString())));
     }
 
     /**
@@ -1876,12 +1892,12 @@ public class JaxrsClientReactiveProcessor {
                                     String.class,
                                     Entity.class, Class.class),
                             async, tryBlock.load(httpMethod), entity,
-                            tryBlock.loadClass(simpleReturnType));
+                            tryBlock.loadClassFromTCCL(simpleReturnType));
                 }
             } else if (returnCategory == ReturnCategory.UNI || returnCategory == ReturnCategory.COROUTINE) {
                 ResultHandle rx = tryBlock.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
-                        builder, tryBlock.loadClass(UniInvoker.class));
+                        builder, tryBlock.loadClassFromTCCL(UniInvoker.class));
                 ResultHandle uniInvoker = tryBlock.checkCast(rx, UniInvoker.class);
                 // with entity
                 if (genericReturnType != null) {
@@ -1897,7 +1913,7 @@ public class JaxrsClientReactiveProcessor {
                                     Uni.class, String.class,
                                     Entity.class, Class.class),
                             uniInvoker, tryBlock.load(httpMethod), entity,
-                            tryBlock.loadClass(simpleReturnType));
+                            tryBlock.loadClassFromTCCL(simpleReturnType));
                 }
                 if (returnCategory == ReturnCategory.COROUTINE) {
                     result = tryBlock.invokeStaticMethod(
@@ -1908,7 +1924,7 @@ public class JaxrsClientReactiveProcessor {
             } else if (returnCategory == ReturnCategory.MULTI) {
                 ResultHandle rx = tryBlock.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
-                        builder, tryBlock.loadClass(MultiInvoker.class));
+                        builder, tryBlock.loadClassFromTCCL(MultiInvoker.class));
                 ResultHandle multiInvoker = tryBlock.checkCast(rx, MultiInvoker.class);
                 // with entity
                 if (genericReturnType != null) {
@@ -1924,7 +1940,7 @@ public class JaxrsClientReactiveProcessor {
                                     Object.class, String.class,
                                     Entity.class, Class.class),
                             multiInvoker, tryBlock.load(httpMethod), entity,
-                            tryBlock.loadClass(simpleReturnType));
+                            tryBlock.loadClassFromTCCL(simpleReturnType));
                 }
             } else {
                 if (genericReturnType != null) {
@@ -1938,7 +1954,7 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor.ofMethod(Invocation.Builder.class, "method", Object.class, String.class,
                                     Entity.class, Class.class),
                             builder, tryBlock.load(httpMethod), entity,
-                            tryBlock.loadClass(simpleReturnType));
+                            tryBlock.loadClassFromTCCL(simpleReturnType));
                 }
             }
         } else {
@@ -1959,12 +1975,12 @@ public class JaxrsClientReactiveProcessor {
                                     String.class,
                                     Class.class),
                             async, tryBlock.load(httpMethod),
-                            tryBlock.loadClass(simpleReturnType));
+                            tryBlock.loadClassFromTCCL(simpleReturnType));
                 }
             } else if (returnCategory == ReturnCategory.UNI || returnCategory == ReturnCategory.COROUTINE) {
                 ResultHandle rx = tryBlock.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
-                        builder, tryBlock.loadClass(UniInvoker.class));
+                        builder, tryBlock.loadClassFromTCCL(UniInvoker.class));
                 ResultHandle uniInvoker = tryBlock.checkCast(rx, UniInvoker.class);
                 if (genericReturnType != null) {
                     result = tryBlock.invokeVirtualMethod(
@@ -1978,7 +1994,7 @@ public class JaxrsClientReactiveProcessor {
                                     Uni.class, String.class,
                                     Class.class),
                             uniInvoker, tryBlock.load(httpMethod),
-                            tryBlock.loadClass(simpleReturnType));
+                            tryBlock.loadClassFromTCCL(simpleReturnType));
                 }
                 if (returnCategory == ReturnCategory.COROUTINE) {
                     result = tryBlock.invokeStaticMethod(
@@ -1989,7 +2005,7 @@ public class JaxrsClientReactiveProcessor {
             } else if (returnCategory == ReturnCategory.MULTI) {
                 ResultHandle rx = tryBlock.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "rx", RxInvoker.class, Class.class),
-                        builder, tryBlock.loadClass(MultiInvoker.class));
+                        builder, tryBlock.loadClassFromTCCL(MultiInvoker.class));
                 ResultHandle multiInvoker = tryBlock.checkCast(rx, MultiInvoker.class);
                 if (genericReturnType != null) {
                     result = tryBlock.invokeVirtualMethod(
@@ -2003,7 +2019,7 @@ public class JaxrsClientReactiveProcessor {
                                     Object.class, String.class,
                                     Class.class),
                             multiInvoker, tryBlock.load(httpMethod),
-                            tryBlock.loadClass(simpleReturnType));
+                            tryBlock.loadClassFromTCCL(simpleReturnType));
                 }
             } else {
                 if (genericReturnType != null) {
@@ -2016,7 +2032,7 @@ public class JaxrsClientReactiveProcessor {
                             MethodDescriptor.ofMethod(Invocation.Builder.class, "method", Object.class, String.class,
                                     Class.class),
                             builder, tryBlock.load(httpMethod),
-                            tryBlock.loadClass(simpleReturnType));
+                            tryBlock.loadClassFromTCCL(simpleReturnType));
                 }
             }
         }
@@ -2188,7 +2204,7 @@ public class JaxrsClientReactiveProcessor {
         paramArray = methodCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
                         Class.class),
-                client, paramArray, methodCreator.loadClass(componentType));
+                client, paramArray, methodCreator.loadClassFromTCCL(componentType));
 
         return methodCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
@@ -2213,7 +2229,7 @@ public class JaxrsClientReactiveProcessor {
         headerParamHandle = invoBuilderEnricher.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class, Object.class, Class.class),
                 client, headerParamHandle,
-                invoBuilderEnricher.loadClass(paramType));
+                invoBuilderEnricher.loadClassFromTCCL(paramType));
 
         invoBuilderEnricher.assign(invocationBuilder,
                 invoBuilderEnricher.invokeInterfaceMethod(
@@ -2227,7 +2243,7 @@ public class JaxrsClientReactiveProcessor {
         ResultHandle handle = methodCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class, Object.class, Class.class),
                 client, pathParamHandle,
-                methodCreator.loadClass(parameterType));
+                methodCreator.loadClassFromTCCL(parameterType));
         methodCreator.assign(methodTarget,
                 methodCreator.invokeInterfaceMethod(WEB_TARGET_RESOLVE_TEMPLATE_METHOD,
                         methodTarget,
@@ -2239,7 +2255,7 @@ public class JaxrsClientReactiveProcessor {
         cookieParamHandle = invoBuilderEnricher.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class, Object.class, Class.class),
                 client, cookieParamHandle,
-                invoBuilderEnricher.loadClass(paramType));
+                invoBuilderEnricher.loadClassFromTCCL(paramType));
         invoBuilderEnricher.assign(invocationBuilder,
                 invoBuilderEnricher.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "cookie", Invocation.Builder.class, String.class,

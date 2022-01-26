@@ -61,7 +61,7 @@
         <!--
         Supported Maven versions, interpreted as a version range
          -->
-        <supported-maven-versions>[3.6.2,)</supported-maven-versions>
+        <supported-maven-versions>[3.8.1,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.4</proposed-maven-version>
@@ -83,13 +83,21 @@
         <opensearch.image>opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
 
+        <!-- Database images for JDBC/Reactive/Hibernate tests -->
+        <postgres.image>docker.io/postgres:14.1</postgres.image>
+        <mariadb.image>docker.io/mariadb:10.4</mariadb.image>
+        <db2.image>docker.io/ibmcom/db2:11.5.5.0</db2.image>
+        <mssql.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssql.image>
+        <oracle.image>docker.io/gvenzl/oracle-xe:21.3.0-slim</oracle.image>
+
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:16.0.0</keycloak.docker.image>
-
+        <keycloak.version>16.1.0</keycloak.version>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
+        
         <unboundid-ldap.version>6.0.3</unboundid-ldap.version>
 
         <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
@@ -140,7 +148,7 @@
         <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
-        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.3-java11</platform.quarkus.native.builder-image>
+        <platform.quarkus.native.builder-image>graalvm</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>

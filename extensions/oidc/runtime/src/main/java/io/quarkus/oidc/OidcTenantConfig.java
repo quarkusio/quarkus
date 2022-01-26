@@ -349,11 +349,11 @@ public class OidcTenantConfig extends OidcCommonConfig {
     @ConfigGroup
     public static class Roles {
 
-        public static Roles fromClaimPath(String path) {
+        public static Roles fromClaimPath(List<String> path) {
             return fromClaimPathAndSeparator(path, null);
         }
 
-        public static Roles fromClaimPathAndSeparator(String path, String sep) {
+        public static Roles fromClaimPathAndSeparator(List<String> path, String sep) {
             Roles roles = new Roles();
             roles.roleClaimPath = Optional.ofNullable(path);
             roles.roleClaimSeparator = Optional.ofNullable(sep);
@@ -361,16 +361,17 @@ public class OidcTenantConfig extends OidcCommonConfig {
         }
 
         /**
-         * Path to the claim containing an array of groups. It starts from the top level JWT JSON object and
-         * can contain multiple segments where each segment represents a JSON object name only, example: "realm/groups".
-         * Use double quotes with the namespace qualified claim names.
-         * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
+         * List of paths to claims containing an array of groups. Each path starts from the top level JWT JSON object
+         * and can contain multiple segments where each segment represents a JSON object name only,
+         * example: "realm/groups". Use double quotes with the namespace qualified claim names.
+         * This property can be used if a token has no 'groups' claim but has the groups set in one or more different
+         * claims.
          */
         @ConfigItem
-        public Optional<String> roleClaimPath = Optional.empty();
+        public Optional<List<String>> roleClaimPath = Optional.empty();
         /**
          * Separator for splitting a string which may contain multiple group values.
-         * It will only be used if the "role-claim-path" property points to a custom claim whose value is a string.
+         * It will only be used if the "role-claim-path" property points to one or more custom claims whose values are strings.
          * A single space will be used by default because the standard 'scope' claim may contain a space separated sequence.
          */
         @ConfigItem
@@ -382,11 +383,11 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<Source> source = Optional.empty();
 
-        public Optional<String> getRoleClaimPath() {
+        public Optional<List<String>> getRoleClaimPath() {
             return roleClaimPath;
         }
 
-        public void setRoleClaimPath(String roleClaimPath) {
+        public void setRoleClaimPath(List<String> roleClaimPath) {
             this.roleClaimPath = Optional.of(roleClaimPath);
         }
 
@@ -481,8 +482,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Force 'https' as the 'redirect_uri' parameter scheme when running behind an SSL terminating reverse proxy.
          * This property, if enabled, will also affect the logout `post_logout_redirect_uri` and the local redirect requests.
          */
-        @ConfigItem(defaultValue = "false")
-        public boolean forceRedirectHttpsScheme;
+        @ConfigItem(defaultValueDocumentation = "false")
+        public Optional<Boolean> forceRedirectHttpsScheme = Optional.empty();
 
         /**
          * List of scopes
@@ -603,12 +604,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.extraParams = extraParams;
         }
 
-        public boolean isForceRedirectHttpsScheme() {
+        public Optional<Boolean> isForceRedirectHttpsScheme() {
             return forceRedirectHttpsScheme;
         }
 
         public void setForceRedirectHttpsScheme(boolean forceRedirectHttpsScheme) {
-            this.forceRedirectHttpsScheme = forceRedirectHttpsScheme;
+            this.forceRedirectHttpsScheme = Optional.of(forceRedirectHttpsScheme);
         }
 
         public boolean isRestorePathAfterRedirect() {

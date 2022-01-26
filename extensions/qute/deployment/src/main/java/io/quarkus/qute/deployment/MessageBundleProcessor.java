@@ -525,6 +525,10 @@ public class MessageBundleProcessor {
                 }
 
                 for (Entry<DotName, Set<String>> e : implicitClassToMembersUsed.entrySet()) {
+                    if (e.getValue().isEmpty()) {
+                        // No members
+                        continue;
+                    }
                     ClassInfo clazz = index.getClassByName(e.getKey());
                     if (clazz != null) {
                         implicitClasses.produce(new ImplicitValueResolverBuildItem(clazz,

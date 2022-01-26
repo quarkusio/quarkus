@@ -11,7 +11,7 @@ import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "add", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Add extension(s) to this project.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
+@CommandLine.Command(name = "add", header = "Add extension(s) to this project.")
 public class ProjectExtensionsAdd extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Mixin

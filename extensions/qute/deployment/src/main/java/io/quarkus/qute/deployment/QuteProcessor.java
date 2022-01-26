@@ -552,6 +552,10 @@ public class QuteProcessor {
 
         // Register an implicit value resolver for the classes collected during validation
         for (Entry<DotName, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
+            if (entry.getValue().isEmpty()) {
+                // No members
+                continue;
+            }
             ClassInfo clazz = index.getClassByName(entry.getKey());
             if (clazz != null) {
                 implicitClasses.produce(new ImplicitValueResolverBuildItem(clazz,
@@ -588,16 +592,20 @@ public class QuteProcessor {
 
     static String buildIgnorePattern(Iterable<String> names) {
         // ^(?!\\Qbar\\P|\\Qfoo\\P).*$
-        StringBuilder ignorePattern = new StringBuilder("^(?!");
-        for (Iterator<String> iterator = names.iterator(); iterator.hasNext();) {
-            String memberName = iterator.next();
-            ignorePattern.append(Pattern.quote(memberName));
-            if (iterator.hasNext()) {
-                ignorePattern.append("|");
+        StringBuilder pattern = new StringBuilder("^(?!");
+        Iterator<String> it = names.iterator();
+        if (!it.hasNext()) {
+            throw new IllegalArgumentException();
+        }
+        while (it.hasNext()) {
+            String name = (String) it.next();
+            pattern.append(Pattern.quote(name));
+            if (it.hasNext()) {
+                pattern.append("|");
             }
         }
-        ignorePattern.append(").*$");
-        return ignorePattern.toString();
+        pattern.append(").*$");
+        return pattern.toString();
     }
 
     static Match validateNestedExpressions(QuteConfig config, TemplateAnalysis templateAnalysis, ClassInfo rootClazz,

@@ -15,7 +15,6 @@
     <name>Quarkus - Reactive PostgreSQL Client - Deployment</name>
 
     <properties>
-        <postgres.image>postgres:14.1</postgres.image>
         <reactive-postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</reactive-postgres.url>
     </properties>
 

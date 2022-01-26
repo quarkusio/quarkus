@@ -1,6 +1,5 @@
 package io.quarkus.oidc.runtime.providers;
 
-import java.util.HashMap;
 import java.util.List;
 
 import io.quarkus.oidc.OidcTenantConfig;
@@ -63,10 +62,8 @@ public class KnownOidcProviders {
         ret.setAuthorizationPath("https://facebook.com/dialog/oauth/");
         ret.setTokenPath("https://graph.facebook.com/v12.0/oauth/access_token");
         ret.setJwksPath("https://www.facebook.com/.well-known/oauth/openid/jwks/");
-        ret.setUserInfoPath("https://graph.facebook.com/me/?fields=id,name,email,first_name,last_name");
         ret.getAuthentication().setScopes(List.of("email", "public_profile"));
-        ret.getAuthentication().setUserInfoRequired(true);
-        ret.getAuthentication().setIdTokenRequired(false);
+        ret.getAuthentication().setForceRedirectHttpsScheme(true);
         return ret;
     }
 
@@ -75,8 +72,6 @@ public class KnownOidcProviders {
         ret.setAuthServerUrl("https://appleid.apple.com/");
         ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
         ret.getAuthentication().setScopes(List.of("openid", "email", "name"));
-        ret.getAuthentication().setExtraParams(new HashMap<>());
-        ret.getAuthentication().getExtraParams().put("response_mode", "form_post");
         ret.getAuthentication().setForceRedirectHttpsScheme(true);
         ret.getCredentials().getClientSecret().setMethod(Method.POST_JWT);
         ret.getCredentials().getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());

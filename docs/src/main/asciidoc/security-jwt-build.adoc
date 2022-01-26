@@ -311,8 +311,10 @@ SmallRye JWT supports the following properties which can be used to customize th
 |smallrye.jwt.sign.key|none|Key value which will be used to sign the claims when either a no-argument sign() or innerSign() method is called.
 |smallrye.jwt.sign.key.id|`none`|Signing key identifier which is checked only when JWK keys are used.
 |smallrye.jwt.encrypt.key.location|`none`|Location of a public key which will be used to encrypt the claims or inner JWT when a no-argument `encrypt()` method is called.
+|smallrye.jwt.sign.relax-key-validation|false|Relax the validation of the signing keys.
 |smallrye.jwt.encrypt.key|none|Key value which will be used to encrypt the claims or inner JWT when a no-argument encrypt() method is called.
 |smallrye.jwt.encrypt.key.id|`none`|Encryption key identifier which is checked only when JWK keys are used.
+|smallrye.jwt.encrypt.relax-key-validation|false|Relax the validation of the encryption keys.
 |smallrye.jwt.new-token.signature-algorithm|RS256|Signature algorithm. This property will be checked if the JWT signature builder has not already set the signature algorithm.
 |smallrye.jwt.new-token.key-encryption-algorithm|RSA-OAEP|Key encryption algorithm. This property will be checked if the JWT encryption builder has not already set the key encryption algorithm.
 |smallrye.jwt.new-token.content-encryption-algorithm|A256GCM|Content encryption algorithm. This property will be checked if the JWT encryption builder has not already set the content encryption algorithm.

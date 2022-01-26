@@ -15,6 +15,9 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
 
+    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-native-image:21.3-java11";
+    public static final String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel:21.3-java11";
+
     /**
      * Comma-separated, additional arguments to pass to the build process.
      * If an argument includes the {@code ,} symbol, it needs to be escaped, e.g. {@code \\,}
@@ -195,10 +198,22 @@ public class NativeConfig {
     }
 
     /**
-     * The docker image to use to do the image build
+     * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
+     * {@code quay.io/quarkus/ubi-quarkus-mandrel:21.3-java17}.
      */
     @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
     public String builderImage;
+
+    public String getEffectiveBuilderImage() {
+        final String builderImageName = this.builderImage.toUpperCase();
+        if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
+            return DEFAULT_GRAALVM_BUILDER_IMAGE;
+        } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
+            return DEFAULT_MANDREL_BUILDER_IMAGE;
+        } else {
+            return this.builderImage;
+        }
+    }
 
     /**
      * The container runtime (e.g. docker) that is used to do an image based build. If this is set then
@@ -428,5 +443,13 @@ public class NativeConfig {
         public String getExecutableName() {
             return this.name().toLowerCase();
         }
+    }
+
+    /**
+     * Supported Builder Image providers/distributions
+     */
+    public static enum BuilderImageProvider {
+        GRAALVM,
+        MANDREL;
     }
 }

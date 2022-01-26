@@ -129,7 +129,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     public AugmentAction createAugmentor(String functionName, Map<String, Object> props) {
         try {
             Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
-            Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader().loadClass(functionName)
+            Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader()
+                    .loadClass(functionName)
                     .getDeclaredConstructor()
                     .newInstance();
             List<?> res = function.apply(props);
@@ -293,16 +294,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             builder.addBannedElement(new MemoryClassPathElement(banned, true));
 
             for (ResolvedDependency dependency : appModel.getDependencies()) {
-                if (!dependency.isRuntimeCp() ||
-                        isHotReloadable(dependency, hotReloadPaths) ||
-                        configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
-                    continue;
-                }
-                if (!flatTestClassPath && dependency.isReloadable()
-                        && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
-                    if (dependency.getType().equals(ArtifactCoords.TYPE_JAR)) {
-                        builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromDependency(dependency)));
-                    }
+                if (!dependency.isRuntimeCp()
+                        || isHotReloadable(dependency, hotReloadPaths)
+                        || configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())
+                        || !flatTestClassPath && dependency.isReloadable()
+                                && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
                     continue;
                 }
 

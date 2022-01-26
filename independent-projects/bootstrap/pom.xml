@@ -28,7 +28,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
 
         <!-- Dependency versions -->
-        <assertj.version>3.22.0</assertj.version>
+        <assertj.version>3.21.0</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.4.3.Final</jboss-logging.version>
         <jsoup.version>1.14.2</jsoup.version> <!-- wagon-http dependency -->
@@ -50,7 +50,7 @@
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
         <jboss-logmanager-embedded.version>1.0.9</jboss-logmanager-embedded.version>
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
-        <slf4j-api.version>1.7.33</slf4j-api.version>
+        <slf4j-api.version>1.7.35</slf4j-api.version>
         <graal-sdk.version>21.3.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <smallrye-common.version>1.8.0</smallrye-common.version>

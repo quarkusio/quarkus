@@ -53,6 +53,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
 
+    private static final String INTERNAL_IDTOKEN_HEADER = "internal";
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
 
     private final BlockingTaskRunner<String> createTokenStateRequestContext = new BlockingTaskRunner<String>();
@@ -106,7 +107,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(AuthorizationCodeTokens.class.getName(), session);
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(session.getIdToken(),
-                                        !configContext.oidcConfig.authentication.isIdTokenRequired().orElse(true)))
+                                        isInternalIdToken(session.getIdToken(), configContext)))
                                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                                     @Override
                                                     public Uni<Void> apply(SecurityIdentity identity) {
@@ -153,7 +154,18 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     }
                                                 });
                     }
+
                 });
+    }
+
+    private boolean isInternalIdToken(String idToken, TenantConfigContext configContext) {
+        if (!configContext.oidcConfig.authentication.idTokenRequired.orElse(true)) {
+            JsonObject headers = OidcUtils.decodeJwtHeaders(idToken);
+            if (headers != null) {
+                return headers.getBoolean(INTERNAL_IDTOKEN_HEADER, false);
+            }
+        }
+        return false;
     }
 
     private boolean isJavaScript(RoutingContext context) {
@@ -361,7 +373,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String generateInternalIdToken(OidcTenantConfig oidcConfig) {
-        return Jwt.claims().sign(KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get()));
+        return Jwt.claims().jws().header(INTERNAL_IDTOKEN_HEADER, true)
+                .sign(KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get()));
     }
 
     private Uni<Void> processSuccessfulAuthentication(RoutingContext context,
@@ -612,7 +625,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private boolean isForceHttps(TenantConfigContext configContext) {
-        return configContext.oidcConfig.authentication.forceRedirectHttpsScheme;
+        return configContext.oidcConfig.authentication.forceRedirectHttpsScheme.orElse(false);
     }
 
     private Uni<Void> buildLogoutRedirectUriUni(RoutingContext context, TenantConfigContext configContext,

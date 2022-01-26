@@ -29,6 +29,11 @@ public class AmazonLambdaSimpleTestCase {
                 .get("/hello/context")
                 .then()
                 .statusCode(204);
+        given()
+                .when()
+                .get("/hello/inject-event")
+                .then()
+                .statusCode(204);
     }
 
     @Test

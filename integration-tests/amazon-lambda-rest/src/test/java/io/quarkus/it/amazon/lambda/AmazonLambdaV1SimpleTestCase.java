@@ -33,6 +33,11 @@ public class AmazonLambdaV1SimpleTestCase {
                 .get("/hello/context")
                 .then()
                 .statusCode(204);
+        given()
+                .when()
+                .get("/hello/inject-event")
+                .then()
+                .statusCode(204);
     }
 
     @Test

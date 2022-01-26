@@ -9,6 +9,7 @@ import javax.ws.rs.Priorities;
 
 /**
  * Used to easily define an exception mapper for the specific REST Client on which it's used.
+ * This method is called when the HTTP response from the invoked service has a status code of 400 or higher.
  *
  * The annotation MUST be placed on a method of the REST Client interface that meets the following criteria:
  * <ul>

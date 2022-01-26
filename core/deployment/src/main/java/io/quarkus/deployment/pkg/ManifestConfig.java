@@ -15,10 +15,19 @@ public class ManifestConfig {
     public boolean addImplementationEntries;
 
     /**
+     * Custom manifest attributes to be added to the main section of the MANIFEST.MF file.
+     * An example of the user defined property:
+     * quarkus.package.manifest.attributes."Entry-key1"=Value1
+     * quarkus.package.manifest.attributes."Entry-key2"=Value2
+     */
+    @ConfigItem()
+    public Map<String, String> attributes;
+
+    /**
      * Custom manifest sections to be added to the MANIFEST.MF file.
      * An example of the user defined property:
-     * quarkus.package.manifest.manifest-sections.{Section-Name}.{Entry-Key1}={Value1}
-     * quarkus.package.manifest.manifest-sections.{Section-Name}.{Entry-Key2}={Value2}
+     * quarkus.package.manifest.manifest-sections."Section-Name"."Entry-Key1"=Value1
+     * quarkus.package.manifest.manifest-sections."Section-Name"."Entry-Key2"=Value2
      */
     @ConfigItem()
     public Map<String, Map<String, String>> manifestSections;

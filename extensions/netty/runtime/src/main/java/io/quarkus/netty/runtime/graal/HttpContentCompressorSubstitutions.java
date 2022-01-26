@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.runtime.graal;
+package io.quarkus.netty.runtime.graal;
 
 import static io.netty.handler.codec.http.HttpHeaderValues.DEFLATE;
 import static io.netty.handler.codec.http.HttpHeaderValues.GZIP;

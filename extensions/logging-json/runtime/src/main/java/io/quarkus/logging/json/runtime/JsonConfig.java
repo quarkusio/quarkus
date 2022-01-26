@@ -1,17 +1,19 @@
 package io.quarkus.logging.json.runtime;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.jboss.logmanager.formatters.StructuredFormatter;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * Configuration for JSON log formatting.
  */
-@ConfigRoot(phase = ConfigPhase.RUN_TIME, name = "log.console.json")
+@ConfigGroup
 public class JsonConfig {
     /**
      * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
@@ -51,4 +53,36 @@ public class JsonConfig {
      */
     @ConfigItem
     boolean printDetails;
+
+    /**
+     * comma-seperated key=value pairs
+     * possible keys are listed {@link StructuredFormatter.Key}
+     * e.g. HOST_NAME=host,LEVEL=severity
+     */
+    @ConfigItem(defaultValue = "<NA>")
+    public String keyoverrides;
+
+    /**
+     * Post additional fields only for JSON formatted messages
+     * You can add static fields to each log event in the following form:
+     *
+     * <pre>
+     * quarkus.log.handler.socket.mySocket.additional-field.field1.value=value1
+     * quarkus.log.console.additional-field.field2.value=value2
+     * </pre>
+     */
+    @ConfigItem
+    @ConfigDocMapKey("field-name")
+    @ConfigDocSection
+    public Map<String, AdditionalFieldConfig> additionalField;
+
+    @ConfigGroup
+    public static class AdditionalFieldConfig {
+        /**
+         * Additional field value.
+         */
+        @ConfigItem
+        public String value;
+
+    }
 }

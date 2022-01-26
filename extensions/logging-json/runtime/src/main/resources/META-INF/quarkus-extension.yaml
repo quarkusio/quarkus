@@ -11,4 +11,4 @@ metadata:
   status: "preview"
   guide: "https://quarkus.io/guides/logging#json-logging"
   config:
-  - "quarkus.log.console.json."
+  - "quarkus.log."

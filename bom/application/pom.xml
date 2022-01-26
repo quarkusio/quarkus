@@ -386,7 +386,7 @@
                 <version>${kotlin.coroutine.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>            
+            </dependency>
 
             <!-- Quarkus core -->
 
@@ -2218,7 +2218,7 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-container-image-buildpack-deployment</artifactId>
                 <version>${project.version}</version>
-            </dependency>            
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-container-image-docker</artifactId>
@@ -2452,16 +2452,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-logging-gelf-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-logging-socket</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-logging-socket-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -5094,7 +5084,7 @@
                 <groupId>dev.snowdrop</groupId>
                 <artifactId>buildpack-client</artifactId>
                 <version>${java-buildpack-client.version}</version>
-            </dependency>   
+            </dependency>
 
             <!-- Jib -->
             <dependency>

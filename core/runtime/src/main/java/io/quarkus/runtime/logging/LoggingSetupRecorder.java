@@ -6,7 +6,6 @@ import static org.wildfly.common.os.Process.getProcessName;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -26,14 +25,11 @@ import java.util.logging.LogRecord;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
-import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
-import org.jboss.logmanager.formatters.JsonFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
-import org.jboss.logmanager.formatters.StructuredFormatter;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
@@ -90,7 +86,7 @@ public class LoggingSetupRecorder {
             final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
-            final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
+            final List<RuntimeValue<Optional<Map<String, Formatter>>>> possibleFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier, LaunchMode launchMode) {
 
         final Map<String, CategoryConfig> categories = config.categories;
@@ -131,7 +127,7 @@ public class LoggingSetupRecorder {
         if (config.console.enable) {
             final Handler consoleHandler = configureConsoleHandler(config.console, consoleRuntimeConfig.getValue(),
                     errorManager, cleanupFiler,
-                    possibleFormatters, possibleBannerSupplier, launchMode);
+                    getApplicableFormatters(possibleFormatters, "console"), possibleBannerSupplier, launchMode);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
         }
@@ -155,18 +151,21 @@ public class LoggingSetupRecorder {
         }
 
         if (config.file.enable) {
-            handlers.add(configureFileHandler(config.file, errorManager, cleanupFiler));
+            handlers.add(configureFileHandler(config.file, errorManager, cleanupFiler,
+                    getApplicableFormatters(possibleFormatters, "file")));
         }
 
         if (config.syslog.enable) {
-            final Handler syslogHandler = configureSyslogHandler(config.syslog, errorManager, cleanupFiler);
+            final Handler syslogHandler = configureSyslogHandler(config.syslog, errorManager, cleanupFiler,
+                    getApplicableFormatters(possibleFormatters, "syslog"));
             if (syslogHandler != null) {
                 handlers.add(syslogHandler);
             }
         }
 
         if (config.socket.enable) {
-            final Handler socketHandler = configureSocketHandler(config.socket, errorManager, cleanupFiler);
+            final Handler socketHandler = configureSocketHandler(config.socket, errorManager, cleanupFiler,
+                    getApplicableFormatters(possibleFormatters, "socket"));
             if (socketHandler != null) {
                 handlers.add(socketHandler);
             }
@@ -329,7 +328,7 @@ public class LoggingSetupRecorder {
     }
 
     private static Map<String, Handler> createNamedHandlers(LogConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,
-            List<RuntimeValue<Optional<Formatter>>> possibleFormatters, ErrorManager errorManager,
+            List<RuntimeValue<Optional<Map<String, Formatter>>>> possibleFormatters, ErrorManager errorManager,
             LogCleanupFilter cleanupFilter, LaunchMode launchMode) {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers.entrySet()) {
@@ -337,9 +336,11 @@ public class LoggingSetupRecorder {
             if (!namedConsoleConfig.enable) {
                 continue;
             }
+            List<Formatter> formatters = getApplicableFormatters(possibleFormatters, "console");
+            formatters.addAll(getApplicableFormatters(possibleFormatters, consoleConfigEntry.getKey()));
             final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, consoleRuntimeConfig, errorManager,
                     cleanupFilter,
-                    possibleFormatters, null, launchMode);
+                    formatters, null, launchMode);
             addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers.entrySet()) {
@@ -347,7 +348,9 @@ public class LoggingSetupRecorder {
             if (!namedFileConfig.enable) {
                 continue;
             }
-            final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter);
+            List<Formatter> formatters = getApplicableFormatters(possibleFormatters, "file");
+            formatters.addAll(getApplicableFormatters(possibleFormatters, fileConfigEntry.getKey()));
+            final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter, formatters);
             addToNamedHandlers(namedHandlers, fileHandler, fileConfigEntry.getKey());
         }
         for (Entry<String, SyslogConfig> sysLogConfigEntry : config.syslogHandlers.entrySet()) {
@@ -355,7 +358,9 @@ public class LoggingSetupRecorder {
             if (!namedSyslogConfig.enable) {
                 continue;
             }
-            final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter);
+            List<Formatter> formatters = getApplicableFormatters(possibleFormatters, "syslog");
+            formatters.addAll(getApplicableFormatters(possibleFormatters, sysLogConfigEntry.getKey()));
+            final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter, formatters);
             if (syslogHandler != null) {
                 addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
             }
@@ -365,7 +370,9 @@ public class LoggingSetupRecorder {
             if (!namedSocketConfig.enable) {
                 continue;
             }
-            final Handler socketHandler = configureSocketHandler(namedSocketConfig, errorManager, cleanupFilter);
+            List<Formatter> formatters = getApplicableFormatters(possibleFormatters, "socket");
+            formatters.addAll(getApplicableFormatters(possibleFormatters, socketConfigEntry.getKey()));
+            final Handler socketHandler = configureSocketHandler(namedSocketConfig, errorManager, cleanupFilter, formatters);
             if (socketHandler != null) {
                 addToNamedHandlers(namedHandlers, socketHandler, socketConfigEntry.getKey());
             }
@@ -417,23 +424,31 @@ public class LoggingSetupRecorder {
         }
     }
 
+    public static List<Formatter> getApplicableFormatters(
+            List<RuntimeValue<Optional<Map<String, Formatter>>>> possibleFormatters, String key) {
+        List<Formatter> formatters = new ArrayList<>();
+        for (RuntimeValue<Optional<Map<String, Formatter>>> value : possibleFormatters) {
+            final Optional<Map<String, Formatter>> val = value.getValue();
+            if (val.isPresent()) {
+                Formatter formatter = val.get().get(key);
+                if (formatter != null)
+                    formatters.add(formatter);
+            }
+        }
+        return formatters;
+    }
+
     private static Handler configureConsoleHandler(final ConsoleConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,
             final ErrorManager defaultErrorManager,
             final LogCleanupFilter cleanupFilter,
-            final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
+            final List<Formatter> formatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier, LaunchMode launchMode) {
         Formatter formatter = null;
-        boolean formatterWarning = false;
-
-        for (RuntimeValue<Optional<Formatter>> value : possibleFormatters) {
-            if (formatter != null) {
-                formatterWarning = true;
-            }
-            final Optional<Formatter> val = value.getValue();
-            if (val.isPresent()) {
-                formatter = val.get();
-            }
+        boolean formatterWarning = formatters.size() > 1;
+        if (!formatters.isEmpty()) {
+            formatter = formatters.get(formatters.size() - 1);
         }
+
         boolean color = false;
         if (formatter == null) {
             Supplier<String> bannerSupplier = null;
@@ -500,7 +515,7 @@ public class LoggingSetupRecorder {
     }
 
     private static Handler configureFileHandler(final FileConfig config, final ErrorManager errorManager,
-            final LogCleanupFilter cleanupFilter) {
+            final LogCleanupFilter cleanupFilter, List<Formatter> formatters) {
         FileHandler handler = new FileHandler();
         FileConfig.RotationConfig rotationConfig = config.rotation;
         if ((rotationConfig.maxFileSize.isPresent() || rotationConfig.rotateOnBoot)
@@ -523,8 +538,7 @@ public class LoggingSetupRecorder {
             handler = periodicRotatingFileHandler;
         }
 
-        final PatternFormatter formatter = new PatternFormatter(config.format);
-        handler.setFormatter(formatter);
+        handler.setFormatter(getFormatter(errorManager, formatters, () -> new PatternFormatter(config.format)));
         handler.setAppend(true);
         try {
             handler.setFile(config.path);
@@ -542,7 +556,7 @@ public class LoggingSetupRecorder {
 
     private static Handler configureSyslogHandler(final SyslogConfig config,
             final ErrorManager errorManager,
-            final LogCleanupFilter logCleanupFilter) {
+            final LogCleanupFilter logCleanupFilter, List<Formatter> formatters) {
         try {
             final SyslogHandler handler = new SyslogHandler(config.endpoint.getHostString(), config.endpoint.getPort());
             handler.setAppName(config.appName.orElse(getProcessName()));
@@ -554,8 +568,7 @@ public class LoggingSetupRecorder {
             handler.setTruncate(config.truncate);
             handler.setUseCountingFraming(config.useCountingFraming);
             handler.setLevel(config.level);
-            final PatternFormatter formatter = new PatternFormatter(config.format);
-            handler.setFormatter(formatter);
+            handler.setFormatter(getFormatter(errorManager, formatters, () -> new PatternFormatter(config.format)));
             handler.setErrorManager(errorManager);
             handler.setFilter(logCleanupFilter);
             if (config.async.enable) {
@@ -570,24 +583,13 @@ public class LoggingSetupRecorder {
 
     private static Handler configureSocketHandler(final SocketConfig config,
             final ErrorManager errorManager,
-            final LogCleanupFilter logCleanupFilter) {
+            final LogCleanupFilter logCleanupFilter, List<Formatter> formatters) {
         try {
             final SocketHandler handler = new SocketHandler(config.endpoint.getHostString(), config.endpoint.getPort());
             handler.setProtocol(config.protocol);
             handler.setBlockOnReconnect(config.blockOnReconnect);
             handler.setLevel(config.level);
-            switch (config.formatter) {
-                case "json":
-                    handler.setFormatter(createJsonFormatter(config.keyoverrides, config.additionalField, errorManager));
-                    break;
-                case "pattern":
-                    handler.setFormatter(new PatternFormatter(config.format));
-                    break;
-                default:
-                    errorManager.error("Unexpected formatter type, expected are: json, pattern", null,
-                            ErrorManager.GENERIC_FAILURE);
-                    return null;
-            }
+            handler.setFormatter(getFormatter(errorManager, formatters, () -> new PatternFormatter(config.format)));
             handler.setErrorManager(errorManager);
             handler.setFilter(logCleanupFilter);
             if (config.async.enable) {
@@ -600,44 +602,19 @@ public class LoggingSetupRecorder {
         }
     }
 
-    private static JsonFormatter createJsonFormatter(String keyOverrides,
-            Map<String, SocketConfig.AdditionalFieldConfig> additionalField, ErrorManager errorManager) {
-        Map<StructuredFormatter.Key, String> keyOverrideMap = null;
-        if (!keyOverrides.equals("<NA>")) {
-            keyOverrideMap = new HashMap<>();
-            for (String pair : keyOverrides.split(",")) {
-                String[] split = pair.split("=", 2);
-                if (split.length == 2) {
-                    StructuredFormatter.Key key = translateToKey(split[0], errorManager);
-                    if (key != null) {
-                        keyOverrideMap.put(key, split[1]);
-                    }
-                } else {
-                    errorManager.error(
-                            "Key override pair '" + pair + "' is invalid, key and value should be separated by = character",
-                            null, ErrorManager.GENERIC_FAILURE);
-                }
-            }
+    public static Formatter getFormatter(final ErrorManager errorManager, List<Formatter> formatters,
+            Supplier<Formatter> defaultFormatter) {
+        Formatter formatter;
+        boolean formatterWarning = formatters.size() > 1;
+        if (!formatters.isEmpty()) {
+            formatter = formatters.get(formatters.size() - 1);
+        } else {
+            formatter = defaultFormatter.get();
         }
-        if (!additionalField.isEmpty()) {
-            Map<String, String> additionalFields = new HashMap<>();
-            for (Map.Entry<String, SocketConfig.AdditionalFieldConfig> field : additionalField.entrySet()) {
-                additionalFields.put(field.getKey(), field.getValue().value);
-            }
-            return new CustomFieldsJsonFormatter(keyOverrideMap, additionalFields);
+        if (formatterWarning) {
+            errorManager.error("Multiple formatters were activated", null, ErrorManager.GENERIC_FAILURE);
         }
-        return new JsonFormatter(keyOverrideMap);
-    }
-
-    private static StructuredFormatter.Key translateToKey(String name, ErrorManager errorManager) {
-        try {
-            return StructuredFormatter.Key.valueOf(name);
-        } catch (IllegalArgumentException e) {
-            errorManager.error(
-                    "Invalid key: " + name + ". Valid values are: " + Arrays.toString(StructuredFormatter.Key.values()), e,
-                    ErrorManager.GENERIC_FAILURE);
-            return null;
-        }
+        return formatter;
     }
 
     private static AsyncHandler createAsyncHandler(AsyncConfig asyncConfig, Level level, Handler handler) {
@@ -697,22 +674,4 @@ public class LoggingSetupRecorder {
         }
     }
 
-    public static class CustomFieldsJsonFormatter extends JsonFormatter {
-        public Map<String, String> additionalFields;
-
-        public CustomFieldsJsonFormatter(Map<Key, String> keyOverrides, Map<String, String> additionalFields) {
-            super(keyOverrides);
-            this.additionalFields = additionalFields;
-        }
-
-        @Override
-        protected void after(Generator generator, ExtLogRecord record) throws Exception {
-            super.after(generator, record);
-            if (!additionalFields.isEmpty()) {
-                for (Map.Entry<String, String> entry : additionalFields.entrySet())
-                    generator.add(entry.getKey(), entry.getValue());
-            }
-        }
-
-    }
 }

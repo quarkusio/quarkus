@@ -1,18 +1,17 @@
-package io.quarkus.logging;
+package io.quarkus.it.logging.json;
 
-import static io.quarkus.logging.LoggingTestsHelper.getHandler;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.Arrays;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.SocketHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import java.util.Arrays;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+
+import static io.quarkus.it.logging.json.LoggingTestsHelper.getHandler;;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AsyncSocketHandlerTest {
 

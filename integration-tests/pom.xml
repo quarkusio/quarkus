@@ -260,7 +260,6 @@
                 <module>quartz</module>
                 <module>redis-client</module>
                 <module>logging-gelf</module>
-                <module>logging-socket</module>
                 <module>cache</module>
                 <module>qute</module>
                 <module>bootstrap-config</module>

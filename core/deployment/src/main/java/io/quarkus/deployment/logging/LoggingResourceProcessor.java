@@ -54,8 +54,8 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
-import io.quarkus.deployment.builditem.LogConsoleFormatBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
+import io.quarkus.deployment.builditem.NamedLogFormatsBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -172,7 +172,7 @@ public final class LoggingResourceProcessor {
     LoggingSetupBuildItem setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, LogBuildTimeConfig buildLog,
             Optional<WebSocketLogHandlerBuildItem> logStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
-            List<NamedLogHandlersBuildItem> namedHandlerBuildItems, List<LogConsoleFormatBuildItem> consoleFormatItems,
+            List<NamedLogHandlersBuildItem> namedHandlerBuildItems, List<NamedLogFormatsBuildItem> formatItems,
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             List<LogStreamBuildItem> logStreamBuildItems,
             LaunchModeBuildItem launchModeBuildItem,
@@ -205,7 +205,7 @@ public final class LoggingResourceProcessor {
 
             recorder.initializeLogging(log, buildLog, alwaysEnableLogStream, devUiLogHandler, handlers,
                     namedHandlers,
-                    consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
+                    formatItems.stream().map(NamedLogFormatsBuildItem::getNamedFormattersValue).collect(Collectors.toList()),
                     possibleSupplier, launchModeBuildItem.getLaunchMode());
             LogConfig logConfig = new LogConfig();
             ConfigInstantiator.handleObject(logConfig);
@@ -232,7 +232,7 @@ public final class LoggingResourceProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(TestSetupBuildItem.class)
-    @Produce(LogConsoleFormatBuildItem.class)
+    @Produce(NamedLogFormatsBuildItem.class)
     @Consume(ConsoleInstalledBuildItem.class)
     void setupStackTraceFormatter(ApplicationArchivesBuildItem item, EffectiveIdeBuildItem ideSupport,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,

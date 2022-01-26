@@ -53,6 +53,7 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -84,6 +85,7 @@ public class S2iProcessor {
             OutputTargetBuildItem out,
             PackageConfig packageConfig,
             JarBuildItem jarBuildItem,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             BuildProducer<KubernetesEnvBuildItem> envProducer,
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
@@ -100,9 +102,10 @@ public class S2iProcessor {
         String jarFileName = s2iConfig.jarFileName.orElse(outputJarFileName);
         String jarDirectory = s2iConfig.jarDirectory;
         String pathToJar = concatUnixPaths(jarDirectory, jarFileName);
+        String baseJvmImage = s2iConfig.baseJvmImage.orElse(S2iConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
 
-        builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseJvmImage));
-        Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(s2iConfig.baseJvmImage);
+        builderImageProducer.produce(new BaseImageInfoBuildItem(baseJvmImage));
+        Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(baseJvmImage);
 
         baseImage.ifPresent(b -> {
             envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, OPENSHIFT));

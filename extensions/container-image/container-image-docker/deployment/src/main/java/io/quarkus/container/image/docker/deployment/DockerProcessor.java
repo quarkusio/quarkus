@@ -34,6 +34,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -63,6 +64,7 @@ public class DockerProcessor {
             ContainerImageConfig containerImageConfig,
             OutputTargetBuildItem out,
             ContainerImageInfoBuildItem containerImageInfo,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             @SuppressWarnings("unused") Optional<AppCDSResultBuildItem> appCDSResult, // ensure docker build will be performed after AppCDS creation
@@ -82,6 +84,19 @@ public class DockerProcessor {
 
         if (!isDockerWorking.getAsBoolean()) {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
+        }
+
+        var dockerfilePaths = getDockerfilePaths(dockerConfig, false, packageConfig, out);
+        var dockerFileBaseInformationProvider = DockerFileBaseInformationProvider.impl();
+        var dockerFileBaseInformation = dockerFileBaseInformationProvider.determine(dockerfilePaths.getDockerfilePath());
+
+        if ((compiledJavaVersion.getJavaVersion().isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE)
+                && dockerFileBaseInformation.isPresent() && (dockerFileBaseInformation.get().getJavaVersion() < 17)) {
+            throw new IllegalStateException(
+                    String.format(
+                            "The project is built with Java 17 or higher, but the selected Dockerfile (%s) is using a lower Java version in the base image (%s). Please ensure you are using the proper base image in the Dockerfile.",
+                            dockerfilePaths.getDockerfilePath().toAbsolutePath(),
+                            dockerFileBaseInformation.get().getBaseImage()));
         }
 
         log.info("Building docker image for jar.");

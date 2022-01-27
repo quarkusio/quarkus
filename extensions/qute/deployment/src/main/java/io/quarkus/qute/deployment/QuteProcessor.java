@@ -1647,7 +1647,9 @@ public class QuteProcessor {
 
     static void processLoopElementHint(Match match, IndexView index, Expression expression,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
-        if (match.isEmpty() || match.type().name().equals(DotNames.INTEGER)) {
+        if (match.isEmpty()
+                || match.type().name().equals(DotNames.INTEGER)
+                || match.type().equals(PrimitiveType.INT)) {
             return;
         }
         Type matchType = null;

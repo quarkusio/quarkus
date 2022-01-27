@@ -454,6 +454,7 @@ triage:
     - labels: [area/websockets]
       directories:
         - extensions/websockets/
+        - integration-tests/websockets/
     - labels: [area/swagger-ui]
       title: "swagger"
       notify: [phillip-kruger, MikeEdgar]

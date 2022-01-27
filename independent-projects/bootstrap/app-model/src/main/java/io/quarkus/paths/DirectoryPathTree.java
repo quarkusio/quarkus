@@ -13,6 +13,8 @@ import java.util.function.Function;
 
 public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathTree, Serializable {
 
+    private static final long serialVersionUID = 2255956884896445059L;
+
     private Path dir;
     private PathFilter pathFilter;
 

@@ -10,6 +10,8 @@ import java.io.Serializable;
  */
 public class AppArtifactKey implements ArtifactKey, Serializable {
 
+    private static final long serialVersionUID = -6758193261385541101L;
+
     public static AppArtifactKey fromString(String str) {
         return new AppArtifactKey(split(str, new String[4], str.length()));
     }

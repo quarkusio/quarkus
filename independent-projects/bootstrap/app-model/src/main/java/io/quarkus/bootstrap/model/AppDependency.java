@@ -9,6 +9,8 @@ import java.util.Objects;
 
 public class AppDependency implements ResolvedDependency, Serializable {
 
+    private static final long serialVersionUID = 7030281544498286020L;
+
     private final AppArtifact artifact;
     private final String scope;
     private int flags;

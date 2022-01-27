@@ -27,6 +27,8 @@ import io.quarkus.paths.PathList;
  */
 public class DevModeContext implements Serializable {
 
+    private static final long serialVersionUID = 4688502145533897982L;
+
     public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null);
 
     public static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
@@ -238,6 +240,8 @@ public class DevModeContext implements Serializable {
 
     public static class ModuleInfo implements Serializable {
 
+        private static final long serialVersionUID = -1376678003747618410L;
+
         private final ArtifactKey appArtifactKey;
         private final String name;
         private final String projectDirectory;
@@ -404,6 +408,9 @@ public class DevModeContext implements Serializable {
     }
 
     public static class CompilationUnit implements Serializable {
+
+        private static final long serialVersionUID = -511238068393954948L;
+
         private PathCollection sourcePaths;
         private final String classesPath;
         private final PathCollection resourcePaths;

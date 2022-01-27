@@ -5,6 +5,8 @@ import java.util.Objects;
 
 public class GACT implements ArtifactKey, Serializable {
 
+    private static final long serialVersionUID = 2860156541775021365L;
+
     public static GACT fromString(String str) {
         return new GACT(split(str, new String[4], str.length()));
     }

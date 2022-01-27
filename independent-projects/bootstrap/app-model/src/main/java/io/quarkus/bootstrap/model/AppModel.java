@@ -26,6 +26,8 @@ import org.jboss.logging.Logger;
 @Deprecated
 public class AppModel implements ApplicationModel, Serializable {
 
+    private static final long serialVersionUID = 6728602422991848950L;
+
     private static final Logger log = Logger.getLogger(AppModel.class);
 
     private final AppArtifact appArtifact;

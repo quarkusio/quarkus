@@ -20,6 +20,7 @@ import java.util.Properties;
 
 public class PlatformImportsImpl implements PlatformImports, Serializable {
 
+    private static final long serialVersionUID = -1722573527738064746L;
     public static final String PROPERTY_PREFIX = "platform.release-info@";
 
     public static final char PLATFORM_KEY_STREAM_SEPARATOR = '$';
@@ -212,6 +213,8 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     }
 
     private static class PlatformImport implements Serializable {
+
+        private static final long serialVersionUID = -400741166176498944L;
         boolean descriptorFound;
     }
 }

@@ -31,7 +31,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
             boolean weak, Class<?>... className) {
-        this(constructors, methods, fields, false, false, false, className);
+        this(constructors, methods, fields, finalFieldsWritable, weak, false, className);
     }
 
     private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,

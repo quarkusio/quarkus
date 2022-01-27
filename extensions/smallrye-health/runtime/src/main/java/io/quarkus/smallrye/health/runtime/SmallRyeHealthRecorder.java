@@ -1,15 +1,19 @@
 package io.quarkus.smallrye.health.runtime;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarNotFoundHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarStaticHandler;
+import io.smallrye.health.SmallRyeHealthReporter;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -38,4 +42,13 @@ public class SmallRyeHealthRecorder {
             return new WebJarNotFoundHandler();
         }
     }
+
+    public void processSmallRyeHealthRuntimeConfiguration(SmallRyeHealthRuntimeConfig runtimeConfig) {
+        SmallRyeHealthReporter reporter = Arc.container().select(SmallRyeHealthReporter.class).get();
+        reporter.setAdditionalProperties(runtimeConfig.additionalProperties);
+
+        reporter.setHealthChecksConfigs(runtimeConfig.check.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().enabled)));
+    }
+
 }

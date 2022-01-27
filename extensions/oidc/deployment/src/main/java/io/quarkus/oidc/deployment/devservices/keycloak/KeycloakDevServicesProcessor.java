@@ -16,13 +16,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -581,10 +582,10 @@ public class KeycloakDevServicesProcessor {
         }
     }
 
-    private String[] getUserRoles(String user) {
-        String roles = capturedDevServicesConfiguration.roles.get(user);
-        return roles == null ? ("alice".equals(user) ? new String[] { "admin", "user" } : new String[] { "user" })
-                : roles.split(",");
+    private List<String> getUserRoles(String user) {
+        List<String> roles = capturedDevServicesConfiguration.roles.get(user);
+        return roles == null ? ("alice".equals(user) ? List.of("admin", "user") : List.of("user"))
+                : roles;
     }
 
     private RealmRepresentation createRealmRep() {
@@ -605,10 +606,14 @@ public class KeycloakDevServicesProcessor {
             realm.getRoles().getRealm().add(new RoleRepresentation("user", null, false));
             realm.getRoles().getRealm().add(new RoleRepresentation("admin", null, false));
         } else {
-            List<String> distinctRoles = capturedDevServicesConfiguration.roles.values().stream().distinct()
-                    .collect(Collectors.toList());
-            for (String role : distinctRoles) {
-                realm.getRoles().getRealm().add(new RoleRepresentation(role, null, false));
+            Set<String> allRoles = new HashSet<>();
+            for (List<String> distinctRoles : capturedDevServicesConfiguration.roles.values()) {
+                for (String role : distinctRoles) {
+                    if (!allRoles.contains(role)) {
+                        allRoles.add(role);
+                        realm.getRoles().getRealm().add(new RoleRepresentation(role, null, false));
+                    }
+                }
             }
         }
         return realm;
@@ -631,13 +636,13 @@ public class KeycloakDevServicesProcessor {
         return client;
     }
 
-    private UserRepresentation createUser(String username, String password, String... realmRoles) {
+    private UserRepresentation createUser(String username, String password, List<String> realmRoles) {
         UserRepresentation user = new UserRepresentation();
 
         user.setUsername(username);
         user.setEnabled(true);
         user.setCredentials(new ArrayList<>());
-        user.setRealmRoles(List.of(realmRoles));
+        user.setRealmRoles(realmRoles);
 
         CredentialRepresentation credential = new CredentialRepresentation();
 

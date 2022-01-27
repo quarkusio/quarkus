@@ -196,6 +196,20 @@ By default, the `quarkus`, `quarkus-app` client with a `secret` password, `alice
 
 Usernames, secrets and their roles can be customized with `quarkus.keycloak.devservices.users` (the map which contains usernames and secrets) and `quarkus.keycloak.devservices.roles` (the map which contains user names and comma separated role values).
 
+For example:
+
+[source,properties]
+----
+%dev.quarkus.keycloak.devservices.users.duke=dukePassword
+%dev.quarkus.keycloak.devservices.roles.duke=reader
+%dev.quarkus.keycloak.devservices.users.john=johnPassword
+%dev.quarkus.keycloak.devservices.roles.john=reader,writer
+----
+
+This configuration creates two users:
+ * `duke` with a `dukePassword` password and a `reader` role
+ * `john` with a `johnPassword` password and `reader` and `writer` roles
+
 `quarkus.oidc.client-id` and `quarkus.oidc.credentials.secret` can be used to customize the client id and secret.
 
 However it is likely your Keycloak configuration may be more complex and require setting more properties.

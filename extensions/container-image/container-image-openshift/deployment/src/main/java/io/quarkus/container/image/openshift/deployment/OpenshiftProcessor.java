@@ -247,9 +247,8 @@ public class OpenshiftProcessor {
         }
 
         String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
-        LOG.info("Performing openshift binary build with jar on server: " + kubernetesClient.getClient().getMasterUrl()
-                + " in namespace:" + namespace + ".");
-
+        LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
+                + kubernetesClient.getClient().getMasterUrl() + " in namespace:" + namespace + ".");
         //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
         //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
         //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
@@ -302,9 +301,9 @@ public class OpenshiftProcessor {
         }
 
         String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
-        LOG.info("Performing openshift binary build with native image on server: " + kubernetesClient.getClient().getMasterUrl()
-                + " in namespace:" + namespace + ".");
 
+        LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
+                + kubernetesClient.getClient().getMasterUrl() + " in namespace:" + namespace + ".");
         Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
                 .stream()
                 .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))

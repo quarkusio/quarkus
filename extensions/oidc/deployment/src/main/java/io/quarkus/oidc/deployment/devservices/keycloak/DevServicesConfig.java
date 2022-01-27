@@ -1,6 +1,7 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -126,7 +127,7 @@ public class DevServicesConfig {
      * not exist.
      */
     @ConfigItem
-    public Map<String, String> roles;
+    public Map<String, List<String>> roles;
 
     /**
      * Grant type.

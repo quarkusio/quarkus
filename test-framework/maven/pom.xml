@@ -33,6 +33,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>

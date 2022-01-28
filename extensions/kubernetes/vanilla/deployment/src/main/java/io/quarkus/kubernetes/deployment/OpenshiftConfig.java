@@ -16,7 +16,9 @@ import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -506,8 +508,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return Optional.of(route);
     }
 
-    public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig) {
-        return containerImageConfig.builder.map(b -> b.equals("openshfit") || b.equals("s2i")).orElse(false);
+    public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {
+        boolean implictlyEnabled = ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities)
+                .filter(c -> c.contains("openshift") || c.contains("s2i")).isPresent();
+        return containerImageConfig.builder.map(b -> b.equals("openshfit") || b.equals("s2i")).orElse(implictlyEnabled);
     }
 
     public DeploymentResourceKind getDeploymentResourceKind() {

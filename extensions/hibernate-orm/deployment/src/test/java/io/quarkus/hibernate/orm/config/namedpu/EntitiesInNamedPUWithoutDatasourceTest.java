@@ -19,7 +19,7 @@ public class EntitiesInNamedPUWithoutDatasourceTest {
                         .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'.");
             })
             .withConfigurationResource("application-named-pu-no-datasource.properties")
-            .overrideConfigKey("quarkus.datasource.devservices", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addPackage(MyEntity.class.getPackage().getName()));
 

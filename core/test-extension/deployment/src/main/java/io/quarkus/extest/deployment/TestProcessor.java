@@ -33,7 +33,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
@@ -45,7 +44,6 @@ import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
-import io.quarkus.extest.runtime.AdditionalStaticInitConfigSourceProvider;
 import io.quarkus.extest.runtime.FinalFieldReflectionObject;
 import io.quarkus.extest.runtime.RuntimeXmlConfigService;
 import io.quarkus.extest.runtime.TestRecorder;
@@ -403,13 +401,6 @@ public final class TestProcessor {
     @BuildStep
     RuntimeInitializedPackageBuildItem runtimeInitializedPackage() {
         return new RuntimeInitializedPackageBuildItem(RuntimeInitializedClass.class.getPackage().getName());
-    }
-
-    @BuildStep
-    void deprecatedStaticInitBuildItem(
-            BuildProducer<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders) {
-        additionalStaticInitConfigSourceProviders.produce(new AdditionalStaticInitConfigSourceProviderBuildItem(
-                AdditionalStaticInitConfigSourceProvider.class.getName()));
     }
 
     @BuildStep

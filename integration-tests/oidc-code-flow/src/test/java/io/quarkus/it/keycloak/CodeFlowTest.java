@@ -46,6 +46,8 @@ public class CodeFlowTest {
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
             verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), null, "web-app", false);
 
+            webClient.getCookieManager().clearCookies();
+
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
 
@@ -147,7 +149,7 @@ public class CodeFlowTest {
 
             WebResponse webResponse = webClient
                     .loadWebResponse(
-                            new WebRequest(URI.create("http://localhost:8081/tenant-https/query?a=b").toURL()));
+                            new WebRequest(URI.create("http://localhost:8081/tenant-https/query?code=b").toURL()));
             String keycloakUrl = webResponse.getResponseHeaderValue("location");
             verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "tenant-https",
                     true);
@@ -178,10 +180,10 @@ public class CodeFlowTest {
 
             endpointLocationWithoutQuery = "http" + endpointLocationWithoutQuery.substring(5);
             URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
-            assertEquals("a=b", endpointLocationWithoutQueryUri.getRawQuery());
+            assertEquals("code=b", endpointLocationWithoutQueryUri.getRawQuery());
 
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
-            assertEquals("tenant-https:reauthenticated?a=b", page.getBody().asText());
+            assertEquals("tenant-https:reauthenticated?code=b", page.getBody().asText());
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
             assertNotNull(sessionCookie);
             webClient.getCookieManager().clearCookies();
@@ -241,6 +243,7 @@ public class CodeFlowTest {
                     });
 
             webClient.getOptions().setRedirectEnabled(true);
+            webClient.getCookieManager().clearCookies();
             page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -321,6 +324,8 @@ public class CodeFlowTest {
 
             // session invalidated because it ended at the OP, should redirect to login page at the OP
             webClient.getOptions().setRedirectEnabled(true);
+            webClient.getCookieManager().clearCookies();
+
             page = webClient.getPage("http://localhost:8081/tenant-logout");
             assertNull(getSessionCookie(webClient, "tenant-logout"));
             assertEquals("Sign in to logout-realm", page.getTitleText());
@@ -510,6 +515,8 @@ public class CodeFlowTest {
             assertNull(getSessionCookie(webClient, "tenant-2"));
 
             webClient.getOptions().setRedirectEnabled(true);
+            webClient.getCookieManager().clearCookies();
+
             page = webClient.getPage("http://localhost:8081/web-app2/name");
 
             assertEquals("Sign in to quarkus", page.getTitleText());

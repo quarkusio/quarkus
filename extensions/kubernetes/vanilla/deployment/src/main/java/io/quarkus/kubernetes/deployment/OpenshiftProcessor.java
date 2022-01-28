@@ -87,12 +87,13 @@ public class OpenshiftProcessor {
 
     @BuildStep
     public void populateInternalRegistry(OpenshiftConfig openshiftConfig, ContainerImageConfig containerImageConfig,
+            Capabilities capabilities,
             BuildProducer<FallbackContainerImageRegistryBuildItem> containerImageRegistry) {
 
         if (!containerImageConfig.registry.isPresent()) {
             DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind();
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
-                if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig)) {
+                if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                     // Images stored in internal openshift registry use the following patttern:
                     // 'image-registry.openshift-image-registry.svc:5000/{{ project name}}/{{ image name }}: {{image version }}.
                     // So, we need warn users if group does not match currently selected project. 
@@ -238,7 +239,7 @@ public class OpenshiftProcessor {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME)));
             }
 
-            if (containerImageConfig.builder.isEmpty() || config.isOpenshiftBuildEnabled(containerImageConfig)) {
+            if (containerImageConfig.builder.isEmpty() || config.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig)));
                 result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyBuilderImageDecorator(name, builderImage)));
             }
@@ -262,7 +263,7 @@ public class OpenshiftProcessor {
 
         // Handle non-openshift builds
         if (deploymentResourceKind == DeploymentResourceKind.DeploymentConfig
-                && !OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig)) {
+                && !OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
             image.ifPresent(i -> {
                 String registry = containerImageConfig.registry
                         .orElse(fallbackRegistry.map(f -> f.getRegistry()).orElse("docker.io"));

@@ -43,8 +43,7 @@ final class RecordableBootstrapFactory {
         // instance) removed
 
         final QuarkusIntegratorServiceImpl integratorService = new QuarkusIntegratorServiceImpl(providedClassLoaderService);
-        final QuarkusStrategySelectorBuilder strategySelectorBuilder = new QuarkusStrategySelectorBuilder();
-        final StrategySelector strategySelector = strategySelectorBuilder.buildSelector(providedClassLoaderService);
+        final StrategySelector strategySelector = QuarkusStrategySelectorBuilder.buildSelector(providedClassLoaderService);
         return new BootstrapServiceRegistryImpl(true, providedClassLoaderService, strategySelector, integratorService);
     }
 

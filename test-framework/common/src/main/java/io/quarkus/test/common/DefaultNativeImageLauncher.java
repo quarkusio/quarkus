@@ -1,7 +1,6 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
-import static io.quarkus.test.common.LauncherUtil.launchProcess;
 import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;

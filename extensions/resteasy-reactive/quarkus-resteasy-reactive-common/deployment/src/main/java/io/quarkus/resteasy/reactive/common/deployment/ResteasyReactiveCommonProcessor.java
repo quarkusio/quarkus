@@ -79,7 +79,7 @@ public class ResteasyReactiveCommonProcessor {
         Optional<List<String>> defaultRolesAllowedConfig = config
                 .getOptionalValues("quarkus.security.jaxrs.default-roles-allowed", String.class);
 
-        if (rrConfig.denyJaxRs.orElse(denyUnannotatedEndpointsConfig.orElse(false)) && resteasyDeployment.isPresent()) {
+        if (denyUnannotatedEndpointsConfig.orElse(false) && resteasyDeployment.isPresent()) {
             final List<ClassInfo> classes = new ArrayList<>();
 
             Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();

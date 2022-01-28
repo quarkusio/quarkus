@@ -171,7 +171,8 @@ public class RuntimeDeploymentManager {
         List<ServerRestHandler> preMatchHandlers = new ArrayList<>();
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
             preMatchHandlers
-                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH));
+                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH,
+                            null, null));
         }
         if (!interceptors.getContainerRequestFilters().getPreMatchInterceptors().isEmpty()) {
             preMatchHandlers = new ArrayList<>(interceptorDeployment.getPreMatchContainerRequestFilters().size());

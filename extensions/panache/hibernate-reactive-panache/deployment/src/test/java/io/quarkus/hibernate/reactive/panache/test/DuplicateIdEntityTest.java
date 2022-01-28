@@ -12,7 +12,7 @@ public class DuplicateIdEntityTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.datasource.devservices", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
             .setExpectedException(BuildException.class)
             .withApplicationRoot((jar) -> jar
                     .addClasses(DuplicateIdEntity.class));

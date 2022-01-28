@@ -38,7 +38,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
-import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
@@ -74,16 +73,6 @@ import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
 
 public class ConfigGenerationBuildStep {
-
-    @BuildStep
-    void deprecatedStaticInitBuildItem(
-            List<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders,
-            BuildProducer<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviderBuildItem) {
-        for (AdditionalStaticInitConfigSourceProviderBuildItem item : additionalStaticInitConfigSourceProviders) {
-            staticInitConfigSourceProviderBuildItem
-                    .produce(new StaticInitConfigSourceProviderBuildItem(item.getProviderClassName()));
-        }
-    }
 
     @BuildStep
     void staticInitSources(

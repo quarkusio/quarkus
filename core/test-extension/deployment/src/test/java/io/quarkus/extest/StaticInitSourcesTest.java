@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.extest.runtime.AdditionalStaticInitConfigSourceProvider;
 import io.quarkus.extest.runtime.config.StaticInitNotSafeConfigSource;
 import io.quarkus.extest.runtime.config.StaticInitSafeConfigSource;
 import io.quarkus.test.QuarkusUnitTest;
@@ -25,10 +24,5 @@ public class StaticInitSourcesTest {
     void staticInitSources() {
         assertEquals(2, StaticInitSafeConfigSource.counter.get());
         assertEquals(1, StaticInitNotSafeConfigSource.counter.get());
-    }
-
-    @Test
-    void deprecatedStaticInitBuildItem() {
-        assertEquals(1, AdditionalStaticInitConfigSourceProvider.AdditionalStaticInitConfigSource.counter.get());
     }
 }

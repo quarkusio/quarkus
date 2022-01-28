@@ -1,5 +1,7 @@
 package io.quarkus.test.mongodb;
 
+import static de.flapdoodle.embed.process.config.process.ProcessOutput.builder;
+
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -24,7 +26,7 @@ import de.flapdoodle.embed.mongo.MongodStarter;
 import de.flapdoodle.embed.mongo.config.*;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.config.RuntimeConfig;
-import de.flapdoodle.embed.process.config.io.ProcessOutput;
+import de.flapdoodle.embed.process.io.Processors;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
@@ -80,7 +82,11 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
 
     private MongodExecutable doGetExecutable(MongodConfig config) {
         RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
-                .processOutput(ProcessOutput.silent())
+                .processOutput(builder()
+                        .output(Processors.silent())
+                        .error(Processors.silent())
+                        .commands(Processors.silent())
+                        .build())
                 .build();
         return MongodStarter.getInstance(runtimeConfig).prepare(config);
     }

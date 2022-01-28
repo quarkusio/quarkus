@@ -20,6 +20,7 @@ import org.apache.kafka.clients.consumer.StickyAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.security.auth.AuthenticateCallbackHandler;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.authenticator.AbstractLogin;
 import org.apache.kafka.common.security.authenticator.DefaultLogin;
@@ -51,8 +52,6 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
 import org.xerial.snappy.OSInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -78,7 +77,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -125,6 +123,10 @@ public class KafkaProcessor {
             "org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClientProvider"
     }).collect(Collectors.toSet());
 
+    private static final DotName LOGIN_MODULE = DotName.createSimple(LoginModule.class.getName());
+    private static final DotName AUTHENTICATE_CALLBACK_HANDLER = DotName
+            .createSimple(AuthenticateCallbackHandler.class.getName());
+
     static final DotName PARTITION_ASSIGNER = DotName
             .createSimple("org.apache.kafka.clients.consumer.internals.PartitionAssignor");
 
@@ -167,14 +169,6 @@ public class KafkaProcessor {
     @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<IndexDependencyBuildItem> indexDependency) {
-        // This is needed for SASL authentication
-
-        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
-                LoginModule.class.getName(),
-                javax.security.auth.Subject.class.getName(),
-                javax.security.auth.login.AppConfigurationEntry.class.getName(),
-                javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag.class.getName()));
-
         indexDependency.produce(new IndexDependencyBuildItem("org.apache.kafka", "kafka-clients"));
     }
 
@@ -457,8 +451,8 @@ public class KafkaProcessor {
     }
 
     @BuildStep
-    public void withSasl(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+    public void withSasl(CombinedIndexBuildItem index,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
 
         reflectiveClass
@@ -474,13 +468,12 @@ public class KafkaProcessor {
             sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KAFKA_CLIENT));
         }
 
-        final Type loginModuleType = Type
-                .create(DotName.createSimple(LoginModule.class.getName()), Kind.CLASS);
-
-        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(loginModuleType)
-                .source(getClass().getSimpleName() + " > " + loginModuleType.name().toString())
-                .build());
+        for (ClassInfo loginModule : index.getIndex().getAllKnownImplementors(LOGIN_MODULE)) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, loginModule.name().toString()));
+        }
+        for (ClassInfo authenticateCallbackHandler : index.getIndex().getAllKnownImplementors(AUTHENTICATE_CALLBACK_HANDLER)) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, authenticateCallbackHandler.name().toString()));
+        }
     }
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {

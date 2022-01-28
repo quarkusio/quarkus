@@ -1,7 +1,6 @@
 package io.quarkus.deployment.dev;
 
 import static io.quarkus.deployment.dev.testing.MessageFormat.BLUE;
-import static java.util.Collections.singleton;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -444,7 +443,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     module.getSourceParents(),
                                     Paths.get(module.getPreBuildOutputDir()),
                                     Paths.get(module.getTargetDir()),
-                                    sourcePath -> module.addSourcePaths(singleton(sourcePath.toAbsolutePath().toString()))));
+                                    sourcePath -> module.addSourcePathFirst(sourcePath.toAbsolutePath().toString())));
                 }
             }
             RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT),

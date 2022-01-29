@@ -3,11 +3,15 @@ package io.quarkus.opentelemetry.deployment.tracing;
 import static io.quarkus.opentelemetry.deployment.OpenTelemetryProcessor.isClassPresent;
 import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -39,7 +43,10 @@ import io.quarkus.opentelemetry.runtime.tracing.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
+import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
+import io.smallrye.config.SmallRyeConfig;
 
 public class TracerProcessor {
     private static final DotName ID_GENERATOR = DotName.createSimple(IdGenerator.class.getName());
@@ -132,6 +139,41 @@ public class TracerProcessor {
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)
+    void dropNames(Optional<StaticResourcesBuildItem> staticResources,
+            BuildProducer<DropNonApplicationUrisBuildItem> dropNonApplicationUris,
+            BuildProducer<DropStaticResourcesBuildItem> dropStaticResources) {
+
+        // Drop nonApplicationUris
+        // We don't use the HttpBuildTimeConfig because we don't want to add a dependency to vertx-http and vertx-http
+        // may not even be available.
+        List<String> nonApplicationUris = new ArrayList<>();
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        if (config.isPropertyPresent("quarkus.http.root-path")) {
+            String rootPath = config.getValue("quarkus.http.root-path", new NormalizeRootHttpPathConverter());
+            String nonApplicationRootPath = config.getRawValue("quarkus.http.non-application-root-path");
+            // span names don't include the leading slash
+            nonApplicationUris.add(rootPath.substring(1) + nonApplicationRootPath);
+        }
+        dropNonApplicationUris.produce(new DropNonApplicationUrisBuildItem(nonApplicationUris));
+
+        // Drop Static Resources
+        List<String> resources = new ArrayList<>();
+        if (staticResources.isPresent()) {
+            for (StaticResourcesBuildItem.Entry entry : staticResources.get().getEntries()) {
+                if (!entry.isDirectory()) {
+                    // span names don't include the leading slash
+                    if (entry.getPath().startsWith("/") && entry.getPath().length() > 1) {
+                        resources.add(entry.getPath().substring(1));
+                    } else {
+                        resources.add(entry.getPath());
+                    }
+                }
+            }
+        }
+        dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
+    }
+
+    @BuildStep(onlyIf = TracerEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem vertxTracingOptions(TracerRecorder recorder) {
         return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
@@ -158,9 +200,13 @@ public class TracerProcessor {
 
     @BuildStep(onlyIf = TracerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupTracer(TracerRuntimeConfig runtimeConfig,
-            TracerRecorder recorder) {
+    void setupTracer(
+            TracerRecorder recorder,
+            TracerRuntimeConfig runtimeConfig,
+            DropNonApplicationUrisBuildItem dropNonApplicationUris,
+            DropStaticResourcesBuildItem dropStaticResources) {
+
         recorder.setupResources(runtimeConfig);
-        recorder.setupSampler(runtimeConfig);
+        recorder.setupSampler(runtimeConfig, dropNonApplicationUris.getDropNames(), dropStaticResources.getDropNames());
     }
 }

@@ -179,7 +179,8 @@ public class QuarkusBootstrap implements Serializable {
         return new CuratedApplication(this, appModelFactory.resolveAppModel(), classLoadingConfig);
     }
 
-    private static ConfiguredClassLoading createClassLoadingConfig(PathCollection applicationRoot, Mode mode) {
+    private static ConfiguredClassLoading createClassLoadingConfig(PathCollection applicationRoot, Mode mode,
+            List<ArtifactKey> parentFirstArtifacts) {
         //look for an application.properties
         for (Path path : applicationRoot) {
             Path props = path.resolve("application.properties");
@@ -189,6 +190,7 @@ public class QuarkusBootstrap implements Serializable {
                     p.load(in);
                     Set<ArtifactKey> parentFirst = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p, mode)));
+                    parentFirst.addAll(parentFirstArtifacts);
                     Set<ArtifactKey> liveReloadable = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, mode)));
                     Set<ArtifactKey> removedArtifacts = toArtifactSet(
@@ -204,7 +206,7 @@ public class QuarkusBootstrap implements Serializable {
                 }
             }
         }
-        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), Collections.emptySet(),
+        return new ConfiguredClassLoading(new HashSet<>(parentFirstArtifacts), Collections.emptySet(), Collections.emptySet(),
                 Collections.emptyMap(), false);
     }
 
@@ -412,6 +414,7 @@ public class QuarkusBootstrap implements Serializable {
         ApplicationModel existingModel;
         final Set<ArtifactKey> localArtifacts = new HashSet<>();
         boolean auxiliaryApplication;
+        List<ArtifactKey> parentFirstArtifacts = new ArrayList<>();
 
         public Builder() {
         }
@@ -537,6 +540,11 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
+        public Builder addParentFirstArtifact(ArtifactKey appArtifactKey) {
+            this.parentFirstArtifacts.add(appArtifactKey);
+            return this;
+        }
+
         /**
          * The app artifact. Note that if you want to use this as the basis of the application
          * you must also explicitly set the application root to this artifacts paths.
@@ -634,7 +642,7 @@ public class QuarkusBootstrap implements Serializable {
                 localArtifacts.add(appArtifact.getKey());
             }
 
-            ConfiguredClassLoading classLoadingConfig = createClassLoadingConfig(applicationRoot, mode);
+            ConfiguredClassLoading classLoadingConfig = createClassLoadingConfig(applicationRoot, mode, parentFirstArtifacts);
             if (classLoadingConfig.flatTestClassPath && mode == Mode.TEST) {
                 flatClassPath = true;
             }

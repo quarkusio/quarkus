@@ -11,4 +11,11 @@
     <groupId>org.acme</groupId>
     <artifactId>quarkus-quickstart-multimodule-html</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.8.2</version>
+        </dependency>
+    </dependencies>
 </project>

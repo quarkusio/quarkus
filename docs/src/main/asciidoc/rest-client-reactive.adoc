@@ -858,11 +858,119 @@ quarkus.rest-client.logging.body-limit=50
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
 ----
 
+== Mocking the client for tests
+If you use a client injected with the `@RestClient` annotation, you can easily mock it for tests.
+You can do it with Mockito's `@InjectMock` or with `QuarkusMock`.
+
+This section shows how to replace your client with a mock. If you would like to get a more in-depth understanding of how mocking works in Quarkus, see the blog post on https://quarkus.io/blog/mocking/[Mocking CDI beans].
+
+NOTE: Mocking does not work when using `@NativeImageTest` or `@QuarkusIntegrationTest`.
+
+Let's assume you have the following client:
+[source,java]
+----
+package io.quarkus.it.rest.client.main;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+
+@Path("/")
+@RegisterRestClient
+public interface Client {
+    @GET
+    String get();
+}
+----
+
+
+=== Mocking with InjectMock
+The simplest approach to mock a client for tests is to use Mockito and `@InjectMock`.
+
+First, add the following dependency to your application:
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5-mockito</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Then, in your test you can simply use `@InjectMock` to create and inject a mock:
+
+[source,java]
+----
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.mockito.InjectMock;
+
+@QuarkusTest
+public class InjectMockTest {
+
+    @InjectMock
+    Client mock;
+
+    @BeforeEach
+    public void setUp() {
+        when(mock.get()).thenReturn("MockAnswer");
+    }
+
+    @Test
+    void doTest() {
+        // ...
+    }
+}
+----
+
+=== Mocking with QuarkusMock
+If Mockito doesn't meet your needs, you can create a mock programmatically using `QuarkusMock`, e.g.:
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusMock;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class QuarkusMockTest {
+
+    @BeforeEach
+    public void setUp() {
+        Client customMock = new Client() { //<1>
+            @Override
+            public String get() {
+                return "MockAnswer";
+            }
+        };
+        QuarkusMock.installMockForType(customMock, Client.class, RestClient.LITERAL); // <2>
+    }
+    @Test
+    void doTest() {
+        // ...
+    }
+}
+----
+
+<1> here we use a manually created implementation of the client interface to replace the actual Client
+<2> note that `RestClient.LITERAL` has to be passed as the last argument of the `installMockForType` method
 
 
 == Using a Mock HTTP Server for tests
+In some cases you may want to mock the remote endpoint - the HTTP server - instead of mocking the client itself.
+This may be especially useful for native tests, or for programmatically created clients.
 
-For tests, you can easily mock the HTTP server with Wiremock.
+You can easily mock an HTTP Server with Wiremock.
 The xref:rest-client.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
 describes how to set it up in detail.
 

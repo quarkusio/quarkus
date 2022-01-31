@@ -8,11 +8,13 @@ import javax.annotation.PreDestroy;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.NoClassInterceptors;
+import io.quarkus.runtime.MockedThroughWrapper;
 
-public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> implements Closeable {
+public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> implements Closeable, MockedThroughWrapper {
     private static final Logger log = Logger.getLogger(RestClientReactiveCDIWrapperBase.class);
 
     private final T delegate;
+    private Object mock;
 
     public RestClientReactiveCDIWrapperBase(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey) {
         this.delegate = RestClientCDIDelegateBuilder.createDelegate(jaxrsInterface, baseUriFromAnnotation, configKey);
@@ -21,14 +23,18 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     @Override
     @NoClassInterceptors
     public void close() throws IOException {
-        delegate.close();
+        if (mock == null) {
+            delegate.close();
+        }
     }
 
     @PreDestroy
     @NoClassInterceptors
     public void destroy() {
         try {
-            close();
+            if (mock == null) {
+                close();
+            }
         } catch (IOException e) {
             log.warn("Failed to close cdi-created rest client instance", e);
         }
@@ -38,6 +44,10 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     @SuppressWarnings("unused")
     @NoClassInterceptors
     public Object getDelegate() {
-        return delegate;
+        return mock == null ? delegate : mock;
+    }
+
+    public void setMock(Object mock) {
+        this.mock = mock;
     }
 }

@@ -125,8 +125,8 @@
         <module>smallrye-jwt</module>
         <module>oidc-common</module>
         <module>oidc</module>
-        <module>oidc-token-propagation</module>
         <module>oidc-client</module>
+        <module>oidc-token-propagation</module>
         <module>oidc-client-filter</module>
         <module>oidc-client-reactive-filter</module>
         <module>keycloak-authorization</module>

@@ -30,15 +30,15 @@ import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.BootstrapTestBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsArtifact.ContentProvider;
 import io.quarkus.bootstrap.resolver.TsDependency;
-import io.quarkus.bootstrap.resolver.update.CreatorOutcomeTestBase;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
-public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTestBase {
+public abstract class PackageAppTestBase extends BootstrapTestBase {
 
     private static final String LIB_PREFIX = "lib/";
     private static final String MAIN_CLS = "io.quarkus.runner.GeneratedMain";
@@ -114,7 +114,7 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
     }
 
     @Override
-    protected void testCreator(QuarkusBootstrap creator) throws Exception {
+    protected void testBootstrap(QuarkusBootstrap creator) throws Exception {
         System.setProperty("quarkus.package.type", "legacy-jar");
         try {
             CuratedApplication curated = creator.bootstrap();

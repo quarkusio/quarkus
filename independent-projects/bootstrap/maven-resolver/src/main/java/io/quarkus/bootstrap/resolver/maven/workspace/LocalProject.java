@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
@@ -11,7 +9,10 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GAV;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathFilter;
@@ -47,7 +48,7 @@ public class LocalProject {
 
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String PROJECT_BUILD_DIR = "${project.build.directory}";
-    private static final String PROJECT_OUTPUT_DIR = "${project.build.outputDirectory}";
+    static final String PROJECT_OUTPUT_DIR = "${project.build.outputDirectory}";
 
     public static final String POM_XML = "pom.xml";
 
@@ -131,21 +132,18 @@ public class LocalProject {
     }
 
     private final Model rawModel;
-    private final String groupId;
-    private final String artifactId;
+    private final ArtifactKey key;
     private String version;
     private final Path dir;
     private final LocalWorkspace workspace;
     final List<LocalProject> modules = new ArrayList<>(0);
-    private AppArtifactKey key;
     private final ModelBuildingResult modelBuildingResult;
     private WorkspaceModule module;
 
     LocalProject(ModelBuildingResult modelBuildingResult, LocalWorkspace workspace) {
         this.rawModel = modelBuildingResult.getRawModel();
         final Model effectiveModel = modelBuildingResult.getEffectiveModel();
-        this.groupId = effectiveModel.getGroupId();
-        this.artifactId = effectiveModel.getArtifactId();
+        this.key = ArtifactKey.ga(effectiveModel.getGroupId(), effectiveModel.getArtifactId());
         this.version = effectiveModel.getVersion();
         this.dir = effectiveModel.getProjectDirectory().toPath();
         this.modelBuildingResult = modelBuildingResult;
@@ -160,8 +158,7 @@ public class LocalProject {
         this.rawModel = rawModel;
         this.dir = rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
-        this.groupId = ModelUtils.getGroupId(rawModel);
-        this.artifactId = rawModel.getArtifactId();
+        this.key = ArtifactKey.ga(ModelUtils.getGroupId(rawModel), rawModel.getArtifactId());
 
         final String rawVersion = ModelUtils.getRawVersion(rawModel);
         final boolean rawVersionIsUnresolved = ModelUtils.isUnresolvedVersion(rawVersion);
@@ -173,7 +170,7 @@ public class LocalProject {
                 workspace.setResolvedVersion(version);
             }
         } else if (version == null && rawVersionIsUnresolved) {
-            throw UnresolvedVersionException.forGa(groupId, artifactId, rawVersion);
+            throw UnresolvedVersionException.forGa(key.getGroupId(), key.getArtifactId(), rawVersion);
         }
     }
 
@@ -189,11 +186,11 @@ public class LocalProject {
     }
 
     public String getGroupId() {
-        return groupId;
+        return key.getGroupId();
     }
 
     public String getArtifactId() {
-        return artifactId;
+        return key.getArtifactId();
     }
 
     public String getVersion() {
@@ -204,7 +201,7 @@ public class LocalProject {
             version = workspace.getResolvedVersion();
         }
         if (version == null) {
-            throw UnresolvedVersionException.forGa(groupId, artifactId, ModelUtils.getRawVersion(rawModel));
+            throw UnresolvedVersionException.forGa(key.getGroupId(), key.getArtifactId(), ModelUtils.getRawVersion(rawModel));
         }
         return version;
     }
@@ -285,24 +282,28 @@ public class LocalProject {
         return workspace;
     }
 
-    public AppArtifactKey getKey() {
-        return key == null ? key = new AppArtifactKey(groupId, artifactId) : key;
+    public ArtifactKey getKey() {
+        return key;
     }
 
-    public AppArtifact getAppArtifact() {
-        return getAppArtifact(
-                modelBuildingResult == null ? rawModel.getPackaging() : modelBuildingResult.getEffectiveModel().getPackaging());
+    public String getPackaging() {
+        return modelBuildingResult == null ? rawModel.getPackaging() : modelBuildingResult.getEffectiveModel().getPackaging();
     }
 
-    public AppArtifact getAppArtifact(String extension) {
-        return new AppArtifact(groupId, artifactId, "", extension, getVersion());
+    public ResolvedDependency getAppArtifact() {
+        return getAppArtifact(getPackaging());
+    }
+
+    public ResolvedDependency getAppArtifact(String extension) {
+        return new ResolvedArtifactDependency(key.getGroupId(), key.getArtifactId(), "", extension, getVersion(),
+                (PathCollection) null);
     }
 
     public Path resolveRelativeToBaseDir(String path) {
         return resolveRelativeToBaseDir(path, null);
     }
 
-    private Path resolveRelativeToBaseDir(String path, String defaultPath) {
+    Path resolveRelativeToBaseDir(String path, String defaultPath) {
         return dir.resolve(path == null ? defaultPath : stripProjectBasedirPrefix(path, PROJECT_BASEDIR));
     }
 
@@ -310,7 +311,7 @@ public class LocalProject {
         return getOutputDir().resolve(path == null ? defaultPath : stripProjectBasedirPrefix(path, PROJECT_BUILD_DIR));
     }
 
-    private static String stripProjectBasedirPrefix(String path, String expr) {
+    static String stripProjectBasedirPrefix(String path, String expr) {
         return path.startsWith(expr) ? path.substring(expr.length() + 1) : path;
     }
 
@@ -332,8 +333,10 @@ public class LocalProject {
         if (module != null) {
             return module;
         }
-        final DefaultWorkspaceModule module = new DefaultWorkspaceModule(
-                new GAV(getKey().getGroupId(), getKey().getArtifactId(), getVersion()), dir.toFile(), getOutputDir().toFile());
+        final WorkspaceModule.Mutable moduleBuilder = WorkspaceModule.builder()
+                .setModuleId(new GAV(key.getGroupId(), key.getArtifactId(), getVersion()))
+                .setModuleDir(dir)
+                .setBuildDir(getOutputDir());
 
         final Build build = (modelBuildingResult == null ? getRawModel() : modelBuildingResult.getEffectiveModel()).getBuild();
         if (build != null && !build.getPlugins().isEmpty()) {
@@ -349,31 +352,31 @@ public class LocalProject {
                         src = processJarPluginExecutionConfig(e, true);
                     }
                     if (src != null) {
-                        module.addArtifactSources(src);
+                        moduleBuilder.addArtifactSources(src);
                     }
                 }
             }
         }
 
-        if (module.getMainSources() == null) {
-            module.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.MAIN,
-                    Collections.singletonList(new DefaultSourceDir(getSourcesSourcesDir().toFile(), getClassesDir().toFile())),
+        if (!moduleBuilder.hasMainSources()) {
+            moduleBuilder.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.MAIN,
+                    Collections.singletonList(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir())),
                     collectMainResources(null)));
         }
-        if (module.getTestSources() == null) {
-            module.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.TEST,
+        if (!moduleBuilder.hasTestSources()) {
+            moduleBuilder.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.TEST,
                     Collections.singletonList(
-                            new DefaultSourceDir(getTestSourcesSourcesDir().toFile(), getTestClassesDir().toFile())),
+                            new DefaultSourceDir(getTestSourcesSourcesDir(), getTestClassesDir())),
                     collectTestResources(null)));
         }
-        module.setBuildFiles(PathList.of(getRawModel().getPomFile().toPath()));
+        moduleBuilder.setBuildFile(getRawModel().getPomFile().toPath());
 
-        module.setDirectDependencyConstraints(getRawModel().getDependencyManagement() == null ? Collections.emptyList()
+        moduleBuilder.setDependencyConstraints(getRawModel().getDependencyManagement() == null ? Collections.emptyList()
                 : toArtifactDependencies(getRawModel().getDependencyManagement().getDependencies()));
 
-        module.setDirectDependencies(toArtifactDependencies(getRawModel().getDependencies()));
+        moduleBuilder.setDependencies(toArtifactDependencies(getRawModel().getDependencies()));
 
-        return this.module = module;
+        return this.module = moduleBuilder.build();
     }
 
     private List<io.quarkus.maven.dependency.Dependency> toArtifactDependencies(final List<Dependency> rawModelDeps) {
@@ -438,19 +441,19 @@ public class LocalProject {
     private Collection<SourceDir> collectMainResources(PathFilter filter) {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getResources();
+        final Path classesDir = getClassesDir();
         if (resources.isEmpty()) {
             return Collections.singletonList(new DefaultSourceDir(
                     new DirectoryPathTree(resolveRelativeToBaseDir(null, "src/main/resources")),
-                    new DirectoryPathTree(getClassesDir(), filter), Collections.emptyMap()));
+                    new DirectoryPathTree(classesDir, filter), Collections.emptyMap()));
         }
         final List<SourceDir> sourceDirs = new ArrayList<>(resources.size());
         for (Resource r : resources) {
             sourceDirs.add(
                     new DefaultSourceDir(
                             new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), "src/main/resources")),
-                            new DirectoryPathTree((r.getTargetPath() == null ? getClassesDir()
-                                    : getClassesDir()
-                                            .resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
+                            new DirectoryPathTree((r.getTargetPath() == null ? classesDir
+                                    : classesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
                                     filter),
                             Collections.emptyMap()));
         }
@@ -460,19 +463,19 @@ public class LocalProject {
     private Collection<SourceDir> collectTestResources(PathFilter filter) {
         final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
                 : rawModel.getBuild().getTestResources();
+        final Path testClassesDir = getTestClassesDir();
         if (resources.isEmpty()) {
             return Collections.singletonList(new DefaultSourceDir(
                     new DirectoryPathTree(resolveRelativeToBaseDir(null, "src/test/resources")),
-                    new DirectoryPathTree(getTestClassesDir(), filter), Collections.emptyMap()));
+                    new DirectoryPathTree(testClassesDir, filter), Collections.emptyMap()));
         }
         final List<SourceDir> sourceDirs = new ArrayList<>(resources.size());
         for (Resource r : resources) {
             sourceDirs.add(
                     new DefaultSourceDir(
                             new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), "src/test/resources")),
-                            new DirectoryPathTree((r.getTargetPath() == null ? getTestClassesDir()
-                                    : getTestClassesDir()
-                                            .resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
+                            new DirectoryPathTree((r.getTargetPath() == null ? testClassesDir
+                                    : testClassesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
                                     filter),
                             Collections.emptyMap()));
         }

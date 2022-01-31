@@ -1,11 +1,12 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -180,7 +181,7 @@ public class BootstrapMavenContext {
         }
     }
 
-    public AppArtifact getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
+    public ArtifactCoords getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
         if (currentProject != null) {
             return currentProject.getAppArtifact(extension);
         }
@@ -188,7 +189,7 @@ public class BootstrapMavenContext {
         if (model == null) {
             return null;
         }
-        return new AppArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", extension,
+        return new GACTV(ModelUtils.getGroupId(model), model.getArtifactId(), "", extension,
                 ModelUtils.getVersion(model));
     }
 

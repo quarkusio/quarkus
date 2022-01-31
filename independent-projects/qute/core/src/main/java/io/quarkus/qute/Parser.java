@@ -805,8 +805,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
             String name = Expressions.parseVirtualMethodName(value);
             List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value, origin, exprValue));
             List<Expression> params = new ArrayList<>(strParams.size());
+            Scope paramScope = new Scope(scope);
             for (String strParam : strParams) {
-                params.add(parseExpression(idGenerator, strParam.trim(), scope, origin));
+                params.add(parseExpression(idGenerator, strParam.trim(), paramScope, origin));
             }
             // Note that an expression may never start with a virtual method
             String lastPartHint = strPartsIterator.hasNext() ? null : scope.getLastPartHint();

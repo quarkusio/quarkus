@@ -87,11 +87,14 @@ public class OidcProviderClient implements Closeable {
         return oidcConfig;
     }
 
-    public Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri) {
+    public Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
         MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         codeGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.AUTHORIZATION_CODE);
         codeGrantParams.add(OidcConstants.CODE_FLOW_CODE, code);
         codeGrantParams.add(OidcConstants.CODE_FLOW_REDIRECT_URI, redirectUri);
+        if (codeVerifier != null) {
+            codeGrantParams.add(OidcConstants.PKCE_CODE_VERIFIER, codeVerifier);
+        }
         return getHttpResponse(metadata.getTokenUri(), codeGrantParams).transform(resp -> getAuthorizationCodeTokens(resp));
     }
 

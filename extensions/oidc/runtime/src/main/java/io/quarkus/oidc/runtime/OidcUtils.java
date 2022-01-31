@@ -1,6 +1,8 @@
 package io.quarkus.oidc.runtime;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -10,9 +12,13 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
+import javax.crypto.SecretKey;
+
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
+import org.jose4j.jwa.AlgorithmConstraints;
+import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
@@ -31,6 +37,8 @@ import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
+import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
@@ -379,5 +387,29 @@ public final class OidcUtils {
             return oidcTenantConfig;
         }
 
+    }
+
+    public static byte[] getSha256Digest(byte[] value) throws NoSuchAlgorithmException {
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        sha256.update(value);
+        return sha256.digest();
+    }
+
+    public static String encryptJson(JsonObject json, SecretKey key) throws Exception {
+        JsonWebEncryption jwe = new JsonWebEncryption();
+        jwe.setAlgorithmHeaderValue(KeyEncryptionAlgorithm.A256KW.getAlgorithm());
+        jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithm.A256GCM.getAlgorithm());
+        jwe.setKey(key);
+        jwe.setPlaintext(json.encode());
+        return jwe.getCompactSerialization();
+    }
+
+    public static JsonObject decryptJson(String jweString, SecretKey key) throws Exception {
+        JsonWebEncryption jwe = new JsonWebEncryption();
+        jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
+                KeyEncryptionAlgorithm.A256KW.getAlgorithm()));
+        jwe.setKey(key);
+        jwe.setCompactSerialization(jweString);
+        return new JsonObject(jwe.getPlaintextString());
     }
 }

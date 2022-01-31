@@ -197,8 +197,8 @@ public class OidcProvider implements Closeable {
         return client.getUserInfo(accessToken);
     }
 
-    public Uni<AuthorizationCodeTokens> getCodeFlowTokens(String code, String redirectUri) {
-        return client.getAuthorizationCodeTokens(code, redirectUri);
+    public Uni<AuthorizationCodeTokens> getCodeFlowTokens(String code, String redirectUri, String codeVerifier) {
+        return client.getAuthorizationCodeTokens(code, redirectUri, codeVerifier);
     }
 
     public Uni<AuthorizationCodeTokens> refreshTokens(String refreshToken) {

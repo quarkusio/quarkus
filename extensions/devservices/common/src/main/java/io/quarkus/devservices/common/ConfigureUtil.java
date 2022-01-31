@@ -1,6 +1,10 @@
 package io.quarkus.devservices.common;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.Collections;
+import java.util.Properties;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -37,5 +41,28 @@ public final class ConfigureUtil {
         container.setNetworkAliases(Collections.singletonList(hostName));
 
         return hostName;
+    }
+
+    public static String getDefaultImageNameFor(String devserviceName) {
+        var imageName = LazyProperties.INSTANCE.getProperty(devserviceName + ".image");
+        if (imageName == null) {
+            throw new IllegalArgumentException("No default image configured for " + devserviceName);
+        }
+        return imageName;
+    }
+
+    private static class LazyProperties {
+
+        private static final Properties INSTANCE;
+
+        static {
+            var tccl = Thread.currentThread().getContextClassLoader();
+            try (InputStream in = tccl.getResourceAsStream("devservices.properties")) {
+                INSTANCE = new Properties();
+                INSTANCE.load(in);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
     }
 }

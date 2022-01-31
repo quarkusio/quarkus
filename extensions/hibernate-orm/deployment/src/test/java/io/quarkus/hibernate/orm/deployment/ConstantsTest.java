@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.DerbyTenSevenDialect;
-import org.hibernate.dialect.MariaDB103Dialect;
+import org.hibernate.dialect.MariaDB106Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.dialect.Oracle12cDialect;
 import org.hibernate.dialect.SQLServer2016Dialect;
@@ -38,7 +38,7 @@ public class ConstantsTest {
         assertDialectMatch(DatabaseKind.DB2, DB297Dialect.class);
         assertDialectMatch(DatabaseKind.POSTGRESQL, QuarkusPostgreSQL10Dialect.class);
         assertDialectMatch(DatabaseKind.H2, QuarkusH2Dialect.class);
-        assertDialectMatch(DatabaseKind.MARIADB, MariaDB103Dialect.class);
+        assertDialectMatch(DatabaseKind.MARIADB, MariaDB106Dialect.class);
         assertDialectMatch(DatabaseKind.MYSQL, MySQL8Dialect.class);
         assertDialectMatch(DatabaseKind.DERBY, DerbyTenSevenDialect.class);
         assertDialectMatch(DatabaseKind.MSSQL, SQLServer2016Dialect.class);

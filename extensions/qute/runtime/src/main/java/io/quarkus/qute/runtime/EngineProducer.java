@@ -172,7 +172,7 @@ public class EngineProducer {
         // Add tags
         for (String tag : tags) {
             // Strip suffix, item.html -> item
-            String tagName = tag.contains(".") ? tag.substring(0, tag.lastIndexOf('.')) : tag;
+            String tagName = tag.contains(".") ? tag.substring(0, tag.indexOf('.')) : tag;
             String tagTemplateId = TAGS + tagName;
             LOGGER.debugf("Registered UserTagSectionHelper for %s [%s]", tagName, tagTemplateId);
             builder.addSectionHelper(new UserTagSectionHelper.Factory(tagName, tagTemplateId));

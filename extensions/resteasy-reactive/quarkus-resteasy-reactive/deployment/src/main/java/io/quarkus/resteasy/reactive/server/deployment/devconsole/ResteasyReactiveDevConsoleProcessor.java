@@ -7,9 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsDevelopment;
@@ -58,7 +59,7 @@ public class ResteasyReactiveDevConsoleProcessor {
 
         try {
             Files.walkFileTree(resource, new SimpleFileVisitor<Path>() {
-                final Stack<StaticResourceInfo.StaticFile> currentFolder = new Stack<>();
+                final Deque<StaticResourceInfo.StaticFile> currentFolder = new ArrayDeque<>();
 
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {

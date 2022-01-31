@@ -86,6 +86,7 @@ public class AeshConsole extends QuarkusConsole {
             }
         }, "Console Shutdown Hook"));
         prompt = registerStatusLine(0);
+
     }
 
     private void updatePromptOnChange(StringBuilder buffer, int newLines) {
@@ -222,6 +223,26 @@ public class AeshConsole extends QuarkusConsole {
             });
             // Keyboard handling
             conn.setStdinHandler(keys -> {
+
+                QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
+                //see if the users application wants to read the keystrokes:
+                int pos = 0;
+                while (pos < keys.length) {
+                    if (!redirectIn.acceptInput(keys[pos])) {
+                        break;
+                    }
+                    ++pos;
+                }
+                if (pos > 0) {
+                    if (pos == keys.length) {
+                        return;
+                    }
+                    //the app only consumed some keys
+                    //stick the rest in a new array
+                    int[] newKeys = new int[keys.length - pos];
+                    System.arraycopy(keys, pos, newKeys, 0, newKeys.length);
+                    keys = newKeys;
+                }
                 try {
                     if (delegateConnection != null) {
                         //console mode

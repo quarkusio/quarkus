@@ -189,7 +189,7 @@ public class BytecodeRecorderTestCase {
     public void testLargeCollection() throws Exception {
 
         List<TestJavaBean> beans = new ArrayList<>();
-        for (int i = 0; i < 10000; ++i) {
+        for (int i = 0; i < 100000; ++i) {
             beans.add(new TestJavaBean("A string", 99));
         }
 

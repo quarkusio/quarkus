@@ -108,6 +108,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     private static final MethodDescriptor COLLECTION_ADD = ofMethod(Collection.class, "add", boolean.class, Object.class);
     private static final MethodDescriptor MAP_PUT = ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
+    public static final String CREATE_ARRAY = "$quarkus$createArray";
 
     private final boolean staticInit;
     private final ClassLoader classLoader;
@@ -517,7 +518,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
         //when this is true it is no longer possible to allocate items in the array. this is a guard against programmer error
         loadComplete = true;
         //now we now know many items we have, create the array
-        ResultHandle array = mainMethod.newArray(Object.class, deferredParameterCount);
+
+        MethodDescriptor createArrayDescriptor = ofMethod(mainMethod.getMethodDescriptor().getDeclaringClass(), CREATE_ARRAY,
+                "[Ljava/lang/Object;");
+        ResultHandle array = mainMethod.invokeVirtualMethod(createArrayDescriptor, mainMethod.getThis());
 
         //this context manages the creation of new methods
         //it tracks the number of instruction groups and when they hit a threshold it
@@ -592,6 +596,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
         context.close();
         mainMethod.returnValue(null);
+        var createArray = file.getMethodCreator(createArrayDescriptor);
+        createArray.returnValue(createArray.newArray(Object.class, deferredParameterCount));
         file.close();
 
     }
@@ -1516,8 +1522,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 for (SerializationStep i : setupSteps) {
                     //then prepare the steps (i.e. creating the values to be placed into this object)
                     i.prepare(context);
-                }
-                for (SerializationStep i : setupSteps) {
                     //now actually run the steps (i.e. actually stick the values into the object)
                     context.writeInstruction(new InstructionGroup() {
                         @Override
@@ -1866,7 +1870,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
         /**
          * The function that is called to read the value for use. This may be by reading the value from the Object[]
-         * array, or is may be a direct ldc instruction in the case of primitives.
+         * array, or is can be a direct ldc instruction in the case of primitives.
          * <p>
          * Code in this method is run in a single instruction group, so large objects should be serialized in the
          * {@link #doPrepare(MethodContext)} method instead
@@ -1894,15 +1898,17 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     abstract class DeferredArrayStoreParameter extends DeferredParameter {
 
-        final int arrayIndex;
+        int arrayIndex = -1;
         final String returnType;
+        ResultHandle originalResultHandle;
+        ResultHandle originalArrayResultHandle;
+        MethodCreator originalRhMethod;
 
         DeferredArrayStoreParameter(String expectedType) {
             returnType = expectedType;
             if (loadComplete) {
                 throw new RuntimeException("Cannot create new DeferredArrayStoreParameter after array has been allocated");
             }
-            arrayIndex = deferredParameterCount++;
         }
 
         DeferredArrayStoreParameter(Object target, Class<?> expectedType) {
@@ -1918,7 +1924,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (loadComplete) {
                 throw new RuntimeException("Cannot create new DeferredArrayStoreParameter after array has been allocated");
             }
-            arrayIndex = deferredParameterCount++;
         }
 
         /**
@@ -1933,8 +1938,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
             context.writeInstruction(new InstructionGroup() {
                 @Override
                 public void write(MethodContext context, MethodCreator method, ResultHandle array) {
-                    ResultHandle val = createValue(context, method, array);
-                    method.writeArrayValue(array, arrayIndex, val);
+                    originalResultHandle = createValue(context, method, array);
+                    originalRhMethod = method;
+                    originalArrayResultHandle = array;
                 }
             });
             prepared = true;
@@ -1942,6 +1948,16 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
         @Override
         final ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {
+            if (!prepared) {
+                prepare(context);
+            }
+            if (method == originalRhMethod) {
+                return originalResultHandle;
+            }
+            if (arrayIndex == -1) {
+                arrayIndex = deferredParameterCount++;
+                originalRhMethod.writeArrayValue(originalArrayResultHandle, arrayIndex, originalResultHandle);
+            }
             ResultHandle resultHandle = method.readArrayValue(array, arrayIndex);
             if (returnType == null) {
                 return resultHandle;
@@ -2050,10 +2066,14 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 //we don't want to have to go back to the array every time
                 //so we cache the result handles within the scope of the current method
                 int arrayIndex = ((DeferredArrayStoreParameter) parameter).arrayIndex;
-                if (currentMethodCache.containsKey(arrayIndex)) {
+                if (arrayIndex > 0 && currentMethodCache.containsKey(arrayIndex)) {
                     return currentMethodCache.get(arrayIndex);
                 }
                 ResultHandle loaded = parameter.doLoad(this, currentMethod, currentMethod.getMethodParam(1));
+                arrayIndex = ((DeferredArrayStoreParameter) parameter).arrayIndex;
+                if (arrayIndex < 0) {
+                    return loaded;
+                }
                 if (parent.currentMethod == currentMethod) {
                     currentMethodCache.put(arrayIndex, loaded);
                     return loaded;

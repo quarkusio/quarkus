@@ -178,7 +178,7 @@ public class TestSupport implements TestController {
                             Files.createDirectories(i);
                         }
                     }
-                    var testCuratedApplication = curatedApplication.getQuarkusBootstrap().clonedBuilder()
+                    QuarkusBootstrap.Builder builder = curatedApplication.getQuarkusBootstrap().clonedBuilder()
                             .setMode(QuarkusBootstrap.Mode.TEST)
                             .setAssertionsEnabled(true)
                             .setDisableClasspathCache(false)
@@ -190,7 +190,14 @@ public class TestSupport implements TestController {
                             .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
                             .setProjectRoot(Paths.get(module.getProjectDirectory()))
                             .setApplicationRoot(PathList.from(paths))
-                            .clearLocalArtifacts() // we want to re-discover the local dependencies with test scope
+                            .clearLocalArtifacts();
+                    //we always want to propagate parent first
+                    //so it is consistent. Some modules may not have quarkus dependencies
+                    //so they won't load junit parent first without this
+                    for (var i : curatedApplication.getApplicationModel().getParentFirst()) {
+                        builder.addParentFirstArtifact(i);
+                    }
+                    var testCuratedApplication = builder // we want to re-discover the local dependencies with test scope
                             .build()
                             .bootstrap();
                     if (mainModule) {

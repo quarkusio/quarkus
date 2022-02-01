@@ -168,7 +168,11 @@ public class ClientCallingResource {
 
     private void callGet(RoutingContext rc, ClientWithExceptionMapper client) {
         try {
-            client.get();
+            String response = client.get();
+            if ("MockAnswer".equals(response)) {
+                rc.response().setStatusCode(503).end(response);
+                return;
+            }
         } catch (MyException expected) {
             rc.response().setStatusCode(200).end();
             return;

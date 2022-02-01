@@ -308,6 +308,12 @@ public class DevModeContext implements Serializable {
             return Optional.ofNullable(test);
         }
 
+        public void addSourcePathFirst(String path) {
+            String absolutePath = Paths.get(path).isAbsolute() ? path
+                    : (projectDirectory + File.separator + path);
+            this.main.sourcePaths = this.main.sourcePaths.addFirst(Paths.get(absolutePath));
+        }
+
         public static class Builder {
 
             private ArtifactKey appArtifactKey;

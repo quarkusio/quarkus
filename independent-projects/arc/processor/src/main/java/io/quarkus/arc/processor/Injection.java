@@ -40,6 +40,7 @@ public class Injection {
         if (Kind.CLASS.equals(beanTarget.kind())) {
             List<Injection> injections = new ArrayList<>();
             forClassBean(beanTarget.asClass(), beanTarget.asClass(), beanDeployment, injections, transformer, false);
+
             Set<AnnotationTarget> injectConstructors = injections.stream().filter(Injection::isConstructor)
                     .map(Injection::getTarget).collect(Collectors.toSet());
             if (injectConstructors.size() > 1) {
@@ -47,6 +48,41 @@ public class Injection {
                         "Multiple @Inject constructors found on " + beanTarget.asClass().name() + ":\n"
                                 + injectConstructors.stream().map(Object::toString).collect(Collectors.joining("\n")));
             }
+
+            Set<MethodInfo> initializerMethods = injections.stream()
+                    .filter(it -> it.isMethod() && !it.isConstructor())
+                    .map(Injection::getTarget)
+                    .map(AnnotationTarget::asMethod)
+                    .collect(Collectors.toSet());
+            for (MethodInfo initializerMethod : initializerMethods) {
+                if (beanDeployment.hasAnnotation(initializerMethod, DotNames.PRODUCES)) {
+                    throw new DefinitionException("Initializer method must not be marked @Produces "
+                            + "(alternatively, producer method must not be marked @Inject): "
+                            + beanTarget.asClass() + "." + initializerMethod.name());
+                }
+
+                if (Annotations.contains(Annotations.getParameterAnnotations(beanDeployment, initializerMethod),
+                        DotNames.DISPOSES)) {
+                    throw new DefinitionException("Initializer method must not have a parameter marked @Disposes "
+                            + "(alternatively, disposer method must not be marked @Inject): "
+                            + beanTarget.asClass() + "." + initializerMethod.name());
+                }
+
+                if (Annotations.contains(Annotations.getParameterAnnotations(beanDeployment, initializerMethod),
+                        DotNames.OBSERVES)) {
+                    throw new DefinitionException("Initializer method must not have a parameter marked @Observes "
+                            + "(alternatively, observer method must not be marked @Inject): "
+                            + beanTarget.asClass() + "." + initializerMethod.name());
+                }
+
+                if (Annotations.contains(Annotations.getParameterAnnotations(beanDeployment, initializerMethod),
+                        DotNames.OBSERVES_ASYNC)) {
+                    throw new DefinitionException("Initializer method must not have a parameter marked @ObservesAsync "
+                            + "(alternatively, async observer method must not be marked @Inject): "
+                            + beanTarget.asClass() + "." + initializerMethod.name());
+                }
+            }
+
             return injections;
         } else if (Kind.METHOD.equals(beanTarget.kind())) {
             if (beanTarget.asMethod().parameters().isEmpty()) {

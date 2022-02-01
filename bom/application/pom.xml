@@ -31,7 +31,7 @@
         <opentelemetry.version>1.9.1</opentelemetry.version>
         <opentelemetry-alpha.version>1.9.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.0</jaeger.version>
-        <quarkus-http.version>4.1.4</quarkus-http.version>
+        <quarkus-http.version>4.1.5</quarkus-http.version>
         <micrometer.version>1.8.2</micrometer.version>
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
@@ -188,7 +188,7 @@
         <gson.version>2.8.6</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.17.1</log4j2-api.version>
-        <log4j-jboss-logmanager.version>1.2.2.Final</log4j-jboss-logmanager.version>
+        <log4j-jboss-logmanager.version>1.3.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.11.0</avro.version>
         <apicurio-registry.version>2.1.5.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.5.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
@@ -2668,6 +2668,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-webjars-locator-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-utilities</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-project-core-extension-codestarts</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

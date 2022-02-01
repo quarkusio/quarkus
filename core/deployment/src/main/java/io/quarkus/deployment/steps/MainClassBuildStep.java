@@ -15,7 +15,6 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.stream.Collectors;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -232,10 +231,6 @@ public class MainClassBuildStep {
                     mv.load(JAVA_LIBRARY_PATH),
                     mv.invokeVirtualMethod(ofMethod(StringBuilder.class, "toString", String.class), javaLibraryPath));
         }
-
-        BytecodeCreator inGraalVMCode = mv
-                .ifNonZero(mv.invokeStaticMethod(ofMethod(ImageInfo.class, "inImageRuntimeCode", boolean.class)))
-                .trueBranch();
 
         mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
         startupContext = mv.readStaticField(scField.getFieldDescriptor());

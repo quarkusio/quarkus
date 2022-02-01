@@ -15,8 +15,8 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
 
-    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-native-image:21.3-java11";
-    public static final String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel:21.3-java11";
+    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-native-image:22.0-java11";
+    public static final String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel:22.0-java11";
 
     /**
      * Comma-separated, additional arguments to pass to the build process.

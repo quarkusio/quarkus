@@ -78,6 +78,7 @@ public class BuildpackProcessor {
             return;
         }
 
+        log.info("Starting (local) container image build for jar using builpack.");
         String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest,
                 outputTarget, false /* isNative */);
 
@@ -109,6 +110,7 @@ public class BuildpackProcessor {
                     "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
         }
 
+        log.info("Starting (local) container image build for native binary using buildpack.");
         String targetImageName = runBuildpackBuild(buildpackConfig, containerImage, containerImageConfig, pushRequest,
                 outputTarget, true /* isNative */);
 

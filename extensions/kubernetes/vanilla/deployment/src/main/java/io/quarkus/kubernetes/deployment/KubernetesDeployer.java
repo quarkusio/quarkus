@@ -128,7 +128,7 @@ public class KubernetesDeployer {
         final DeploymentTargetEntry selectedTarget;
 
         boolean checkForMissingRegistry = true;
-        boolean checkForNamespaceGroupAlignment = true;
+        boolean checkForNamespaceGroupAlignment = false;
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty()) {
             selectedTarget = targets.getEntriesSortedByPriority().get(0);
@@ -155,6 +155,8 @@ public class KubernetesDeployer {
         if (OPENSHIFT.equals(selectedTarget.getName())) {
             checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability)
                     || Capability.CONTAINER_IMAGE_OPENSHIFT.equals(activeContainerImageCapability);
+
+            // We should ensure that we have image group and namespace alignment we are not using deployment triggers via DeploymentConfig.
             if (!targets.getEntriesSortedByPriority().get(0).getKind().equals("DeploymentConfig")) {
                 checkForNamespaceGroupAlignment = true;
             }

@@ -157,6 +157,7 @@ public class JibProcessor {
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
+        log.info("Starting (local) container image build for jar using jib.");
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
         writeOutputFiles(container, jibConfig, outputTarget);
@@ -195,6 +196,8 @@ public class JibProcessor {
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
         handleExtraFiles(outputTarget, jibContainerBuilder);
+
+        log.info("Starting (local) container image build for native binary using jib.");
         JibContainer container = containerize(containerImageConfig, jibConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
         writeOutputFiles(container, jibConfig, outputTarget);
@@ -221,7 +224,6 @@ public class JibProcessor {
             previousContextStorageSysProp = System.setProperty(OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP,
                     "default");
 
-            log.info("Starting container image build");
             JibContainer container = jibContainerBuilder.containerize(containerizer);
             log.infof("%s container image %s (%s)\n",
                     containerImageConfig.isPushExplicitlyEnabled() ? "Pushed" : "Created",

@@ -17,10 +17,12 @@ import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
@@ -46,12 +48,13 @@ public class DevServicesDatasourceProcessor {
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
-    List<DevServicesResultBuildItem> launchDatabases(CurateOutcomeBuildItem curateOutcomeBuildItem,
+    DevServicesDatasourceResultBuildItem launchDatabases(CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
             List<DevServicesDatasourceProviderBuildItem> devDBProviders,
             DataSourcesBuildTimeConfig dataSourceBuildTimeConfig,
             LaunchModeBuildItem launchMode,
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configurationHandlerBuildItems,
+            BuildProducer<DevServicesResultBuildItem> devServicesResultBuildItemBuildProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
@@ -80,7 +83,11 @@ public class DevServicesDatasourceProcessor {
                 }
             }
             if (!restartRequired) {
-                return databases.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
+                for (RunningDevService database : databases) {
+                    devServicesResultBuildItemBuildProducer.produce(database.toBuildItem());
+                }
+                // keep the previous behaviour of producing DevServicesDatasourceResultBuildItem only when the devservice first starts.
+                return null;
             }
             for (Closeable i : databases) {
                 try {
@@ -92,6 +99,8 @@ public class DevServicesDatasourceProcessor {
             databases = null;
             cachedProperties = null;
         }
+        DevServicesDatasourceResultBuildItem.DbResult defaultResult;
+        Map<String, DevServicesDatasourceResultBuildItem.DbResult> namedResults = new HashMap<>();
         //now we need to figure out if we need to launch some databases
         //note that because we run in dev and test mode only we know the runtime
         //config at build time, as they both execute in the same JVM
@@ -123,6 +132,7 @@ public class DevServicesDatasourceProcessor {
         if (defaultDevService != null) {
             runningDevServices.add(defaultDevService);
         }
+        defaultResult = toDbResult(defaultDevService);
         for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources.entrySet()) {
             RunningDevService namedDevService = startDevDb(entry.getKey(), curateOutcomeBuildItem,
                     installedDrivers, true,
@@ -130,6 +140,7 @@ public class DevServicesDatasourceProcessor {
                     launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem, globalDevServicesConfig);
             if (namedDevService != null) {
                 runningDevServices.add(namedDevService);
+                namedResults.put(entry.getKey(), toDbResult(namedDevService));
             }
         }
 
@@ -156,7 +167,10 @@ public class DevServicesDatasourceProcessor {
         }
         databases = runningDevServices;
         cachedProperties = propertiesMap;
-        return databases.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
+        for (RunningDevService database : databases) {
+            devServicesResultBuildItemBuildProducer.produce(database.toBuildItem());
+        }
+        return new DevServicesDatasourceResultBuildItem(defaultResult, namedResults);
     }
 
     private String trim(String optional) {
@@ -290,11 +304,17 @@ public class DevServicesDatasourceProcessor {
                     devDebProperties.put(name, ConfigProvider.getConfig().getValue(name, String.class));
                 }
             }
-            return new RunningDevService(dbName != null ? dbName : defaultDbKind.get(), datasource.getId(),
-                    datasource.getCloseTask(), devDebProperties);
+            return new RunningDevService(defaultDbKind.get(), datasource.getId(), datasource.getCloseTask(), devDebProperties);
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);
         }
+    }
+
+    private DevServicesDatasourceResultBuildItem.DbResult toDbResult(RunningDevService devService) {
+        if (devService == null) {
+            return null;
+        }
+        return new DevServicesDatasourceResultBuildItem.DbResult(devService.getName(), devService.getConfig());
     }
 }

@@ -11,7 +11,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * @deprecated use {@link DevServicesResultBuildItem}
  */
-@Deprecated
+@Deprecated(since = "https://github.com/quarkusio/quarkus/pull/23048")
 public final class DevServicesConfigResultBuildItem extends MultiBuildItem {
 
     final String key;

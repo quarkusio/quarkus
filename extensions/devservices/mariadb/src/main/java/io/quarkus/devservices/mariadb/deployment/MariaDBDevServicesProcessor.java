@@ -24,7 +24,6 @@ public class MariaDBDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(MariaDBDevServicesProcessor.class);
 
-    public static final String TAG = "10.5.9";
     public static final Integer PORT = 3306;
     public static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "TC_MY_CNF";
 
@@ -75,8 +74,8 @@ public class MariaDBDevServicesProcessor {
 
         public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName.orElse("docker.io/" + MariaDBContainer.IMAGE + ":" + MariaDBDevServicesProcessor.TAG))
-                    .asCompatibleSubstituteFor(DockerImageName.parse(MariaDBContainer.IMAGE)));
+                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mariadb")))
+                    .asCompatibleSubstituteFor(DockerImageName.parse(MariaDBContainer.NAME)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
         }

@@ -85,7 +85,7 @@
 
         <!-- Database images for JDBC/Reactive/Hibernate tests -->
         <postgres.image>docker.io/postgres:14.1</postgres.image>
-        <mariadb.image>docker.io/mariadb:10.4</mariadb.image>
+        <mariadb.image>docker.io/mariadb:10.6</mariadb.image>
         <db2.image>docker.io/ibmcom/db2:11.5.5.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssql.image>
         <oracle.image>docker.io/gvenzl/oracle-xe:21.3.0-slim</oracle.image>

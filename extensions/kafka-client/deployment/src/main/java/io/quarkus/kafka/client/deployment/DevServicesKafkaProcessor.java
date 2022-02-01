@@ -232,7 +232,8 @@ public class DevServicesKafkaProcessor {
             if (config.imageName.contains("strimzi")) {
                 StrimziKafkaContainer container = new StrimziKafkaContainer(config.imageName)
                         .withBrokerId(1)
-                        .withKraft();
+                        .withKraft()
+                        .waitForRunning();
                 ConfigureUtil.configureSharedNetwork(container, "kafka");
                 if (config.serviceName != null) {
                     container.withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, config.serviceName);

@@ -48,12 +48,17 @@ Note that the Kafka advertised address is automatically configured with the chos
 
 == Configuring the image
 
-Dev Services for Kafka only support Redpanda and Strimzi (in https://github.com/apache/kafka/blob/trunk/config/kraft/README.md[Kraft] mode).
+Dev Services for Kafka supports https://redpanda.com[Redpanda] and https://strimzi.io[Strimzi] (in https://github.com/apache/kafka/blob/trunk/config/kraft/README.md[Kraft] mode).
 
-It defaults to `vectorized/redpanda` images.
+Redpanda is a Kafka compatible event streaming platform.
+Because it provides a faster startup time dev services defaults to `vectorized/redpanda` images.
 You can select any version from https://hub.docker.com/r/vectorized/redpanda.
 
-For Strimzi, you need to set the image name property, with a Kafka version which has Kraft support (2.8.1 and higher):
+Strimzi provides container images and Operators for running Apache Kafka on Kubernetes.
+While Strimzi is optimized for Kubernetes, the images work perfectly in classic container environments.
+Strimzi container images run "genuine" Kafka broker on JVM, which is slower to start.
+
+For Strimzi, you can select any image with a Kafka version which has Kraft support (2.8.1 and higher) from https://quay.io/repository/strimzi-test-container/test-container?tab=tags
 
 [source, properties]
 ----

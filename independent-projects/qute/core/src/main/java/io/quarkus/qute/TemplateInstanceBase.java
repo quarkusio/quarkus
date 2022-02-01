@@ -3,8 +3,11 @@ package io.quarkus.qute;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.jboss.logging.Logger;
 
 public abstract class TemplateInstanceBase implements TemplateInstance {
+
+    private static final Logger LOG = Logger.getLogger(TemplateInstanceBase.class);
 
     static final String DATA_MAP_KEY = "io.quarkus.qute.dataMap";
     static final Map<String, Object> EMPTY_DATA_MAP = Collections.singletonMap(DATA_MAP_KEY, true);
@@ -54,6 +57,25 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
             return Mapper.wrap(dataMap);
         }
         return EMPTY_DATA_MAP;
+    }
+
+    protected abstract Engine engine();
+
+    @Override
+    public long getTimeout() {
+        Object t = getAttribute(TemplateInstance.TIMEOUT);
+        if (t != null) {
+            if (t instanceof Long) {
+                return ((Long) t).longValue();
+            } else {
+                try {
+                    return Long.parseLong(t.toString());
+                } catch (NumberFormatException e) {
+                    LOG.warnf("Invalid timeout value set for " + toString() + ": " + t);
+                }
+            }
+        }
+        return engine().getTimeout();
     }
 
 }

@@ -1,20 +1,27 @@
 package io.quarkus.resteasy.reactive.qute.runtime;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
 import io.smallrye.mutiny.Uni;
 
 public class TemplateResponseFilter {
+
+    @Inject
+    Engine engine;
 
     @SuppressWarnings("unchecked")
     @ServerResponseFilter
@@ -54,7 +61,14 @@ public class TemplateResponseFilter {
             mediaType = responseContext.getMediaType();
         }
 
-        return instance.createUni().chain(r -> {
+        Uni<String> uni = instance.createUni();
+        if (!engine.useAsyncTimeout()) {
+            // Make sure the timeout is always used
+            long timeout = instance.getTimeout();
+            uni = uni.ifNoItem().after(Duration.ofMillis(timeout))
+                    .failWith(() -> new TemplateException(instance + " rendering timeout [" + timeout + "ms] occured"));
+        }
+        return uni.chain(r -> {
             if (mediaType != null) {
                 responseContext.setEntity(r, null, mediaType);
             } else {

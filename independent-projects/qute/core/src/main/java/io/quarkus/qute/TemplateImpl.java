@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -13,14 +14,16 @@ import java.util.function.Consumer;
 
 class TemplateImpl implements Template {
 
+    private final String templateId;
     private final String generatedId;
     private final EngineImpl engine;
     private final Optional<Variant> variant;
     final SectionNode root;
 
-    TemplateImpl(EngineImpl engine, SectionNode root, String generatedId, Optional<Variant> variant) {
+    TemplateImpl(EngineImpl engine, SectionNode root, String templateId, String generatedId, Optional<Variant> variant) {
         this.engine = engine;
         this.root = root;
+        this.templateId = templateId;
         this.generatedId = generatedId;
         this.variant = variant;
     }
@@ -51,19 +54,23 @@ class TemplateImpl implements Template {
         return variant;
     }
 
+    @Override
+    public String toString() {
+        return "Template " + templateId + " [generatedId=" + generatedId + "]";
+    }
+
     private class TemplateInstanceImpl extends TemplateInstanceBase {
 
         @Override
         public String render() {
+            long timeout = getTimeout();
             try {
-                Object timeoutAttr = getAttribute(TIMEOUT);
-                long timeout = timeoutAttr != null ? Long.parseLong(timeoutAttr.toString()) : 10000;
-                return renderAsync().toCompletableFuture().get(timeout, TimeUnit.MILLISECONDS);
+                return renderAsyncNoTimeout().toCompletableFuture().get(timeout, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(e);
             } catch (TimeoutException e) {
-                throw new IllegalStateException(e);
+                throw newTimeoutException(timeout);
             } catch (ExecutionException e) {
                 if (e.getCause() instanceof RuntimeException) {
                     throw (RuntimeException) e.getCause();
@@ -75,7 +82,7 @@ class TemplateImpl implements Template {
 
         @Override
         public Multi<String> createMulti() {
-            return Multi.createFrom().emitter(emitter -> consume(emitter::emit)
+            Multi<String> multi = Multi.createFrom().emitter(emitter -> renderData(data(), emitter::emit)
                     .whenComplete((r, f) -> {
                         if (f == null) {
                             emitter.complete();
@@ -83,22 +90,57 @@ class TemplateImpl implements Template {
                             emitter.fail(f);
                         }
                     }));
+            if (engine.useAsyncTimeout()) {
+                long timeout = getTimeout();
+                multi = multi.ifNoItem()
+                        .after(Duration.ofMillis(timeout))
+                        .failWith(() -> newTimeoutException(timeout));
+            }
+            return multi;
         }
 
         @Override
         public Uni<String> createUni() {
-            return Uni.createFrom().completionStage(this::renderAsync);
+            Uni<String> uni = Uni.createFrom().completionStage(this::renderAsyncNoTimeout);
+            if (engine.useAsyncTimeout()) {
+                long timeout = getTimeout();
+                uni = uni.ifNoItem()
+                        .after(Duration.ofMillis(timeout))
+                        .failWith(() -> newTimeoutException(timeout));
+            }
+            return uni;
         }
 
         @Override
         public CompletionStage<String> renderAsync() {
-            StringBuilder builder = new StringBuilder(1028);
-            return renderData(data(), builder::append).thenApply(v -> builder.toString());
+            CompletionStage<String> cs = renderAsyncNoTimeout();
+            if (engine.useAsyncTimeout()) {
+                cs = cs.toCompletableFuture().orTimeout(getTimeout(), TimeUnit.MILLISECONDS);
+            }
+            return cs;
         }
 
         @Override
         public CompletionStage<Void> consume(Consumer<String> resultConsumer) {
-            return renderData(data(), resultConsumer);
+            CompletionStage<Void> cs = renderData(data(), resultConsumer);
+            if (engine.useAsyncTimeout()) {
+                cs = cs.toCompletableFuture().orTimeout(getTimeout(), TimeUnit.MILLISECONDS);
+            }
+            return cs;
+        }
+
+        private TemplateException newTimeoutException(long timeout) {
+            return new TemplateException(TemplateImpl.this.toString() + " rendering timeout [" + timeout + "ms] occured");
+        }
+
+        @Override
+        protected Engine engine() {
+            return engine;
+        }
+
+        private CompletionStage<String> renderAsyncNoTimeout() {
+            StringBuilder builder = new StringBuilder(1028);
+            return renderData(data(), builder::append).thenApply(v -> builder.toString());
         }
 
         private CompletionStage<Void> renderData(Object data, Consumer<String> consumer) {
@@ -121,6 +163,11 @@ class TemplateImpl implements Template {
                 }
             });
             return result;
+        }
+
+        @Override
+        public String toString() {
+            return "Instance of " + TemplateImpl.this.toString();
         }
 
     }

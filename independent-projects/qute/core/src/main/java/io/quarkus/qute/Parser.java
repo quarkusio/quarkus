@@ -35,7 +35,7 @@ import org.jboss.logging.Logger;
 class Parser implements Function<String, Expression>, ParserHelper {
 
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
-    private static final String ROOT_HELPER_NAME = "$root";
+    static final String ROOT_HELPER_NAME = "$root";
 
     static final Origin SYNTHETIC_ORIGIN = new OriginImpl(0, 0, 0, "<<synthetic>>", "<<synthetic>>", Optional.empty());
 
@@ -163,7 +163,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             if (!root.helperName.equals(ROOT_HELPER_NAME)) {
                 throw parserError("unterminated section [" + root.helperName + "] detected");
             }
-            TemplateImpl template = new TemplateImpl(engine, root.build(), generatedId, variant);
+            TemplateImpl template = new TemplateImpl(engine, root.build(), templateId, generatedId, variant);
 
             Set<TemplateNode> nodesToRemove = Collections.emptySet();
             if (hasLineSeparator && engine.removeStandaloneLines) {

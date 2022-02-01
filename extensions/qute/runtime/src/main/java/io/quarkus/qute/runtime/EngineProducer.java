@@ -188,6 +188,9 @@ public class EngineProducer {
             builder.addTemplateInstanceInitializer(createInitializer(initializerClass));
         }
 
+        builder.timeout(runtimeConfig.timeout);
+        builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout);
+
         engine = builder.build();
 
         // Load discovered templates

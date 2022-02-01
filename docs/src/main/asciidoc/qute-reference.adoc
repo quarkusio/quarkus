@@ -519,6 +519,35 @@ If a part of an expression resolves to a `CompletionStage`, the resolution conti
 For example, if there is an expression `{foo.size}` and `foo` resolves to `CompletionStage<List<String>>` then `size` is resolved against the completed result, i.e. `List<String>`.
 If a part of an expression resolves to a `Uni`, a `CompletionStage` is first created from `Uni` using `Uni#subscribeAsCompletionStage()` and then evaluated as described above.
 
+It can happen that a `CompletionStage` never completes or a `Uni` emits no item/failure. 
+In this case, the rendering methods (such as `TemplateInstance#render()` and `TemplateInstance#createUni()`) fail after a specific timeout.
+The timeout can be specified as a template instance `timeout` attribute.
+If no `timeout` attribute is set the global rendering timeout is used.
+
+TIP: In Quarkus, the default timeout can be set via the `io.quarkus.qute.timeout` configuration property. If using Qute standalone then the `EngineBuilder#timeout()` method can be used.
+
+NOTE: In previous versions, only the `TemplateInstance#render()` method honored the timeout attribute. You can use the `io.quarkus.qute.useAsyncTimeout=false` config property to preserve the old behavior and take care of the timeout yourself, for example `templateInstance.createUtni().ifNoItem().after(Duration.ofMillis(500)).fail()`.
+
+===== How to Identify a Problematic Part of the Template
+
+It's not easy to find the problematic part of a template when a timeout occurs.
+You can set the `TRACE` level for the logger `io.quarkus.qute.nodeResolve` and try analyze the log output afterwards.
+
+.`application.properties` Example
+[source,properties]
+----
+quarkus.log.category."io.quarkus.qute.nodeResolve".min-level=TRACE
+quarkus.log.category."io.quarkus.qute.nodeResolve".level=TRACE
+----
+
+You should see the following pair of log messages for every expression and section used in a template:
+----
+TRACE [io.qua.qut.nodeResolve] Resolve {name} started: Template hello.html at line 8
+TRACE [io.qua.qut.nodeResolve] Resolve {name} completed: Template hello.html at line 8
+----
+
+If a `completed` log message is missing then you have a good candidate to explore.
+
 ==== Missing Properties
 
 It can happen that an expression may not be evaluated at runtime.

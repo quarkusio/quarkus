@@ -20,6 +20,10 @@ public class TemplateException extends RuntimeException {
         this(origin, message, null);
     }
 
+    public TemplateException(String message, Throwable cause) {
+        this(null, message, cause);
+    }
+
     public TemplateException(Origin origin, String message, Throwable cause) {
         super(message, cause);
         this.origin = origin;

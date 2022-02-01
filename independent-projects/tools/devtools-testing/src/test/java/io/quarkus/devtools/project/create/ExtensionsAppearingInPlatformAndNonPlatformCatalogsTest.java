@@ -43,7 +43,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
                 .newRelease("2.0.4")
                 .quarkusVersion("2.2.2")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 // foo platform member
                 .newMember("acme-foo-bom").addExtension("acme-foo").addExtension("org.other", "other-extension", "6.0")
                 .release()
@@ -53,7 +53,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
                 // 1.0.1 release
                 .newRelease("1.0.1")
                 .quarkusVersion("1.1.2")
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("acme-foo").addExtension("org.other", "other-extension", "5.1")
                 .release()
                 .newMember("acme-baz-bom").addExtension("acme-baz").release()
@@ -61,7 +61,7 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
                 // 1.0.0 release
                 .newRelease("1.0.0")
                 .quarkusVersion("1.1.1")
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("acme-foo").addExtension("org.other", "other-extension", "5.0")
                 .release()
                 .newMember("acme-bar-bom").addExtension("acme-bar").release()

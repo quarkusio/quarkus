@@ -18,13 +18,8 @@ in a domain specific way.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -57,15 +52,9 @@ The solution is located in the `kogito-pmml-quickstart` {quickstarts-tree-url}/k
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kogito-pmml-quickstart \
-    -Dextensions="kogito,resteasy-jackson" \
-    -DnoExamples
-cd kogito-pmml-quickstart
-----
+:create-app-artifact-id: kogito-pmml-quickstart
+:create-app-extensions: kogito,resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the `kogito` extension
 that comes with all needed dependencies and configuration to equip your application
@@ -75,19 +64,24 @@ It also imports the `resteasy-jackson` extension that is needed for Kogito to ex
 If you already have your Quarkus project configured, you can add the `kogito` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="kogito"
-----
+:add-extension-extensions: kogito
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.kie.kogito</groupId>
     <artifactId>kogito-quarkus</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.kie.kogito:kogito-quarkus")
 ----
 
 == Writing the application
@@ -152,9 +146,11 @@ To get started quickly copy the PMML file from the
 
 == Running and Using the Application
 
-=== Running in Developer Mode
+=== Running in Dev Mode
 
-To run the microservice in dev mode, use `./mvnw clean quarkus:dev`.
+To run the microservice in dev mode, use:
+
+include::includes/devtools/dev.adoc[]
 
 === Running in JVM Mode
 
@@ -162,10 +158,7 @@ When you're done playing with dev mode you can run it as a standard Java applica
 
 First compile it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Then run it:
 
@@ -183,18 +176,15 @@ production environment, as the runtime technology is included in
 the produced binary, and optimized to run with minimal resource overhead.
 
 Compilation will take a bit longer, so this step is disabled by default;
-let's build again by enabling the `native` profile:
+let's build a native executable with the following command:
 
-[source,bash]
-----
-./mvnw package -Dnative
-----
+include::includes/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 
 [source,bash]
 ----
-./target/kogito-pmml-quickstart-runner
+./target/kogito-pmml-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 == Testing the Application

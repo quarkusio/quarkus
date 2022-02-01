@@ -30,12 +30,7 @@ This guide will help you with:
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* around 15 minutes
-* your favorite IDE
-* Java 11+ installed with `JAVA_HOME` configured appropriately.
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 NOTE: Verify that Maven is using the Java version you expect.
 If you have multiple JDKs installed, make sure Maven is using the expected one.
@@ -289,7 +284,17 @@ The fact that the application is reactive does not change anything.
 
 In https://github.com/quarkusio/quarkus-quickstarts/blob/main/hibernate-reactive-panache-quickstart/src/test/java/org/acme/hibernate/orm/panache/FruitsEndpointTest.java[FruitsEndpointTest.java] you can see how the test for the fruit application can be implemented.
 
-Packaging and running the application does not change either.The `./mvnw package` and `./mvnw package -Pnative` to generate a native executable works as usual.You can also package the application in a container.
+Packaging and running the application does not change either.
+
+You can use the following command as usual:
+
+include::includes/devtools/build.adoc[]
+
+or to build a native executable:
+
+include::includes/devtools/build-native.adoc[]
+
+You can also package the application in a container.
 
 To run the application, don’t forget to start a database and provide the configuration to your application.
 

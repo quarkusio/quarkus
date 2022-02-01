@@ -14,12 +14,7 @@ include::./status-include.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Scenario
 
@@ -40,36 +35,35 @@ The solution is located in the `cache-quickstart` {quickstarts-tree-url}/cache-q
 
 == Creating the Maven project
 
-First, we need to create a new Quarkus project using Maven with the following command:
+First, we need to create a new Quarkus project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=cache-quickstart \
-    -DclassName="org.acme.cache.WeatherForecastResource" \
-    -Dpath="/weather" \
-    -Dextensions="resteasy,cache,resteasy-jackson"
-----
+:create-app-artifact-id: cache-quickstart
+:create-app-extensions: resteasy,cache,resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
-This command generates the Maven project with a REST endpoint and imports the `cache` and `resteasy-jackson` extensions.
+This command generates the project and imports the `cache` and `resteasy-jackson` extensions.
 
 If you already have your Quarkus project configured, you can add the `cache` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="cache"
-----
+:add-extension-extensions: cache
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-cache</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-cache")
 ----
 
 == Creating the REST API
@@ -145,7 +139,8 @@ public class WeatherForecast {
 }
 ----
 
-Now, we just need to update the generated `WeatherForecastResource` class to use the service and response:
+Now, we just need to create the REST resource.
+Create the `src/main/java/org/acme/cache/WeatherForecastResource.java` file with this content:
 
 [source,java]
 ----
@@ -186,7 +181,9 @@ Otherwise, it will start from the current day plus the `daysInFuture` value.
 
 We're all done! Let's check if everything's working.
 
-First, run the application using `./mvnw compile quarkus:dev` from the project directory.
+First, run the application using dev mode from the project directory:
+
+include::includes/devtools/dev.adoc[]
 
 Then, call `http://localhost:8080/weather?city=Raleigh` from a browser.
 After six long seconds, the application will answer something like this:

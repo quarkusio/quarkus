@@ -101,6 +101,6 @@ the minimum amount of jars in memory.
 Perhaps the most important reason why dev-mode applications should not be run in production is that the dev-mode allows reading information that could be confidential (via the Dev-UI)
 while also giving access to operations that could be destructive (either by exposing endpoints that should not be available in production application or via the Dev-UI).
 
-== Native binary
+== Native executable
 
-When a native binary is created (explained in detail xref:building-native-image.adoc[here]), it is *always* built from a production application.
+When a native executable is created (explained in detail xref:building-native-image.adoc[here]), it is *always* built from a production application.

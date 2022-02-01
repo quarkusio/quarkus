@@ -14,14 +14,9 @@ We will also explore how you can query your Elasticsearch or OpenSearch cluster 
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 20 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
-* xref:building-native-image.adoc[GraalVM installed if you want to run in native mode]
+:prerequisites-time: 20 minutes
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -47,16 +42,9 @@ The provided solution contains a few additional elements such as tests and testi
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=hibernate-search-orm-elasticsearch-quickstart \
-    -DclassName="org.acme.hibernate.search.elasticsearch.LibraryResource" \
-    -Dpath="/library" \
-    -Dextensions="resteasy,hibernate-orm-panache,hibernate-search-orm-elasticsearch,resteasy-jackson,jdbc-postgresql"
-cd hibernate-search-orm-elasticsearch-quickstart
-----
+:create-app-artifact-id: hibernate-search-orm-elasticsearch-quickstart
+:create-app-extensions: hibernate-orm-panache,jdbc-postgresql,hibernate-search-orm-elasticsearch,resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the following extensions:
 
@@ -68,14 +56,13 @@ This command generates a Maven structure importing the following extensions:
 If you already have your Quarkus project configured, you can add the `hibernate-search-orm-elasticsearch` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="hibernate-search-orm-elasticsearch"
-----
+:add-extension-extensions: hibernate-search-orm-elasticsearch
+include::includes/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -83,12 +70,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
-[IMPORTANT]
-====
-For now, let's delete the two generated tests `LibraryResourceTest` and `NativeLibraryResourceIT` present in `src/test/java`.
-If you are interested in how you can test this application, just refer to the solution in the quickstarts Git repository:
-it contains a lot of tests and the required testing infrastructure.
-====
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-hibernate-search-orm-elasticsearch")
+----
 
 == Creating the bare entities
 
@@ -190,7 +176,7 @@ public class Book extends PanacheEntity {
 
 While everything is not yet set up for our REST service, we can initialize it with the standard CRUD operations we will need.
 
-Just copy this content in the `LibraryResource` file created by the Maven `create-project` command:
+Create the `org.acme.hibernate.search.elasticsearch.LibraryResource` class:
 
 [source,java]
 ----
@@ -632,10 +618,16 @@ docker run -it --rm=true --name postgresql_quarkus_test -e POSTGRES_USER=quarkus
 
 You can now interact with your REST service:
 
- * start Quarkus with `./mvnw compile quarkus:dev`
+:devtools-wrapped:
+
+ * start your Quarkus application with:
++
+include::includes/devtools/dev.adoc[]
  * open a browser to `http://localhost:8080/`
  * search for authors or book titles (we initialized some data for you)
  * create new authors and books and search for them too
+
+:!devtools-wrapped:
 
 As you can see, all your updates are automatically synchronized to the Elasticsearch cluster.
 
@@ -840,10 +832,8 @@ and relies on a background processor to consume these events and perform automat
 
 To enable the `outbox-polling` coordination strategy, an additional extension is required:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="hibernate-search-orm-coordination-outbox-polling"
-----
+:add-extension-extensions: hibernate-search-orm-coordination-outbox-polling
+include::includes/devtools/extension-add.adoc[]
 
 Once the extension is there, you will need to explicitly select the `outbox-polling` strategy
 by setting link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.coordination.strategy[`quarkus.hibernate-search-orm.coordination.strategy`]

@@ -17,12 +17,7 @@ In this guide, we will learn how to configure a Quarkus application.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* between 5 and 10 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Solution
 
@@ -46,6 +41,9 @@ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -Dpath="/greeting"
 cd config-quickstart
 ----
+:create-app-artifact-id: org.acme
+:create-app-extensions: config-quickstart
+include::includes/devtools/create-app.adoc[]
 
 It generates:
 
@@ -53,8 +51,6 @@ It generates:
 * a landing page accessible on `http://localhost:8080`
 * example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
-* an `org.acme.config.GreetingResource` resource
-* an associated test
 
 == Create the configuration
 
@@ -71,6 +67,30 @@ Edit the file with the following content:
 # Your configuration properties
 greeting.message = hello
 greeting.name = quarkus
+----
+
+== Create a REST resource
+
+Create the `org.acme.config.GreetingResource` REST resource with the following content:
+
+[source,java]
+----
+package org.acme.config;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/greeting")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "Hello RESTEasy";
+    }
+}
 ----
 
 == Inject the configuration
@@ -116,21 +136,13 @@ public String hello() {
 }
 ----
 
-Once set, check the application with:
-
-[source,shell]
-----
-$ curl http://localhost:8080/greeting
-hello quarkus!
-----
-
 TIP: Use `@io.smallrye.config.ConfigMapping` annotation to group multiple configurations in a single interface. Please,
 check the https://smallrye.io/docs/smallrye-config/main/mapping/mapping.html[Config Mappings] documentation.
 
 == Update the test
 
 We also need to update the functional test to reflect the changes made to the endpoint.
-Edit the `src/test/java/org/acme/config/GreetingResourceTest.java` file and change the content of the `testHelloEndpoint` method to:
+Create the `src/test/java/org/acme/config/GreetingResourceTest.java` file with the following content:
 
 [source,java]
 ----
@@ -159,14 +171,24 @@ public class GreetingResourceTest {
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/greeting.
 
 Changing the configuration file is immediately reflected.
 You can add the `greeting.suffix`, remove the other properties, change the values, etc.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
 
 == Programmatically access the configuration
 

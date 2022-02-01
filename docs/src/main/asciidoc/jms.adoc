@@ -15,14 +15,8 @@ include::./status-include.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 * A running Artemis server, or Docker to start one
-* GraalVM, or Docker, installed if you want to run in native mode.
 
 == Architecture
 
@@ -57,23 +51,25 @@ or download an https://github.com/amqphub/quarkus-qpid-jms-quickstart/archive/ma
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=jms-quickstart \
-    -DnoCode \
-    -Dextensions="resteasy,qpid-jms"
-cd jms-quickstart
-----
+:create-app-artifact-id: jms-quickstart
+:create-app-extensions: resteasy,qpid-jms
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project, with its pom.xml importing the quarkus-qpid-jms extension:
-[source,xml]
+This command generates a new project importing the quarkus-qpid-jms extension:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-    <groupId>org.amqphub.quarkus</groupId>
+    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-qpid-jms</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-qpid-jms")
 ----
 
 [#starting-the-broker]
@@ -301,10 +297,7 @@ More detail about the configuration are available in the https://github.com/amqp
 If you followed the instructions, you should have the Artemis server running.
 Then, you just need to run the application using:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 Open `http://localhost:8080/prices.html` in your browser.
 
@@ -312,16 +305,11 @@ Open `http://localhost:8080/prices.html` in your browser.
 
 You can build the native executable with:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
 Or, if you don't have GraalVM installed, you can instead use Docker to build the native executable using:
-[source,bash]
-----
-./mvnw package -Pnative -Dquarkus.native.container-build=true
-----
+
+include::includes/devtools/build-native-container.adoc[]
 
 and then run with:
 
@@ -357,23 +345,25 @@ The Artemis JMS solution is located in the `jms-quickstart` {quickstarts-tree-ur
 
 Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=jms-quickstart \
-    -DnoCode \
-    -Dextensions="resteasy,artemis-jms"
-cd jms-quickstart
-----
+:create-app-artifact-id: jms-quickstart
+:create-app-extensions: resteasy,artemis-jms
+include::includes/devtools/create-app.adoc[]
 
-This creates a Maven project, with its pom.xml importing the quarkus-artemis-jms extension:
-[source,xml]
+This creates a new project importing the quarkus-artemis-jms extension:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkiverse.artemis</groupId>
-  <artifactId>quarkus-artemis-jms</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-artemis-jms</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-artemis-jms")
 ----
 
 With the project created, you can resume from <<starting-the-broker>> in the detailed steps above

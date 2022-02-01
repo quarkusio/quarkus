@@ -12,12 +12,7 @@ how you can test it via a user-friendly UI named Swagger UI.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -37,18 +32,9 @@ The solution is located in the `openapi-swaggerui-quickstart` {quickstarts-tree-
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=openapi-swaggerui-quickstart \
-    -DclassName="org.acme.openapi.swaggerui.FruitResource" \
-    -Dpath="/fruits" \
-    -Dextensions="resteasy,resteasy-jackson"
-cd openapi-swaggerui-quickstart
-----
-
-This command generates the Maven project with a `/fruits` REST endpoint.
+:create-app-artifact-id: openapi-swaggerui-quickstart
+:create-app-extensions: resteasy,resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
 == Expose a REST Resource
 
@@ -115,7 +101,7 @@ public class FruitResource {
 }
 ----
 
-As we changed the API, we also need to update the test:
+You can also create a test:
 
 [source,java]
 ----
@@ -180,14 +166,13 @@ https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md[OpenAPI
 
 You just need to add the `openapi` extension to your Quarkus application:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="quarkus-smallrye-openapi"
-----
+:add-extension-extensions: quarkus-smallrye-openapi
+include::includes/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -195,12 +180,15 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-openapi")
+----
+
 Now, we are ready to run our application:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 Once your application is started, you can make a request to the default `/q/openapi` endpoint:
 

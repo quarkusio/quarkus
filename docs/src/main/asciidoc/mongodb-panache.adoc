@@ -63,28 +63,28 @@ The solution is located in the `mongodb-panache-quickstart` {quickstarts-tree-ur
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=mongodb-panache-quickstart \
-    -DclassName="org.acme.mongodb.panache.PersonResource" \
-    -Dpath="/persons" \
-    -Dextensions="resteasy-reactive-jackson,mongodb-panache"
-cd mongodb-panache-quickstart
-----
+:create-app-artifact-id: mongodb-panache-quickstart
+:create-app-extensions: resteasy-reactive-jackson,mongodb-panache
+include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the RESTEasy Reactive Jackson and MongoDB with Panache extensions.
-After this, the `quarkus-mongodb-panache` extension has been added to your `pom.xml`.
+After this, the `quarkus-mongodb-panache` extension has been added to your build file.
 
-If you don't want to generate a new project, add the dependency in your `pom.xml`:
+If you don't want to generate a new project, add the dependency in your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-mongodb-panache</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-mongodb-panache")
 ----
 
 == Setting up and configuring MongoDB with Panache
@@ -981,13 +981,20 @@ methods, including your own.
 
 Add this dependency to your `pom.xml`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-panache-mock</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-panache-mock")
 ----
 
 Given this simple entity:
@@ -1061,13 +1068,20 @@ what mock object to pass.
 If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit5-mockito` module,
 which makes mocking beans much easier:
 
-[source,java]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-junit5-mockito</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-junit5-mockito")
 ----
 
 Given this simple entity:

@@ -18,10 +18,10 @@ This guide covers:
 
 == Prerequisites
 
-For this guide you need:
-
-* roughly 2 hours for all modalities
-* having access to an Azure subscription. https://azure.microsoft.com/free/?WT.mc_id=opensource-quarkus-brborges[Get a free one here]
+:prerequisites-time: 2 hours for all modalities
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
+* Having access to an Azure subscription. https://azure.microsoft.com/free/?WT.mc_id=opensource-quarkus-brborges[Get a free one here]
 
 This guide will take as input a native application developed in the xref:building-native-image.adoc[building native image guide].
 

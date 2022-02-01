@@ -6,25 +6,27 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Building applications with Maven
 
 include::./attributes.adoc[]
+:devtools-no-gradle:
 
 [[project-creation]]
 == Creating a new project
 
-With Maven, you can scaffold a new project with:
+You can scaffold a new Maven project with:
 
-[source,bash,subs=attributes+]
+:create-app-group-id: my-groupId
+:create-app-artifact-id: my-artifactId
+:create-app-code:
+:create-app-post-command:
+include::includes/devtools/create-app.adoc[]
+
+If you are using the CLI, you can get the list of available options with:
+
+[source,bash]
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=my-groupId \
-    -DprojectArtifactId=my-artifactId \
-    -DprojectVersion=my-version \
-    -DclassName="org.my.group.MyResource"
+quarkus create app --help
 ----
 
-NOTE: If you just launch `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
-for user inputs. You can disable (and use default values) this interactive mode by passing `-B` to the Maven command.
-
-The following table lists the attributes you can pass to the `create` command:
+If you are using the Maven command, the following table lists the attributes you can pass to the `create` command:
 
 [cols=3*,options="header"]
 |===
@@ -76,9 +78,6 @@ The following table lists the attributes you can pass to the `create` command:
 
 By default, the command will target the `io.quarkus.platform:quarkus-bom:{quarkus-version}` platform release (unless the coordinates of the desired platform release have been specified).
 
-If you decide to generate a REST resource (using the `className` attribute), the endpoint is exposed at: `http://localhost:8080/$path`.
-If you use the default `path`, the URL is: http://localhost:8080/hello.
-
 The project is generated in a directory named after the passed artifactId.
 If the directory already exists, the generation fails.
 
@@ -89,17 +88,12 @@ Instructions to build the image and run the container are written in those Docke
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:
 
-[source,bash]
-----
-./mvnw quarkus:list-extensions
-----
+include::includes/devtools/extension-list.adoc[]
 
-You can enable an extension using:
+You can add an extension using:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="hibernate-validator"
-----
+:add-extension-extensions: hibernate-validator
+include::includes/devtools/extension-add.adoc[]
 
 Extensions are passed using a comma-separated list.
 
@@ -124,10 +118,8 @@ $ ./mvnw quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 
 You can install all extensions which match a globbing pattern :
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="hibernate-*"
-----
+:add-extension-extensions: smallrye-*
+include::includes/devtools/extension-add.adoc[]
 
 [[dev-mode]]
 == Development mode
@@ -135,16 +127,13 @@ You can install all extensions which match a globbing pattern :
 Quarkus comes with a built-in development mode.
 Run your application with:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.
 This is great to do development spanning UI and database as you see changes reflected immediately.
 
-`quarkus:dev` enables hot deployment with background compilation, which means
+Dev mode enables hot deployment with background compilation, which means
 that when you modify your Java files or your resource files and refresh your browser these changes will automatically take effect.
 This works too for resource files like the configuration property file.
 The act of
@@ -158,10 +147,9 @@ Hit `CTRL+C` to stop the application.
 ====
 By default, `quarkus:dev` sets the debug host to `localhost` (for security reasons). If you need to change this, for example to enable debugging on all hosts, you can use the `-DdebugHost` option like so:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev -DdebugHost=0.0.0.0
-----
+:dev-additional-parameters: -DdebugHost=0.0.0.0
+include::includes/devtools/dev-parameters.adoc[]
+:!dev-additional-parameters:
 ====
 
 === Remote Development Mode
@@ -190,10 +178,7 @@ may want to leave it out of the properties file and specify it as a system prope
 
 The `mutable-jar` is then built in the same way that a regular Quarkus jar is built, i.e. by issuing:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
 on bare metal you can set it via the `export QUARKUS_LAUNCH_DEVMODE=true` command and then run the application with the proper `java -jar ...` command to run the application.
@@ -281,7 +266,11 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 
 [TIP]
 ====
-You can also run a Quarkus application in debug mode with a suspended JVM using `./mvnw compile quarkus:dev -Dsuspend` which is a shorthand for `./mvnw compile quarkus:dev -Dsuspend=true`.
+You can also run a Quarkus application in debug mode with a suspended JVM using:
+
+:dev-additional-parameters: -Dsuspend -Ddebug
+include::includes/devtools/dev-parameters.adoc[]
+:!dev-additional-parameters:
 
 Then, attach your debugger to `localhost:5005`.
 ====
@@ -298,7 +287,11 @@ In the wizard, select: `Maven -> Existing Maven Project`.
 On the next screen, select the root location of the project.
 The next screen list the found modules; select the generated project and click on `Finish`. Done!
 
-In a separated terminal, run `./mvnw compile quarkus:dev`, and enjoy a highly productive environment.
+In a separated terminal, run:
+
+include::includes/devtools/dev.adoc[]
+
+and enjoy a highly productive environment.
 
 **IntelliJ**
 
@@ -310,7 +303,11 @@ In IntelliJ:
 4. Next a few times (review the different options if needed)
 5. On the last screen click on Finish
 
-In a separated terminal or in the embedded terminal, run `./mvnw compile quarkus:dev`. Enjoy!
+In a separated terminal or in the embedded terminal, run:
+
+include::includes/devtools/dev.adoc[]
+
+Enjoy!
 
 **Apache NetBeans**
 
@@ -320,7 +317,11 @@ In NetBeans:
 2. Select the project root
 3. Click on `Open Project`
 
-In a separated terminal or the embedded terminal, go to the project root and run `./mvnw compile quarkus:dev`. Enjoy!
+In a separated terminal or the embedded terminal, go to the project root and run:
+
+include::includes/devtools/dev.adoc[]
+
+Enjoy!
 
 **Visual Studio Code**
 
@@ -363,7 +364,7 @@ To enable the use-case of building and testing a Quarkus application offline, th
 
 [source,bash]
 ----
-mvn quarkus:go-offline
+./mvnw quarkus:go-offline
 ----
 
 This goal will resolve all the runtime, build time, test and dev mode dependencies of the application downloading them to the configured local Maven repository.
@@ -375,7 +376,10 @@ Native executables make Quarkus applications ideal for containers and serverless
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version} (Make sure to use a Java 11 version of GraalVM).
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
 
-Create a native executable using: `./mvnw package -Pnative`.
+Create a native executable using:
+
+include::includes/devtools/build-native.adoc[]
+
 A native executable will be present in `target/`.
 
 To run Integration Tests on the native executable, make sure to have the proper Maven plugin configured (see <<build-tool-maven>>) and launch the `verify` goal.
@@ -416,10 +420,9 @@ Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/gettin
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-[source,bash]
-----
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-----
+:build-additional-parameters: -Dquarkus.native.container-build=true
+include::includes/devtools/build-native.adoc[]
+:!build-additional-parameters:
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
@@ -534,7 +537,9 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 [[fast-jar]]
 === Using fast-jar
 
-`fast-jar` is now the default quarkus package type. The result of `./mvnw package` command is a new directory under `target` named `quarkus-app`.
+`fast-jar` is the default quarkus package type.
+
+The result of the build is a directory under `target` named `quarkus-app`.
 
 You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
 
@@ -596,8 +601,14 @@ More information on this topic can be found on the xref:cdi-reference.adoc#bean_
 
 Quarkus supports xref:config-reference.adoc#profiles[configuration profiles] in order to provide a specific configuration according to the target environment.
 
-The profile can be provided directly in the Maven build's command thanks to the system property `quarkus.profile` with a command of type `./mvnw package -Dquarkus.profile=<profile-name-here>`,
-however it is also possible to specify the profile directly in the POM file of the project using project properties, the Quarkus Maven plugin configuration properties or system properties set in the Quarkus Maven plugin configuration.
+The profile can be provided directly in the Maven build's command thanks to the system property `quarkus.profile` with a command of type:
+
+// TODO switch to <profile-name-here> once escaping issue is fixed in Asciidoctor
+:build-additional-parameters: -Dquarkus.profile=profile-name-here
+include::includes/devtools/build.adoc[]
+:!build-additional-parameters:
+
+However it is also possible to specify the profile directly in the POM file of the project using project properties, the Quarkus Maven plugin configuration properties or system properties set in the Quarkus Maven plugin configuration.
 
 In order of precedence (greater precedence first):
 

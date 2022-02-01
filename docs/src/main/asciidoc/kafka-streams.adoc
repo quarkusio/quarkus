@@ -11,14 +11,9 @@ This guide demonstrates how your Quarkus application can utilize the Apache Kafk
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 30 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker Compose to start an Apache Kafka development cluster
-* GraalVM installed if you want to run in native mode.
+:prerequisites-time: 30 minutes
+:prerequisites-docker-compose:
+include::includes/devtools/prerequisites.adoc[]
 
 It is recommended, that you have read the {quickstarts-tree-url}/kafka-quickstart[Kafka quickstart] before.
 
@@ -82,34 +77,34 @@ The solution is located in the `kafka-streams-quickstart` {quickstarts-tree-url}
 First, we need a new project with the temperature value producer.
 Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kafka-streams-quickstart-producer \
-    -Dextensions="kafka" \
-    -DnoExamples \
-    && mv kafka-streams-quickstart-producer producer
-----
+:create-app-artifact-id: kafka-streams-quickstart-producer
+:create-app-extensions: kafka
+:create-app-post-command: mv kafka-streams-quickstart-producer producer
+include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
 
 If you already have your Quarkus project configured, you can add the `smallrye-reactive-messaging-kafka` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="quarkus-smallrye-reactive-messaging-kafka"
-----
+:add-extension-extensions: quarkus-smallrye-reactive-messaging-kafka
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
 ----
 
 === The Temperature Value Producer
@@ -234,34 +229,34 @@ With the producer application in place, it's time to implement the actual aggreg
 which will run the Kafka Streams pipeline.
 Create another project like so:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kafka-streams-quickstart-aggregator \
-    -Dextensions="resteasy,kafka-streams,resteasy-jackson" \
-    -DnoExamples \
-    && mv kafka-streams-quickstart-aggregator aggregator
-----
+:create-app-artifact-id: kafka-streams-quickstart-aggregator
+:create-app-extensions: kafka-streams,resteasy-jackson
+:create-app-post-command: mv kafka-streams-quickstart-aggregator aggregator
+include::includes/devtools/create-app.adoc[]
 
 This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for Jackson.
 
 If you already have your Quarkus project configured, you can add the `kafka-streams` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="kafka-streams"
-----
+:add-extension-extensions: kafka-streams
+include::includes/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-kafka-streams</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kafka-streams")
 ----
 
 === The Pipeline Implementation
@@ -1114,12 +1109,12 @@ The Quarkus extension for Kafka Streams enables the execution of stream processi
 natively via GraalVM without further configuration.
 
 To run both the `producer` and `aggregator` applications in native mode,
-the Maven builds can be executed using the `native` profile:
+the Maven builds can be executed using `-Dnative`:
 
 [source,bash]
 ----
-./mvnw clean package -f producer/pom.xml -Pnative -Dnative-image.container-runtime=docker
-./mvnw clean package -f aggregator/pom.xml -Pnative -Dnative-image.container-runtime=docker
+./mvnw clean package -f producer/pom.xml -Dnative -Dnative-image.container-runtime=docker
+./mvnw clean package -f aggregator/pom.xml -Dnative -Dnative-image.container-runtime=docker
 ----
 
 Now create an environment variable named `QUARKUS_MODE` and with value set to "native":

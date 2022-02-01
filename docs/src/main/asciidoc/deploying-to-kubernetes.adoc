@@ -14,46 +14,52 @@ Finally, when either one of container image extensions is present (see the xref:
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* roughly 10 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* access to a Kubernetes cluster (Minikube is a viable option)
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
+* Access to a Kubernetes cluster (Minikube is a viable option)
 
 [#kubernetes]
 == Kubernetes
 
 Let's create a new project that contains both the Kubernetes and Jib extensions:
 
-[source,bash,subs=attributes+]
+:create-app-artifact-id: kubernetes-quickstart
+:create-app-extensions: resteasy,kubernetes,jib
+include::includes/devtools/create-app.adoc[]
+
+This added the following dependencies to the build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kubernetes-quickstart \
-    -DclassName="org.acme.rest.GreetingResource" \
-    -Dpath="/greeting" \
-    -Dextensions="resteasy,kubernetes,jib"
-cd kubernetes-quickstart
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-container-image-jib</artifactId>
+</dependency>
 ----
 
-This added the following dependencies to the `pom.xml`
-
-[source,xml]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
 ----
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-kubernetes</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-container-image-jib</artifactId>
-    </dependency>
+implementation("io.quarkus:quarkus-resteasy")
+implementation("io.quarkus:quarkus-kubernetes")
+implementation("io.quarkus:quarkus-container-image-jib")
 ----
 
 By adding these dependencies, we enable the generation of Kubernetes manifests each time we perform a build while also enabling the build of a container image using Jib.
-For example, following the execution of `./mvnw package`, you will notice amongst the other files that are created, two files named
+For example, following the execution of:
+
+include::includes/devtools/build.adoc[]
+
+you will notice amongst the other files that are created, two files named
 `kubernetes.json` and `kubernetes.yml` in the `target/kubernetes/` directory.
 
 If you look at either file you will see that it contains both a Kubernetes `Deployment` and a `Service`.
@@ -497,12 +503,19 @@ quarkus.kubernetes.replicas=3
 
 By default, the Kubernetes resources do not contain readiness and liveness probes in the generated `Deployment`. Adding them however is just a matter of adding the SmallRye Health extension like so:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-smallrye-health</artifactId>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-health</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
@@ -570,12 +583,19 @@ containers:
 
 Applications that are deployed to Kubernetes and need to access the API server will usually make use of the `kubernetes-client` extension:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-kubernetes-client</artifactId>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes-client</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kubernetes-client")
 ----
 
 To access the API server from within a Kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding etc.).
@@ -587,12 +607,19 @@ If more roles are required, they will have to be added manually.
 https://github.com/kubernetes/minikube[Minikube] is quite popular when a Kubernetes cluster is needed for development purposes. To make the deployment to Minikube
 experience as frictionless as possible, Quarkus provides the `quarkus-minikube` extension. This extension can be added to a project like so:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-minikube</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-minikube")
 ----
 
 The purpose of this extension is to generate Kubernetes manifests (`minikube.yaml` and `minikube.json`) that are tailored to Minikube.
@@ -834,13 +861,44 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 
 One way to deploy an application to OpenShift is to use s2i (source to image) to create an image stream from the source and then deploy the image stream:
 
-[source,bash]
+[source,bash,role="primary asciidoc-tabs-sync-cli"]
+.CLI
+----
+quarkus extension remove kubernetes,jib
+quarkus extension add openshift
+
+oc new-project quarkus-project
+quarkus build -Dquarkus.container-image.build=true 
+
+oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0.0-SNAPSHOT
+oc expose svc/greeting
+oc get route
+curl <route>/greeting
+----
+
+[source,bash,role="secondary asciidoc-tabs-sync-maven"]
+.Maven
 ----
 ./mvnw quarkus:remove-extension -Dextensions="kubernetes, jib"
 ./mvnw quarkus:add-extension -Dextensions="openshift"
 
 oc new-project quarkus-project
 ./mvnw clean package -Dquarkus.container-image.build=true 
+
+oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0.0-SNAPSHOT
+oc expose svc/greeting
+oc get route
+curl <route>/greeting
+----
+
+[source,bash,role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew removeExtension --extensions="kubernetes, jib"
+./gradlew addExtension --extensions="openshift"
+
+oc new-project quarkus-project
+./gradlew build -Dquarkus.container-image.build=true 
 
 oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0.0-SNAPSHOT
 oc expose svc/greeting
@@ -1238,22 +1296,33 @@ To enable Service Binding support, in addition to one of the currently supported
 
 If the Kubernetes cluster in which your Quarkus application runs supports provisioning a PostgreSQL database, one could use the following dependencies to take advantage of the Service Binding feature:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-postgresql</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-service-binding</artifactId>
-        </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes-service-binding</artifactId>
+</dependency>
 
-       <!-- Hibernate isn't necessary for Service Binding, but most relational database access will benefit from using it -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm</artifactId>
-        </dependency>
+<!-- Hibernate isn't necessary for Service Binding, but most relational database access will benefit from using it -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-orm</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-jdbc-postgresql")
+implementation("io.quarkus:quarkus-kubernetes-service-binding")
+
+// Hibernate isn't necessary for Service Binding, but most relational database access will benefit from using it
+implementation("io.quarkus:quarkus-hibernate-orm")
 ----
 
 The configuration of the application could be as simple as:

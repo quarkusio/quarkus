@@ -6,8 +6,6 @@ import javax.enterprise.inject.spi.ObserverMethod;
 import javax.servlet.DispatcherType;
 
 import io.opentracing.Tracer;
-import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
-import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -26,6 +24,8 @@ import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingStandaloneC
 import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingStandaloneVertxDynamicFeature;
 import io.quarkus.smallrye.opentracing.runtime.TracerProducer;
 import io.quarkus.undertow.deployment.FilterBuildItem;
+import io.smallrye.opentracing.contrib.interceptor.OpenTracingInterceptor;
+import io.smallrye.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
 
 public class SmallRyeOpenTracingProcessor {
 

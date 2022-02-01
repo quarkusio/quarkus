@@ -21,10 +21,6 @@
         <jandex.version>2.4.2.Final</jandex.version>
         <resteasy.version>4.7.5.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
-        <opentracing-jaxrs.version>1.0.0</opentracing-jaxrs.version>
-        <opentracing-web-servlet-filter.version>0.4.1</opentracing-web-servlet-filter.version>
-        <opentracing-tracerresolver.version>0.1.8</opentracing-tracerresolver.version>
-        <opentracing-concurrent.version>0.4.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
@@ -48,7 +44,7 @@
         <smallrye-metrics.version>3.0.4</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.17</smallrye-open-api.version>
         <smallrye-graphql.version>1.4.2</smallrye-graphql.version>
-        <smallrye-opentracing.version>2.0.1</smallrye-opentracing.version>
+        <smallrye-opentracing.version>2.1.0</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.2.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.3.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.2.2</smallrye-context-propagation.version>
@@ -3050,26 +3046,6 @@
                 <artifactId>opentracing-util</artifactId>
                 <version>${opentracing.version}</version>
                 <type>test-jar</type>
-            </dependency>
-            <dependency>
-                <groupId>io.opentracing.contrib</groupId>
-                <artifactId>opentracing-jaxrs2</artifactId>
-                <version>${opentracing-jaxrs.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentracing.contrib</groupId>
-                <artifactId>opentracing-concurrent</artifactId>
-                <version>${opentracing-concurrent.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentracing.contrib</groupId>
-                <artifactId>opentracing-web-servlet-filter</artifactId>
-                <version>${opentracing-web-servlet-filter.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentracing.contrib</groupId>
-                <artifactId>opentracing-tracerresolver</artifactId>
-                <version>${opentracing-tracerresolver.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.opentracing.contrib</groupId>

@@ -556,6 +556,15 @@ public class JunitTestRunner {
                             enclosingClasses.put(classInfo.name(), enclosing);
                         }
                     }
+                } else if (instance.target().kind() == AnnotationTarget.Kind.FIELD) {
+                    ClassInfo classInfo = instance.target().asField().declaringClass();
+                    allTestClasses.add(classInfo.name());
+                    if (classInfo.classAnnotation(NESTED) != null) {
+                        var enclosing = classInfo.enclosingClass();
+                        if (enclosing != null) {
+                            enclosingClasses.put(classInfo.name(), enclosing);
+                        }
+                    }
                 }
             }
         }
@@ -627,8 +636,8 @@ public class JunitTestRunner {
                     log.error("Failed to instrument " + i + " for usage tracking", e);
                 }
             }
-            cl = testApplication.createRuntimeClassLoader(testApplication.getAugmentClassLoader(), Collections.emptyMap(),
-                    transformedClasses);
+            cl = testApplication.createDeploymentClassLoader();
+            cl.reset(Collections.emptyMap(), transformedClasses);
             for (String i : unitTestClasses) {
                 try {
                     utClasses.add(cl.loadClass(i));
@@ -674,6 +683,24 @@ public class JunitTestRunner {
             for (AnnotationInstance instance : index.getAnnotations(an)) {
                 if (instance.target().kind() == AnnotationTarget.Kind.CLASS) {
                     ret.add(instance.target().asClass().name());
+                }
+            }
+        }
+        Set<DotName> processed = new HashSet<>();
+        processed.addAll(ret);
+        for (ClassInfo clazz : index.getKnownClasses()) {
+            for (DotName annotation : clazz.annotations().keySet()) {
+                if (processed.contains(annotation)) {
+                    continue;
+                }
+                processed.add(annotation);
+                try {
+                    Class<?> loadedAnnotation = Thread.currentThread().getContextClassLoader().loadClass(annotation.toString());
+                    if (loadedAnnotation.isAnnotationPresent(Testable.class)) {
+                        ret.add(annotation);
+                    }
+                } catch (ClassNotFoundException e) {
+                    log.warn("Unable to load annotation type " + annotation + " cannot determine if it is @Testable");
                 }
             }
         }

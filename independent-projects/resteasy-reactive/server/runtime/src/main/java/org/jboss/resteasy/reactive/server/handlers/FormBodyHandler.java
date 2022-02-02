@@ -131,7 +131,9 @@ public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableSe
         @Override
         public int read() throws IOException {
             int res = delegate.read();
-            baos.write(res);
+            if (res != -1) {
+                baos.write(res);
+            }
             return res;
         }
     }

@@ -7,7 +7,7 @@ import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandResult;
 import org.aesh.command.invocation.CommandInvocation;
 
-import io.quarkus.devservices.runtime.devmode.DevServiceDescription;
+import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 
 @CommandDefinition(name = "list", description = "List of dev services")
 public class DevServicesListCommand implements Command {
@@ -16,7 +16,7 @@ public class DevServicesListCommand implements Command {
     public CommandResult execute(CommandInvocation commandInvocation) {
         commandInvocation.println("");
         StringBuilder builder = new StringBuilder();
-        for (DevServiceDescription serviceDescription : DevServicesCommand.serviceDescriptions) {
+        for (DevServiceDescriptionBuildItem serviceDescription : DevServicesCommand.serviceDescriptions) {
             printDevService(builder, serviceDescription, false);
             builder.append("\n");
         }

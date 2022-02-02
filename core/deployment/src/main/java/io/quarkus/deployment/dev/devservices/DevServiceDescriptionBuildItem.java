@@ -1,17 +1,19 @@
-package io.quarkus.devservices.runtime.devmode;
+package io.quarkus.deployment.dev.devservices;
 
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class DevServiceDescription {
+import io.quarkus.builder.item.MultiBuildItem;
+
+public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     private String name;
     private ContainerInfo containerInfo;
     private Map<String, String> configs;
 
-    public DevServiceDescription() {
+    public DevServiceDescriptionBuildItem() {
     }
 
-    public DevServiceDescription(String name, ContainerInfo containerInfo, Map<String, String> configs) {
+    public DevServiceDescriptionBuildItem(String name, ContainerInfo containerInfo, Map<String, String> configs) {
         this.name = name;
         this.containerInfo = containerInfo;
         this.configs = configs;

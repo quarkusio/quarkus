@@ -12,13 +12,13 @@ import org.aesh.command.GroupCommandDefinition;
 import org.aesh.command.invocation.CommandInvocation;
 
 import io.quarkus.deployment.console.SetCompleter;
-import io.quarkus.devservices.runtime.devmode.DevServiceDescription;
+import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 
 @GroupCommandDefinition(name = "devservices", description = "Dev Service Commands")
 public class DevServicesCommand implements GroupCommand {
-    static List<DevServiceDescription> serviceDescriptions;
+    static List<DevServiceDescriptionBuildItem> serviceDescriptions;
 
-    public DevServicesCommand(List<DevServiceDescription> serviceDescriptions) {
+    public DevServicesCommand(List<DevServiceDescriptionBuildItem> serviceDescriptions) {
         DevServicesCommand.serviceDescriptions = serviceDescriptions;
     }
 
@@ -33,7 +33,7 @@ public class DevServicesCommand implements GroupCommand {
         return CommandResult.SUCCESS;
     }
 
-    static Optional<DevServiceDescription> findDevService(String devServiceName) {
+    static Optional<DevServiceDescriptionBuildItem> findDevService(String devServiceName) {
         return serviceDescriptions.stream()
                 .filter(d -> d.getName().equals(devServiceName))
                 .findFirst();
@@ -44,7 +44,7 @@ public class DevServicesCommand implements GroupCommand {
         @Override
         protected Set<String> allOptions(String soFar) {
             return serviceDescriptions.stream()
-                    .map(DevServiceDescription::getName)
+                    .map(DevServiceDescriptionBuildItem::getName)
                     .collect(Collectors.toSet());
         }
     }

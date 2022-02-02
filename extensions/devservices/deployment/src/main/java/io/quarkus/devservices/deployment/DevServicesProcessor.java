@@ -22,20 +22,15 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.dev.devservices.ContainerInfo;
+import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-import io.quarkus.devservices.runtime.devmode.ContainerInfo;
-import io.quarkus.devservices.runtime.devmode.DevServiceDescription;
-import io.quarkus.devservices.runtime.devmode.DevServicesRecorder;
 
 public class DevServicesProcessor {
 
@@ -48,18 +43,15 @@ public class DevServicesProcessor {
     static Map<String, ContainerLogForwarder> containerLogForwarders = new HashMap<>();
 
     @BuildStep(onlyIf = { IsDevelopment.class })
-    @Record(value = ExecutionTime.STATIC_INIT)
-    public void config(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeTemplateProducer,
+    public List<DevServiceDescriptionBuildItem> config(
             BuildProducer<ConsoleCommandBuildItem> commandBuildItemBuildProducer,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
-            DevServicesRecorder recorder,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             List<DevServicesResultBuildItem> devServicesResults) {
-        List<DevServiceDescription> serviceDescriptions = buildServiceDescriptions(devServicesResults,
+        List<DevServiceDescriptionBuildItem> serviceDescriptions = buildServiceDescriptions(devServicesResults,
                 devServicesLauncherConfig);
 
-        for (DevServiceDescription devService : serviceDescriptions) {
+        for (DevServiceDescriptionBuildItem devService : serviceDescriptions) {
             if (devService.hasContainerInfo()) {
                 containerLogForwarders.compute(devService.getContainerInfo().getId(),
                         (id, forwarder) -> Objects.requireNonNullElseGet(forwarder,
@@ -67,12 +59,9 @@ public class DevServicesProcessor {
             }
         }
 
-        devConsoleRuntimeTemplateProducer.produce(new DevConsoleRuntimeTemplateInfoBuildItem("devServices",
-                recorder.devServices(serviceDescriptions), this.getClass(), curateOutcomeBuildItem));
-
         // Build commands if we are in local dev mode
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
-            return;
+            return serviceDescriptions;
         }
 
         commandBuildItemBuildProducer.produce(
@@ -83,13 +72,13 @@ public class DevServicesProcessor {
         }
         context.reset(
                 new ConsoleCommand('c', "Show dev services containers", null, () -> {
-                    List<DevServiceDescription> descriptions = buildServiceDescriptions(devServicesResults,
+                    List<DevServiceDescriptionBuildItem> descriptions = buildServiceDescriptions(devServicesResults,
                             devServicesLauncherConfig);
                     StringBuilder builder = new StringBuilder();
                     builder.append("\n\n")
                             .append(RED + "==" + RESET + " " + UNDERLINE + "Dev Services" + NO_UNDERLINE)
                             .append("\n\n");
-                    for (DevServiceDescription devService : descriptions) {
+                    for (DevServiceDescriptionBuildItem devService : descriptions) {
                         printDevService(builder, devService, true);
                         builder.append("\n");
                     }
@@ -99,9 +88,10 @@ public class DevServicesProcessor {
                         new ConsoleCommand.HelpState(() -> logForwardEnabled ? GREEN : RED,
                                 () -> logForwardEnabled ? "enabled" : "disabled"),
                         this::toggleLogForwarders));
+        return serviceDescriptions;
     }
 
-    private List<DevServiceDescription> buildServiceDescriptions(List<DevServicesResultBuildItem> devServicesResults,
+    private List<DevServiceDescriptionBuildItem> buildServiceDescriptions(List<DevServicesResultBuildItem> devServicesResults,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
         // Fetch container infos
         Set<String> containerIds = devServicesResults.stream()
@@ -111,13 +101,13 @@ public class DevServicesProcessor {
         Map<String, Container> containerInfos = fetchContainerInfos(containerIds);
         // Build descriptions
         Set<String> configKeysFromDevServices = new HashSet<>();
-        List<DevServiceDescription> descriptions = new ArrayList<>();
+        List<DevServiceDescriptionBuildItem> descriptions = new ArrayList<>();
         for (DevServicesResultBuildItem buildItem : devServicesResults) {
             configKeysFromDevServices.addAll(buildItem.getConfig().keySet());
             descriptions.add(toDevServiceDescription(buildItem, containerInfos.get(buildItem.getContainerId())));
         }
         // Sort descriptions by name
-        descriptions.sort(Comparator.comparing(DevServiceDescription::getName));
+        descriptions.sort(Comparator.comparing(DevServiceDescriptionBuildItem::getName));
         // Add description from other dev service configs as last
         if (devServicesLauncherConfig.isPresent()) {
             Map<String, String> config = new HashMap<>(devServicesLauncherConfig.get().getConfig());
@@ -125,7 +115,7 @@ public class DevServicesProcessor {
                 config.remove(key);
             }
             if (!config.isEmpty()) {
-                descriptions.add(new DevServiceDescription("Other Dev Services", null, config));
+                descriptions.add(new DevServiceDescriptionBuildItem("Other Dev Services", null, config));
             }
         }
         return descriptions;
@@ -143,11 +133,11 @@ public class DevServicesProcessor {
                 .collect(Collectors.toMap(Container::getId, Function.identity()));
     }
 
-    private DevServiceDescription toDevServiceDescription(DevServicesResultBuildItem buildItem, Container container) {
+    private DevServiceDescriptionBuildItem toDevServiceDescription(DevServicesResultBuildItem buildItem, Container container) {
         if (container == null) {
-            return new DevServiceDescription(buildItem.getName(), null, buildItem.getConfig());
+            return new DevServiceDescriptionBuildItem(buildItem.getName(), null, buildItem.getConfig());
         } else {
-            return new DevServiceDescription(buildItem.getName(), toContainerInfo(container), buildItem.getConfig());
+            return new DevServiceDescriptionBuildItem(buildItem.getName(), toContainerInfo(container), buildItem.getConfig());
         }
     }
 
@@ -198,7 +188,7 @@ public class DevServicesProcessor {
         }
     }
 
-    public static void printDevService(StringBuilder builder, DevServiceDescription devService, boolean withStatus) {
+    public static void printDevService(StringBuilder builder, DevServiceDescriptionBuildItem devService, boolean withStatus) {
         if (devService.hasContainerInfo()) {
             builder.append(BOLD).append(devService.getName()).append(NO_BOLD);
             if (withStatus) {

@@ -17,8 +17,8 @@ import org.testcontainers.containers.output.OutputFrame;
 
 import com.github.dockerjava.api.command.LogContainerCmd;
 
+import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.devservices.deployment.DevServicesCommand.DevServiceCompleter;
-import io.quarkus.devservices.runtime.devmode.DevServiceDescription;
 
 @CommandDefinition(name = "logs", description = "Print container logs")
 public class DevServicesLogsCommand implements Command {
@@ -34,9 +34,9 @@ public class DevServicesLogsCommand implements Command {
 
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) {
-        Optional<DevServiceDescription> devService = findDevService(this.devService);
+        Optional<DevServiceDescriptionBuildItem> devService = findDevService(this.devService);
         if (devService.isPresent()) {
-            DevServiceDescription desc = devService.get();
+            DevServiceDescriptionBuildItem desc = devService.get();
             try (FrameConsumerResultCallback resultCallback = new FrameConsumerResultCallback()) {
                 resultCallback.addConsumer(OutputFrame.OutputType.STDERR,
                         frame -> commandInvocation.print(frame.getUtf8String()));

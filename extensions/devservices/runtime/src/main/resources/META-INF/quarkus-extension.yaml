@@ -1,9 +1,0 @@
----
-artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "Dev Services"
-metadata:
-  guide: "https://quarkus.io/guides/dev-services"
-  status: "stable"
-  unlisted: true
-  config:
-    - "quarkus.devservices."

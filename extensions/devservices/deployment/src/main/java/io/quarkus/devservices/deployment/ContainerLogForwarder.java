@@ -13,24 +13,24 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.output.FrameConsumerResultCallback;
 import org.testcontainers.containers.output.OutputFrame;
 
-import io.quarkus.devservices.runtime.devmode.DevServiceDescription;
+import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 
 public class ContainerLogForwarder implements Closeable {
 
-    private final DevServiceDescription devService;
+    private final DevServiceDescriptionBuildItem devService;
     private final AtomicLong timestamp = new AtomicLong(0L);
     private final Logger logger;
     private final String shortId;
     private FrameConsumerResultCallback resultCallback;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
-    public ContainerLogForwarder(DevServiceDescription devService) {
+    public ContainerLogForwarder(DevServiceDescriptionBuildItem devService) {
         this.devService = devService;
         this.logger = Logger.getLogger(devService.getName());
         this.shortId = devService.getContainerInfo().getShortId();
     }
 
-    public DevServiceDescription getDevService() {
+    public DevServiceDescriptionBuildItem getDevService() {
         return devService;
     }
 

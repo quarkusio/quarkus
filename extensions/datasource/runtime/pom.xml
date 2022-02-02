@@ -39,10 +39,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-credentials</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

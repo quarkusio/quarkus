@@ -25,7 +25,7 @@ public class DevConsoleDevServicesSmokeTest {
                 .statusCode(200).body(Matchers.containsString("Dev Services"));
 
         RestAssured.with()
-                .get("q/dev/io.quarkus.quarkus-devservices/dev-services")
+                .get("q/dev/io.quarkus.quarkus-vertx-http/dev-services")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Dev Services"));
 

@@ -132,7 +132,7 @@ public class DevServicesProcessor {
     }
 
     private Map<String, Container> fetchContainerInfos(Set<String> containerIds) {
-        if (!isDockerWorking.getAsBoolean() || containerIds.isEmpty()) {
+        if (containerIds.isEmpty() || !isDockerWorking.getAsBoolean()) {
             return Collections.emptyMap();
         }
         return DockerClientFactory.lazyClient().listContainersCmd()

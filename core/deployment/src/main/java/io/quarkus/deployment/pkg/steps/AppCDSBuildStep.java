@@ -158,8 +158,7 @@ public class AppCDSBuildStep {
             if (log.isDebugEnabled()) {
                 processBuilder.inheritIO();
             } else {
-                processBuilder.redirectError(NULL_FILE);
-                processBuilder.redirectOutput(NULL_FILE);
+                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD).redirectOutput(ProcessBuilder.Redirect.DISCARD);
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
@@ -264,8 +263,7 @@ public class AppCDSBuildStep {
             if (log.isDebugEnabled()) {
                 processBuilder.inheritIO();
             } else {
-                processBuilder.redirectError(NULL_FILE);
-                processBuilder.redirectOutput(NULL_FILE);
+                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD).redirectOutput(ProcessBuilder.Redirect.DISCARD);
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
@@ -308,9 +306,4 @@ public class AppCDSBuildStep {
             return true;
         }
     }
-
-    // copied from Java 9
-    // TODO remove when we move to Java 11
-
-    private static final File NULL_FILE = new File(SystemUtils.IS_OS_WINDOWS ? "NUL" : "/dev/null");
 }

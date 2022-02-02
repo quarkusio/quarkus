@@ -310,6 +310,8 @@
                 <module>grpc-health</module>
                 <module>grpc-hibernate</module>
                 <module>grpc-hibernate-reactive</module>
+                <module>grpc-external-proto</module>
+                <module>grpc-external-proto-test</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
             </modules>

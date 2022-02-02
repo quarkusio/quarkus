@@ -361,7 +361,7 @@ public class QuteProcessor {
                 String tagPath = path.getPath();
                 String tagName = tagPath.substring(TemplatePathBuildItem.TAGS.length(), tagPath.length());
                 if (tagName.contains(".")) {
-                    tagName = tagName.substring(0, tagName.lastIndexOf('.'));
+                    tagName = tagName.substring(0, tagName.indexOf('.'));
                 }
                 builder.addSectionHelper(new UserTagSectionHelper.Factory(tagName, tagPath));
             }

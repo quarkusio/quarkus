@@ -15,7 +15,6 @@
 
     <properties>
         <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test?allowPublicKeyRetrieval=true</mysql.url>
-        <mysql.image>mysql:8.0.22</mysql.image>
     </properties>
 
     <dependencies>

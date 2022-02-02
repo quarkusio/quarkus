@@ -11,6 +11,7 @@
     <maven.compiler.source>11</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.target>11</maven.compiler.target>
+    <db2.image>@db2.image@</db2.image>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -56,6 +57,12 @@
     </dependency>
   </dependencies>
   <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>io.quarkus</groupId>

@@ -24,11 +24,6 @@ public class DB2DevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(DB2DevServicesProcessor.class);
 
-    /**
-     * If you update this remember to update the container-license-acceptance.txt in the tests
-     */
-    public static final String TAG = "11.5.5.1";
-
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupDB2(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
@@ -70,7 +65,7 @@ public class DB2DevServicesProcessor {
         private String hostName = null;
 
         public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
-            super(DockerImageName.parse(imageName.orElse("ibmcom/db2:" + DB2DevServicesProcessor.TAG))
+            super(DockerImageName.parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")))
                     .asCompatibleSubstituteFor(DockerImageName.parse("ibmcom/db2")));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

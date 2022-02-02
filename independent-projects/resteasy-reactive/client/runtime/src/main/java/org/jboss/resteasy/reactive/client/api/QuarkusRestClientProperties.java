@@ -42,4 +42,10 @@ public class QuarkusRestClientProperties {
      */
     public static final String NAME = "io.quarkus.rest.client.name";
 
+    /**
+     * Set to true to prevent the client from providing additional contextual information (REST client class and method names)
+     * when exception happens during a client invocation.
+     */
+    public static final String DISABLE_CONTEXTUAL_ERROR_MESSAGES = "io.quarkus.rest.client.disable-contextual-error-messages";
+
 }

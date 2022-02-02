@@ -74,16 +74,14 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
 
             final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
             final Method initAndRun = codeGenerator.getMethod("initAndRun", ClassLoader.class, PathCollection.class,
-                    Path.class,
-                    Path.class,
-                    Consumer.class, ApplicationModel.class, Properties.class, String.class);
-            initAndRun.invoke(null, deploymentClassLoader,
-                    PathList.of(sourcesDir),
-                    generatedSourcesDir(test),
-                    buildDir().toPath(),
-                    sourceRegistrar,
-                    curatedApplication.getApplicationModel(),
-                    mavenProject().getProperties(), launchMode.name());
+                    Path.class, Path.class,
+                    Consumer.class, ApplicationModel.class, Properties.class, String.class,
+                    boolean.class);
+            initAndRun.invoke(null, deploymentClassLoader, PathList.of(sourcesDir),
+                    generatedSourcesDir(test), buildDir().toPath(),
+                    sourceRegistrar, curatedApplication.getApplicationModel(), mavenProject().getProperties(),
+                    launchMode.name(),
+                    test);
         } catch (Exception any) {
             throw new MojoExecutionException("Quarkus code generation phase has failed", any);
         } finally {

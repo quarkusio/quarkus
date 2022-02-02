@@ -81,8 +81,10 @@ import org.fusesource.jansi.internal.Kernel32;
 import org.fusesource.jansi.internal.WindowsSupport;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
@@ -993,11 +995,20 @@ public class DevMojo extends AbstractMojo {
         }
 
         addQuarkusDevModeDeps(builder);
+        //look for an application.properties
+        Set<Path> resourceDirs = new HashSet<>();
+        for (Resource resource : project.getResources()) {
+            String dir = resource.getDirectory();
+            Path path = Paths.get(dir);
+            resourceDirs.add(path);
+        }
+        Set<ArtifactKey> configuredParentFirst = QuarkusBootstrap.createClassLoadingConfig(PathsCollection.from(resourceDirs),
+                QuarkusBootstrap.Mode.DEV, Collections.emptyList()).parentFirstArtifacts;
 
         //in most cases these are not used, however they need to be present for some
         //parent-first cases such as logging
         //first we go through and get all the parent first artifacts
-        Set<ArtifactKey> parentFirstArtifacts = new HashSet<>();
+        Set<ArtifactKey> parentFirstArtifacts = new HashSet<>(configuredParentFirst);
         for (Artifact appDep : project.getArtifacts()) {
             if (appDep.getArtifactHandler().getExtension().equals("jar") && appDep.getFile().isFile()) {
                 try (ZipFile file = new ZipFile(appDep.getFile())) {

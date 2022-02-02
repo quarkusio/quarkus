@@ -69,11 +69,11 @@ public final class Beans {
         return null;
     }
 
-    static BeanInfo createProducerMethod(MethodInfo producerMethod, BeanInfo declaringBean, BeanDeployment beanDeployment,
+    static BeanInfo createProducerMethod(Set<Type> beanTypes, MethodInfo producerMethod, BeanInfo declaringBean,
+            BeanDeployment beanDeployment,
             DisposerInfo disposer, InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         List<ScopeInfo> scopes = new ArrayList<>();
-        Set<Type> types = Types.getProducerMethodTypeClosure(producerMethod, beanDeployment);
         Integer priority = null;
         boolean isAlternative = false;
         boolean isDefaultBean = false;
@@ -169,7 +169,7 @@ public final class Beans {
         }
 
         List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer);
-        BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, types, qualifiers, injections, declaringBean,
+        BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, beanTypes, qualifiers, injections, declaringBean,
                 disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority);
         for (Injection injection : injections) {
             injection.init(bean);

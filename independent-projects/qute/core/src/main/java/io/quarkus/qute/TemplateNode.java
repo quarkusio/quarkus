@@ -78,6 +78,13 @@ public interface TemplateNode {
          */
         Optional<Variant> getVariant();
 
+        default void appendTo(StringBuilder builder) {
+            if (!getTemplateId().equals(getTemplateGeneratedId())) {
+                builder.append(" in template [").append(getTemplateId()).append("]");
+            }
+            builder.append(" on line ").append(getLine());
+        }
+
     }
 
 }

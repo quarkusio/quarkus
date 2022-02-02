@@ -504,10 +504,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     static TemplateException parserError(String message, Origin origin) {
         StringBuilder builder = new StringBuilder("Parser error");
-        if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-            builder.append(" in template [").append(origin.getTemplateId()).append("]");
-        }
-        builder.append(" on line ").append(origin.getLine()).append(": ")
+        origin.appendTo(builder);
+        builder.append(": ")
                 .append(message);
         return new TemplateException(origin,
                 builder.toString());
@@ -533,10 +531,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 && LOGGER.isDebugEnabled()) {
             StringBuilder builder = new StringBuilder("Too many section params for ").append(tag);
             Origin origin = origin(0);
-            if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-                builder.append(" in template [").append(origin.getTemplateId()).append("]");
-            }
-            builder.append(" on line ").append(origin.getLine());
+            origin.appendTo(builder);
             builder.append(String.format("[label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams));
             LOGGER.debugf(builder.toString());
         }
@@ -822,11 +817,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
             } else {
                 StringBuilder builder = new StringBuilder(literal == null ? "Null" : "Non-literal");
                 builder.append(" value used in bracket notation [").append(value).append("]");
-                if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-                    builder.append(" in template [").append(origin.getTemplateId()).append("]");
-                }
-                builder.append(" on line ").append(origin.getLine());
-                throw new TemplateException(builder.toString());
+                origin.appendTo(builder);
+                throw new TemplateException(origin, builder.toString());
             }
         }
 

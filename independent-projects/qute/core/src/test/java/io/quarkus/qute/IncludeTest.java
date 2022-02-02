@@ -1,8 +1,7 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -148,12 +147,11 @@ public class IncludeTest {
     public void testAmbiguousInserts() {
         Engine engine = Engine.builder().addDefaults().build();
         engine.putTemplate("super", engine.parse("{#insert header}default header{/insert}"));
-        try {
-            engine.parse("{#include super}{#header}1{/}{#header}2{/}{/}");
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("Multiple blocks"));
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#include super}{#header}1{/}{#header}2{/}{/}"))
+                .withMessage(
+                        "Multiple blocks define the content for the {#insert} section of name [header] on line 1")
+                .hasFieldOrProperty("origin");
     }
 
     @Test
@@ -161,6 +159,17 @@ public class IncludeTest {
         Engine engine = Engine.builder().addDefaults().build();
         engine.putTemplate("super", engine.parse("{#for i in 5}{#insert row}No row{/}{/for}"));
         assertEquals("1:2:3:4:5:", engine.parse("{#include super}{#row}{i}:{/row}{/}").render());
+    }
+
+    @Test
+    public void testTagAndInsertConflict() {
+        Engine engine = Engine.builder().addDefaults().addSectionHelper(new UserTagSectionHelper.Factory("row", "row")).build();
+        engine.putTemplate("row", engine.parse("{foo}"));
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#insert}{/}\n{#insert row /}"))
+                .withMessage(
+                        "An {#insert} section defined in the {#include} section on line 2 conflicts with an existing section/tag: row")
+                .hasFieldOrProperty("origin");
     }
 
 }

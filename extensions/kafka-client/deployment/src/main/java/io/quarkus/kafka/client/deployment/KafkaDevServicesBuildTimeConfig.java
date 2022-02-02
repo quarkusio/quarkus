@@ -45,7 +45,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * See https://github.com/strimzi/test-container and https://quay.io/repository/strimzi-test-container/test-container
      * <p>
      */
-    @ConfigItem(defaultValue = "docker.io/vectorized/redpanda:v21.11.2")
+    @ConfigItem(defaultValue = "docker.io/vectorized/redpanda:v21.11.3")
     public String imageName;
 
     /**

@@ -64,10 +64,11 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@code Optional<Response>} or {@code Optional<RestResponse>} should be used when filtering does not need to perform any
  * blocking operations but the filter
  * might abort processing - in this case processing is aborted when the {@code Optional} contains a {@code Response} payload.
- * <li>{@code Uni<Void>} should be used when filtering needs to perform a blocking operations but the filter cannot abort
+ * <li>{@code Uni<Void>} should be used when filtering needs to perform a non-blocking operation but the filter cannot abort
  * processing.
  * Note that {@code Uni<Void>} can easily be produced using: {@code Uni.createFrom().nullItem()}
- * <li>{@code Uni<Response>} or {@code Uni<RestResponse>} should be used when filtering needs to perform a blocking operations
+ * <li>{@code Uni<Response>} or {@code Uni<RestResponse>} should be used when filtering needs to perform a non-blocking
+ * operation
  * and the filter
  * might abort processing - in this case processing is aborted when the {@code Uni} contains a {@code Response} payload.
  * </ul>

@@ -2,15 +2,19 @@ package io.quarkus.gradle.tasks;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -19,6 +23,9 @@ import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -36,11 +43,14 @@ import org.gradle.jvm.toolchain.JavaToolchainSpec;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -51,7 +61,10 @@ import io.quarkus.runtime.LaunchMode;
 public class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
+
+    private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
     private Set<File> filesIncludedInClasspath = new HashSet<>();
+
     protected Configuration quarkusDevConfiguration;
 
     private File buildDir;
@@ -268,23 +281,29 @@ public class QuarkusDev extends QuarkusTask {
                     .equals(localDep.getWorkspaceModule().getId()));
         }
 
+        addQuarkusDevModeDeps(builder);
+
+        //look for an application.properties
+        Set<Path> resourceDirs = new HashSet<>();
+        for (SourceDir resourceDir : appModel.getApplicationModule().getMainSources().getResourceDirs()) {
+            resourceDirs.add(resourceDir.getOutputDir());
+        }
+
+        Set<ArtifactKey> configuredParentFirst = QuarkusBootstrap.createClassLoadingConfig(PathsCollection.from(resourceDirs),
+                QuarkusBootstrap.Mode.DEV, Collections.emptyList()).parentFirstArtifacts;
+
+        Set<ArtifactKey> parentFirstArtifactKeys = new HashSet<>(configuredParentFirst);
+        parentFirstArtifactKeys.addAll(appModel.getParentFirst());
+
         for (io.quarkus.maven.dependency.ResolvedDependency artifact : appModel.getDependencies()) {
-            //we only use the launcher for launching from the IDE, we need to exclude it
-            if (artifact.getGroupId().equals("io.quarkus")
-                    && artifact.getArtifactId().equals("quarkus-ide-launcher")) {
-                continue;
-            }
             if (!projectDependencies.contains(artifact.getKey())) {
                 artifact.getResolvedPaths().forEach(p -> {
-                    if (Files.exists(p)) {
-                        if (artifact.getGroupId().equals("io.quarkus")
-                                && artifact.getArtifactId().equals("quarkus-class-change-agent")) {
-                            builder.jvmArgs("-javaagent:" + p.toFile().getAbsolutePath());
-                        } else {
-                            addToClassPaths(builder, p.toFile());
-                        }
+                    File file = p.toFile();
+                    if (file.exists() && parentFirstArtifactKeys.contains(artifact.getKey())
+                            && filesIncludedInClasspath.add(file)) {
+                        getProject().getLogger().debug("Adding dependency {}", file);
+                        builder.classpathEntry(file);
                     }
-
                 });
             }
         }
@@ -325,6 +344,52 @@ public class QuarkusDev extends QuarkusTask {
 
     protected void modifyDevModeContext(GradleDevModeLauncher.Builder builder) {
 
+    }
+
+    private void addQuarkusDevModeDeps(GradleDevModeLauncher.Builder builder) {
+        final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-core-deployment/pom.properties";
+        final InputStream devModePomPropsIs = DevModeMain.class.getClassLoader().getResourceAsStream(pomPropsPath);
+        if (devModePomPropsIs == null) {
+            throw new GradleException("Failed to locate " + pomPropsPath + " on the classpath");
+        }
+        final Properties devModeProps = new Properties();
+        try (InputStream is = devModePomPropsIs) {
+            devModeProps.load(is);
+        } catch (IOException e) {
+            throw new GradleException("Failed to load " + pomPropsPath + " from the classpath", e);
+        }
+        final String devModeGroupId = devModeProps.getProperty("groupId");
+        if (devModeGroupId == null) {
+            throw new GradleException("Classpath resource " + pomPropsPath + " is missing groupId");
+        }
+        final String devModeArtifactId = devModeProps.getProperty("artifactId");
+        if (devModeArtifactId == null) {
+            throw new GradleException("Classpath resource " + pomPropsPath + " is missing artifactId");
+        }
+        final String devModeVersion = devModeProps.getProperty("version");
+        if (devModeVersion == null) {
+            throw new GradleException("Classpath resource " + pomPropsPath + " is missing version");
+        }
+
+        Dependency devModeDependency = getProject().getDependencies()
+                .create(String.format("%s:%s:%s", devModeGroupId, devModeArtifactId, devModeVersion));
+
+        final Configuration devModeDependencyConfiguration = getProject().getConfigurations()
+                .detachedConfiguration(devModeDependency);
+
+        for (ResolvedArtifact appDep : devModeDependencyConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
+            ModuleVersionIdentifier artifactId = appDep.getModuleVersion().getId();
+            //we only use the launcher for launching from the IDE, we need to exclude it
+            if (!(artifactId.getGroup().equals("io.quarkus")
+                    && artifactId.getName().equals("quarkus-ide-launcher"))) {
+                if (artifactId.getGroup().equals("io.quarkus")
+                        && artifactId.getName().equals("quarkus-class-change-agent")) {
+                    builder.jvmArgs("-javaagent:" + appDep.getFile().getAbsolutePath());
+                } else {
+                    builder.classpathEntry(appDep.getFile());
+                }
+            }
+        }
     }
 
     private void addLocalProject(ResolvedDependency project, GradleDevModeLauncher.Builder builder, Set<ArtifactKey> addeDeps,
@@ -452,13 +517,6 @@ public class QuarkusDev extends QuarkusTask {
     private java.util.Optional<JavaCompile> getJavaCompileTask() {
         return java.util.Optional
                 .ofNullable((JavaCompile) getProject().getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME));
-    }
-
-    private void addToClassPaths(GradleDevModeLauncher.Builder classPathManifest, File file) {
-        if (filesIncludedInClasspath.add(file)) {
-            getProject().getLogger().debug("Adding dependency {}", file);
-            classPathManifest.classpathEntry(file);
-        }
     }
 
     public void shouldPropagateJavaCompilerArgs(boolean shouldPropagateJavaCompilerArgs) {

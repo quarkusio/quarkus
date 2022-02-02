@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.TemplateNode.Origin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -222,7 +223,19 @@ public interface SectionHelperFactory<T extends SectionHelper> {
             return null;
         }
 
+        /**
+         * 
+         * @return the engine
+         */
         public Engine getEngine();
+
+        /**
+         * 
+         * @return the origin of the section start tag
+         */
+        public default Origin getOrigin() {
+            return getBlocks().get(0).origin;
+        }
 
     }
 

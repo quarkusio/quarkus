@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Futures.evaluateParams;
 
+import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -98,9 +99,11 @@ public class IncludeSectionHelper implements SectionHelper {
             for (SectionBlock block : context.getBlocks()) {
                 String name = block.id.equals(MAIN_BLOCK_NAME) ? DEFAULT_NAME : block.label;
                 if (extendingBlocks.put(name, block) != null) {
-                    throw new TemplateException(context.getBlocks().get(0).origin, String.format(
-                            "Multiple blocks define the content for the insert section '%s' in template %s",
-                            name, block.origin.getTemplateId()));
+                    Origin origin = context.getOrigin();
+                    StringBuilder msg = new StringBuilder(
+                            "Multiple blocks define the content for the {#insert} section of name [" + name + "]");
+                    origin.appendTo(msg);
+                    throw new TemplateException(origin, msg.toString());
                 }
             }
 
@@ -128,7 +131,11 @@ public class IncludeSectionHelper implements SectionHelper {
                 public Template get() {
                     Template template = engine.getTemplate(templateId);
                     if (template == null) {
-                        throw new TemplateException("Template not found: " + templateId);
+                        Origin origin = context.getOrigin();
+                        StringBuilder msg = new StringBuilder(
+                                "Included template [" + templateId + "] not found");
+                        origin.appendTo(msg);
+                        throw new TemplateException(origin, msg.toString());
                     }
                     return template;
                 }

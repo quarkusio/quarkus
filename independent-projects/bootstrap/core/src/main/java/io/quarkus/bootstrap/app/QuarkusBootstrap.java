@@ -162,7 +162,7 @@ public class QuarkusBootstrap implements Serializable {
         return new CuratedApplication(this, appModelFactory.resolveAppModel(), classLoadingConfig);
     }
 
-    private static ConfiguredClassLoading createClassLoadingConfig(PathCollection applicationRoot, Mode mode,
+    public static ConfiguredClassLoading createClassLoadingConfig(PathCollection applicationRoot, Mode mode,
             List<ArtifactKey> parentFirstArtifacts) {
         //look for an application.properties
         for (Path path : applicationRoot) {

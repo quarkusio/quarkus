@@ -12,15 +12,8 @@ interactive web applications.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
-
-
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -39,31 +32,23 @@ The solution is located in the `opentracing-quickstart` {quickstarts-tree-url}/o
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=opentracing-quickstart \
-    -DclassName="org.acme.opentracing.TracedResource" \
-    -Dpath="/hello" \
-    -Dextensions="resteasy,quarkus-smallrye-opentracing"
-cd opentracing-quickstart
-----
+:create-app-artifact-id: opentracing-quickstart
+:create-app-extensions: resteasy,quarkus-smallrye-opentracing
+include::includes/devtools/create-app.adoc[]
 
-This command generates the Maven project with a REST endpoint and imports the `smallrye-opentracing` extension, which
+This command generates the Maven project and imports the `smallrye-opentracing` extension, which
 includes the OpenTracing support and the default https://www.jaegertracing.io/[Jaeger] tracer.
 
 If you already have your Quarkus project configured, you can add the `smallrye-opentracing` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-opentracing"
-----
+:add-extension-extensions: smallrye-opentracing
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -71,9 +56,15 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-opentracing")
+----
+
 === Examine the JAX-RS resource
 
-Open the `src/main/java/org/acme/opentracing/TracedResource.java` file and see the following content:
+Create the `src/main/java/org/acme/opentracing/TracedResource.java` file with the following content:
 
 [source,java]
 ----
@@ -138,17 +129,13 @@ docker run -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 or if configuring the tracer via environment variables:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1"
-----
+:dev-additional-parameters: -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1"
+include::includes/devtools/dev.adoc[]
+:!dev-additional-parameters:
 
 Once both the application and tracing system are started, you can make a request to the provided endpoint:
 
@@ -204,14 +191,21 @@ The instrumentation documented in this section has been tested with Quarkus and 
 
 === JDBC
 
-The https://github.com/opentracing-contrib/java-jdbc[JDBC instrumentation] will add a span for each JDBC queries done by your application, to enable it, add the following dependency to your pom.xml:
+The https://github.com/opentracing-contrib/java-jdbc[JDBC instrumentation] will add a span for each JDBC queries done by your application, to enable it, add the following dependency to your build file:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.opentracing.contrib</groupId>
     <artifactId>opentracing-jdbc</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.opentracing.contrib:opentracing-jdbc")
 ----
 
 As it uses a dedicated JDBC driver, you must configure your datasource and Hibernate to use it.
@@ -230,14 +224,21 @@ quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 === Kafka
 
-The https://github.com/opentracing-contrib/java-kafka-client[Kafka instrumentation] will add a span for each message sent to or received from a Kafka topic. To enable it, add the following dependency to your pom.xml:
+The https://github.com/opentracing-contrib/java-kafka-client[Kafka instrumentation] will add a span for each message sent to or received from a Kafka topic. To enable it, add the following dependency to your build file:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.opentracing.contrib</groupId>
     <artifactId>opentracing-kafka-client</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.opentracing.contrib:opentracing-kafka-client")
 ----
 
 It contains OpenTracing interceptors that must be registered on Kafka producers and consumers.
@@ -263,14 +264,21 @@ NOTE: `interceptor.classes` accept a list of classes separated by a comma.
 
 === MongoDB client
 
-The https://github.com/opentracing-contrib/java-mongo-driver[Mongo Driver instrumentation] will add a span for each command executed by your application. To enable it, add the following dependency to your pom.xml:
+The https://github.com/opentracing-contrib/java-mongo-driver[Mongo Driver instrumentation] will add a span for each command executed by your application. To enable it, add the following dependency to your build file:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.opentracing.contrib</groupId>
     <artifactId>opentracing-mongo-common</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.opentracing.contrib:opentracing-mongo-common")
 ----
 
 It contains the OpenTracing CommandListener that will be registered on the configuration of the mongo client.
@@ -284,14 +292,21 @@ quarkus.mongodb.tracing.enabled=true
 
 === Zipkin compatibility mode
 
-To enable it, add the following dependency to your pom.xml:
+To enable it, add the following dependency to your build file:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.jaegertracing</groupId>
     <artifactId>jaeger-zipkin</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.jaegertracing:jaeger-zipkin")
 ----
 
 It contains the dependencies to convert the request to zipkin format.

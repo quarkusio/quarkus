@@ -15,12 +15,11 @@ include::./status-include.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 5 minutes
-* https://jbang.dev/download[jbang v0.40.3+]
-* an IDE
-* GraalVM installed if you want to run in native mode
+:prerequisites-time: 5 minutes
+:prerequisites-no-maven:
+:prerequisites-no-cli:
+include::includes/devtools/prerequisites.adoc[]
+* https://jbang.dev/download[JBang]
 
 == Solution
 
@@ -84,7 +83,7 @@ image::getting-started-architecture.png[alt=Architecture, align=center]
 
 == Creating the initial file
 
-First, we need a Java file. jbang lets you create an initial version using:
+First, we need a Java file. JBang lets you create an initial version using:
 
 [source,bash,subs=attributes+]
 ----
@@ -96,7 +95,7 @@ This command generates a .java file that you can directly run on Linux and macOS
 
 This initial version will print `Hello World` when run.
 
-Once generated, look at the `quarkusapp.java`.
+Once generated, look at the `quarkusapp.java` file.
 
 You will find at the top a line looking like this:
 
@@ -114,7 +113,7 @@ The next line
 // //DEPS <dependency1> <dependency2>
 ----
 
-Is illustrating how you add dependencies to this script. This is a feature of `jbang`.
+Is illustrating how you add dependencies to this script. This is a feature of JBang.
 
 Go ahead and update this line to include the `quarkus-resteasy` dependency like so:
 
@@ -123,7 +122,7 @@ Go ahead and update this line to include the `quarkus-resteasy` dependency like 
 //DEPS io.quarkus:quarkus-resteasy:{quarkus-version}
 ----
 
-Now, run `jbang quarkusapp.java` and you will see `jbang` resolving this dependency and building the jar with help from Quarkus' jbang integration.
+Now, run `jbang quarkusapp.java` and you will see JBang resolving this dependency and building the jar with help from Quarkus' JBang integration.
 
 [source,shell,subs=attributes+]
 ----
@@ -151,7 +150,7 @@ To work around that you can run `jbang edit quarkusapp.java`, this will print ou
 
 On Linux/macOS you can run `<idecommand> `jbang edit quarkusapp.java``.
 
-If you add dependencies while editing you can get jbang to automatically refresh
+If you add dependencies while editing, you can get JBang to automatically refresh
 the IDE project using `jbang edit --live=<idecommand> quarkusapp.java`.
 ====
 
@@ -187,7 +186,7 @@ It's a very simple class with a main method that starts Quarkus with a REST endp
 [TIP]
 .Why is the `main` method there?
 ====
-A `main` method is currently needed for the `jbang` integration to work - we might remove this requirement in the future.
+A `main` method is currently needed for the JBang integration to work - we might remove this requirement in the future.
 ====
 
 == Running the application
@@ -234,7 +233,7 @@ We are using `curl -w "\n"` in this example to avoid your terminal printing a '%
 [TIP]
 .Why is `quarkus-resteasy` not resolved?
 ====
-In this second run you should not see a line saying it is resolving `quarkus-resteasy` as jbang caches the dependency resolution between runs.
+In this second run you should not see a line saying it is resolving `quarkus-resteasy` as JBang caches the dependency resolution between runs.
 If you want to clear the caches to force resolution use `jbang cache clear`.
 ====
 
@@ -269,7 +268,7 @@ static public class GreetingService {
 ====
 We are using a nested static public class instead of a top level class for two reasons:
 
-. jbang currently does not support multiple source files.
+. JBang currently does not support multiple source files.
 . All Java frameworks relying on introspection have challenges using top level classes as they are not as visible as public classes; and in Java there can only be one top level public class in a file.
 
 ====
@@ -355,11 +354,11 @@ hello quarkus
 To debug the application you use `jbang --debug quarkusapp.java` and you can use your IDE to connect on port 4004; if you want to use the
 more traditional Quarkus debug port you can use `jbang --debug=5005 quarkusapp.java`.
 
-Note: `jbang` debugging always suspends thus you need to connect the debugger to have the application run.
+Note: JBang debugging always suspends thus you need to connect the debugger to have the application run.
 
 == Logging
 
-To use logging in Quarkus scripting with jbang you do as usual, with configuring a logger, i.e.
+To use logging in Quarkus scripting with JBang you do as usual, with configuring a logger, i.e.
 
 [source,java]
 ----
@@ -422,7 +421,7 @@ __  ____  __  _____   ___  __ ____  ______
 2020-08-30 06:22:32,013 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
 ----
 
-This native build will take some time on first run but any subsequent runs (without changing `quarkusapp.java`) will be close to instant thanks to jbang cache:
+This native build will take some time on first run but any subsequent runs (without changing `quarkusapp.java`) will be close to instant thanks to JBang cache:
 
 [source,shell,subs=attributes+]
 ----
@@ -438,4 +437,4 @@ __  ____  __  _____   ___  __ ____  ______
 
 === Conclusion
 
-If you want to get started with Quarkus or write something quickly, Quarkus Scripting with jbang lets you do that. No Maven, no Gradle - just a Java file. In this guide we outlined the very basics on using Quarkus with jbang; if you want to learn more about what jbang can do, go see https://jbang.dev.
+If you want to get started with Quarkus or write something quickly, Quarkus Scripting with jbang lets you do that. No Maven, no Gradle - just a Java file. In this guide we outlined the very basics on using Quarkus with JBang; if you want to learn more about what JBang can do, go see https://jbang.dev.

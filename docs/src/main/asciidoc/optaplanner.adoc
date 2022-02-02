@@ -46,12 +46,9 @@ The solution is located in {quickstarts-tree-url}/optaplanner-quickstart[the `op
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* about 30 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version} or Gradle 4+
+:prerequisites-time: 30 minutes
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
 
 == The build file and the dependencies
 
@@ -63,81 +60,75 @@ with the following extensions, for Maven or Gradle:
 * OptaPlanner (`optaplanner-quarkus`)
 * OptaPlanner Jackson (`optaplanner-quarkus-jackson`)
 
-Alternatively, generate it from the command line with Maven:
+Alternatively, generate it from the command line:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=optaplanner-quickstart \
-    -Dextensions="resteasy,resteasy-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson" \
-    -DnoExamples
-cd optaplanner-quickstart
-----
+:create-app-artifact-id: optaplanner-quickstart
+:create-app-extensions: resteasy,resteasy-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson
+include::includes/devtools/create-app.adoc[]
 
-In Maven, your `pom.xml` file contains these dependencies:
+This will include the following dependencies in your build file:
 
-[source,xml,subs=attributes+]
+[source,xml,subs=attributes+,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-  <dependencyManagement>
+<dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>io.quarkus.platform</groupId>
-        <artifactId>quarkus-bom</artifactId>
-        <version>{quarkus-version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.quarkus.platform</groupId>
-        <artifactId>quarkus-optaplanner-bom</artifactId>
-        <version>{quarkus-version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+        <dependency>
+            <groupId>io.quarkus.platform</groupId>
+            <artifactId>quarkus-bom</artifactId>
+            <version>{quarkus-version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.platform</groupId>
+            <artifactId>quarkus-optaplanner-bom</artifactId>
+            <version>{quarkus-version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
     </dependencies>
-  </dependencyManagement>
-  <dependencies>
+</dependencyManagement>
+<dependencies>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-jackson</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-jackson</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.optaplanner</groupId>
-      <artifactId>optaplanner-quarkus</artifactId>
+        <groupId>org.optaplanner</groupId>
+        <artifactId>optaplanner-quarkus</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.optaplanner</groupId>
-      <artifactId>optaplanner-quarkus-jackson</artifactId>
+        <groupId>org.optaplanner</groupId>
+        <artifactId>optaplanner-quarkus-jackson</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5</artifactId>
-      <scope>test</scope>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-junit5</artifactId>
+        <scope>test</scope>
     </dependency>
-  </dependencies>
+</dependencies>
 ----
 
-//On the other hand, in Gradle, your `build.gradle` file contains these dependencies:
-//
-//[source,groovy,subs=attributes+]
-//----
-//dependencies {
-//    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:{quarkus-version}")
-//    implementation enforcedPlatform("io.quarkus.platform:quarkus-optaplanner-bom:{quarkus-version}")
-//    implementation 'io.quarkus:quarkus-resteasy'
-//    implementation 'io.quarkus:quarkus-resteasy-jackson'
-//    implementation 'org.optaplanner:optaplanner-quarkus'
-//    implementation 'org.optaplanner:optaplanner-quarkus-jackson'
-//
-//    testImplementation 'io.quarkus:quarkus-junit5'
-//}
-//----
+[source,gradle,subs=attributes+,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+dependencies {
+    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:{quarkus-version}")
+    implementation enforcedPlatform("io.quarkus.platform:quarkus-optaplanner-bom:{quarkus-version}")
+    implementation 'io.quarkus:quarkus-resteasy'
+    implementation 'io.quarkus:quarkus-resteasy-jackson'
+    implementation 'org.optaplanner:optaplanner-quarkus'
+    implementation 'org.optaplanner:optaplanner-quarkus-jackson'
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+}
+----
 
 == Model the domain objects
 
@@ -680,10 +671,7 @@ quarkus.optaplanner.solver.termination.spent-limit=5s
 
 First start the application:
 
-[source,shell]
-----
-$ ./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 === Try the application
 
@@ -732,14 +720,22 @@ To test each constraint in isolation, use a `ConstraintVerifier` in unit tests.
 It tests each constraint's corner cases in isolation from the other tests,
 which lowers maintenance when adding a new constraint with proper test coverage.
 
-Add a `optaplanner-test` dependency in your `pom.xml`:
-[source,xml]
+Add a `optaplanner-test` dependency in your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-    <dependency>
-      <groupId>org.optaplanner</groupId>
-      <artifactId>optaplanner-test</artifactId>
-      <scope>test</scope>
-    </dependency>
+<dependency>
+    <groupId>org.optaplanner</groupId>
+    <artifactId>optaplanner-test</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("org.optaplanner:optaplanner-test")
 ----
 
 Create the `src/test/java/org/acme/optaplanner/solver/TimeTableConstraintProviderTest.java` class:

@@ -20,35 +20,49 @@ include::./status-include.adoc[]
 
 === Hibernate ORM
 
-* Add the required dependencies to your `pom.xml`
+* Add the required dependencies to your build file
 ** Hibernate ORM REST Data with Panache extension (`quarkus-hibernate-orm-rest-data-panache`)
 ** A JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
 ** One of the RESTEasy JSON serialization extensions (the extension supports both RESTEasy Classic and RESTEasy Reactive)
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-hibernate-orm-rest-data-panache</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jdbc-postgresql</artifactId>
-    </dependency>
-   <!-- Use these if you are using RESTEasy Reactive -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
-    </dependency>
-    <!-- Use this if you are going to use RESTEasy Classic -->
-    <!--
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-jackson</artifactId>
-    </dependency>
-    -->
-</dependencies>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-orm-rest-data-panache</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+
+<!-- Use this if you are using RESTEasy Reactive -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+</dependency>
+
+<!-- Use this if you are going to use RESTEasy Classic -->
+<!--
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
+-->
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-hibernate-orm-rest-data-panache")
+implementation("io.quarkus:quarkus-jdbc-postgresql")
+
+// Use this if you are using RESTEasy Reactive
+implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+
+// Use this if you are going to use RESTEasy Classic
+// implementation("io.quarkus:quarkus-resteasy-jackson")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache guide].
@@ -56,38 +70,53 @@ include::./status-include.adoc[]
 
 === MongoDB
 
-* Add the required dependencies to your `pom.xml`
+* Add the required dependencies to your build file
 ** MongoDB REST Data with Panache extension (`quarkus-mongodb-rest-data-panache`)
 ** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-reactive-jackson` or `quarkus-resteasy-reactive-jsonb`)
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-mongodb-rest-data-panache</artifactId>
-    </dependency>
-   <!-- Use these if you are using RESTEasy Reactive -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-reactive-links</artifactId>
-    </dependency>
-    <!-- Use this if you are going to use RESTEasy Classic -->
-    <!--
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-jackson</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.jboss.resteasy</groupId>
-        <artifactId>resteasy-links</artifactId>
-    </dependency>
-    -->
-</dependencies>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mongodb-rest-data-panache</artifactId>
+</dependency>
+
+<!-- Use these if you are using RESTEasy Reactive -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-links</artifactId>
+</dependency>
+
+<!-- Use these if you are going to use RESTEasy Classic -->
+<!--
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.jboss.resteasy</groupId>
+    <artifactId>resteasy-links</artifactId>
+</dependency>
+-->
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-mongodb-rest-data-panache")
+
+// Use these if you are using RESTEasy Reactive
+implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+implementation("io.quarkus:quarkus-resteasy-reactive-links")
+
+// Use these if you are going to use RESTEasy Classic
+// implementation("io.quarkus:quarkus-resteasy-jackson")
+// implementation("io.quarkus:resteasy-links")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache guide].

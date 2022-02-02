@@ -8,6 +8,7 @@ project:
   authors:
     - Quarkus Community
   license: Apache-2.0
+  licenseUrl: https://github.com/quarkusio/quarkus/blob/main/LICENSE.txt
   copyright: Quarkus contributors
   java:
     groupId: io.quarkus

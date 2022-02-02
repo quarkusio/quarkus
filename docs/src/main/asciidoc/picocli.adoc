@@ -4,15 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Command Mode with Picocli
-:extension-status: experimental
 
 include::./attributes.adoc[]
 
 https://picocli.info/[Picocli] is an open source tool for creating rich command line applications.
 
 Quarkus provides support for using Picocli. This guide contains examples of `picocli` extension usage.
-
-include::./status-include.adoc[]
 
 IMPORTANT: If you are not familiar with the Quarkus Command Mode, consider reading the xref:command-mode-reference.adoc[Command Mode reference guide] first.
 

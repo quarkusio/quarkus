@@ -12,15 +12,8 @@ distributed tracing for interactive web applications.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
-
-
+:prerequisites-docker-compose:
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -39,32 +32,24 @@ The solution is located in the `opentelemetry-quickstart` {quickstarts-tree-url}
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=opentelemetry-quickstart \
-    -DclassName="org.acme.opentelemetry.TracedResource" \
-    -Dpath="/hello" \
-    -Dextensions="resteasy,quarkus-opentelemetry-exporter-otlp"
-cd opentelemetry-quickstart
-----
+:create-app-artifact-id: opentelemetry-quickstart
+:create-app-extensions: resteasy,quarkus-opentelemetry-exporter-otlp
+include::includes/devtools/create-app.adoc[]
 
-This command generates the Maven project with a REST endpoint and imports the `quarkus-opentelemetry-exporter-otlp` extension,
+This command generates the Maven project and imports the `quarkus-opentelemetry-exporter-otlp` extension,
 which includes the OpenTelemetry support,
 and a gRPC span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
 
 If you already have your Quarkus project configured, you can add the `quarkus-opentelemetry-exporter-otlp` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="opentelemetry-otlp-exporter"
-----
+:add-extension-extensions: opentelemetry-otlp-exporter
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -72,9 +57,15 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-opentelemetry-exporter-otlp")
+----
+
 === Examine the JAX-RS resource
 
-Open the `src/main/java/org/acme/opentelemetry/TracedResource.java` file and see the following content:
+Create a `src/main/java/org/acme/opentelemetry/TracedResource.java` file with the following content:
 
 [source,java]
 ----
@@ -194,17 +185,13 @@ services:
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 or if configuring the OTLP gRPC endpoint via JVM arguments:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev -Djvm.args="-Dquarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:55680"
-----
+:dev-additional-parameters: -Djvm.args="-Dquarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://localhost:55680"
+include::includes/devtools/dev.adoc[]
+:!dev-additional-parameters:
 
 With the OpenTelemetry Collector, Jaeger system and application running, you can make a request to the provided endpoint:
 
@@ -255,7 +242,8 @@ propagators, you can however choose any of the supported OpenTelemetry propagato
 The `b3`, `b3multi`, `jaeger` and `ottrace` propagators will need the https://github.com/open-telemetry/opentelemetry-java/tree/main/extensions/trace-propagators[trace-propagators]
 extension to be added as a dependency to your project.
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.opentelemetry</groupId>
@@ -263,13 +251,27 @@ extension to be added as a dependency to your project.
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.opentelemetry:opentelemetry-extension-trace-propagators")
+----
+
 The `xray` propagator will need the https://github.com/open-telemetry/opentelemetry-java/tree/main/extensions/aws[aws] extension to be added as a dependency to your project.
-[source,xml]
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.opentelemetry</groupId>
     <artifactId>opentelemetry-extension-aws</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.opentelemetry:opentelemetry-extension-aws")
 ----
 ====
 

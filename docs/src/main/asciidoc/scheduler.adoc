@@ -14,19 +14,14 @@ TIP: If you need a clustered scheduler use the xref:quartz.adoc[Quartz extension
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 10 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
 In this guide, we create a straightforward application accessible using HTTP to get the current value of a counter.
 This counter is periodically (every 10 seconds) incremented.
 
-image:scheduling-task-architecture.png[alt=Architecture]
+image::scheduling-task-architecture.png[alt=Architecture]
 
 == Solution
 
@@ -41,44 +36,39 @@ The solution is located in the `scheduler-quickstart` {quickstarts-tree-url}/sch
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=scheduler-quickstart \
-    -DclassName="org.acme.scheduler.CountResource" \
-    -Dpath="/count" \
-    -Dextensions="scheduler"
-cd scheduler-quickstart
-----
+:create-app-artifact-id: scheduler-quickstart
+:create-app-extensions: resteasy,scheduler
+include::includes/devtools/create-app.adoc[]
 
-It generates:
+It generates a new project including:
 
-* the Maven structure
 * a landing page accessible on `http://localhost:8080`
 * example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
-* an `org.acme.scheduler.CountResource` resource
-* an associated test
 
-The Maven project also imports the Quarkus scheduler extension.
+The project also imports the RESTEasy and scheduler extensions.
 
 If you already have your Quarkus project configured, you can add the `scheduler` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="scheduler"
-----
+:add-extension-extensions: scheduler
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-scheduler</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-scheduler")
 ----
 
 [#standard-scheduling]
@@ -142,9 +132,9 @@ Edit the `application.properties` file and add the `cron.expr` configuration:
 cron.expr=*/5 * * * * ?
 ----
 
-== Updating the resource and the test
+== Creating the REST resource
 
-Edit the `CountResource` class, and update the content to:
+Create the `CountResource` class as follows:
 
 [source,java]
 ----
@@ -173,45 +163,27 @@ public class CountResource {
 1. Inject the `CounterBean`
 2. Send back the current counter value
 
-We also need to update the tests. Edit the `CountResourceTest` class to match:
-
-[source, java]
-----
-package org.acme.scheduler;
-
-import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.Test;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.containsString;
-
-@QuarkusTest
-public class CountResourceTest {
-
-    @Test
-    public void testHelloEndpoint() {
-        given()
-          .when().get("/count")
-          .then()
-             .statusCode(200)
-             .body(containsString("count")); // <1>
-    }
-
-}
-----
-1. Ensure that the response contains `count`
-
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
 In another terminal, run `curl localhost:8080/count` to check the counter value.
 After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
 
 Observe the console to verify that the message `Cron expression configured in application.properties` has been displayed indicating
 that the cron job using an expression configured in `application.properties` has been triggered.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
 
 [[scheduler-configuration-reference]]
 == Scheduler Configuration Reference

@@ -36,14 +36,21 @@ See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture do
 The first way to use reactive routes is to use the `@Route` annotation.
 To have access to this annotation, you need to add the `quarkus-reactive-routes` extension:
 
-In your `pom.xml` file, add:
+In your build file, add:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-reactive-routes</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-reactive-routes")
 ----
 
 Then in a _bean_, you can use the `@Route` annotation as follows:
@@ -681,19 +688,24 @@ You can add support for link:https://www.openapis.org/[OpenAPI] and link:https:/
 
 Add the extension by running this command:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="io.quarkus:quarkus-smallrye-openapi"
-----
+:add-extension-extensions: quarkus-smallrye-openapi
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-openapi</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-openapi")
 ----
 
 This is enough to generate a basic OpenAPI schema document from your Vert.x Routes:

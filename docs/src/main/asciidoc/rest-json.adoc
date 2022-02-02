@@ -15,12 +15,7 @@ TIP: there is another guide if you need a xref:rest-client.adoc[REST client] (in
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -41,26 +36,26 @@ The solution is located in the `rest-json-quickstart` {quickstarts-tree-url}/res
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-json-quickstart \
-    -DclassName="org.acme.rest.json.FruitResource" \
-    -Dpath="/fruits" \
-    -Dextensions="resteasy-jackson"
-cd rest-json-quickstart
-----
+:create-app-artifact-id: rest-json-quickstart
+:create-app-extensions: resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
+This command generates a new project importing the RESTEasy/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
 and in particular adds the following dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-jackson</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy-jackson")
 ----
 
 [NOTE]
@@ -70,26 +65,26 @@ To improve user experience, Quarkus registers the three Jackson https://github.c
 
 Quarkus also supports https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] so, if you prefer JSON-B over Jackson, you can create a project relying on the RESTEasy JSON-B extension instead:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-json-quickstart \
-    -DclassName="org.acme.rest.json.FruitResource" \
-    -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb"
-cd rest-json-quickstart
-----
+:create-app-artifact-id: rest-json-quickstart
+:create-app-extensions: resteasy-jsonb
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
+This command generates a new project importing the RESTEasy/JAX-RS and https://eclipse-ee4j.github.io/jsonb-api/[JSON-B] extensions,
 and in particular adds the following dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-jsonb</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy-jsonb")
 ----
 
 == Creating your first JSON REST service
@@ -119,7 +114,7 @@ public class Fruit {
 
 Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer.
 
-Now, edit the `org.acme.rest.json.FruitResource` class as follows:
+Now, create the `org.acme.rest.json.FruitResource` class as follows:
 
 [source,java]
 ----
@@ -312,13 +307,21 @@ In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` fi
 
 You can now interact with your REST service:
 
- * start Quarkus with `./mvnw compile quarkus:dev`
+:devtools-wrapped:
+
+ * start Quarkus with:
++
+include::includes/devtools/dev.adoc[]
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 
+:!devtools-wrapped:
+
 == Building a native executable
 
-You can build a native executable with the usual command `./mvnw package -Pnative`.
+You can build a native executable with the usual command:
+
+include::includes/devtools/build-native.adoc[]
 
 Running it is as simple as executing `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`.
 
@@ -436,9 +439,15 @@ Open a browser to http://localhost:8080/legumes.html and you will see our list o
 
 The interesting part starts when running the application as a native executable:
 
- * create the native executable with `./mvnw package -Pnative`.
+:devtools-wrapped:
+
+ * create the native executable with:
++
+include::includes/devtools/build-native.adoc[]
  * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
+
+:!devtools-wrapped:
 
 No legumes there.
 
@@ -468,10 +477,16 @@ TIP: The `@RegisterForReflection` annotation instructs Quarkus to keep the class
 
 Let's do that and follow the same steps as before:
 
+:devtools-wrapped:
+
  * hit `Ctrl+C` to stop the application
- * create the native executable with `./mvnw package -Pnative`.
+ * create the native executable with:
++
+include::includes/devtools/build-native.adoc[]
  * execute it with `./target/rest-json-quickstart-1.0.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
+
+:!devtools-wrapped:
 
 This time, you can see our list of legumes.
 
@@ -483,12 +498,19 @@ Quarkus recommends the usage of https://smallrye.io/smallrye-mutiny[Mutiny] to w
 
 To integrate Mutiny and RESTEasy, you need to add the `quarkus-resteasy-mutiny` dependency to your project:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-mutiny</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-mutiny</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy-mutiny")
 ----
 
 Then, your endpoint can return `Uni` or `Multi` instances:

@@ -327,7 +327,7 @@ public class ResteasyReactiveCommonProcessor {
      * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
      * @return the set of classes that have been annotated with unsuccessful build time conditions.
      */
-    private static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
+    public static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
         return buildTimeConditions.stream()
                 .filter(item -> !item.isEnabled())
                 .map(BuildTimeConditionBuildItem::getTarget)

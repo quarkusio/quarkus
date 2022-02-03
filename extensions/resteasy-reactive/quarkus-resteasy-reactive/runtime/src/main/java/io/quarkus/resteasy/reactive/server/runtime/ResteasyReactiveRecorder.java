@@ -4,7 +4,6 @@ import static io.quarkus.resteasy.reactive.server.runtime.NotFoundExceptionMappe
 
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -74,7 +73,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
-            LaunchMode launchMode, boolean servletPresent, List<String> vertxContextPropsToCopy) {
+            LaunchMode launchMode, boolean servletPresent) {
 
         if (servletPresent) {
             info.setResumeOn404(true);
@@ -108,8 +107,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                     return new QuarkusResteasyReactiveRequestContext(deployment, providers, (RoutingContext) context,
                             requestContext,
                             handlerChain,
-                            abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation,
-                            vertxContextPropsToCopy);
+                            abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation);
                 }
 
             };

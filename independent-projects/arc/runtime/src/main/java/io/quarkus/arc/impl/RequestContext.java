@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
@@ -33,7 +34,7 @@ class RequestContext implements ManagedContext {
     private static final Logger LOGGER = Logger.getLogger(RequestContext.class.getPackage().getName());
 
     // It's a normal scope so there may be no more than one mapped instance per contextual type per thread
-    private final ThreadLocal<ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>>> currentContext = new ThreadLocal<>();
+    private final ThreadLocal<RequestContextState> currentContext = new ThreadLocal<>();
 
     private final LazyValue<Notifier<Object>> initializedNotifier;
     private final LazyValue<Notifier<Object>> beforeDestroyedNotifier;
@@ -55,18 +56,19 @@ class RequestContext implements ManagedContext {
     public <T> T getIfActive(Contextual<T> contextual, Function<Contextual<T>, CreationalContext<T>> creationalContextFun) {
         Objects.requireNonNull(contextual, "Contextual must not be null");
         Objects.requireNonNull(creationalContextFun, "CreationalContext supplier must not be null");
-        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
-        if (ctx == null) {
+        RequestContextState ctxState = currentContext.get();
+        if (ctxState == null) {
             // Thread local not set - context is not active!
             return null;
         }
-        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctx.get(contextual);
+        Map<Contextual<?>, ContextInstanceHandle<?>> ctxMap = currentContext.get().value;
+        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctxMap.get(contextual);
         if (instance == null) {
             CreationalContext<T> creationalContext = creationalContextFun.apply(contextual);
             // Bean instance does not exist - create one if we have CreationalContext
             instance = new ContextInstanceHandleImpl<T>((InjectableBean<T>) contextual,
                     contextual.create(creationalContext), creationalContext);
-            ctx.put(contextual, instance);
+            ctxMap.put(contextual, instance);
         }
         return instance.get();
     }
@@ -86,7 +88,7 @@ class RequestContext implements ManagedContext {
     @Override
     public <T> T get(Contextual<T> contextual) {
         Objects.requireNonNull(contextual, "Contextual must not be null");
-        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
+        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get().value;
         if (ctx == null) {
             // Thread local not set - context is not active!
             throw new ContextNotActiveException();
@@ -102,7 +104,7 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void destroy(Contextual<?> contextual) {
-        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
+        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get().value;
         if (ctx == null) {
             // Thread local not set - context is not active!
             throw new ContextNotActiveException();
@@ -116,12 +118,12 @@ class RequestContext implements ManagedContext {
     @Override
     public void activate(ContextState initialState) {
         if (initialState == null) {
-            currentContext.set(new ConcurrentHashMap<>());
+            currentContext.set(new RequestContextState(new ConcurrentHashMap<>()));
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
             fireIfNotEmpty(initializedNotifier);
         } else {
             if (initialState instanceof RequestContextState) {
-                currentContext.set(((RequestContextState) initialState).value);
+                currentContext.set(((RequestContextState) initialState));
             } else {
                 throw new IllegalArgumentException("Invalid initial state: " + initialState.getClass().getName());
             }
@@ -130,20 +132,20 @@ class RequestContext implements ManagedContext {
 
     @Override
     public ContextState getState() {
-        ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
+        RequestContextState ctx = currentContext.get();
         if (ctx == null) {
             // Thread local not set - context is not active!
             throw new ContextNotActiveException();
         }
-        return new RequestContextState(ctx);
+        return ctx;
     }
 
     public ContextState getStateIfActive() {
-        ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
+        RequestContextState ctx = currentContext.get();
         if (ctx == null) {
             return null;
         }
-        return new RequestContextState(ctx);
+        return ctx;
     }
 
     @Override
@@ -158,8 +160,14 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void destroy(ContextState state) {
+        if (state == null) {
+            // nothing to destroy
+            return;
+        }
         if (state instanceof RequestContextState) {
-            destroy(((RequestContextState) state).value);
+            RequestContextState reqState = ((RequestContextState) state);
+            reqState.isValid.set(false);
+            destroy(reqState.value);
         } else {
             throw new IllegalArgumentException("Invalid state: " + state.getClass().getName());
         }
@@ -223,15 +231,22 @@ class RequestContext implements ManagedContext {
     static class RequestContextState implements ContextState {
 
         private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value;
+        private final AtomicBoolean isValid;
 
         RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
             this.value = value;
+            this.isValid = new AtomicBoolean(true);
         }
 
         @Override
         public Map<InjectableBean<?>, Object> getContextualInstances() {
             return value.values().stream()
                     .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+        }
+
+        @Override
+        public boolean isValid() {
+            return isValid.get();
         }
 
     }

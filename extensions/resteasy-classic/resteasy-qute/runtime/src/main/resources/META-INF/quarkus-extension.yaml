@@ -9,7 +9,7 @@ metadata:
   guide: "https://quarkus.io/guides/qute"
   categories:
   - "web"
-  status: "experimental"
+  status: "stable"
   codestart:
     name: "resteasy-qute"
     languages:

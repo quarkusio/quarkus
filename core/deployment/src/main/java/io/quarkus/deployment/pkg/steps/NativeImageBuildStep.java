@@ -613,6 +613,9 @@ public class NativeImageBuildStep {
                 if (nativeConfig.userCountry.isPresent()) {
                     nativeImageArgs.add("-J-Duser.country=" + nativeConfig.userCountry.get());
                 }
+                if (nativeConfig.locales.isPresent()) {
+                    nativeImageArgs.add("-H:IncludeLocales=" + nativeConfig.locales.get());
+                }
                 nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding);
 
                 if (enableSslNative) {

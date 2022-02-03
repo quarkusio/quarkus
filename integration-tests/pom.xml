@@ -300,6 +300,7 @@
                 <module>logging-min-level-unset</module>
                 <module>logging-min-level-set</module>
                 <module>logging-panache</module>
+                <module>locales</module>
                 <module>redis-devservices</module>
 
                 <!-- gRPC tests -->

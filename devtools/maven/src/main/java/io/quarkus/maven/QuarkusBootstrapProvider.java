@@ -6,7 +6,6 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +35,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
@@ -203,9 +203,10 @@ public class QuarkusBootstrapProvider implements Closeable {
             }
             reloadableModules.add(artifactCoords.getKey());
 
+            final List<Dependency> forcedDependencies = mojo.forcedDependencies(mode);
             final ApplicationModel appModel;
             try {
-                appModel = modelResolver.resolveManagedModel(artifactCoords, Collections.emptyList(), managingProject(mojo),
+                appModel = modelResolver.resolveManagedModel(artifactCoords, forcedDependencies, managingProject(mojo),
                         reloadableModules);
             } catch (AppModelResolverException e) {
                 throw new MojoExecutionException("Failed to bootstrap application in " + mode + " mode", e);
@@ -220,7 +221,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setProjectRoot(mojo.baseDir().toPath())
                     .setBaseName(mojo.finalName())
                     .setTargetDirectory(mojo.buildDir().toPath())
-                    .setForcedDependencies(mojo.forcedDependencies(mode));
+                    .setForcedDependencies(forcedDependencies);
 
             try {
                 return builder.build().bootstrap();

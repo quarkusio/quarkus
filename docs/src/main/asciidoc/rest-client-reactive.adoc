@@ -699,7 +699,7 @@ public interface ExtensionsService {
     @ClientExceptionMapper
     static RuntimeException toException(Response response) {
         if (response.getStatus() == 500) {
-            throw new RuntimeException("The remote service responded with HTTP 500");
+            return new RuntimeException("The remote service responded with HTTP 500");
         }
         return null;
     }

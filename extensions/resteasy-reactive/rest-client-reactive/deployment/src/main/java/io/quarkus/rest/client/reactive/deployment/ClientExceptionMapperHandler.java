@@ -8,6 +8,7 @@ import javax.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -82,26 +83,34 @@ class ClientExceptionMapperHandler {
         for (Type i : targetMethod.parameters()) {
             sigBuilder.append(i.name().toString());
         }
+
+        int priority = Priorities.USER;
+        AnnotationValue priorityAnnotationValue = instance.value("priority");
+        if (priorityAnnotationValue != null) {
+            priority = priorityAnnotationValue.asInt();
+        }
+
         ClassInfo restClientInterfaceClassInfo = targetMethod.declaringClass();
         String generatedClassName = restClientInterfaceClassInfo.name().toString() + "_" + targetMethod.name() + "_"
                 + "ResponseExceptionMapper" + "_" + HashUtil.sha1(sigBuilder.toString());
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
                 .interfaces(ResponseExceptionMapper.class).build()) {
-            MethodCreator mc = cc.getMethodCreator("toThrowable", Throwable.class, Response.class);
-            ResultHandle resultHandle = mc.invokeStaticInterfaceMethod(
+            MethodCreator toThrowable = cc.getMethodCreator("toThrowable", Throwable.class, Response.class);
+            ResultHandle resultHandle = toThrowable.invokeStaticInterfaceMethod(
                     MethodDescriptor.ofMethod(
                             restClientInterfaceClassInfo.name().toString(),
                             targetMethod.name(),
                             targetMethod.returnType().name().toString(),
                             targetMethod.parameters().get(0).name().toString()),
-                    mc.getMethodParam(0));
-            mc.returnValue(resultHandle);
+                    toThrowable.getMethodParam(0));
+            toThrowable.returnValue(resultHandle);
+
+            if (priority != Priorities.USER) {
+                MethodCreator getPriority = cc.getMethodCreator("getPriority", int.class);
+                getPriority.returnValue(getPriority.load(priority));
+            }
         }
 
-        int priority = Priorities.USER;
-        if (instance.value() != null) {
-            priority = instance.value().asInt();
-        }
         return new Result(restClientInterfaceClassInfo.name().toString(), generatedClassName, priority);
     }
 

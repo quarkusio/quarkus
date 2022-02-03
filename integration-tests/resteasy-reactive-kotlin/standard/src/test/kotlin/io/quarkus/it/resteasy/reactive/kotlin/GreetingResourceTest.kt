@@ -1,7 +1,6 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
 import io.quarkus.test.junit.QuarkusTest
-import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import io.restassured.module.kotlin.extensions.Given
 import io.restassured.module.kotlin.extensions.Then

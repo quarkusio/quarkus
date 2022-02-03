@@ -1,9 +1,13 @@
 package io.quarkus.kotlin.deployment;
 
+import static io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem.builder;
+
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassFinalFieldsWritablePredicateBuildItem;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 
@@ -37,5 +41,26 @@ public class KotlinProcessor {
     @BuildStep
     ReflectiveClassFinalFieldsWritablePredicateBuildItem dataClassPredicate() {
         return new ReflectiveClassFinalFieldsWritablePredicateBuildItem(new IsDataClassWithDefaultValuesPredicate());
+    }
+
+    /*
+     * Register the Kotlin reflection types if they are present.
+     */
+    @BuildStep
+    void registerKotlinReflection(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourcePatternsBuildItem> nativeResourcePatterns) {
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false,
+                "kotlin.reflect.jvm.internal.ReflectionFactoryImpl"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, "kotlin.KotlinVersion"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, false, "kotlin.KotlinVersion[]"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, false, "kotlin.KotlinVersion$Companion"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, false, "kotlin.KotlinVersion$Companion[]"));
+
+        nativeResourcePatterns.produce(builder().includePatterns(
+                "META-INF/.*.kotlin_module$",
+                "META-INF/services/kotlin.reflect.*",
+                ".*.kotlin_builtins")
+                .build());
     }
 }

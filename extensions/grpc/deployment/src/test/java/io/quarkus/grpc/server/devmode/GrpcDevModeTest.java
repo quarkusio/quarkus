@@ -2,6 +2,7 @@ package io.quarkus.grpc.server.devmode;
 
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -37,10 +38,11 @@ public class GrpcDevModeTest {
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(DevModeTestService.class, DevModeTestStreamService.class, DevModeTestInterceptor.class,
-                                    DevModeTestRestResource.class)
+                                    DevModeTestRestResource.class, DevModeServiceCallingResource.class, DevModeService.class)
                             .addPackage(GreeterGrpc.class.getPackage()).addPackage(HelloReply.class.getPackage())
                             .addPackage(Devmodetest.class.getPackage()).addPackage(StreamsGrpc.class.getPackage())
-                            .addPackage(StreamsOuterClass.Item.class.getPackage()))
+                            .addPackage(StreamsOuterClass.Item.class.getPackage())
+                            .addAsResource("dev-mode.properties", "application.properties"))
             .setCodeGenSources("proto");
 
     protected ManagedChannel channel;
@@ -124,6 +126,28 @@ public class GrpcDevModeTest {
                 text -> text.replaceAll("TEST_ONE = .*;", "TEST_ONE = 15;"));
         Thread.sleep(5000); // to wait for eager reload for code gen sources to happen
         callHello("HACK_TO_GET_STATUS_NUMBER", "15");
+    }
+
+    @Test
+    public void testProtoFileChangeAndImplementationReload() throws InterruptedException {
+        when().get("/dev-mode-test")
+                .then().statusCode(200)
+                .body(equalTo("ORIGINAL_GET"));
+
+        test.modifyFile("proto/devmodetest.proto",
+                text -> text.replaceAll("// placeholder for a new method",
+                        "rpc StreamCheck(DevModeRequest) returns (stream DevModeResponse);"));
+
+        test.modifySourceFile("DevModeService.java",
+                text -> text.replace("// test will add override here",
+                        "@Override"));
+        test.modifySourceFile("DevModeServiceCallingResource.java",
+                text -> text.replace("\"ORIGINAL_GET\"",
+                        "responseFor(client.streamCheck(request))"));
+        Thread.sleep(5000); // to wait for eager reload for code gen sources to happen
+        when().get("/dev-mode-test")
+                .then().statusCode(200)
+                .body(equalTo("OKAY"));
     }
 
     private CompletionStage<Boolean> callEcho(String name, List<String> output) {

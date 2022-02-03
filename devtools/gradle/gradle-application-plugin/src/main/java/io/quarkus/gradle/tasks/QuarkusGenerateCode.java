@@ -137,7 +137,8 @@ public class QuarkusGenerateCode extends QuarkusTask {
                         sourceRegistrar,
                         appCreationContext.getApplicationModel(),
                         realProperties,
-                        launchMode.name());
+                        launchMode.name(),
+                        test);
 
             }
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {

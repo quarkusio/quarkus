@@ -295,7 +295,7 @@ podman exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} -f import.cypher
 Once the import completes (shouldn't take more than a couple of minutes), go to the Neo4j browser,
 and you'll be able to observe a small summary of the data in the graph:
 
-image:native-reference-neo4j-db-info.png[Neo4j database information after import]
+image::native-reference-neo4j-db-info.png[Neo4j database information after import]
 
 The data above shows that there are ~60000 methods, and just over ~200000 edges between them.
 The Quarkus application demonstrated here is very basic, so there’s not a lot we can explore, but here are some example queries you can run to explore the graph in more detail.
@@ -661,7 +661,7 @@ $ ${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
 The flame graph is an svg file that a web browser, such as Firefox, can easily display.
 After the above two commands complete one can open `flamegraph.svg` in their browser:
 
-image:native-reference-perf-flamegraph-no-symbols.png[Perf flamegraph without symbols]
+image::native-reference-perf-flamegraph-no-symbols.png[Perf flamegraph without symbols]
 
 We see a big majority of time spent in what is supposed to be our main,
 but we see no trace of the `GreetingResource` class,
@@ -724,7 +724,7 @@ The flamegraph now shows where the bottleneck is.
 It's when `StringBuilder.delete()` is called which calls `System.arraycopy()`.
 The issue is that 1 million characters need to be shifted in very small increments:
 
-image:native-reference-perf-flamegraph-symbols.png[Perf flamegraph with symbols]
+image::native-reference-perf-flamegraph-symbols.png[Perf flamegraph with symbols]
 
 === Multi-Thread
 
@@ -825,7 +825,7 @@ perf script -i perf.data | ${FG_HOME}/stackcollapse-perf.pl > out.perf-folded
 ${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
 ----
 
-image:native-reference-multi-flamegraph-separate-threads.png[Muti-thread perf flamegraph with separate threads]
+image::native-reference-multi-flamegraph-separate-threads.png[Muti-thread perf flamegraph with separate threads]
 
 The flamegraph produced looks odd. Each thread is treated independently even though they all do the same work.
 This makes it difficult to have a clear picture of the bottlenecks in the program.
@@ -854,7 +854,7 @@ perf script | sed -E "s/thread-[0-9]*/thread/" \
 ${FG_HOME}/flamegraph.pl out.perf-folded > flamegraph.svg
 ----
 
-image:native-reference-multi-flamegraph-joined-threads.png[Muti-thread perf flamegraph with joined threads]
+image::native-reference-multi-flamegraph-joined-threads.png[Muti-thread perf flamegraph with joined threads]
 
 When you open the flamegraph, you will see all threads' work collapsed into a single area.
 Then, you can clearly see that there's some locking that could affect performance.

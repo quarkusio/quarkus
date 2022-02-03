@@ -19,7 +19,6 @@ import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -28,8 +27,6 @@ import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.options.Option;
@@ -39,11 +36,15 @@ import org.gradle.jvm.toolchain.JavaToolchainSpec;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.gradle.tooling.ToolingUtils;
-import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 
@@ -261,8 +262,11 @@ public class QuarkusDev extends QuarkusTask {
         builder.sourceEncoding(getSourceEncoding());
 
         final ApplicationModel appModel = extension().getApplicationModel(LaunchMode.DEVELOPMENT);
-        final Set<GACT> projectDependencies = new HashSet<>();
-        addSelfWithLocalDeps(project, builder, new HashSet<>(), projectDependencies, true);
+        final Set<ArtifactKey> projectDependencies = new HashSet<>();
+        for (ResolvedDependency localDep : DependenciesFilter.getReloadableModules(appModel)) {
+            addLocalProject(localDep, builder, projectDependencies, appModel.getAppArtifact().getWorkspaceModule().getId()
+                    .equals(localDep.getWorkspaceModule().getId()));
+        }
 
         for (io.quarkus.maven.dependency.ResolvedDependency artifact : appModel.getDependencies()) {
             //we only use the launcher for launching from the IDE, we need to exclude it
@@ -270,8 +274,7 @@ public class QuarkusDev extends QuarkusTask {
                     && artifact.getArtifactId().equals("quarkus-ide-launcher")) {
                 continue;
             }
-            if (!projectDependencies
-                    .contains(new GACT(artifact.getGroupId(), artifact.getArtifactId()))) {
+            if (!projectDependencies.contains(artifact.getKey())) {
                 artifact.getResolvedPaths().forEach(p -> {
                     if (Files.exists(p)) {
                         if (artifact.getGroupId().equals("io.quarkus")
@@ -324,143 +327,120 @@ public class QuarkusDev extends QuarkusTask {
 
     }
 
-    private void addSelfWithLocalDeps(Project project, GradleDevModeLauncher.Builder builder, Set<String> visited,
-            Set<GACT> addedDeps, boolean root) {
-        if (!visited.add(project.getPath())) {
-            return;
-        }
-        final Configuration compileCp = project.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
-        if (compileCp != null) {
-            compileCp.getIncoming().getDependencies().forEach(d -> {
-                if (d instanceof ProjectDependency) {
-                    addSelfWithLocalDeps(((ProjectDependency) d).getDependencyProject(), builder, visited, addedDeps, false);
-                }
-            });
-        }
+    private void addLocalProject(ResolvedDependency project, GradleDevModeLauncher.Builder builder, Set<ArtifactKey> addeDeps,
+            boolean root) {
+        addeDeps.add(project.getKey());
 
-        addLocalProject(project, builder, addedDeps, root);
-    }
-
-    private void addLocalProject(Project project, GradleDevModeLauncher.Builder builder, Set<GACT> addeDeps, boolean root) {
-        final GACT key = new GACT(project.getGroup().toString(), project.getName(), "", "jar");
-        if (addeDeps.contains(key)) {
-            return;
-        }
-        final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
-        if (javaConvention == null) {
+        final ArtifactSources sources = project.getSources();
+        if (sources == null) {
             return;
         }
 
-        SourceSetContainer sourceSets = javaConvention.getSourceSets();
-        SourceSet mainSourceSet = sourceSets.findByName(SourceSet.MAIN_SOURCE_SET_NAME);
-        if (mainSourceSet == null) {
-            return;
-        }
         Set<Path> sourcePaths = new LinkedHashSet<>();
         Set<Path> sourceParentPaths = new LinkedHashSet<>();
 
-        for (File sourceDir : mainSourceSet.getAllJava().getSrcDirs()) {
-            if (sourceDir.exists()) {
-                sourcePaths.add(sourceDir.toPath().toAbsolutePath());
-                sourceParentPaths.add(sourceDir.toPath().getParent().toAbsolutePath());
+        Path classesDir = null;
+        for (SourceDir src : sources.getSourceDirs()) {
+            if (Files.exists(src.getDir())) {
+                sourcePaths.add(src.getDir());
+                sourceParentPaths.add(src.getDir().getParent());
+                if (classesDir == null) {
+                    classesDir = src.getOutputDir();
+                }
             }
         }
+
         final Set<Path> resourcesSrcDirs = new LinkedHashSet<>();
-        for (File resourcesSrcDir : mainSourceSet.getResources().getSourceDirectories().getFiles()) {
-            resourcesSrcDirs.add(resourcesSrcDir.toPath().toAbsolutePath());
-        }
         // resourcesSrcDir may exist but if it's empty the resources output dir won't be created
-        final File resourcesOutputDir = mainSourceSet.getOutput().getResourcesDir();
-
-        if (sourcePaths.isEmpty() && !resourcesOutputDir.exists()) {
-            return;
+        Path resourcesOutputDir = null;
+        for (SourceDir resource : sources.getResourceDirs()) {
+            resourcesSrcDirs.add(resource.getDir());
+            if (resourcesOutputDir == null) {
+                resourcesOutputDir = resource.getOutputDir();
+            }
         }
 
-        String classesDir = QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false);
-        if (classesDir == null) {
+        if (sourcePaths.isEmpty() && (resourcesOutputDir == null || !Files.exists(resourcesOutputDir)) || classesDir == null) {
             return;
-        } else {
-            File classesDirFile = new File(classesDir);
-            if (!classesDirFile.exists()) {
-                return;
-            }
         }
 
         final String resourcesOutputPath;
-        if (resourcesOutputDir.exists()) {
-            resourcesOutputPath = resourcesOutputDir.getAbsolutePath();
-            if (!Files.exists(Paths.get(classesDir))) {
+        if (resourcesOutputDir != null && Files.exists(resourcesOutputDir)) {
+            resourcesOutputPath = resourcesOutputDir.toString();
+            if (!Files.exists(classesDir)) {
                 // currently classesDir can't be null and is expected to exist
-                classesDir = resourcesOutputPath;
+                classesDir = resourcesOutputDir;
             }
         } else {
             // currently resources dir should exist
-            resourcesOutputPath = classesDir;
+            resourcesOutputPath = classesDir.toString();
         }
 
         DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
-                .setArtifactKey(key)
-                .setName(project.getName())
-                .setProjectDirectory(project.getProjectDir().getAbsolutePath())
+                .setArtifactKey(project.getKey())
+                .setName(project.getArtifactId())
+                .setProjectDirectory(project.getWorkspaceModule().getModuleDir().getAbsolutePath())
                 .setSourcePaths(PathList.from(sourcePaths))
-                .setClassesPath(classesDir)
+                .setClassesPath(classesDir.toString())
                 .setResourcePaths(PathList.from(resourcesSrcDirs))
                 .setResourcesOutputPath(resourcesOutputPath)
                 .setSourceParents(PathList.from(sourceParentPaths))
-                .setPreBuildOutputDir(project.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString())
-                .setTargetDir(project.getBuildDir().toString());
+                .setPreBuildOutputDir(project.getWorkspaceModule().getBuildDir().toPath().resolve("generated-sources")
+                        .toAbsolutePath().toString())
+                .setTargetDir(project.getWorkspaceModule().getBuildDir().toString());
 
-        SourceSet testSourceSet = sourceSets.findByName(SourceSet.TEST_SOURCE_SET_NAME);
-        if (testSourceSet != null) {
-
+        final ArtifactSources testSources = project.getWorkspaceModule().getTestSources();
+        if (testSources != null) {
             Set<Path> testSourcePaths = new LinkedHashSet<>();
             Set<Path> testSourceParentPaths = new LinkedHashSet<>();
+            Path testClassesDir = null;
 
-            for (File sourceDir : testSourceSet.getAllJava().getSrcDirs()) {
-                if (sourceDir.exists()) {
-                    testSourcePaths.add(sourceDir.toPath().toAbsolutePath());
-                    testSourceParentPaths.add(sourceDir.toPath().getParent().toAbsolutePath());
-                }
-            }
-            final Set<Path> testResourcesSrcDirs = new LinkedHashSet<>();
-            for (File testResourcesSrcDir : testSourceSet.getResources().getSourceDirectories().getFiles()) {
-                testResourcesSrcDirs.add(testResourcesSrcDir.toPath().toAbsolutePath());
-            }
-            // resourcesSrcDir may exist but if it's empty the resources output dir won't be created
-            final File testResourcesOutputDir = testSourceSet.getOutput().getResourcesDir();
-
-            if (!testSourcePaths.isEmpty() || (testResourcesOutputDir != null && testResourcesOutputDir.exists())) {
-                String testClassesDir = QuarkusGradleUtils.getClassesDir(testSourceSet, project.getBuildDir(), true);
-                if (testClassesDir != null) {
-                    File testClassesDirFile = new File(testClassesDir);
-                    if (testClassesDirFile.exists()) {
-                        final String testResourcesOutputPath;
-                        if (testResourcesOutputDir.exists()) {
-                            testResourcesOutputPath = testResourcesOutputDir.getAbsolutePath();
-                            if (!Files.exists(Paths.get(testClassesDir))) {
-                                // currently classesDir can't be null and is expected to exist
-                                testClassesDir = testResourcesOutputPath;
-                            }
-                        } else {
-                            // currently resources dir should exist
-                            testResourcesOutputPath = testClassesDir;
-                        }
-                        moduleBuilder.setTestSourcePaths(PathList.from(testSourcePaths))
-                                .setTestClassesPath(testClassesDir)
-                                .setTestResourcePaths(PathList.from(testResourcesSrcDirs))
-                                .setTestResourcesOutputPath(testResourcesOutputPath);
+            for (SourceDir src : testSources.getSourceDirs()) {
+                if (Files.exists(src.getDir())) {
+                    testSourcePaths.add(src.getDir());
+                    testSourceParentPaths.add(src.getDir().getParent());
+                    if (testClassesDir == null && src.getOutputDir() != null) {
+                        testClassesDir = src.getOutputDir();
                     }
                 }
             }
-        }
-        DevModeContext.ModuleInfo wsModuleInfo = moduleBuilder.build();
 
+            final Set<Path> testResourcesSrcDirs = new LinkedHashSet<>();
+            // resourcesSrcDir may exist but if it's empty the resources output dir won't be created
+            Path testResourcesOutputDir = null;
+            for (SourceDir resource : testSources.getResourceDirs()) {
+                testResourcesSrcDirs.add(resource.getDir());
+                if (testResourcesOutputDir == null) {
+                    testResourcesOutputDir = resource.getOutputDir();
+                }
+            }
+
+            if (testClassesDir != null && (!testSourcePaths.isEmpty()
+                    || (testResourcesOutputDir != null && Files.exists(testResourcesOutputDir)))) {
+                final String testResourcesOutputPath;
+                if (Files.exists(testResourcesOutputDir)) {
+                    testResourcesOutputPath = testResourcesOutputDir.toString();
+                    if (!Files.exists(testClassesDir)) {
+                        // currently classesDir can't be null and is expected to exist
+                        testClassesDir = testResourcesOutputDir;
+                    }
+                } else {
+                    // currently resources dir should exist
+                    testResourcesOutputPath = testClassesDir.toString();
+                }
+                moduleBuilder.setTestSourcePaths(PathList.from(testSourcePaths))
+                        .setTestClassesPath(testClassesDir.toString())
+                        .setTestResourcePaths(PathList.from(testResourcesSrcDirs))
+                        .setTestResourcesOutputPath(testResourcesOutputPath);
+            }
+        }
+
+        final DevModeContext.ModuleInfo wsModuleInfo = moduleBuilder.build();
         if (root) {
             builder.mainModule(wsModuleInfo);
         } else {
             builder.dependency(wsModuleInfo);
         }
-        addeDeps.add(key);
     }
 
     private String getSourceEncoding() {

@@ -71,6 +71,12 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     private static final String DEPLOYMENT_CONFIGURATION = "quarkusDeploymentConfiguration";
     private static final String CLASSPATH_CONFIGURATION = "quarkusClasspathConfiguration";
 
+    /* @formatter:off */
+    private static final byte COLLECT_TOP_EXTENSION_RUNTIME_NODES = 0b001;
+    private static final byte COLLECT_DIRECT_DEPS =                 0b010;
+    private static final byte COLLECT_RELOADABLE_MODULES =          0b100;
+    /* @formatter:on */
+
     private static Configuration classpathConfig(Project project, LaunchMode mode) {
         if (LaunchMode.TEST.equals(mode)) {
             return project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
@@ -212,48 +218,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
     }
 
-    private static void processQuarkusDir(ResolvedDependencyBuilder artifactBuilder, Path quarkusDir,
-            ApplicationModelBuilder modelBuilder) {
-        if (!Files.exists(quarkusDir)) {
-            return;
-        }
-        final Path quarkusDescr = quarkusDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
-        if (!Files.exists(quarkusDescr)) {
-            return;
-        }
-        final Properties extProps = readDescriptor(quarkusDescr);
-        if (extProps == null) {
-            return;
-        }
-        artifactBuilder.setRuntimeExtensionArtifact();
-        if (artifactBuilder.isFlagSet(DependencyFlags.DIRECT)) {
-            artifactBuilder.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
-        }
-        final String extensionCoords = artifactBuilder.toGACTVString();
-        modelBuilder.handleExtensionProperties(extProps, extensionCoords);
-
-        final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
-        if (providesCapabilities != null) {
-            modelBuilder
-                    .addExtensionCapabilities(CapabilityContract.providesCapabilities(extensionCoords, providesCapabilities));
-        }
-    }
-
-    private static Properties readDescriptor(final Path path) {
-        final Properties rtProps;
-        if (!Files.exists(path)) {
-            // not a platform artifact
-            return null;
-        }
-        rtProps = new Properties();
-        try (BufferedReader reader = Files.newBufferedReader(path)) {
-            rtProps.load(reader);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to load extension description " + path, e);
-        }
-        return rtProps;
-    }
-
     private PlatformImports resolvePlatformImports(Project project,
             List<org.gradle.api.artifacts.Dependency> deploymentDeps) {
         final Configuration boms = project.getConfigurations()
@@ -308,11 +272,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                         toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()),
                         k -> toDependency(a, mainSourceSet));
                 dep.setDeploymentCp();
+                dep.clearFlag(DependencyFlags.RELOADABLE);
             } else if (isDependency(a)) {
                 final ResolvedDependencyBuilder dep = appDependencies.computeIfAbsent(
                         toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()),
                         k -> toDependency(a));
                 dep.setDeploymentCp();
+                dep.clearFlag(DependencyFlags.RELOADABLE);
             }
         }
     }
@@ -331,7 +297,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         configuration.getFirstLevelModuleDependencies()
                 .forEach(d -> {
                     collectDependencies(d, mode, project, appDependencies, artifactFiles, new HashSet<>(), modelBuilder,
-                            wsModule);
+                            wsModule,
+                            (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS | COLLECT_RELOADABLE_MODULES));
                 });
 
         if (artifactFiles != null) {
@@ -372,8 +339,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private void collectDependencies(org.gradle.api.artifacts.ResolvedDependency resolvedDep, LaunchMode mode, Project project,
             Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies, Set<File> artifactFiles,
-            Set<ArtifactKey> processedModules, ApplicationModelBuilder modelBuilder, WorkspaceModule.Mutable parentModule) {
-
+            Set<ArtifactKey> processedModules, ApplicationModelBuilder modelBuilder, WorkspaceModule.Mutable parentModule,
+            byte flags) {
         WorkspaceModule.Mutable projectModule = null;
         for (ResolvedArtifact a : resolvedDep.getModuleArtifacts()) {
             final ArtifactKey artifactKey = toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(),
@@ -384,8 +351,11 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             final ArtifactCoords depCoords = toArtifactCoords(a);
             final ResolvedDependencyBuilder depBuilder = ResolvedDependencyBuilder.newInstance()
                     .setCoords(depCoords)
-                    .setDirect(processedModules.isEmpty())
                     .setRuntimeCp();
+            if (isFlagOn(flags, COLLECT_DIRECT_DEPS)) {
+                depBuilder.setDirect(true);
+                flags = clearFlag(flags, COLLECT_DIRECT_DEPS);
+            }
             if (parentModule != null) {
                 parentModule.addDependency(new ArtifactDependency(depCoords));
             }
@@ -429,7 +399,16 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
             depBuilder.setResolvedPaths(paths == null ? PathList.of(a.getFile().toPath()) : paths)
                     .setWorkspaceModule(projectModule);
-            processQuarkusDependency(depBuilder, modelBuilder);
+            if (processQuarkusDependency(depBuilder, modelBuilder)) {
+                if (isFlagOn(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
+                    depBuilder.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
+                    flags = clearFlag(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES);
+                }
+                flags = clearFlag(flags, COLLECT_RELOADABLE_MODULES);
+            }
+            if (!isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
+                depBuilder.clearFlag(DependencyFlags.RELOADABLE);
+            }
             appDependencies.put(depBuilder.getKey(), depBuilder);
 
             if (artifactFiles != null) {
@@ -441,7 +420,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         for (org.gradle.api.artifacts.ResolvedDependency child : resolvedDep.getChildren()) {
             if (!processedModules.contains(new GACT(child.getModuleGroup(), child.getModuleName()))) {
                 collectDependencies(child, mode, project, appDependencies, artifactFiles, processedModules, modelBuilder,
-                        projectModule);
+                        projectModule, flags);
             }
         }
     }
@@ -475,21 +454,62 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         return projectModule;
     }
 
-    private void processQuarkusDependency(ResolvedDependencyBuilder artifactBuilder, ApplicationModelBuilder modelBuilder) {
-        artifactBuilder.getResolvedPaths().forEach(artifactPath -> {
+    private boolean processQuarkusDependency(ResolvedDependencyBuilder artifactBuilder, ApplicationModelBuilder modelBuilder) {
+        for (Path artifactPath : artifactBuilder.getResolvedPaths()) {
             if (!Files.exists(artifactPath) || !artifactBuilder.getType().equals(ArtifactCoords.TYPE_JAR)) {
-                return;
+                break;
             }
             if (Files.isDirectory(artifactPath)) {
-                processQuarkusDir(artifactBuilder, artifactPath.resolve(BootstrapConstants.META_INF), modelBuilder);
+                return processQuarkusDir(artifactBuilder, artifactPath.resolve(BootstrapConstants.META_INF), modelBuilder);
             } else {
                 try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactPath)) {
-                    processQuarkusDir(artifactBuilder, artifactFs.getPath(BootstrapConstants.META_INF), modelBuilder);
+                    return processQuarkusDir(artifactBuilder, artifactFs.getPath(BootstrapConstants.META_INF), modelBuilder);
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to process " + artifactPath, e);
                 }
             }
-        });
+        }
+        return false;
+    }
+
+    private static boolean processQuarkusDir(ResolvedDependencyBuilder artifactBuilder, Path quarkusDir,
+            ApplicationModelBuilder modelBuilder) {
+        if (!Files.exists(quarkusDir)) {
+            return false;
+        }
+        final Path quarkusDescr = quarkusDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
+        if (!Files.exists(quarkusDescr)) {
+            return false;
+        }
+        final Properties extProps = readDescriptor(quarkusDescr);
+        if (extProps == null) {
+            return false;
+        }
+        artifactBuilder.setRuntimeExtensionArtifact();
+        final String extensionCoords = artifactBuilder.toGACTVString();
+        modelBuilder.handleExtensionProperties(extProps, extensionCoords);
+
+        final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
+        if (providesCapabilities != null) {
+            modelBuilder
+                    .addExtensionCapabilities(CapabilityContract.providesCapabilities(extensionCoords, providesCapabilities));
+        }
+        return true;
+    }
+
+    private static Properties readDescriptor(final Path path) {
+        final Properties rtProps;
+        if (!Files.exists(path)) {
+            // not a platform artifact
+            return null;
+        }
+        rtProps = new Properties();
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+            rtProps.load(reader);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to load extension description " + path, e);
+        }
+        return rtProps;
     }
 
     private static void initProjectModule(Project project, WorkspaceModule.Mutable module, SourceSet sourceSet,
@@ -584,6 +604,22 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 }
             }
         }
+    }
+
+    private static byte setFlag(byte flags, byte flag) {
+        flags |= flag;
+        return flags;
+    }
+
+    private static boolean isFlagOn(byte walkingFlags, byte flag) {
+        return (walkingFlags & flag) > 0;
+    }
+
+    private static byte clearFlag(byte flags, byte flag) {
+        if ((flags & flag) > 0) {
+            flags ^= flag;
+        }
+        return flags;
     }
 
     private static boolean isDependency(ResolvedArtifact a) {

@@ -42,7 +42,7 @@
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
-        <smallrye-common.version>1.8.0</smallrye-common.version>
+        <smallrye-common.version>1.9.0</smallrye-common.version>
         <smallrye-config.version>2.8.2</smallrye-config.version>
         <smallrye-health.version>3.2.0</smallrye-health.version>
         <smallrye-metrics.version>3.0.4</smallrye-metrics.version>

@@ -10,9 +10,9 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
-import io.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 import io.opentracing.tag.Tags;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.smallrye.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 

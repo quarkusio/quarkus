@@ -65,6 +65,8 @@ public class NativeConfig {
 
     /**
      * Defines the user language used for building the native executable.
+     * It also serves as te default Locale language for the native executable application runtime.
+     * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
      * Defaults to the system one.
      */
@@ -74,12 +76,26 @@ public class NativeConfig {
 
     /**
      * Defines the user country used for building the native executable.
+     * It also serves as te default Locale country for the native executable application runtime.
+     * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
      * Defaults to the system one.
      */
     @ConfigItem(defaultValue = "${user.country:}")
     @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> userCountry;
+
+    /**
+     * Defines the locales to be accessible in the native executable.
+     * The format is a comma separated list of IETF BCP 47 language tags,
+     * e.g. "fr,de,cs" or "de-AT,ja-JP" etc.
+     * See also LocalesBuildTimeConfig for a separate, native-image unrelated usage.
+     * <p>
+     * Defaults to empty, i.e. not explicitly set during native-image build.
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<String> locales;
 
     /**
      * Defines the file encoding as in -Dfile.encoding=...

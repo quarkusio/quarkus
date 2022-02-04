@@ -25,7 +25,6 @@ public class OracleDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(OracleDevServicesProcessor.class);
 
     public static final String IMAGE = "gvenzl/oracle-xe";
-    public static final String TAG = "21.3.0-slim";
     public static final String DEFAULT_DATABASE_USER = "quarkus";
     public static final String DEFAULT_DATABASE_PASSWORD = "quarkus";
     public static final String DEFAULT_DATABASE_NAME = "quarkusdb";
@@ -74,8 +73,7 @@ public class OracleDevServicesProcessor {
         public QuarkusOracleServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName
-                            .orElse("docker.io/" + OracleDevServicesProcessor.IMAGE + ":" + OracleDevServicesProcessor.TAG))
+                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")))
                     .asCompatibleSubstituteFor(OracleDevServicesProcessor.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

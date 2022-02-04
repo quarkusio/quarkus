@@ -24,7 +24,6 @@ public class MySQLDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(MySQLDevServicesProcessor.class);
 
-    public static final String TAG = "8.0.24";
     public static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "TC_MY_CNF";
 
     @BuildStep
@@ -75,8 +74,8 @@ public class MySQLDevServicesProcessor {
 
         public QuarkusMySQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName.orElse("docker.io/" + MySQLContainer.IMAGE + ":" + MySQLDevServicesProcessor.TAG))
-                    .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.IMAGE)));
+                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mysql")))
+                    .asCompatibleSubstituteFor(DockerImageName.parse(MySQLContainer.NAME)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
         }

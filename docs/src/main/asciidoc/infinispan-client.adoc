@@ -25,19 +25,24 @@ Locate the solution in the `infinispan-client-quickstart` {quickstarts-tree-url}
 
 Run the following command in the base directory of your Quarkus project to add the `infinispan-client` extension:
 
-[source]
-----
-./mvnw quarkus:add-extension -Dextensions="infinispan-client"
-----
+:add-extension-extensions: infinispan-client
+include::includes/devtools/extension-add.adoc[]
 
-This command adds the following dependency to your `pom.xml`:
+This command adds the following dependency to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-infinispan-client</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-infinispan-client")
 ----
 
 == Configuring the Infinispan client

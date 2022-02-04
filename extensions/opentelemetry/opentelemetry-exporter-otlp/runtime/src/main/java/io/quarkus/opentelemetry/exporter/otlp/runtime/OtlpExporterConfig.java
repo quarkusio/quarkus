@@ -7,6 +7,8 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 public class OtlpExporterConfig {
     @ConfigRoot(name = "opentelemetry.tracer.exporter.otlp", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -25,7 +27,8 @@ public class OtlpExporterConfig {
         /**
          * The OTLP endpoint to connect to. The endpoint must start with either http:// or https://.
          */
-        @ConfigItem()
+        @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> endpoint;
 
         /**
@@ -36,7 +39,7 @@ public class OtlpExporterConfig {
          * "https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#specifying-headers-via-environment-variables">
          * Specifying headers</a> for more details.
          */
-        @ConfigItem()
+        @ConfigItem
         Optional<List<String>> headers;
 
         /**
@@ -55,7 +58,7 @@ public class OtlpExporterConfig {
          * "https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#opentelemetry-protocol-exporter">
          * Configuration Options</a> for the supported compression methods.
          */
-        @ConfigItem()
+        @ConfigItem
         public Optional<String> compression;
 
     }

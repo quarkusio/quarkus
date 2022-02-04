@@ -17,34 +17,30 @@ in a domain specific way.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE (VSCode is preferred with the Red Hat BPMN Editor VSCode Extension)
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
+:prerequisites-docker:
+:prerequisites-ide: (VSCode is preferred with the Red Hat BPMN Editor VSCode Extension)
+include::includes/devtools/prerequisites.adoc[]
 
 === Install modelling plugins in your IDE
 
 Kogito Tooling is currently supported in VSCode, Online and on other platforms:
 
-* VSCode
+VSCode::
 
-Download and install the https://marketplace.visualstudio.com/items?itemName=redhat.vscode-extension-bpmn-editor[Red Hat BPMN Editor VSCode Extension] to edit and model process definitions from VSCode IDE.
+    Download and install the https://marketplace.visualstudio.com/items?itemName=redhat.vscode-extension-bpmn-editor[Red Hat BPMN Editor VSCode Extension] to edit and model process definitions from VSCode IDE.
 
-* Online
+Online::
 
-To avoid any modeler installation you can use directly use https://bpmn.new[BPMN.new] to design and model your process through your favorite web browser.
+    To avoid any modeler installation you can use directly use https://bpmn.new[BPMN.new] to design and model your process through your favorite web browser.
 
-* Other platforms
+Eclipse::
 
-You can reference to https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] to download the latest platforms supported for the https://github.com/kiegroup/kogito-tooling/releases[Kogito tooling releases].
+    To be able to make use of visual modelling of your processes, download Eclipse IDE and
+    install from Marketplace Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
 
-* Eclipse
+Other platforms::
 
-To be able to make use of visual modelling of your processes, download Eclipse IDE and
-install from Marketplace Eclipse BPMN2 Modeller plugin (with jBPM Runtime Extension)
+    You can go to https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] to download the latest platforms supported for the https://github.com/kiegroup/kogito-tooling/releases[Kogito tooling releases].
 
 == Architecture
 
@@ -83,15 +79,9 @@ The solution is located in the `kogito-quickstart` {quickstarts-tree-url}/kogito
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kogito-quickstart \
-    -Dextensions="kogito,resteasy-jackson" \
-    -DnoExamples
-cd kogito-quickstart
-----
+:create-app-artifact-id: kogito-quickstart
+:create-app-extensions: kogito,resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the `kogito` extension
 that comes with all needed dependencies and configuration to equip your application
@@ -101,19 +91,24 @@ It also imports the `resteasy-jackson` extension that is needed for Kogito to ex
 If you already have your Quarkus project configured, you can add the `kogito` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="kogito"
-----
+:add-extension-extensions: kogito
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.kie.kogito</groupId>
     <artifactId>kogito-quarkus</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.kie.kogito:kogito-quarkus")
 ----
 
 == Writing the application
@@ -261,9 +256,11 @@ To model this process yourself, just follow these steps (start event should be a
 
 == Running and Using the Application
 
-=== Running in Developer Mode
+=== Running in Dev Mode
 
-To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`.
+To run the microservice in dev mode, use:
+
+include::includes/devtools/dev.adoc[]
 
 === Running in JVM Mode
 
@@ -271,10 +268,7 @@ When you're done playing with "dev-mode" you can run it as a standard Java appli
 
 First compile it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Then run it:
 
@@ -292,18 +286,15 @@ production environment, as the runtime technology is included in
 the produced binary, and optimized to run with minimal resource overhead.
 
 Compilation will take a bit longer, so this step is disabled by default;
-let's build again by enabling the `native` profile:
+let's build a native executable with the following command:
 
-[source,bash]
-----
-./mvnw package -Dnative
-----
+include::includes/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 
 [source,bash]
 ----
-./target/kogito-quickstart-runner
+./target/kogito-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 == Testing the Application
@@ -389,17 +380,24 @@ Version of the Infinispan is aligned with Quarkus BOM so make sure the right ver
 
 === Add dependencies to project
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-infinispan-client</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-infinispan-client</artifactId>
 </dependency>
 <dependency>
-  <groupId>org.kie.kogito</groupId>
-  <artifactId>infinispan-persistence-addon</artifactId>
-  <version>${kogito.version}</version>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>infinispan-persistence-addon</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-infinispan-client")
+implementation("org.kie.kogito:infinispan-persistence-addon")
 ----
 
 === Configure connection with Infinispan server
@@ -465,12 +463,19 @@ For more information about DMN support in Kogito, you may refer to the companion
 Kogito allows to define DRL rules as decision tables using the Microsoft Excel file formats.
 To be able to use such assets in your application, an additional dependency is required:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.kie.kogito</groupId>
     <artifactId>drools-decisiontables</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.kie.kogito:drools-decisiontables")
 ----
 
 Once the dependency is added to the project, decision tables in `xls` or `xlsx` format can be properly handled.

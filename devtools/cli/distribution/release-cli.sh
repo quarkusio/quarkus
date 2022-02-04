@@ -6,6 +6,13 @@ then
     exit 1
 fi
 
+BRANCH=$2
+if [ -z "$BRANCH" ]
+then
+    echo "Must specify Quarkus branch"
+    exit 1
+fi
+
 DIST_DIR="$( dirname "${BASH_SOURCE[0]}" )"
 pushd ${DIST_DIR}
 
@@ -35,9 +42,10 @@ tar -zcf ${JAVA_BINARY_DIR}.tar.gz ${JAVA_BINARY_DIR}
 popd
 
 export JRELEASER_PROJECT_VERSION=${VERSION}
-export JRELEASER_BRANCH=main
+export JRELEASER_BRANCH=${BRANCH}
+export JRELEASER_CHOCOLATEY_GITHUB_BRANCH=${BRANCH}
 
-jbang jreleaser@jreleaser full-release \
+jbang org.jreleaser:jreleaser:1.0.0-M1 full-release \
   --git-root-search \
   -od target
 

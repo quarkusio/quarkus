@@ -32,7 +32,8 @@ public class RegisteredClientExceptionMapperTest {
                     .addAsResource(
                             new StringAsset(setUrlForClass(ClientNoProviders.class)
                                     + setUrlForClass(ClientWithRegisteredLowPriorityMapper.class)
-                                    + setUrlForClass(ClientWithRegisteredHighPriorityMapper.class)),
+                                    + setUrlForClass(ClientWithRegisteredHighPriorityMapper.class)
+                                    + setUrlForClass(ClientWithRegisteredHighPriorityMapperAndSetPriority.class)),
                             "application.properties"));
 
     @RestClient
@@ -43,6 +44,9 @@ public class RegisteredClientExceptionMapperTest {
 
     @RestClient
     ClientWithRegisteredHighPriorityMapper clientWithRegisteredHighPriorityMapper;
+
+    @RestClient
+    ClientWithRegisteredHighPriorityMapperAndSetPriority clientWithRegisteredHighPriorityMapperAndSetPriority;
 
     @BeforeEach
     void setUp() {
@@ -77,8 +81,8 @@ public class RegisteredClientExceptionMapperTest {
 
     @Test
     void customExceptionMapperEngagesWhenRegisteredExceptionMapperHasHigherPriority() {
-        assertThrows(DummyException3.class, clientWithRegisteredHighPriorityMapper::get404);
-        assertThat(DummyException3.executionCount.get()).isEqualTo(1);
+        assertThrows(DummyException.class, clientWithRegisteredHighPriorityMapperAndSetPriority::get404);
+        assertThat(DummyException.executionCount.get()).isEqualTo(1);
     }
 
     @Path("/error")

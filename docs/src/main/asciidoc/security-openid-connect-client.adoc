@@ -11,7 +11,7 @@ include::./attributes.adoc[]
 This guide explains how to use:
 
  - `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org[Keycloak]
- - `quarkus-oidc-token-propagation` extension to propagate the current `Bearer` or `Authorization Code Flow` access tokens
+ - `quarkus-oidc-token-propagation` and `quarkus-oidc-token-propagation-reactive` extensions to propagate the current `Bearer` or `Authorization Code Flow` access tokens
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
 
@@ -930,6 +930,24 @@ As already noted above, please use `AccessTokenRequestFilter` if you work with K
 
 You can generate the tokens as described in xref:security-openid-connect.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] section.
 Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered token propagation filter to invoke on the downstream endpoint, for example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
+
+[[reactive-token-propagation]]
+== Token Propagation Reactive
+
+Add the following Maven Dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
+</dependency>
+----
+
+The `quarkus-oidc-token-propagation-reactive` extension provides `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` which can be used to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
+
+The `quarkus-oidc-token-propagation-reactive` extension (as opposed to the non-reactive `quarkus-oidc-token-propagation` extension) does not currently support the exchanging or resigning the tokens before the propagation.
+However these features may be added in the future.
 
 == References
 

@@ -84,7 +84,7 @@ public class DockerProcessor {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 
-        log.info("Building docker image for jar.");
+        log.info("Starting (local) container image build for jar using docker.");
 
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out, reader,
@@ -128,7 +128,7 @@ public class DockerProcessor {
                     "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
         }
 
-        log.info("Starting docker image build");
+        log.info("Starting (local) container image build for native binary using docker.");
 
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,

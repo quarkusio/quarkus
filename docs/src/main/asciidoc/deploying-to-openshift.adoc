@@ -12,30 +12,19 @@ This guide covers generating and deploying OpenShift resources based on sane def
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* roughly 5 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* access to an OpenShift cluster (Minishift is a viable option)
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
+* Access to an OpenShift cluster (Minishift is a viable option)
 * OpenShift CLI (Optional, only required for manual deployment)
 
 == Bootstrapping the project
 
 First, we need a new project that contains the OpenShift extension. This can be done using the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=openshift-quickstart \
-    -DclassName="org.acme.rest.GreetingResource" \
-    -Dpath="/greeting" \
-    -Dextensions="resteasy,openshift"
-
-cd openshift-quickstart
-----
+:create-app-artifact-id: openshift-quickstart
+:create-app-extensions: resteasy,openshift
+:create-app-code:
+include::includes/devtools/create-app.adoc[]
 
 Quarkus offers the ability to automatically generate OpenShift resources based on sane defaults and user supplied configuration.
 The OpenShift extension is actually a wrapper extension that brings together the xref:deploying-to-kubernetes.adoc[kubernetes] and xref:container-image.adoc#s2i[container-image-s2i]
@@ -43,12 +32,19 @@ extensions with sensible defaults so that it's easier for the user to get starte
 
 When we added the OpenShift extension to the command line invocation above, the following dependency was added to the `pom.xml`
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-openshift</artifactId>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-openshift</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-openshift")
 ----
 
 == Log Into the OpenShift Cluster
@@ -74,13 +70,11 @@ oc login --token=myToken --server=myServerUrl
 TIP: You can request the token via the _Copy Login Command_ link in the OpenShift web console.
 
 Finally, you don't need to use the OpenShift CLI at all.
-Instead, set the `quarkus.kubernetes-client.master-url` config property and authenticate with the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` respectively.
+Instead, set the `quarkus.kubernetes-client.master-url` config property and authenticate with the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` respectively:
 
-.Log In - Configuration Properties Example
-[source,bash]
-----
-./mvnw clean package -Dquarkus.kubernetes-client.master-url=myServerUrl -Dquarkus.kubernetes-client.token=myToken
-----
+:build-additional-parameters: -Dquarkus.kubernetes-client.master-url=myServerUrl -Dquarkus.kubernetes-client.token=myToken
+include::includes/devtools/build.adoc[]
+:!build-additional-parameters:
 
 == Build and Deployment
 
@@ -88,10 +82,9 @@ You can trigger a build and deployment in a single step or build the container i
 
 To trigger a build and deployment in a single step:
 
-[source,bash,subs=attributes+]
-----
-./mvnw clean package -Dquarkus.kubernetes.deploy=true
-----
+:build-additional-parameters: -Dquarkus.kubernetes.deploy=true
+include::includes/devtools/build.adoc[]
+:!build-additional-parameters:
 
 TIP: If you want to test your application immediately then set the `quarkus.openshift.route.expose` config property to `true` to <<exposing_routes,expose the service automatically>>, e.g. add `-Dquarkus.openshift.route.expose=true` to the command above.
 

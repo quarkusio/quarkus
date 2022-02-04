@@ -18,11 +18,9 @@ This guide covers:
 
 == Prerequisites
 
-For this guide you need:
-
-* Roughly 1 hour for all modalities
-* JDK 11
-* Apache Maven {maven-version}
+:prerequisites-time: 1 hour for all modalities
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
 * https://cloud.google.com/[A Google Cloud Account].  Free accounts work.
 * https://cloud.google.com/sdk[Cloud SDK CLI Installed]
 

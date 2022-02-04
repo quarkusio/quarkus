@@ -30,6 +30,8 @@ public class NativeInvalidDefinitionExceptionMapper {
                 // we were not able to determine the type, so just log the exception
                 log.error(e);
             }
+        } else {
+            log.error(e);
         }
         return Response.serverError().build();
     }

@@ -17,12 +17,7 @@ This guide explains how to:
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 10 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Solution
 
@@ -37,24 +32,14 @@ The solution is located in the `lifecycle-quickstart` {quickstarts-tree-url}/lif
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=lifecycle-quickstart \
-    -DclassName="org.acme.lifecycle.GreetingResource" \
-    -Dpath="/hello"
-cd lifecycle-quickstart
-----
+:create-app-artifact-id: lifecycle-quickstart
+include::includes/devtools/create-app.adoc[]
 
 It generates:
 
 * the Maven structure
-* a landing page accessible on `http://localhost:8080`
 * example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
-* an `org.acme.lifecycle.GreetingResource` resource
-* an associated test
 
 == The main method
 
@@ -135,9 +120,19 @@ String[] args;
 
 Command line arguments can be passed to the application through the `-D` flag with the property `quarkus.args`:
 
-* For Quarkus dev mode: `./mvnw quarkus:dev -Dquarkus.args=<cmd-args>`
+:devtools-wrapped:
+// TODO: use <cmd-args> once Asciidoctor escaping bug is fixed
+:dev-additional-parameters: -Dquarkus.args=cmd-args
+
+* For Quarkus dev mode:
++
+include::includes/devtools/dev-parameters.adoc[]
+
 * For a runner jar: `java -Dquarkus.args=<cmd-args> -jar target/quarkus-app/quarkus-run.jar`
 * For a native executable: `./target/lifecycle-quickstart-1.0-SNAPSHOT-runner -Dquarkus.args=<cmd-args>`
+
+:!dev-additional-parameters:
+:!devtools-wrapped:
 
 == Listening for startup and shutdown events
 
@@ -216,11 +211,22 @@ TIP: If a class is annotated with `@Startup` but with no scope annotation then `
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`, the logged message is printed.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
+The logged message is printed.
 When the application is stopped, the second log message is printed.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable using `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable using:
+
+include::includes/devtools/build-native.adoc[]
 
 == Launch Modes
 

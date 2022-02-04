@@ -208,6 +208,7 @@
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
                 <module>oidc-token-propagation</module>
+                <module>oidc-token-propagation-reactive</module>
                 <module>smallrye-jwt-token-propagation</module>
                 <module>oidc-code-flow</module>
                 <module>oidc-tenancy</module>

@@ -4,6 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started with SmallRye Stork
+:extension-status: preview
 
 // Temporary until stork in in the BOM
 :stork-version: 1.0.0.Beta1

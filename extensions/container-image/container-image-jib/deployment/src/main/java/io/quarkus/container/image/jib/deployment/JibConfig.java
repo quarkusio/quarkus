@@ -135,8 +135,19 @@ public class JibConfig {
     public boolean alwaysCacheBaseImage;
 
     /**
-     * List of target platforms. Each platform is defined using the pattern: \<os\>|\<arch\>[/variant]|\<os\>/\<arch\>[/variant]
-     * ex: linux/amd64,linux/arm64/v8. If not specified, OS default is linux and architecture default is amd64
+     * List of target platforms. Each platform is defined using the pattern:
+     * 
+     * <pre>
+     *  {@literal <os>|<arch>[/variant]|<os>/<arch>[/variant]}
+     * </pre>
+     * 
+     * for example:
+     *
+     * <pre>
+     * {@literal linux/amd64,linux/arm64/v8}
+     * </pre>
+     *
+     * If not specified, OS default is linux and architecture default is amd64
      *
      * If more than one platform is configured, it is important to note that the base image has to be a Docker manifest or an
      * OCI image index containing a version of each chosen platform

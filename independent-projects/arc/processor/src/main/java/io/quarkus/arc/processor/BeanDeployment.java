@@ -1029,8 +1029,9 @@ public class BeanDeployment {
         for (MethodInfo producerMethod : producerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(producerMethod.declaringClass());
             if (declaringBean != null) {
-                BeanInfo producerMethodBean = Beans.createProducerMethod(producerMethod, declaringBean, this,
-                        findDisposer(declaringBean, producerMethod, disposers), injectionPointTransformer);
+                Set<Type> beanTypes = Types.getProducerMethodTypeClosure(producerMethod, this);
+                BeanInfo producerMethodBean = Beans.createProducerMethod(beanTypes, producerMethod, declaringBean, this,
+                        findDisposer(beanTypes, declaringBean, producerMethod, disposers), injectionPointTransformer);
                 if (producerMethodBean != null) {
                     beans.add(producerMethodBean);
                     injectionPoints.addAll(producerMethodBean.getAllInjectionPoints());
@@ -1041,8 +1042,9 @@ public class BeanDeployment {
         for (FieldInfo producerField : producerFields) {
             BeanInfo declaringBean = beanClassToBean.get(producerField.declaringClass());
             if (declaringBean != null) {
+                Set<Type> beanTypes = Types.getProducerFieldTypeClosure(producerField, this);
                 BeanInfo producerFieldBean = Beans.createProducerField(producerField, declaringBean, this,
-                        findDisposer(declaringBean, producerField, disposers));
+                        findDisposer(beanTypes, declaringBean, producerField, disposers));
                 if (producerFieldBean != null) {
                     beans.add(producerFieldBean);
                 }
@@ -1102,20 +1104,11 @@ public class BeanDeployment {
         }
     }
 
-    private DisposerInfo findDisposer(BeanInfo declaringBean, AnnotationTarget annotationTarget, List<DisposerInfo> disposers) {
+    private DisposerInfo findDisposer(Set<Type> beanTypes, BeanInfo declaringBean, AnnotationTarget annotationTarget,
+            List<DisposerInfo> disposers) {
         List<DisposerInfo> found = new ArrayList<>();
-        Type beanType;
         Set<AnnotationInstance> qualifiers = new HashSet<>();
-        List<AnnotationInstance> allAnnotations;
-        if (Kind.FIELD.equals(annotationTarget.kind())) {
-            allAnnotations = annotationTarget.asField().annotations();
-            beanType = annotationTarget.asField().type();
-        } else if (Kind.METHOD.equals(annotationTarget.kind())) {
-            allAnnotations = annotationTarget.asMethod().annotations();
-            beanType = annotationTarget.asMethod().returnType();
-        } else {
-            throw new RuntimeException("Unsupported annotation target: " + annotationTarget);
-        }
+        Collection<AnnotationInstance> allAnnotations = getAnnotations(annotationTarget);
         allAnnotations.forEach(a -> extractQualifiers(a).forEach(qualifiers::add));
         for (DisposerInfo disposer : disposers) {
             if (disposer.getDeclaringBean().equals(declaringBean)) {
@@ -1125,8 +1118,14 @@ public class BeanDeployment {
                         hasQualifier = false;
                     }
                 }
-                if (hasQualifier && beanResolver.matches(disposer.getDisposedParameterType(), beanType)) {
-                    found.add(disposer);
+                if (hasQualifier) {
+                    Type disposedParamType = disposer.getDisposedParameterType();
+                    for (Type beanType : beanTypes) {
+                        if (beanResolver.matches(disposedParamType, beanType)) {
+                            found.add(disposer);
+                            break;
+                        }
+                    }
                 }
             }
         }

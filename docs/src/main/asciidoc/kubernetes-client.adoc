@@ -21,19 +21,24 @@ Being able to write such operators in Java with the very low footprint that nati
 Once you have your Quarkus project configured you can add the `kubernetes-client` extension
 to your project by running the following command in your project base directory.
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="kubernetes-client"
-----
+:add-extension-extensions: kubernetes-client
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-kubernetes-client</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kubernetes-client")
 ----
 
 == Usage
@@ -129,13 +134,20 @@ public class KubernetesClientTest {
 
 Note that to take advantage of these features, the `quarkus-test-kubernetes-client` dependency needs to be added, for example like so:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-kubernetes-client</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-kubernetes-client")
 ----
 
 By default, the mock server will be in CRUD mode, so you have to use the client to build your state before your application can retrieve it,
@@ -308,12 +320,19 @@ client.pods().watch(new ResourceWatcher<Pod>());
 
 Please note that if you would like to use Elliptic Curve keys with Kubernetes Client then adding a BouncyCastle PKIX dependency is required:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.bouncycastle</groupId>
     <artifactId>bcpkix-jdk15on</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bcpkix-jdk15on")
 ----
 
 Note that internally an `org.bouncycastle.jce.provider.BouncyCastleProvider` provider will be registered if it has not already been registered.
@@ -373,10 +392,8 @@ particular they have the same `quarkus.kubernetes-client` prefix.
 
 Add the extension with:
 
-[source]
-----
-./mvnw quarkus:add-extension -Dextensions="openshift-client"
-----
+:add-extension-extensions: openshift-client
+include::includes/devtools/extension-add.adoc[]
 
 Note that `openshift-client` extension has a dependency on the `kubernetes-client` extension.
 
@@ -432,13 +449,20 @@ public class OpenShiftClientTest {
 
 To use this feature, you have to add a dependency on `quarkus-test-openshift-client`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-openshift-client</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-openshift-client")
 ----
 
 == Configuration Reference

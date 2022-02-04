@@ -699,7 +699,6 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public void setCookieSuffix(String cookieSuffix) {
             this.cookieSuffix = Optional.of(cookieSuffix);
         }
-
     }
 
     @ConfigGroup

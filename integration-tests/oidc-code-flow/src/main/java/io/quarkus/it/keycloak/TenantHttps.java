@@ -25,7 +25,7 @@ public class TenantHttps {
 
     @GET
     @Path("query")
-    public String getTenantWithQuery(@QueryParam("a") String value) {
-        return getTenant() + "?a=" + value;
+    public String getTenantWithQuery(@QueryParam("code") String value) {
+        return getTenant() + "?code=" + value;
     }
 }

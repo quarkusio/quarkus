@@ -52,6 +52,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
+    static final String NO_OIDC_COOKIES_AVAILABLE = "no_oidc_cookies";
 
     private static final String INTERNAL_IDTOKEN_HEADER = "internal";
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
@@ -63,7 +64,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
         final Cookie sessionCookie = context.request().getCookie(getSessionCookieName(oidcTenantConfig));
 
-        // if session already established, try to re-authenticate
+        // if the session is already established then try to re-authenticate
         if (sessionCookie != null) {
             context.put(OidcUtils.SESSION_COOKIE_NAME, sessionCookie.getName());
             Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
@@ -76,21 +77,52 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     });
         }
 
-        final String code = context.request().getParam("code");
-        if (code == null) {
-            return Uni.createFrom().optional(Optional.empty());
+        final Cookie stateCookie = context.request().getCookie(getStateCookieName(oidcTenantConfig));
+
+        // if the state cookie is available then try to complete the code flow and start a new session
+        if (stateCookie != null) {
+            String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
+            if (!isStateValid(context, parsedStateCookieValue[0])) {
+                OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
+                return Uni.createFrom().failure(new AuthenticationCompletionException());
+            }
+
+            final String code = context.request().getParam(OidcConstants.CODE_FLOW_CODE);
+            if (code != null) {
+                // start a new session by starting the code flow dance
+                Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
+                return resolvedContext.onItem()
+                        .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
+                            @Override
+                            public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
+                                return performCodeFlow(identityProviderManager, context, tenantContext, code, stateCookie,
+                                        parsedStateCookieValue);
+                            }
+                        });
+            } else {
+                LOG.debug("State cookie is present but neither 'code' nor 'error' query parameter is returned");
+                OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
+                return Uni.createFrom().failure(new AuthenticationCompletionException());
+            }
         }
+        // return an empty identity - this will lead to a challenge redirecting the user to OpenId Connect provider
+        // unless it is detected it is a redirect from the provider in which case HTTP 401 will be returned.
+        context.put(NO_OIDC_COOKIES_AVAILABLE, Boolean.TRUE);
+        return Uni.createFrom().optional(Optional.empty());
 
-        // start a new session by starting the code flow dance
-        Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
-        return resolvedContext.onItem()
-                .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
-                    @Override
-                    public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                        return performCodeFlow(identityProviderManager, context, tenantContext, code);
-                    }
-                });
+    }
 
+    private boolean isStateValid(RoutingContext context, String cookieState) {
+        List<String> values = context.queryParam(OidcConstants.CODE_FLOW_STATE);
+        // IDP must return a 'state' query parameter and the value of the state cookie must start with this parameter's value
+        if (values.size() != 1) {
+            LOG.debug("State parameter can not be empty or multi-valued");
+            return false;
+        } else if (!cookieState.equals(values.get(0))) {
+            LOG.debug("State cookie value does not match the state query parameter value");
+            return false;
+        }
+        return true;
     }
 
     private Uni<SecurityIdentity> reAuthenticate(Cookie sessionCookie,
@@ -198,6 +230,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                     @Override
                     public Uni<ChallengeData> apply(Void t) {
+
+                        if (context.get(NO_OIDC_COOKIES_AVAILABLE) != null
+                                && context.request().getParam(OidcConstants.CODE_FLOW_CODE) != null
+                                && isRedirectFromProvider(context, configContext)) {
+                            LOG.debug(
+                                    "The state cookie is missing but the 'code' is available, authentication has failed");
+                            return Uni.createFrom().item(new ChallengeData(401, "WWW-Authenticate", "OIDC"));
+
+                        }
+
                         if (!shouldAutoRedirect(configContext, context)) {
                             // If the client (usually an SPA) wants to handle the redirect manually, then
                             // return status code 499 and WWW-Authenticate header with the 'OIDC' value.
@@ -250,43 +292,31 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 });
     }
 
-    private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
-            RoutingContext context, TenantConfigContext configContext, String code) {
+    private boolean isRedirectFromProvider(RoutingContext context, TenantConfigContext configContext) {
+        String referer = context.request().getHeader(HttpHeaders.REFERER);
+        return referer != null && referer.startsWith(configContext.provider.getMetadata().getAuthorizationUri());
+    }
 
-        Cookie stateCookie = context.getCookie(getStateCookieName(configContext));
+    private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
+            RoutingContext context, TenantConfigContext configContext, String code, Cookie stateCookie,
+            String[] parsedStateCookieValue) {
 
         String userPath = null;
         String userQuery = null;
-        if (stateCookie != null) {
-            List<String> values = context.queryParam("state");
-            // IDP must return a 'state' query parameter and the value of the state cookie must start with this parameter's value
-            if (values.size() != 1) {
-                LOG.debug("State parameter can not be empty or multi-valued");
-                return Uni.createFrom().failure(new AuthenticationCompletionException());
-            } else if (!stateCookie.getValue().startsWith(values.get(0))) {
-                LOG.debug("State cookie value does not match the state query parameter value");
-                return Uni.createFrom().failure(new AuthenticationCompletionException());
-            } else {
-                // This is an original redirect from IDP, check if the original request path and query need to be restored
-                String[] pair = COOKIE_PATTERN.split(stateCookie.getValue());
-                if (pair.length == 2) {
-                    int userQueryIndex = pair[1].indexOf("?");
-                    if (userQueryIndex >= 0) {
-                        userPath = pair[1].substring(0, userQueryIndex);
-                        if (userQueryIndex + 1 < pair[1].length()) {
-                            userQuery = pair[1].substring(userQueryIndex + 1);
-                        }
-                    } else {
-                        userPath = pair[1];
-                    }
+
+        // This is an original redirect from IDP, check if the original request path and query need to be restored
+        if (parsedStateCookieValue.length == 2) {
+            int userQueryIndex = parsedStateCookieValue[1].indexOf("?");
+            if (userQueryIndex >= 0) {
+                userPath = parsedStateCookieValue[1].substring(0, userQueryIndex);
+                if (userQueryIndex + 1 < parsedStateCookieValue[1].length()) {
+                    userQuery = parsedStateCookieValue[1].substring(userQueryIndex + 1);
                 }
-                OidcUtils.removeCookie(context, configContext.oidcConfig, stateCookie.getName());
+            } else {
+                userPath = parsedStateCookieValue[1];
             }
-        } else {
-            // State cookie must be available to minimize the risk of CSRF
-            LOG.debug("The state cookie is missing after a redirect from IDP, authentication has failed");
-            return Uni.createFrom().failure(new AuthenticationCompletionException());
         }
+        OidcUtils.removeCookie(context, configContext.oidcConfig, stateCookie.getName());
 
         final String finalUserPath = userPath;
         final String finalUserQuery = userQuery;
@@ -463,13 +493,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 cookieValue += (COOKIE_DELIM + requestPath);
             }
         }
-        createCookie(context, configContext.oidcConfig, getStateCookieName(configContext), cookieValue, 60 * 30);
+        createCookie(context, configContext.oidcConfig, getStateCookieName(configContext.oidcConfig), cookieValue, 60 * 30);
         return uuid;
     }
 
     private String generatePostLogoutState(RoutingContext context, TenantConfigContext configContext) {
-        OidcUtils.removeCookie(context, configContext.oidcConfig, getPostLogoutCookieName(configContext));
-        return createCookie(context, configContext.oidcConfig, getPostLogoutCookieName(configContext),
+        OidcUtils.removeCookie(context, configContext.oidcConfig, getPostLogoutCookieName(configContext.oidcConfig));
+        return createCookie(context, configContext.oidcConfig, getPostLogoutCookieName(configContext.oidcConfig),
                 UUID.randomUUID().toString(),
                 60 * 30).getValue();
     }
@@ -639,12 +669,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 });
     }
 
-    private static String getStateCookieName(TenantConfigContext configContext) {
-        return OidcUtils.STATE_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
+    private static String getStateCookieName(OidcTenantConfig oidcConfig) {
+        return OidcUtils.STATE_COOKIE_NAME + getCookieSuffix(oidcConfig);
     }
 
-    private static String getPostLogoutCookieName(TenantConfigContext configContext) {
-        return OidcUtils.POST_LOGOUT_COOKIE_NAME + getCookieSuffix(configContext.oidcConfig);
+    private static String getPostLogoutCookieName(OidcTenantConfig oidcConfig) {
+        return OidcUtils.POST_LOGOUT_COOKIE_NAME + getCookieSuffix(oidcConfig);
     }
 
     private static String getSessionCookieName(OidcTenantConfig oidcConfig) {

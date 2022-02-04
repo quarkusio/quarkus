@@ -151,4 +151,12 @@ public class SmallRyeGraphQLConfig {
     @ConfigItem
     @ConfigDocSection
     public SmallRyeGraphQLUIConfig ui;
+
+    /**
+     * Subprotocols that should be supported by the server for graphql-over-websocket use cases.
+     * Allowed subprotocols are "graphql-ws" and "graphql-transport-ws". By default, both are enabled.
+     */
+    @ConfigItem
+    public Optional<List<String>> websocketSubprotocols;
+
 }

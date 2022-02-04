@@ -11,6 +11,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.BeanGenerator.ProviderType;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
@@ -77,9 +78,6 @@ public class ClientProxyGenerator extends AbstractGenerator {
     Collection<Resource> generate(BeanInfo bean, String beanClassName,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
-                generateSources);
-
         ProviderType providerType = new ProviderType(bean.getProviderType());
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String baseName = getBaseName(bean, beanClassName);
@@ -88,6 +86,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
+
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
+                name -> name.equals(generatedName) ? SpecialType.CLIENT_PROXY : null, generateSources);
 
         // Foo_ClientProxy extends Foo implements ClientProxy
         List<String> interfaces = new ArrayList<>();

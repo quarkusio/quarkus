@@ -13,6 +13,7 @@ import io.quarkus.arc.processor.BeanInfo.DecorationInfo;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
@@ -99,9 +100,6 @@ public class SubclassGenerator extends AbstractGenerator {
 
     Collection<Resource> generate(BeanInfo bean, String beanClassName) {
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
-                generateSources);
-
         Type providerType = bean.getProviderType();
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
@@ -110,6 +108,10 @@ public class SubclassGenerator extends AbstractGenerator {
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
+
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
+                name -> name.equals(generatedName) ? SpecialType.SUBCLASS : null,
+                generateSources);
 
         // Foo_Subclass extends Foo implements Subclass
         ClassCreator subclass = ClassCreator.builder().classOutput(classOutput).className(generatedName)

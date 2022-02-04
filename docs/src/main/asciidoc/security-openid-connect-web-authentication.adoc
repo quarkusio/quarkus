@@ -1278,6 +1278,21 @@ You can add more properties to it with `quarkus.oidc.authentication.extra-params
 quarkus.oidc.authentication.extra-params.response_mode=query
 ----
 
+=== Customize authentication error response
+
+If the user authentication has failed at the OpenId Connect Authorization endpoint, for example, due to an invalid scope or other invalid parameters included in the redirect to the provider, then the provider will redirect the user back to Quarkus not with the `code` but `error` and `error_description` parameters.
+
+In such cases HTTP `401` will be returned by default. However, you can instead request that a custom public error endpoint is called in order to return a user friendly HTML error page. Use `quarkus.oidc.authentication.error-path`, for example:
+
+[source,properties]
+----
+quarkus.oidc.authentication.error-path=/error
+----
+
+It has to start fron a forward slash and be relative to the current endpoint's base URI. For example, if it is set as '/error' and the current request URI is `https://localhost:8080/callback?error=invalid_scope` then a final redirect will be made to `https://localhost:8080/error?error=invalid_scope`.
+
+It is important that this error endpoint is a public resource to avoid the user redirected to this page be authenticated again.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]

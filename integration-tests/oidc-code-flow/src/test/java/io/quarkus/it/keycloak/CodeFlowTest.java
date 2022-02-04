@@ -88,6 +88,68 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testCodeFlowScopeError() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+
+            // replace scope
+            keycloakUrl = keycloakUrl.replace("scope=openid+profile+email+phone", "scope=unknown");
+
+            // response from keycloak
+            webResponse = webClient.loadWebResponse(new WebRequest(URI.create(keycloakUrl).toURL()));
+
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+            URI endpointLocationUri = URI.create(endpointLocation);
+
+            // response from Quarkus 
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            assertEquals(401, webResponse.getStatusCode());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowScopeErrorWithErrorPage() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant-https/query?code=b").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+
+            // replace scope
+            keycloakUrl = keycloakUrl.replace("scope=openid+profile+email+phone", "scope=unknown");
+
+            // response from keycloak
+            webResponse = webClient.loadWebResponse(new WebRequest(URI.create(keycloakUrl).toURL()));
+
+            // This is a redirect from the OIDC server to the endpoint
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocation.startsWith("https"));
+            endpointLocation = "http" + endpointLocation.substring(5);
+            URI endpointLocationUri = URI.create(endpointLocation);
+
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+
+            // This is a redirect from quarkus-oidc to the error page
+            String endpointErrorLocation = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointErrorLocation.startsWith("https"));
+
+            endpointErrorLocation = "http" + endpointErrorLocation.substring(5);
+
+            HtmlPage page = webClient.getPage(URI.create(endpointErrorLocation).toURL());
+            assertEquals("error: invalid_scope, error_description: Invalid scopes: unknown profile email phone",
+                    page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCodeFlowForceHttpsRedirectUri() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);

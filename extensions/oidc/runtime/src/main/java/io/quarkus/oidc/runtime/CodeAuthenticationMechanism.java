@@ -99,6 +99,28 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         parsedStateCookieValue);
                             }
                         });
+            } else if (context.request().getParam(OidcConstants.CODE_FLOW_ERROR) != null) {
+                OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
+                String error = context.request().getParam(OidcConstants.CODE_FLOW_ERROR);
+                String errorDescription = context.request().getParam(OidcConstants.CODE_FLOW_ERROR_DESCRIPTION);
+
+                LOG.debugf("Authentication has failed, error: %s, description: %s", error, errorDescription);
+
+                if (oidcTenantConfig.authentication.errorPath.isPresent()) {
+                    URI absoluteUri = URI.create(context.request().absoluteURI());
+
+                    StringBuilder errorUri = new StringBuilder(buildUri(context,
+                            isForceHttps(oidcTenantConfig),
+                            absoluteUri.getAuthority(),
+                            oidcTenantConfig.authentication.errorPath.get()));
+                    errorUri.append('?').append(absoluteUri.getRawQuery());
+
+                    String finalErrorUri = errorUri.toString();
+                    LOG.debugf("Error URI: %s", finalErrorUri);
+                    return Uni.createFrom().failure(new AuthenticationRedirectException(finalErrorUri));
+                } else {
+                    return Uni.createFrom().failure(new AuthenticationCompletionException());
+                }
             } else {
                 LOG.debug("State cookie is present but neither 'code' nor 'error' query parameter is returned");
                 OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
@@ -232,12 +254,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     public Uni<ChallengeData> apply(Void t) {
 
                         if (context.get(NO_OIDC_COOKIES_AVAILABLE) != null
-                                && context.request().getParam(OidcConstants.CODE_FLOW_CODE) != null
                                 && isRedirectFromProvider(context, configContext)) {
                             LOG.debug(
-                                    "The state cookie is missing but the 'code' is available, authentication has failed");
+                                    "The state cookie is missing after the redirect from OpenId Connect Provider, authentication has failed");
                             return Uni.createFrom().item(new ChallengeData(401, "WWW-Authenticate", "OIDC"));
-
                         }
 
                         if (!shouldAutoRedirect(configContext, context)) {
@@ -269,7 +289,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         // redirect_uri
                         String redirectPath = getRedirectPath(configContext, context);
-                        String redirectUriParam = buildUri(context, isForceHttps(configContext), redirectPath);
+                        String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig), redirectPath);
                         LOG.debugf("Authentication request redirect_uri parameter: %s", redirectUriParam);
 
                         codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_REDIRECT_URI).append(EQ)
@@ -293,6 +313,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private boolean isRedirectFromProvider(RoutingContext context, TenantConfigContext configContext) {
+        // The referrer check is the best effort at attempting to avoid the redirect loop after
+        // the user has authenticated at the OpenId Connect Provider page but the state cookie has been lost
+        // during the redirect back to Quarkus.
+
         String referer = context.request().getHeader(HttpHeaders.REFERER);
         return referer != null && referer.startsWith(configContext.provider.getMetadata().getAuthorizationUri());
     }
@@ -369,7 +393,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     URI absoluteUri = URI.create(context.request().absoluteURI());
 
                                                     StringBuilder finalUriWithoutQuery = new StringBuilder(buildUri(context,
-                                                            isForceHttps(configContext),
+                                                            isForceHttps(configContext.oidcConfig),
                                                             absoluteUri.getAuthority(),
                                                             (finalUserPath != null ? finalUserPath
                                                                     : absoluteUri.getRawPath())));
@@ -618,7 +642,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // 'redirect_uri': typically it must match the 'redirect_uri' query parameter which was used during the code request.
         String redirectPath = getRedirectPath(configContext, context);
-        String redirectUriParam = buildUri(context, isForceHttps(configContext), redirectPath);
+        String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
 
         return configContext.provider.getCodeFlowTokens(code, redirectUriParam);
@@ -636,7 +660,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         if (configContext.oidcConfig.logout.postLogoutPath.isPresent()) {
             logoutUri.append(AMP).append(configContext.oidcConfig.logout.getPostLogoutUriParam()).append(EQ).append(
-                    buildUri(context, isForceHttps(configContext), configContext.oidcConfig.logout.postLogoutPath.get()));
+                    buildUri(context, isForceHttps(configContext.oidcConfig),
+                            configContext.oidcConfig.logout.postLogoutPath.get()));
             logoutUri.append(AMP).append(OidcConstants.LOGOUT_STATE).append(EQ)
                     .append(generatePostLogoutState(context, configContext));
         }
@@ -654,8 +679,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
     }
 
-    private boolean isForceHttps(TenantConfigContext configContext) {
-        return configContext.oidcConfig.authentication.forceRedirectHttpsScheme.orElse(false);
+    private boolean isForceHttps(OidcTenantConfig oidcConfig) {
+        return oidcConfig.authentication.forceRedirectHttpsScheme.orElse(false);
     }
 
     private Uni<Void> buildLogoutRedirectUriUni(RoutingContext context, TenantConfigContext configContext,

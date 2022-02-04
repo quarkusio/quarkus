@@ -68,14 +68,16 @@ public interface ResourceOutput {
         enum Type {
             JAVA_CLASS,
             JAVA_SOURCE,
-            SERVICE_PROVIDER,
+            SERVICE_PROVIDER
         }
 
         enum SpecialType {
             BEAN,
             INTERCEPTOR_BEAN,
             DECORATOR_BEAN,
-            OBSERVER;
+            OBSERVER,
+            CLIENT_PROXY,
+            SUBCLASS
         }
 
     }

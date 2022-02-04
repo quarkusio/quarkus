@@ -284,7 +284,7 @@ public class NativeImageBuildStep {
             String executableName = getNativeImageExecutableName();
             String errorMessage = "Cannot find the `" + executableName
                     + "` in the GRAALVM_HOME, JAVA_HOME and System PATH. Install it using `gu install native-image`";
-            if (!SystemUtils.IS_OS_LINUX) {
+            if (!SystemUtils.IS_OS_LINUX && !SystemUtils.IS_OS_MAC) {
                 throw new RuntimeException(errorMessage);
             }
             log.warn(errorMessage + " Attempting to fall back to container build.");

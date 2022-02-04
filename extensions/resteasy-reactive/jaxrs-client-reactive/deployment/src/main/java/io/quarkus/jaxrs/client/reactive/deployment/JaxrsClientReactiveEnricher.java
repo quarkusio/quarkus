@@ -8,6 +8,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 
 /**
@@ -42,13 +43,15 @@ public interface JaxrsClientReactiveEnricher {
      * @param index jandex index
      * @param generatedClasses build producer used to generate classes. Used e.g. to generate classes for header filling
      * @param methodIndex 0-based index of the method in the interface. Used to assure there is no clash in generating classes
+     * @param javaMethodField method reference in a static class field
      */
     void forMethod(ClassCreator classCreator, MethodCreator constructor,
             MethodCreator clinit,
             MethodCreator methodCreator,
             ClassInfo interfaceClass,
             MethodInfo method, AssignableResultHandle invocationBuilder,
-            IndexView index, BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex);
+            IndexView index, BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex,
+            FieldDescriptor javaMethodField);
 
     /**
      * Method-level alterations for methods of sub-resources
@@ -65,11 +68,12 @@ public interface JaxrsClientReactiveEnricher {
      * @param generatedClasses build producer used to generate classes
      * @param methodIndex 0-based index of method in the root interface
      * @param subMethodIndex index of the method in the sub-resource interface
+     * @param javaMethodField method reference in a static class field
      */
     void forSubResourceMethod(ClassCreator subClassCreator, MethodCreator subConstructor,
             MethodCreator subClinit,
             MethodCreator subMethodCreator, ClassInfo rootInterfaceClass, ClassInfo subInterfaceClass,
             MethodInfo subMethod, MethodInfo rootMethod, AssignableResultHandle invocationBuilder, // sub-level
             IndexView index, BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            int methodIndex, int subMethodIndex);
+            int methodIndex, int subMethodIndex, FieldDescriptor javaMethodField);
 }

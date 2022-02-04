@@ -31,9 +31,10 @@ public class BasicTest {
     String appleUrl;
     @TestHTTPResource()
     String baseUrl;
-
     @TestHTTPResource("/hello")
     String helloUrl;
+    @TestHTTPResource("/params")
+    String paramsUrl;
 
     @Test
     public void shouldMakeTextRequest() {
@@ -207,6 +208,14 @@ public class BasicTest {
         Assertions.assertTrue(outsideServerFound);
         Assertions.assertTrue(clientFound);
         Assertions.assertTrue(clientServerFound);
+    }
+
+    @Test
+    public void shouldConvertParamFirstToOneUsingCustomConverter() {
+        RestAssured.with().body(paramsUrl).post("/call-params-client-with-param-first")
+                .then()
+                .statusCode(200)
+                .body(equalTo("1"));
     }
 
     private List<Map<String, Object>> getSpans() {

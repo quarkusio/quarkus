@@ -42,8 +42,8 @@ public class SmallRyeGraphQLRecorder {
         }
     }
 
-    public Handler<RoutingContext> subscriptionHandler(BeanContainer beanContainer, RuntimeValue<Boolean> initialized) {
-        return new SmallRyeGraphQLSubscriptionHandler(getCurrentIdentityAssociation(),
+    public Handler<RoutingContext> graphqlOverWebsocketHandler(BeanContainer beanContainer, RuntimeValue<Boolean> initialized) {
+        return new SmallRyeGraphQLOverWebSocketHandler(getCurrentIdentityAssociation(),
                 CDI.current().select(CurrentVertxRequest.class).get());
     }
 

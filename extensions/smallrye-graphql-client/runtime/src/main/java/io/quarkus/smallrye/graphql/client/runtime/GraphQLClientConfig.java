@@ -23,16 +23,14 @@ public class GraphQLClientConfig {
     public Map<String, String> headers;
 
     /**
-     * WebSocket subprotocols that should be supported by this client for running subscriptions over websockets.
+     * WebSocket subprotocols that should be supported by this client for running GraphQL operations over websockets.
      * Allowed values are:
      * - `graphql-ws` for the deprecated Apollo protocol
-     * - `graphql-transport-ws` for the newer GraphQL over WebSocket protocol
+     * - `graphql-transport-ws` for the newer GraphQL over WebSocket protocol (default value)
      * If multiple protocols are provided, the actual protocol to be used will be subject to negotiation with
      * the server.
-     * To make the client work with the dummy protocol implemented by SmallRye GraphQL 1.4 server-side,
-     * leave this empty.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "graphql-transport-ws")
     public Optional<List<String>> subprotocols;
 
     /**

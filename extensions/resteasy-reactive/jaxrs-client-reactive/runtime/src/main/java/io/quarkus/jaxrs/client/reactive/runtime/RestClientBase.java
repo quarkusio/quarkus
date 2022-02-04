@@ -19,8 +19,8 @@ public abstract class RestClientBase implements Closeable {
     }
 
     @SuppressWarnings("unused") // used by generated code
-    public <T> Object[] convertParamArray(T[] value, Class<T> type) {
-        ParamConverter<T> converter = getConverter(type, null, null);
+    public <T> Object[] convertParamArray(T[] value, Class<T> type, Type genericType, Annotation[] annotations) {
+        ParamConverter<T> converter = getConverter(type, genericType, annotations);
 
         if (converter == null) {
             return value;
@@ -35,8 +35,8 @@ public abstract class RestClientBase implements Closeable {
     }
 
     @SuppressWarnings("unused") // used by generated code
-    public <T> Object convertParam(T value, Class<T> type) {
-        ParamConverter<T> converter = getConverter(type, null, null);
+    public <T> Object convertParam(T value, Class<T> type, Type genericType, Annotation[] annotations) {
+        ParamConverter<T> converter = getConverter(type, genericType, annotations);
         if (converter != null) {
             return converter.toString(value);
         } else {
@@ -49,7 +49,7 @@ public abstract class RestClientBase implements Closeable {
 
         if (converterProvider == null) {
             for (ParamConverterProvider provider : paramConverterProviders) {
-                ParamConverter<T> converter = provider.getConverter(type, null, null);
+                ParamConverter<T> converter = provider.getConverter(type, genericType, annotations);
                 if (converter != null) {
                     providerForClass.put(type, provider);
                     return converter;
@@ -57,7 +57,7 @@ public abstract class RestClientBase implements Closeable {
             }
             providerForClass.put(type, NO_PROVIDER);
         } else if (converterProvider != NO_PROVIDER) {
-            return converterProvider.getConverter(type, null, null);
+            return converterProvider.getConverter(type, genericType, annotations);
         }
         return null;
     }

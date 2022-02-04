@@ -108,7 +108,7 @@ public class ArcContextProvider implements ThreadContextProvider {
                 return new ThreadContextController() {
                     @Override
                     public void endContext() throws IllegalStateException {
-                        requestContext.activate(toRestore);
+                        requestContext.activate(toRestore.isValid() ? toRestore : null);
                     }
                 };
             } else {
@@ -141,11 +141,13 @@ public class ArcContextProvider implements ThreadContextProvider {
             if (toRestore != null) {
                 // context active, store current state, feed it new one and restore state afterwards
                 // it is not necessary to deactivate the context first - just overwrite the previous state
-                requestContext.activate(state);
+                // if the context state is invalid (i.e. the context was destroyed by Arc), we instead create new state
+                requestContext.activate(state.isValid() ? state : null);
                 return new RestoreContextController(requestContext, toRestore);
             } else {
                 // context not active, activate and pass it new instance, deactivate afterwards
-                requestContext.activate(state);
+                // if the context state is invalid (i.e. the context was destroyed by Arc), we instead create new state
+                requestContext.activate(state.isValid() ? state : null);
                 return requestContext::deactivate;
             }
         }
@@ -165,7 +167,7 @@ public class ArcContextProvider implements ThreadContextProvider {
         @Override
         public void endContext() throws IllegalStateException {
             // it is not necessary to deactivate the context first - just overwrite the previous state
-            requestContext.activate(stateToRestore);
+            requestContext.activate(stateToRestore.isValid() ? stateToRestore : null);
         }
 
     }

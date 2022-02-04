@@ -95,5 +95,15 @@ public interface InjectableContext extends AlterableContext {
          */
         Map<InjectableBean<?>, Object> getContextualInstances();
 
+        /**
+         * Context state is typically invalidated once the context to which is belongs is being destroyed.
+         * This flag is then used by context propagation to indicate that the given state shouldn't be reused anymore.
+         * 
+         * @return true if the context state is valid, false otherwise
+         */
+        default boolean isValid() {
+            return true;
+        }
+
     }
 }

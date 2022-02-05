@@ -119,9 +119,9 @@ public class QuarkusPlugin implements Plugin<Project> {
         tasks.register(QUARKUS_INFO_TASK_NAME, QuarkusInfo.class);
         tasks.register(QUARKUS_UPDATE_TASK_NAME, QuarkusUpdate.class);
         tasks.register(QUARKUS_GO_OFFLINE_TASK_NAME, QuarkusGoOffline.class, task -> {
-            task.setCompileClasspath(project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+            task.setCompileClasspath(project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
             task.setTestCompileClasspath(
-                    project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME));
+                    project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME));
             task.setQuarkusDevClasspath(project.getConfigurations().getByName(DEV_MODE_CONFIGURATION_NAME));
         });
 
@@ -277,9 +277,9 @@ public class QuarkusPlugin implements Plugin<Project> {
     private void registerConditionalDependencies(Project project) {
         ApplicationDeploymentClasspathBuilder deploymentClasspathBuilder = new ApplicationDeploymentClasspathBuilder(
                 project);
-        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
+        project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((dependencies) -> {
-                    final String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME;
+                    final String configName = JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME;
                     final Collection<ExtensionDependency> implementationExtensions = new ConditionalDependenciesEnabler(project,
                             configName).declareConditionalDependencies();
                     deploymentClasspathBuilder.createBuildClasspath(implementationExtensions, configName);
@@ -290,9 +290,9 @@ public class QuarkusPlugin implements Plugin<Project> {
                     .declareConditionalDependencies();
             deploymentClasspathBuilder.createBuildClasspath(devModeExtensions, configName);
         });
-        project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
+        project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((testDependencies) -> {
-                    final String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME;
+                    final String configName = JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME;
                     final Collection<ExtensionDependency> testExtensions = new ConditionalDependenciesEnabler(project,
                             configName).declareConditionalDependencies();
                     deploymentClasspathBuilder.createBuildClasspath(testExtensions, configName);
@@ -300,7 +300,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve(annotationProcessors -> {
                     Set<ResolvedArtifact> compileClasspathArtifacts = project.getConfigurations()
-                            .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getResolvedConfiguration()
+                            .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).getResolvedConfiguration()
                             .getResolvedArtifacts();
 
                     // enable the Panache annotation processor on the classpath, if it's found among the dependencies
@@ -349,7 +349,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         final HashSet<String> visited = new HashSet<>();
         ConfigurationContainer configurations = project.getConfigurations();
-        configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
+        configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)
                 .getIncoming().getDependencies()
                 .forEach(d -> {
                     if (d instanceof ProjectDependency) {
@@ -429,9 +429,9 @@ public class QuarkusPlugin implements Plugin<Project> {
             }
         }
 
-        final Configuration compileConfig = dep.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
-        if (compileConfig != null) {
-            compileConfig.getIncoming().getDependencies()
+        final Configuration runtimeConfig = dep.getConfigurations().findByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+        if (runtimeConfig != null) {
+            runtimeConfig.getIncoming().getDependencies()
                     .forEach(d -> {
                         if (d instanceof ProjectDependency) {
                             visitProjectDep(project, ((ProjectDependency) d).getDependencyProject(), visited);

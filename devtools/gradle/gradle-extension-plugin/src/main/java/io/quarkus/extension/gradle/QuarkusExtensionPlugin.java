@@ -105,12 +105,12 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     private void exportDeploymentClasspath(Project project) {
         DeploymentClasspathBuilder deploymentClasspathBuilder = new DeploymentClasspathBuilder(project);
-        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
+        project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((dependencies) -> deploymentClasspathBuilder
-                        .exportDeploymentClasspath(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
-        project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME).getIncoming()
+                        .exportDeploymentClasspath(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+        project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME).getIncoming()
                 .beforeResolve((testDependencies) -> deploymentClasspathBuilder
-                        .exportDeploymentClasspath(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME));
+                        .exportDeploymentClasspath(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME));
 
     }
 

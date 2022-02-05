@@ -106,7 +106,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         deploymentConfiguration = project.getConfigurations().create(DEPLOYMENT_CONFIGURATION)
                 .withDependencies(ds -> ds.addAll(platforms));
         Configuration implementationDeployment = project.getConfigurations().findByName(ToolingUtils
-                .toDeploymentConfigurationName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
+                .toDeploymentConfigurationName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
         if (implementationDeployment != null) {
             deploymentConfiguration.extendsFrom(implementationDeployment);
         }
@@ -114,7 +114,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         if (LaunchMode.TEST.equals(mode)) {
             Configuration testDeploymentConfiguration = project.getConfigurations()
                     .findByName(ToolingUtils
-                            .toDeploymentConfigurationName(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME));
+                            .toDeploymentConfigurationName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME));
             if (testDeploymentConfiguration != null) {
                 deploymentConfiguration.extendsFrom(testDeploymentConfiguration);
             }

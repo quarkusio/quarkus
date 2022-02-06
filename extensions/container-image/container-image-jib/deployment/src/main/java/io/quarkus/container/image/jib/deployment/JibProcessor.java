@@ -426,22 +426,25 @@ public class JibProcessor {
 
                 FileEntriesLayer.Builder bootLibsLayerBuilder = FileEntriesLayer.builder();
                 Path bootLibPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.BOOT_LIB);
-                Files.list(bootLibPath).forEach(lib -> {
-                    try {
-                        AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
-                                .resolve(JarResultBuildStep.BOOT_LIB)
-                                .resolve(lib.getFileName());
-                        if (appCDSResult.isPresent()) {
-                            // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
-                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer, Files.getLastModifiedTime(lib).toInstant());
-                        } else {
-                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer);
-                        }
+                try (Stream<Path> boolLibPaths = Files.list(bootLibPath)) {
+                    boolLibPaths.forEach(lib -> {
+                        try {
+                            AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
+                                    .resolve(JarResultBuildStep.BOOT_LIB)
+                                    .resolve(lib.getFileName());
+                            if (appCDSResult.isPresent()) {
+                                // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
+                                bootLibsLayerBuilder.addEntry(lib, libPathInContainer,
+                                        Files.getLastModifiedTime(lib).toInstant());
+                            } else {
+                                bootLibsLayerBuilder.addEntry(lib, libPathInContainer);
+                            }
 
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+                }
                 jibContainerBuilder.addFileEntriesLayer(bootLibsLayerBuilder.build());
 
                 Path deploymentPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.DEPLOYMENT_LIB);

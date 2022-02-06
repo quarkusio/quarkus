@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -65,8 +66,8 @@ public class WebJarLocatorStandaloneBuildStep {
                     provider.apply(tree -> {
                         final Path webjarsDir = tree.getPath(WEBJARS_PREFIX);
                         final Path nameDir;
-                        try {
-                            nameDir = Files.list(webjarsDir).filter(Files::isDirectory).findFirst().get();
+                        try (Stream<Path> webjarsDirPaths = Files.list(webjarsDir)) {
+                            nameDir = webjarsDirPaths.filter(Files::isDirectory).findFirst().get();
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }

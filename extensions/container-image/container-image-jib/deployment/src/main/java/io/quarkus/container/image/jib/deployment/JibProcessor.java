@@ -463,8 +463,12 @@ public class JibProcessor {
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(getEnvironmentVariables(jibConfig))
-                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels))
-                    .setCreationTime(Instant.now());
+                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
+
+            if (jibConfig.useCurrentTimestamp) {
+                jibContainerBuilder.setCreationTime(Instant.now());
+            }
+
             for (int port : jibConfig.ports) {
                 jibContainerBuilder.addExposedPort(Port.tcp(port));
             }
@@ -539,8 +543,11 @@ public class JibProcessor {
 
             JibContainerBuilder jibContainerBuilder = javaContainerBuilder.toContainerBuilder()
                     .setEnvironment(getEnvironmentVariables(jibConfig))
-                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels))
-                    .setCreationTime(Instant.now());
+                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
+
+            if (jibConfig.useCurrentTimestamp) {
+                jibContainerBuilder.setCreationTime(Instant.now());
+            }
 
             if (jibConfig.jvmEntrypoint.isPresent()) {
                 jibContainerBuilder.setEntrypoint(jibConfig.jvmEntrypoint.get());
@@ -578,8 +585,12 @@ public class JibProcessor {
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(getEnvironmentVariables(jibConfig))
-                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels))
-                    .setCreationTime(Instant.now());
+                    .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
+
+            if (jibConfig.useCurrentTimestamp) {
+                jibContainerBuilder.setCreationTime(Instant.now());
+            }
+
             for (int port : jibConfig.ports) {
                 jibContainerBuilder.addExposedPort(Port.tcp(port));
             }

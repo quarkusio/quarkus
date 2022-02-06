@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class MavenRegistryCache implements RegistryCache {
@@ -50,8 +51,8 @@ public class MavenRegistryCache implements RegistryCache {
                 throw new RegistryResolutionException("Failed to resolve " + coords + " locally", e);
             }
             if (Files.exists(dir)) {
-                try {
-                    Files.list(dir).forEach(path -> {
+                try (Stream<Path> dirPaths = Files.list(dir)) {
+                    dirPaths.forEach(path -> {
                         try {
                             Files.delete(path);
                         } catch (IOException e) {

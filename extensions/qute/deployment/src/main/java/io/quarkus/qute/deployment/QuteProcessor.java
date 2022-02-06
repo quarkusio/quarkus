@@ -1272,12 +1272,14 @@ public class QuteProcessor {
             for (Path path : artifact.getResolvedPaths()) {
                 if (Files.isDirectory(path)) {
                     // Try to find the templates in the root dir
-                    Path basePath = Files.list(path).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
-                    if (basePath != null) {
-                        LOGGER.debugf("Found extension templates dir: %s", path);
-                        scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                config);
-                        break;
+                    try (Stream<Path> paths = Files.list(path)) {
+                        Path basePath = paths.filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                        if (basePath != null) {
+                            LOGGER.debugf("Found extension templates dir: %s", path);
+                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
+                                    config);
+                            break;
+                        }
                     }
                 } else {
                     try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
@@ -1298,8 +1300,8 @@ public class QuteProcessor {
                 for (Path rootDir : tree.getRoots()) {
                     // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
                     // a wrong directory name on case-insensitive file systems
-                    try {
-                        Path basePath = Files.list(rootDir).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                    try (Stream<Path> rootDirPaths = Files.list(rootDir)) {
+                        Path basePath = rootDirPaths.filter(QuteProcessor::isBasePath).findFirst().orElse(null);
                         if (basePath != null) {
                             LOGGER.debugf("Found templates dir: %s", basePath);
                             basePaths.add(basePath);

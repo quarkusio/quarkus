@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -847,9 +848,11 @@ public class SmallRyeOpenApiProcessor {
             if (classes != null) {
                 Path path = classes.resolve(pathName);
                 if (Files.exists(path)) {
-                    return Files.list(path).map((t) -> {
-                        return pathName + "/" + t.getFileName().toString();
-                    }).collect(Collectors.toList());
+                    try (Stream<Path> paths = Files.list(path)) {
+                        return paths.map((t) -> {
+                            return pathName + "/" + t.getFileName().toString();
+                        }).collect(Collectors.toList());
+                    }
                 }
             }
         }

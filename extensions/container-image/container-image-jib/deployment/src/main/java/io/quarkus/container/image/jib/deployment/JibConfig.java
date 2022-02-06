@@ -187,4 +187,13 @@ public class JibConfig {
      */
     @ConfigItem
     public Optional<String> dockerExecutableName;
+
+    /**
+     * Whether to set the creation time to the actual build time. Otherwise, the creation time
+     * will be set to the Unix epoch (00:00:00, January 1st, 1970 in UTC). See <a href=
+     * "https://github.com/GoogleContainerTools/jib/blob/master/docs/faq.md#why-is-my-image-created-48-years-ago">Jib
+     * FAQ</a> for more information
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useCurrentTimestamp;
 }

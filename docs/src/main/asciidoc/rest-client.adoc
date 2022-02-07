@@ -14,12 +14,7 @@ TIP: there is another guide if you need to write server xref:rest-json.adoc[JSON
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Solution
 
@@ -34,16 +29,9 @@ The solution is located in the `rest-client-quickstart` {quickstarts-tree-url}/r
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-client-quickstart \
-    -DclassName="org.acme.rest.client.ExtensionsResource" \
-    -Dpath="/extension" \
-    -Dextensions="resteasy,resteasy-jackson,rest-client,rest-client-jackson"
-cd rest-client-quickstart
-----
+:create-app-artifact-id: rest-client-quickstart
+:create-app-extensions: resteasy,resteasy-jackson,rest-client,rest-client-jackson
+include::includes/devtools/create-app.adoc[]
 
 This command generates the Maven project with a REST endpoint and imports:
 
@@ -53,14 +41,13 @@ This command generates the Maven project with a REST endpoint and imports:
 If you already have your Quarkus project configured, you can add the `rest-client` and the `rest-client-jackson` extensions
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="rest-client,rest-client-jackson"
-----
+:add-extension-extensions: rest-client,rest-client-jackson
+include::includes/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -70,6 +57,13 @@ This will add the following to your `pom.xml`:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-client-jackson</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-rest-client")
+implementation("io.quarkus:quarkus-rest-client-jackson")
 ----
 
 == Setting up the model
@@ -243,9 +237,9 @@ quarkus.tls.trust-all=true
 This setting should not be used in production as it will disable any kind of SSL verification.
 ====
 
-== Update the JAX-RS resource
+== Create the JAX-RS resource
 
-Open the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file and update it with the following content:
+Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
 
 [source,java]
 ----
@@ -591,13 +585,23 @@ org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Author
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-rest-client.
 
 You should see a JSON object containing some basic information about the REST Client extension.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
 
 == REST Client and RESTEasy interactions
 
@@ -631,6 +635,23 @@ First of all, Wiremock needs to be added as a test dependency. For a Maven proje
 </dependency>
 ----
 
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>com.github.tomakehurst</groupId>
+    <artifactId>wiremock-jre8</artifactId>
+    <scope>test</scope>
+    <version>${wiremock.version}</version> <1>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("com.github.tomakehurst:wiremock-jre8:$wiremockVersion")
+----
+
 <1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
 
 In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`
@@ -658,34 +679,34 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*; // <1>
 
 public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {  // <2>
 
-	private WireMockServer wireMockServer;
+    private WireMockServer wireMockServer;
 
-	@Override
-	public Map<String, String> start() {
-		wireMockServer = new WireMockServer();
-		wireMockServer.start(); // <3>
+    @Override
+    public Map<String, String> start() {
+        wireMockServer = new WireMockServer();
+        wireMockServer.start(); // <3>
 
-		stubFor(get(urlEqualTo("/extensions?id=io.quarkus:quarkus-rest-client"))   // <4>
-				.willReturn(aResponse()
-						.withHeader("Content-Type", "application/json")
-						.withBody(
-                        "[{" +
-                        "\"id\": \"io.quarkus:quarkus-rest-client\"," +
-                        "\"name\": \"REST Client\"" +
-                        "}]"
-						)));
+        stubFor(get(urlEqualTo("/extensions?id=io.quarkus:quarkus-rest-client"))   // <4>
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                            "[{" +
+                            "\"id\": \"io.quarkus:quarkus-rest-client\"," +
+                            "\"name\": \"REST Client\"" +
+                            "}]"
+                        )));
 
-		stubFor(get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://stage.code.quarkus.io/api")));   // <5>
+        stubFor(get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://stage.code.quarkus.io/api")));   // <5>
 
-		return Collections.singletonMap("quarkus.rest-client.\"org.acme.rest.client.ExtensionsService\".url", wireMockServer.baseUrl()); // <6>
-	}
+        return Collections.singletonMap("quarkus.rest-client.\"org.acme.rest.client.ExtensionsService\".url", wireMockServer.baseUrl()); // <6>
+    }
 
-	@Override
-	public void stop() {
-		if (null != wireMockServer) {
-			wireMockServer.stop();  // <7>
-		}
-	}
+    @Override
+    public void stop() {
+        if (null != wireMockServer) {
+            wireMockServer.stop();  // <7>
+        }
+    }
 }
 ----
 

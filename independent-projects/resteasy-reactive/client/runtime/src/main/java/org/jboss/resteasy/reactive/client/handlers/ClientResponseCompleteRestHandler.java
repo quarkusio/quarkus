@@ -83,7 +83,7 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                                 "Expected FileAttribute or Attribute, got: " + httpData.getClass());
                     }
                 }
-            } else {
+            } else if (!void.class.equals(context.getResponseType().getRawType())) {
                 Object entity = context.readEntity(entityStream,
                         context.getResponseType(),
                         responseContext.getMediaType(),

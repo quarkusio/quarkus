@@ -590,7 +590,9 @@ public class JunitTestRunner {
             try {
                 itClasses.add(Thread.currentThread().getContextClassLoader().loadClass(i));
             } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+                log.warnf(
+                        "Failed to load test class %s (possibly as it was added after the test run started), it will not be executed this run.",
+                        i);
             }
         }
         itClasses.sort(Comparator.comparing(new Function<Class<?>, String>() {
@@ -631,7 +633,9 @@ public class JunitTestRunner {
                 try {
                     utClasses.add(cl.loadClass(i));
                 } catch (ClassNotFoundException exception) {
-                    throw new RuntimeException(exception);
+                    log.warnf(
+                            "Failed to load test class %s (possibly as it was added after the test run started), it will not be executed this run.",
+                            i);
                 }
             }
 

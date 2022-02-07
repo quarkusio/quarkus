@@ -392,7 +392,11 @@ public class TestSupport implements TestController {
             i.runStarted(testCount.get());
         }
         for (var i : runnables) {
-            i.run();
+            try {
+                i.run();
+            } catch (Exception e) {
+                log.error("Failed to run test module", e);
+            }
         }
         Map<String, TestClassResult> aggregate = new HashMap<>();
         for (var i : allResults) {

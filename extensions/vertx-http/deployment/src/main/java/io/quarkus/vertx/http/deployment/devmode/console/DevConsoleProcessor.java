@@ -964,7 +964,7 @@ public class DevConsoleProcessor {
                 }
             }
             if (rootPackages.isEmpty()) {
-                return Collections.emptyList();
+                return List.of("");
             }
             List<String> result = new ArrayList<>(rootPackages.size());
             for (Path rootPackage : rootPackages) {

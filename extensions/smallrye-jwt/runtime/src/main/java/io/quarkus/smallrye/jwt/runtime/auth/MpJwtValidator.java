@@ -49,6 +49,9 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
+        if (!(request.getToken() instanceof JsonWebTokenCredential)) {
+            return Uni.createFrom().nullItem();
+        }
         if (!blockingAuthentication) {
             return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
                 @Override

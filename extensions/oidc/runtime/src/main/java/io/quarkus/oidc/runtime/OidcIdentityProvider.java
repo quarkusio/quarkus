@@ -58,6 +58,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
+        if (!(request.getToken() instanceof AccessTokenCredential || request.getToken() instanceof IdTokenCredential)) {
+            return Uni.createFrom().nullItem();
+        }
         RoutingContext vertxContext = HttpSecurityUtils.getRoutingContextAttribute(request);
         vertxContext.put(AuthenticationRequestContext.class.getName(), context);
 

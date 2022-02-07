@@ -9,8 +9,9 @@ import java.util.Objects;
  * Authorization header
  * POST
  * 
- * It is not permitted for multiple HTTP authentication mechanisms to use the same credential
- * transport type, as they will not be able to figure out which mechanisms should process which
+ * Not that using multiple HTTP authentication mechanisms to use the same credential
+ * transport type can lead to unexpected authentication failures as they will not be able to figure out which mechanisms should
+ * process which
  * request.
  */
 public class HttpCredentialTransport {
@@ -49,7 +50,11 @@ public class HttpCredentialTransport {
         /**
          * X509
          */
-        X509
+        X509,
+        /**
+         * Authorizatiob code, type target is the query 'code' parameter
+         */
+        AUTHORIZATION_CODE
     }
 
     @Override

@@ -22,16 +22,19 @@ import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism {
+    private static HttpCredentialTransport OIDC_SERVICE_TRANSPORT = new HttpCredentialTransport(
+            HttpCredentialTransport.Type.AUTHORIZATION, OidcConstants.BEARER_SCHEME);
+    private static HttpCredentialTransport OIDC_WEB_APP_TRANSPORT = new HttpCredentialTransport(
+            HttpCredentialTransport.Type.AUTHORIZATION_CODE, OidcConstants.CODE_FLOW_CODE);
 
     private final BearerAuthenticationMechanism bearerAuth = new BearerAuthenticationMechanism();
     private final CodeAuthenticationMechanism codeAuth = new CodeAuthenticationMechanism();
-
     private final DefaultTenantConfigResolver resolver;
 
     public OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver) {
         this.resolver = resolver;
-        this.bearerAuth.setResolver(resolver);
-        this.codeAuth.setResolver(resolver);
+        this.bearerAuth.init(this, resolver);
+        this.codeAuth.init(this, resolver);
     }
 
     @Override
@@ -91,10 +94,18 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        //not 100% correct, but enough for now
-        //if OIDC is present we don't really want another bearer mechanism
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, OidcConstants.BEARER_SCHEME);
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        setTenantIdAttribute(context);
+        return resolve(context).onItem().transform(new Function<OidcTenantConfig, HttpCredentialTransport>() {
+            @Override
+            public HttpCredentialTransport apply(OidcTenantConfig oidcTenantConfig) {
+                if (!oidcTenantConfig.tenantEnabled) {
+                    return null;
+                }
+                return isWebApp(context, oidcTenantConfig) ? OIDC_WEB_APP_TRANSPORT
+                        : OIDC_SERVICE_TRANSPORT;
+            }
+        });
     }
 
     private static void setTenantIdAttribute(RoutingContext context) {
@@ -118,5 +129,10 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
             String tenantId = index == -1 ? suffix : suffix.substring(0, index);
             context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
         }
+    }
+
+    @Override
+    public int getPriority() {
+        return HttpAuthenticationMechanism.DEFAULT_PRIORITY + 1;
     }
 }

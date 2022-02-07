@@ -54,7 +54,7 @@ integration-tests/my-ext/src/test/java/org/acme/
 integration-tests/my-ext/src/test/java/org/acme/my/
 integration-tests/my-ext/src/test/java/org/acme/my/ext/
 integration-tests/my-ext/src/test/java/org/acme/my/ext/it/
+integration-tests/my-ext/src/test/java/org/acme/my/ext/it/MyExtResourceIT.java
 integration-tests/my-ext/src/test/java/org/acme/my/ext/it/MyExtResourceTest.java
-integration-tests/my-ext/src/test/java/org/acme/my/ext/it/NativeMyExtResourceIT.java
 integration-tests/pom.xml
 pom.xml

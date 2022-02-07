@@ -24,7 +24,7 @@ class RESTEasyReactiveCodestartTest {
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource("org.acme.ReactiveGreetingResource");
         codestartTest.checkGeneratedTestSource("org.acme.ReactiveGreetingResourceTest");
-        codestartTest.checkGeneratedTestSource("org.acme.NativeReactiveGreetingResourceIT");
+        codestartTest.checkGeneratedTestSource("org.acme.ReactiveGreetingResourceIT");
     }
 
 }

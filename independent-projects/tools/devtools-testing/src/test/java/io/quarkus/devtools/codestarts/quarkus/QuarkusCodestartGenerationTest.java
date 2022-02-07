@@ -77,7 +77,7 @@ class QuarkusCodestartGenerationTest {
         checkConfigProperties(projectDir);
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/com/andy/BonjourResource.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/com/andy/NativeBonjourResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/com/andy/BonjourResourceIT.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/resources/META-INF/resources/index.html");
     }
 
@@ -135,9 +135,9 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("class BonjourResourceTest"))
                 .satisfies(checkContains("\"/bonjour\""));
 
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/kotlin/com/andy/NativeBonjourResourceIT.kt")
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/kotlin/com/andy/BonjourResourceIT.kt")
                 .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class NativeBonjourResourceIT : BonjourResourceTest"));
+                .satisfies(checkContains("class BonjourResourceIT : BonjourResourceTest"));
     }
 
     @Test
@@ -168,9 +168,9 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("class BonjourResourceTest"))
                 .satisfies(checkContains("\"/bonjour\""));
 
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/NativeBonjourResourceIT.scala")
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/BonjourResourceIT.scala")
                 .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class NativeBonjourResourceIT extends BonjourResourceTest"));
+                .satisfies(checkContains("class BonjourResourceIT extends BonjourResourceTest"));
     }
 
     @Test
@@ -188,7 +188,7 @@ class QuarkusCodestartGenerationTest {
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/GreetingResource.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceTest.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/NativeGreetingResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceIT.java");
     }
 
     @Test
@@ -207,7 +207,7 @@ class QuarkusCodestartGenerationTest {
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/GreetingResource.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceTest.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/NativeGreetingResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceIT.java");
     }
 
     @Test

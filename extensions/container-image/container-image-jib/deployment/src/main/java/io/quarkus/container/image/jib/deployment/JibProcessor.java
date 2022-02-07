@@ -79,8 +79,8 @@ public class JibProcessor {
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
-    private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.11";
-    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11:1.11";
+    private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.11";
+    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.11";
 
     private static final String OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP = "io.opentelemetry.context.contextStorageProvider";
 
@@ -426,22 +426,25 @@ public class JibProcessor {
 
                 FileEntriesLayer.Builder bootLibsLayerBuilder = FileEntriesLayer.builder();
                 Path bootLibPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.BOOT_LIB);
-                Files.list(bootLibPath).forEach(lib -> {
-                    try {
-                        AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
-                                .resolve(JarResultBuildStep.BOOT_LIB)
-                                .resolve(lib.getFileName());
-                        if (appCDSResult.isPresent()) {
-                            // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
-                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer, Files.getLastModifiedTime(lib).toInstant());
-                        } else {
-                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer);
-                        }
+                try (Stream<Path> boolLibPaths = Files.list(bootLibPath)) {
+                    boolLibPaths.forEach(lib -> {
+                        try {
+                            AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
+                                    .resolve(JarResultBuildStep.BOOT_LIB)
+                                    .resolve(lib.getFileName());
+                            if (appCDSResult.isPresent()) {
+                                // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
+                                bootLibsLayerBuilder.addEntry(lib, libPathInContainer,
+                                        Files.getLastModifiedTime(lib).toInstant());
+                            } else {
+                                bootLibsLayerBuilder.addEntry(lib, libPathInContainer);
+                            }
 
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+                }
                 jibContainerBuilder.addFileEntriesLayer(bootLibsLayerBuilder.build());
 
                 Path deploymentPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.DEPLOYMENT_LIB);

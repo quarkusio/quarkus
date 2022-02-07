@@ -118,6 +118,17 @@ public class ClientCallingResource {
             rc.response().end(greeting);
         });
 
+        router.post("/params/param").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
+                .end(getParam(rc)));
+
+        router.route("/call-params-client-with-param-first").blockingHandler(rc -> {
+            String url = rc.getBody().toString();
+            ParamClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(ParamClient.class);
+            String result = client.getParam(Param.FIRST);
+            rc.response().end(result);
+        });
+
         router.route("/rest-response").blockingHandler(rc -> {
             String url = rc.getBody().toString();
             RestResponseClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
@@ -164,6 +175,10 @@ public class ClientCallingResource {
             return 1;
         }
         return Integer.parseInt(countQueryParam.get(0));
+    }
+
+    private String getParam(io.vertx.ext.web.RoutingContext rc) {
+        return rc.queryParam("param").get(0);
     }
 
     private void callGet(RoutingContext rc, ClientWithExceptionMapper client) {

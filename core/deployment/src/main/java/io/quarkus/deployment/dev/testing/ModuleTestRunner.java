@@ -88,10 +88,10 @@ public class ModuleTestRunner {
                     Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
                     try {
                         prepared.run();
+                    } finally {
                         synchronized (ModuleTestRunner.this) {
                             runner = null;
                         }
-                    } finally {
                         Thread.currentThread().setContextClassLoader(old);
                     }
                 }

@@ -11,6 +11,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.BeanGenerator.ProviderType;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
@@ -24,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,9 +78,6 @@ public class ClientProxyGenerator extends AbstractGenerator {
     Collection<Resource> generate(BeanInfo bean, String beanClassName,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
-                generateSources);
-
         ProviderType providerType = new ProviderType(bean.getProviderType());
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String baseName = getBaseName(bean, beanClassName);
@@ -89,6 +86,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
+
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
+                name -> name.equals(generatedName) ? SpecialType.CLIENT_PROXY : null, generateSources);
 
         // Foo_ClientProxy extends Foo implements ClientProxy
         List<String> interfaces = new ArrayList<>();
@@ -320,14 +320,16 @@ public class ClientProxyGenerator extends AbstractGenerator {
         IndexView index = bean.getDeployment().getBeanArchiveIndex();
 
         if (bean.isClassBean()) {
-            Set<Methods.NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
+            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
             ClassInfo classInfo = bean.getTarget().get().asClass();
             Methods.addDelegatingMethods(index, classInfo,
                     methods, methodsFromWhichToRemoveFinal, transformUnproxyableClasses);
             if (!methodsFromWhichToRemoveFinal.isEmpty()) {
-                String className = classInfo.name().toString();
-                bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
-                        new Methods.RemoveFinalFromMethod(className, methodsFromWhichToRemoveFinal)));
+                for (Map.Entry<String, Set<Methods.NameAndDescriptor>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
+                    String className = entry.getKey();
+                    bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
+                            new Methods.RemoveFinalFromMethod(className, entry.getValue())));
+                }
             }
         } else if (bean.isProducerMethod()) {
             MethodInfo producerMethod = bean.getTarget().get().asMethod();

@@ -200,7 +200,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         try {
                             CodeGenerator.trigger(classLoader,
                                     codeGen,
-                                    curatedApplication.getApplicationModel(), properties, LaunchMode.DEVELOPMENT);
+                                    curatedApplication.getApplicationModel(), properties, LaunchMode.DEVELOPMENT, false);
                         } catch (Exception any) {
                             log.warn("Code generation failed", any);
                         }

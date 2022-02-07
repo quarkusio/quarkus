@@ -479,7 +479,8 @@ public class ArcProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LiveReloadBuildItem liveReloadBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer) throws Exception {
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
+            List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
             for (Throwable error : validationError.getValues()) {
@@ -496,6 +497,8 @@ public class ArcProcessor {
         }
 
         Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(bytecodeTransformer);
+        Set<DotName> reflectiveBeanClassesNames = reflectiveBeanClasses.stream().map(ReflectiveBeanClassBuildItem::getClassName)
+                .collect(Collectors.toSet());
 
         long start = System.currentTimeMillis();
         List<ResourceOutput.Resource> resources = beanProcessor.generateResources(new ReflectionRegistration() {
@@ -507,6 +510,22 @@ public class ArcProcessor {
             @Override
             public void registerField(FieldInfo fieldInfo) {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+            }
+
+            @Override
+            public void registerClientProxy(DotName beanClassName, String clientProxyName) {
+                if (reflectiveBeanClassesNames.contains(beanClassName)) {
+                    // Fields should never be registered for client proxies
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, clientProxyName));
+                }
+            }
+
+            @Override
+            public void registerSubclass(DotName beanClassName, String subclassName) {
+                if (reflectiveBeanClassesNames.contains(beanClassName)) {
+                    // Fields should never be registered for subclasses
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, subclassName));
+                }
             }
 
         }, existingClasses.existingClasses, bytecodeTransformerConsumer,

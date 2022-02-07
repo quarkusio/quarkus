@@ -742,7 +742,7 @@ public class ResteasyReactiveProcessor {
         BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
                 beanContainerBuildItem.getValue());
 
-        String applicationPath = determineApplicationPath(index, getAppPath(serverConfig.path));
+        String applicationPath = determineApplicationPath(appResult, getAppPath(serverConfig.path));
         // spec allows the path contain encoded characters
         if ((applicationPath != null) && applicationPath.contains("%")) {
             applicationPath = Encode.decodePath(applicationPath);
@@ -967,32 +967,19 @@ public class ResteasyReactiveProcessor {
         return newPropertyValue;
     }
 
-    private String determineApplicationPath(IndexView index, Optional<String> defaultPath) {
-        Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyReactiveDotNames.APPLICATION_PATH);
-        if (applicationPaths.isEmpty()) {
+    private String determineApplicationPath(ApplicationScanningResult appResult,
+            Optional<String> defaultPath) {
+        if (appResult.getSelectedAppClass() == null) {
             return defaultPath.orElse("/");
         }
-        // currently we only examine the first class that is annotated with @ApplicationPath so best
-        // fail if the user code has multiple such annotations instead of surprising the user
-        // at runtime
-        if (applicationPaths.size() > 1) {
-            StringBuilder sb = new StringBuilder();
-            boolean first = true;
-            for (AnnotationInstance annotationInstance : applicationPaths) {
-                if (first) {
-                    first = false;
-                } else {
-                    sb.append(",");
-                }
-                sb.append(annotationInstance.target().asClass().name().toString());
-            }
-            throw new RuntimeException("Multiple classes ( " + sb.toString()
-                    + ") have been annotated with @ApplicationPath which is currently not supported");
+        AnnotationInstance applicationPathValue = appResult.getSelectedAppClass()
+                .classAnnotation(ResteasyReactiveDotNames.APPLICATION_PATH);
+        if (applicationPathValue == null) {
+            return defaultPath.orElse("/");
         }
         String applicationPath = null;
-        AnnotationValue applicationPathValue = applicationPaths.iterator().next().value();
-        if ((applicationPathValue != null)) {
-            applicationPath = applicationPathValue.asString();
+        if ((applicationPathValue.value() != null)) {
+            applicationPath = applicationPathValue.value().asString();
         }
         return applicationPath;
     }

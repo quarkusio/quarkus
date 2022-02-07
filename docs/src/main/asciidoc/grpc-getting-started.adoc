@@ -157,14 +157,24 @@ The Quarkus code generation mechanism lets you control the scope of dependencies
 - `groupId1:artifactId1,groupId2:artifactId2` - scan only the dependencies with group id and artifact id in the list.
 
 If not specified, the property is set to `com.google.protobuf:protobuf-java`.
-To override it, set the `quarkus.generate-code.grpc.scan-for-imports` property in your pom.xml (or gradle.properties) to the desired value, e.g.
+To override it, set the `quarkus.generate-code.grpc.scan-for-imports` property in your application.properties to the desired value, e.g.
 
-[source,xml]
+[source,properties]
 ----
-<properties>
-  <quarkus.generate-code.grpc.scan-for-imports>all</quarkus.generate-code.grpc.scan-for-imports>
-</properties>
+quarkus.generate-code.grpc.scan-for-imports=all
 ----
+
+=== `proto` files from dependencies
+In some cases, you may want to use `proto` files from a different project to generate the gRPC stubs. In this case:
+
+1. Add a dependency on the artifact that contains the proto file to your project
+2. In `application.properties`, specify the dependencies you want to scan for proto files.
+
+[source,properties]
+----
+quarkus.generate-code.grpc.scan-for-proto=<groupId>:<artifactId>
+----
+The value of the property may be `none`, which is the default value, or a comma separated list of `groupId:artifactId` coordinates.
 
 == Implementing a gRPC service
 

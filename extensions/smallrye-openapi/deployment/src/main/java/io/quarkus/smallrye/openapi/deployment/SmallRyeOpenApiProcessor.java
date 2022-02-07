@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -171,7 +172,8 @@ public class SmallRyeOpenApiProcessor {
             List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
-                List<String> filesInDir = getResourceFiles(path.toString(), outputTargetBuildItem.getOutputDirectory());
+                List<String> filesInDir = getResourceFiles(PathUtils.asString(path, "/"),
+                        outputTargetBuildItem.getOutputDirectory());
                 for (String possibleFile : filesInDir) {
                     watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(possibleFile));
                 }
@@ -845,10 +847,13 @@ public class SmallRyeOpenApiProcessor {
             Path classes = target.resolve("classes");
             if (classes != null) {
                 Path path = classes.resolve(pathName);
-
-                return Files.list(path).map((t) -> {
-                    return pathName + "/" + t.getFileName().toString();
-                }).collect(Collectors.toList());
+                if (Files.exists(path)) {
+                    try (Stream<Path> paths = Files.list(path)) {
+                        return paths.map((t) -> {
+                            return pathName + "/" + t.getFileName().toString();
+                        }).collect(Collectors.toList());
+                    }
+                }
             }
         }
         return filenames;

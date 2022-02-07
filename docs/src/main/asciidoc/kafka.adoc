@@ -493,6 +493,19 @@ Different consumer groups can thus scale independently according to the message 
 +
 image::kafka-two-app-two-consumer-groups.png[alt=Architecture, width=60%, align=center]
 
+[NOTE]
+====
+A common business requirement is to consume and process Kafka records in order.
+The Kafka broker preserves order of records inside a partition and not inside a topic.
+Therefore it is important to think about how records are partitioned inside a topic.
+The default partitioner uses record key hash to compute the partition for a record, or when the key is not defined, chooses a partition randomly per batch or records.
+
+During normal operation, a Kafka consumer preserves the order of records inside each partition assigned to it.
+Smallrye Reactive Messaging keeps this order for processing, unless `@Blocking(ordered = false)` is used (see <<blocking-processing>>).
+
+Note that due to consumer rebalances, Kafka consumers only guarantee at-least-once processing of single records, meaning that uncommitted records _can_ be processed again by consumers.
+====
+
 ==== Consumer Rebalance Listener
 
 Inside a consumer group, as new group members arrive and old members leave, the partitions are re-assigned so that each member receives a proportional share of the partitions.
@@ -1763,6 +1776,16 @@ See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture do
 
 More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.1/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].
 
+[TIP]
+====
+Each channel can be disabled via configuration using:
+
+[source, properties]
+----
+mp.messaging.[incoming|outgoing].[channel].enabled=false
+----
+====
+
 The most important attributes are listed in the tables below:
 
 === Incoming channel configuration (polling from Kafka)
@@ -1818,6 +1841,15 @@ Some properties have aliases which can be configured globally:
 [source, properties]
 ----
 kafka.bootstrap.servers=...
+----
+
+You can also pass any property supported by the underlying https://kafka.apache.org/documentation/#producerconfigs[Kafka producer].
+
+For example, to configure the `max.block.ms` property, use:
+
+[source,properties]
+----
+mp.messaging.incoming.[channel].max.block.ms=10000
 ----
 
 Some producer client properties are configured to sensible default values:

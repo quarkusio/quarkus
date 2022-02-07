@@ -28,11 +28,24 @@ public class KafkaDevServicesBuildTimeConfig {
     public Optional<Integer> port;
 
     /**
-     * The Kafka image to use.
-     * Note that only Redpanda images are supported.
+     * The Kafka container image to use.
+     * <p>
+     * Only Redpanda and Strimzi images are supported.
+     * Default image is Redpanda.
+     * <p>
+     * Note that Strimzi images are launched in Kraft mode.
+     * In order to use a Strimzi image you need to set a compatible image name such as
+     * {@code quay.io/strimzi-test-container/test-container:0.100.0-kafka-3.1.0} or
+     * {@code quay.io/strimzi/kafka:0.27.1-kafka-3.0.0}
+     * <p>
+     * For Redpanda:
      * See https://vectorized.io/docs/quick-start-docker/ and https://hub.docker.com/r/vectorized/redpanda
+     * <p>
+     * For Strimzi:
+     * See https://github.com/strimzi/test-container and https://quay.io/repository/strimzi-test-container/test-container
+     * <p>
      */
-    @ConfigItem(defaultValue = "docker.io/vectorized/redpanda:v21.11.2")
+    @ConfigItem(defaultValue = "docker.io/vectorized/redpanda:v21.11.3")
     public String imageName;
 
     /**

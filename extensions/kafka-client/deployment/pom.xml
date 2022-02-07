@@ -55,6 +55,10 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.strimzi</groupId>
+            <artifactId>strimzi-test-container</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit4-mock</artifactId>
         </dependency>

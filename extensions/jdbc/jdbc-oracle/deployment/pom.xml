@@ -91,7 +91,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <excludes>
-                                <!-- force the default, overriding the DevServices exlude -->
+                                <!-- force the default, overriding the DevServices exclude -->
                                 <exclude>**/*$*</exclude>
                             </excludes>
                         </configuration>

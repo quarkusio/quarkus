@@ -31,8 +31,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.aesh.readline.terminal.impl.ExecPty;
 import org.aesh.readline.terminal.impl.Pty;
@@ -1044,27 +1042,8 @@ public class DevMojo extends AbstractMojo {
         //parent-first cases such as logging
         //first we go through and get all the parent first artifacts
         Set<ArtifactKey> parentFirstArtifacts = new HashSet<>(configuredParentFirst);
-        for (Artifact appDep : project.getArtifacts()) {
-            if (appDep.getArtifactHandler().getExtension().equals(ArtifactCoords.TYPE_JAR) && appDep.getFile().isFile()) {
-                try (ZipFile file = new ZipFile(appDep.getFile())) {
-                    ZipEntry entry = file.getEntry(EXT_PROPERTIES_PATH);
-                    if (entry != null) {
-                        Properties p = new Properties();
-                        try (InputStream inputStream = file.getInputStream(entry)) {
-                            p.load(inputStream);
-                            String parentFirst = p.getProperty(ApplicationModel.PARENT_FIRST_ARTIFACTS);
-                            if (parentFirst != null) {
-                                String[] artifacts = parentFirst.split(",");
-                                for (String artifact : artifacts) {
-                                    parentFirstArtifacts.add(new GACT(artifact.split(":")));
-                                }
-                            }
-                        }
+        parentFirstArtifacts.addAll(appModel.getParentFirst());
 
-                    }
-                }
-            }
-        }
         for (Artifact appDep : project.getArtifacts()) {
             // only add the artifact if it's present in the dev mode context
             // we need this to avoid having jars on the classpath multiple times

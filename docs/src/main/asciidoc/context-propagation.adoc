@@ -274,6 +274,47 @@ You can also inject a custom-built `ThreadContext` using the https://javadoc.io/
     }
 ----
 
+Likewise, there is a similar way to inject a configured instance of `ManagedExecutor` using the https://javadoc.io/doc/io.smallrye/smallrye-context-propagation-api/latest/io/smallrye/context/api/ManagedExecutorConfig.html[`@ManagedExecutorConfig`] annotation:
+
+[source,java]
+----
+    // Custom ManagedExecutor with different async limit, queue and no propagation
+    @Inject
+    @ManagedExecutorConfig(maxAsync = 2, maxQueued = 3, cleared = ThreadContext.ALL_REMAINING)
+    ManagedExecutor configuredCustomExecutor;
+----
+
+=== Sharing configured CDI instances of ManagedExecutor and ThreadContext
+
+If you need to inject the same `ManagedExecutor` or `ThreadContext` into several places and share it's capacity, you can name the instance with https://javadoc.io/doc/io.smallrye/smallrye-context-propagation-api/latest/io/smallrye/context/api/NamedInstance.html[`@NamedInstance`] annotation.
+`@NamedInstance` is a CDI qualifier and all injections of the same type and name will therefore share the same underlying instance.
+If you also need to customize your instance, you can do so using `@ManagedExecutorConfig`/`ThreadContextConfig` annotation on one of its injection points:
+
+[source,java]
+----
+    // Custom configured ManagedExecutor with name
+    @Inject
+    @ManagedExecutorConfig(maxAsync = 2, maxQueued = 3, cleared = ThreadContext.ALL_REMAINING)
+    @NamedInstance("myExecutor")
+    ManagedExecutor sharedConfiguredExecutor;
+
+    // Since this executor has the same name, it will be the same instance as above
+    @Inject
+    @NamedInstance("myExecutor")
+    ManagedExecutor sameExecutor;
+
+    // Custom ThreadContext with a name
+    @Inject
+    @ThreadContextConfig(unchanged = ThreadContext.ALL_REMAINING)
+    @NamedInstance("myContext")
+    ThreadContext sharedConfiguredThreadContext;
+
+    // Given equal value of @NamedInstance, this ThreadContext will be the same as the above one
+    @Inject
+    @NamedInstance("myContext")
+    ThreadContext sameContext;
+----
+
 == Context Propagation for CDI
 
 In terms of CDI, `@RequestScoped`, `@ApplicationScoped` and `@Singleton` beans get propagated and are available in other threads.

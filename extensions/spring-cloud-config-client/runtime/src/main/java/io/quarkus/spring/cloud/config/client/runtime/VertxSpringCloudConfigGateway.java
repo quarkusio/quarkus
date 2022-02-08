@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.runtime.TlsConfig;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.KeyStoreOptionsBase;
@@ -130,7 +131,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private static byte[] storeBytes(Path keyStorePath)
             throws Exception {
         InputStream classPathResource = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(keyStorePath.toString());
+                .getResourceAsStream(ClassPathUtils.toResourceName(keyStorePath));
         if (classPathResource != null) {
             try (InputStream is = classPathResource) {
                 return allBytes(is);

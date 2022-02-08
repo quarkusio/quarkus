@@ -42,6 +42,7 @@ import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.stork.Stork;
 
 @SuppressWarnings({ "OptionalIsPresent", "Convert2Lambda" })
@@ -223,7 +224,7 @@ public class Channels {
 
     private static InputStream streamFor(Path path, String resourceName) {
         final InputStream resource = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(path.toString());
+                .getResourceAsStream(ClassPathUtils.toResourceName(path));
         if (resource != null) {
             return resource;
         } else {

@@ -167,7 +167,7 @@
                             if (sourceMap.hasOwnProperty(key)) {
                             var packages = sourceMap[key];
                             for (var i = 0; i < packages.length; i++) {
-                            if (className.startsWith(packages[i] + ".")) {
+                            if (className.startsWith(packages[i] + ".") || ((packages[i] === "") && (className.indexOf('.') == -1))) {
                             return key;
                             }
                             }
@@ -183,7 +183,7 @@
                             if (sourceLocationMap.hasOwnProperty(key)) {
                             var packages = sourceLocationMap[key];
                             for (var i = 0; i < packages.length; i++) {
-                            if (className.startsWith(packages[i] + ".")) {
+                            if (className.startsWith(packages[i] + ".") || ((packages[i] === "") && (className.indexOf('.') == -1))) {
                             return key;
                             }
                             }

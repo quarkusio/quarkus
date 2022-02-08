@@ -14,6 +14,12 @@ class GreetingResource(val headers: HttpHeaders) {
         val lastName = headers.getHeaderString("lastName");
         return Greeting("hello $firstName $lastName")
     }
+
+    @GET
+    @Path("noop")
+    suspend fun noop() {
+
+    }
 }
 
 data class Greeting(val message:String)

@@ -27,4 +27,13 @@ class GreetingResourceTest {
                 .then()
                 .statusCode(204)
     }
+
+    @Test
+    fun testNoopCoroutine() {
+        When {
+            get("/greeting/noop")
+        } Then {
+            statusCode(204)
+        }
+    }
 }

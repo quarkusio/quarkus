@@ -18,7 +18,7 @@ public enum Ide {
     IDEA("idea", List.of("--line", "{lineNumber}", "{fileName}"), List.of("--help")),
     ECLIPSE("eclipse", List.of("--launcher.openFile", "{fileName}:{lineNumber}"), Collections.emptyList()),
     VSCODE("code", List.of("--goto", "{fileName}:{lineNumber}"), List.of("--version")),
-    NETBEANS("netbeans", Collections.emptyList(), List.of("--help"));
+    NETBEANS("netbeans", List.of("{fileName}:{lineNumber}"), List.of("--help"));
 
     private static final Logger log = Logger.getLogger(Ide.class);
 

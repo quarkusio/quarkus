@@ -76,9 +76,14 @@ public final class MessageBundles {
                     continue;
                 }
                 Instance<?> found = container.select(locEntry.getValue(), new Localized.Literal(locEntry.getKey()));
-                if (!found.isResolvable()) {
+                if (found.isUnsatisfied()) {
                     throw new IllegalStateException(
                             Qute.fmt("Bean not found for localized interface [{e.value}] and locale [{e.key}]")
+                                    .data("e", locEntry).render());
+                }
+                if (found.isAmbiguous()) {
+                    throw new IllegalStateException(
+                            Qute.fmt("Multiple beans found for localized interface [{e.value}] and locale [{e.key}]")
                                     .data("e", locEntry).render());
                 }
                 interfaces.put(locEntry.getKey(), (Resolver) found.get());

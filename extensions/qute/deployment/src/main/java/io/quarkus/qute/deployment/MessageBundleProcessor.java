@@ -156,11 +156,17 @@ public class MessageBundleProcessor {
                     Map<String, ClassInfo> localeToInterface = new HashMap<>();
                     for (ClassInfo localizedInterface : localized) {
                         String locale = localizedInterface.classAnnotation(Names.LOCALIZED).value().asString();
+                        if (defaultLocale.equals(locale)) {
+                            throw new MessageBundleException(
+                                    String.format(
+                                            "Locale of [%s] conflicts with the locale [%s] of the default message bundle [%s]",
+                                            localizedInterface, locale, bundleClass));
+                        }
                         ClassInfo previous = localeToInterface.put(locale, localizedInterface);
-                        if (defaultLocale.equals(locale) || previous != null) {
+                        if (previous != null) {
                             throw new MessageBundleException(String.format(
-                                    "A localized message bundle interface [%s] already exists for locale %s: [%s]",
-                                    previous != null ? previous : bundleClass, locale, localizedInterface));
+                                    "Cannot register [%s] - a localized message bundle interface exists for locale [%s]: %s",
+                                    localizedInterface, locale, previous));
                         }
                         localizedInterfaces.add(localizedInterface.name());
                     }
@@ -172,12 +178,18 @@ public class MessageBundleProcessor {
                         if (fileName.startsWith(name)) {
                             // msg_en.txt -> en
                             String locale = fileName.substring(fileName.indexOf('_') + 1, fileName.indexOf('.'));
+                            if (defaultLocale.equals(locale)) {
+                                throw new MessageBundleException(
+                                        String.format(
+                                                "Locale of [%s] conflicts with the locale [%s] of the default message bundle [%s]",
+                                                fileName, locale, bundleClass));
+                            }
                             ClassInfo localizedInterface = localeToInterface.get(locale);
                             if (localizedInterface != null) {
                                 throw new MessageBundleException(
                                         String.format(
-                                                "A localized message bundle interface [%s] already exists for locale %s: [%s]",
-                                                localizedInterface, locale, fileName));
+                                                "Cannot register [%s] - a localized message bundle interface exists for locale [%s]: %s",
+                                                fileName, locale, localizedInterface));
                             }
                             localeToFile.put(locale, messageFile);
                         }

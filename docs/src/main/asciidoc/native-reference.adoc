@@ -1226,7 +1226,7 @@ Then, run the Docker container as:
 $ docker run --privileged \
 -t -i -v $(PWD)/$(project):/data --rm -p 8080:8080 fedora-tools:v1 /bin/bash
 ...
-[root@75d1df96849c data]# _
+_
 ----
 
 [[NOTE]]
@@ -1240,8 +1240,8 @@ Once the container is running, you need to ensure that the kernel is ready for t
 
 [source,bash]
 ----
-[root@75d1df96849c data]# echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
-[root@75d1df96849c data]# echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
 ----
 
 Once you’re inside the container, you can execute `strings`, `perf`, `objdump`…, etc commands on the generated binary.
@@ -1256,8 +1256,8 @@ Flame graphs should also be generated inside the container:
 
 [source,bash]
 ----
-[root@75d1df96849c data]# perf script | /opt/FlameGraph/stackcollapse-perf.pl > out.perf-folded
-[root@75d1df96849c data]# /opt/FlameGraph/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script | /opt/FlameGraph/stackcollapse-perf.pl > out.perf-folded
+/opt/FlameGraph/flamegraph.pl out.perf-folded > flamegraph.svg
 ----
 
 The resulting svg files can then be opened outside the container for visualization.
@@ -1351,7 +1351,7 @@ $ ./mvnw package -DskipTests -Pnative \
 
 https://docs.oracle.com/javacomponents/jmc-5-4/jfr-runtime-guide/about.htm#JFRUH170[Java Flight Recorder (JFR)] and
 https://www.oracle.com/java/technologies/jdk-mission-control.html[JDK Mission Control (JMC)]
-can be used to debug profile native binaries since GraalVM CE 21.2.0.
+can be used to profile native binaries since GraalVM CE 21.2.0.
 However, JFR in GraalVM is currently significantly limited in capabilities compared to HotSpot.
 The custom event API is fully supported, but many VM level features are unavailable.
 They will be added in future releases. Current limitations are:

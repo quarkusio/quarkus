@@ -1137,7 +1137,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
                 builder.setOptional(true);
             } else if (convertible) {
-                throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
+                typeHandled = true;
+                elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
+                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             } else {
                 // the "element" type is not of importance as in this case the signature is used at runtime to determine the proper types
                 elementType = DUMMY_ELEMENT_TYPE.toString();

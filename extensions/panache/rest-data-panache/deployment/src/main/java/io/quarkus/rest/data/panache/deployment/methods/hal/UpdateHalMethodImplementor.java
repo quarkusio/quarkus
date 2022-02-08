@@ -24,7 +24,9 @@ import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.quarkus.rest.data.panache.runtime.UpdateExecutor;
+import io.smallrye.mutiny.Uni;
 
 public final class UpdateHalMethodImplementor extends HalMethodImplementor {
 
@@ -34,15 +36,19 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
 
     private static final String RESOURCE_GET_METHOD_NAME = "get";
 
+    private static final String EXCEPTION_MESSAGE = "Failed to update an entity";
+
     private final boolean withValidation;
 
-    public UpdateHalMethodImplementor(boolean withValidation, boolean isResteasyClassic) {
-        super(isResteasyClassic);
+    public UpdateHalMethodImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
+        super(isResteasyClassic, isReactivePanache);
         this.withValidation = withValidation;
     }
 
     /**
-     * Expose {@link RestDataResource#update(Object, Object)} via HAL JAX-RS method.
+     * Generate HAL JAX-RS PUT method.
+     *
+     * The RESTEasy Classic version exposes {@link RestDataResource#update(Object, Object)} via HAL JAX-RS method.
      * Generated code looks more or less like this:
      *
      * <pre>
@@ -81,11 +87,48 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
      *     }
      * }
      * </pre>
+     *
+     * The RESTEasy Reactive version exposes
+     * {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#update(Object, Object)}
+     * and the generated code looks more or less like this:
+     *
+     * <pre>
+     * {@code
+     *     &#64;PUT
+     *     &#64;Path("{id}")
+     *     &#64;Consumes({"application/json"})
+     *     &#64;Produces({"application/json"})
+     *     &#64;LinkResource(
+     *         rel = "update",
+     *         entityClassName = "com.example.Entity"
+     *     )
+     *     public Uni<Response> update(@PathParam("id") ID id, Entity entityToSave) {
+     *         return resource.get(id).flatMap(entity -> {
+     *             if (entity == null) {
+     *                 return Uni.createFrom().item(Response.status(204).build());
+     *             } else {
+     *                 return resource.update(id, entityToSave).map(savedEntity -> {
+     *                     String location = new ResourceLinksProvider().getSelfLink(savedEntity);
+     *                     if (location != null) {
+     *                         ResponseBuilder responseBuilder = Response.status(201);
+     *                         responseBuilder.entity(new HalEntityWrapper(savedEntity));
+     *                         responseBuilder.location(URI.create(location));
+     *                         return responseBuilder.build();
+     *                     } else {
+     *                         throw new RuntimeException("Could not extract a new entity URL")
+     *                     }
+     *                 });
+     *             }
+     *         }).onFailure().invoke(t -> throw new RestDataPanacheException(t));
+     *     }
+     * }
+     * </pre>
      */
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class,
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
+                isNotReactivePanache() ? Response.class : Uni.class,
                 resourceMetadata.getIdType(), resourceMetadata.getEntityType());
 
         // Add method annotations
@@ -104,23 +147,52 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
         ResultHandle id = methodCreator.getMethodParam(0);
         ResultHandle entityToSave = methodCreator.getMethodParam(1);
 
-        // Invoke resource methods inside a supplier function which will be given to an update executor.
-        // For ORM, this update executor will have the @Transactional annotation to make
-        // sure that all database operations are executed in a single transaction.
-        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to update an entity");
-        ResultHandle updateExecutor = getUpdateExecutor(tryBlock);
-        ResultHandle updateFunction = getUpdateFunction(tryBlock, resourceMetadata.getResourceClass(), resource, id,
-                entityToSave);
-        ResultHandle newEntity = tryBlock.invokeInterfaceMethod(
-                ofMethod(UpdateExecutor.class, "execute", Object.class, Supplier.class),
-                updateExecutor, updateFunction);
+        if (isNotReactivePanache()) {
+            // Invoke resource methods inside a supplier function which will be given to an update executor.
+            // For ORM, this update executor will have the @Transactional annotation to make
+            // sure that all database operations are executed in a single transaction.
+            TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
+            ResultHandle updateExecutor = getUpdateExecutor(tryBlock);
+            ResultHandle updateFunction = getUpdateFunction(tryBlock, resourceMetadata.getResourceClass(), resource, id,
+                    entityToSave);
+            ResultHandle newEntity = tryBlock.invokeInterfaceMethod(
+                    ofMethod(UpdateExecutor.class, "execute", Object.class, Supplier.class),
+                    updateExecutor, updateFunction);
 
-        BranchResult createdNewEntity = tryBlock.ifNotNull(newEntity);
-        ResultHandle wrappedNewEntity = wrapHalEntity(createdNewEntity.trueBranch(), newEntity);
-        ResultHandle newEntityUrl = ResponseImplementor.getEntityUrl(createdNewEntity.trueBranch(), newEntity);
-        createdNewEntity.trueBranch().returnValue(
-                ResponseImplementor.created(createdNewEntity.trueBranch(), wrappedNewEntity, newEntityUrl));
-        createdNewEntity.falseBranch().returnValue(ResponseImplementor.noContent(createdNewEntity.falseBranch()));
+            BranchResult createdNewEntity = tryBlock.ifNotNull(newEntity);
+            ResultHandle wrappedNewEntity = wrapHalEntity(createdNewEntity.trueBranch(), newEntity);
+            ResultHandle newEntityUrl = ResponseImplementor.getEntityUrl(createdNewEntity.trueBranch(), newEntity);
+            createdNewEntity.trueBranch().returnValue(
+                    ResponseImplementor.created(createdNewEntity.trueBranch(), wrappedNewEntity, newEntityUrl));
+            createdNewEntity.falseBranch().returnValue(ResponseImplementor.noContent(createdNewEntity.falseBranch()));
+        } else {
+            ResultHandle uniResponse = methodCreator.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_GET_METHOD_NAME, Uni.class, Object.class),
+                    resource, id);
+
+            methodCreator
+                    .returnValue(
+                            UniImplementor.flatMap(methodCreator, uniResponse, EXCEPTION_MESSAGE, (getBody, itemWasFound) -> {
+                                ResultHandle uniUpdateEntity = getBody.invokeVirtualMethod(
+                                        ofMethod(resourceMetadata.getResourceClass(), RESOURCE_UPDATE_METHOD_NAME, Uni.class,
+                                                Object.class,
+                                                Object.class),
+                                        resource, id, entityToSave);
+
+                                getBody.returnValue(UniImplementor.map(getBody, uniUpdateEntity, EXCEPTION_MESSAGE,
+                                        (updateBody, itemUpdated) -> {
+                                            ResultHandle wrappedNewEntity = wrapHalEntity(updateBody, itemUpdated);
+                                            ResultHandle newEntityUrl = ResponseImplementor.getEntityUrl(updateBody,
+                                                    itemUpdated);
+
+                                            BranchResult ifEntityIsNew = updateBody.ifNull(itemWasFound);
+                                            ifEntityIsNew.trueBranch().returnValue(ResponseImplementor
+                                                    .created(ifEntityIsNew.trueBranch(), wrappedNewEntity, newEntityUrl));
+                                            ifEntityIsNew.falseBranch()
+                                                    .returnValue(ResponseImplementor.noContent(ifEntityIsNew.falseBranch()));
+                                        }));
+                            }));
+        }
 
         methodCreator.close();
     }

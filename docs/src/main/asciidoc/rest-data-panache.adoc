@@ -18,6 +18,26 @@ include::./status-include.adoc[]
 
 == Setting up REST Data with Panache
 
+Quarkus provides the following extensions to set up REST Data with Panache. Please, check out the next compatibility table to use the right one according to the technology you're using:
+
+.Compatibility Table
+|===
+|Extension |Hibernate | RESTEasy
+
+|<<hr-hibernate-orm, quarkus-hibernate-orm-rest-data-panache>>
+|`ORM`
+|`Classic and Reactive`
+
+|<<hr-hibernate-reactive, quarkus-hibernate-reactive-rest-data-panache>>
+|`Reactive`
+|`Reactive`
+
+|<<hr-mongodb, quarkus-mongodb-rest-data-panache>>
+|`ORM`
+|`Classic and Reactive`
+|===
+
+[[hr-hibernate-orm]]
 === Hibernate ORM
 
 * Add the required dependencies to your build file
@@ -66,8 +86,43 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache guide].
-* Define the interfaces for generation as explained in the resource generation section.
+* Define the interfaces for generation as explained in <<hr-generating-resources, the resource generation section>>.
 
+[[hr-hibernate-reactive]]
+=== Hibernate Reactive
+
+* Add the required dependencies to your `pom.xml`
+** Hibernate Reactive REST Data with Panache extension (`quarkus-hibernate-reactive-rest-data-panache`)
+** A Vert.x reactive database driver extension (`quarkus-reactive-pg-client`, `quarkus-reactive-mysql-client`, ...)
+** One of the RESTEasy Reactive serialization extensions (`quarkus-resteasy-reactive-jsonb`, `quarkus-resteasy-reactive-jackson`, ...)
+
+[source,xml]
+----
+<dependencies>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-reactive-rest-data-panache</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-reactive-pg-client</artifactId>
+    </dependency>
+   <!-- Use these if you are using RESTEasy Reactive Jackson -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-reactive-links</artifactId>
+    </dependency>
+</dependencies>
+----
+
+* Implement the Panache entities and/or repositories as explained in the xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache guide].
+* Define the interfaces for generation as explained in <<hr-generating-resources, the resource generation section>>.
+
+[[hr-mongodb]]
 === MongoDB
 
 * Add the required dependencies to your build file
@@ -120,8 +175,9 @@ implementation("io.quarkus:quarkus-resteasy-reactive-links")
 ----
 
 * Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache guide].
-* Define the interfaces for generation as explained in the resource generation section.
+* Define the interfaces for generation as explained in <<hr-generating-resources, the resource generation section>>.
 
+[[hr-generating-resources]]
 == Generating resources
 
 REST Data with Panache generates JAX-RS resources based on the interfaces available in your application.

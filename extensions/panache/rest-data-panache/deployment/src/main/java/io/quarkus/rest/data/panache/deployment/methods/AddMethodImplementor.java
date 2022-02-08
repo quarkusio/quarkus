@@ -14,6 +14,8 @@ import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
+import io.smallrye.mutiny.Uni;
 
 public final class AddMethodImplementor extends StandardMethodImplementor {
 
@@ -21,17 +23,21 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
 
     private static final String RESOURCE_METHOD_NAME = "add";
 
+    private static final String EXCEPTION_MESSAGE = "Failed to add an entity";
+
     private static final String REL = "add";
 
     private final boolean withValidation;
 
-    public AddMethodImplementor(boolean withValidation, boolean isResteasyClassic) {
-        super(isResteasyClassic);
+    public AddMethodImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
+        super(isResteasyClassic, isReactivePanache);
         this.withValidation = withValidation;
     }
 
     /**
-     * Generate JAX-RS POST method that exposes {@link RestDataResource#add(Object)}.
+     * Generate JAX-RS POST method.
+     *
+     * The RESTEasy Classic version exposes {@link RestDataResource#add(Object)}.
      * Generated code looks more or less like this:
      *
      * <pre>
@@ -62,11 +68,41 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
      *     }
      * }
      * </pre>
+     *
+     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#add(Object)}
+     * and the generated code looks more or less like this:
+     * 
+     * <pre>
+     * {@code
+     *     &#64;POST
+     *     &#64;Path("")
+     *     &#64;Consumes({"application/json"})
+     *     &#64;Produces({"application/json"})
+     *     &#64;LinkResource(
+     *         rel = "add",
+     *         entityClassName = "com.example.Entity"
+     *     )
+     *     public Uni<Response> add(Entity entityToSave) {
+     *         return restDataResource.add(entityToSave).map(entity -> {
+     *             String location = new ResourceLinksProvider().getSelfLink(entity);
+     *             if (location != null) {
+     *                 ResponseBuilder responseBuilder = Response.status(201);
+     *                 responseBuilder.entity(entity);
+     *                 responseBuilder.location(URI.create(location));
+     *                 return responseBuilder.build();
+     *             } else {
+     *                 throw new RuntimeException("Could not extract a new entity URL")
+     *             }
+     *         }).onFailure().invoke(t -> throw new RestDataPanacheException(t));
+     *     }
+     * }
+     * </pre>
      */
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class,
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
+                isNotReactivePanache() ? Response.class : Uni.class,
                 resourceMetadata.getEntityType());
 
         // Add method annotations
@@ -83,15 +119,22 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle entityToSave = methodCreator.getMethodParam(0);
 
-        // Invoke resource methods
-        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to add an entity");
-        ResultHandle entity = tryBlock.invokeVirtualMethod(
-                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Object.class, Object.class),
-                resource, entityToSave);
-        // Return response
-        tryBlock.returnValue(ResponseImplementor.created(tryBlock, entity));
+        if (isNotReactivePanache()) {
+            TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
+            ResultHandle entity = tryBlock.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Object.class, Object.class),
+                    resource, entityToSave);
+            tryBlock.returnValue(ResponseImplementor.created(tryBlock, entity));
+            tryBlock.close();
+        } else {
+            ResultHandle uniEntity = methodCreator.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Uni.class, Object.class),
+                    resource, entityToSave);
 
-        tryBlock.close();
+            methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntity, EXCEPTION_MESSAGE,
+                    (body, item) -> body.returnValue(ResponseImplementor.created(body, item))));
+        }
+
         methodCreator.close();
     }
 

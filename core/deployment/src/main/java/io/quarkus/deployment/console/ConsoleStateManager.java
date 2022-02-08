@@ -51,19 +51,20 @@ public class ConsoleStateManager {
         @Override
         public void accept(int[] ints) {
             for (int i : ints) {
+                char key = (char) i;
                 if (readLineBuilder != null) {
                     if (i == '\n' || i == '\r') {
                         readLineConsumer.accept(readLineBuilder.toString());
                         readLineBuilder = null;
                         readLineConsumer = null;
                     } else {
-                        readLineBuilder.append((char) i);
+                        readLineBuilder.append(key);
                     }
                 } else {
                     if (i == '\n') {
                         System.out.println("");
                     }
-                    Holder command = commands.get((char) i);
+                    Holder command = commands.get(key);
                     if (command != null) {
                         if (command.consoleCommand.getReadLineHandler() != null) {
                             QuarkusConsole.INSTANCE.doReadLine();
@@ -71,6 +72,10 @@ public class ConsoleStateManager {
                             readLineConsumer = command.consoleCommand.getReadLineHandler();
                         } else {
                             command.consoleCommand.getRunnable().run();
+                        }
+                    } else {
+                        if (QuarkusConsole.INSTANCE.singleLetterAliases().containsKey(key)) {
+                            QuarkusConsole.INSTANCE.runAlias(key);
                         }
                     }
                 }
@@ -203,11 +208,16 @@ public class ConsoleStateManager {
         for (Holder i : commands.values()) {
             contexts.add(i.context);
         }
+        Set<Character> seen = new HashSet<>();
 
         for (ConsoleContext ctx : contexts.stream().sorted(Comparator.comparing(ConsoleContext::getName))
                 .collect(Collectors.toList())) {
             System.out.println("\n" + RED + "==" + RESET + " " + UNDERLINE + ctx.name + NO_UNDERLINE + "\n");
             for (var i : ctx.internal) {
+                if (seen.contains(i.getKey())) {
+                    continue;
+                }
+                seen.add(i.getKey());
                 if (i.getDescription() != null) {
                     if (i.getHelpState() == null) {
                         System.out.println(helpOption(i.getKey(), i.getDescription()));
@@ -220,7 +230,15 @@ public class ConsoleStateManager {
                 }
             }
         }
-
+        Map<Character, String> aliases = QuarkusConsole.INSTANCE.singleLetterAliases();
+        if (!aliases.isEmpty()) {
+            System.out.println("\n" + RED + "==" + RESET + " " + UNDERLINE + "User Defined Aliases" + NO_UNDERLINE + "\n");
+            for (Map.Entry<Character, String> entry : aliases.entrySet()) {
+                if (!seen.contains(entry.getKey())) {
+                    System.out.println(helpOption(entry.getKey(), entry.getValue()));
+                }
+            }
+        }
     }
 
     static class Holder {

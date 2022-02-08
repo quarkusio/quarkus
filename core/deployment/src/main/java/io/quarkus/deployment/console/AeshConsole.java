@@ -1,7 +1,10 @@
 package io.quarkus.deployment.console;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.Lock;
@@ -589,11 +592,51 @@ public class AeshConsole extends QuarkusConsole {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
 
+    @Override
+    public Map<Character, String> singleLetterAliases() {
+        try {
+            var manager = new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true);
+            Map<Character, String> ret = new HashMap<>();
+            for (String alias : manager.getAllNames()) {
+                if (alias.length() == 1) {
+                    ret.put(alias.charAt(0), manager.getAlias(alias).get().getValue());
+                }
+            }
+            return ret;
+        } catch (IOException e) {
+            return Map.of();
+        }
+    }
+
+    @Override
+    public void runAlias(char alias) {
+        try {
+            AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
+            ConsoleCliManager.commands.forEach(commandBuilder::command);
+
+            CommandRegistry registry = commandBuilder
+                    .create();
+            Settings settings = SettingsBuilder
+                    .builder()
+                    .enableExport(false)
+                    .inputStream(new ByteArrayInputStream(new byte[] { (byte) alias, '\n' }))
+                    .enableAlias(true)
+                    .aliasManager(
+                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                    .connection(delegateConnection)
+                    .commandRegistry(registry)
+                    .build();
+            aeshConsole = new ReadlineConsole(settings);
+            aeshConsole.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void exitCliMode() {
-        if (aeshConsole == null) {
+        if (aeshConsole == null || delegateConnection == null) {
             return;
         }
         aeshConsole.stop();

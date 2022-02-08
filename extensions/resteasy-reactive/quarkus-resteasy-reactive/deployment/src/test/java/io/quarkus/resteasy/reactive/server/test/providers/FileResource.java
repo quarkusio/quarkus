@@ -8,6 +8,7 @@ import javax.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.file.AsyncFile;
@@ -50,6 +51,19 @@ public class FileResource {
             vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions(), result -> {
                 if (result.succeeded())
                     emitter.complete(result.result());
+                else
+                    emitter.fail(result.cause());
+            });
+        });
+    }
+
+    @Path("rest-response-async-file")
+    @GET
+    public Uni<RestResponse<AsyncFile>> getRestResponseAsyncFile(RoutingContext vertxRequest) {
+        return Uni.createFrom().emitter(emitter -> {
+            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions(), result -> {
+                if (result.succeeded())
+                    emitter.complete(RestResponse.ResponseBuilder.ok(result.result()).header("foo", "bar").build());
                 else
                     emitter.fail(result.cause());
             });

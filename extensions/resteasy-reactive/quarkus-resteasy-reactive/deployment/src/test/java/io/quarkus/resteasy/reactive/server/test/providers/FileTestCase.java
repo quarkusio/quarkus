@@ -76,6 +76,11 @@ public class FileTestCase {
                 .header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue())
                 .statusCode(200)
                 .body(Matchers.equalTo(content));
+        RestAssured.get("/providers/file/rest-response-async-file")
+                .then()
+                .header("foo", "bar")
+                .statusCode(200)
+                .body(Matchers.equalTo(content));
         RestAssured.get("/providers/file/mutiny-async-file")
                 .then()
                 .header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue())

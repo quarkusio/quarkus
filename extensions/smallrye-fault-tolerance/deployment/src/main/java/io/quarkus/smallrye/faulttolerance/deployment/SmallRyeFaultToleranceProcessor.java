@@ -61,6 +61,7 @@ import io.quarkus.smallrye.faulttolerance.runtime.QuarkusExistingCircuitBreakerN
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.SmallRyeFaultToleranceRecorder;
+import io.smallrye.faulttolerance.CdiFaultToleranceSpi;
 import io.smallrye.faulttolerance.CircuitBreakerMaintenanceImpl;
 import io.smallrye.faulttolerance.ExecutorHolder;
 import io.smallrye.faulttolerance.FaultToleranceBinding;
@@ -200,7 +201,7 @@ public class SmallRyeFaultToleranceProcessor {
         // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(FaultToleranceInterceptor.class, QuarkusFaultToleranceOperationProvider.class,
-                        QuarkusExistingCircuitBreakerNames.class)
+                        QuarkusExistingCircuitBreakerNames.class, CdiFaultToleranceSpi.Dependencies.class)
                 .build());
 
         if (!metricsCapability.isPresent()) {

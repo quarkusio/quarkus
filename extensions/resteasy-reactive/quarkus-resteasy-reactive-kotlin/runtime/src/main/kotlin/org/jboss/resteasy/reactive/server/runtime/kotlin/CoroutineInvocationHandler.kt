@@ -37,7 +37,10 @@ class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
             // ensure the proper CL is not lost in dev-mode
             Thread.currentThread().contextClassLoader = originalTCCL
             try {
-                requestContext.result = invoker.invokeCoroutine(requestContext.endpointInstance, requestContext.parameters)
+                val result = invoker.invokeCoroutine(requestContext.endpointInstance, requestContext.parameters)
+                if (result != Unit) {
+                    requestContext.result = result
+                }
             } catch (t: Throwable) {
                 // passing true since the target doesn't change and we want response filters to be able to know what the resource method was
                 requestContext.handleException(t, true)

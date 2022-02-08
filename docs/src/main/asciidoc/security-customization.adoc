@@ -11,15 +11,22 @@ include::./attributes.adoc[]
 
 `io.quarkus:quarkus-security` module contains the core Quarkus security classes.
 
-In most cases it does not have to be added directly to your project's `pom.xml` as it is already provided by all of the security extensions.
-However if you need to write your own custom security code (for example, register a <<jaxrs-security-context, Custom JAX-RS SecurityContext>>) or use <<bouncy-castle, BouncyCastle>> libraries, then please make sure it is included:
+In most cases, it does not have to be added directly to your project's build file as it is already provided by all of the security extensions.
+However, if you need to write your own custom security code (for example, register a <<jaxrs-security-context, Custom JAX-RS SecurityContext>>) or use <<bouncy-castle, BouncyCastle>> libraries, then please make sure it is included:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-security</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-security</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-security")
 ----
 
 == HttpAuthenticationMechanism Customization
@@ -266,12 +273,19 @@ quarkus.security.security-providers=BC
 
 and add the BouncyCastle provider dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>org.bouncycastle</groupId>
-  <artifactId>bcprov-jdk15on</artifactId>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcprov-jdk15on</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bcprov-jdk15on")
 ----
 
 [[bouncy-castle-jsse]]
@@ -294,12 +308,19 @@ quarkus.http.ssl.certificate.trust-store-password=password
 
 and add the BouncyCastle TLS dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>org.bouncycastle</groupId>
-  <artifactId>bctls-jdk15on</artifactId>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bctls-jdk15on</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bctls-jdk15on")
 ----
 
 [[bouncy-castle-fips]]
@@ -315,12 +336,19 @@ quarkus.security.security-providers=BCFIPS
 
 and add the BouncyCastle FIPS provider dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>org.bouncycastle</groupId>
-  <artifactId>bc-fips</artifactId>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bc-fips</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bc-fips")
 ----
 
 [NOTE]
@@ -359,7 +387,8 @@ quarkus.http.ssl.certificate.trust-store-provider=BCFIPS
 
 and the BouncyCastle TLS dependency optimized for using the BouncyCastle FIPS provider:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
   <groupId>org.bouncycastle</groupId>
@@ -367,9 +396,16 @@ and the BouncyCastle TLS dependency optimized for using the BouncyCastle FIPS pr
 </dependency>
 
 <dependency>
-  <groupId>org.bouncycastle</groupId>
-  <artifactId>bc-fips</artifactId>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bc-fips</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bctls-fips")
+implementation("org.bouncycastle:bc-fips")
 ----
 
 Note that the keystore and truststore type and provider are set to `BCFKS` and `BCFIPS`.
@@ -389,12 +425,19 @@ keytool -genkey -alias server -keyalg RSA -keystore server-keystore.jks -keysize
 
 If you are going to use security in a reactive environment, you will likely need SmallRye Context Propagation:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-context-propagation</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-context-propagation</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-context-propagation")
 ----
 
 This will allow you to propagate the identity throughout the reactive callbacks. You also need to make sure you

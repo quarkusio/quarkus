@@ -13,14 +13,8 @@ include::./status-include.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* docker and docker-compose
-* GraalVM installed if you want to run in native mode.
+:prerequisites-docker-compose:
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -56,14 +50,10 @@ First, we need to create two projects: the _producer_ and the _processor_.
 
 To create the _producer_ project, in a terminal run:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rabbitmq-quickstart-producer \
-    -DnoCode=true \
-    -Dextensions=smallrye-reactive-messaging-rabbitmq,resteasy-reactive-jackson
-----
+:create-app-artifact-id: rabbitmq-quickstart-producer
+:create-app-extensions: smallrye-reactive-messaging-rabbitmq,resteasy-reactive-jackson
+:create-app-post-command:
+include::includes/devtools/create-app.adoc[]
 
 This command creates the project structure and select the two Quarkus extensions we will be using:
 
@@ -72,14 +62,10 @@ This command creates the project structure and select the two Quarkus extensions
 
 To create the _processor_ project, from the same directory, run:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rabbitmq-quickstart-processor \
-    -DnoCode=true \
-    -Dextensions=smallrye-reactive-messaging-rabbitmq
-----
+:create-app-artifact-id: rabbitmq-quickstart-processor
+:create-app-extensions: smallrye-reactive-messaging-rabbitmq
+:create-app-post-command:
+include::includes/devtools/create-app.adoc[]
 
 At that point you should have the following structure:
 

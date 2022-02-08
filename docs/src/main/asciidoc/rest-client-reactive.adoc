@@ -15,12 +15,7 @@ for the server part.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Solution
 
@@ -35,16 +30,9 @@ The solution is located in the `rest-client-reactive-quickstart` {quickstarts-tr
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-client-reactive-quickstart \
-    -DclassName="org.acme.rest.client.ExtensionsResource" \
-    -Dpath="/extension" \
-    -Dextensions="resteasy-reactive-jackson,rest-client-reactive-jackson"
-cd rest-client-reactive-quickstart
-----
+:create-app-artifact-id: rest-client-reactive-quickstart
+:create-app-extensions: resteasy-reactive-jackson,rest-client-reactive-jackson
+include::includes/devtools/create-app.adoc[]
 
 This command generates the Maven project with a REST endpoint and imports:
 
@@ -54,19 +42,24 @@ This command generates the Maven project with a REST endpoint and imports:
 If you already have your Quarkus project configured, you can add the `rest-client-reactive-jackson` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="rest-client-reactive-jackson"
-----
+:add-extension-extensions: rest-client-reactive-jackson
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-rest-client-reactive-jackson")
 ----
 
 == Setting up the model
@@ -203,9 +196,9 @@ quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
 quarkus.rest-client.extensions-api.scope=javax.inject.Singleton
 ----
 
-== Update the JAX-RS resource
+== Create the JAX-RS resource
 
-Open the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file and update it with the following content:
+Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
 
 
 [source,java]
@@ -829,13 +822,23 @@ NOTE: MicroProfile REST Client specification does not allow setting proxy creden
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-rest-client-reactive.
 
 You should see a JSON object containing some basic information about this extension.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
 
 == Logging traffic
 REST Client Reactive can log the requests it sends and the responses it receives.
@@ -890,13 +893,21 @@ public interface Client {
 The simplest approach to mock a client for tests is to use Mockito and `@InjectMock`.
 
 First, add the following dependency to your application:
-[source,xml]
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-junit5-mockito</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-junit5-mockito")
 ----
 
 Then, in your test you can simply use `@InjectMock` to create and inject a mock:

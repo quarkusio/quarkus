@@ -111,7 +111,7 @@ or for native:
 
 [source,properties]
 ----
-quarkus.buildpack.jvm-builder-image=<native builder image>
+quarkus.buildpack.native-builder-image=<native builder image>
 ----
 
 To use this feature, add the following extension to your project.

@@ -65,11 +65,11 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.paths.PathUtils;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
@@ -172,7 +172,7 @@ public class SmallRyeOpenApiProcessor {
             List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
-                List<String> filesInDir = getResourceFiles(PathUtils.asString(path, "/"),
+                List<String> filesInDir = getResourceFiles(ClassPathUtils.toResourceName(path),
                         outputTargetBuildItem.getOutputDirectory());
                 for (String possibleFile : filesInDir) {
                     watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(possibleFile));
@@ -795,7 +795,7 @@ public class SmallRyeOpenApiProcessor {
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
                 try {
-                    List<String> filesInDir = getResourceFiles(PathUtils.asString(path, "/"), target);
+                    List<String> filesInDir = getResourceFiles(ClassPathUtils.toResourceName(path), target);
                     for (String possibleModelFile : filesInDir) {
                         addStaticModelIfExist(results, possibleModelFile);
                     }

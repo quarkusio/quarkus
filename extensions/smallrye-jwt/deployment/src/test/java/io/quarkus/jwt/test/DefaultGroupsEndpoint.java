@@ -11,6 +11,7 @@ import javax.ws.rs.core.HttpHeaders;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.jwt.auth.principal.JWTParser;
 
 @Path("/endp")
@@ -20,6 +21,9 @@ public class DefaultGroupsEndpoint {
 
     @Inject
     JsonWebToken jwtPrincipal;
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     @Inject
     JWTParser parser;
@@ -32,6 +36,14 @@ public class DefaultGroupsEndpoint {
     @RolesAllowed("User")
     public String echoGroups() {
         return jwtPrincipal.getGroups().stream().reduce("", String::concat);
+    }
+
+    @GET
+    @Path("/routingContext")
+    @RolesAllowed("User")
+    public String checkRoutingContext() {
+        return jwtPrincipal.getGroups().stream().reduce("", String::concat)
+                + "; routing-context-available:" + securityIdentity.getAttributes().containsKey("routing-context-available");
     }
 
     @GET

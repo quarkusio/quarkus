@@ -866,7 +866,8 @@ public class CodeFlowTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-split-tokens:alice", page.getBody().asText());
+            assertEquals("tenant-split-tokens:alice, id token has 5 parts, access token has 5 parts, refresh token has 5 parts",
+                    page.getBody().asText());
 
             page = webClient.getPage("http://localhost:8081/web-app/access/tenant-split-tokens");
             assertEquals("tenant-split-tokens:AT injected", page.getBody().asText());
@@ -874,13 +875,13 @@ public class CodeFlowTest {
             assertEquals("tenant-split-tokens:RT injected", page.getBody().asText());
 
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-tokens");
-            checkSingleTokenCookie(idTokenCookie, "ID");
+            checkSingleTokenCookie(idTokenCookie, "ID", true);
 
             Cookie atTokenCookie = getSessionAtCookie(page.getWebClient(), "tenant-split-tokens");
-            checkSingleTokenCookie(atTokenCookie, "Bearer");
+            checkSingleTokenCookie(atTokenCookie, "Bearer", true);
 
             Cookie rtTokenCookie = getSessionRtCookie(page.getWebClient(), "tenant-split-tokens");
-            checkSingleTokenCookie(rtTokenCookie, "Refresh");
+            checkSingleTokenCookie(rtTokenCookie, "Refresh", true);
 
             // verify all the cookies are cleared after the session timeout
             webClient.getOptions().setRedirectEnabled(false);
@@ -961,10 +962,27 @@ public class CodeFlowTest {
         }
     }
 
-    private void checkSingleTokenCookie(Cookie idTokenCookie, String type) {
-        String[] parts = idTokenCookie.getValue().split("\\|");
-        assertEquals(1, parts.length);
-        assertEquals(type, OidcUtils.decodeJwtContent(parts[0]).getString("typ"));
+    private void checkSingleTokenCookie(Cookie tokenCookie, String type) {
+        checkSingleTokenCookie(tokenCookie, type, false);
+
+    }
+
+    private void checkSingleTokenCookie(Cookie tokenCookie, String type, boolean decrypt) {
+        String[] cookieParts = tokenCookie.getValue().split("\\|");
+        assertEquals(1, cookieParts.length);
+        String token = cookieParts[0];
+        String[] tokenParts = token.split("\\.");
+        if (decrypt) {
+            assertEquals(5, tokenParts.length);
+            try {
+                token = OidcUtils.decryptString(token, KeyUtils.createSecretKeyFromSecret("eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU"));
+                tokenParts = token.split("\\.");
+            } catch (Exception ex) {
+                fail("Token descryption has failed");
+            }
+        }
+        assertEquals(3, tokenParts.length);
+        assertEquals(type, OidcUtils.decodeJwtContent(token).getString("typ"));
     }
 
     @Test

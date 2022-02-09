@@ -21,6 +21,10 @@ import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 import org.jboss.logmanager.LogManager;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -28,6 +32,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ContextHandlerBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
@@ -40,8 +45,10 @@ import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
+import io.quarkus.vertx.core.runtime.VertxLocalsHelper;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.AbstractVerticle;
@@ -78,6 +85,80 @@ class VertxCoreProcessor {
     @BuildStep
     LogCleanupFilterBuildItem cleanupVertxWarnings() {
         return new LogCleanupFilterBuildItem("io.vertx.core.impl.ContextImpl", "You have disabled TCCL checks");
+    }
+
+    @BuildStep
+    BytecodeTransformerBuildItem overrideContextToAddSafeGuards() {
+        return new BytecodeTransformerBuildItem("io.vertx.core.impl.AbstractContext",
+                (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                    @Override
+                    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                            String[] exceptions) {
+                        MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature, exceptions);
+
+                        if (name.equals("get") || name.equals("put") || name.equals("remove")) {
+                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                @Override
+                                public void visitCode() {
+                                    super.visitCode();
+                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                            VertxLocalsHelper.class.getName().replace(".", "/"), "throwOnRootContextAccess",
+                                            "()V", false);
+                                }
+                            };
+                        }
+
+                        if (name.equals("getLocal")) {
+                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                @Override
+                                public void visitCode() {
+                                    super.visitCode();
+                                    visitVarInsn(Opcodes.ALOAD, 0); // this
+                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
+                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                            VertxLocalsHelper.class.getName().replace(".", "/"), "getLocal",
+                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;)Ljava/lang/Object;",
+                                            false);
+                                    visitInsn(Opcodes.ARETURN);
+                                }
+                            };
+                        }
+
+                        if (name.equals("putLocal")) {
+                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                @Override
+                                public void visitCode() {
+                                    super.visitCode();
+                                    visitVarInsn(Opcodes.ALOAD, 0); // this
+                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
+                                    visitVarInsn(Opcodes.ALOAD, 2); // second param (object)
+                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                            VertxLocalsHelper.class.getName().replace(".", "/"), "putLocal",
+                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;Ljava/lang/Object;)V",
+                                            false);
+                                    visitInsn(Opcodes.RETURN);
+                                }
+                            };
+                        }
+
+                        if (name.equals("removeLocal")) {
+                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                @Override
+                                public void visitCode() {
+                                    super.visitCode();
+                                    visitVarInsn(Opcodes.ALOAD, 0); // this
+                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
+                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                            VertxLocalsHelper.class.getName().replace(".", "/"), "removeLocal",
+                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;)Z", false);
+                                    visitInsn(Type.getType(Boolean.TYPE).getOpcode(Opcodes.IRETURN));
+                                }
+                            };
+                        }
+
+                        return visitor;
+                    }
+                });
     }
 
     @BuildStep

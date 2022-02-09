@@ -150,7 +150,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
             System.err.println("@QuarkusTest has detected a hang, as there has been no test activity in " + hangTimeout);
             System.err.println("To configure this timeout use the " + QUARKUS_TEST_HANG_DETECTION_TIMEOUT + " config property");
-            System.err.println("A stack track is below to help diagnose the potential hang");
+            System.err.println("A stack trace is below to help diagnose the potential hang");
             System.err.println("=== Stack Trace ===");
             ThreadInfo[] threads = ManagementFactory.getThreadMXBean().dumpAllThreads(true, true);
             for (ThreadInfo info : threads) {

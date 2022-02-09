@@ -141,6 +141,12 @@ public class TestConfig {
     Profile profile;
 
     /**
+     * Container related test settings
+     */
+    @ConfigItem
+    Container container;
+
+    /**
      * Additional launch parameters to be used when Quarkus launches the produced artifact for {@code @QuarkusIntegrationTest}
      * When the artifact is a {@code jar}, this string is passed right after the {@code java} command.
      * When the artifact is a {@code container}, this string is passed right after the {@code docker run} command.
@@ -230,6 +236,19 @@ public class TestConfig {
          */
         @ConfigItem(defaultValue = "")
         Optional<List<String>> tags;
+    }
+
+    @ConfigGroup
+    public static class Container {
+
+        /**
+         * Controls the container network to be used when @QuarkusIntegration needs to launch the application in a container.
+         * This setting only applies if Quarkus does not need to use a shared network - which is the case if DevServices are
+         * used
+         * when running the test.
+         */
+        @ConfigItem
+        Optional<String> network;
     }
 
     public enum Mode {

@@ -124,18 +124,21 @@ public class DefaultTenantConfigResolver {
 
     private TenantConfigContext getStaticTenantContext(RoutingContext context) {
 
-        String tenantId = null;
+        String tenantId = context.get(CURRENT_STATIC_TENANT_ID);
 
-        if (tenantResolver.isResolvable()) {
-            tenantId = context.get(CURRENT_STATIC_TENANT_ID);
-            if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
+        if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
+            if (tenantResolver.isResolvable()) {
                 tenantId = tenantResolver.get().resolve(context);
-                if (tenantId != null) {
-                    context.put(CURRENT_STATIC_TENANT_ID, tenantId);
-                } else {
-                    context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
-                }
             }
+            if (tenantId == null) {
+                tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            }
+        }
+
+        if (tenantId != null) {
+            context.put(CURRENT_STATIC_TENANT_ID, tenantId);
+        } else {
+            context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
         }
 
         TenantConfigContext configContext = tenantId != null ? tenantConfigBean.getStaticTenantsConfig().get(tenantId) : null;

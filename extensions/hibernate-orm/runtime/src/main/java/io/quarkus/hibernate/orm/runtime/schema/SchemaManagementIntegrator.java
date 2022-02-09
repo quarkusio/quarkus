@@ -72,9 +72,9 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         if (name != null) {
             return name;
         }
-        Object prop = sf.getProperties().get("hibernate.ejb.persistenceUnitName");
-        if (prop != null) {
-            return prop.toString();
+        Object persistenceUnitName = sf.getProperties().get("hibernate.ejb.persistenceUnitName");
+        if (persistenceUnitName != null) {
+            return persistenceUnitName.toString();
         }
         return DataSourceUtil.DEFAULT_DATASOURCE_NAME;
     }
@@ -92,23 +92,24 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         if (!LaunchMode.current().isDevOrTest()) {
             throw new IllegalStateException("Can only be used in dev or test mode");
         }
-        Holder val = metadataMap.get(name);
+        Holder holder = metadataMap.get(name);
 
-        ServiceRegistry serviceRegistry = val.sessionFactory.getServiceRegistry();
+        ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
         SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
-        Object prop = executionOptions.getConfigurationValues().get("javax.persistence.schema-generation.database.action");
-        if (prop != null && !(prop.toString().equals("none"))) {
+        Object schemaGenerationDatabaseAction = executionOptions.getConfigurationValues()
+                .get("javax.persistence.schema-generation.database.action");
+        if (schemaGenerationDatabaseAction != null && !(schemaGenerationDatabaseAction.toString().equals("none"))) {
             //if this is none we assume another framework is doing this (e.g. flyway)
             SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
             SchemaDropper schemaDropper = schemaManagementTool.getSchemaDropper(executionOptions.getConfigurationValues());
-            schemaDropper.doDrop(val.metadata, executionOptions, new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
+            schemaDropper.doDrop(holder.metadata, executionOptions, new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
             schemaManagementTool.getSchemaCreator(executionOptions.getConfigurationValues())
-                    .doCreation(val.metadata, executionOptions, new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
+                    .doCreation(holder.metadata, executionOptions, new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
         }
         //we still clear caches though
-        val.sessionFactory.getCache().evictAll();
-        val.sessionFactory.getCache().evictQueries();
+        holder.sessionFactory.getCache().evictAll();
+        holder.sessionFactory.getCache().evictQueries();
     }
 
     public static void runPostBootValidation(String name) {

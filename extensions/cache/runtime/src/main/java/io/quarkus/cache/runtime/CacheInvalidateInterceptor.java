@@ -49,8 +49,7 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
                 .onItem().transformToUniAndMerge(new Function<CacheInvalidate, Uni<? extends Void>>() {
                     @Override
                     public Uni<Void> apply(CacheInvalidate binding) {
-                        return invalidate(binding, interceptionContext.getCacheKeyParameterPositions(),
-                                invocationContext.getParameters());
+                        return invalidate(binding, interceptionContext.getCacheKeyParameterPositions(), invocationContext);
                     }
                 })
                 .onItem().ignoreAsUni()
@@ -71,15 +70,16 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
             CacheInterceptionContext<CacheInvalidate> interceptionContext) throws Exception {
         LOGGER.trace("Invalidating cache entries in a blocking way");
         for (CacheInvalidate binding : interceptionContext.getInterceptorBindings()) {
-            invalidate(binding, interceptionContext.getCacheKeyParameterPositions(), invocationContext.getParameters())
-                    .await().indefinitely();
+            invalidate(binding, interceptionContext.getCacheKeyParameterPositions(), invocationContext).await().indefinitely();
         }
         return invocationContext.proceed();
     }
 
-    private Uni<Void> invalidate(CacheInvalidate binding, List<Short> cacheKeyParameterPositions, Object[] parameters) {
+    private Uni<Void> invalidate(CacheInvalidate binding, List<Short> cacheKeyParameterPositions,
+            InvocationContext invocationContext) {
         Cache cache = cacheManager.getCache(binding.cacheName()).get();
-        Object key = getCacheKey(cache, cacheKeyParameterPositions, parameters);
+        Object key = getCacheKey(cache, binding.keyGenerator(), cacheKeyParameterPositions, invocationContext.getMethod(),
+                invocationContext.getParameters());
         LOGGER.debugf("Invalidating entry with key [%s] from cache [%s]", key, binding.cacheName());
         return cache.invalidate(key);
     }

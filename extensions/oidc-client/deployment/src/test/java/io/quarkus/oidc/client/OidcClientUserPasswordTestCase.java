@@ -23,6 +23,7 @@ public class OidcClientUserPasswordTestCase {
 
     private static Class<?>[] testClasses = {
             OidcClientResource.class,
+            OidcPublicClientResource.class,
             ProtectedResource.class
     };
 
@@ -35,6 +36,17 @@ public class OidcClientUserPasswordTestCase {
     @Test
     public void testPasswordGrantToken() {
         String token = RestAssured.when().get("/client/token").body().asString();
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+
+    }
+
+    @Test
+    public void testPublicClientPasswordGrantToken() {
+        String token = RestAssured.when().get("/public-client/token").body().asString();
         RestAssured.given().auth().oauth2(token)
                 .when().get("/protected")
                 .then()

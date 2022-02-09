@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -32,6 +33,7 @@ import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.eclipse.microprofile.config.Config;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
@@ -49,6 +51,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -305,8 +308,17 @@ public final class IntegrationTestUtil {
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
                 networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
             } catch (Exception e) {
-                networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
-                manageNetwork = true;
+                // use the network the use has specified or else just generate one if none is configured
+
+                Config config = LauncherUtil.installAndGetSomeConfig();
+                Optional<String> networkIdOpt = config
+                        .getOptionalValue("quarkus.test.container.network", String.class);
+                if (networkIdOpt.isPresent()) {
+                    networkId = networkIdOpt.get();
+                } else {
+                    networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+                    manageNetwork = true;
+                }
             }
         }
 

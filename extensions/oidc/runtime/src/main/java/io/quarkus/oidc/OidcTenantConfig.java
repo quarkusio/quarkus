@@ -589,6 +589,36 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem(defaultValueDocumentation = "true")
         public Optional<Boolean> idTokenRequired = Optional.empty();
 
+        /**
+         * Requires that a Proof Key for Code Exchange (PKCE) is used.
+         */
+        @ConfigItem(defaultValueDocumentation = "false")
+        public Optional<Boolean> pkceRequired = Optional.empty();
+
+        /**
+         * Secret which will be used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
+         * This secret must be set if PKCE is required but no client secret is set.
+         * The length of the secret which will be used to encrypt the code verifier must be 32 characters long.
+         */
+        @ConfigItem
+        public Optional<String> pkceSecret = Optional.empty();
+
+        public Optional<Boolean> isPkceRequired() {
+            return pkceRequired;
+        }
+
+        public void setPkceRequired(boolean pkceRequired) {
+            this.pkceRequired = Optional.of(pkceRequired);
+        }
+
+        public Optional<String> getPkceSecret() {
+            return pkceSecret;
+        }
+
+        public void setPkceSecret(String pkceSecret) {
+            this.pkceSecret = Optional.of(pkceSecret);
+        }
+
         public Optional<String> getErrorPath() {
             return errorPath;
         }

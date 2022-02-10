@@ -51,4 +51,10 @@ public final class OidcConstants {
 
     public static final String EXPIRES_IN = "expires_in";
     public static final String REFRESH_EXPIRES_IN = "refresh_expires_in";
+
+    public static final String PKCE_CODE_VERIFIER = "code_verifier";
+    public static final String PKCE_CODE_CHALLENGE = "code_challenge";
+
+    public static final String PKCE_CODE_CHALLENGE_METHOD = "code_challenge_method";
+    public static final String PKCE_CODE_CHALLENGE_S256 = "S256";
 }

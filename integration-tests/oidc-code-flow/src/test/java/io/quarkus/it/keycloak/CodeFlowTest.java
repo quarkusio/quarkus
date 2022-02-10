@@ -10,7 +10,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +32,7 @@ import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.smallrye.jwt.util.KeyUtils;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -150,7 +153,7 @@ public class CodeFlowTest {
     }
 
     @Test
-    public void testCodeFlowForceHttpsRedirectUri() throws IOException {
+    public void testCodeFlowForceHttpsRedirectUriAndPkce() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
             // Verify X-Forwarded-Prefix header is checked during all the redirects 
@@ -176,6 +179,10 @@ public class CodeFlowTest {
 
             // This is a redirect from the OIDC server to the endpoint
             String endpointLocation = webResponse.getResponseHeaderValue("location");
+
+            Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
+            verifyCodeVerifier(stateCookie, keycloakUrl);
+
             assertTrue(endpointLocation.startsWith("https"));
             endpointLocation = "http" + endpointLocation.substring(5);
             assertTrue(endpointLocation.contains("/xforwarded"));
@@ -185,6 +192,7 @@ public class CodeFlowTest {
 
             webClient.addRequestHeader("X-Forwarded-Prefix", "/xforwarded");
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            assertNull(getStateCookie(webClient, "tenant-https_test"));
 
             // This is a redirect from quarkus-oidc which drops the query parameters
             String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
@@ -205,7 +213,7 @@ public class CodeFlowTest {
     }
 
     @Test
-    public void testCodeFlowForceHttpsRedirectUriWithQuery() throws IOException {
+    public void testCodeFlowForceHttpsRedirectUriWithQueryAndPkce() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
 
@@ -234,7 +242,11 @@ public class CodeFlowTest {
             URI endpointLocationUri = URI.create(endpointLocation);
             assertNotNull(endpointLocationUri.getRawQuery());
 
+            Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
+            verifyCodeVerifier(stateCookie, keycloakUrl);
+
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            assertNull(getStateCookie(webClient, "tenant-https_test"));
 
             // This is a redirect from quarkus-oidc which drops the code and state query parameters
             String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
@@ -252,9 +264,75 @@ public class CodeFlowTest {
         }
     }
 
-    private void verifyLocationHeader(WebClient webClient, String loc, String tenant, String path, boolean forceHttps) {
+    @Test
+    public void testCodeFlowForceHttpsRedirectUriAndPkceMissingCodeVerifier() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+            // Verify X-Forwarded-Prefix header is checked during all the redirects 
+            webClient.addRequestHeader("X-Forwarded-Prefix", "/xforwarded");
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "xforwarded%2Ftenant-https",
+                    true);
+
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+
+            Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
+            verifyCodeVerifier(stateCookie, keycloakUrl);
+
+            assertTrue(endpointLocation.startsWith("https"));
+            endpointLocation = "http" + endpointLocation.substring(5);
+            assertTrue(endpointLocation.contains("/xforwarded"));
+            endpointLocation = endpointLocation.replace("/xforwarded", "");
+            URI endpointLocationUri = URI.create(endpointLocation);
+            assertNotNull(endpointLocationUri.getRawQuery());
+            webClient.addRequestHeader("X-Forwarded-Prefix", "/xforwarded");
+
+            String cookieValueWithoutCodeVerifier = stateCookie.getValue().split("\\|")[0];
+            Cookie stateCookieWithoutCodeVerifier = new Cookie(stateCookie.getDomain(), stateCookie.getName(),
+                    cookieValueWithoutCodeVerifier);
+            webClient.getCookieManager().clearCookies();
+            webClient.getCookieManager().addCookie(stateCookieWithoutCodeVerifier);
+            Cookie stateCookie2 = getStateCookie(webClient, "tenant-https_test");
+            assertEquals(cookieValueWithoutCodeVerifier, stateCookie2.getValue());
+
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            assertEquals(401, webResponse.getStatusCode());
+            assertNull(getStateCookie(webClient, "tenant-https_test"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void verifyCodeVerifier(Cookie stateCookie, String keycloakUrl) throws Exception {
+        String encodedState = stateCookie.getValue().split("\\|")[1];
+
+        String codeVerifier = OidcUtils.decryptJson(encodedState,
+                KeyUtils.createSecretKeyFromSecret("eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU")).getString("code_verifier");
+        String codeChallenge = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(OidcUtils.getSha256Digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)));
+
+        assertTrue(keycloakUrl.contains("code_challenge=" + codeChallenge));
+    }
+
+    private void verifyLocationHeader(WebClient webClient, String loc, String tenant, String path, boolean httpsScheme) {
         assertTrue(loc.startsWith("http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/auth"));
-        String scheme = forceHttps ? "https" : "http";
+        String scheme = httpsScheme ? "https" : "http";
         assertTrue(loc.contains("redirect_uri=" + scheme + "%3A%2F%2Flocalhost%3A8081%2F" + path));
         assertTrue(loc.contains("state=" + getStateCookieStateParam(webClient, tenant)));
         assertTrue(loc.contains("scope=openid+profile+email+phone"));
@@ -262,6 +340,10 @@ public class CodeFlowTest {
         assertTrue(loc.contains("client_id=quarkus-app"));
         assertTrue(loc.contains("max-age=60"));
 
+        if (httpsScheme) {
+            assertTrue(loc.contains("code_challenge"));
+            assertTrue(loc.contains("code_challenge_method=S256"));
+        }
     }
 
     @Test

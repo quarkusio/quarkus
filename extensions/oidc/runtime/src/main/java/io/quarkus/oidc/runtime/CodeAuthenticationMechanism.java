@@ -4,7 +4,11 @@ import static io.quarkus.oidc.runtime.OidcIdentityProvider.NEW_AUTHENTICATION;
 import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_RESPONSE;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Base64.Encoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +54,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final String COOKIE_DELIM = "|";
     static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
     static final String SESSION_MAX_AGE_PARAM = "session-max-age";
+    static final String STATE_COOKIE_RESTORE_PATH = "restore-path";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
     static final String NO_OIDC_COOKIES_AVAILABLE = "no_oidc_cookies";
@@ -59,6 +64,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private final BlockingTaskRunner<String> createTokenStateRequestContext = new BlockingTaskRunner<String>();
     private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext = new BlockingTaskRunner<AuthorizationCodeTokens>();
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
@@ -82,8 +88,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         // if the state cookie is available then try to complete the code flow and start a new session
         if (stateCookie != null) {
             String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
+            OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
+
             if (!isStateValid(context, parsedStateCookieValue[0])) {
-                OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
                 return Uni.createFrom().failure(new AuthenticationCompletionException());
             }
 
@@ -95,7 +102,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                                return performCodeFlow(identityProviderManager, context, tenantContext, code, stateCookie,
+                                return performCodeFlow(identityProviderManager, context, tenantContext, code,
                                         parsedStateCookieValue);
                             }
                         });
@@ -123,7 +130,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 }
             } else {
                 LOG.debug("State cookie is present but neither 'code' nor 'error' query parameter is returned");
-                OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
                 return Uni.createFrom().failure(new AuthenticationCompletionException());
             }
         }
@@ -295,9 +301,22 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_REDIRECT_URI).append(EQ)
                                 .append(OidcCommonUtils.urlEncode(redirectUriParam));
 
+                        // pkce
+                        PkceStateBean pkceStateBean = createPkceStateBean(configContext);
+
                         // state
                         codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_STATE).append(EQ)
-                                .append(generateCodeFlowState(context, configContext, redirectPath));
+                                .append(generateCodeFlowState(context, configContext, redirectPath,
+                                        pkceStateBean != null ? pkceStateBean.getCodeVerifier() : null));
+
+                        if (pkceStateBean != null) {
+                            codeFlowParams
+                                    .append(AMP).append(OidcConstants.PKCE_CODE_CHALLENGE).append(EQ)
+                                    .append(pkceStateBean.getCodeChallenge());
+                            codeFlowParams
+                                    .append(AMP).append(OidcConstants.PKCE_CODE_CHALLENGE_METHOD).append(EQ)
+                                    .append(OidcConstants.PKCE_CODE_CHALLENGE_S256);
+                        }
 
                         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
                         addExtraParamsToUri(codeFlowParams, configContext.oidcConfig.authentication.getExtraParams());
@@ -321,31 +340,58 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return referer != null && referer.startsWith(configContext.provider.getMetadata().getAuthorizationUri());
     }
 
+    private PkceStateBean createPkceStateBean(TenantConfigContext configContext) {
+        if (configContext.oidcConfig.authentication.pkceRequired.orElse(false)) {
+            PkceStateBean bean = new PkceStateBean();
+
+            Encoder encoder = Base64.getUrlEncoder().withoutPadding();
+
+            // code verifier
+            byte[] codeVerifierBytes = new byte[32];
+            secureRandom.nextBytes(codeVerifierBytes);
+            String codeVerifier = encoder.encodeToString(codeVerifierBytes);
+            bean.setCodeVerifier(codeVerifier);
+
+            // code challenge
+            try {
+                byte[] codeChallengeBytes = OidcUtils.getSha256Digest(codeVerifier.getBytes(StandardCharsets.ISO_8859_1));
+                String codeChallenge = encoder.encodeToString(codeChallengeBytes);
+                bean.setCodeChallenge(codeChallenge);
+            } catch (Exception ex) {
+                throw new AuthenticationFailedException(ex);
+            }
+
+            return bean;
+        }
+        return null;
+    }
+
     private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
-            RoutingContext context, TenantConfigContext configContext, String code, Cookie stateCookie,
-            String[] parsedStateCookieValue) {
+            RoutingContext context, TenantConfigContext configContext, String code, String[] parsedStateCookieValue) {
 
         String userPath = null;
         String userQuery = null;
 
         // This is an original redirect from IDP, check if the original request path and query need to be restored
-        if (parsedStateCookieValue.length == 2) {
-            int userQueryIndex = parsedStateCookieValue[1].indexOf("?");
+        CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue, configContext);
+        if (stateBean != null && stateBean.getRestorePath() != null) {
+            String restorePath = stateBean.getRestorePath();
+            int userQueryIndex = restorePath.indexOf("?");
             if (userQueryIndex >= 0) {
-                userPath = parsedStateCookieValue[1].substring(0, userQueryIndex);
-                if (userQueryIndex + 1 < parsedStateCookieValue[1].length()) {
-                    userQuery = parsedStateCookieValue[1].substring(userQueryIndex + 1);
+                userPath = restorePath.substring(0, userQueryIndex);
+                if (userQueryIndex + 1 < restorePath.length()) {
+                    userQuery = restorePath.substring(userQueryIndex + 1);
                 }
             } else {
-                userPath = parsedStateCookieValue[1];
+                userPath = restorePath;
             }
         }
-        OidcUtils.removeCookie(context, configContext.oidcConfig, stateCookie.getName());
 
         final String finalUserPath = userPath;
         final String finalUserQuery = userQuery;
 
-        Uni<AuthorizationCodeTokens> codeFlowTokensUni = getCodeFlowTokensUni(context, configContext, code);
+        Uni<AuthorizationCodeTokens> codeFlowTokensUni = getCodeFlowTokensUni(context, configContext, code,
+                stateBean != null ? stateBean.getCodeVerifier() : null);
 
         return codeFlowTokensUni
                 .onItemOrFailure()
@@ -426,9 +472,33 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     }
 
+    private CodeAuthenticationStateBean getCodeAuthenticationBean(String[] parsedStateCookieValue,
+            TenantConfigContext configContext) {
+        if (parsedStateCookieValue.length == 2) {
+            CodeAuthenticationStateBean bean = new CodeAuthenticationStateBean();
+            if (!configContext.oidcConfig.authentication.pkceRequired.orElse(false)) {
+                bean.setRestorePath(parsedStateCookieValue[1]);
+                return bean;
+            }
+
+            JsonObject json = null;
+            try {
+                json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getPkceSecretKey());
+            } catch (Exception ex) {
+                LOG.tracef("State cookie value can not be decrypted for the %s tenant",
+                        configContext.oidcConfig.tenantId.get());
+                throw new AuthenticationFailedException(ex);
+            }
+            bean.setRestorePath(json.getString(STATE_COOKIE_RESTORE_PATH));
+            bean.setCodeVerifier(json.getString(OidcConstants.PKCE_CODE_VERIFIER));
+            return bean;
+        }
+        return null;
+    }
+
     private String generateInternalIdToken(OidcTenantConfig oidcConfig) {
         return Jwt.claims().jws().header(INTERNAL_IDTOKEN_HEADER, true)
-                .sign(KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get()));
+                .sign(KeyUtils.createSecretKeyFromSecret(OidcCommonUtils.clientSecret(oidcConfig.credentials)));
     }
 
     private Uni<Void> processSuccessfulAuthentication(RoutingContext context,
@@ -499,26 +569,51 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String generateCodeFlowState(RoutingContext context, TenantConfigContext configContext,
-            String redirectPath) {
+            String redirectPath, String pkceCodeVerifier) {
         String uuid = UUID.randomUUID().toString();
         String cookieValue = uuid;
 
         Authentication auth = configContext.oidcConfig.getAuthentication();
         boolean restorePath = auth.isRestorePathAfterRedirect() || !auth.redirectPath.isPresent();
-        if (restorePath) {
-            String requestQuery = context.request().query();
-            String requestPath = !redirectPath.equals(context.request().path()) || requestQuery != null
-                    ? context.request().path()
-                    : "";
-            if (requestQuery != null) {
-                requestPath += ("?" + requestQuery);
+        if (restorePath || pkceCodeVerifier != null) {
+            CodeAuthenticationStateBean extraStateValue = new CodeAuthenticationStateBean();
+            if (restorePath) {
+                String requestQuery = context.request().query();
+                String requestPath = !redirectPath.equals(context.request().path()) || requestQuery != null
+                        ? context.request().path()
+                        : "";
+                if (requestQuery != null) {
+                    requestPath += ("?" + requestQuery);
+                }
+                if (!requestPath.isEmpty()) {
+                    extraStateValue.setRestorePath(requestPath);
+                }
             }
-            if (!requestPath.isEmpty()) {
-                cookieValue += (COOKIE_DELIM + requestPath);
+            extraStateValue.setCodeVerifier(pkceCodeVerifier);
+            if (!extraStateValue.isEmpty()) {
+                cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
             }
         }
         createCookie(context, configContext.oidcConfig, getStateCookieName(configContext.oidcConfig), cookieValue, 60 * 30);
         return uuid;
+    }
+
+    private String encodeExtraStateValue(CodeAuthenticationStateBean extraStateValue, TenantConfigContext configContext) {
+        if (extraStateValue.getCodeVerifier() != null) {
+            JsonObject json = new JsonObject();
+            json.put(OidcConstants.PKCE_CODE_VERIFIER, extraStateValue.getCodeVerifier());
+            if (extraStateValue.getRestorePath() != null) {
+                json.put(STATE_COOKIE_RESTORE_PATH, extraStateValue.getRestorePath());
+            }
+            try {
+                return OidcUtils.encryptJson(json, configContext.getPkceSecretKey());
+            } catch (Exception ex) {
+                throw new AuthenticationFailedException(ex);
+            }
+        } else {
+            return extraStateValue.getRestorePath();
+        }
+
     }
 
     private String generatePostLogoutState(RoutingContext context, TenantConfigContext configContext) {
@@ -638,14 +733,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private Uni<AuthorizationCodeTokens> getCodeFlowTokensUni(RoutingContext context, TenantConfigContext configContext,
-            String code) {
+            String code, String codeVerifier) {
 
         // 'redirect_uri': typically it must match the 'redirect_uri' query parameter which was used during the code request.
         String redirectPath = getRedirectPath(configContext, context);
         String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
 
-        return configContext.provider.getCodeFlowTokens(code, redirectUriParam);
+        return configContext.provider.getCodeFlowTokens(code, redirectUriParam, codeVerifier);
     }
 
     private String buildLogoutRedirectUri(TenantConfigContext configContext, String idToken, RoutingContext context) {

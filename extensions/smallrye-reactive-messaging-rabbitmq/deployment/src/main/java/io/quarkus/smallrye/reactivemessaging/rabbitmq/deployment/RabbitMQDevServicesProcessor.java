@@ -3,6 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -19,11 +20,12 @@ import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -54,57 +56,47 @@ public class RabbitMQDevServicesProcessor {
     private static final String RABBITMQ_USERNAME_PROP = "rabbitmq-username";
     private static final String RABBITMQ_PASSWORD_PROP = "rabbitmq-password";
 
-    static volatile Closeable closeable;
+    static volatile RunningDevService devService;
     static volatile RabbitMQDevServiceCfg cfg;
     static volatile boolean first = true;
 
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
-    public DevServicesRabbitMQBrokerBuildItem startRabbitMQDevService(
+    public DevServicesResultBuildItem startRabbitMQDevService(
             LaunchModeBuildItem launchMode,
             RabbitMQBuildTimeConfig rabbitmqClientBuildTimeConfig,
-            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             GlobalDevServicesConfig devServicesConfig) {
 
         RabbitMQDevServiceCfg configuration = getConfiguration(rabbitmqClientBuildTimeConfig);
 
-        if (closeable != null) {
+        if (devService != null) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
             if (!shouldShutdownTheBroker) {
-                return null;
+                return devService.toBuildItem();
             }
             shutdownBroker();
             cfg = null;
         }
 
-        RabbitMQBroker broker;
-        DevServicesRabbitMQBrokerBuildItem rabbitMQ = null;
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "RabbitMQ Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            broker = startRabbitMQBroker(configuration, launchMode, devServicesConfig.timeout);
-            if (broker != null) {
-                closeable = broker.getCloseable();
-                devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(RABBITMQ_HOST_PROP, broker.host));
-                devServicePropertiesProducer
-                        .produce(new DevServicesConfigResultBuildItem(RABBITMQ_PORT_PROP, Integer.toString(broker.port)));
-                devServicePropertiesProducer
-                        .produce(new DevServicesConfigResultBuildItem(RABBITMQ_USERNAME_PROP, broker.username));
-                devServicePropertiesProducer
-                        .produce(new DevServicesConfigResultBuildItem(RABBITMQ_PASSWORD_PROP, broker.password));
+            RunningDevService newDevService = startRabbitMQBroker(configuration, launchMode, devServicesConfig.timeout);
+            if (newDevService != null) {
+                devService = newDevService;
 
-                rabbitMQ = new DevServicesRabbitMQBrokerBuildItem(broker.host, broker.port, broker.username, broker.password);
-
-                if (broker.isOwner()) {
+                Map<String, String> config = devService.getConfig();
+                if (devService.isOwner()) {
                     log.info("Dev Services for RabbitMQ started.");
                     log.infof("Other Quarkus applications in dev mode will find the "
                             + "broker automatically. For Quarkus applications in production mode, you can connect to"
-                            + " this by starting your application with -Drabbitmq-host=%s -Drabbitmq-port=%d -Drabbitmq-username=%s -Drabbitmq-password=%s",
-                            broker.host, broker.port, broker.username, broker.password);
+                            + " this by starting your application with -Drabbitmq-host=%s -Drabbitmq-port=%s -Drabbitmq-username=%s -Drabbitmq-password=%s",
+                            config.get(RABBITMQ_HOST_PROP), config.get(RABBITMQ_PORT_PROP),
+                            config.get(RABBITMQ_USERNAME_PROP), config.get(RABBITMQ_PASSWORD_PROP));
                 }
             }
             compressor.close();
@@ -113,39 +105,43 @@ public class RabbitMQDevServicesProcessor {
             throw new RuntimeException(t);
         }
 
+        if (devService == null) {
+            return null;
+        }
+
         // Configure the watch dog
         if (first) {
             first = false;
             Runnable closeTask = () -> {
-                if (closeable != null) {
+                if (devService != null) {
                     shutdownBroker();
 
                     log.info("Dev Services for RabbitMQ shut down.");
                 }
                 first = true;
-                closeable = null;
+                devService = null;
                 cfg = null;
             };
             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             ((QuarkusClassLoader) cl.parent()).addCloseTask(closeTask);
         }
         cfg = configuration;
-        return rabbitMQ;
+        return devService.toBuildItem();
     }
 
     private void shutdownBroker() {
-        if (closeable != null) {
+        if (devService != null) {
             try {
-                closeable.close();
+                devService.close();
             } catch (Throwable e) {
                 log.error("Failed to stop the RabbitMQ broker", e);
             } finally {
-                closeable = null;
+                devService = null;
             }
         }
     }
 
-    private RabbitMQBroker startRabbitMQBroker(RabbitMQDevServiceCfg config, LaunchModeBuildItem launchMode,
+    private RunningDevService startRabbitMQBroker(RabbitMQDevServiceCfg config, LaunchModeBuildItem launchMode,
             Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
@@ -180,23 +176,31 @@ public class RabbitMQDevServicesProcessor {
         config.bindings
                 .forEach(b -> container.withBinding(b.source, b.destination, b.arguments, b.routingKey, b.destinationType));
 
-        final Supplier<RabbitMQBroker> defaultRabbitMQBrokerSupplier = () -> {
+        final Supplier<RunningDevService> defaultRabbitMQBrokerSupplier = () -> {
+
             // Starting the broker
             timeout.ifPresent(container::withStartupTimeout);
             container.start();
 
-            return new RabbitMQBroker(
-                    container.getHost(),
-                    container.getPort(),
-                    container.getAdminUsername(),
-                    container.getAdminPassword(),
-                    container::close);
+            return getRunningDevService(container.getContainerId(), container::close, container.getHost(),
+                    container.getPort(), container.getAdminUsername(), container.getAdminPassword());
         };
 
         return rabbitmqContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
-                .map(containerAddress -> new RabbitMQBroker(containerAddress.getHost(), containerAddress.getPort(),
-                        container.getAdminUsername(), container.getAdminPassword(), null))
+                .map(containerAddress -> getRunningDevService(containerAddress.getId(), null, containerAddress.getHost(),
+                        containerAddress.getPort(), container.getAdminUsername(), container.getAdminPassword()))
                 .orElseGet(defaultRabbitMQBrokerSupplier);
+    }
+
+    private RunningDevService getRunningDevService(String containerId, Closeable closeable, String host, int port,
+            String username, String password) {
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put(RABBITMQ_HOST_PROP, host);
+        configMap.put(RABBITMQ_PORT_PROP, String.valueOf(port));
+        configMap.put(RABBITMQ_USERNAME_PROP, username);
+        configMap.put(RABBITMQ_PASSWORD_PROP, password);
+        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_RABBITMQ.getName(),
+                containerId, closeable, configMap);
     }
 
     private boolean hasRabbitMQChannelWithoutHostAndPort() {
@@ -224,30 +228,6 @@ public class RabbitMQDevServicesProcessor {
     private RabbitMQDevServiceCfg getConfiguration(RabbitMQBuildTimeConfig cfg) {
         RabbitMQDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
         return new RabbitMQDevServiceCfg(devServicesConfig);
-    }
-
-    private static class RabbitMQBroker {
-        private final Closeable closeable;
-        private final String host;
-        private final int port;
-        private final String username;
-        private final String password;
-
-        public RabbitMQBroker(String host, int port, String username, String password, Closeable closeable) {
-            this.host = host;
-            this.port = port;
-            this.username = username;
-            this.password = password;
-            this.closeable = closeable;
-        }
-
-        public boolean isOwner() {
-            return closeable != null;
-        }
-
-        public Closeable getCloseable() {
-            return closeable;
-        }
     }
 
     private static final class RabbitMQDevServiceCfg {

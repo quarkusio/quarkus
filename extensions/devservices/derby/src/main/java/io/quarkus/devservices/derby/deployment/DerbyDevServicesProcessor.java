@@ -64,7 +64,7 @@ public class DerbyDevServicesProcessor {
                         additionalArgs.append("=");
                         additionalArgs.append(i.getValue());
                     }
-                    return new RunningDevServicesDatasource(
+                    return new RunningDevServicesDatasource(null,
                             "jdbc:derby://localhost:" + port + "/memory:" + datasourceName.orElse("quarkus") + ";create=true"
                                     + additionalArgs.toString(),
                             null,

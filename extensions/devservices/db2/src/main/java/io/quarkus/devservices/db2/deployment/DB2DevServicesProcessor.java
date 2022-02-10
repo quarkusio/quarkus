@@ -44,7 +44,9 @@ public class DB2DevServicesProcessor {
 
                 LOG.info("Dev Services for IBM Db2 started.");
 
-                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getContainerId(),
+                        container.getEffectiveJdbcUrl(),
+                        container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override

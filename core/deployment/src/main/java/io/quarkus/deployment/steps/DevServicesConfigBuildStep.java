@@ -16,6 +16,7 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 
@@ -32,9 +33,13 @@ class DevServicesConfigBuildStep {
     @Produce(ServiceStartBuildItem.class)
     DevServicesLauncherConfigResultBuildItem setup(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
             List<DevServicesConfigResultBuildItem> devServicesConfigResultBuildItems,
+            List<DevServicesResultBuildItem> devServicesResultBuildItems,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
         Map<String, String> newProperties = new HashMap<>(devServicesConfigResultBuildItems.stream().collect(
                 Collectors.toMap(DevServicesConfigResultBuildItem::getKey, DevServicesConfigResultBuildItem::getValue)));
+        for (DevServicesResultBuildItem resultBuildItem : devServicesResultBuildItems) {
+            newProperties.putAll(resultBuildItem.getConfig());
+        }
         Config config = ConfigProvider.getConfig();
         //check if there are existing already started dev services
         //if there were no changes to the processors they don't produce config

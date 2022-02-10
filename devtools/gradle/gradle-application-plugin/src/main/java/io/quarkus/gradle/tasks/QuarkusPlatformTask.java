@@ -1,5 +1,7 @@
 package io.quarkus.gradle.tasks;
 
+import static io.quarkus.gradle.GradleUtils.listProjectBoms;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -13,9 +15,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ModuleDependency;
-import org.gradle.api.attributes.Category;
-import org.gradle.api.plugins.JavaPlugin;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -67,7 +66,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     }
 
     protected List<ArtifactCoords> importedPlatforms() {
-        final List<Dependency> bomDeps = boms();
+        final List<Dependency> bomDeps = listProjectBoms(getProject());
         if (bomDeps.isEmpty()) {
             throw new GradleException("No platforms detected in the project");
         }
@@ -95,7 +94,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     }
 
     protected String quarkusCoreVersion() {
-        final List<Dependency> bomDeps = boms();
+        final List<Dependency> bomDeps = listProjectBoms(getProject());
         if (bomDeps.isEmpty()) {
             throw new GradleException("No platforms detected in the project");
         }
@@ -116,25 +115,6 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
             throw new IllegalStateException("Failed to determine the Quarkus core version for the project");
         }
         return quarkusCoreVersion;
-    }
-
-    private List<Dependency> boms() {
-        final Configuration impl = getProject().getConfigurations().getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
-        List<Dependency> boms = new ArrayList<>();
-        impl.getIncoming().getDependencies()
-                .forEach(d -> {
-                    if (!(d instanceof ModuleDependency)) {
-                        return;
-                    }
-                    final ModuleDependency module = (ModuleDependency) d;
-                    final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
-                    if (category != null
-                            && (Category.ENFORCED_PLATFORM.equals(category.getName())
-                                    || Category.REGULAR_PLATFORM.equals(category.getName()))) {
-                        boms.add(d);
-                    }
-                });
-        return boms;
     }
 
     protected QuarkusProject getQuarkusProject(boolean limitExtensionsToImportedPlatforms) {

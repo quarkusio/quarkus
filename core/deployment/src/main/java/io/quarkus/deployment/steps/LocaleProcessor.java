@@ -1,8 +1,13 @@
 package io.quarkus.deployment.steps;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -12,6 +17,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 /**
  * In order for a Native image built app to be able to use localized names of e.g. countries,
@@ -19,6 +25,14 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
  * For instance, Locale.FRANCE.getDisplayCountry(Locale.GERMAN) must print "Frankreich".
  */
 public class LocaleProcessor {
+
+    private static final Logger log = Logger.getLogger(LocaleProcessor.class);
+    public static final String DEPRECATED_USER_LANGUAGE_WARNING = "Your application is setting the deprecated 'quarkus.native.user-language' configuration key. "
+            +
+            "Please, consider using only 'quarkus.default-locale' configuration key instead.";
+    public static final String DEPRECATED_USER_COUNTRY_WARNING = "Your application is setting the deprecated 'quarkus.native.user-country' configuration key. "
+            +
+            "Please, consider using only 'quarkus.default-locale' configuration key instead.";
 
     @BuildStep(onlyIf = { NativeBuild.class, NonEnglishLocale.class })
     void nativeResources(BuildProducer<NativeImageResourceBundleBuildItem> resources) {
@@ -35,14 +49,14 @@ public class LocaleProcessor {
     }
 
     @BuildStep(onlyIf = { NativeBuild.class, NonEnglishLocale.class })
-    void servicesResource(BuildProducer<NativeImageResourceBuildItem> nibProducer,
-            BuildProducer<GeneratedResourceBuildItem> genResProducer) {
+    void servicesResource(BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources) {
         final String r1 = "META-INF/services/sun.util.resources.LocaleData$SupplementaryResourceBundleProvider";
         final String r2 = "META-INF/services/sun.util.resources.LocaleData$CommonResourceBundleProvider";
-        nibProducer.produce(new NativeImageResourceBuildItem(r1, r2));
-        genResProducer.produce(new GeneratedResourceBuildItem(r1,
+        nativeImageResources.produce(new NativeImageResourceBuildItem(r1, r2));
+        generatedResources.produce(new GeneratedResourceBuildItem(r1,
                 "sun.util.resources.provider.SupplementaryLocaleDataProvider".getBytes(StandardCharsets.UTF_8)));
-        genResProducer.produce(new GeneratedResourceBuildItem(r2,
+        generatedResources.produce(new GeneratedResourceBuildItem(r2,
                 "sun.util.resources.provider.LocaleDataProvider".getBytes(StandardCharsets.UTF_8)));
     }
 
@@ -51,20 +65,87 @@ public class LocaleProcessor {
      * for something else than US English.
      */
     static final class NonEnglishLocale implements BooleanSupplier {
-        private static final Pattern US_ENGLISH = Pattern.compile("(?i:(en|,|-US)+)");
         private final NativeConfig nativeConfig;
+        private final LocalesBuildTimeConfig localesBuildTimeConfig;
 
-        public NonEnglishLocale(NativeConfig nativeConfig) {
+        public NonEnglishLocale(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
             this.nativeConfig = nativeConfig;
+            this.localesBuildTimeConfig = localesBuildTimeConfig;
         }
 
         @Override
         public boolean getAsBoolean() {
-            return (nativeConfig.userLanguage.isPresent() && !US_ENGLISH.matcher(nativeConfig.userLanguage.get()).matches())
+            return (nativeConfig.userLanguage.isPresent() && nonEnglishLocale(nativeConfig.userLanguage.get()))
                     ||
-                    (nativeConfig.userCountry.isPresent() && !US_ENGLISH.matcher(nativeConfig.userCountry.get()).matches())
+                    (nativeConfig.userCountry.isPresent() && nonEnglishLocale(nativeConfig.userCountry.get()))
                     ||
-                    (nativeConfig.locales.isPresent() && !US_ENGLISH.matcher(nativeConfig.locales.get()).matches());
+                    nonEnglishLocale(localesBuildTimeConfig.defaultLocale)
+                    ||
+                    localesBuildTimeConfig.locales.stream().anyMatch(LocaleProcessor::nonEnglishLocale);
         }
     }
+
+    public static boolean nonEnglishLocale(Locale locale) {
+        return (!locale.getLanguage().isEmpty() && !"en".equals(locale.getLanguage()))
+                || (!locale.getCountry().isEmpty() && !"US".equals(locale.getCountry()));
+    }
+
+    /**
+     * User language for native-image executable.
+     *
+     * @param nativeConfig
+     * @param localesBuildTimeConfig
+     * @return User language set by 'quarkus.default-locale' or by deprecated 'quarkus.native.user-language' or
+     *         effectively LocalesBuildTimeConfig.DEFAULT_LANGUAGE if none of the aforementioned is set.
+     */
+    public static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+        String language = localesBuildTimeConfig.defaultLocale.getLanguage();
+        if (nativeConfig.userLanguage.isPresent()) {
+            log.warn(DEPRECATED_USER_LANGUAGE_WARNING);
+            // The deprecated option takes precedence for users who are already using it.
+            language = nativeConfig.userLanguage.get().getLanguage();
+        }
+        return language;
+    }
+
+    /**
+     * User country for native-image executable.
+     *
+     * @param nativeConfig
+     * @param localesBuildTimeConfig
+     * @return User country set by 'quarkus.default-locale' or by deprecated 'quarkus.native.user-country' or
+     *         effectively LocalesBuildTimeConfig.DEFAULT_COUNTRY (could be an empty string) if none of the aforementioned is
+     *         set.
+     */
+    public static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+        String country = localesBuildTimeConfig.defaultLocale.getCountry();
+        if (nativeConfig.userCountry.isPresent()) {
+            log.warn(DEPRECATED_USER_COUNTRY_WARNING);
+            // The deprecated option takes precedence for users who are already using it.
+            country = nativeConfig.userCountry.get().getCountry();
+        }
+        return country;
+    }
+
+    /**
+     * Additional locales to be included in native-image executable.
+     *
+     * @param nativeConfig
+     * @param localesBuildTimeConfig
+     * @return A comma separated list of IETF BCP 47 language tags, optionally with ISO 3166-1 alpha-2 country codes.
+     */
+    public static String nativeImageIncludeLocales(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+        // We start with what user sets as needed locales
+        final Set<Locale> additionalLocales = new HashSet<>(localesBuildTimeConfig.locales);
+        // We subtract what we already declare for native-image's user.language or user.country.
+        // Note the deprecated options still count and actually overwrite the preferred 'quarkus.default-locale'.
+        additionalLocales.remove(localesBuildTimeConfig.defaultLocale);
+        nativeConfig.userCountry.ifPresent(additionalLocales::remove);
+        nativeConfig.userLanguage.ifPresent(additionalLocales::remove);
+        return additionalLocales.stream()
+                .filter(LocaleProcessor::nonEnglishLocale)
+                .map(l -> l.getLanguage() + (l.getCountry().isEmpty() ? "" : "-" + l.getCountry()))
+                .collect(Collectors.joining(","));
+    }
+
 }

@@ -2,6 +2,7 @@ package io.quarkus.deployment.pkg;
 
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -10,6 +11,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.LocaleConverter;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
@@ -71,34 +73,26 @@ public class NativeConfig {
      * It also serves as te default Locale language for the native executable application runtime.
      * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
-     * Defaults to the system one.
+     * 
+     * @deprecated Use the global quarkus.default-locale.
      */
-    @ConfigItem(defaultValue = "${user.language:}")
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> userLanguage;
+    @ConfigItem
+    @ConvertWith(LocaleConverter.class)
+    @Deprecated
+    public Optional<Locale> userLanguage;
 
     /**
      * Defines the user country used for building the native executable.
      * It also serves as te default Locale country for the native executable application runtime.
      * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
-     * Defaults to the system one.
-     */
-    @ConfigItem(defaultValue = "${user.country:}")
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> userCountry;
-
-    /**
-     * Defines the locales to be accessible in the native executable.
-     * The format is a comma separated list of IETF BCP 47 language tags,
-     * e.g. "fr,de,cs" or "de-AT,ja-JP" etc.
-     * See also LocalesBuildTimeConfig for a separate, native-image unrelated usage.
-     * <p>
-     * Defaults to empty, i.e. not explicitly set during native-image build.
+     * 
+     * @deprecated Use the global quarkus.default-locale.
      */
     @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> locales;
+    @ConvertWith(LocaleConverter.class)
+    @Deprecated
+    public Optional<Locale> userCountry;
 
     /**
      * Defines the file encoding as in -Dfile.encoding=...

@@ -396,12 +396,17 @@ public class BootstrapMavenContext {
     private DefaultRepositorySystemSession newRepositorySystemSession() throws BootstrapMavenException {
         final DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         final Settings settings = getEffectiveSettings();
-
         final List<Mirror> mirrors = settings.getMirrors();
         if (mirrors != null && !mirrors.isEmpty()) {
+            final boolean isBlockedMethodAvailable = mirrorIsBlockedMethodAvailable();
             final DefaultMirrorSelector ms = new DefaultMirrorSelector();
             for (Mirror m : mirrors) {
-                ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.isBlocked(), m.getMirrorOf(), m.getMirrorOfLayouts());
+                if (isBlockedMethodAvailable) {
+                    ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.isBlocked(), m.getMirrorOf(), m.getMirrorOfLayouts());
+                } else {
+                    // Maven pre-3.8.x
+                    ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.getMirrorOf(), m.getMirrorOfLayouts());
+                }
             }
             session.setMirrorSelector(ms);
         }
@@ -944,5 +949,14 @@ public class BootstrapMavenContext {
     private static boolean isMavenRepoEnvVarOption(String varName, String repoId, String option) {
         return varName.length() == BOOTSTRAP_MAVEN_REPO_PREFIX.length() + repoId.length() + option.length()
                 && varName.endsWith(option);
+    }
+
+    private static boolean mirrorIsBlockedMethodAvailable() {
+        try {
+            Mirror.class.getMethod("isBlocked");
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

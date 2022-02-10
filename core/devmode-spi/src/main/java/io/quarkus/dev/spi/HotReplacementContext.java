@@ -12,6 +12,8 @@ public interface HotReplacementContext {
 
     List<Path> getSourcesDir();
 
+    List<Path> getTestSourcesDir();
+
     List<Path> getResourcesDir();
 
     Throwable getDeploymentProblem();

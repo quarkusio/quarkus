@@ -103,5 +103,4 @@ public class LocalesIT {
                 .body(is("Italy"))
                 .log().all();
     }
-
 }

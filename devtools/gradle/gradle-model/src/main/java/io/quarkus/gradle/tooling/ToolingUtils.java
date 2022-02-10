@@ -76,6 +76,10 @@ public class ToolingUtils {
     public static ApplicationModel create(Project project, LaunchMode mode) {
         final ModelParameter params = new ModelParameterImpl();
         params.setMode(mode.toString());
+        return create(project, params);
+    }
+
+    public static ApplicationModel create(Project project, ModelParameter params) {
         return (ApplicationModel) new GradleApplicationModelBuilder().buildAll(ApplicationModel.class.getName(), params,
                 project);
     }

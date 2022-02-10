@@ -27,7 +27,9 @@ import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.gradle.dsl.Manifest;
+import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.runtime.util.StringUtil;
 
 public class QuarkusBuild extends QuarkusTask {
@@ -124,7 +126,13 @@ public class QuarkusBuild extends QuarkusTask {
     public void buildQuarkus() {
         getLogger().lifecycle("building quarkus jar");
 
-        final ApplicationModel appModel = extension().getApplicationModel();
+        final ApplicationModel appModel;
+        try {
+            appModel = extension().getAppModelResolver().resolveModel(new GACTV(getProject().getGroup().toString(),
+                    getProject().getName(), getProject().getVersion().toString()));
+        } catch (AppModelResolverException e) {
+            throw new GradleException("Failed to resolve Quarkus application model for " + getProject().getPath(), e);
+        }
 
         final Properties effectiveProperties = getBuildSystemProperties(appModel.getAppArtifact());
         if (ignoredEntries != null && ignoredEntries.size() > 0) {

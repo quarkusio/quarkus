@@ -14,10 +14,15 @@ Hibernate ORM with Panache focuses on making your entities trivial and fun to wr
 
 == First: an example
 
-What we're doing in Panache is allow you to write your Hibernate ORM entities like this:
+What we're doing in Panache is to allow you to write your Hibernate ORM entities like this:
 
 [source,java]
 ----
+public enum Status {
+    Alive,
+    Deceased
+}
+
 @Entity
 public class Person extends PanacheEntity {
     public String name;

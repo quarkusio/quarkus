@@ -199,6 +199,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return paths;
     }
 
+    @Override
+    public List<Path> getTestSourcesDir() {
+        final List<Path> paths = new ArrayList<>();
+        for (ModuleInfo m : context.getAllModules()) {
+            if (m.getTest().isPresent()) {
+                for (Path p : m.getTest().get().getSourcePaths()) {
+                    paths.add(p);
+                }
+            }
+        }
+        return paths;
+    }
+
     private void startTestScanningTimer() {
         synchronized (this) {
             if (testClassChangeWatcher == null && testClassChangeTimer == null) {

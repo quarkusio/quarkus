@@ -71,11 +71,17 @@ public class MongodbConfig {
     @ConfigItem(name = "native.dns.server-port", defaultValue = "53")
     public OptionalInt dnsServerPortInNativeMode;
 
-    // mongo.dns.lookup-timeout
     /**
      * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
      * duration.
      */
     @ConfigItem(name = "native.dns.lookup-timeout", defaultValue = "5s")
     public Duration dnsLookupTimeoutInNativeMode;
+
+    /**
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property enables the logging ot the
+     * DNS lookup. It can be useful to understand why the lookup fails.
+     */
+    @ConfigItem(name = "native.dns.log-activity", defaultValue = "false")
+    public Optional<Boolean> dnsLookupLogActivityInNativeMode;
 }

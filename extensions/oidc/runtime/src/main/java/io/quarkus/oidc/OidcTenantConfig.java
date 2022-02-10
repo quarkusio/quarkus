@@ -463,6 +463,23 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean removeRedirectParameters = true;
 
         /**
+         * Relative path to the public endpoint which will process the error response from the OIDC authorization endpoint.
+         * If the user authentication has failed then the OIDC provider will return an 'error' and an optional
+         * 'error_description'
+         * parameters, instead of the expected authorization 'code'.
+         *
+         * If this property is set then the user will be redirected to the endpoint which can return a user friendly
+         * error description page. It has to start from a forward slash and will be appended to the request URI's host and port.
+         * For example, if it is set as '/error' and the current request URI is
+         * 'https://localhost:8080/callback?error=invalid_scope'
+         * then a redirect will be made to 'https://localhost:8080/error?error=invalid_scope'.
+         *
+         * If this property is not set then HTTP 401 status will be returned in case of the user authentication failure.
+         */
+        @ConfigItem
+        public Optional<String> errorPath = Optional.empty();
+
+        /**
          * Both ID and access tokens are fetched from the OIDC provider as part of the authorization code flow.
          * ID token is always verified on every user request as the primary token which is used
          * to represent the principal and extract the roles.
@@ -571,6 +588,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem(defaultValueDocumentation = "true")
         public Optional<Boolean> idTokenRequired = Optional.empty();
+
+        public Optional<String> getErrorPath() {
+            return errorPath;
+        }
+
+        public void setErrorPath(String errorPath) {
+            this.errorPath = Optional.of(errorPath);
+        }
 
         public boolean isJavaScriptAutoRedirect() {
             return javaScriptAutoRedirect;

@@ -233,6 +233,36 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem(defaultValue = "false")
         public boolean splitTokens;
 
+        /**
+         * Requires that the tokens are encrypted before being stored in the cookies.
+         */
+        @ConfigItem(defaultValueDocumentation = "false")
+        public Optional<Boolean> encryptionRequired = Optional.empty();
+
+        /**
+         * Secret which will be used to encrypt the tokens.
+         * This secret must be set if the token encryption is required but no client secret is set.
+         * The length of the secret which will be used to encrypt the tokens must be 32 characters long.
+         */
+        @ConfigItem
+        public Optional<String> encryptionSecret = Optional.empty();
+
+        public Optional<Boolean> isEncryptionRequired() {
+            return encryptionRequired;
+        }
+
+        public void setEncryptionRequired(boolean encryptionRequired) {
+            this.encryptionRequired = Optional.of(encryptionRequired);
+        }
+
+        public Optional<String> getEncryptionSecret() {
+            return encryptionSecret;
+        }
+
+        public void setEncryptionSecret(String encryptionSecret) {
+            this.encryptionSecret = Optional.of(encryptionSecret);
+        }
+
         public boolean isSplitTokens() {
             return splitTokens;
         }

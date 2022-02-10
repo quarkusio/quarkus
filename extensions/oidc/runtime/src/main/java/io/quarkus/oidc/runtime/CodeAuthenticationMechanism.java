@@ -158,6 +158,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             IdentityProviderManager identityProviderManager,
             TenantConfigContext configContext) {
 
+        context.put(TenantConfigContext.class.getName(), configContext);
         return resolver.getTokenStateManager().getTokens(context, configContext.oidcConfig,
                 sessionCookie.getValue(), getTokenStateRequestContext)
                 .chain(new Function<AuthorizationCodeTokens, Uni<? extends SecurityIdentity>>() {
@@ -525,6 +526,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         }
                         final long sessionMaxAge = maxAge;
                         context.put(SESSION_MAX_AGE_PARAM, maxAge);
+                        context.put(TenantConfigContext.class.getName(), configContext);
                         return resolver.getTokenStateManager()
                                 .createTokenState(context, configContext.oidcConfig, tokens, createTokenStateRequestContext)
                                 .map(new Function<String, Void>() {

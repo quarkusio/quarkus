@@ -23,6 +23,11 @@ public class TenantConfigContext {
      */
     private final SecretKey pkceSecretKey;
 
+    /**
+     * Token Encryption Secret Key
+     */
+    private final SecretKey tokenEncSecretKey;
+
     final boolean ready;
 
     public TenantConfigContext(OidcProvider client, OidcTenantConfig config) {
@@ -35,6 +40,7 @@ public class TenantConfigContext {
         this.ready = ready;
 
         pkceSecretKey = createPkceSecretKey(config);
+        tokenEncSecretKey = createTokenEncSecretKey(config);
     }
 
     private static SecretKey createPkceSecretKey(OidcTenantConfig config) {
@@ -49,11 +55,27 @@ public class TenantConfigContext {
         return null;
     }
 
+    private static SecretKey createTokenEncSecretKey(OidcTenantConfig config) {
+        if (config.tokenStateManager.encryptionRequired.orElse(false)) {
+            String encSecret = config.tokenStateManager.encryptionSecret
+                    .orElse(OidcCommonUtils.clientSecret(config.credentials));
+            if (encSecret.length() < 32) {
+                throw new RuntimeException("Secret key for encrypting tokens must be at least 32 characters long");
+            }
+            return KeyUtils.createSecretKeyFromSecret(encSecret);
+        }
+        return null;
+    }
+
     public OidcTenantConfig getOidcTenantConfig() {
         return oidcConfig;
     }
 
     public SecretKey getPkceSecretKey() {
         return pkceSecretKey;
+    }
+
+    public SecretKey getTokenEncSecretKey() {
+        return tokenEncSecretKey;
     }
 }

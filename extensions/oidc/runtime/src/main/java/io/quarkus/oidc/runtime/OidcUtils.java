@@ -396,20 +396,28 @@ public final class OidcUtils {
     }
 
     public static String encryptJson(JsonObject json, SecretKey key) throws Exception {
+        return encryptString(json.encode(), key);
+    }
+
+    public static String encryptString(String jweString, SecretKey key) throws Exception {
         JsonWebEncryption jwe = new JsonWebEncryption();
         jwe.setAlgorithmHeaderValue(KeyEncryptionAlgorithm.A256KW.getAlgorithm());
         jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithm.A256GCM.getAlgorithm());
         jwe.setKey(key);
-        jwe.setPlaintext(json.encode());
+        jwe.setPlaintext(jweString);
         return jwe.getCompactSerialization();
     }
 
     public static JsonObject decryptJson(String jweString, SecretKey key) throws Exception {
+        return new JsonObject(decryptString(jweString, key));
+    }
+
+    public static String decryptString(String jweString, SecretKey key) throws Exception {
         JsonWebEncryption jwe = new JsonWebEncryption();
         jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
                 KeyEncryptionAlgorithm.A256KW.getAlgorithm()));
         jwe.setKey(key);
         jwe.setCompactSerialization(jweString);
-        return new JsonObject(jwe.getPlaintextString());
+        return jwe.getPlaintextString();
     }
 }

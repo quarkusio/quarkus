@@ -103,7 +103,15 @@ public enum Ide {
      * @return The path or null if it could not be found
      */
     public static Path findSourceFile(String fileName) {
+        // Check source files
         for (var i : DevConsoleManager.getHotReplacementContext().getSourcesDir()) {
+            Path resolved = i.resolve(fileName);
+            if (Files.exists(resolved)) {
+                return resolved;
+            }
+        }
+        // Check test files
+        for (var i : DevConsoleManager.getHotReplacementContext().getTestSourcesDir()) {
             Path resolved = i.resolve(fileName);
             if (Files.exists(resolved)) {
                 return resolved;

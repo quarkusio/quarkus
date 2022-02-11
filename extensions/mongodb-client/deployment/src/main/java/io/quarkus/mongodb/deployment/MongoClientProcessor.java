@@ -26,6 +26,7 @@ import org.jboss.jandex.IndexView;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
+import com.mongodb.client.model.changestream.UpdateDescription;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
 
@@ -151,6 +152,7 @@ public class MongoClientProcessor {
                 .collect(Collectors.toCollection(ArrayList::new));
         // ChangeStreamDocument needs to be registered for reflection with its fields.
         reflectiveClass.add(new ReflectiveClassBuildItem(true, true, true, ChangeStreamDocument.class.getName()));
+        reflectiveClass.add(new ReflectiveClassBuildItem(true, true, false, UpdateDescription.class.getName()));
         return reflectiveClass;
     }
 

@@ -119,6 +119,8 @@ To use this feature, add the following extension to your project.
 :add-extension-extensions: container-image-buildpack
 include::includes/devtools/extension-add.adoc[]
 
+NOTE: When using the buildpack container image extension it is strongly advised to avoid adding `quarkus.container-image.build=true` in your properties configuration as it might trigger nesting builds within builds. It's preferable to pass it as an option to the build command instead.
+
 == Building
 
 To build a container image for your project, `quarkus.container-image.build=true` needs to be set using any of the ways that Quarkus supports.

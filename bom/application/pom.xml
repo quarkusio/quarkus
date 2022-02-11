@@ -157,7 +157,7 @@
         <liquibase-mongodb.version>4.7.1</liquibase-mongodb.version>
         <snakeyaml.version>1.30</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>4.3.4</mongo-client.version>
+        <mongo-client.version>4.5.0</mongo-client.version>
         <mongo-crypt.version>1.2.1</mongo-crypt.version>
         <proton-j.version>0.33.10</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>

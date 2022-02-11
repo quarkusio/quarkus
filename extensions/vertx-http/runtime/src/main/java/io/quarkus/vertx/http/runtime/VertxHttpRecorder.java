@@ -532,9 +532,11 @@ public class VertxHttpRecorder {
         }
 
         int eventLoopCount = eventLoops.get();
-        int ioThreads;
+        final int ioThreads;
         if (httpConfiguration.ioThreads.isPresent()) {
             ioThreads = Math.min(httpConfiguration.ioThreads.getAsInt(), eventLoopCount);
+        } else if (launchMode.isDevOrTest()) {
+            ioThreads = Math.min(2, eventLoopCount); //Don't start ~100 threads to run a couple unit tests
         } else {
             ioThreads = eventLoopCount;
         }

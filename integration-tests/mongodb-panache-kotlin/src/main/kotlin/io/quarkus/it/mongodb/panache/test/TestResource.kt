@@ -150,6 +150,11 @@ class TestResource {
         Assertions.assertEquals(5, TestImperativeEntity.count("category = ?1", "newCategory2"))
         updated = TestImperativeEntity.update("newField", "newValue").all()
         Assertions.assertEquals(10, updated)
+        updated = TestImperativeEntity.update("{'\$inc': {'cpt': 1}}").all()
+        Assertions.assertEquals(10, updated)
+        updated = TestImperativeEntity.update(Document("\$inc", Document("cpt", 1))).where(Document("category", "newCategory2"))
+        Assertions.assertEquals(5, updated)
+        Assertions.assertEquals(5, TestImperativeEntity.count("cpt = ?1", 2))
 
         // delete
         TestImperativeEntity.delete("category = ?1", "newCategory2")
@@ -293,6 +298,11 @@ class TestResource {
         Assertions.assertEquals(5, testImperativeRepository.count("category = ?1", "newCategory2"))
         updated = testImperativeRepository.update("newField", "newValue").all()
         Assertions.assertEquals(10, updated)
+        updated = testImperativeRepository.update("{'\$inc': {'cpt': 1}}").all()
+        Assertions.assertEquals(10, updated)
+        updated = testImperativeRepository.update(Document("\$inc", Document("cpt", 1))).where(Document("category", "newCategory2"))
+        Assertions.assertEquals(5, updated)
+        Assertions.assertEquals(5, testImperativeRepository.count("cpt = ?1", 2))
 
         // delete
         testImperativeRepository.delete("category = ?1", "newCategory2")
@@ -505,6 +515,11 @@ class TestResource {
         Assertions.assertEquals(5, TestReactiveEntity.count("category = ?1", "newCategory2").await().indefinitely())
         updated = TestReactiveEntity.update("newField", "newValue").all().await().indefinitely()
         Assertions.assertEquals(10, updated)
+        updated = TestReactiveEntity.update("{'\$inc': {'cpt': 1}}").all().await().indefinitely()
+        Assertions.assertEquals(10, updated)
+        updated = TestReactiveEntity.update(Document("\$inc", Document("cpt", 1))).where(Document("category", "newCategory2")).await().indefinitely()
+        Assertions.assertEquals(5, updated)
+        Assertions.assertEquals(5, TestReactiveEntity.count("cpt = ?1", 2).await().indefinitely())
 
         // delete
         TestReactiveEntity.delete("category = ?1", "newCategory2").await().indefinitely()
@@ -657,6 +672,11 @@ class TestResource {
         Assertions.assertEquals(5, testReactiveRepository.count("category = ?1", "newCategory2").await().indefinitely())
         updated = testReactiveRepository.update("newField", "newValue").all().await().indefinitely()
         Assertions.assertEquals(10, updated)
+        updated = testReactiveRepository.update("{'\$inc': {'cpt': 1}}").all().await().indefinitely()
+        Assertions.assertEquals(10, updated)
+        updated = testReactiveRepository.update(Document("\$inc", Document("cpt", 1))).where(Document("category", "newCategory2")).await().indefinitely()
+        Assertions.assertEquals(5, updated)
+        Assertions.assertEquals(5, testReactiveRepository.count("cpt = ?1", 2).await().indefinitely())
 
         // delete
         testReactiveRepository.delete("category = ?1", "newCategory2").await().indefinitely()

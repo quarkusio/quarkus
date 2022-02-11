@@ -224,7 +224,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
@@ -396,7 +396,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).list()</code>.
      *
      * @param query a {@link org.bson.Document} query
@@ -571,7 +571,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).stream()</code>.
      *
      * @param query a {@link org.bson.Document} query
@@ -890,6 +890,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Map)
      * @see #update(String, Parameters)
+     * @see #update(Document)
      */
     @GenerateBridge
     default io.quarkus.mongodb.panache.common.PanacheUpdate update(String update, Object... params) {
@@ -907,7 +908,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
-     *
+     * @see #update(Document)
      */
     @GenerateBridge
     default io.quarkus.mongodb.panache.common.PanacheUpdate update(String update, Map<String, Object> params) {
@@ -925,9 +926,26 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Object...)
      * @see #update(String, Map)
+     * @see #update(Document)
      */
     @GenerateBridge
     default io.quarkus.mongodb.panache.common.PanacheUpdate update(String update, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update BSON document.
+     * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
+     * update should be applied.
+     *
+     * @param update the update document, as a {@link org.bson.Document}.
+     * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
+     * @see #update(String, Object...)
+     * @see #update(String, Map)
+     * @see #update(String, Parameters)
+     */
+    @GenerateBridge
+    default io.quarkus.mongodb.panache.common.PanacheUpdate update(Document update) {
         throw INSTANCE.implementationInjectionMissing();
     }
 

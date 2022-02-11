@@ -756,6 +756,19 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     fun update(update: String, params: Parameters): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate = throw INSTANCE.implementationInjectionMissing()
 
     /**
+     * Update all entities of this type by the given BSON update document.
+     * The returned [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, as a [Document].
+     * @param params [Parameters] of named parameters
+     * @return a new [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] instance for the given update document
+     * @see [update]
+     */
+    @GenerateBridge
+    fun update(update: Document): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
+            throw INSTANCE.implementationInjectionMissing()
+
+    /**
      * Allow to access the underlying Mongo Collection.
      */
     @GenerateBridge

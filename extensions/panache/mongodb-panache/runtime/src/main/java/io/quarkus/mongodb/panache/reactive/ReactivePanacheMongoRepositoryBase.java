@@ -938,6 +938,24 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
+     * Update all entities of this type by the given update BSON document.
+     * The returned {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} object will allow to restrict on
+     * which document the
+     * update should be applied.
+     *
+     * @param update the update document, as a {@link org.bson.Document}.
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} instance for the given update
+     *         document
+     * @see #update(String, Object...)
+     * @see #update(String, Map)
+     * @see #update(String, Parameters)
+     */
+    @GenerateBridge
+    default io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(Document update) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
      * Allow to access the underlying Mongo Collection
      */
     @GenerateBridge

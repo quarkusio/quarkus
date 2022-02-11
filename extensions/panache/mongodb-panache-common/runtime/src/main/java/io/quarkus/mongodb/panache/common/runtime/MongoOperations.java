@@ -749,6 +749,10 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return executeUpdate(entityClass, update, params);
     }
 
+    public UpdateType update(Class<?> entityClass, Document update) {
+        return createUpdate(mongoCollection(entityClass), entityClass, update);
+    }
+
     private UpdateType executeUpdate(Class<?> entityClass, String update, Object... params) {
         String bindUpdate = bindUpdate(entityClass, update, params);
         Document docUpdate = Document.parse(bindUpdate);

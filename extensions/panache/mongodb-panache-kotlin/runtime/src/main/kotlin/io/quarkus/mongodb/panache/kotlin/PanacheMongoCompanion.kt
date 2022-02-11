@@ -685,6 +685,17 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
     fun update(update: String, params: Parameters): io.quarkus.mongodb.panache.common.PanacheUpdate = throw INSTANCE.implementationInjectionMissing()
 
     /**
+     * Update all entities of this type by the given update BSON document.
+     * The returned [io.quarkus.mongodb.panache.common.PanacheUpdate] object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, as a [Document].
+     * @return a new [io.quarkus.mongodb.panache.common.PanacheUpdate] instance for the given update document
+     * @see [update]
+     */
+    @GenerateBridge
+    fun update(update: Document): io.quarkus.mongodb.panache.common.PanacheUpdate = throw INSTANCE.implementationInjectionMissing()
+    
+    /**
      * Allow to access the underlying Mongo Collection.
      *
      * @return the [MongoCollection] used by this entity

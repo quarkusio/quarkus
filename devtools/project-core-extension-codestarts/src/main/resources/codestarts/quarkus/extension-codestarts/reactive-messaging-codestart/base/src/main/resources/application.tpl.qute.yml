@@ -9,7 +9,9 @@ mp:
     incoming:
       words-in:
         topic: words
-        "auto.offset.reset": earliest
+        auto:
+          offset:
+            reset: earliest
 
 {#case 'io.quarkus:quarkus-smallrye-reactive-messaging-amqp'}
 mp:

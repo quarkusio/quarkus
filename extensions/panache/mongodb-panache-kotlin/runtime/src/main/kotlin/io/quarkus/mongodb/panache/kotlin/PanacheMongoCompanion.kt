@@ -133,7 +133,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
     fun find(query: Document): PanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a query string
      * @param sort the sort strategy to use
@@ -272,7 +272,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
     fun list(query: Document): List<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for `find(query, sort).list()`.
      *
      * @param query a query document
@@ -415,7 +415,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id: Any> {
     fun stream(query: Document): Stream<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for `find(query, sort).stream()`.
      *
      * @param query a query Document

@@ -224,7 +224,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
@@ -396,7 +396,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).list()</code>.
      *
      * @param query a {@link org.bson.Document} query
@@ -571,7 +571,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).stream()</code>.
      *
      * @param query a {@link org.bson.Document} query

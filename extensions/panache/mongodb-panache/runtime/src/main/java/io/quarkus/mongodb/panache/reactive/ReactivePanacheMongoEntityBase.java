@@ -223,7 +223,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a {@link Document} query
      * @param sort the {@link Document} sort
@@ -399,7 +399,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).list()</code>.
      *
      * @param query a {@link Document} query
@@ -575,7 +575,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).stream()</code>.
      *
      * @param query a {@link Document} query

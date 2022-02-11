@@ -165,7 +165,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     fun find(query: Document): PanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a [Document] query
      * @param sort the [Document] sort
@@ -304,7 +304,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     fun list(query: Document): List<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for `find(query, sort).list()`.
      *
      * @param query a [Document] query
@@ -447,7 +447,7 @@ interface PanacheMongoRepositoryBase<Entity: Any, Id: Any> {
     fun stream(query: Document): Stream<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for `find(query, sort).stream()`.
      *
      * @param query a [Document] query

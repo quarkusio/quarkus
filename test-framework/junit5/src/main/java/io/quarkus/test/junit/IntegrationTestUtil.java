@@ -498,7 +498,7 @@ public final class IntegrationTestUtil {
             if (url.getPath().endsWith("test-classes/")) {
                 // we have the maven test classes dir
                 return toPath(url).getParent();
-            } else if (url.getPath().endsWith("test/")) {
+            } else if (url.getPath().endsWith("test/") || url.getPath().endsWith("integrationTest/")) {
                 // we have the gradle test classes dir, build/classes/java/test
                 return toPath(url).getParent().getParent().getParent();
             } else if (url.getPath().contains("/target/surefire/")) {

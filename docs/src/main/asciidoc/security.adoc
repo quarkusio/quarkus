@@ -275,4 +275,95 @@ If a Quarkus tag represented by the given CPE name entry is affected by some CVE
 We will be asking the NVD CPE team to update the list as well as link Quarkus CPE name entries with the related CVEs on a regular basis.
 If you work with the link:https://jeremylong.github.io/DependencyCheck/dependency-check-maven/[OWASP Dependency Check Plugin] which is using NVD feeds to detect the vulnerabilities at the application build time and see a false positive reported then please re-open link:https://github.com/quarkusio/quarkus/issues/2611[this issue] and provide the details.
 
-Note link:https://jeremylong.github.io/DependencyCheck/dependency-check-maven/[OWASP Dependency Check Plugin] `6.2.0` or later should be used with Quarkus.
+You can add `OWASP Dependency Check Plugin` to your project's `pom.xml` like this:
+
+[source,xml]
+----
+<plugin>
+    <groupId>org.owasp</groupId>
+    <artifactId>dependency-check-maven</artifactId>
+    <version>${owasp-dependency-check-plugin.version}</version>
+    <configuration>
+        <!-- Fail only when detecting High Vulnerability issues -->
+        <failBuildOnCVSS>7</failBuildOnCVSS>
+        <suppressionFiles>
+            <suppressionFile>${project.basedir}/dependency-cpe-suppression.xml</suppressionFile>
+        </suppressionFiles>
+    </configuration>
+</plugin>
+---- 
+
+You can change `failBuildOnCVSS` value to detect less severe issues as well.
+
+A suppression list may vary depending on whether you'd like to keep checking the false positives to avoid missing something or not.
+For example, it can look like this:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.2.xsd">
+    <!--
+        This is a CPE suppression file for the maven dependency check plugin.
+        Each CPE that is found by error (false positive) needs to be suppressed for a specific jar using it's GAV.
+        See https://jeremylong.github.io/DependencyCheck/general/suppression.html
+     -->
+    <suppress>
+        <notes>
+            <![CDATA[
+                Suppress the false positive CPE for netty-tcnative-classes to netty
+            ]]>
+        </notes>
+        <gav regex="true">^io\.netty:netty-tcnative-classes.*:.*$</gav>
+        <cpe>cpe:/a:netty:netty</cpe>
+    </suppress>
+    <suppress>
+        <notes>
+            <![CDATA[
+                Suppress the false positive CPE for Quarkus Mutiny to mutiny:mutiny
+            ]]>
+        </notes>
+        <gav regex="true">^io\.quarkus:quarkus-mutiny.*:.*$</gav>
+        <cpe>cpe:/a:mutiny:mutiny</cpe>
+    </suppress>
+    <suppress>
+        <notes>
+            <![CDATA[
+                Suppress the false positive CPE for Smallrye Mutiny to mutiny:mutiny
+            ]]>
+        </notes>
+        <gav regex="true">^io\.smallrye.reactive:mutiny.*:.*$</gav>
+        <cpe>cpe:/a:mutiny:mutiny</cpe>
+    </suppress>
+    <suppress>
+        <notes>
+            <![CDATA[
+                Suppress the false positive CPE for Smallrye Mutiny to mutiny:mutiny
+            ]]>
+        </notes>
+        <gav regex="true">^io\.smallrye.reactive:smallrye-mutiny.*:.*$</gav>
+        <cpe>cpe:/a:mutiny:mutiny</cpe>
+    </suppress>
+    <suppress>
+        <notes>
+            <![CDATA[
+                Suppress the false positive CPE for Smallrye Mutiny to mutiny:mutiny
+            ]]>
+        </notes>
+        <gav regex="true">^io\.smallrye.reactive:vertx-mutiny.*:.*$</gav>
+        <cpe>cpe:/a:mutiny:mutiny</cpe>
+    </suppress>
+    <suppress>
+        <notes>
+            <![CDATA[
+                Suppress the false positive CPE for graal-sdk to GraalVM (the JVM distribution)
+            ]]>
+        </notes>
+        <gav regex="true">^org\.graalvm\.sdk:graal-sdk:.*$</gav>
+        <cpe>cpe:/a:oracle:graalvm</cpe>
+    </suppress>
+</suppressions>
+----
+
+Such a suppression list has to be carefully prepared and revisited from time to time. You should consider making individual suppressions time limited by adding an `until` tribute, for example: `<suppress until="2022-01-01Z">...</suppress>`. It will let you doublecheck that only the same known false positives are reported when the suppression period expires, and after reviewing the report you can set a new expiry date.
+
+Note link:https://jeremylong.github.io/DependencyCheck/dependency-check-maven/[OWASP Dependency Check Plugin] `6.5.3` or later should be used with Quarkus.

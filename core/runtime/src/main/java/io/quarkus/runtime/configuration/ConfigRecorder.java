@@ -34,9 +34,9 @@ public class ConfigRecorder {
                     if (mismatches == null) {
                         mismatches = new ArrayList<>();
                     }
-                    mismatches.add(
-                            " - " + entry.getKey() + " was '" + entry.getValue() + "' at build time and is now '" + val.get()
-                                    + "'");
+                    mismatches.add(" - " + entry.getKey() + " is set to '" + entry.getValue()
+                            + "' but it is build time fixed to '" + val.get() + "'. Did you change the property "
+                            + entry.getKey() + " after building the application?");
                 }
             }
         }

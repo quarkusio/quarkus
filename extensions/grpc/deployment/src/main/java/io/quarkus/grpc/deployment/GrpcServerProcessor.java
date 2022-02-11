@@ -77,6 +77,7 @@ import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.stork.GrpcStorkRecorder;
+import io.quarkus.grpc.runtime.supports.context.GrpcDuplicatedContextGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
@@ -340,6 +341,7 @@ public class GrpcServerProcessor {
             // this makes GrpcRequestContextGrpcInterceptor registered as a global gRPC interceptor.
             // Global interceptors are invoked before any of the per-service interceptors
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcRequestContextGrpcInterceptor.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcDuplicatedContextGrpcInterceptor.class));
             features.produce(new FeatureBuildItem(GRPC_SERVER));
 
             if (capabilities.isPresent(Capability.SECURITY)) {
@@ -354,6 +356,8 @@ public class GrpcServerProcessor {
     @BuildStep
     void registerAdditionalInterceptors(BuildProducer<AdditionalGlobalInterceptorBuildItem> additionalInterceptors,
             Capabilities capabilities) {
+        additionalInterceptors
+                .produce(new AdditionalGlobalInterceptorBuildItem(GrpcRequestContextGrpcInterceptor.class.getName()));
         additionalInterceptors
                 .produce(new AdditionalGlobalInterceptorBuildItem(GrpcRequestContextGrpcInterceptor.class.getName()));
         if (capabilities.isPresent(Capability.SECURITY)) {

@@ -34,7 +34,7 @@ public class GACT implements ArtifactKey, Serializable {
                     "One of groupId or artifactId is missing from '" + str.substring(0, fromIndex) + "'");
         }
         if (i == fromIndex - 1) {
-            parts[2] = "";
+            parts[2] = ArtifactCoords.DEFAULT_CLASSIFIER;
         } else {
             parts[2] = str.substring(i + 1, fromIndex);
         }
@@ -69,15 +69,32 @@ public class GACT implements ArtifactKey, Serializable {
     protected final String type;
 
     public GACT(String[] parts) {
+        if (parts == null || parts.length < 2 || parts.length > 4) {
+            final StringBuilder sb = new StringBuilder().append("Artifact key ");
+            if (parts == null) {
+                sb.append("null");
+            } else {
+                sb.append('\'');
+                if (parts.length > 0) {
+                    sb.append(parts[0]);
+                    for (int i = 1; i < parts.length; ++i) {
+                        sb.append(':').append(parts[i]);
+                    }
+                }
+                sb.append('\'');
+            }
+            throw new IllegalArgumentException(
+                    sb.append(" does not follow format <groupId>:<artifactId>[:<classifier>[:<type>]]").toString());
+        }
         this.groupId = parts[0];
         this.artifactId = parts[1];
         if (parts.length == 2 || parts[2] == null) {
-            this.classifier = "";
+            this.classifier = ArtifactCoords.DEFAULT_CLASSIFIER;
         } else {
             this.classifier = parts[2];
         }
         if (parts.length <= 3 || parts[3] == null) {
-            this.type = "jar";
+            this.type = ArtifactCoords.TYPE_JAR;
         } else {
             this.type = parts[3];
         }
@@ -94,7 +111,7 @@ public class GACT implements ArtifactKey, Serializable {
     public GACT(String groupId, String artifactId, String classifier, String type) {
         this.groupId = groupId;
         this.artifactId = artifactId;
-        this.classifier = classifier == null ? "" : classifier;
+        this.classifier = classifier == null ? ArtifactCoords.DEFAULT_CLASSIFIER : classifier;
         this.type = type;
     }
 

@@ -4,6 +4,7 @@ public interface ArtifactCoords {
 
     String TYPE_JAR = "jar";
     String TYPE_POM = "pom";
+    String DEFAULT_CLASSIFIER = "";
 
     String getGroupId();
 

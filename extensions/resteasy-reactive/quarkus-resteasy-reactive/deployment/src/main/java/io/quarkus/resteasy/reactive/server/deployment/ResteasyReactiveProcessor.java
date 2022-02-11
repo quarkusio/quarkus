@@ -105,6 +105,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -334,7 +335,8 @@ public class ResteasyReactiveProcessor {
     //this allows multiple objects to be compressed into a single object at runtime
     //saving memory and reducing reload time
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
-    public void setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+    public void setupEndpoints(ApplicationIndexBuildItem applicationIndexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -409,6 +411,7 @@ public class ResteasyReactiveProcessor {
                             .addMethodScanners(
                                     methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
                             .setIndex(index)
+                            .setApplicationIndex(applicationIndexBuildItem.getIndex())
                             .addContextTypes(CONTEXT_TYPES)
                             .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                             .setEndpointInvokerFactory(

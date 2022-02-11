@@ -68,7 +68,7 @@ public class QuarkusServerEndpointIndexer
 
             @Override
             public IndexView index() {
-                return index;
+                return applicationIndex;
             }
 
             @Override

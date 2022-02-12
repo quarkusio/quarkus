@@ -24,6 +24,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.quarkus.arc.Unremovable;
 
@@ -53,7 +54,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
         this.instrumenter = builder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(clientAttributesExtractor))
-                .addAttributesExtractor(clientAttributesExtractor)
+                .addAttributesExtractor(HttpClientAttributesExtractor.create(clientAttributesExtractor))
                 .newClientInstrumenter(new ClientRequestContextTextMapSetter());
     }
 
@@ -115,10 +116,10 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     }
 
     private static class ClientAttributesExtractor
-            extends HttpClientAttributesExtractor<ClientRequestContext, ClientResponseContext> {
+            implements HttpClientAttributesGetter<ClientRequestContext, ClientResponseContext> {
 
         @Override
-        protected String url(final ClientRequestContext request) {
+        public String url(final ClientRequestContext request) {
             URI uri = request.getUri();
             if (uri.getUserInfo() != null) {
                 return UriBuilder.fromUri(uri).userInfo(null).build().toString();
@@ -127,49 +128,49 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         }
 
         @Override
-        protected String flavor(final ClientRequestContext request, final ClientResponseContext response) {
+        public String flavor(final ClientRequestContext request, final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected String method(final ClientRequestContext request) {
+        public String method(final ClientRequestContext request) {
             return request.getMethod();
         }
 
         @Override
-        protected List<String> requestHeader(final ClientRequestContext request, final String name) {
+        public List<String> requestHeader(final ClientRequestContext request, final String name) {
             return request.getStringHeaders().getOrDefault(name, emptyList());
         }
 
         @Override
-        protected Long requestContentLength(final ClientRequestContext request, final ClientResponseContext response) {
+        public Long requestContentLength(final ClientRequestContext request, final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected Long requestContentLengthUncompressed(final ClientRequestContext request,
+        public Long requestContentLengthUncompressed(final ClientRequestContext request,
                 final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected Integer statusCode(final ClientRequestContext request, final ClientResponseContext response) {
+        public Integer statusCode(final ClientRequestContext request, final ClientResponseContext response) {
             return response.getStatus();
         }
 
         @Override
-        protected Long responseContentLength(final ClientRequestContext request, final ClientResponseContext response) {
+        public Long responseContentLength(final ClientRequestContext request, final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected Long responseContentLengthUncompressed(final ClientRequestContext request,
+        public Long responseContentLengthUncompressed(final ClientRequestContext request,
                 final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected List<String> responseHeader(final ClientRequestContext request, final ClientResponseContext response,
+        public List<String> responseHeader(final ClientRequestContext request, final ClientResponseContext response,
                 final String name) {
             return response.getHeaders().getOrDefault(name, emptyList());
         }

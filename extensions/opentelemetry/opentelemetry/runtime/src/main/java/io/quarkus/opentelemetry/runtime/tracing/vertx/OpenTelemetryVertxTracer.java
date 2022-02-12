@@ -21,7 +21,9 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
@@ -54,7 +56,7 @@ public class OpenTelemetryVertxTracer
 
         this.serverInstrumenter = serverBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
-                .addAttributesExtractor(serverAttributesExtractor)
+                .addAttributesExtractor(HttpServerAttributesExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(new AdditionalServerAttributesExtractor())
                 .newServerInstrumenter(new HttpRequestTextMapGetter());
 
@@ -67,7 +69,7 @@ public class OpenTelemetryVertxTracer
 
         this.clientInstrumenter = clientBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
-                .addAttributesExtractor(clientAttributesExtractor)
+                .addAttributesExtractor(HttpClientAttributesExtractor.create(clientAttributesExtractor))
                 .newClientInstrumenter(new HttpRequestTextMapSetter());
     }
 
@@ -285,10 +287,10 @@ public class OpenTelemetryVertxTracer
 
     // TODO - Ideally this should use HttpSpanNameExtractor, but to keep the name without the slash we use our own.
     private static class ServerSpanNameExtractor implements SpanNameExtractor<HttpRequest> {
-        private final HttpServerAttributesExtractor<HttpRequest, HttpResponse> serverAttributesExtractor;
+        private final HttpServerAttributesGetter<HttpRequest, HttpResponse> serverAttributesExtractor;
 
         private ServerSpanNameExtractor(
-                final HttpServerAttributesExtractor<HttpRequest, HttpResponse> serverAttributesExtractor) {
+                final HttpServerAttributesGetter<HttpRequest, HttpResponse> serverAttributesExtractor) {
             this.serverAttributesExtractor = serverAttributesExtractor;
         }
 
@@ -306,14 +308,14 @@ public class OpenTelemetryVertxTracer
         }
 
         static SpanNameExtractor<HttpRequest> create(
-                HttpServerAttributesExtractor<HttpRequest, HttpResponse> serverAttributesExtractor) {
+                HttpServerAttributesGetter<HttpRequest, HttpResponse> serverAttributesExtractor) {
             return new ServerSpanNameExtractor(serverAttributesExtractor);
         }
     }
 
-    private static class ServerAttributesExtractor extends HttpServerAttributesExtractor<HttpRequest, HttpResponse> {
+    private static class ServerAttributesExtractor implements HttpServerAttributesGetter<HttpRequest, HttpResponse> {
         @Override
-        protected String flavor(final HttpRequest request) {
+        public String flavor(final HttpRequest request) {
             if (request instanceof HttpServerRequest) {
                 HttpServerRequest serverRequest = (HttpServerRequest) request;
                 switch (serverRequest.version()) {
@@ -331,17 +333,17 @@ public class OpenTelemetryVertxTracer
         }
 
         @Override
-        protected String target(final HttpRequest request) {
+        public String target(final HttpRequest request) {
             return request.uri();
         }
 
         @Override
-        protected String route(final HttpRequest request) {
+        public String route(final HttpRequest request) {
             return request.uri().length() > 1 ? request.uri() : null;
         }
 
         @Override
-        protected String scheme(final HttpRequest request) {
+        public String scheme(final HttpRequest request) {
             if (request instanceof HttpServerRequest) {
                 return ((HttpServerRequest) request).scheme();
             }
@@ -349,47 +351,47 @@ public class OpenTelemetryVertxTracer
         }
 
         @Override
-        protected String serverName(final HttpRequest request, final HttpResponse response) {
+        public String serverName(final HttpRequest request, final HttpResponse response) {
             return request.remoteAddress().hostName();
         }
 
         @Override
-        protected String method(final HttpRequest request) {
+        public String method(final HttpRequest request) {
             return request.method().name();
         }
 
         @Override
-        protected List<String> requestHeader(final HttpRequest request, final String name) {
+        public List<String> requestHeader(final HttpRequest request, final String name) {
             return request.headers().getAll(name);
         }
 
         @Override
-        protected Long requestContentLength(final HttpRequest request, final HttpResponse response) {
+        public Long requestContentLength(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected Long requestContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
+        public Long requestContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected Integer statusCode(final HttpRequest request, final HttpResponse response) {
+        public Integer statusCode(final HttpRequest request, final HttpResponse response) {
             return response.statusCode();
         }
 
         @Override
-        protected Long responseContentLength(final HttpRequest request, final HttpResponse response) {
+        public Long responseContentLength(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected Long responseContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
+        public Long responseContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected List<String> responseHeader(final HttpRequest request, final HttpResponse response, final String name) {
+        public List<String> responseHeader(final HttpRequest request, final HttpResponse response, final String name) {
             return response.headers().getAll(name);
         }
     }
@@ -492,55 +494,55 @@ public class OpenTelemetryVertxTracer
         }
     }
 
-    private static class ClientAttributesExtractor extends HttpClientAttributesExtractor<HttpRequest, HttpResponse> {
+    private static class ClientAttributesExtractor implements HttpClientAttributesGetter<HttpRequest, HttpResponse> {
         @Override
-        protected String url(final HttpRequest request) {
+        public String url(final HttpRequest request) {
             return request.absoluteURI();
         }
 
         @Override
-        protected String flavor(final HttpRequest request, final HttpResponse response) {
+        public String flavor(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected String method(final HttpRequest request) {
+        public String method(final HttpRequest request) {
             return request.method().name();
         }
 
         @Override
-        protected List<String> requestHeader(final HttpRequest request, final String name) {
+        public List<String> requestHeader(final HttpRequest request, final String name) {
             return request.headers().getAll(name);
         }
 
         @Override
-        protected Long requestContentLength(final HttpRequest request, final HttpResponse response) {
+        public Long requestContentLength(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected Long requestContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
+        public Long requestContentLengthUncompressed(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected Integer statusCode(final HttpRequest request, final HttpResponse response) {
+        public Integer statusCode(final HttpRequest request, final HttpResponse response) {
             return response.statusCode();
         }
 
         @Override
-        protected Long responseContentLength(final HttpRequest request, final HttpResponse response) {
+        public Long responseContentLength(final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected Long responseContentLengthUncompressed(
+        public Long responseContentLengthUncompressed(
                 final HttpRequest request, final HttpResponse response) {
             return null;
         }
 
         @Override
-        protected List<String> responseHeader(final HttpRequest request, final HttpResponse response, final String name) {
+        public List<String> responseHeader(final HttpRequest request, final HttpResponse response, final String name) {
             return response.headers().getAll(name);
         }
     }

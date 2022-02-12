@@ -36,7 +36,7 @@ Enable NMT on the command line;
 
  -XX:NativeMemoryTracking=[off | summary | detail] <1>
 
-<1> NOTE: this feature will add cause an approximately 5-10% performance overhead
+<1> NOTE: this feature will add a 5-10% performance overhead
 
 It is then possible to use jcmd to dump a report of the native memory usage of the Hotspot JVM running your application;
 

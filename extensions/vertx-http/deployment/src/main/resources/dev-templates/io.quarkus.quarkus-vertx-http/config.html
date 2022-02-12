@@ -281,6 +281,10 @@ function applyConfigFilter(){
 }
 
 function filterByConfigExtension(configfilterText, configfilterKeys){
+    if(configfilterKeys.startsWith("[") && configfilterKeys.endsWith("]")){
+        configfilterKeys = configfilterKeys.substring(1, configfilterKeys.length-1);
+    }
+
     configfilter = configfilterKeys.split(",");
     $('#configCurrentFilter').show();
     configCurrentFilter.innerHTML = "<span style='border-bottom: 1px dotted;'>" + configfilterText + " <i class='fas fa-times-circle' onclick='clearConfigFilter();'></i></span>";
@@ -289,6 +293,7 @@ function filterByConfigExtension(configfilterText, configfilterKeys){
         var ck = $(this).text().trim();
         var hide = true;
         configfilter.forEach(function (item, index) {
+            item = item.trim();
             if(ck.startsWith(item)){
                 hide = false;
             }

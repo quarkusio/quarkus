@@ -8,6 +8,8 @@ import org.apache.http.params.CoreConnectionPNames;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
@@ -16,6 +18,7 @@ import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "very flaky, see https://github.com/quarkusio/quarkus/issues/23642")
 public class IncompletePostTestCase {
 
     @RegisterExtension

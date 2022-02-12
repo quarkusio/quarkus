@@ -1018,7 +1018,7 @@ The full source of the `knative.json` file looks something like this:
         "app.kubernetes.io/name" : "test-quarkus-app",
         "app.kubernetes.io/version" : "1.0.0-SNAPSHOT"
       },
-      "name" : "knative.
+      "name" : "knative"
     },
     "spec" : {
       "runLatest" : {

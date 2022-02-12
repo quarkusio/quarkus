@@ -131,6 +131,20 @@ public @interface Scheduled {
      */
     Class<? extends SkipPredicate> skipExecutionIf() default Never.class;
 
+    /**
+     * Defines a period after which the job is considered overdue.
+     * <p>
+     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
+     * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
+     * Note that the absolute value of the value is always used.
+     * <p>
+     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
+     * and use the configured value instead: {@code &#64;Scheduled(every = "{myservice.check.overdue-grace-period.expr}")}.
+     *
+     * @return the period expression based on the ISO-8601 duration format {@code PnDTnHnMn.nS}
+     */
+    String overdueGracePeriod() default "";
+
     @Retention(RUNTIME)
     @Target(METHOD)
     @interface Schedules {

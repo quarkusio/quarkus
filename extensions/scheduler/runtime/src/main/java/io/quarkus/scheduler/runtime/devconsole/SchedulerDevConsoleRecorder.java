@@ -135,6 +135,12 @@ public class SchedulerDevConsoleRecorder {
                 public Instant getPreviousFireTime() {
                     return now;
                 }
+
+                @Override
+                public boolean isOverdue() {
+                    return false;
+                }
+
             };
         }
 

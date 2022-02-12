@@ -1,5 +1,7 @@
 package io.quarkus.scheduler;
 
+import java.util.List;
+
 /**
  * The container provides a built-in bean with bean type {@link Scheduler} and qualifier
  * {@link javax.enterprise.inject.Default}.
@@ -46,4 +48,13 @@ public interface Scheduler {
      */
     boolean isRunning();
 
+    /**
+     * @return an immutable list of scheduled jobs represented by their trigger.
+     */
+    List<Trigger> getScheduledJobs();
+
+    /**
+     * @return the trigger of a specific job or null for non-existent identity.
+     */
+    Trigger getScheduledJob(String identity);
 }

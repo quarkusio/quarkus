@@ -116,7 +116,7 @@ final class CompressorSubstitute {
 }
 
 @TargetClass(InternalStreamConnection.class)
-final class InternalStreamConnectionSubtitution {
+final class InternalStreamConnectionSubstitution {
     @Substitute
     private CompressorSubstitute createCompressor(final MongoCompressor mongoCompressor) {
         throw new UnsupportedOperationException("Unsupported compressor in native mode");
@@ -179,7 +179,6 @@ final class DefaultDnsResolverSubstitution {
             if (srvRecords.isEmpty()) {
                 throw new MongoConfigurationException("No SRV records available for host " + "_mongodb._tcp." + srvHost);
             }
-
             for (SrvRecord srvRecord : srvRecords) {
                 String resolvedHost = srvRecord.target().endsWith(".")
                         ? srvRecord.target().substring(0, srvRecord.target().length() - 1)

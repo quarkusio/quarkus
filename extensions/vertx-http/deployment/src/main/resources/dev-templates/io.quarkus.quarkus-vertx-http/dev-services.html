@@ -1,65 +1,45 @@
 {#include main fluid=true}
-{#style}
-table.inner > tbody > tr:nth-of-type(odd) {
-    background: transparent;
-}
-table.inner > tbody > tr:nth-of-type(even) {
-    background: transparent;
-}
-table.inner > tbody > tr > td {
-    padding: 5px;
-}
-{/style}
 {#title}Dev Services{/title}
 {#body}
-<table class="table table-striped">
-    <thead class="thead-dark">
-    <tr>
-        <th scope="col">Service</th>
-        <th scope="col">Config</th>
-    </tr>
-    </thead>
-    <tbody>
+
+
+<div class="row row-cols-1 row-cols-md-2">
     {#for service in info:devServices}
-    <tr>
-        <td>
-            <h5>{service.name}</h5>
-            <div>
-                <table class="table-borderless inner">
-                    <tbody>
-                    <tr>
-                        <td><strong>Container</strong></td>
-                        <td>{service.containerInfo.getShortId()} {service.containerInfo.formatNames()}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Image</strong></td>
-                        <td>{service.containerInfo.imageName}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Networks</strong></td>
-                        <td>{service.containerInfo.formatNetworks()}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Exposed Ports</strong></td>
-                        <td>{service.containerInfo.formatPorts()}</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </td>
-        <td>
-            <br>
-            {#for config in service.configs}
-            <code>
-                <a href="{devRootAppend}/io.quarkus.quarkus-vertx-http/config?filterByExtension=''&filterConfigKeys={config.key}">{config.key}</a>
-                = {config.value}
-            </code>
-            <br>
-            {/for}
-        </td>
-    </tr>
+    <div class="col mb-4">
+      <div class="card h-100">
+        <div class="card-header">
+            {service.name}
+          </div>
+          <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <i class="fas fa-box-open" data-toggle="tooltip" data-placement="top" title="Container"></i> {service.containerInfo.getShortId()} {service.containerInfo.formatNames()}
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fab fa-docker" data-toggle="tooltip" data-placement="top" title="Image"></i> {service.containerInfo.imageName}
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-network-wired" data-toggle="tooltip" data-placement="top" title="Networks"></i> {service.containerInfo.formatNetworks()}
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fas fa-project-diagram" data-toggle="tooltip" data-placement="top" title="Exposed Ports"></i> {service.containerInfo.formatPorts()}
+                    </li>
+                </ul>
+                <hr/>
+                <h5 class="card-title">Config</h5>
+                <code class="h-100">
+                {#for config in service.configs}
+                    {config.key} = {config.value}
+                    <br/>
+                {/for}
+                </code>
+          </div>
+          <div class="card-footer border-0 bg-white">
+              <a href='{devRootAppend}/io.quarkus.quarkus-vertx-http/config?filterByExtension="{service.name}"&filterConfigKeys={service.configs.keys}' class='float-right text-secondary' title='Config Editor'><i class='fas fa-edit'></i></a>
+          </div>
+      </div>
+    </div>
     {/for}
-    </tbody>
-</table>
+</div>
 {/body}
 {/include}

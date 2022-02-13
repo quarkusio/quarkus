@@ -56,6 +56,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
 import io.quarkus.resteasy.common.runtime.config.ResteasyConfigSourceProvider;
@@ -320,6 +321,12 @@ public class ResteasyCommonProcessor {
                 jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(QUARKUS_JSONB_SERIALIZER.toString()));
             }
         }
+    }
+
+    @BuildStep
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(org.jboss.resteasy.spi.config.ConfigurationFactory.class.getName()));
     }
 
     private void registerJsonContextResolver(

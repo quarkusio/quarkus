@@ -501,12 +501,12 @@ public class QuartzScheduler implements Scheduler {
 
         @Override
         public Instant getFireTime() {
-            return trigger.context.getScheduledFireTime().toInstant();
+            return trigger.context.getFireTime().toInstant();
         }
 
         @Override
         public Instant getScheduledFireTime() {
-            return trigger.context.getFireTime().toInstant();
+            return trigger.context.getScheduledFireTime().toInstant();
         }
 
     }

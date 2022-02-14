@@ -14,6 +14,8 @@ import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
+import io.smallrye.mutiny.Uni;
 
 public final class GetMethodImplementor extends StandardMethodImplementor {
 
@@ -21,15 +23,19 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
 
     private static final String RESOURCE_METHOD_NAME = "get";
 
+    private static final String EXCEPTION_MESSAGE = "Failed to get an entity";
+
     private static final String REL = "self";
 
-    public GetMethodImplementor(boolean isResteasyClassic) {
-        super(isResteasyClassic);
+    public GetMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
+        super(isResteasyClassic, isReactivePanache);
     }
 
     /**
-     * Generate JAX-RS GET method that exposes {@link RestDataResource#get(Object)}.
-     * Generated code looks more or less like this:
+     * Generate JAX-RS GET method.
+     *
+     * The RESTEasy Classic version exposes {@link RestDataResource#get(Object)}.
+     * and the generated code looks more or less like this:
      *
      * <pre>
      * {@code
@@ -54,11 +60,34 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
      *     }
      * }
      * </pre>
+     *
+     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#delete(Object)}
+     * and the generated code looks more or less like this:
+     * 
+     * <pre>
+     * {@code
+     *     &#64;GET
+     *     &#64;Produces({"application/json"})
+     *     &#64;Path("{id}")
+     *     &#64;LinkResource(
+     *         rel = "self",
+     *         entityClassName = "com.example.Entity"
+     *     )
+     *     public Uni<Response> get(@PathParam("id") ID id) {
+     *         try {
+     *             return restDataResource.get(id).map(entity -> entity == null ? Response.status(404).build() : Response.ok(entity).build());
+     *         } catch (Throwable t) {
+     *             throw new RestDataPanacheException(t);
+     *         }
+     *     }
+     * }
+     * </pre>
      */
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class,
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
+                isNotReactivePanache() ? Response.class : Uni.class,
                 resourceMetadata.getIdType());
 
         // Add method annotations
@@ -71,18 +100,33 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle id = methodCreator.getMethodParam(0);
 
-        // Invoke resource methods
-        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to get an entity");
-        ResultHandle entity = tryBlock.invokeVirtualMethod(
-                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Object.class, Object.class),
-                resource, id);
+        if (isNotReactivePanache()) {
+            TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
+            ResultHandle entity = tryBlock.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Object.class, Object.class),
+                    resource, id);
 
-        // Return response
-        BranchResult wasNotFound = tryBlock.ifNull(entity);
-        wasNotFound.trueBranch().returnValue(ResponseImplementor.notFound(wasNotFound.trueBranch()));
-        wasNotFound.falseBranch().returnValue(ResponseImplementor.ok(wasNotFound.falseBranch(), entity));
+            // Return response
+            BranchResult wasNotFound = tryBlock.ifNull(entity);
+            wasNotFound.trueBranch().returnValue(ResponseImplementor.notFound(wasNotFound.trueBranch()));
+            wasNotFound.falseBranch().returnValue(ResponseImplementor.ok(wasNotFound.falseBranch(), entity));
 
-        tryBlock.close();
+            tryBlock.close();
+        } else {
+            ResultHandle uniEntity = methodCreator.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Uni.class, Object.class),
+                    resource, id);
+
+            methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntity, EXCEPTION_MESSAGE,
+                    (body, entity) -> {
+                        BranchResult entityWasNotFound = body.ifNull(entity);
+                        entityWasNotFound.trueBranch()
+                                .returnValue(ResponseImplementor.notFound(entityWasNotFound.trueBranch()));
+                        entityWasNotFound.falseBranch()
+                                .returnValue(ResponseImplementor.ok(entityWasNotFound.falseBranch(), entity));
+                    }));
+        }
+
         methodCreator.close();
     }
 

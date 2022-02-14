@@ -14,6 +14,8 @@ import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
+import io.smallrye.mutiny.Uni;
 
 public final class DeleteMethodImplementor extends StandardMethodImplementor {
 
@@ -21,15 +23,19 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
 
     private static final String RESOURCE_METHOD_NAME = "delete";
 
+    private static final String EXCEPTION_MESSAGE = "Failed to delete an entity";
+
     private static final String REL = "remove";
 
-    public DeleteMethodImplementor(boolean isResteasyClassic) {
-        super(isResteasyClassic);
+    public DeleteMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
+        super(isResteasyClassic, isReactivePanache);
     }
 
     /**
-     * Generate JAX-RS DELETE method that exposes {@link RestDataResource#delete(Object)}.
-     * Generated code looks more or less like this:
+     * Generate JAX-RS DELETE method.
+     *
+     * The RESTEasy Classic version exposes {@link RestDataResource#delete(Object)}
+     * and the generated code looks more or less like this:
      *
      * <pre>
      * {@code
@@ -39,7 +45,7 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
      *         rel = "remove",
      *         entityClassName = "com.example.Entity"
      *     )
-     *     public Response delete(@PathParam("id") ID id) {
+     *     public Response delete(@PathParam("id") ID id) throws RestDataPanacheException {
      *         try {
      *             boolean deleted = restDataResource.delete(id);
      *             if (deleted) {
@@ -53,11 +59,33 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
      *     }
      * }
      * </pre>
+     *
+     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#delete(Object)}
+     * and the generated code looks more or less like this:
+     *
+     * <pre>
+     * {@code
+     *     &#64;DELETE
+     *     &#64;Path("{id}")
+     *     &#64;LinkResource(
+     *         rel = "remove",
+     *         entityClassName = "com.example.Entity"
+     *     )
+     *     public Uni<Response> delete(@PathParam("id") ID id) throws RestDataPanacheException {
+     *         try {
+     *             return restDataResource.delete(id).map(deleted -> deleted ? Response.noContent().build() : Response.status(404).build());
+     *         } catch (Throwable t) {
+     *             throw new RestDataPanacheException(t);
+     *         }
+     *     }
+     * }
+     * </pre>
      */
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class,
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
+                isNotReactivePanache() ? Response.class : Uni.class,
                 resourceMetadata.getIdType());
 
         // Add method annotations
@@ -69,18 +97,39 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
         ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
         ResultHandle id = methodCreator.getMethodParam(0);
 
-        // Invoke resource methods
-        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to delete an entity");
-        ResultHandle deleted = tryBlock.invokeVirtualMethod(
-                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, boolean.class, Object.class),
-                resource, id);
+        if (isNotReactivePanache()) {
+            TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
+            ResultHandle deleted = tryBlock.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, boolean.class, Object.class),
+                    resource, id);
 
-        // Return response
-        BranchResult entityWasDeleted = tryBlock.ifNonZero(deleted);
-        entityWasDeleted.trueBranch().returnValue(ResponseImplementor.noContent(entityWasDeleted.trueBranch()));
-        entityWasDeleted.falseBranch().returnValue(ResponseImplementor.notFound(entityWasDeleted.falseBranch()));
+            // Return response
+            BranchResult entityWasDeleted = tryBlock.ifNonZero(deleted);
+            entityWasDeleted.trueBranch().returnValue(ResponseImplementor.noContent(entityWasDeleted.trueBranch()));
+            entityWasDeleted.falseBranch().returnValue(ResponseImplementor.notFound(entityWasDeleted.falseBranch()));
 
-        tryBlock.close();
+            tryBlock.close();
+        } else {
+            ResultHandle uniDeleted = methodCreator.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Uni.class, Object.class),
+                    resource, id);
+
+            methodCreator.returnValue(UniImplementor.map(methodCreator, uniDeleted, EXCEPTION_MESSAGE,
+                    (body, entity) -> {
+                        ResultHandle deleted = body.checkCast(entity, Boolean.class);
+                        // Workaround to have boolean type, otherwise it's an integer.
+                        ResultHandle falseDefault = body.invokeStaticMethod(
+                                ofMethod(Boolean.class, "valueOf", Boolean.class, String.class), body.load("false"));
+                        ResultHandle deletedAsInt = body.invokeVirtualMethod(
+                                ofMethod(Boolean.class, "compareTo", int.class, Boolean.class), deleted, falseDefault);
+
+                        BranchResult entityWasDeleted = body.ifNonZero(deletedAsInt);
+                        entityWasDeleted.trueBranch().returnValue(ResponseImplementor.noContent(entityWasDeleted.trueBranch()));
+                        entityWasDeleted.falseBranch()
+                                .returnValue(ResponseImplementor.notFound(entityWasDeleted.falseBranch()));
+                    }));
+        }
+
         methodCreator.close();
     }
 

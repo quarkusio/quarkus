@@ -34,9 +34,11 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     private static final Logger LOGGER = Logger.getLogger(StandardMethodImplementor.class);
 
     private final boolean isResteasyClassic;
+    private final boolean isReactivePanache;
 
-    protected StandardMethodImplementor(boolean isResteasyClassic) {
+    protected StandardMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
         this.isResteasyClassic = isResteasyClassic;
+        this.isReactivePanache = isReactivePanache;
     }
 
     /**
@@ -143,5 +145,9 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
             suffix = suffix.substring(1);
         }
         return String.join("/", path, suffix);
+    }
+
+    protected boolean isNotReactivePanache() {
+        return !isReactivePanache;
     }
 }

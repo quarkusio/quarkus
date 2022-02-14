@@ -82,12 +82,18 @@ public class RestDataProcessor {
             BuildProducer<GeneratedBeanBuildItem> resteasyClassicImplementationsProducer,
             BuildProducer<GeneratedJaxRsResourceBuildItem> resteasyReactiveImplementationsProducer) {
 
+        boolean isReactivePanache = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
         boolean isResteasyClassic = capabilities.isPresent(Capability.RESTEASY);
+
+        if (isReactivePanache && isResteasyClassic) {
+            throw new IllegalStateException(
+                    "Reactive REST Data Panache does not work with 'quarkus-resteasy'. Only 'quarkus-resteasy-reactive' extensions are supported");
+        }
 
         ClassOutput classOutput = isResteasyClassic ? new GeneratedBeanGizmoAdaptor(resteasyClassicImplementationsProducer)
                 : new GeneratedJaxRsResourceGizmoAdaptor(resteasyReactiveImplementationsProducer);
         JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(hasValidatorCapability(capabilities),
-                isResteasyClassic);
+                isResteasyClassic, isReactivePanache);
         ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
 
         for (RestDataResourceBuildItem resourceBuildItem : resourceBuildItems) {

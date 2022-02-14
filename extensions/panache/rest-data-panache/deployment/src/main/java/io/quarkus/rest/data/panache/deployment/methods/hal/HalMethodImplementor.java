@@ -18,8 +18,8 @@ import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapper;
  */
 abstract class HalMethodImplementor extends StandardMethodImplementor {
 
-    HalMethodImplementor(boolean isResteasyClassic) {
-        super(isResteasyClassic);
+    HalMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
+        super(isResteasyClassic, isReactivePanache);
     }
 
     /**

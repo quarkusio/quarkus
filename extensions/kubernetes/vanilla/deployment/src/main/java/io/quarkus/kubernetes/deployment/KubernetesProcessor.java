@@ -45,6 +45,7 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
+import io.quarkus.kubernetes.spi.DekorateOutputBuildItem;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -91,6 +92,7 @@ class KubernetesProcessor {
             EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
             List<ConfiguratorBuildItem> configurators,
             List<DecoratorBuildItem> decorators,
+            BuildProducer<DekorateOutputBuildItem> dekorateSessionProducer,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
             BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer) {
@@ -160,6 +162,7 @@ class KubernetesProcessor {
 
                 // write the generated resources to the filesystem
                 generatedResourcesMap = session.close();
+                List<String> generatedFiles = new ArrayList<>(generatedResourcesMap.size());
                 List<String> generatedFileNames = new ArrayList<>(generatedResourcesMap.size());
                 for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
                     Path path = Paths.get(resourceEntry.getKey());
@@ -182,12 +185,15 @@ class KubernetesProcessor {
                     }
 
                     generatedFileNames.add(fileName);
+                    generatedFiles.add(relativePath);
                     generatedResourceProducer.produce(
                             new GeneratedFileSystemResourceBuildItem(
                                     // we need to make sure we are only passing the relative path to the build item
                                     relativePath,
                                     resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
                 }
+
+                dekorateSessionProducer.produce(new DekorateOutputBuildItem(project, session, generatedFiles));
 
                 if (!generatedFileNames.isEmpty()) {
                     log.debugf("Generated the Kubernetes manifests: '%s' in '%s'", String.join(",", generatedFileNames),

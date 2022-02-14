@@ -11,7 +11,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -60,22 +59,9 @@ public class DuplicatedContextTest {
 
     @Test
     public void testThatBlockingRoutesAreCalledOnDuplicatedContext() {
-        // Creates a bunch of requests that will be executed concurrently.
-        // So, we are sure that event loops are reused.
-        List<Uni<Void>> unis = new ArrayList<>();
-        for (int i = 0; i < 500; i++) {
-            String uuid = UUID.randomUUID().toString();
-            unis.add(Uni.createFrom().item(() -> {
-                String resp = get("/context-blocking/" + uuid).asString();
-                Assertions.assertEquals(resp, "OK-" + uuid);
-                return null;
-            }));
-        }
-
-        Uni.join().all(unis).andFailFast()
-                .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(30));
-
+        String uuid = UUID.randomUUID().toString();
+        String resp = get("/context-blocking/" + uuid).asString();
+        Assertions.assertEquals(resp, "OK-" + uuid);
     }
 
     @ApplicationScoped

@@ -2,6 +2,7 @@ package io.quarkus.deployment.dev.testing;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -244,11 +245,16 @@ public class TestConfig {
         /**
          * Controls the container network to be used when @QuarkusIntegration needs to launch the application in a container.
          * This setting only applies if Quarkus does not need to use a shared network - which is the case if DevServices are
-         * used
-         * when running the test.
+         * used when running the test.
          */
         @ConfigItem
         Optional<String> network;
+
+        /**
+         * Set additional ports to be exposed when @QuarkusIntegration needs to launch the application in a container.
+         */
+        @ConfigItem
+        Map<String, String> additionalExposedPorts;
     }
 
     public enum Mode {

@@ -34,6 +34,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
     private String containerImage;
     private boolean pullRequired;
+    private Map<Integer, Integer> additionalExposedPorts;
 
     private final Map<String, String> systemProps = new HashMap<>();
 
@@ -51,6 +52,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.devServicesLaunchResult = initContext.getDevServicesLaunchResult();
         this.containerImage = initContext.containerImage();
         this.pullRequired = initContext.pullRequired();
+        this.additionalExposedPorts = initContext.additionalExposedPorts();
     }
 
     @Override
@@ -97,6 +99,10 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(httpPort + ":" + httpPort);
         args.add("-p");
         args.add(httpsPort + ":" + httpsPort);
+        for (var entry : additionalExposedPorts.entrySet()) {
+            args.add("-p");
+            args.add(entry.getKey() + ":" + entry.getValue());
+        }
         // if the dev services resulted in creating a dedicated network, then use it
         if (devServicesLaunchResult.networkId() != null) {
             args.add("--net=" + devServicesLaunchResult.networkId());

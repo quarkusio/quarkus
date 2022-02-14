@@ -528,5 +528,10 @@ triage:
       notify: [FroMage, manovotn]
       directories:
         - extensions/smallrye-context-propagation
+    - labels: [area/stork]
+      title: "stork"
+      notify: [michalszynkiewicz]
+      directories:
+        - extensions/smallrye-stork/
   qe:
     notify: [rsvoboda, mjurc]

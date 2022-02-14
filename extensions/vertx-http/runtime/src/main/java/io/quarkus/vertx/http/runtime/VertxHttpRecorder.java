@@ -844,6 +844,7 @@ public class VertxHttpRecorder {
         options.setReusePort(httpConfiguration.soReusePort);
         options.setTcpQuickAck(httpConfiguration.tcpQuickAck);
         options.setTcpCork(httpConfiguration.tcpCork);
+        options.setAcceptBacklog(httpConfiguration.acceptBacklog);
         options.setTcpFastOpen(httpConfiguration.tcpFastOpen);
         options.setCompressionSupported(httpConfiguration.enableCompression);
         options.setDecompressionSupported(httpConfiguration.enableDecompression);

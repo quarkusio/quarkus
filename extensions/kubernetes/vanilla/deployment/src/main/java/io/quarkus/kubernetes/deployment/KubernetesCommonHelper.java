@@ -185,7 +185,7 @@ public class KubernetesCommonHelper {
         if (!roleBindings.isEmpty()) {
             result.add(new DecoratorBuildItem(new ApplyServiceAccountNameDecorator()));
             result.add(new DecoratorBuildItem(new AddServiceAccountResourceDecorator()));
-            roles.forEach(r -> result.add(new DecoratorBuildItem(new AddRoleResourceDecorator(r))));
+            roles.forEach(r -> result.add(new DecoratorBuildItem(new AddRoleResourceDecorator(name, r))));
             roleBindings.forEach(rb -> {
                 result.add(new DecoratorBuildItem(new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(),
                         rb.isClusterWide() ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole

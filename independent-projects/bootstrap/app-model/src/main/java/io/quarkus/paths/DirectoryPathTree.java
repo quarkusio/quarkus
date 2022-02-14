@@ -2,6 +2,7 @@ package io.quarkus.paths;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,7 +61,7 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             return func.apply(null);
         }
-        final Path path = dir.resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        final Path path = dir.resolve(interpretPath(relativePath, manifestEnabled));
         if (!Files.exists(path)) {
             return func.apply(null);
         }
@@ -73,7 +74,7 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
             consumer.accept(null);
             return;
         }
-        final Path path = dir.resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        final Path path = dir.resolve(interpretPath(relativePath, manifestEnabled));
         if (!Files.exists(path)) {
             consumer.accept(null);
             return;
@@ -81,12 +82,25 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
         PathTreeVisit.consume(dir, dir, path, pathFilter, consumer);
     }
 
+    private String interpretPath(String relativePath, boolean manifestEnabled) {
+        FileSystem fileSystem = dir.getFileSystem();
+        Path path = fileSystem.getPath(relativePath);
+        if (path.isAbsolute()) {
+            // We got passed an absolute path; interpret it as relative to `dir`.
+            // Without this, we would be allowing callers to access the whole filesystem tree,
+            // because absolute paths would not necessarily be pointing to files under `dir`.
+            path = path.relativize(path.getRoot());
+            relativePath = path.toString();
+        }
+        return manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath;
+    }
+
     @Override
     public boolean contains(String relativePath) {
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             return false;
         }
-        final Path path = dir.resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        final Path path = dir.resolve(interpretPath(relativePath, manifestEnabled));
         return Files.exists(path);
     }
 
@@ -95,7 +109,7 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             return null;
         }
-        final Path path = dir.resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        final Path path = dir.resolve(interpretPath(relativePath, manifestEnabled));
         return Files.exists(path) ? path : null;
     }
 

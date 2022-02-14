@@ -154,6 +154,10 @@
                                             <exclude>org.slf4j:slf4j-jdk14</exclude>
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
+                                            <!-- findbugs is not required at runtime -->
+                                            <exclude>com.google.code.findbugs:jsr305</exclude>
+                                            <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
+                                            <exclude>com.google.guava:listenablefuture</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

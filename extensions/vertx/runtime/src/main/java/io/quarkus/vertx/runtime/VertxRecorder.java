@@ -26,6 +26,7 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 
 @Recorder
@@ -81,7 +82,7 @@ public class VertxRecorder {
                 // Create a context attached to each consumer
                 // If we don't all consumers will use the same event loop and so published messages (dispatched to all
                 // consumers) delivery is serialized.
-                Context context = vi.createEventLoopContext();
+                ContextInternal context = vi.createEventLoopContext();
                 context.runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void x) {
@@ -96,7 +97,9 @@ public class VertxRecorder {
                             @Override
                             public void handle(Message<Object> m) {
                                 if (invoker.isBlocking()) {
-                                    context.executeBlocking(new Handler<Promise<Object>>() {
+                                    // We need to create a duplicated context from the "context"
+                                    Context dup = context.duplicate();
+                                    dup.executeBlocking(new Handler<Promise<Object>>() {
                                         @Override
                                         public void handle(Promise<Object> event) {
                                             try {

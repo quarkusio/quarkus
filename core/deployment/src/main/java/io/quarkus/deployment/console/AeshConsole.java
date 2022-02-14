@@ -225,6 +225,10 @@ public class AeshConsole extends QuarkusConsole {
             conn.setStdinHandler(keys -> {
 
                 QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
+                // redirectIn might have not been initialized yet
+                if (redirectIn == null) {
+                    return;
+                }
                 //see if the users application wants to read the keystrokes:
                 int pos = 0;
                 while (pos < keys.length) {

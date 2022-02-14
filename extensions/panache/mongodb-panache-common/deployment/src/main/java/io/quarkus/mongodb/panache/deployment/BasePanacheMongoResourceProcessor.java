@@ -51,8 +51,8 @@ import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import io.quarkus.mongodb.deployment.MongoClientNameBuildItem;
 import io.quarkus.mongodb.deployment.MongoUnremovableClientsBuildItem;
 import io.quarkus.mongodb.panache.common.PanacheMongoRecorder;
-import io.quarkus.mongodb.panache.jackson.ObjectIdDeserializer;
-import io.quarkus.mongodb.panache.jackson.ObjectIdSerializer;
+import io.quarkus.mongodb.panache.common.jackson.ObjectIdDeserializer;
+import io.quarkus.mongodb.panache.common.jackson.ObjectIdSerializer;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
@@ -400,9 +400,11 @@ public abstract class BasePanacheMongoResourceProcessor {
     protected void registerJsonbSerDeser(BuildProducer<JsonbSerializerBuildItem> jsonbSerializers,
             BuildProducer<JsonbDeserializerBuildItem> jsonbDeserializers) {
         jsonbSerializers
-                .produce(new JsonbSerializerBuildItem(io.quarkus.mongodb.panache.jsonb.ObjectIdSerializer.class.getName()));
+                .produce(new JsonbSerializerBuildItem(
+                        io.quarkus.mongodb.panache.common.jsonb.ObjectIdSerializer.class.getName()));
         jsonbDeserializers
-                .produce(new JsonbDeserializerBuildItem(io.quarkus.mongodb.panache.jsonb.ObjectIdDeserializer.class.getName()));
+                .produce(new JsonbDeserializerBuildItem(
+                        io.quarkus.mongodb.panache.common.jsonb.ObjectIdDeserializer.class.getName()));
     }
 
     @BuildStep

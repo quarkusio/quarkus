@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.jsonb;
+package io.quarkus.mongodb.panache.common.jsonb;
 
 import javax.json.bind.serializer.JsonbSerializer;
 import javax.json.bind.serializer.SerializationContext;

@@ -25,7 +25,7 @@
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.11.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.10.1-alpha</opentelemetry-alpha.version>
+        <opentelemetry-alpha.version>1.11.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.0</jaeger.version>
         <quarkus-http.version>4.1.6</quarkus-http.version>
         <micrometer.version>1.8.2</micrometer.version>

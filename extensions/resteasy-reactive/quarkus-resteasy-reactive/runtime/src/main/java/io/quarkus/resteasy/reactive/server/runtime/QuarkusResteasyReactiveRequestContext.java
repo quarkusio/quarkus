@@ -14,6 +14,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 import io.quarkus.arc.Arc;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.ext.web.RoutingContext;
 
@@ -29,6 +30,7 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain, devModeTccl,
                 vertxContextPropsToCopy);
         this.association = currentIdentityAssociation;
+        VertxContextSafetyToggle.setCurrentContextSafe(true);
     }
 
     protected void handleRequestScopeActivation() {

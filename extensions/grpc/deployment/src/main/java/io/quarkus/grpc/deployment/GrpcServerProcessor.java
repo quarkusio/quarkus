@@ -72,6 +72,7 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.grpc.runtime.ServerInterceptorStorage;
+import io.quarkus.grpc.runtime.config.GrpcClientBuildTimeConfig;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
@@ -525,8 +526,8 @@ public class GrpcServerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setUpStork(GrpcStorkRecorder storkRecorder) {
-        storkRecorder.init();
+    void setUpStork(GrpcStorkRecorder storkRecorder, GrpcClientBuildTimeConfig config) {
+        storkRecorder.init(config.storkProactiveConnections);
     }
 
     @BuildStep

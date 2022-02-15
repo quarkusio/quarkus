@@ -10,14 +10,26 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.it.rest.client.reactive.stork.MyServiceDiscoveryProvider;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
+import io.vertx.core.Vertx;
 
 @QuarkusTest
 @QuarkusTestResource(SlowWiremockServer.class)
 @QuarkusTestResource(FastWiremockServer.class)
 public class RestClientReactiveStorkTest {
+
+    @Test
+    @DisabledOnNativeImage
+    void shouldUseQuarkusVertxInstance() {
+        Vertx providedVertx = MyServiceDiscoveryProvider.providedVertx;
+        assertThat(providedVertx).isNotNull()
+                .isEqualTo(Arc.container().instance(Vertx.class).get());
+    }
 
     @Test
     void shouldUseFasterService() {

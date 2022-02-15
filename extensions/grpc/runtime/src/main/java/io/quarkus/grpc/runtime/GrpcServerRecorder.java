@@ -87,8 +87,7 @@ public class GrpcServerRecorder {
         }
         Vertx vertx = vertxSupplier.getValue();
         if (hasNoServices(grpcContainer.getServices()) && LaunchMode.current() != LaunchMode.DEVELOPMENT) {
-            throw new IllegalStateException(
-                    "Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
+            LOGGER.error("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
 
         this.blockingMethodsPerService = blockingMethodsPerServiceImplementationClass;

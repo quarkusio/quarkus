@@ -67,6 +67,7 @@ import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientType;
 import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.GrpcClientRecorder;
+import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.quarkus.grpc.runtime.supports.IOThreadClientInterceptor;
@@ -86,6 +87,11 @@ public class GrpcClientProcessor {
         beans.produce(new AdditionalBeanBuildItem(GrpcClient.class, RegisterClientInterceptor.class));
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(GrpcClientConfigProvider.class,
                 GrpcClientInterceptorContainer.class, IOThreadClientInterceptor.class).build());
+    }
+
+    @BuildStep
+    void registerStorkInterceptor(BuildProducer<AdditionalBeanBuildItem> beans) {
+        beans.produce(new AdditionalBeanBuildItem(StorkMeasuringGrpcInterceptor.class));
     }
 
     @BuildStep
@@ -385,6 +391,8 @@ public class GrpcClientProcessor {
             globalInterceptors.add(recorderContext.classProxy(globalInterceptor));
         }
 
+        // it's okay if this one is not used:
+        superfluousInterceptors.remove(StorkMeasuringGrpcInterceptor.class.getName());
         if (!superfluousInterceptors.isEmpty()) {
             LOGGER.warnf("At least one unused gRPC client interceptor found: %s. If there are meant to be used globally, " +
                     "annotate them with @GlobalInterceptor.", String.join(", ", superfluousInterceptors));

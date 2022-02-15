@@ -57,6 +57,7 @@ import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
@@ -113,6 +114,11 @@ public class SmallRyeGraphQLProcessor {
     private static final String BRANDING_STYLE_MODULE = BRANDING_DIR + "smallrye-graphql-ui-graphiql.css";
     private static final String BRANDING_FAVICON_GENERAL = BRANDING_DIR + "favicon.ico";
     private static final String BRANDING_FAVICON_MODULE = BRANDING_DIR + "smallrye-graphql-ui-graphiql.ico";
+
+    private static final String SUBPROTOCOL_GRAPHQL_WS = "graphql-ws";
+    private static final String SUBPROTOCOL_GRAPHQL_TRANSPORT_WS = "graphql-transport-ws";
+    private static final List<String> SUPPORTED_WEBSOCKET_SUBPROTOCOLS = List.of(SUBPROTOCOL_GRAPHQL_WS,
+            SUBPROTOCOL_GRAPHQL_TRANSPORT_WS);
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
@@ -260,7 +266,8 @@ public class SmallRyeGraphQLProcessor {
             LaunchModeBuildItem launchMode,
             BodyHandlerBuildItem bodyHandlerBuildItem,
             SmallRyeGraphQLConfig graphQLConfig,
-            BeanContainerBuildItem beanContainer) {
+            BeanContainerBuildItem beanContainer,
+            BuildProducer<WebsocketSubProtocolsBuildItem> webSocketSubProtocols) {
 
         /*
          * <em>Ugly Hack</em>
@@ -276,13 +283,29 @@ public class SmallRyeGraphQLProcessor {
         }
 
         // Subscriptions
-        Handler<RoutingContext> subscriptionHandler = recorder
-                .subscriptionHandler(beanContainer.getValue(), graphQLInitializedBuildItem.getInitialized());
+        Handler<RoutingContext> graphqlOverWebsocketHandler = recorder
+                .graphqlOverWebsocketHandler(beanContainer.getValue(), graphQLInitializedBuildItem.getInitialized());
 
         routeProducer.produce(httpRootPathBuildItem.routeBuilder()
                 .orderedRoute(graphQLConfig.rootPath, Integer.MIN_VALUE)
-                .handler(subscriptionHandler)
+                .handler(graphqlOverWebsocketHandler)
                 .build());
+
+        // WebSocket subprotocols
+        graphQLConfig.websocketSubprotocols.ifPresentOrElse(subprotocols -> {
+            for (String subprotocol : subprotocols) {
+                if (!SUPPORTED_WEBSOCKET_SUBPROTOCOLS.contains(subprotocol)) {
+                    throw new IllegalArgumentException("Unknown websocket subprotocol: " + subprotocol);
+                } else {
+                    webSocketSubProtocols.produce(new WebsocketSubProtocolsBuildItem(subprotocol));
+                }
+            }
+        }, () -> {
+            // if unspecified, allow all supported subprotocols
+            for (String subprotocol : SUPPORTED_WEBSOCKET_SUBPROTOCOLS) {
+                webSocketSubProtocols.produce(new WebsocketSubProtocolsBuildItem(subprotocol));
+            }
+        });
 
         // Queries and Mutations
         boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);

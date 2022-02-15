@@ -377,11 +377,15 @@ triage:
       directories:
         - extensions/narayana-jta/
         - extensions/narayana-stm/
-        - extensions/narayana-lra/
         - integration-tests/narayana-jta/
         - integration-tests/narayana-stm/
-        - integration-tests/narayana-lra/
       notify: [mmusgrov]
+    - labels: [area/lra]
+      title: "lra"
+      directories:
+        - extensions/narayana-lra/
+        - integration-tests/narayana-lra/
+      notify: [xstefank, mmusgrov]
     - labels: [area/neo4j]
       title: "neo4j"
       notify: [michael-simons]

@@ -171,6 +171,10 @@ public final class RouteBuildItem extends MultiBuildItem {
         }
 
         public RouteBuildItem build() {
+            if (routeFunction == null) {
+                throw new IllegalStateException(
+                        "'RouteBuildItem$Builder.routeFunction' was not set. Ensure that one of the builder methods that result in it being set is called");
+            }
             return new RouteBuildItem(this, RouteType.APPLICATION_ROUTE);
         }
 

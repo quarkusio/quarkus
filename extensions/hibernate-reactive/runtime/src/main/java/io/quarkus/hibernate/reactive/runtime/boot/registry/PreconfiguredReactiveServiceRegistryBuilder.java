@@ -20,7 +20,6 @@ import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
-import org.hibernate.reactive.context.impl.VertxContextInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
@@ -43,6 +42,7 @@ import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
+import io.quarkus.hibernate.reactive.runtime.customized.CheckingVertxContextInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcEnvironmentInitiator;
 
@@ -138,7 +138,9 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
 
         // Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
         serviceInitiators.add(ReactiveMarkerServiceInitiator.INSTANCE);
-        serviceInitiators.add(VertxContextInitiator.INSTANCE);
+
+        // Custom to Quarkus: Hibernate Reactive upstream would use org.hibernate.reactive.context.impl.VertxContextInitiator
+        serviceInitiators.add(CheckingVertxContextInitiator.INSTANCE);
 
         //Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSessionFactoryBuilderInitiator.INSTANCE);

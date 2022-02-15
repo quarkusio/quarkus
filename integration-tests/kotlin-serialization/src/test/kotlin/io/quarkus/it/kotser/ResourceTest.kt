@@ -5,8 +5,10 @@ import io.restassured.http.ContentType.JSON
 import io.restassured.module.kotlin.extensions.Given
 import io.restassured.module.kotlin.extensions.Then
 import io.restassured.module.kotlin.extensions.When
+import org.hamcrest.CoreMatchers
 import org.hamcrest.CoreMatchers.`is`
 import org.junit.jupiter.api.Test
+import javax.ws.rs.core.MediaType
 
 @QuarkusTest
 open class ResourceTest {
@@ -74,6 +76,20 @@ open class ResourceTest {
                   "name": "Pam Halpert",
                   "defaulted": "hi there!"
                 }""".trimIndent()))
+        }
+    }
+
+    @Test
+    fun testCreateAndFetch() {
+        Given {
+            log().ifValidationFails()
+        } When {
+            accept(MediaType.TEXT_PLAIN)
+            get("/create")
+        } Then {
+            log().ifValidationFails()
+            statusCode(200)
+            body(CoreMatchers.equalTo("hello, world"))
         }
     }
 }

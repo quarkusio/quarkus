@@ -157,6 +157,7 @@ updates:
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*
+      - dependency-name: com.google.code.gson:gson
       - dependency-name: com.google.errorprone:*
       - dependency-name: com.google.http-client:*
       - dependency-name: io.dekorate:servicebinding-annotations

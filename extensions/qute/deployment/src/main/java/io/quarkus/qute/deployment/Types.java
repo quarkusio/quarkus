@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -154,6 +155,7 @@ public final class Types {
         for (ClassInfo implementor : implementors) {
             assignables.add(implementor.name());
         }
+        assignables.addAll(getAllInterfacesExtending(class1, index));
         return assignables.contains(class2);
     }
 
@@ -185,6 +187,19 @@ public final class Types {
             default:
                 throw new IllegalArgumentException("Unsupported primitive: " + primitive);
         }
+    }
+
+    private static Set<DotName> getAllInterfacesExtending(DotName target, IndexView index) {
+        Set<DotName> ret = new HashSet<>();
+        for (ClassInfo clazz : index.getKnownClasses()) {
+            if (!Modifier.isInterface(clazz.flags())) {
+                continue;
+            }
+            if (clazz.interfaceNames().contains(target)) {
+                ret.add(clazz.name());
+            }
+        }
+        return ret;
     }
 
 }

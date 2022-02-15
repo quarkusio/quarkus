@@ -1297,6 +1297,11 @@ For example, if there is an expression `item.name` where `item` maps to `org.acm
 An optional _parameter declaration_ is used to bind a Java type to expressions whose first part matches the parameter name.
 Parameter declarations are specified directly in a template.
 
+A Java type should be always identified with a _fully qualified name_ unless it's a JDK type from the `java.lang` package - in this case, the package name is optional.
+Parameterized types are supported, however wildcards are always ignored - only the upper/lower bound is taken into account.
+For example, the parameter declaration `{@java.util.List<? extends org.acme.Foo> list}` is recognized as `{@java.util.List<org.acme.Foo> list}`.
+Type variables are not handled in a special way and should never be used.
+
 .Parameter Declaration Example
 [source,html]
 ----
@@ -1343,6 +1348,19 @@ Note that sections can override names that would otherwise match a parameter dec
 ----
 <1> Validated against `org.acme.Foo`.
 <2> Not validated - `foo` is overridden in the loop section.
+
+.More Parameter Declarations Examples 
+[source]
+----
+{@int pages} <1>
+{@java.util.List<String> strings} <2>
+{@java.util.Map<String,? extends Number> numbers} <3>
+{@java.util.Optional<?> param} <4>
+----
+<1> A primitive type.
+<2> `String` is replaced with `java.lang.String`: `{@java.util.List<java.lang.String> strings}`
+<3> The wildcard is ignored and the upper bound is used instead: `{@java.util.Map<String,Number>}`
+<4> The wildcard is ignored and the `java.lang.Object` is used instead: `{@java.util.Optional<java.lang.Object>}`
  
 [[typesafe_templates]]
 === Type-safe Templates

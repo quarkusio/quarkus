@@ -96,7 +96,16 @@ public final class BeanArchives {
 
         @Override
         public Collection<ClassInfo> getKnownClasses() {
-            return index.getKnownClasses();
+            if (additionalClasses.isEmpty()) {
+                return index.getKnownClasses();
+            }
+            List<ClassInfo> all = new ArrayList<>(index.getKnownClasses());
+            for (Optional<ClassInfo> additional : additionalClasses.values()) {
+                if (additional.isPresent()) {
+                    all.add(additional.get());
+                }
+            }
+            return all;
         }
 
         @Override

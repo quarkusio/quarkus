@@ -43,9 +43,10 @@ import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
 
-@SuppressWarnings({ "OptionalIsPresent", "Convert2Lambda" })
+@SuppressWarnings({ "OptionalIsPresent" })
 public class Channels {
 
     private static final Logger LOGGER = Logger.getLogger(Channels.class.getName());
@@ -127,6 +128,10 @@ public class Channels {
 
         NettyChannelBuilder builder = NettyChannelBuilder
                 .forTarget(target)
+                // clients are intercepted using the IOThreadClientInterceptor interceptor which will decide on which
+                // thread the messages should be processed.
+                .directExecutor() // will use I/O thread - must not be blocked.
+                .offloadExecutor(Infrastructure.getDefaultExecutor())
                 .defaultLoadBalancingPolicy(loadBalancingPolicy)
                 .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
                 .keepAliveWithoutCalls(config.keepAliveWithoutCalls)

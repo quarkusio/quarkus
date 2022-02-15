@@ -158,7 +158,7 @@ public class DevServicesApicurioRegistryProcessor {
         // Starting the broker
         return apicurioRegistryContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .map(containerAddress -> new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(),
-                        containerAddress.getId(), null, REGISTRY_URL_CONFIG, containerAddress.getUrl()))
+                        containerAddress.getId(), null, REGISTRY_URL_CONFIG, containerAddress.getUrl() + "/apis/registry/v2"))
                 .orElseGet(() -> {
                     ApicurioRegistryContainer container = new ApicurioRegistryContainer(
                             DockerImageName.parse(config.imageName), config.fixedExposedPort,
@@ -168,7 +168,7 @@ public class DevServicesApicurioRegistryProcessor {
                     container.start();
 
                     return new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(), container.getContainerId(),
-                            container::close, REGISTRY_URL_CONFIG, container.getUrl());
+                            container::close, REGISTRY_URL_CONFIG, container.getUrl() + "/apis/registry/v2");
                 });
     }
 

@@ -179,6 +179,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected final IndexView index;
+    protected final IndexView applicationIndex;
     protected final Map<String, String> existingConverters;
     protected final Map<String, InjectableBean> injectableBeans;
     protected final boolean hasRuntimeConverters;
@@ -200,6 +201,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
+        this.applicationIndex = builder.applicationIndex;
         this.existingConverters = builder.existingConverters;
         this.scannedResourcePaths = builder.scannedResourcePaths;
         this.config = builder.config;
@@ -1263,6 +1265,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<String, BeanFactory<Object>> factoryCreator;
         private BlockingDefault defaultBlocking = BlockingDefault.AUTOMATIC;
         private IndexView index;
+        private IndexView applicationIndex;
         private Map<String, String> existingConverters = new HashMap<>();
         private Map<DotName, String> scannedResourcePaths;
         private ResteasyReactiveConfig config;
@@ -1311,6 +1314,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setIndex(IndexView index) {
             this.index = index;
+            return (B) this;
+        }
+
+        public B setApplicationIndex(IndexView index) {
+            this.applicationIndex = index;
             return (B) this;
         }
 

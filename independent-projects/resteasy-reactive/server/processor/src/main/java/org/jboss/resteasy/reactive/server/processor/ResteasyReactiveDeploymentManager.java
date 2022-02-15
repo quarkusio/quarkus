@@ -201,6 +201,7 @@ public class ResteasyReactiveDeploymentManager {
 
             ServerEndpointIndexer.Builder builder = new ServerEndpointIndexer.Builder()
                     .setIndex(index)
+                    .setApplicationIndex(index)
                     .addContextTypes(contextTypes)
                     .setAnnotationsTransformers(annotationsTransformers)
                     .setScannedResourcePaths(resources.getScannedResourcePaths())

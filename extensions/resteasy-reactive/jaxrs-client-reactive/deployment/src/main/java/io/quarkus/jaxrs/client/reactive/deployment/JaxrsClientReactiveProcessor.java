@@ -122,6 +122,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -224,6 +225,7 @@ public class JaxrsClientReactiveProcessor {
             List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
             List<JaxrsClientReactiveEnricherBuildItem> enricherBuildItems,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            ApplicationIndexBuildItem applicationIndexBuildItem,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
             ResteasyReactiveConfig config,
@@ -256,6 +258,7 @@ public class JaxrsClientReactiveProcessor {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         ClientEndpointIndexer clientEndpointIndexer = new ClientEndpointIndexer.Builder()
                 .setIndex(index)
+                .setApplicationIndex(applicationIndexBuildItem.getIndex())
                 .setExistingConverters(new HashMap<>())
                 .setScannedResourcePaths(result.getScannedResourcePaths())
                 .setConfig(createRestReactiveConfig(config))

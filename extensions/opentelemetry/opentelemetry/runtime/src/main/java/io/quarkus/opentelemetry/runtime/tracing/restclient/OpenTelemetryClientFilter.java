@@ -12,6 +12,7 @@ import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.ext.Provider;
 
@@ -27,6 +28,17 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.quarkus.arc.Unremovable;
 
+/**
+ * A client filter for the JAX-RS Client and MicroProfile REST Client that records OpenTelemetry data.
+ *
+ * For the Resteasy Reactive Client, we skip the OpenTelemetry registration, since this can be handled by the
+ * {@link io.quarkus.opentelemetry.runtime.tracing.vertx.OpenTelemetryVertxTracer}. In theory, this wouldn't be an
+ * issue, because the OpenTelemetry Instrumenter detects two Client Span and merge both together, but they need to be
+ * executed with the same OpenTelemetry Context. Right now, the Reactive REST Client filters are executed outside the
+ * Vert.x Context, so we are unable to propagate the OpenTelemetry Context. This is also not a big issue, because the
+ * correct OpenTelemetry data will be populated in Vert.x. The only missing piece is the route name available in
+ * io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityHandler, which is not propagated to Vert.x.
+ */
 @Unremovable
 @Provider
 public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientResponseFilter {
@@ -59,6 +71,10 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
     @Override
     public void filter(final ClientRequestContext request) {
+        if (isReactiveClient(request)) {
+            return;
+        }
+
         Context parentContext = Context.current();
         if (instrumenter.shouldStart(parentContext, request)) {
             Context spanContext = instrumenter.start(parentContext, request);
@@ -86,6 +102,10 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
             request.removeProperty(REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT);
             request.removeProperty(REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE);
         }
+    }
+
+    static boolean isReactiveClient(final ClientRequestContext request) {
+        return "Resteasy Reactive Client".equals(request.getHeaderString(HttpHeaders.USER_AGENT));
     }
 
     private static class ClientRequestContextTextMapSetter implements TextMapSetter<ClientRequestContext> {

@@ -34,7 +34,6 @@ import io.quarkus.opentelemetry.runtime.tracing.restclient.OpenTelemetryClientFi
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
-import io.quarkus.vertx.deployment.CopyVertxContextDataBuildItem;
 
 public class OpenTelemetryProcessor {
     static class OpenTelemetryEnabled implements BooleanSupplier {
@@ -136,11 +135,6 @@ public class OpenTelemetryProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void storeVertxOnContextStorage(OpenTelemetryRecorder recorder, CoreVertxBuildItem vertx) {
         recorder.storeVertxOnContextStorage(vertx.getVertx());
-    }
-
-    @BuildStep
-    CopyVertxContextDataBuildItem copyVertxContextData() {
-        return new CopyVertxContextDataBuildItem(QuarkusContextStorage.ACTIVE_CONTEXT);
     }
 
     public static boolean isClassPresent(String classname) {

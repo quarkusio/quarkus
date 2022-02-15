@@ -94,7 +94,8 @@ public class DevServicesApicurioRegistryProcessor {
         cfg = configuration;
 
         if (devService.isOwner()) {
-            log.infof("Dev Services for Apicurio Registry started. The registry is available at %s", getRegistryUrlConfig());
+            log.infof("Dev Services for Apicurio Registry started. The registry is available at %s",
+                    devService.getConfig().get(REGISTRY_URL_CONFIG));
         }
 
         // Configure the watch dog
@@ -116,8 +117,8 @@ public class DevServicesApicurioRegistryProcessor {
         return devService.toBuildItem();
     }
 
-    private String getRegistryUrlConfig() {
-        return devService.getConfig().get(REGISTRY_URL_CONFIG) + "/apis/registry/v2";
+    private String getRegistryUrlConfig(String baseUrl) {
+        return baseUrl + "/apis/registry/v2";
     }
 
     private void shutdownApicurioRegistry() {
@@ -158,7 +159,7 @@ public class DevServicesApicurioRegistryProcessor {
         // Starting the broker
         return apicurioRegistryContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .map(containerAddress -> new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(),
-                        containerAddress.getId(), null, REGISTRY_URL_CONFIG, containerAddress.getUrl()))
+                        containerAddress.getId(), null, REGISTRY_URL_CONFIG, getRegistryUrlConfig(containerAddress.getUrl())))
                 .orElseGet(() -> {
                     ApicurioRegistryContainer container = new ApicurioRegistryContainer(
                             DockerImageName.parse(config.imageName), config.fixedExposedPort,
@@ -168,7 +169,7 @@ public class DevServicesApicurioRegistryProcessor {
                     container.start();
 
                     return new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(), container.getContainerId(),
-                            container::close, REGISTRY_URL_CONFIG, container.getUrl());
+                            container::close, REGISTRY_URL_CONFIG, getRegistryUrlConfig(container.getUrl()));
                 });
     }
 

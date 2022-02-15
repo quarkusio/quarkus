@@ -115,7 +115,10 @@ public class JarResource implements ClassLoadingResource {
                 // for the "path" which includes the "realName"
                 final URL resUrl = new URI(jarUri.getScheme(), jarUri.getPath() + "!/" + realName, null).toURL();
                 // wrap it up into a "jar" protocol URL
-                return new URL("jar", null, resUrl.getProtocol() + ':' + resUrl.getPath());
+                //horrible hack to deal with '?' characters in the URL
+                //seems to be the only way, the URI constructor just does not let you handle them in a sane way
+                return new URL("jar", null, resUrl.getProtocol() + ':' + resUrl.getPath()
+                        + (resUrl.getQuery() == null ? "" : ("%3F" + resUrl.getQuery())));
             } catch (MalformedURLException | URISyntaxException e) {
                 throw new RuntimeException(e);
             }

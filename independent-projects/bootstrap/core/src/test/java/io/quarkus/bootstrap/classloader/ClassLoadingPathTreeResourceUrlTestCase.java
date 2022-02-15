@@ -1,17 +1,12 @@
 package io.quarkus.bootstrap.classloader;
 
-import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
-import io.quarkus.bootstrap.classloading.JarClassPathElement;
-import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.util.IoUtils;
 import java.io.InputStream;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -24,8 +19,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-//see https://github.com/quarkusio/quarkus/issues/10943
-public class ClassLoadingResourceUrlTestCase {
+public class ClassLoadingPathTreeResourceUrlTestCase {
 
     /**
      * URLClassLoader will return URL's that end with a / if the call to getResource ends with a /
@@ -41,7 +35,7 @@ public class ClassLoadingResourceUrlTestCase {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new DirectoryClassPathElement(path.resolve("tmp"), true))
+                    .addElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);
@@ -79,7 +73,7 @@ public class ClassLoadingResourceUrlTestCase {
         try {
             jar.as(ExplodedExporter.class).exportExploded(tmpDir.toFile(), "tmpcltest");
             final ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new DirectoryClassPathElement(tmpDir.resolve("tmpcltest"), true))
+                    .addElement(ClassPathElement.fromPath(tmpDir.resolve("tmpcltest"), true))
                     .build();
 
             try (final InputStream is = cl.getResourceAsStream("b/")) {
@@ -107,7 +101,7 @@ public class ClassLoadingResourceUrlTestCase {
             jar.as(ZipExporter.class).exportTo(path.toFile(), true);
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new JarClassPathElement(path, true))
+                    .addElement(ClassPathElement.fromPath(path, true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);
@@ -126,25 +120,6 @@ public class ClassLoadingResourceUrlTestCase {
         } finally {
             IoUtils.recursiveDelete(path);
         }
-    }
-
-    @Test
-    public void testMemoryUrlConnections() throws Exception {
-        long start = System.currentTimeMillis();
-        Thread.sleep(2);
-
-        ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                .addElement(
-                        new MemoryClassPathElement(Collections.singletonMap("a.txt", "hello".getBytes(StandardCharsets.UTF_8)),
-                                true))
-                .build();
-        URL res = cl.getResource("a.txt");
-        Assertions.assertNotNull(res);
-        URLConnection urlConnection = res.openConnection();
-        Assertions.assertEquals(5, urlConnection.getContentLength());
-        Assertions.assertTrue(urlConnection.getLastModified() > start);
-        Assertions.assertEquals("hello", new String(urlConnection.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
-
     }
 
     public static Iterable<Object[]> paths() {

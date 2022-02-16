@@ -78,6 +78,7 @@ import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.Expressions;
 import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.deployment.QuteProcessor.LookupConfig;
@@ -304,8 +305,8 @@ public class MessageBundleProcessor {
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
             MessageBundleMethodBuildItem messageBundleMethod = bundleMethods.get(analysis.id);
             if (messageBundleMethod != null) {
+                // All top-level expressions without a namespace should be mapped to a param
                 Set<String> usedParamNames = new HashSet<>();
-                // All top-level expressions without namespace map to a param
                 Set<String> paramNames = IntStream.range(0, messageBundleMethod.getMethod().parameters().size())
                         .mapToObj(idx -> getParameterName(messageBundleMethod.getMethod(), idx)).collect(Collectors.toSet());
                 for (Expression expression : analysis.expressions) {
@@ -330,8 +331,12 @@ public class MessageBundleProcessor {
             return;
         }
         if (!expression.hasNamespace()) {
-            String name = expression.getParts().get(0).getName();
-            if (!paramNames.contains(name)) {
+            Expression.Part firstPart = expression.getParts().get(0);
+            String name = firstPart.getName();
+            // Skip expressions that have type info derived from a parent section, e.g "it<loop#3>" and "foo<set#3>"
+            if (firstPart.getTypeInfo() == null || (firstPart.getTypeInfo().startsWith("" + Expressions.TYPE_INFO_SEPARATOR)
+                    && !paramNames.contains(name))) {
+                // Expression has no type info or type info that does not match a method parameter
                 incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
                         name + " is not a parameter of the message bundle method "
                                 + messageBundleMethod.getMethod().declaringClass().name() + "#"
@@ -799,7 +804,7 @@ public class MessageBundleProcessor {
         return generatedName.replace('/', '.');
     }
 
-    private String getParameterName(MethodInfo method, int position) {
+    static String getParameterName(MethodInfo method, int position) {
         String name = method.parameterName(position);
         AnnotationInstance paramAnnotation = Annotations
                 .find(Annotations.getParameterAnnotations(method.annotations()).stream()

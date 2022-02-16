@@ -21,4 +21,8 @@ public class MovieExtensions {
         return !val;
     }
 
+    static int toInt(Movie movie, int val) {
+        return val;
+    }
+
 }

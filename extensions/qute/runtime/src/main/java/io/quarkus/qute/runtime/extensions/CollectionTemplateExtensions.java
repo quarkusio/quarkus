@@ -1,5 +1,7 @@
 package io.quarkus.qute.runtime.extensions;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -62,6 +64,12 @@ public class CollectionTemplateExtensions {
             return list;
         }
         return list.subList(list.size() - n, list.size());
+    }
+
+    // This extension method has higher priority than ValueResolvers.orEmpty() 
+    // and makes it possible to validate expressions derived from {list.orEmpty} 
+    static <T> Collection<T> orEmpty(Collection<T> iterable) {
+        return iterable != null ? iterable : Collections.emptyList();
     }
 
 }

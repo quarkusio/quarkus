@@ -619,6 +619,8 @@ public class QuteProcessor {
             List<TemplateExtensionMethodBuildItem> regularExtensionMethods,
             Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods) {
 
+        LOGGER.debugf("Validate %s from %s", expression, expression.getOrigin());
+
         // Validate the parameters of nested virtual methods
         for (Expression.Part part : expression.getParts()) {
             if (part.isVirtualMethod()) {

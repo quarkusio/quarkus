@@ -84,7 +84,6 @@ public class EngineProducer {
         EngineBuilder builder = Engine.builder();
 
         // We don't register the map resolver because of param declaration validation
-        // See DefaultTemplateExtensions
         builder.addValueResolver(ValueResolvers.thisResolver());
         builder.addValueResolver(ValueResolvers.orResolver());
         builder.addValueResolver(ValueResolvers.trueResolver());

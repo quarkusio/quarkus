@@ -453,8 +453,8 @@ public class QuteProcessor {
                     MethodInfo method = messageBundleMethod.getMethod();
                     for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
                         Type paramType = it.next();
-                        parserHelper.addParameter(method.parameterName(it.previousIndex()),
-                                JandexUtil.getBoxedTypeName(paramType));
+                        String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
+                        parserHelper.addParameter(name, JandexUtil.getBoxedTypeName(paramType));
                     }
                 }
             }

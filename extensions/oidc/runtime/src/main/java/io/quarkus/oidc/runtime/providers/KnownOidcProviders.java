@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime.providers;
 import java.util.List;
 
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
@@ -73,6 +74,7 @@ public class KnownOidcProviders {
         ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
         ret.getAuthentication().setScopes(List.of("openid", "email", "name"));
         ret.getAuthentication().setForceRedirectHttpsScheme(true);
+        ret.getAuthentication().setResponseMode(ResponseMode.FORM_POST);
         ret.getCredentials().getClientSecret().setMethod(Method.POST_JWT);
         ret.getCredentials().getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
         ret.getCredentials().getJwt().setAudience("https://appleid.apple.com/");

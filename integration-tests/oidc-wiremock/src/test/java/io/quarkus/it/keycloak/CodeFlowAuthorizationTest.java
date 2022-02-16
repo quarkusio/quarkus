@@ -58,6 +58,25 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
+    public void testCodeFlowFormPost() throws IOException {
+        defineCodeFlowLogoutStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-form-post");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            page = form.getInputByValue("login").click();
+
+            assertEquals("alice", page.getBody().asText());
+            assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCodeFlowUserInfo() throws IOException {
         defineCodeFlowAuthorizationOauth2TokenStub();
         doTestCodeFlowUserInfo("code-flow-user-info-only");

@@ -359,6 +359,9 @@ public final class OidcUtils {
         if (tenant.authentication.forceRedirectHttpsScheme.isEmpty()) {
             tenant.authentication.forceRedirectHttpsScheme = provider.authentication.forceRedirectHttpsScheme;
         }
+        if (tenant.authentication.responseMode.isEmpty()) {
+            tenant.authentication.responseMode = provider.authentication.responseMode;
+        }
 
         // credentials
         if (tenant.credentials.clientSecret.method.isEmpty()) {

@@ -41,6 +41,7 @@ public final class OidcConstants {
 
     public static final String AUTHORIZATION_CODE = "authorization_code";
     public static final String CODE_FLOW_RESPONSE_TYPE = "response_type";
+    public static final String CODE_FLOW_RESPONSE_MODE = "response_mode";
     public static final String CODE_FLOW_CODE = "code";
     public static final String CODE_FLOW_ERROR = "error";
     public static final String CODE_FLOW_ERROR_DESCRIPTION = "error_description";

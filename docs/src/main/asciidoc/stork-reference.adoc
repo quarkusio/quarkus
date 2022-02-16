@@ -98,7 +98,7 @@ import io.smallrye.stork.spi.ServiceDiscoveryProvider;
 @ServiceDiscoveryAttribute(name = "host",
         description = "Host name of the service discovery server.", required = true) // <2>
 @ServiceDiscoveryAttribute(name = "port",
-        description = "Hort of the service discovery server.", required = false)
+        description = "Port of the service discovery server.", required = false)
 public class AcmeServiceDiscoveryProvider // <3>
         implements ServiceDiscoveryProvider<AcmeServiceDiscoveryProviderConfiguration> {
 

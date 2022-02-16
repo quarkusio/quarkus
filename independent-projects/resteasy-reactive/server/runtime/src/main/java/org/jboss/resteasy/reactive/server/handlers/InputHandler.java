@@ -43,8 +43,7 @@ public class InputHandler implements ServerRestHandler {
             // let's not set it twice
             return;
         }
-        if (context.serverRequest().getRequestMethod().equals(HttpMethod.GET) ||
-                context.serverRequest().getRequestMethod().equals(HttpMethod.HEAD)) {
+        if (context.serverRequest().getRequestMethod().equals(HttpMethod.HEAD)) {
             return;
         }
         InputListener h = new InputListener(context);

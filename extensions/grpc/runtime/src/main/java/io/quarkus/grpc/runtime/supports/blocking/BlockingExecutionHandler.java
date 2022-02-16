@@ -37,8 +37,7 @@ class BlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
          * The lock object is assumed to be the request's listener
          */
         synchronized (lock) {
-            final Context previous = Context.current();
-            grpcContext.attach();
+            Context previous = grpcContext.attach();
             try {
                 requestContext.activate(state);
                 try {

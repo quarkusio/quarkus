@@ -18,6 +18,7 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.DecoratorInfo;
 import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.arc.runtime.ArcContainerSupplier;
@@ -106,6 +107,15 @@ public class ArcDevConsoleProcessor {
         }
         for (InterceptorInfo interceptor : validationContext.get(BuildExtension.Key.INTERCEPTORS)) {
             beanInfos.addInterceptor(DevInterceptorInfo.from(interceptor, predicate));
+        }
+        for (InterceptorInfo interceptor : validationContext.get(BuildExtension.Key.REMOVED_INTERCEPTORS)) {
+            beanInfos.addRemovedInterceptor(DevInterceptorInfo.from(interceptor, predicate));
+        }
+        for (DecoratorInfo decorator : validationContext.get(BuildExtension.Key.DECORATORS)) {
+            beanInfos.addDecorator(DevDecoratorInfo.from(decorator, predicate));
+        }
+        for (DecoratorInfo decorator : validationContext.get(BuildExtension.Key.REMOVED_DECORATORS)) {
+            beanInfos.addRemovedDecorator(DevDecoratorInfo.from(decorator, predicate));
         }
         beanInfos.sort();
         return new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos);

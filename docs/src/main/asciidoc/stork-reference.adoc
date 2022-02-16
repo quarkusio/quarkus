@@ -59,7 +59,7 @@ To implement your Service Discovery Provider, make sure your project depends on 
 [source, xml]
 ----
 <dependency>
-    <groupI>io.smallrye.stork</groupI>
+    <groupId>io.smallrye.stork</groupId>
     <artifactId>stork-core</artifactId>
 </dependency>
 <dependency>
@@ -69,6 +69,23 @@ To implement your Service Discovery Provider, make sure your project depends on 
     <scope>provided</scope>
 </dependency>
 ----
+
+[NOTE]
+====
+If the provider is located in an extension, the configuration generator should be declared in the
+`annotationProcessorPaths` section of the runtime module using the default scope:
+
+[source,xml]
+----
+<annotationProcessorPaths>
+  ...
+  <path>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-configuration-generator</artifactId>
+  </path>
+</annotationProcessorPaths>
+----
+====
 
 === Implementing a service discovery provider
 
@@ -186,7 +203,7 @@ To implement your Load Balancer Provider, make sure your project depends on Core
 [source, xml]
 ----
 <dependency>
-    <groupI>io.smallrye.stork</groupI>
+    <groupId>io.smallrye.stork</groupId>
     <artifactId>stork-core</artifactId>
 </dependency>
 <dependency>
@@ -196,6 +213,11 @@ To implement your Load Balancer Provider, make sure your project depends on Core
     <scope>provided</scope>
 </dependency>
 ----
+
+[NOTE]
+====
+Similar to custom discovery providers, if the provider is located in an extension, the configuration generator should be declared in the `annotationProcessorPaths` section of the runtime module using the default scope.
+====
 
 === Implementing a load balancer provider
 

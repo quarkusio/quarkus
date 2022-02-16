@@ -11,6 +11,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -58,6 +59,7 @@ public class DuplicatedContextTest {
     }
 
     @Test
+    @Disabled("This test is flaky on CI, must be investigated")
     public void testThatBlockingRoutesAreCalledOnDuplicatedContext() {
         String uuid = UUID.randomUUID().toString();
         String resp = get("/context-blocking/" + uuid).asString();

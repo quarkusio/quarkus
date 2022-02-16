@@ -26,17 +26,6 @@ All the information between the browser and the server is formatted as JSON.
 
 The elements are stored in Elasticsearch.
 
-== Solution
-
-We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
-
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
-
-The solution for the low level client is located in the `elasticsearch-rest-client-quickstart` {quickstarts-tree-url}/elasticsearch-rest-client-quickstart[directory].
-
-The solution for the high level client is located in the `elasticsearch-rest-high-level-client-quickstart` {quickstarts-tree-url}/elasticsearch-rest-high-level-client-quickstart[directory].
-
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
@@ -203,10 +192,16 @@ Now, create the `org.acme.elasticsearch.FruitResource` class as follows:
 ----
 package org.acme.elasticsearch;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
 
 @Path("/fruits")
 public class FruitResource {
@@ -331,23 +326,28 @@ docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPT
        --rm -p 9200:9200 docker.elastic.co/elasticsearch/elasticsearch-oss:{elasticsearch-version}
 ----
 
-== Creating a frontend
+== Running the application
 
-Now let's add a simple web page to interact with our `FruitResource`.
-Quarkus automatically serves static resources located under the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this {quickstarts-blob-url}/elasticsearch-low-level-client-quickstart/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
-
-You can now interact with your REST service:
+Now let's run our application via Quarkus dev mode:
 
 :devtools-wrapped:
-* start Quarkus with:
 +
 include::includes/devtools/dev.adoc[]
-* open a browser to `http://localhost:8080/fruits.html`
-* add new fruits to the list via the 'Add fruit' form
-* search for fruits by name or color via the 'Search Fruit' form
-
 :!devtools-wrapped:
+
+You can add new fruits to the list via the following curl command:
+
+[source,bash,subs=attributes+]
+----
+curl localhost:8080/fruits -d '{"name": "bananas", "color": "yellow"}' -H "Content-Type: application/json"
+----
+
+And search for fruits by name or color via the flowing curl command:
+
+[source,bash,subs=attributes+]
+----
+curl localhost:8080/fruits/search?color=yellow
+----
 
 == Using the High Level REST Client
 

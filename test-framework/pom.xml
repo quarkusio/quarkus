@@ -43,6 +43,7 @@
         <module>jacoco</module>
         <module>mongodb</module>
         <module>infinispan-client</module>
+        <module>kafka-companion</module>
     </modules>
 
 </project>

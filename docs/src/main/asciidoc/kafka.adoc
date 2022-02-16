@@ -1727,7 +1727,88 @@ With in-memory channels we were able to test application code processing message
 Note that different in-memory channels are independent, and switching channel connector to in-memory does not simulate message delivery between channels configured to the same Kafka topic.
 ====
 
-=== Starting Kafka in a test resource
+=== Testing using a Kafka broker
+
+If you are using <<kafka-dev-services>>, a Kafka broker will be started and available throughout the tests, unless it is disabled in `%test` profile.
+While it is possible to connect to this broker using Kafka Clients API,
+https://smallrye.io/smallrye-reactive-messaging/latest/kafka/test-companion/[Kafka Companion Library] proposes an easier way of interacting with a Kafka broker and, creating consumer, producer and admin actions inside tests.
+
+For using `KafkaCompanion` API in tests, start by adding the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-kafka-companion</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+which provides `io.quarkus.test.kafka.KafkaCompanionResource` - an implementation of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager`.
+
+Then use `@QuarkusTestResource` to configure the Kafka Companion in tests, for example:
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.UUID;
+
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.kafka.InjectKafkaCompanion;
+import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
+import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
+
+@QuarkusTest
+@QuarkusTestResource(KafkaCompanionResource.class)
+public class OrderProcessorTest {
+
+    @InjectKafkaCompanion // <1>
+    KafkaCompanion companion;
+
+    @Test
+    void testProcessor() {
+        companion.produceStrings().usingGenerator(i -> new ProducerRecord<>("orders", UUID.randomUUID().toString())); // <2>
+
+        // Expect that the tested application processes orders from 'orders' topic and write to 'orders-processed' topic
+
+        ConsumerTask<String, String> orders = companion.consumeStrings().fromTopics("orders-processed", 10); // <3>
+        orders.awaitCompletion(); // <4>
+        assertEquals(10, orders.count());
+    }
+}
+----
+
+<1> `@InjectKafkaCompanion` injects the `KafkaCompanion` instance, configured to access the Kafka broker created for tests.
+<2> Use `KafkaCompanion` to create producer task which writes 10 records to 'orders' topic.
+<3> Create consumer task which subscribes to 'orders-processed' topic and consumes 10 records.
+<4> Await completion of the consumer task.
+
+[TIP]
+====
+If the Kafka Dev Service is available during tests, `KafkaCompanionResource` uses the created Kafka broker, otherwise it creates a Kafka broker using https://github.com/strimzi/test-container[Strimzi Test Container].
+
+The configuration of the created Kafka broker can be customized using `@ResourceArg`, for example:
+[source,java]
+----
+@QuarkusTestResource(value = KafkaCompanionResource.class, initArgs = {
+        @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi/kafka:0.28.0-kafka-3.0.0"), // Image name
+        @ResourceArg(name = "kafka.port", value = "9092"), // Fixed port for kafka, by default it will be exposed on a random port
+        @ResourceArg(name = "kraft", value = "true"), // Enable Kraft mode
+        @ResourceArg(name = "num.partitions", value = "3"), // Other custom broker configurations
+})
+public class OrderProcessorTest {
+    // ...
+}
+----
+====
+
+==== Custom test resource
 
 Alternatively, you can start a Kafka broker in a test resource.
 The following snippet shows a test resource starting a Kafka broker using https://www.testcontainers.org/modules/kafka/[Testcontainers]:

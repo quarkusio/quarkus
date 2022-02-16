@@ -89,6 +89,10 @@
                     <groupId>jakarta.activation</groupId>
                     <artifactId>jakarta.activation-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.worldturner.medeia</groupId>
+                    <artifactId>medeia-validator-jackson</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <!-- required by io.confluent.kafka.schemaregistry.client.rest.entities.ServerClusterId -->
@@ -104,7 +108,12 @@
             </exclusions>
         </dependency>
 
-
+        <!-- Kafka Test Companion -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-kafka-companion</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

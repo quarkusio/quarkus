@@ -12,7 +12,7 @@ import org.postgresql.core.BaseConnection;
 import com.oracle.svm.core.annotate.AutomaticFeature;
 
 @AutomaticFeature
-public final class SQLXLMFeature implements Feature {
+public final class SQLXMLFeature implements Feature {
 
     private final AtomicBoolean triggered = new AtomicBoolean(false);
 
@@ -40,7 +40,7 @@ public final class SQLXLMFeature implements Feature {
         if (needsEnablingYet) {
             if (log) {
                 System.out.println(
-                        "Quarkus's automatic feature for GraalVM native images: enabling support for XML processing in the PosgreSQL JDBC driver");
+                        "Quarkus' automatic feature for GraalVM native images: enabling support for XML processing in the PostgreSQL JDBC driver");
             }
             enableDomXMLProcessingInDriver(duringAnalysisAccess);
         }

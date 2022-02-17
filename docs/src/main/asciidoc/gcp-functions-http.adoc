@@ -65,6 +65,8 @@ For real life applications, you should choose one of this technology and stick t
 
 If you don't need endpoints of each type, you can remove the corresponding extensions from your `pom.xml`.
 
+NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must use `gcloud beta` command and add the `--gen2` parameter.
+
 === The JAX-RS endpoint
 
 [source,java]
@@ -198,7 +200,7 @@ You can download it via Maven using the following command:
 [source,bash]
 ----
 mvn dependency:copy \
-  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.2' \
+  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.1.0' \
   -DoutputDirectory=.
 ----
 
@@ -208,7 +210,7 @@ Then you can use it to launch your function locally.
 
 [source,bash]
 ----
-java -jar java-function-invoker-1.0.2.jar \
+java -jar java-function-invoker-1.1.0.jar \
   --classpath target/deployment/google-cloud-functions-http-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.http.QuarkusHttpFunction
 ----

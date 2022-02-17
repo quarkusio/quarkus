@@ -241,6 +241,16 @@ The labels in generated resources will look like:
   }
 ----
 
+[NOTE]
+====
+You can also remove the `app.kubernetes.io/version` label by applying the following configuration:
+
+[source,properties]
+----
+quarkus.kubernetes.add-version-to-label-selectors=false
+----
+====
+
 ==== Custom Labels
 
 To add additional custom labels, for example `foo=bar` just apply the following configuration:

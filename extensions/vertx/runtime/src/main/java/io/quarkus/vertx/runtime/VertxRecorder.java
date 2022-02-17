@@ -17,6 +17,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -98,7 +99,7 @@ public class VertxRecorder {
                             public void handle(Message<Object> m) {
                                 if (invoker.isBlocking()) {
                                     // We need to create a duplicated context from the "context"
-                                    Context dup = context.duplicate();
+                                    Context dup = VertxContext.getOrCreateDuplicatedContext(context);
                                     dup.executeBlocking(new Handler<Promise<Object>>() {
                                         @Override
                                         public void handle(Promise<Object> event) {

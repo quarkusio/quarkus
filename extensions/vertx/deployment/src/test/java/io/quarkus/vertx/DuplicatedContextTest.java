@@ -20,6 +20,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Context;
@@ -27,8 +29,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.impl.EventLoopContext;
-import io.vertx.core.impl.WorkerContext;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
 
@@ -152,10 +152,9 @@ public class DuplicatedContextTest {
 
         private Uni<String> process(String id) {
             Context context = Vertx.currentContext();
-            Assertions.assertFalse(context instanceof EventLoopContext);
-            Assertions.assertFalse(context instanceof WorkerContext);
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
 
-            String val = context.getLocal("key");
+            String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
 
             context.putLocal("key", id);
@@ -167,9 +166,9 @@ public class DuplicatedContextTest {
                             .map(Buffer::toString)
                             .map(msg -> {
                                 Assertions.assertEquals("hey!", msg);
-                                Assertions.assertEquals(id, Vertx.currentContext().getLocal("key"));
+                                Assertions.assertEquals(id, ContextLocals.get("key", null));
                                 Assertions.assertSame(Vertx.currentContext(), context);
-                                return "OK-" + context.getLocal("key");
+                                return "OK-" + ContextLocals.get("key", null);
                             }).toCompletionStage());
         }
 
@@ -183,10 +182,9 @@ public class DuplicatedContextTest {
         @ConsumeEvent(value = "context-send")
         public void consumeSend(String s) {
             Context context = Vertx.currentContext();
-            Assertions.assertFalse(context instanceof EventLoopContext);
-            Assertions.assertFalse(context instanceof WorkerContext);
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
 
-            String val = context.getLocal("key");
+            String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
             context.putLocal("key", s);
 
@@ -196,10 +194,9 @@ public class DuplicatedContextTest {
         @ConsumeEvent(value = "context-send-blocking")
         public void consumeSendBlocking(String s) {
             Context context = Vertx.currentContext();
-            Assertions.assertFalse(context instanceof EventLoopContext);
-            Assertions.assertFalse(context instanceof WorkerContext);
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
 
-            String val = context.getLocal("key");
+            String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
             context.putLocal("key", s);
 
@@ -209,10 +206,9 @@ public class DuplicatedContextTest {
         @ConsumeEvent(value = "context-publish")
         public void consumePublish1(String s) {
             Context context = Vertx.currentContext();
-            Assertions.assertFalse(context instanceof EventLoopContext);
-            Assertions.assertFalse(context instanceof WorkerContext);
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
 
-            String val = context.getLocal("key");
+            String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
             context.putLocal("key", s);
 
@@ -222,10 +218,9 @@ public class DuplicatedContextTest {
         @ConsumeEvent(value = "context-publish")
         public void consumePublish2(String s) {
             Context context = Vertx.currentContext();
-            Assertions.assertFalse(context instanceof EventLoopContext);
-            Assertions.assertFalse(context instanceof WorkerContext);
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
 
-            String val = context.getLocal("key");
+            String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
             context.putLocal("key", s);
 
@@ -236,10 +231,9 @@ public class DuplicatedContextTest {
         @Blocking
         public void consumePublishBlocking1(String s) {
             Context context = Vertx.currentContext();
-            Assertions.assertFalse(context instanceof EventLoopContext);
-            Assertions.assertFalse(context instanceof WorkerContext);
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
 
-            String val = context.getLocal("key");
+            String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
             context.putLocal("key", s);
 
@@ -250,10 +244,9 @@ public class DuplicatedContextTest {
         @Blocking
         public void consumePublishBlocking2(String s) {
             Context context = Vertx.currentContext();
-            Assertions.assertFalse(context instanceof EventLoopContext);
-            Assertions.assertFalse(context instanceof WorkerContext);
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
 
-            String val = context.getLocal("key");
+            String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
             context.putLocal("key", s);
 

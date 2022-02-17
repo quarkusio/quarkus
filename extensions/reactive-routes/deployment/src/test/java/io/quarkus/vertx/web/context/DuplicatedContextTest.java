@@ -18,6 +18,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Context;
@@ -25,8 +27,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.impl.EventLoopContext;
-import io.vertx.core.impl.WorkerContext;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -87,14 +87,13 @@ public class DuplicatedContextTest {
 
         private void process(RoutingContext ctx) {
             Context context = Vertx.currentContext();
-            Assertions.assertFalse(context instanceof EventLoopContext);
-            Assertions.assertFalse(context instanceof WorkerContext);
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
 
-            String val = context.getLocal("key");
+            String val = ContextLocals.<String> get("key").orElse(null);
             Assertions.assertNull(val);
 
             String id = ctx.pathParam("id");
-            context.putLocal("key", id);
+            ContextLocals.put("key", id);
 
             vertx.createHttpClient().request(HttpMethod.GET, 8081, "localhost", "/hey")
                     .compose(request -> request.end().compose(x -> request.response()))
@@ -102,9 +101,9 @@ public class DuplicatedContextTest {
                     .map(Buffer::toString)
                     .onSuccess(msg -> {
                         Assertions.assertEquals("hey!", msg);
-                        Assertions.assertEquals(id, Vertx.currentContext().getLocal("key"));
+                        Assertions.assertEquals(id, ContextLocals.<String> get("key").orElseThrow());
                         Assertions.assertSame(Vertx.currentContext(), context);
-                        ctx.response().end("OK-" + context.getLocal("key"));
+                        ctx.response().end("OK-" + ContextLocals.get("key").orElseThrow());
                     });
         }
 

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ContextInternal;
@@ -122,7 +123,7 @@ public class LocalContextAccessTest {
         CompletableFuture<Void> put = new CompletableFuture<>();
         CompletableFuture<Void> remove = new CompletableFuture<>();
 
-        ContextInternal local = context.duplicate();
+        Context local = VertxContext.getOrCreateDuplicatedContext(context);
 
         local.runOnContext(x -> {
             try {

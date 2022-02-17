@@ -7,12 +7,10 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.MountableFile;
 
-import com.github.dockerjava.api.command.InspectContainerResponse;
-
 public class KeycloakContainer extends FixedHostPortGenericContainer<KeycloakContainer> {
 
     public KeycloakContainer() {
-        super("quay.io/keycloak/keycloak:15.0.2");
+        super("quay.io/keycloak/keycloak:16.1.1");
         withExposedPorts(8443);
         withFixedExposedPort(8080, 8080);
         withEnv("KEYCLOAK_USER", "admin");
@@ -23,27 +21,9 @@ public class KeycloakContainer extends FixedHostPortGenericContainer<KeycloakCon
         waitingFor(Wait.forLogMessage(".*WFLYSRV0025.*", 1));
         withNetwork(Network.SHARED);
         withNetworkAliases("keycloak");
-        withCreateContainerCmdModifier(cmd -> {
-            cmd.withEntrypoint("");
-            cmd.withCmd("/bin/bash", "-c", "cd /opt/jboss/keycloak " +
-                    "&& bin/jboss-cli.sh --file=ssl/keycloak-ssl.cli " +
-                    "&& rm -rf standalone/configuration/standalone_xml_history/current " +
-                    "&& cd .. " +
-                    "&& /opt/jboss/tools/docker-entrypoint.sh -Dkeycloak.profile.feature.upload_scripts=enabled -b 0.0.0.0");
-        });
-    }
-
-    @Override
-    protected void containerIsStarting(InspectContainerResponse containerInfo, boolean reused) {
-        super.containerIsStarting(containerInfo);
-        copyFileToContainer(MountableFile.forClasspathResource("certificates/ca-truststore.p12"),
-                "/opt/jboss/keycloak/standalone/configuration/certs/ca-truststore.p12");
-        copyFileToContainer(MountableFile.forClasspathResource("certificates/keycloak.server.keystore.p12"),
-                "/opt/jboss/keycloak/standalone/configuration/certs/keycloak.server.keystore.p12");
-        copyFileToContainer(MountableFile.forClasspathResource("keycloak/scripts/keycloak-ssl.cli"),
-                "/opt/jboss/keycloak/ssl/keycloak-ssl.cli");
-        copyFileToContainer(MountableFile.forClasspathResource("keycloak/realms/kafka-authz-realm.json"),
+        withCopyFileToContainer(MountableFile.forClasspathResource("keycloak/realms/kafka-authz-realm.json"),
                 "/opt/jboss/keycloak/realms/kafka-authz-realm.json");
+        withCommand("-Dkeycloak.profile.feature.upload_scripts=enabled", "-b", "0.0.0.0");
     }
 
     public void createHostsFile() {

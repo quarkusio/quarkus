@@ -391,7 +391,7 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 
 |orEmpty
 |Outputs an empty list if the previous part cannot be resolved or resolves to `null`.
-|`{#for pet in pets.orEmpty}{pet.name}{/for}`
+|`{pets.orEmpty.size}` outputs `0` if `pets` is not resolvable or `null`
 
 |Ternary Operator
 |Shorthand for if-then-else statement. Unlike in <<if_section>> nested operators are not supported.
@@ -597,8 +597,10 @@ A section helper that defines the logic of a section can "execute" any of the bl
 ==== Loop Section
 
 The loop section makes it possible to iterate over an instance of `Iterable`, `Iterator`, array, `Map` (element is a `Map.Entry`), `Stream`, `Integer` and `int` (primitive value).
-It has two flavors.
-The first one is using the `each` name and `it` is an implicit alias for the iteration element.
+A `null` parameter value results in a no-op.
+
+This section has two flavors.
+The first one is using the name `each` and `it` is an implicit alias for the iteration element.
 
 [source]
 ----
@@ -608,7 +610,7 @@ The first one is using the `each` name and `it` is an implicit alias for the ite
 ----
 <1> `name` is resolved against the current iteration element.
 
-The other form is using the `for` name and can specify the alias used to reference the iteration element:
+The other form is using the name `for` and specifies the alias used to reference the iteration element:
 
 [source]
 ----

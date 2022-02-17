@@ -1,8 +1,7 @@
 package io.quarkus.vertx.core.runtime;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.EventLoopContext;
-import io.vertx.core.impl.WorkerContext;
 
 public class VertxLocalsHelper {
 
@@ -21,7 +20,7 @@ public class VertxLocalsHelper {
 
     @SuppressWarnings("unchecked")
     public static <T> T getLocal(ContextInternal context, Object key) {
-        if (!(context instanceof EventLoopContext) && !(context instanceof WorkerContext)) {
+        if (VertxContext.isDuplicatedContext(context)) {
             // We are on a duplicated context, allow accessing the locals
             return (T) context.localContextData().get(key);
         } else {
@@ -30,7 +29,7 @@ public class VertxLocalsHelper {
     }
 
     public static void putLocal(ContextInternal context, Object key, Object value) {
-        if (!(context instanceof EventLoopContext) && !(context instanceof WorkerContext)) {
+        if (VertxContext.isDuplicatedContext(context)) {
             // We are on a duplicated context, allow accessing the locals
             context.localContextData().put(key, value);
         } else {
@@ -39,7 +38,7 @@ public class VertxLocalsHelper {
     }
 
     public static boolean removeLocal(ContextInternal context, Object key) {
-        if (!(context instanceof EventLoopContext) && !(context instanceof WorkerContext)) {
+        if (VertxContext.isDuplicatedContext(context)) {
             // We are on a duplicated context, allow accessing the locals
             return context.localContextData().remove(key) != null;
         } else {

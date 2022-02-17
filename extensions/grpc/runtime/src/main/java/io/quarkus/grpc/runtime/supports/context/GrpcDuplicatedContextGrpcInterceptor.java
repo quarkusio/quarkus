@@ -12,11 +12,9 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.quarkus.grpc.GlobalInterceptor;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.EventLoopContext;
-import io.vertx.core.impl.WorkerContext;
 
 @ApplicationScoped
 @GlobalInterceptor
@@ -27,7 +25,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
     }
 
     private static boolean isRootContext(Context context) {
-        return context instanceof EventLoopContext || context instanceof WorkerContext;
+        return !VertxContext.isDuplicatedContext(context);
     }
 
     @Override
@@ -40,10 +38,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         if (capturedVertxContext != null) {
             // If we are not on a duplicated context, create and switch.
-            Context local = capturedVertxContext;
-            if (isRootContext(capturedVertxContext)) {
-                local = ((ContextInternal) capturedVertxContext).duplicate();
-            }
+            Context local = VertxContext.getOrCreateDuplicatedContext(capturedVertxContext);
 
             // Must be sure to call next.startCall on the right context
             return new ListenedOnDuplicatedContext<>(() -> next.startCall(call, headers), local);

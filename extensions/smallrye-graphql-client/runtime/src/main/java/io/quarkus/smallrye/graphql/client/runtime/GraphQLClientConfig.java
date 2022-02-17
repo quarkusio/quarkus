@@ -34,6 +34,20 @@ public class GraphQLClientConfig {
     public Optional<List<String>> subprotocols;
 
     /**
+     * If true, then queries and mutations will run over the websocket transport rather than pure HTTP.
+     * Off by default, because it has higher overhead.
+     */
+    @ConfigItem
+    public Optional<Boolean> executeSingleResultOperationsOverWebsocket;
+
+    /**
+     * Maximum time in milliseconds that will be allowed to wait for the server to acknowledge a websocket connection
+     * (send a subprotocol-specific ACK message).
+     */
+    @ConfigItem
+    public Optional<Integer> websocketInitializationTimeout;
+
+    /**
      * The trust store location. Can point to either a classpath resource or a file.
      */
     @ConfigItem

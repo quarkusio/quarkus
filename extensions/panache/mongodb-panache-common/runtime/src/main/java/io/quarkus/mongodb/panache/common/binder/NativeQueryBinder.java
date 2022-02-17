@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.binder;
+package io.quarkus.mongodb.panache.common.binder;
 
 import java.util.Map;
 

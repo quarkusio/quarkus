@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.jackson;
+package io.quarkus.mongodb.panache.common.jackson;
 
 import java.io.IOException;
 

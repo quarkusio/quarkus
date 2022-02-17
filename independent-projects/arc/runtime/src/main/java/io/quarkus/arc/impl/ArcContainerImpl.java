@@ -72,8 +72,8 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final AtomicBoolean running;
 
-    private final ArrayList<InjectableBean<?>> beans;
-    private final ArrayList<RemovedBean> removedBeans;
+    private final List<InjectableBean<?>> beans;
+    private final List<RemovedBean> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableDecorator<?>> decorators;
     private final List<InjectableObserverMethod<?>> observers;
@@ -98,13 +98,13 @@ public class ArcContainerImpl implements ArcContainer {
     public ArcContainerImpl() {
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
-        beans = new ArrayList<>();
-        removedBeans = new ArrayList<>();
-        interceptors = new ArrayList<>();
-        decorators = new ArrayList<>();
-        observers = new ArrayList<>();
-        transitiveInterceptorBindings = new HashMap<>();
-        qualifierNonbindingMembers = new HashMap<>();
+        List<InjectableBean<?>> beans = new ArrayList<>();
+        List<RemovedBean> removedBeans = new ArrayList<>();
+        List<InjectableInterceptor<?>> interceptors = new ArrayList<>();
+        List<InjectableDecorator<?>> decorators = new ArrayList<>();
+        List<InjectableObserverMethod<?>> observers = new ArrayList<>();
+        Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
+        Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
 
         applicationContext = new ApplicationContext();
         singletonContext = new SingletonContext();
@@ -126,7 +126,6 @@ public class ArcContainerImpl implements ArcContainer {
                 }
             }
             removedBeans.addAll(components.getRemovedBeans());
-            removedBeans.trimToSize();
             observers.addAll(components.getObservers());
             // Add custom contexts
             for (InjectableContext context : components.getContexts()) {
@@ -145,7 +144,6 @@ public class ArcContainerImpl implements ArcContainer {
         }
         // register built-in beans
         addBuiltInBeans(beans);
-        beans.trimToSize();
 
         interceptors.sort((i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
 
@@ -159,6 +157,14 @@ public class ArcContainerImpl implements ArcContainer {
         resourceProviders.trimToSize();
 
         instance = InstanceImpl.of(Object.class, Collections.emptySet());
+
+        this.beans = List.copyOf(beans);
+        this.interceptors = List.copyOf(interceptors);
+        this.decorators = List.copyOf(decorators);
+        this.observers = List.copyOf(observers);
+        this.removedBeans = List.copyOf(removedBeans);
+        this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
+        this.qualifierNonbindingMembers = Map.copyOf(qualifierNonbindingMembers);
     }
 
     private void putContext(InjectableContext context) {
@@ -371,10 +377,7 @@ public class ArcContainerImpl implements ArcContainer {
             // Clear caches
             Reflections.clearCaches();
             contexts.clear();
-            beans.clear();
-            removedBeans.clear();
             resolved.clear();
-            observers.clear();
             running.set(false);
             InterceptedStaticMethods.clear();
 
@@ -383,19 +386,23 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     public List<InjectableBean<?>> getBeans() {
-        return new ArrayList<>(beans);
+        return beans;
     }
 
     public List<RemovedBean> getRemovedBeans() {
-        return Collections.unmodifiableList(removedBeans);
+        return removedBeans;
     }
 
     public List<InjectableInterceptor<?>> getInterceptors() {
-        return new ArrayList<>(interceptors);
+        return interceptors;
+    }
+
+    public List<InjectableDecorator<?>> getDecorators() {
+        return decorators;
     }
 
     public List<InjectableObserverMethod<?>> getObservers() {
-        return new ArrayList<>(observers);
+        return observers;
     }
 
     InstanceHandle<Object> getResource(Type type, Set<Annotation> annotations) {

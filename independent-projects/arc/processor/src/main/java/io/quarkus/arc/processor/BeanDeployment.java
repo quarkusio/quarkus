@@ -129,7 +129,7 @@ public class BeanDeployment {
         this.observerTransformers = initAndSort(builder.observerTransformers, buildContext);
         this.removeUnusedBeans = builder.removeUnusedBeans;
         this.unusedExclusions = removeUnusedBeans ? new ArrayList<>(builder.removalExclusions) : null;
-        this.removedBeans = new CopyOnWriteArraySet<>();
+        this.removedBeans = removeUnusedBeans ? new CopyOnWriteArraySet<>() : Collections.emptySet();
         this.customContexts = new ConcurrentHashMap<>();
 
         this.excludeTypes = builder.excludeTypes != null ? new ArrayList<>(builder.excludeTypes) : Collections.emptyList();
@@ -237,13 +237,14 @@ public class BeanDeployment {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans.addAll(findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers,
                 injectionPoints, jtaCapabilities));
-        // Note that we need to use view of the collections to reflect further additions, e.g. synthetic beans and observers
+        // Note that we use unmodifiable views because the underlying collections may change in the next phase
+        // E.g. synthetic beans are added and unused interceptors removed
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
         buildContextPut(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
-
         this.interceptors.addAll(findInterceptors(injectionPoints));
         buildContextPut(Key.INTERCEPTORS.asString(), Collections.unmodifiableList(interceptors));
         this.decorators.addAll(findDecorators(injectionPoints));
+        buildContextPut(Key.DECORATORS.asString(), Collections.unmodifiableList(decorators));
         this.injectionPoints.addAll(injectionPoints);
         buildContextPut(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(this.injectionPoints));
 
@@ -287,6 +288,10 @@ public class BeanDeployment {
                     TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - removalStart));
             //we need to re-initialize it, so it does not contain removed beans
             initBeanByTypeMap();
+            buildContext.putInternal(BuildExtension.Key.REMOVED_INTERCEPTORS.asString(),
+                    Collections.unmodifiableSet(removedInterceptors));
+            buildContext.putInternal(BuildExtension.Key.REMOVED_DECORATORS.asString(),
+                    Collections.unmodifiableSet(removedDecorators));
         }
         buildContext.putInternal(BuildExtension.Key.REMOVED_BEANS.asString(), Collections.unmodifiableSet(removedBeans));
         LOGGER.debugf("Bean deployment initialized in %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));

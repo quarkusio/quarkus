@@ -33,10 +33,10 @@
 
   {/script}
 
-  {#title}Interceptors{/title}
+  {#title}Decorators{/title}
   {#body}
   <div class="alert alert-primary alert-dismissible fade show" role="alert" data-timer="30000">
-    Interceptors are sorted by the interceptor class name in ascending order. However, application interceptors go first. 
+    Decorators are sorted by the decorator class name in ascending order. However, application decorators go first. 
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
@@ -45,29 +45,23 @@
    <thead class="thead-dark">
     <tr>
       <th scope="col">#</th>
-      <th scope="col">Interceptor Class</th>
+      <th scope="col">Decorator class</th>
       <th scope="col">Priority</th>
-      <th scope="col">Bindings</th>
-      <th scope="col">Interception Types</th>
+      <th scope="col">Delegate Type</th>
+      <th scope="col">Delegate Qualifiers</th>
     </tr>
    </thead>
    <tbody>
-    {#for interceptor in info:devBeanInfos.interceptors}
+    {#for decorator in info:devBeanInfos.decorators}
     <tr>
-      <td>{interceptor_count}.</td>
-      <td><span class="class-candidate">{interceptor.interceptorClass}</span></td>
-      <td><span class="badge rounded-pill bg-info text-light larger-badge" title="Priority: {interceptor.priority}">{interceptor.priority}</span></td>
+      <td>{decorator_count}.</td>
+      <td><span class="class-candidate">{decorator.decoratorClass}</span></td>
+      <td><span class="badge rounded-pill bg-info text-light larger-badge" title="Priority: {decorator.priority}">{decorator.priority}</span></td>
+      <td><span class="class-candidate">{decorator.delegateType}</span></td>
       <td>
-       {#for b in interceptor.bindings}
-        <span class="annotation" title="Binding: {b}">{b.simpleName}</span><br/>
+       {#for q in decorator.delegateQualifiers}
+        <span class="annotation" title="Binding: {q}">{q.simpleName}</span><br/>
        {/for}
-      </td>
-      <td>
-       <ul>
-       {#each interceptor.intercepts}
-       <li>{#interception-type it.key /} {interceptor.interceptorClass.simpleName}#{it.value.name}()</li>
-       {/each}
-       </ul>
       </td>
     {/for}
    </tbody>

@@ -79,9 +79,18 @@ public class DevServicesLambdaProcessor {
                 : config.mockEventServer.devPort;
         startMode = launchMode.getLaunchMode();
         server.start(port);
-        String baseUrl = "localhost:" + port + MockEventServer.BASE_PATH;
+        int actualPort = server.getPort();
+        String baseUrl = "localhost:" + actualPort + MockEventServer.BASE_PATH;
         Map<String, String> properties = new HashMap<>();
         properties.put(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, baseUrl);
+
+        if (actualPort != port) {
+            String portPropertyValue = String.valueOf(actualPort);
+            String portPropertySuffix = launchMode.getLaunchMode() == LaunchMode.TEST ? "test-port" : "dev-port";
+            String propName = "quarkus.lambda.mock-event-server." + portPropertySuffix;
+            System.setProperty(propName, portPropertyValue);
+        }
+
         devServicePropertiesProducer.produce(
                 new DevServicesResultBuildItem(Feature.AMAZON_LAMBDA.getName(), null, properties));
         Runnable closeTask = () -> {

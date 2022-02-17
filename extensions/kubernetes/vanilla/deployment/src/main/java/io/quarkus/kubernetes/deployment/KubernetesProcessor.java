@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import io.dekorate.Session;
 import io.dekorate.SessionReader;
 import io.dekorate.SessionWriter;
+import io.dekorate.config.ConfigurationSupplier;
 import io.dekorate.kubernetes.config.Configurator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.logger.NoopLogger;
@@ -42,9 +43,11 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.kubernetes.spi.ConfigurationSupplierBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
+import io.quarkus.kubernetes.spi.DekorateOutputBuildItem;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -90,12 +93,15 @@ class KubernetesProcessor {
             List<KubernetesPortBuildItem> kubernetesPorts,
             EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
             List<ConfiguratorBuildItem> configurators,
+            List<ConfigurationSupplierBuildItem> configurationSuppliers,
             List<DecoratorBuildItem> decorators,
+            BuildProducer<DekorateOutputBuildItem> dekorateSessionProducer,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
             BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer) {
 
-        List<ConfiguratorBuildItem> allConfigurationRegistry = new ArrayList<>(configurators);
+        List<ConfiguratorBuildItem> allConfigurators = new ArrayList<>(configurators);
+        List<ConfigurationSupplierBuildItem> allConfigurationSuppliers = new ArrayList<>(configurationSuppliers);
         List<DecoratorBuildItem> allDecorators = new ArrayList<>(decorators);
 
         final Path root;
@@ -141,10 +147,15 @@ class KubernetesProcessor {
 
                 //We need to verify to filter out anything that doesn't extend the Configurator class.
                 //The ConfiguratorBuildItem is a wrapper to Object.
-                allConfigurationRegistry.stream().filter(d -> d.matches(Configurator.class)).forEach(i -> {
-                    Configurator configurator = (Configurator) i.getConfigurator();
-                    session.getConfigurationRegistry().add(configurator);
-                });
+                for (ConfiguratorBuildItem configuratorBuildItem : allConfigurators) {
+                    session.getConfigurationRegistry().add((Configurator) configuratorBuildItem.getConfigurator());
+                }
+                //We need to verify to filter out anything that doesn't extend the ConfigurationSupplier class.
+                //The ConfigurationSupplierBuildItem is a wrapper to Object.
+                for (ConfigurationSupplierBuildItem configurationSupplierBuildItem : allConfigurationSuppliers) {
+                    session.getConfigurationRegistry()
+                            .add((ConfigurationSupplier) configurationSupplierBuildItem.getConfigurationSupplier());
+                }
 
                 //We need to verify to filter out anything that doesn't extend the Decorator class.
                 //The DecoratorBuildItem is a wrapper to Object.
@@ -160,6 +171,7 @@ class KubernetesProcessor {
 
                 // write the generated resources to the filesystem
                 generatedResourcesMap = session.close();
+                List<String> generatedFiles = new ArrayList<>(generatedResourcesMap.size());
                 List<String> generatedFileNames = new ArrayList<>(generatedResourcesMap.size());
                 for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
                     Path path = Paths.get(resourceEntry.getKey());
@@ -182,12 +194,15 @@ class KubernetesProcessor {
                     }
 
                     generatedFileNames.add(fileName);
+                    generatedFiles.add(relativePath);
                     generatedResourceProducer.produce(
                             new GeneratedFileSystemResourceBuildItem(
                                     // we need to make sure we are only passing the relative path to the build item
                                     relativePath,
                                     resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
                 }
+
+                dekorateSessionProducer.produce(new DekorateOutputBuildItem(project, session, generatedFiles));
 
                 if (!generatedFileNames.isEmpty()) {
                     log.debugf("Generated the Kubernetes manifests: '%s' in '%s'", String.join(",", generatedFileNames),

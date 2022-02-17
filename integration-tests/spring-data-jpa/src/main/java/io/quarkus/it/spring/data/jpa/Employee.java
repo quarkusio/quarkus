@@ -20,6 +20,9 @@ public class Employee extends AbstractEntity {
     @Column(name = "last_name")
     private String lastName;
 
+    @Column(unique = true)
+    private String email;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id", nullable = false)
     private Team belongsToTeam;

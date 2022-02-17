@@ -97,18 +97,24 @@ public class MethodNameParser {
         int firstIndex = methodName.indexOf("First");
         int topIndex = methodName.indexOf("Top");
         if ((firstIndex != -1) || (topIndex != -1)) {
-            try {
-                String topCountStr = methodName.substring(Math.max(firstIndex, topIndex), byIndex)
-                        .replace("Top", "").replace("First", "");
-                if (topCountStr.isEmpty()) {
-                    topCount = 1;
-                } else {
-                    topCount = Integer.valueOf(topCountStr);
+            int effectiveFirstOrTopIndex = (topIndex > -1 && firstIndex > -1) ? Math.max(topIndex, firstIndex)
+                    : Math.max(firstIndex, topIndex);
+            // 'First' and 'Top' could be part of a field name, so we only conside them as part of a top query
+            // if they are found before 'By'
+            if (effectiveFirstOrTopIndex < byIndex) {
+                try {
+                    String topCountStr = methodName.substring(effectiveFirstOrTopIndex, byIndex)
+                            .replace("Top", "").replace("First", "");
+                    if (topCountStr.isEmpty()) {
+                        topCount = 1;
+                    } else {
+                        topCount = Integer.valueOf(topCountStr);
+                    }
+                } catch (Exception e) {
+                    throw new UnableToParseMethodException(
+                            "Unable to parse query with limiting results clause. Offending method is "
+                                    + repositoryMethodDescription + ".");
                 }
-            } catch (Exception e) {
-                throw new UnableToParseMethodException(
-                        "Unable to parse query with limiting results clause. Offending method is "
-                                + repositoryMethodDescription + ".");
             }
         }
         if ((topCount != null) && (queryType != QueryType.SELECT)) {

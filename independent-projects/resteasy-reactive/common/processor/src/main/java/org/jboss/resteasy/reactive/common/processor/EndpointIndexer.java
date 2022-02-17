@@ -563,7 +563,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
                     basicResourceClassInfo.getProduces());
-            produces = applyDefaultProduces(produces, nonAsyncReturnType);
+            produces = applyDefaultProduces(produces, nonAsyncReturnType, httpMethod);
             produces = addDefaultCharsets(produces);
 
             String sseElementType = basicResourceClassInfo.getSseElementType();
@@ -717,8 +717,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean encoded, Type paramType, PARAM parameterResult, String name, String defaultValue,
             ParameterType type, String elementType, boolean single, String signature);
 
-    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
-        setupApplyDefaults(nonAsyncReturnType);
+    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType,
+            DotName httpMethod) {
+        setupApplyDefaults(nonAsyncReturnType, httpMethod);
         if (produces != null && produces.length != 0)
             return produces;
         return applyAdditionalDefaults(nonAsyncReturnType);
@@ -740,7 +741,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return result.toArray(EMPTY_STRING_ARRAY);
     }
 
-    protected void setupApplyDefaults(Type nonAsyncReturnType) {
+    protected void setupApplyDefaults(Type nonAsyncReturnType, DotName httpMethod) {
 
     }
 

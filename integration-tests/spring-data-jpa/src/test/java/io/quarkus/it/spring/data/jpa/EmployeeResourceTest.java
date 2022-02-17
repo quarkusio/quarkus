@@ -21,4 +21,13 @@ public class EmployeeResourceTest {
         assertThat(employees).extracting("userId").containsExactlyInAnyOrder("johdoe", "petdig");
     }
 
+    @Test
+    public void testFindByLastNameContainingAndFirstNameContainingAndEmailContainingAllIgnoreCase() {
+        List<Employee> employees = when().get("/employee/search?first=John&last=Doe&email=doe").then()
+                .statusCode(200)
+                .extract().body().jsonPath().getList(".", Employee.class);
+
+        assertThat(employees).extracting("userId").containsExactly("johdoe");
+    }
+
 }

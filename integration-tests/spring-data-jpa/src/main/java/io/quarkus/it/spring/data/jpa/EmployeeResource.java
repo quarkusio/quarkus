@@ -6,6 +6,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 
 @Path("/employee")
 @Produces("application/json")
@@ -32,5 +33,13 @@ public class EmployeeResource {
     @Path("/unit/{orgUnitName}")
     public List<Employee> findByManagerOfManager(@PathParam("orgUnitName") String orgUnitName) {
         return this.employeeRepository.findByBelongsToTeamOrganizationalUnitName(orgUnitName);
+    }
+
+    @GET
+    @Path("/search")
+    public List<Employee> findByLastNameContainingAndFirstNameContainingAndEmailContainingAllIgnoreCase(
+            @QueryParam("first") String firstName, @QueryParam("last") String lastName, @QueryParam("email") String email) {
+        return this.employeeRepository.findByLastNameContainingAndFirstNameContainingAndEmailContainingAllIgnoreCase(lastName,
+                firstName, email);
     }
 }

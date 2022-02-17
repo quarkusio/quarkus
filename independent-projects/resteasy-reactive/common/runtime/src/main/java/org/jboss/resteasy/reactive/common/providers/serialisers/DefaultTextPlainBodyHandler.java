@@ -25,9 +25,13 @@ public abstract class DefaultTextPlainBodyHandler implements MessageBodyReader<O
         return !String.class.equals(type) && TypeConverter.isConvertable(type);
     }
 
-    @SuppressWarnings("unchecked")
     public Object readFrom(Class type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+        return doReadFrom(type, mediaType, entityStream);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    protected Object doReadFrom(Class type, MediaType mediaType, InputStream entityStream) throws IOException {
         String input = MessageReaderUtil.readString(entityStream, mediaType);
         validateInput(input);
         return TypeConverter.getType(type, input);

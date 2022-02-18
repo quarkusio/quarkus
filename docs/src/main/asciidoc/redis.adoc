@@ -569,6 +569,35 @@ RedisClient redisClient2;
 ReactiveRedisClient reactiveClient2;
 ----
 
+=== Providing Redis Hosts Programmatically
+
+The `RedisHostsProvider` programmatically provides redis hosts. This allows for configuration of properties like redis connection password coming from other sources.
+
+[NOTE]
+====
+This is useful as it removes the need to store sensitive data in application.properties.
+====
+
+[source,java,indent=0]
+----
+@ApplicationScoped
+@Named("hosts-provider") // the name of the host provider
+public class ExampleRedisHostProvider implements RedisHostsProvider {
+    @Override
+    public Set<URI> getHosts() {
+        // do stuff to get the host
+        String host = "redis://localhost:6379/3"
+        return Collections.singleton(URI.create(host));
+    }
+}
+----
+
+The host provider can be used to configure the redis client like shown below
+[source,properties,indent=0]
+----
+quarkus.redis.hosts-provider-name=hosts-provider
+----
+
 === Creating Clients Programmatically
 
 The `RedisClient` and `ReactiveRedisClient` provide factory methods to create clients programmatically.

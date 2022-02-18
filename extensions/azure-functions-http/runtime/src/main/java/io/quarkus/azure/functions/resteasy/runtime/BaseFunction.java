@@ -61,6 +61,7 @@ public class BaseFunction {
                 bootstrapError = true;
                 errorWriter.println("Quarkus bootstrap failed.");
                 ex.printStackTrace(errorWriter);
+                log.error("Quarkus bootstrap failed.", ex);
             }
         } else {
             errorWriter.println("Quarkus bootstrapped successfully.");

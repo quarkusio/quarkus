@@ -21,8 +21,8 @@ import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.WorkerContext;
 import io.vertx.mutiny.core.Context;
@@ -88,7 +88,7 @@ public class MutinyStubInjectionTest {
 
         public String invokeFromDuplicatedContext(String s) {
             Context root = vertx.getOrCreateContext();
-            ContextInternal duplicate = ((ContextInternal) root.getDelegate()).duplicate();
+            io.vertx.core.Context duplicate = VertxContext.getOrCreateDuplicatedContext(root.getDelegate());
             return Uni.createFrom().<String> emitter(e -> {
                 duplicate.runOnContext(x -> {
                     service.sayHello(HelloRequest.newBuilder().setName(s).build())

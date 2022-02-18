@@ -3,7 +3,6 @@ package io.quarkus.opentelemetry.runtime.tracing.vertx;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
-import static io.quarkus.opentelemetry.runtime.QuarkusContextStorage.ACTIVE_CONTEXT;
 
 import java.net.URI;
 import java.util.List;
@@ -27,6 +26,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpMethod;
@@ -75,6 +75,7 @@ public class OpenTelemetryVertxTracer
 
     @Override
     public <R> SpanOperation receiveRequest(
+            // The Vert.x context passed to use is already duplicated.
             final Context context,
             final SpanKind kind,
             final TracingPolicy policy,
@@ -87,9 +88,9 @@ public class OpenTelemetryVertxTracer
             return null;
         }
 
-        io.opentelemetry.context.Context parentContext = context.getLocal(ACTIVE_CONTEXT);
+        io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getContext(context);
         if (parentContext == null) {
-            parentContext = io.opentelemetry.context.Context.root();
+            parentContext = io.opentelemetry.context.Context.current();
         }
 
         if (serverInstrumenter.shouldStart(parentContext, (HttpRequest) request)) {
@@ -103,6 +104,7 @@ public class OpenTelemetryVertxTracer
 
     @Override
     public <R> void sendResponse(
+            // The Vert.x context passed to use is already duplicated.
             final Context context,
             final R response,
             final SpanOperation spanOperation,
@@ -132,6 +134,7 @@ public class OpenTelemetryVertxTracer
 
     @Override
     public <R> SpanOperation sendRequest(
+            // This context is not duplicated, so we need to do it.
             final Context context,
             final SpanKind kind,
             final TracingPolicy policy,
@@ -144,16 +147,17 @@ public class OpenTelemetryVertxTracer
             return null;
         }
 
-        io.opentelemetry.context.Context parentContext = context.getLocal(ACTIVE_CONTEXT);
+        io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getContext(context);
         if (parentContext == null) {
-            parentContext = io.opentelemetry.context.Context.root();
+            parentContext = io.opentelemetry.context.Context.current();
         }
 
         if (clientInstrumenter.shouldStart(parentContext, (HttpRequest) request)) {
             io.opentelemetry.context.Context spanContext = clientInstrumenter.start(parentContext,
                     WriteHeadersHttpRequest.request((HttpRequest) request, headers));
-            Scope scope = QuarkusContextStorage.INSTANCE.attach(context, spanContext);
-            return SpanOperation.span(context, (HttpRequest) request, spanContext, scope);
+            Context duplicatedContext = VertxContext.getOrCreateDuplicatedContext(context);
+            Scope scope = QuarkusContextStorage.INSTANCE.attach(duplicatedContext, spanContext);
+            return SpanOperation.span(duplicatedContext, (HttpRequest) request, spanContext, scope);
         }
 
         return null;
@@ -161,6 +165,8 @@ public class OpenTelemetryVertxTracer
 
     @Override
     public <R> void receiveResponse(
+            // This context is not duplicated, so we need to do it, but we can't duplicate it again because it was already done in
+            // io.quarkus.opentelemetry.runtime.tracing.vertx.OpenTelemetryVertxTracer.sendRequest, but we don't use it so it should be ok.
             final Context context,
             final R response,
             final SpanOperation spanOperation,

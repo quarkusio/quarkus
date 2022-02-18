@@ -1,5 +1,6 @@
 package io.quarkus.vertx.core.runtime.context;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -64,6 +65,10 @@ public final class VertxContextSafetyToggle {
     }
 
     private static void checkIsSafe(final Context context, final String errorMessageOnVeto, final String errorMessageOnDoubt) {
+        if (!VertxContext.isDuplicatedContext(context)) {
+            throw new IllegalStateException(
+                    "Can't get the context safety flag: the current context is not a duplicated context");
+        }
         final Object safeFlag = context.getLocal(ACCESS_TOGGLE_KEY);
         if (safeFlag == Boolean.TRUE) {
             return;
@@ -88,6 +93,9 @@ public final class VertxContextSafetyToggle {
         final io.vertx.core.Context context = Vertx.currentContext();
         if (context == null) {
             throw new IllegalStateException("Can't set the context safety flag: no Vert.x context found");
+        } else if (!VertxContext.isDuplicatedContext(context)) {
+            throw new IllegalStateException(
+                    "Can't set the context safety flag: the current context is not a duplicated context");
         } else {
             context.putLocal(ACCESS_TOGGLE_KEY, Boolean.valueOf(safe));
         }

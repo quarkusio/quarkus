@@ -80,7 +80,7 @@ A minimal configuration for the Kafka connector with an incoming channel looks l
 mp.messaging.incoming.prices.connector=smallrye-kafka <2>
 ----
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.incoming.$channel.bootstrap.servers` property.
-In dev mode and when running tests, xref:kafka-dev-services.adoc[Dev Services for Kafka] automatically starts a Kafka broker.
+In dev mode and when running tests, <<kafka-dev-services>> automatically starts a Kafka broker.
 When not provided this property defaults to `localhost:9092`.
 <2> Configure the connector to manage the prices channel. By default the topic name is same as the channel name. You can configure the topic attribute to override it.
 
@@ -685,7 +685,7 @@ mp.messaging.outgoing.prices-out.topic=prices <3>
 ----
 
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.outgoing.$channel.bootstrap.servers` property.
-In dev mode and when running tests, xref:kafka-dev-services.adoc[Dev Services for Kafka] automatically starts a Kafka broker.
+In dev mode and when running tests, <<kafka-dev-services>> automatically starts a Kafka broker.
 When not provided, this property defaults to `localhost:9092`.
 <2> Configure the connector to manage the `prices-out` channel.
 <3> By default, the topic name is same as the channel name. You can configure the topic attribute to override it.

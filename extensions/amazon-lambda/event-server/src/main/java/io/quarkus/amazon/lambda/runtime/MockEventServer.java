@@ -20,6 +20,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -50,15 +51,21 @@ public class MockEventServer implements Closeable {
 
     public void start(int port) {
         vertx = Vertx.vertx(new VertxOptions().setMaxWorkerExecuteTime(60).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES));
-        httpServer = vertx.createHttpServer();
+        HttpServerOptions options = new HttpServerOptions();
+        options.setPort(port == 0 ? -1 : port);
+        httpServer = vertx.createHttpServer(options);
         router = Router.router(vertx);
         setupRoutes();
         try {
-            httpServer.requestHandler(router).listen(port).toCompletionStage().toCompletableFuture().get();
+            this.httpServer.requestHandler(router).listen().toCompletionStage().toCompletableFuture().get();
+            log.info("Mock Lambda Event Server Started");
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
-        log.info("Mock Lambda Event Server Started");
+    }
+
+    public int getPort() {
+        return httpServer.actualPort();
     }
 
     public void setupRoutes() {

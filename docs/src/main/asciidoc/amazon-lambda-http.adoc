@@ -167,7 +167,7 @@ quarkus.lambda.mock-event-server.dev-port=8082
 quarkus.lambda.mock-event-server.test-port=8083
 ----
 
-
+A port value of zero will result in a randomly assigned port.
 
 == Simulate Amazon Lambda Deployment with SAM CLI
 

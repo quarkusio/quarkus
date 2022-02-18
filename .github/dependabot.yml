@@ -108,7 +108,6 @@ updates:
       - dependency-name: org.eclipse:yasson
       # AWS
       - dependency-name: com.amazonaws:*
-      - dependency-name: com.amazonaws.serverless:*
       # Azure
       - dependency-name: com.microsoft.azure.functions:*
       # Apache Commons

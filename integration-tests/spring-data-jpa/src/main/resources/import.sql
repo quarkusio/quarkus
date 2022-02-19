@@ -80,7 +80,8 @@ INSERT INTO team(id, name, unit_id) VALUES (11, 'Sales Team', 2);
 INSERT INTO employee(id, user_id, first_name, last_name, team_id, email) VALUES (100, 'johdoe', 'John', 'Doe', 10, 'johdoe@acme.com');
 INSERT INTO employee(id, user_id, first_name, last_name, team_id, email) VALUES (101, 'petdig', 'Peter', 'Digger', 10, 'petdig@acme.com');
 INSERT INTO employee(id, user_id, first_name, last_name, team_id, email) VALUES (102, 'stesmi', 'Stella', 'Smith', 11, 'stesmi@acme.com');
-INSERT INTO employee(id, user_id, first_name, last_name, team_id, email) VALUES (100, 'jd', 'John', 'Doe', 12, 'jd@acme.com');
+INSERT INTO employee(id, user_id, first_name, last_name, team_id, email) VALUES (103, 'jd', 'John', 'Doe', 11, 'jd@acme.com');
+INSERT INTO employee(id, user_id, first_name, last_name, team_id, email) VALUES (104, 'jodo', 'John', 'Doe', 11, 'jodo@acme.com');
 
 INSERT INTO MotorCar(id, brand, model) VALUES (1, 'Monteverdi', 'Hai 450');
 INSERT INTO MotorCar(id, brand, model) VALUES (2, 'Rinspeed', 'iChange');

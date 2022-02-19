@@ -42,4 +42,10 @@ public class EmployeeResource {
         return this.employeeRepository.findByLastNameContainingAndFirstNameContainingAndEmailContainingAllIgnoreCase(lastName,
                 firstName, email);
     }
+
+    @GET
+    @Path("/search-first-2")
+    public List<Employee> findTop2ByFirstNameContainingAllIgnoreCase(@QueryParam("first") String firstName) {
+        return this.employeeRepository.findFirst2ByFirstNameContainingIgnoreCaseOrderById(firstName);
+    }
 }

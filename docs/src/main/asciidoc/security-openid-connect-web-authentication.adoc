@@ -619,7 +619,7 @@ If can enable `PKCE` for your OIDC `web-app` endpoint with a `quarkus.oidc.authe
 
 [source, properties]
 ----
-quarkus.oidc.authentication.pkce-required
+quarkus.oidc.authentication.pkce-required=true
 quarkus.oidc.authentication.pkce-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 ----
 

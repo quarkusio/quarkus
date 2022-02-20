@@ -11,7 +11,6 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.ConvertWith;
-import io.quarkus.runtime.configuration.LocaleConverter;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
@@ -67,29 +66,29 @@ public class NativeConfig {
 
     /**
      * Defines the user language used for building the native executable.
-     * It also serves as te default Locale language for the native executable application runtime.
+     * It also serves as the default Locale language for the native executable application runtime.
      * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
      * 
      * @deprecated Use the global quarkus.default-locale.
      */
     @ConfigItem
-    @ConvertWith(LocaleConverter.class)
+    @ConvertWith(TrimmedStringConverter.class)
     @Deprecated
-    public Optional<Locale> userLanguage;
+    public Optional<String> userLanguage;
 
     /**
      * Defines the user country used for building the native executable.
-     * It also serves as te default Locale country for the native executable application runtime.
+     * It also serves as the default Locale country for the native executable application runtime.
      * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
      * 
      * @deprecated Use the global quarkus.default-locale.
      */
     @ConfigItem
-    @ConvertWith(LocaleConverter.class)
+    @ConvertWith(TrimmedStringConverter.class)
     @Deprecated
-    public Optional<Locale> userCountry;
+    public Optional<String> userCountry;
 
     /**
      * Defines the file encoding as in -Dfile.encoding=...

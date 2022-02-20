@@ -27,28 +27,28 @@ import io.quarkus.runtime.LocalesBuildTimeConfig;
 public class LocaleProcessor {
 
     private static final Logger log = Logger.getLogger(LocaleProcessor.class);
-    public static final String DEPRECATED_USER_LANGUAGE_WARNING = "Your application is setting the deprecated 'quarkus.native.user-language' configuration key. "
+    public static final String DEPRECATED_USER_LANGUAGE_WARNING = "Your application is setting the deprecated 'quarkus.native.user-language' configuration property. "
             +
-            "Please, consider using only 'quarkus.default-locale' configuration key instead.";
-    public static final String DEPRECATED_USER_COUNTRY_WARNING = "Your application is setting the deprecated 'quarkus.native.user-country' configuration key. "
+            "Please, consider using only 'quarkus.default-locale' configuration property instead.";
+    public static final String DEPRECATED_USER_COUNTRY_WARNING = "Your application is setting the deprecated 'quarkus.native.user-country' configuration property. "
             +
-            "Please, consider using only 'quarkus.default-locale' configuration key instead.";
+            "Please, consider using only 'quarkus.default-locale' configuration property instead.";
 
-    @BuildStep(onlyIf = { NativeBuild.class, NonEnglishLocale.class })
+    @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     void nativeResources(BuildProducer<NativeImageResourceBundleBuildItem> resources) {
         resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.LocaleNames"));
         resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.CurrencyNames"));
         //Adding sun.util.resources.TimeZoneNames is not necessary.
     }
 
-    @BuildStep(onlyIf = { NativeBuild.class, NonEnglishLocale.class })
+    @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     ReflectiveClassBuildItem setupReflectionClasses() {
         return new ReflectiveClassBuildItem(false, false,
                 "sun.util.resources.provider.SupplementaryLocaleDataProvider",
                 "sun.util.resources.provider.LocaleDataProvider");
     }
 
-    @BuildStep(onlyIf = { NativeBuild.class, NonEnglishLocale.class })
+    @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     void servicesResource(BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<GeneratedResourceBuildItem> generatedResources) {
         final String r1 = "META-INF/services/sun.util.resources.LocaleData$SupplementaryResourceBundleProvider";
@@ -62,32 +62,29 @@ public class LocaleProcessor {
 
     /**
      * We activate additional resources in native-image executable only if user opts
-     * for something else than US English.
+     * for anything else than what is already the system default.
      */
-    static final class NonEnglishLocale implements BooleanSupplier {
+    static final class NonDefaultLocale implements BooleanSupplier {
         private final NativeConfig nativeConfig;
         private final LocalesBuildTimeConfig localesBuildTimeConfig;
 
-        public NonEnglishLocale(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+        public NonDefaultLocale(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
             this.nativeConfig = nativeConfig;
             this.localesBuildTimeConfig = localesBuildTimeConfig;
         }
 
         @Override
         public boolean getAsBoolean() {
-            return (nativeConfig.userLanguage.isPresent() && nonEnglishLocale(nativeConfig.userLanguage.get()))
+            return (nativeConfig.userLanguage.isPresent()
+                    && !Locale.getDefault().getLanguage().equals(nativeConfig.userLanguage.get()))
                     ||
-                    (nativeConfig.userCountry.isPresent() && nonEnglishLocale(nativeConfig.userCountry.get()))
+                    (nativeConfig.userCountry.isPresent()
+                            && !Locale.getDefault().getCountry().equals(nativeConfig.userCountry.get()))
                     ||
-                    nonEnglishLocale(localesBuildTimeConfig.defaultLocale)
+                    !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale)
                     ||
-                    localesBuildTimeConfig.locales.stream().anyMatch(LocaleProcessor::nonEnglishLocale);
+                    localesBuildTimeConfig.locales.stream().anyMatch(l -> !Locale.getDefault().equals(l));
         }
-    }
-
-    public static boolean nonEnglishLocale(Locale locale) {
-        return (!locale.getLanguage().isEmpty() && !"en".equals(locale.getLanguage()))
-                || (!locale.getCountry().isEmpty() && !"US".equals(locale.getCountry()));
     }
 
     /**
@@ -103,7 +100,7 @@ public class LocaleProcessor {
         if (nativeConfig.userLanguage.isPresent()) {
             log.warn(DEPRECATED_USER_LANGUAGE_WARNING);
             // The deprecated option takes precedence for users who are already using it.
-            language = nativeConfig.userLanguage.get().getLanguage();
+            language = nativeConfig.userLanguage.get();
         }
         return language;
     }
@@ -122,7 +119,7 @@ public class LocaleProcessor {
         if (nativeConfig.userCountry.isPresent()) {
             log.warn(DEPRECATED_USER_COUNTRY_WARNING);
             // The deprecated option takes precedence for users who are already using it.
-            country = nativeConfig.userCountry.get().getCountry();
+            country = nativeConfig.userCountry.get();
         }
         return country;
     }
@@ -138,12 +135,16 @@ public class LocaleProcessor {
         // We start with what user sets as needed locales
         final Set<Locale> additionalLocales = new HashSet<>(localesBuildTimeConfig.locales);
         // We subtract what we already declare for native-image's user.language or user.country.
-        // Note the deprecated options still count and actually overwrite the preferred 'quarkus.default-locale'.
+        // Note the deprecated options still count.
         additionalLocales.remove(localesBuildTimeConfig.defaultLocale);
-        nativeConfig.userCountry.ifPresent(additionalLocales::remove);
-        nativeConfig.userLanguage.ifPresent(additionalLocales::remove);
+        if (nativeConfig.userCountry.isPresent() && nativeConfig.userLanguage.isPresent()) {
+            additionalLocales.remove(new Locale(nativeConfig.userLanguage.get(), nativeConfig.userCountry.get()));
+        } else if (nativeConfig.userLanguage.isPresent()) {
+            additionalLocales.remove(new Locale(nativeConfig.userLanguage.get()));
+        }
+
         return additionalLocales.stream()
-                .filter(LocaleProcessor::nonEnglishLocale)
+                .filter(l -> !Locale.getDefault().equals(l))
                 .map(l -> l.getLanguage() + (l.getCountry().isEmpty() ? "" : "-" + l.getCountry()))
                 .collect(Collectors.joining(","));
     }

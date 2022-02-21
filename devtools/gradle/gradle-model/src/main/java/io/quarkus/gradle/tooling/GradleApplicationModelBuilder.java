@@ -44,6 +44,7 @@ import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.model.gradle.ModelParameter;
 import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultSourceDir;
 import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
@@ -192,10 +193,10 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 .setBuildFile(project.getBuildFile().toPath());
 
         initProjectModule(project, mainModule, javaConvention.getSourceSets().findByName(SourceSet.MAIN_SOURCE_SET_NAME),
-                SourceSet.MAIN_SOURCE_SET_NAME, "");
-        if (mode.equals(LaunchMode.TEST)) {
+                SourceSet.MAIN_SOURCE_SET_NAME, ArtifactSources.MAIN);
+        if (mode.equals(LaunchMode.TEST) || mode.equals(LaunchMode.DEVELOPMENT)) {
             initProjectModule(project, mainModule, javaConvention.getSourceSets().findByName(SourceSet.TEST_SOURCE_SET_NAME),
-                    SourceSet.TEST_SOURCE_SET_NAME, "tests");
+                    SourceSet.TEST_SOURCE_SET_NAME, ArtifactSources.TEST);
         }
 
         final PathList.Builder paths = PathList.builder();
@@ -605,11 +606,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 }
             }
         }
-    }
-
-    private static byte setFlag(byte flags, byte flag) {
-        flags |= flag;
-        return flags;
     }
 
     private static boolean isFlagOn(byte walkingFlags, byte flag) {

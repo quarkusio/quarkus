@@ -488,7 +488,7 @@ public class QuarkusDev extends QuarkusTask {
             if (testClassesDir != null && (!testSourcePaths.isEmpty()
                     || (testResourcesOutputDir != null && Files.exists(testResourcesOutputDir)))) {
                 final String testResourcesOutputPath;
-                if (Files.exists(testResourcesOutputDir)) {
+                if (testResourcesOutputDir != null && Files.exists(testResourcesOutputDir)) {
                     testResourcesOutputPath = testResourcesOutputDir.toString();
                     if (!Files.exists(testClassesDir)) {
                         // currently classesDir can't be null and is expected to exist

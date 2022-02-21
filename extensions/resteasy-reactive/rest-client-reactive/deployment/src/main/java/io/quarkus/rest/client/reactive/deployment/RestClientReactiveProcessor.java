@@ -400,7 +400,7 @@ class RestClientReactiveProcessor {
                 // but emitting the correct invokespecial instruction would become convoluted
                 // (as invokespecial may only reference a method from a _direct_ super interface)
                 for (MethodInfo method : jaxrsInterface.methods()) {
-                    boolean isDefault = !Modifier.isAbstract(method.flags());
+                    boolean isDefault = !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags());
                     if (isDefault) {
                         methodsToImplement.add(method);
                     }

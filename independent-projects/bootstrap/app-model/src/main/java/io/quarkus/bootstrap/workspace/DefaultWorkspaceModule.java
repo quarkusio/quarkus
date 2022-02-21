@@ -17,9 +17,6 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
 
     private static final long serialVersionUID = 6906903256002107806L;
 
-    public static final String MAIN = "";
-    public static final String TEST = "tests";
-
     public static Builder builder() {
         return new DefaultWorkspaceModule().new Builder();
     }
@@ -91,12 +88,12 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
 
         @Override
         public boolean hasMainSources() {
-            return DefaultWorkspaceModule.this.sourcesSets.containsKey(DefaultWorkspaceModule.MAIN);
+            return DefaultWorkspaceModule.this.sourcesSets.containsKey(ArtifactSources.MAIN);
         }
 
         @Override
         public boolean hasTestSources() {
-            return DefaultWorkspaceModule.this.sourcesSets.containsKey(DefaultWorkspaceModule.TEST);
+            return DefaultWorkspaceModule.this.sourcesSets.containsKey(ArtifactSources.TEST);
         }
 
         @Override

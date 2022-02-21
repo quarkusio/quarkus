@@ -2,9 +2,9 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultSourceDir;
-import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -359,12 +359,12 @@ public class LocalProject {
         }
 
         if (!moduleBuilder.hasMainSources()) {
-            moduleBuilder.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.MAIN,
+            moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.MAIN,
                     Collections.singletonList(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir())),
                     collectMainResources(null)));
         }
         if (!moduleBuilder.hasTestSources()) {
-            moduleBuilder.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.TEST,
+            moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.TEST,
                     Collections.singletonList(
                             new DefaultSourceDir(getTestSourcesSourcesDir(), getTestClassesDir())),
                     collectTestResources(null)));
@@ -435,7 +435,7 @@ public class LocalProject {
 
     private static String getClassifier(Xpp3Dom dom, boolean test) {
         final Xpp3Dom classifier = dom.getChild("classifier");
-        return classifier == null ? (test ? DefaultWorkspaceModule.TEST : DefaultWorkspaceModule.MAIN) : classifier.getValue();
+        return classifier == null ? (test ? ArtifactSources.TEST : ArtifactSources.MAIN) : classifier.getValue();
     }
 
     private Collection<SourceDir> collectMainResources(PathFilter filter) {

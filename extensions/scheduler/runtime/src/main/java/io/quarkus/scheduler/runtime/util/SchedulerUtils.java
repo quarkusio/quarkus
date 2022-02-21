@@ -24,6 +24,7 @@ public class SchedulerUtils {
 
     private static final String DELAYED = "delayed";
     private static final String EVERY = "every";
+    private static final String OVERDUE_GRACE_PERIOD = "overdueGracePeriod";
 
     private SchedulerUtils() {
 
@@ -54,6 +55,20 @@ public class SchedulerUtils {
             optionalMillis = OptionalLong.of(parseDurationAsMillis(scheduled, value, EVERY));
         }
         return optionalMillis;
+    }
+
+    /**
+     * Parse the `@Scheduled(overdueGracePeriod = "")` field into milliseconds.
+     *
+     * @param scheduled annotation
+     * @return returns the duration.
+     */
+    public static Duration parseOverdueGracePeriod(Scheduled scheduled, Duration defaultDuration) {
+        String value = lookUpPropertyValue(scheduled.overdueGracePeriod());
+        if (value.isEmpty()) {
+            return defaultDuration;
+        }
+        return parseDuration(scheduled, value, OVERDUE_GRACE_PERIOD);
     }
 
     public static boolean isOff(String value) {

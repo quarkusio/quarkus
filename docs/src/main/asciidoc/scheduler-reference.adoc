@@ -31,6 +31,9 @@ NOTE: If there is no CDI scope defined on the declaring class then `@Singleton` 
 Furthermore, the annotated method must return `void` and either declare no parameters or one parameter of type `io.quarkus.scheduler.ScheduledExecution`.
 
 TIP: The annotation is repeatable so a single method could be scheduled multiple times.
+TIP: A CDI event of type `io.quarkus.scheduler.SuccessfulExecution` is fired synchronously and asynchronously when an execution of a scheduled method is successful.
+TIP: A CDI event of type `io.quarkus.scheduler.FailedExecution` is fired synchronously and asynchronously  when an execution of a scheduled method throw an exception.
+
 
 === Triggers
 
@@ -278,6 +281,11 @@ class MyService {
       }
       scheduler.resume("myIdentity"); <3>
       scheduler.resume(); <4>
+      scheduler.getScheduledJobs(); <5>
+      Trigger jobTrigger = scheduler.getScheduledJob("myIdentity"); <6>
+      if (jobTrigger != null && jobTrigger.isOverdue()){ <7>
+        // the job is late to the party.
+      }
    }
 }
 ----
@@ -285,6 +293,9 @@ class MyService {
 <2> Pause a specific scheduled method by its identity
 <3> Resume a specific scheduled method by its identity
 <4> Resume the scheduler.
+<5> List all jobs in the scheduler.
+<6> Get Trigger metadata for a specific scheduled job by its identity.
+<7> You can configure the grace period for isOverdue() with quarkus.scheduler.overdue-grace-period
 
 == Programmatic Scheduling
 

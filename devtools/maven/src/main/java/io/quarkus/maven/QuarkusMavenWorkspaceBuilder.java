@@ -9,9 +9,9 @@ import org.apache.maven.model.Resource;
 import org.apache.maven.project.MavenProject;
 
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultSourceDir;
-import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
@@ -38,7 +38,7 @@ class QuarkusMavenWorkspaceBuilder {
             resources.add(new DefaultSourceDir(Path.of(r.getDirectory()),
                     r.getTargetPath() == null ? classesDir : Path.of(r.getTargetPath())));
         }
-        moduleBuilder.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.MAIN, sources, resources));
+        moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.MAIN, sources, resources));
 
         final Path testClassesDir = Path.of(build.getTestOutputDirectory());
         final List<SourceDir> testSources = new ArrayList<>(project.getCompileSourceRoots().size());
@@ -48,7 +48,7 @@ class QuarkusMavenWorkspaceBuilder {
             testResources.add(new DefaultSourceDir(Path.of(r.getDirectory()),
                     r.getTargetPath() == null ? testClassesDir : Path.of(r.getTargetPath())));
         }
-        moduleBuilder.addArtifactSources(new DefaultArtifactSources(DefaultWorkspaceModule.TEST, testSources, testResources));
+        moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.TEST, testSources, testResources));
 
         moduleBuilder.setBuildFile(project.getFile().toPath());
 

@@ -28,19 +28,19 @@ public interface WorkspaceModule {
     ArtifactSources getSources(String classifier);
 
     default boolean hasMainSources() {
-        return hasSources(DefaultWorkspaceModule.MAIN);
+        return hasSources(ArtifactSources.MAIN);
     }
 
     default boolean hasTestSources() {
-        return hasSources(DefaultWorkspaceModule.TEST);
+        return hasSources(ArtifactSources.TEST);
     }
 
     default ArtifactSources getMainSources() {
-        return getSources(DefaultWorkspaceModule.MAIN);
+        return getSources(ArtifactSources.MAIN);
     }
 
     default ArtifactSources getTestSources() {
-        return getSources(DefaultWorkspaceModule.TEST);
+        return getSources(ArtifactSources.TEST);
     }
 
     PathCollection getBuildFiles();

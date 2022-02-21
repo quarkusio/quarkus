@@ -550,7 +550,7 @@ Notice there's an extra bit in the key (the `second` segment).
 The syntax is as follows: `quarkus.redis.[optional name.][redis configuration property]`.
 If the name is omitted, it configures the default client.
 
-=== Named Redis client Injection
+== Named Redis Client Injection
 
 When using multiple clients, you can select the client to inject using the `io.quarkus.redis.client.RedisClientName` qualifier.
 Using the above properties to configure three different clients, you can also inject each one as follows:
@@ -569,7 +569,7 @@ RedisClient redisClient2;
 ReactiveRedisClient reactiveClient2;
 ----
 
-=== Providing Redis Hosts Programmatically
+== Providing Redis Hosts Programmatically
 
 The `RedisHostsProvider` programmatically provides redis hosts. This allows for configuration of properties like redis connection password coming from other sources.
 
@@ -598,7 +598,7 @@ The host provider can be used to configure the redis client like shown below
 quarkus.redis.hosts-provider-name=hosts-provider
 ----
 
-=== Creating Clients Programmatically
+== Creating Clients Programmatically
 
 The `RedisClient` and `ReactiveRedisClient` provide factory methods to create clients programmatically.
 The client to be created are configured using the usual <<config-reference,Redis configuration>>.

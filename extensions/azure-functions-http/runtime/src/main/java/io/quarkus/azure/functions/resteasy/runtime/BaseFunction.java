@@ -34,9 +34,9 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 public class BaseFunction {
     private static final Logger log = Logger.getLogger("io.quarkus.azure");
 
-    protected static volatile String deploymentStatus;
-    protected static volatile boolean started = false;
-    protected static volatile boolean bootstrapError = false;
+    protected static String deploymentStatus;
+    protected static boolean started = false;
+    protected static boolean bootstrapError = false;
 
     private static final int BUFFER_SIZE = 8096;
 

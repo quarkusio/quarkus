@@ -7,6 +7,8 @@ import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_GROUP
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
+import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
+import static io.quarkus.kubernetes.deployment.Constants.S2I;
 import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
 
 import java.util.List;
@@ -510,8 +512,8 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {
         boolean implictlyEnabled = ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities)
-                .filter(c -> c.contains("openshift") || c.contains("s2i")).isPresent();
-        return containerImageConfig.builder.map(b -> b.equals("openshfit") || b.equals("s2i")).orElse(implictlyEnabled);
+                .filter(c -> c.contains(OPENSHIFT) || c.contains(S2I)).isPresent();
+        return containerImageConfig.builder.map(b -> b.equals(OPENSHIFT) || b.equals(S2I)).orElse(implictlyEnabled);
     }
 
     public DeploymentResourceKind getDeploymentResourceKind() {

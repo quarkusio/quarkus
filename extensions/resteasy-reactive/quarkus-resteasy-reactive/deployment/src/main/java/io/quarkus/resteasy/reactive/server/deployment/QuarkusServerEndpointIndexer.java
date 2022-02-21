@@ -59,11 +59,16 @@ public class QuarkusServerEndpointIndexer
     private DefaultProducesHandler.Context currentDefaultProducesContext;
 
     @Override
-    protected void setupApplyDefaults(Type nonAsyncReturnType) {
+    protected void setupApplyDefaults(Type nonAsyncReturnType, DotName httpMethod) {
         currentDefaultProducesContext = new DefaultProducesHandler.Context() {
             @Override
             public Type nonAsyncReturnType() {
                 return nonAsyncReturnType;
+            }
+
+            @Override
+            public DotName httpMethod() {
+                return httpMethod;
             }
 
             @Override

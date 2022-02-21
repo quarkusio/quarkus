@@ -55,7 +55,7 @@ public final class JacksonMessageBodyWriterUtil {
                     }
                 }
             }
-            entityStream.write(defaultWriter.writeValueAsBytes(o));
+            entityStream.write(defaultWriter.writeValueAsString(o).getBytes(StandardCharsets.UTF_8));
         }
     }
 

@@ -904,7 +904,7 @@ public class BeanDeployment {
 
             // non-inherited stuff:
             for (MethodInfo method : beanClass.methods()) {
-                if (Methods.isSynthetic(method)) {
+                if (method.isSynthetic()) {
                     continue;
                 }
                 if (annotationStore.getAnnotations(method).isEmpty()) {
@@ -931,7 +931,7 @@ public class BeanDeployment {
             while (aClass != null) {
                 for (MethodInfo method : aClass.methods()) {
                     Methods.MethodKey methodDescriptor = new Methods.MethodKey(method);
-                    if (Methods.isSynthetic(method) || Methods.isOverriden(methodDescriptor, methods)) {
+                    if (method.isSynthetic() || Methods.isOverriden(methodDescriptor, methods)) {
                         continue;
                     }
                     methods.add(methodDescriptor);

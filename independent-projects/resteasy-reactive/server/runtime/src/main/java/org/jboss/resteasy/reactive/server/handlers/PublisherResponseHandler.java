@@ -1,10 +1,14 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
+import static org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl.EMPTY_BUFFER;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import javax.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
@@ -43,9 +47,9 @@ public class PublisherResponseHandler implements ServerRestHandler {
         @Override
         public void onNext(Object item) {
             OutboundSseEventImpl event = new OutboundSseEventImpl.BuilderImpl().data(item).build();
-            SseUtil.send(requestContext, event, customizers).handle(new BiFunction<Object, Throwable, Object>() {
+            SseUtil.send(requestContext, event, customizers).whenComplete(new BiConsumer<Object, Throwable>() {
                 @Override
-                public Object apply(Object v, Throwable t) {
+                public void accept(Object v, Throwable t) {
                     if (t != null) {
                         // need to cancel because the exception didn't come from the Multi
                         subscription.cancel();
@@ -54,7 +58,6 @@ public class PublisherResponseHandler implements ServerRestHandler {
                         // send in the next item
                         subscription.request(1);
                     }
-                    return null;
                 }
             });
         }
@@ -250,11 +253,11 @@ public class PublisherResponseHandler implements ServerRestHandler {
             requestContext.setResponseContentType(mediaType);
             // this is the non-async return type
             requestContext.setGenericReturnType(requestContext.getTarget().getReturnType());
-            // we have several possibilities here, but in all we suspend
-            requestContext.suspend();
+
             if (mediaType.isCompatible(MediaType.SERVER_SENT_EVENTS_TYPE)) {
                 handleSse(requestContext, result);
             } else {
+                requestContext.suspend();
                 boolean json = mediaType.toString().contains(JSON);
                 if (requiresChunkedStream(mediaType)) {
                     handleChunkedStreaming(requestContext, result, json);
@@ -279,7 +282,18 @@ public class PublisherResponseHandler implements ServerRestHandler {
     }
 
     private void handleSse(ResteasyReactiveRequestContext requestContext, Publisher<?> result) {
-        result.subscribe(new SseMultiSubscriber(requestContext, streamingResponseCustomizers));
+        SseUtil.setHeaders(requestContext, requestContext.serverResponse(), streamingResponseCustomizers);
+        requestContext.suspend();
+        requestContext.serverResponse().write(EMPTY_BUFFER, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) {
+                if (throwable == null) {
+                    result.subscribe(new SseMultiSubscriber(requestContext, streamingResponseCustomizers));
+                } else {
+                    requestContext.resume(throwable);
+                }
+            }
+        });
     }
 
     public interface StreamingResponseCustomizer {

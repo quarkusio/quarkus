@@ -37,7 +37,7 @@ public class QuarkusExtensionPluginTest {
 
     @Test
     public void jarShouldContainsExtensionPropertiesFile() throws IOException {
-        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList()));
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
 
         BuildResult jarResult = GradleRunner.create()
                 .withPluginClasspath()

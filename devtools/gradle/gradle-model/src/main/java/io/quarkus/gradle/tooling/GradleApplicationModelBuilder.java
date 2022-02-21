@@ -28,7 +28,6 @@ import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
-import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.AbstractCompile;
@@ -50,9 +49,11 @@ import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
@@ -68,68 +69,12 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private static final String MAIN_RESOURCES_OUTPUT = "build/resources/main";
     private static final String CLASSES_OUTPUT = "build/classes";
-    private static final String DEPLOYMENT_CONFIGURATION = "quarkusDeploymentConfiguration";
-    private static final String CLASSPATH_CONFIGURATION = "quarkusClasspathConfiguration";
 
     /* @formatter:off */
     private static final byte COLLECT_TOP_EXTENSION_RUNTIME_NODES = 0b001;
     private static final byte COLLECT_DIRECT_DEPS =                 0b010;
     private static final byte COLLECT_RELOADABLE_MODULES =          0b100;
     /* @formatter:on */
-
-    private static Configuration classpathConfig(Project project, LaunchMode mode) {
-        if (LaunchMode.TEST.equals(mode)) {
-            return project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-        }
-        if (LaunchMode.DEVELOPMENT.equals(mode)) {
-            Configuration classpathConfiguration = project.getConfigurations().findByName(CLASSPATH_CONFIGURATION);
-            if (classpathConfiguration != null) {
-                project.getConfigurations().remove(classpathConfiguration);
-            }
-
-            return project.getConfigurations().create(CLASSPATH_CONFIGURATION).extendsFrom(
-                    project.getConfigurations().getByName(ToolingUtils.DEV_MODE_CONFIGURATION_NAME),
-                    project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
-                    project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
-        }
-        return project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-    }
-
-    private static Configuration deploymentClasspathConfig(Project project, LaunchMode mode,
-            Collection<org.gradle.api.artifacts.Dependency> platforms) {
-
-        Configuration deploymentConfiguration = project.getConfigurations().findByName(DEPLOYMENT_CONFIGURATION);
-        if (deploymentConfiguration != null) {
-            project.getConfigurations().remove(deploymentConfiguration);
-        }
-
-        deploymentConfiguration = project.getConfigurations().create(DEPLOYMENT_CONFIGURATION)
-                .withDependencies(ds -> ds.addAll(platforms));
-        Configuration implementationDeployment = project.getConfigurations().findByName(ToolingUtils
-                .toDeploymentConfigurationName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME));
-        if (implementationDeployment != null) {
-            deploymentConfiguration.extendsFrom(implementationDeployment);
-        }
-
-        if (LaunchMode.TEST.equals(mode)) {
-            Configuration testDeploymentConfiguration = project.getConfigurations()
-                    .findByName(ToolingUtils
-                            .toDeploymentConfigurationName(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME));
-            if (testDeploymentConfiguration != null) {
-                deploymentConfiguration.extendsFrom(testDeploymentConfiguration);
-            }
-        }
-        if (LaunchMode.DEVELOPMENT.equals(mode)) {
-            Configuration devDeploymentConfiguration = project.getConfigurations()
-                    .findByName(ToolingUtils
-                            .toDeploymentConfigurationName(ToolingUtils.DEV_MODE_CONFIGURATION_NAME));
-            if (devDeploymentConfiguration != null) {
-                deploymentConfiguration.extendsFrom(devDeploymentConfiguration);
-            }
-
-        }
-        return deploymentConfiguration;
-    }
 
     @Override
     public boolean canBuild(String modelName) {
@@ -152,8 +97,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     public Object buildAll(String modelName, ModelParameter parameter, Project project) {
         final LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
 
-        final List<org.gradle.api.artifacts.Dependency> deploymentDeps = ToolingUtils.getEnforcedPlatforms(project);
-        final PlatformImports platformImports = resolvePlatformImports(project, deploymentDeps);
+        final List<org.gradle.api.artifacts.Dependency> enforcedPlatforms = ToolingUtils.getEnforcedPlatforms(project);
+        final PlatformImports platformImports = resolvePlatformImports(project, enforcedPlatforms);
 
         final ResolvedDependency appArtifact = getProjectArtifact(project, mode);
         final ApplicationModelBuilder modelBuilder = new ApplicationModelBuilder()
@@ -161,12 +106,14 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 .addReloadableWorkspaceModule(appArtifact.getKey())
                 .setPlatformImports(platformImports);
 
+        final ApplicationDeploymentClasspathBuilder classpathBuilder = new ApplicationDeploymentClasspathBuilder(project, mode,
+                enforcedPlatforms);
+        final Configuration classpathConfig = classpathBuilder.getRuntimeConfiguration();
+        final Configuration deploymentConfig = classpathBuilder.getDeploymentConfiguration();
+
         final Map<ArtifactKey, ResolvedDependencyBuilder> appDependencies = new LinkedHashMap<>();
-        Configuration classpathConfig = classpathConfig(project, mode);
         collectDependencies(classpathConfig.getResolvedConfiguration(), mode, project, appDependencies, modelBuilder,
                 appArtifact.getWorkspaceModule().mutable());
-
-        Configuration deploymentConfig = deploymentClasspathConfig(project, mode, deploymentDeps);
         collectExtensionDependencies(project, deploymentConfig, appDependencies);
 
         for (ResolvedDependencyBuilder d : appDependencies.values()) {

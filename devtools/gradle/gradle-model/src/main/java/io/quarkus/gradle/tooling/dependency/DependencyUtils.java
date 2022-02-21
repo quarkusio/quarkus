@@ -16,7 +16,6 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ExternalDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -27,11 +26,11 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.fs.util.ZipUtils;
-import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACTV;
 
 public class DependencyUtils {
 
@@ -43,19 +42,13 @@ public class DependencyUtils {
         if (configurationCopy != null) {
             project.getConfigurations().remove(configurationCopy);
         }
-        configurationCopy = project.getConfigurations().create(COPY_CONFIGURATION_NAME);
+        return duplicateConfiguration(project, COPY_CONFIGURATION_NAME, toDuplicate);
+    }
 
-        // We add boms for dependency resolution
-        List<Dependency> boms = ToolingUtils.getEnforcedPlatforms(toDuplicate);
-        configurationCopy.getDependencies().addAll(boms);
-
+    public static Configuration duplicateConfiguration(Project project, String name, Configuration toDuplicate) {
+        final Configuration configurationCopy = project.getConfigurations().create(name);
+        configurationCopy.getDependencies().addAll(toDuplicate.getAllDependencies());
         configurationCopy.getDependencyConstraints().addAll(toDuplicate.getAllDependencyConstraints());
-        for (Dependency dependency : toDuplicate.getAllDependencies()) {
-            if (isTestFixtureDependency(dependency)) {
-                continue;
-            }
-            configurationCopy.getDependencies().add(dependency);
-        }
         return configurationCopy;
     }
 
@@ -76,7 +69,7 @@ public class DependencyUtils {
         return String.join(":", dependency.getGroup(), dependency.getName(), dependency.getVersion());
     }
 
-    public static String asDependencyNotation(AppArtifactCoords artifactCoords) {
+    public static String asDependencyNotation(ArtifactCoords artifactCoords) {
         return String.join(":", artifactCoords.getGroupId(), artifactCoords.getArtifactId(), artifactCoords.getVersion());
     }
 
@@ -107,7 +100,7 @@ public class DependencyUtils {
             if (Files.exists(descriptorPath)) {
                 return loadExtensionInfo(project, descriptorPath, artifactId, null);
             }
-        } else if ("jar".equals(artifact.getExtension())) {
+        } else if (ArtifactCoords.TYPE_JAR.equals(artifact.getExtension())) {
             try (FileSystem artifactFs = ZipUtils.newFileSystem(artifactFile.toPath())) {
                 Path descriptorPath = artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH);
                 if (Files.exists(descriptorPath)) {
@@ -128,7 +121,7 @@ public class DependencyUtils {
         } catch (IOException e) {
             throw new GradleException("Failed to load " + descriptorPath, e);
         }
-        AppArtifactCoords deploymentModule = AppArtifactCoords
+        ArtifactCoords deploymentModule = GACTV
                 .fromString(extensionProperties.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT));
         final List<Dependency> conditionalDependencies;
         if (extensionProperties.containsKey(BootstrapConstants.CONDITIONAL_DEPENDENCIES)) {
@@ -153,7 +146,7 @@ public class DependencyUtils {
     }
 
     public static Dependency create(DependencyHandler dependencies, String conditionalDependency) {
-        AppArtifactCoords dependencyCoords = AppArtifactCoords.fromString(conditionalDependency);
+        final ArtifactCoords dependencyCoords = GACTV.fromString(conditionalDependency);
         return dependencies.create(String.join(":", dependencyCoords.getGroupId(), dependencyCoords.getArtifactId(),
                 dependencyCoords.getVersion()));
     }
@@ -166,14 +159,8 @@ public class DependencyUtils {
 
     public static void requireDeploymentDependency(String deploymentConfigurationName, ExtensionDependency extension,
             DependencyHandler dependencies) {
-        ExternalDependency dependency = (ExternalDependency) dependencies.add(deploymentConfigurationName,
-                extension.asDependencyNotation());
-        dependency.capabilities(
-                handler -> handler.requireCapability(asCapabilityNotation(extension.getDeploymentModule())));
-    }
-
-    public static String asCapabilityNotation(AppArtifactCoords artifactCoords) {
-        return String.join(":", artifactCoords.getGroupId(), artifactCoords.getArtifactId() + "-capability",
-                artifactCoords.getVersion());
+        dependencies.add(deploymentConfigurationName,
+                extension.getDeploymentModule().getGroupId() + ":" + extension.getDeploymentModule().getArtifactId() + ":"
+                        + extension.getDeploymentModule().getVersion());
     }
 }

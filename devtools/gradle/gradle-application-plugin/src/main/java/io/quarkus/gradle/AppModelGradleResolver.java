@@ -15,23 +15,26 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.gradle.impl.ModelParameterImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.runtime.LaunchMode;
 
 public class AppModelGradleResolver implements AppModelResolver {
 
     private final Project project;
-    private final ApplicationModel model;
+    private final LaunchMode mode;
 
-    public AppModelGradleResolver(Project project, ApplicationModel model) {
-        this.model = model;
+    public AppModelGradleResolver(Project project, LaunchMode mode) {
         this.project = project;
+        this.mode = mode;
     }
 
     @Override
@@ -140,17 +143,17 @@ public class AppModelGradleResolver implements AppModelResolver {
     @Override
     public ApplicationModel resolveModel(ArtifactCoords appArtifact)
             throws AppModelResolverException {
-        if (model.getAppArtifact().toGACTVString().equals(appArtifact.toGACTVString())) {
-            return model;
-        }
-        throw new AppModelResolverException(
-                "Requested artifact " + appArtifact + " does not match loaded model " + model.getAppArtifact());
+        ensureProjectCoords(appArtifact);
+        return ToolingUtils.create(project, mode);
     }
 
     @Override
-    public ApplicationModel resolveModel(ArtifactCoords root, Collection<Dependency> deps)
+    public ApplicationModel resolveModel(ArtifactCoords appArtifact, Collection<Dependency> deps)
             throws AppModelResolverException {
-        throw new UnsupportedOperationException();
+        ensureProjectCoords(appArtifact);
+        final ModelParameterImpl param = new ModelParameterImpl();
+        param.setMode(mode.toString());
+        return ToolingUtils.create(project, param);
     }
 
     @Override
@@ -160,5 +163,16 @@ public class AppModelGradleResolver implements AppModelResolver {
             Set<ArtifactKey> localProjects)
             throws AppModelResolverException {
         return resolveModel(appArtifact);
+    }
+
+    protected void ensureProjectCoords(ArtifactCoords appArtifact) throws AppModelResolverException {
+        if (project.getName().equals(appArtifact.getArtifactId())
+                && appArtifact.getGroupId().equals(appArtifact.getGroupId())
+                && appArtifact.getVersion().equals(appArtifact.getVersion())) {
+            return;
+        }
+        throw new AppModelResolverException(
+                "Requested artifact " + appArtifact + " does not match project " + project.getGroup() + ":" + project.getName()
+                        + ":" + project.getVersion());
     }
 }

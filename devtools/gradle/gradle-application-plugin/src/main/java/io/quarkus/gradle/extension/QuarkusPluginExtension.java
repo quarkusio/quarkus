@@ -198,7 +198,7 @@ public class QuarkusPluginExtension {
     }
 
     public AppModelResolver getAppModelResolver(LaunchMode mode) {
-        return new AppModelGradleResolver(project, getApplicationModel(mode));
+        return new AppModelGradleResolver(project, mode);
     }
 
     public ApplicationModel getApplicationModel() {

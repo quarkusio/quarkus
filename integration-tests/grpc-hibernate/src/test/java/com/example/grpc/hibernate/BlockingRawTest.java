@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
@@ -49,7 +50,7 @@ public class BlockingRawTest {
                     .await().atMost(Duration.ofSeconds(5));
         }
 
-        List<String> actual = new ArrayList<>();
+        List<String> actual = new CopyOnWriteArrayList<>();
         Multi<TestOuterClass.Item> all = client.getAll(EMPTY)
                 .onFailure().invoke(th -> {
                     System.out.println("Failed to read");
@@ -65,8 +66,8 @@ public class BlockingRawTest {
     @Timeout(TIMEOUT)
     void shouldAddViaBidi() {
         List<String> expected = new ArrayList<>();
-        List<String> echoed = new ArrayList<>();
-        List<String> actual = new ArrayList<>();
+        List<String> echoed = new CopyOnWriteArrayList<>();
+        List<String> actual = new CopyOnWriteArrayList<>();
 
         Multi<TestOuterClass.Item> request = Multi.createFrom().emitter(
                 m -> {

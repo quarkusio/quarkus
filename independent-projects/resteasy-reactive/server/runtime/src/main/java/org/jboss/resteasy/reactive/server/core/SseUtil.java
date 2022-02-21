@@ -151,8 +151,6 @@ public class SseUtil extends CommonSseUtil {
 
     public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response,
             List<PublisherResponseHandler.StreamingResponseCustomizer> customizers) {
-        // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
-        // happens first
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
             response.setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.SERVER_SENT_EVENTS);
@@ -164,6 +162,7 @@ public class SseUtil extends CommonSseUtil {
                 customizers.get(i).customize(response);
             }
             // FIXME: other headers?
+
         }
     }
 }

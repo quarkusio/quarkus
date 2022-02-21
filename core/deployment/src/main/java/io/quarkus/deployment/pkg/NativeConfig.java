@@ -2,6 +2,7 @@ package io.quarkus.deployment.pkg;
 
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -68,20 +69,28 @@ public class NativeConfig {
 
     /**
      * Defines the user language used for building the native executable.
+     * It also serves as the default Locale language for the native executable application runtime.
+     * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
-     * Defaults to the system one.
+     * 
+     * @deprecated Use the global quarkus.default-locale.
      */
-    @ConfigItem(defaultValue = "${user.language:}")
+    @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
+    @Deprecated
     public Optional<String> userLanguage;
 
     /**
      * Defines the user country used for building the native executable.
+     * It also serves as the default Locale country for the native executable application runtime.
+     * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
-     * Defaults to the system one.
+     * 
+     * @deprecated Use the global quarkus.default-locale.
      */
-    @ConfigItem(defaultValue = "${user.country:}")
+    @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
+    @Deprecated
     public Optional<String> userCountry;
 
     /**

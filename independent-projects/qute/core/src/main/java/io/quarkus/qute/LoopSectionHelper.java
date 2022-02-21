@@ -41,9 +41,8 @@ public class LoopSectionHelper implements SectionHelper {
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         return context.resolutionContext().evaluate(iterable).thenCompose(it -> {
             if (it == null) {
-                throw new TemplateException(String.format(
-                        "Iteration error in template [%s] on line %s: {%s} resolved to null, use {%<s.orEmpty} to ignore this error",
-                        iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString()));
+                // Treat null as no-op, as it is handled by SingleResultNode
+                return ResultNode.NOOP;
             }
             // Try to extract the capacity for collections, maps and arrays to avoid resize
             List<CompletionStage<ResultNode>> results = new ArrayList<>(extractSize(it));
@@ -64,7 +63,6 @@ public class LoopSectionHelper implements SectionHelper {
             if (results.size() == 1) {
                 return results.get(0);
             }
-
             return Results.process(results);
         });
     }

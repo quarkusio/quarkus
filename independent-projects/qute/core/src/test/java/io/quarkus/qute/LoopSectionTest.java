@@ -127,9 +127,8 @@ public class LoopSectionTest {
     @Test
     public void testNull() {
         Engine engine = Engine.builder().addDefaults().build();
-        assertThatExceptionOfType(TemplateException.class)
-                .isThrownBy(() -> engine.parse("{#for i in items}{i}:{/for}").data("items", null).render())
-                .withMessageContaining("{items} resolved to null, use {items.orEmpty} to ignore this error");
+        assertEquals("", engine.parse("{#for i in items}{i}:{/for}").data("items", null).render());
+        assertEquals("", engine.parse("{#each foo.bar.baz??}{i}:{/each}").render());
     }
 
     @Test

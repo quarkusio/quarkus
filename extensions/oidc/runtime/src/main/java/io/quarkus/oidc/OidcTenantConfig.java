@@ -463,6 +463,29 @@ public class OidcTenantConfig extends OidcCommonConfig {
      */
     @ConfigGroup
     public static class Authentication {
+
+        /**
+         * Authorization code flow response mode
+         */
+        public enum ResponseMode {
+            /**
+             * Authorization response parameters are encoded in the query string added to the redirect_uri
+             */
+            QUERY,
+
+            /**
+             * Authorization response parameters are encoded as HTML form values that are auto-submitted in the browser
+             * and transmitted via the HTTP POST method using the application/x-www-form-urlencoded content type
+             */
+            FORM_POST
+        }
+
+        /**
+         * Authorization code flow response mode
+         */
+        @ConfigItem(defaultValueDocumentation = "query")
+        public Optional<ResponseMode> responseMode = Optional.empty();
+
         /**
          * Relative path for calculating a "redirect_uri" query parameter.
          * It has to start from a forward slash and will be appended to the request URI's host and port.
@@ -783,6 +806,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setCookieSuffix(String cookieSuffix) {
             this.cookieSuffix = Optional.of(cookieSuffix);
+        }
+
+        public Optional<ResponseMode> getResponseMode() {
+            return responseMode;
+        }
+
+        public void setResponseMode(ResponseMode responseMode) {
+            this.responseMode = Optional.of(responseMode);
         }
     }
 

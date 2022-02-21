@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
@@ -202,6 +203,7 @@ public class OidcUtilsTest {
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
         assertEquals("https://appleid.apple.com/", config.getAuthServerUrl().get());
         assertEquals(List.of("openid", "email", "name"), config.authentication.scopes.get());
+        assertEquals(ResponseMode.FORM_POST, config.authentication.responseMode.get());
         assertEquals(Method.POST_JWT, config.credentials.clientSecret.method.get());
         assertEquals("https://appleid.apple.com/", config.credentials.jwt.audience.get());
         assertEquals(SignatureAlgorithm.ES256.getAlgorithm(), config.credentials.jwt.signatureAlgorithm.get());
@@ -216,7 +218,7 @@ public class OidcUtilsTest {
         tenant.setApplicationType(ApplicationType.HYBRID);
         tenant.setAuthServerUrl("http://localhost/wiremock");
         tenant.authentication.setScopes(List.of("write"));
-
+        tenant.authentication.setResponseMode(ResponseMode.QUERY);
         tenant.credentials.clientSecret.setMethod(Method.POST);
         tenant.credentials.jwt.setAudience("http://localhost/audience");
         tenant.credentials.jwt.setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
@@ -227,7 +229,7 @@ public class OidcUtilsTest {
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
-
+        assertEquals(ResponseMode.QUERY, config.authentication.responseMode.get());
         assertEquals(Method.POST, config.credentials.clientSecret.method.get());
         assertEquals("http://localhost/audience", config.credentials.jwt.audience.get());
         assertEquals(SignatureAlgorithm.ES256.getAlgorithm(), config.credentials.jwt.signatureAlgorithm.get());

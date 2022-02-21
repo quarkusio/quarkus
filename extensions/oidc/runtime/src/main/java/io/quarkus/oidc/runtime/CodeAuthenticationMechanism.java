@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -27,6 +28,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
+import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -39,8 +41,12 @@ import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonObject;
@@ -58,6 +64,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
     static final String NO_OIDC_COOKIES_AVAILABLE = "no_oidc_cookies";
+    static final String FORM_URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
     private static final String INTERNAL_IDTOKEN_HEADER = "internal";
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
@@ -87,50 +94,38 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // if the state cookie is available then try to complete the code flow and start a new session
         if (stateCookie != null) {
-            String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
-            OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
-
-            if (!isStateValid(context, parsedStateCookieValue[0])) {
-                return Uni.createFrom().failure(new AuthenticationCompletionException());
-            }
-
-            final String code = context.request().getParam(OidcConstants.CODE_FLOW_CODE);
-            if (code != null) {
-                // start a new session by starting the code flow dance
-                Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
-                return resolvedContext.onItem()
-                        .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
-                            @Override
-                            public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                                return performCodeFlow(identityProviderManager, context, tenantContext, code,
-                                        parsedStateCookieValue);
-                            }
-                        });
-            } else if (context.request().getParam(OidcConstants.CODE_FLOW_ERROR) != null) {
-                OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
-                String error = context.request().getParam(OidcConstants.CODE_FLOW_ERROR);
-                String errorDescription = context.request().getParam(OidcConstants.CODE_FLOW_ERROR_DESCRIPTION);
-
-                LOG.debugf("Authentication has failed, error: %s, description: %s", error, errorDescription);
-
-                if (oidcTenantConfig.authentication.errorPath.isPresent()) {
-                    URI absoluteUri = URI.create(context.request().absoluteURI());
-
-                    StringBuilder errorUri = new StringBuilder(buildUri(context,
-                            isForceHttps(oidcTenantConfig),
-                            absoluteUri.getAuthority(),
-                            oidcTenantConfig.authentication.errorPath.get()));
-                    errorUri.append('?').append(absoluteUri.getRawQuery());
-
-                    String finalErrorUri = errorUri.toString();
-                    LOG.debugf("Error URI: %s", finalErrorUri);
-                    return Uni.createFrom().failure(new AuthenticationRedirectException(finalErrorUri));
-                } else {
-                    return Uni.createFrom().failure(new AuthenticationCompletionException());
+            if (ResponseMode.FORM_POST == oidcTenantConfig.authentication.responseMode.orElse(ResponseMode.QUERY)) {
+                String contentType = context.request().getHeader("Content-Type");
+                if (context.request().method() == HttpMethod.POST
+                        && contentType != null
+                        && (contentType.equals(FORM_URL_ENCODED_CONTENT_TYPE)
+                                || contentType.startsWith(FORM_URL_ENCODED_CONTENT_TYPE + ";"))) {
+                    context.request().setExpectMultipart(true);
+                    return Uni.createFrom().emitter(new Consumer<UniEmitter<? super MultiMap>>() {
+                        @Override
+                        public void accept(UniEmitter<? super MultiMap> t) {
+                            context.request().endHandler(new Handler<Void>() {
+                                @Override
+                                public void handle(Void event) {
+                                    t.complete(context.request().formAttributes());
+                                }
+                            });
+                            context.request().resume();
+                        }
+                    }).onItem().transformToUni(new Function<MultiMap, Uni<? extends SecurityIdentity>>() {
+                        @Override
+                        public Uni<? extends SecurityIdentity> apply(MultiMap requestParams) {
+                            return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager, stateCookie,
+                                    requestParams);
+                        }
+                    });
                 }
+                LOG.debug("HTTP POST and " + FORM_URL_ENCODED_CONTENT_TYPE
+                        + " content type must be used with the form_post response mode");
+                return Uni.createFrom().failure(new AuthenticationFailedException());
             } else {
-                LOG.debug("State cookie is present but neither 'code' nor 'error' query parameter is returned");
-                return Uni.createFrom().failure(new AuthenticationCompletionException());
+                return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager, stateCookie,
+                        context.queryParams());
             }
         }
         // return an empty identity - this will lead to a challenge redirecting the user to OpenId Connect provider
@@ -140,8 +135,65 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     }
 
-    private boolean isStateValid(RoutingContext context, String cookieState) {
-        List<String> values = context.queryParam(OidcConstants.CODE_FLOW_STATE);
+    private Uni<SecurityIdentity> processRedirectFromOidc(RoutingContext context, OidcTenantConfig oidcTenantConfig,
+            IdentityProviderManager identityProviderManager, Cookie stateCookie, MultiMap requestParams) {
+        String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
+        OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
+
+        if (!isStateValid(requestParams, parsedStateCookieValue[0])) {
+            return Uni.createFrom().failure(new AuthenticationCompletionException());
+        }
+
+        if (requestParams.contains(OidcConstants.CODE_FLOW_CODE)) {
+            // start a new session by starting the code flow dance
+            Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
+            return resolvedContext.onItem()
+                    .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
+                        @Override
+                        public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
+                            return performCodeFlow(identityProviderManager, context, tenantContext, requestParams,
+                                    parsedStateCookieValue);
+                        }
+                    });
+        } else if (requestParams.contains(OidcConstants.CODE_FLOW_ERROR)) {
+            OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
+            String error = requestParams.get(OidcConstants.CODE_FLOW_ERROR);
+            String errorDescription = requestParams.get(OidcConstants.CODE_FLOW_ERROR_DESCRIPTION);
+
+            LOG.debugf("Authentication has failed, error: %s, description: %s", error, errorDescription);
+
+            if (oidcTenantConfig.authentication.errorPath.isPresent()) {
+                URI absoluteUri = URI.create(context.request().absoluteURI());
+
+                StringBuilder errorUri = new StringBuilder(buildUri(context,
+                        isForceHttps(oidcTenantConfig),
+                        absoluteUri.getAuthority(),
+                        oidcTenantConfig.authentication.errorPath.get()));
+                errorUri.append('?').append(getRequestParametersAsQuery(absoluteUri, requestParams, oidcTenantConfig));
+
+                String finalErrorUri = errorUri.toString();
+                LOG.debugf("Error URI: %s", finalErrorUri);
+                return Uni.createFrom().failure(new AuthenticationRedirectException(finalErrorUri));
+            } else {
+                return Uni.createFrom().failure(new AuthenticationCompletionException());
+            }
+        } else {
+            LOG.debug("State cookie is present but neither 'code' nor 'error' query parameter is returned");
+            return Uni.createFrom().failure(new AuthenticationCompletionException());
+        }
+
+    }
+
+    private String getRequestParametersAsQuery(URI requestUri, MultiMap requestParams, OidcTenantConfig oidcConfig) {
+        if (ResponseMode.FORM_POST == oidcConfig.authentication.responseMode.orElse(ResponseMode.QUERY)) {
+            return OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(requestParams)).toString();
+        } else {
+            return requestUri.getRawQuery();
+        }
+    }
+
+    private boolean isStateValid(MultiMap requestParams, String cookieState) {
+        List<String> values = requestParams.getAll(OidcConstants.CODE_FLOW_STATE);
         // IDP must return a 'state' query parameter and the value of the state cookie must start with this parameter's value
         if (values.size() != 1) {
             LOG.debug("State parameter can not be empty or multi-valued");
@@ -279,6 +331,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         codeFlowParams.append(OidcConstants.CODE_FLOW_RESPONSE_TYPE).append(EQ)
                                 .append(OidcConstants.CODE_FLOW_CODE);
 
+                        // response_mode
+                        if (ResponseMode.FORM_POST == configContext.oidcConfig.authentication.responseMode
+                                .orElse(ResponseMode.QUERY)) {
+                            codeFlowParams.append(OidcConstants.CODE_FLOW_RESPONSE_MODE).append(EQ)
+                                    .append(configContext.oidcConfig.authentication.responseMode.get().toString()
+                                            .toLowerCase());
+                        }
+
                         // client_id
                         codeFlowParams.append(AMP).append(OidcConstants.CLIENT_ID).append(EQ)
                                 .append(OidcCommonUtils.urlEncode(configContext.oidcConfig.clientId.get()));
@@ -368,7 +428,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
-            RoutingContext context, TenantConfigContext configContext, String code, String[] parsedStateCookieValue) {
+            RoutingContext context, TenantConfigContext configContext, MultiMap requestParams,
+            String[] parsedStateCookieValue) {
 
         String userPath = null;
         String userQuery = null;
@@ -391,6 +452,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         final String finalUserPath = userPath;
         final String finalUserQuery = userQuery;
 
+        final String code = requestParams.get(OidcConstants.CODE_FLOW_CODE);
         Uni<AuthorizationCodeTokens> codeFlowTokensUni = getCodeFlowTokensUni(context, configContext, code,
                 stateBean != null ? stateBean.getCodeVerifier() : null);
 
@@ -446,7 +508,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                                     : absoluteUri.getRawPath())));
 
                                                     if (!removeRedirectParams) {
-                                                        finalUriWithoutQuery.append('?').append(absoluteUri.getRawQuery());
+                                                        finalUriWithoutQuery.append('?')
+                                                                .append(getRequestParametersAsQuery(absoluteUri, requestParams,
+                                                                        configContext.oidcConfig));
                                                     }
                                                     if (finalUserQuery != null) {
                                                         finalUriWithoutQuery.append(!removeRedirectParams ? "" : "?");

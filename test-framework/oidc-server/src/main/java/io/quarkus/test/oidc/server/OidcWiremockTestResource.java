@@ -143,6 +143,26 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "</html> ")
                                 .withTransformers("response-template")));
 
+        // Login Page, form_post response mode
+        server.stubFor(
+                get(urlPathMatching("/auth/realms/quarkus-form-post[/]?"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "text/html")
+                                .withBody("<html>\n" +
+                                        "<body>\n" +
+                                        " <form action=\"/login-form-post\" name=\"form\">\n" +
+                                        "  <input type=\"text\" id=\"username\" name=\"username\"/>\n" +
+                                        "  <input type=\"password\" id=\"password\" name=\"password\"/>\n" +
+                                        "  <input type=\"hidden\" id=\"state\" name=\"state\" value=\"{{request.query.state}}\"/>\n"
+                                        +
+                                        "  <input type=\"hidden\" id=\"redirect_uri\" name=\"redirect_uri\" value=\"{{request.query.redirect_uri}}\"/>\n"
+                                        +
+                                        "  <input type=\"submit\" id=\"login\" value=\"login\"/>\n" +
+                                        "</form>\n" +
+                                        "</body>\n" +
+                                        "</html> ")
+                                .withTransformers("response-template")));
+
         // Login Request
         server.stubFor(
                 get(urlPathMatching("/login"))
@@ -150,6 +170,25 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                 .withHeader("Location",
                                         "{{request.query.redirect_uri}}?state={{request.query.state}}&code=58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc")
                                 .withStatus(302)
+                                .withTransformers("response-template")));
+
+        // Login Request, form_post response mode
+        server.stubFor(
+                get(urlPathMatching("/login-form-post"))
+                        .willReturn(aResponse()
+                                .withBody("<html>\n" +
+                                        "   <head><title>Submit This Form</title></head>\n" +
+                                        "   <body onload=\"javascript:document.forms[0].submit()\">\n" +
+                                        "    <form method=\"post\" action=\"{{request.query.redirect_uri}}\">\n" +
+                                        "      <input type=\"hidden\" name=\"state\"\n" +
+                                        "       value=\"{{request.query.state}}\"/>\n" +
+                                        "      <input type=\"hidden\" name=\"code\"\n" +
+                                        "       value=\"58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc\"/>\n"
+                                        +
+                                        "    </form>\n" +
+                                        "   </body>\n" +
+                                        "  </html>\n" +
+                                        "")
                                 .withTransformers("response-template")));
 
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());

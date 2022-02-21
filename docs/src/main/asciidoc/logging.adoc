@@ -313,14 +313,14 @@ Quarkus comes with three different log handlers: **console**, **file** and **sys
 
 The console log handler is enabled by default.  It outputs all log events to the console of your application (typically to the system's `stdout`).
 
-For details of its configuration options, see link:#quarkus-log-logging-log-config_quarkus.log.console[the Console Logging configuration reference].
+For details of its configuration options, see link:#quarkus-log-logging-log-config_quarkus.log.console-console-logging[the Console Logging configuration reference].
 
 === File log handler
 
 The file log handler is disabled by default. It outputs all log events to a file on the application's host.
 It supports log file rotation.
 
-For details of its configuration options, see link:#quarkus-log-logging-log-config_quarkus.log.file[the File Logging configuration reference].
+For details of its configuration options, see link:#quarkus-log-logging-log-config_quarkus.log.file-file-logging[the File Logging configuration reference].
 
 === Syslog log handler
 
@@ -329,7 +329,7 @@ link:https://en.wikipedia.org/wiki/Syslog[Syslog] is a protocol for sending log 
 The syslog handler sends all log events to a syslog server (by default, the syslog server that is local to the application).
 It is disabled by default.
 
-For details of its configuration options, see link:#quarkus-log-logging-log-config_quarkus.log.syslog[the Syslog Logging configuration reference].
+For details of its configuration options, see link:#quarkus-log-logging-log-config_quarkus.log.syslog-syslog-logging[the Syslog Logging configuration reference].
 
 == Examples
 

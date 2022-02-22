@@ -73,7 +73,7 @@ public class DockerProcessor {
             @SuppressWarnings("unused") // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
             return;
         }
 

@@ -51,6 +51,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     protected <T> T apply(String relativePath, Function<PathVisit, T> func, boolean manifestEnabled) {
+        DirectoryPathTree.ensureRelativePath(relativePath);
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             return func.apply(null);
         }
@@ -73,6 +74,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public void accept(String relativePath, Consumer<PathVisit> consumer) {
+        DirectoryPathTree.ensureRelativePath(relativePath);
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             consumer.accept(null);
             return;
@@ -97,6 +99,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public boolean contains(String relativePath) {
+        DirectoryPathTree.ensureRelativePath(relativePath);
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             return false;
         }

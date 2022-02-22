@@ -2303,9 +2303,13 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle paramAnnotations) {
         ResultHandle paramArray;
         String componentType = null;
+
+        AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
+        BranchResult isValueNull = methodCreator.ifNull(target);
+        BytecodeCreator notNullValue = isValueNull.falseBranch();
         if (type.kind() == Type.Kind.ARRAY) {
             componentType = type.asArrayType().component().name().toString();
-            paramArray = methodCreator.checkCast(queryParamHandle, Object[].class);
+            paramArray = notNullValue.checkCast(queryParamHandle, Object[].class);
         } else if (isCollection(type, index)) {
             if (type.kind() == PARAMETERIZED_TYPE) {
                 Type paramType = type.asParameterizedType().arguments().get(0);
@@ -2316,25 +2320,30 @@ public class JaxrsClientReactiveProcessor {
             if (componentType == null) {
                 componentType = DotNames.OBJECT.toString();
             }
-            paramArray = methodCreator.invokeStaticMethod(
+            paramArray = notNullValue.invokeStaticMethod(
                     MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
                     queryParamHandle);
         } else {
             componentType = type.name().toString();
-            paramArray = methodCreator.invokeStaticMethod(
+            paramArray = notNullValue.invokeStaticMethod(
                     MethodDescriptor.ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
                     queryParamHandle);
         }
 
-        paramArray = methodCreator.invokeVirtualMethod(
+        paramArray = notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
                         Class.class, java.lang.reflect.Type.class, Annotation[].class),
-                client, paramArray, methodCreator.loadClassFromTCCL(componentType), genericType, paramAnnotations);
+                client, paramArray, notNullValue.loadClassFromTCCL(componentType), genericType, paramAnnotations);
 
-        return methodCreator.invokeInterfaceMethod(
+        notNullValue.assign(result, notNullValue.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
                         String.class, Object[].class),
-                target, methodCreator.load(paramName), paramArray);
+                target, notNullValue.load(paramName), paramArray));
+
+        BytecodeCreator nullValue = isValueNull.trueBranch();
+        nullValue.assign(result, nullValue.loadNull());
+
+        return result;
     }
 
     private boolean isCollection(Type type, IndexView index) {
@@ -2352,23 +2361,24 @@ public class JaxrsClientReactiveProcessor {
             String paramName, ResultHandle headerParamHandle, String paramType, ResultHandle client,
             FieldDescriptor methodGenericTypeField, FieldDescriptor methodParamAnnotationsField, int paramIdx) {
 
-        ResultHandle genericType = invoBuilderEnricher.readArrayValue(
-                invoBuilderEnricher.readStaticField(methodGenericTypeField), paramIdx);
+        BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(headerParamHandle).falseBranch();
+        ResultHandle genericType = notNullValue.readArrayValue(
+                notNullValue.readStaticField(methodGenericTypeField), paramIdx);
 
-        ResultHandle parameterAnnotations = invoBuilderEnricher.readArrayValue(
-                invoBuilderEnricher.readStaticField(methodParamAnnotationsField), paramIdx);
+        ResultHandle parameterAnnotations = notNullValue.readArrayValue(
+                notNullValue.readStaticField(methodParamAnnotationsField), paramIdx);
 
-        headerParamHandle = invoBuilderEnricher.invokeVirtualMethod(
+        headerParamHandle = notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
                         Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
                 client, headerParamHandle,
-                invoBuilderEnricher.loadClassFromTCCL(paramType), genericType, parameterAnnotations);
+                notNullValue.loadClassFromTCCL(paramType), genericType, parameterAnnotations);
 
-        invoBuilderEnricher.assign(invocationBuilder,
-                invoBuilderEnricher.invokeInterfaceMethod(
+        notNullValue.assign(invocationBuilder,
+                notNullValue.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "header", Invocation.Builder.class,
                                 String.class, Object.class),
-                        invocationBuilder, invoBuilderEnricher.load(paramName), headerParamHandle));
+                        invocationBuilder, notNullValue.load(paramName), headerParamHandle));
     }
 
     private void addPathParam(BytecodeCreator methodCreator, AssignableResultHandle methodTarget,
@@ -2389,13 +2399,14 @@ public class JaxrsClientReactiveProcessor {
             String parameterType, String restClientInterfaceClassName,
             ResultHandle client, AssignableResultHandle formParams, ResultHandle genericType,
             ResultHandle parameterAnnotations) {
-        ResultHandle convertedFormParam = methodCreator.invokeVirtualMethod(
+        BytecodeCreator notNullValue = methodCreator.ifNull(formParamHandle).falseBranch();
+        ResultHandle convertedFormParam = notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
                         Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
                 client, formParamHandle,
-                methodCreator.loadClassFromTCCL(parameterType), genericType, parameterAnnotations);
-        ResultHandle isString = methodCreator.instanceOf(convertedFormParam, String.class);
-        BranchResult isStringBranch = methodCreator.ifTrue(isString);
+                notNullValue.loadClassFromTCCL(parameterType), genericType, parameterAnnotations);
+        ResultHandle isString = notNullValue.instanceOf(convertedFormParam, String.class);
+        BranchResult isStringBranch = notNullValue.ifTrue(isString);
         isStringBranch.falseBranch().throwException(IllegalStateException.class,
                 "Form parameter '" + paramName
                         + "' could not be converted to 'String' for REST Client interface '"
@@ -2404,29 +2415,31 @@ public class JaxrsClientReactiveProcessor {
                         + ParamConverterProvider.class.getName()
                         + "' that is registered with the client via the @RegisterProvider annotation on the REST Client interface.");
         isStringBranch.trueBranch().invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
-                methodCreator.load(paramName), convertedFormParam);
+                notNullValue.load(paramName), convertedFormParam);
     }
 
     private void addCookieParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,
             String paramName, ResultHandle cookieParamHandle, String paramType, ResultHandle client,
             FieldDescriptor methodGenericTypeField, FieldDescriptor methodParamAnnotationsField, int paramIdx) {
 
-        ResultHandle genericType = invoBuilderEnricher.readArrayValue(
-                invoBuilderEnricher.readStaticField(methodGenericTypeField), paramIdx);
+        BytecodeCreator notNullValue = invoBuilderEnricher.ifNull(cookieParamHandle).falseBranch();
 
-        ResultHandle parameterAnnotations = invoBuilderEnricher.readArrayValue(
-                invoBuilderEnricher.readStaticField(methodParamAnnotationsField), paramIdx);
+        ResultHandle genericType = notNullValue.readArrayValue(
+                notNullValue.readStaticField(methodGenericTypeField), paramIdx);
 
-        cookieParamHandle = invoBuilderEnricher.invokeVirtualMethod(
+        ResultHandle parameterAnnotations = notNullValue.readArrayValue(
+                notNullValue.readStaticField(methodParamAnnotationsField), paramIdx);
+
+        cookieParamHandle = notNullValue.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParam", Object.class,
                         Object.class, Class.class, java.lang.reflect.Type.class, Annotation[].class),
                 client, cookieParamHandle,
-                invoBuilderEnricher.loadClassFromTCCL(paramType), genericType, parameterAnnotations);
-        invoBuilderEnricher.assign(invocationBuilder,
-                invoBuilderEnricher.invokeInterfaceMethod(
+                notNullValue.loadClassFromTCCL(paramType), genericType, parameterAnnotations);
+        notNullValue.assign(invocationBuilder,
+                notNullValue.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Invocation.Builder.class, "cookie", Invocation.Builder.class, String.class,
                                 String.class),
-                        invocationBuilder, invoBuilderEnricher.load(paramName), cookieParamHandle));
+                        invocationBuilder, notNullValue.load(paramName), cookieParamHandle));
     }
 
     private enum ReturnCategory {

@@ -39,6 +39,7 @@ public class RegisterClientHeadersTest {
     @Test
     public void shouldUseHeadersFactory() {
         assertEquals("ping:bar", client.echo("ping:"));
+        assertEquals("nullbar", client.echo(null));
     }
 
     @Test

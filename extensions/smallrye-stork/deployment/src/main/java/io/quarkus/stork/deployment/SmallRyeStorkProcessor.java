@@ -2,6 +2,7 @@ package io.quarkus.stork.deployment;
 
 import static java.util.Arrays.asList;
 
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -30,6 +31,7 @@ public class SmallRyeStorkProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown) {
         storkRecorder.initialize(shutdown);
     }

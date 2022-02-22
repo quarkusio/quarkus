@@ -182,6 +182,12 @@ public class HttpConfiguration {
     public boolean tcpFastOpen;
 
     /**
+     * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
+     */
+    @ConfigItem
+    public int acceptBacklog;
+
+    /**
      * Path to a unix domain socket
      */
     @ConfigItem(defaultValue = "/var/run/io.quarkus.app.socket")

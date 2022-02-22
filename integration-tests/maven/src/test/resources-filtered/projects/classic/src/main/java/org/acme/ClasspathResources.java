@@ -1,5 +1,6 @@
 package org.acme;
 
+import javax.ws.rs.QueryParam;
 import org.apache.commons.io.IOUtils;
 
 import javax.ws.rs.GET;
@@ -32,6 +33,7 @@ public class ClasspathResources {
                 () -> assertCorrectExactFileLocation(),
                 () -> assertInvalidDirectory(),
                 () -> assertCorrectDirectory(),
+                () -> assertTopLevelDirectory(),
                 () -> assertMultiRelease()
         );
     }
@@ -154,6 +156,22 @@ public class ClasspathResources {
             }
 
 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return errorResult(testType, "exception during resolution of resource");
+        }
+    }
+
+    private String assertTopLevelDirectory() {
+        final String testType = "top-level-directory";
+        try {
+            Enumeration<URL> directoryEnumeration = this.getClass().getClassLoader().getResources("assets");
+            List<URL> directoryURLList = urlList(directoryEnumeration);
+            if (directoryURLList.size() != 1) {
+                return errorResult(testType, "wrong number of directory urls");
+            }
+
+            return SUCCESS;
         } catch (Exception e) {
             e.printStackTrace();
             return errorResult(testType, "exception during resolution of resource");

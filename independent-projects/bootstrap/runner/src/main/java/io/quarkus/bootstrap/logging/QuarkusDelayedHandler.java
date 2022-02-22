@@ -207,6 +207,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
 
     public synchronized void buildTimeComplete() {
         buildTimeLoggingActivated = false;
+        runCloseTasks();
     }
 
     /**
@@ -235,9 +236,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
     @Override
     public Handler[] clearHandlers() throws SecurityException {
         activated = false;
-        for (Runnable i : logCloseTasks) {
-            i.run();
-        }
+        runCloseTasks();
         return super.clearHandlers();
     }
 
@@ -310,6 +309,15 @@ public class QuarkusDelayedHandler extends ExtHandler {
         }
         droppedRecords.clear();
         activated = true;
+    }
+
+    private void runCloseTasks() {
+        if (!logCloseTasks.isEmpty()) {
+            for (Runnable i : logCloseTasks) {
+                i.run();
+            }
+            logCloseTasks.clear();
+        }
     }
 
     static final class CategoryAndLevel {

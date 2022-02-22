@@ -2,12 +2,18 @@ package io.quarkus.opentelemetry.deployment;
 
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -19,7 +25,10 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.extension.annotations.SpanAttribute;
 import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.config.SmallRyeConfig;
+import io.vertx.ext.web.Router;
 
 public class WithSpanInterceptorTest {
     @RegisterExtension
@@ -79,6 +88,15 @@ public class WithSpanInterceptorTest {
         assertEquals(spanItems.get(0).getParentSpanId(), spanItems.get(1).getSpanId());
     }
 
+    @Test
+    void spanCdiRest() {
+        spanBean.spanRestClient();
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(4);
+        assertEquals(spanItems.get(0).getTraceId(), spanItems.get(1).getTraceId());
+        assertEquals(spanItems.get(0).getTraceId(), spanItems.get(2).getTraceId());
+        assertEquals(spanItems.get(0).getTraceId(), spanItems.get(3).getTraceId());
+    }
+
     @ApplicationScoped
     public static class SpanBean {
         @WithSpan
@@ -108,6 +126,14 @@ public class WithSpanInterceptorTest {
         public void spanChild() {
             spanChildBean.spanChild();
         }
+
+        @Inject
+        SpanRestClient spanRestClient;
+
+        @WithSpan
+        public void spanRestClient() {
+            spanRestClient.spanRestClient();
+        }
     }
 
     @ApplicationScoped
@@ -115,6 +141,30 @@ public class WithSpanInterceptorTest {
         @WithSpan
         public void spanChild() {
 
+        }
+    }
+
+    @ApplicationScoped
+    public static class SpanRestClient {
+        @Inject
+        SmallRyeConfig config;
+
+        @WithSpan
+        public void spanRestClient() {
+            WebTarget target = ClientBuilder.newClient()
+                    .target(UriBuilder.fromUri(config.getRawValue("test.url")).path("hello"));
+            Response response = target.request().get();
+            assertEquals(HTTP_OK, response.getStatus());
+        }
+    }
+
+    @ApplicationScoped
+    public static class HelloRouter {
+        @Inject
+        Router router;
+
+        public void register(@Observes StartupEvent ev) {
+            router.get("/hello").handler(rc -> rc.response().end("hello"));
         }
     }
 }

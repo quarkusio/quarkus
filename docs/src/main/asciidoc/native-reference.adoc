@@ -214,7 +214,7 @@ First, start a Neo4j instance:
 [source,bash]
 ----
 export NEO_PASS=...
-podman run \
+docker run \
   --detach \
   --rm \
   --name testneo4j \
@@ -278,18 +278,18 @@ Next, copy the import cypher script and CSV files into Neo4j's import folder:
 
 [source,bash]
 ----
-podman cp \
+docker cp \
     target/*-native-image-source-jar/reports \
     testneo4j:/var/lib/neo4j/import
 
-podman cp import.cypher testneo4j:/var/lib/neo4j
+docker cp import.cypher testneo4j:/var/lib/neo4j
 ----
 
 After copying all the files, invoke the import script:
 
 [source,bash]
 ----
-podman exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} -f import.cypher
+docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} -f import.cypher
 ----
 
 Once the import completes (shouldn't take more than a couple of minutes), go to the Neo4j browser,
@@ -339,7 +339,7 @@ When that happens, you can alternatively run the queries directly against the cy
 
 [source,bash]
 ----
-podman exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} \
+docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} \
   "match (m:Method) <- [*1..10] - (o) where m.name = 'hello' return *"
 ----
 
@@ -355,7 +355,7 @@ These are called expert options and you can learn more about them by running:
 
 [source,bash,subs=attributes+]
 ----
-podman run quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor} --expert-options-all
+docker run quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor} --expert-options-all
 ----
 
 To use these expert options, add them comma separated to the `-Dquarkus.native.additional-build-args` parameter.
@@ -1226,7 +1226,7 @@ Then, run the Docker container as:
 $ docker run --privileged \
 -t -i -v $(PWD)/$(project):/data --rm -p 8080:8080 fedora-tools:v1 /bin/bash
 ...
-[root@75d1df96849c data]# _
+_
 ----
 
 [[NOTE]]
@@ -1240,8 +1240,8 @@ Once the container is running, you need to ensure that the kernel is ready for t
 
 [source,bash]
 ----
-[root@75d1df96849c data]# echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
-[root@75d1df96849c data]# echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
 ----
 
 Once you’re inside the container, you can execute `strings`, `perf`, `objdump`…, etc commands on the generated binary.
@@ -1249,15 +1249,15 @@ Since the binary was created inside a Linux container, the container tools shoul
 
 [source,bash]
 ----
-[root@75d1df96849c data]# objdump -t ./target/code-with-quarkus-1.0.0-SNAPSHOT-runner | grep “GreetingResource”
+objdump -t ./target/code-with-quarkus-1.0.0-SNAPSHOT-runner | grep “GreetingResource”
 ----
 
 Flame graphs should also be generated inside the container:
 
 [source,bash]
 ----
-[root@75d1df96849c data]# perf script | /opt/FlameGraph/stackcollapse-perf.pl > out.perf-folded
-[root@75d1df96849c data]# /opt/FlameGraph/flamegraph.pl out.perf-folded > flamegraph.svg
+perf script | /opt/FlameGraph/stackcollapse-perf.pl > out.perf-folded
+/opt/FlameGraph/flamegraph.pl out.perf-folded > flamegraph.svg
 ----
 
 The resulting svg files can then be opened outside the container for visualization.
@@ -1351,7 +1351,7 @@ $ ./mvnw package -DskipTests -Pnative \
 
 https://docs.oracle.com/javacomponents/jmc-5-4/jfr-runtime-guide/about.htm#JFRUH170[Java Flight Recorder (JFR)] and
 https://www.oracle.com/java/technologies/jdk-mission-control.html[JDK Mission Control (JMC)]
-can be used to debug profile native binaries since GraalVM CE 21.2.0.
+can be used to profile native binaries since GraalVM CE 21.2.0.
 However, JFR in GraalVM is currently significantly limited in capabilities compared to HotSpot.
 The custom event API is fully supported, but many VM level features are unavailable.
 They will be added in future releases. Current limitations are:

@@ -9,4 +9,8 @@ public interface SecurityCheck {
     void apply(SecurityIdentity identity, Method method, Object[] parameters);
 
     void apply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters);
+
+    default boolean isPermitAll() {
+        return false;
+    }
 }

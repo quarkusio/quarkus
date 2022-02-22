@@ -141,10 +141,12 @@ public class QuarkusPlugin implements Plugin<Project> {
         TaskProvider<QuarkusTest> quarkusTest = tasks.register(QUARKUS_TEST_TASK_NAME, QuarkusTest.class);
         tasks.register(QUARKUS_TEST_CONFIG_TASK_NAME, QuarkusTestConfig.class);
 
-        Task buildNative = tasks.create(BUILD_NATIVE_TASK_NAME, DefaultTask.class);
-        buildNative.finalizedBy(quarkusBuild);
-        buildNative.doFirst(t -> project.getLogger()
-                .warn("The 'buildNative' task has been deprecated in favor of 'build -Dquarkus.package.type=native'"));
+        tasks.register(BUILD_NATIVE_TASK_NAME, DefaultTask.class, task -> {
+            task.finalizedBy(quarkusBuild);
+            task.doFirst(t -> project.getLogger()
+                    .warn("The 'buildNative' task has been deprecated in favor of 'build -Dquarkus.package.type=native'"));
+
+        });
 
         configureBuildNativeTask(project);
 
@@ -374,9 +376,10 @@ public class QuarkusPlugin implements Plugin<Project> {
             configurations.findByName(NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME).extendsFrom(
                     configurations.findByName(sourceSetExtension.extraNativeTest().getRuntimeOnlyConfigurationName()));
 
-            QuarkusTestNative nativeTest = (QuarkusTestNative) project.getTasks().getByName(TEST_NATIVE_TASK_NAME);
-            nativeTest.setTestClassesDirs(nativeTestSourceSets.getOutput().getClassesDirs());
-            nativeTest.setClasspath(nativeTestSourceSets.getRuntimeClasspath());
+            project.getTasks().withType(QuarkusTestNative.class, task -> {
+                task.setTestClassesDirs(nativeTestSourceSets.getOutput().getClassesDirs());
+                task.setClasspath(nativeTestSourceSets.getRuntimeClasspath());
+            });
         }
     }
 

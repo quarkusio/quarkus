@@ -17,7 +17,7 @@ import io.smallrye.mutiny.Uni;
 @Singleton
 public class SecurityConstrainer {
 
-    public static final Uni<Object> CHECK_OK = Uni.createFrom().item(new Object());
+    public static final Object CHECK_OK = new Object();
     @Inject
     SecurityIdentityAssociation identity;
 
@@ -27,7 +27,7 @@ public class SecurityConstrainer {
     public void check(Method method, Object[] parameters) {
 
         SecurityCheck securityCheck = storage.getSecurityCheck(method);
-        if (securityCheck != null) {
+        if (securityCheck != null && !securityCheck.isPermitAll()) {
             try {
                 securityCheck.apply(identity.getIdentity(), method, parameters);
             } catch (BlockingOperationNotAllowedException blockingException) {
@@ -43,11 +43,11 @@ public class SecurityConstrainer {
 
     public Uni<?> nonBlockingCheck(Method method, Object[] parameters) {
         SecurityCheck securityCheck = storage.getSecurityCheck(method);
-        if (securityCheck != null) {
+        if (securityCheck != null && !securityCheck.isPermitAll()) {
             return identity.getDeferredIdentity()
                     .onItem()
                     .invoke(identity -> securityCheck.apply(identity, method, parameters));
         }
-        return CHECK_OK;
+        return Uni.createFrom().item(CHECK_OK);
     }
 }

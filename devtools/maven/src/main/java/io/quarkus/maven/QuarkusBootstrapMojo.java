@@ -1,6 +1,7 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.LaunchMode;
 
 public abstract class QuarkusBootstrapMojo extends AbstractMojo {
@@ -148,6 +150,17 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected String appArtifactCoords() {
         return appArtifact;
+    }
+
+    /**
+     * Allows implementations to provide extra dependencies that should be enforced on the application.
+     * Originally requested by Camel K.
+     * 
+     * @param mode launch mode the application is being bootstrapped in
+     * @return list of extra dependencies that should be enforced on the application
+     */
+    protected List<Dependency> forcedDependencies(LaunchMode mode) {
+        return Collections.emptyList();
     }
 
     protected RepositorySystem repositorySystem() {

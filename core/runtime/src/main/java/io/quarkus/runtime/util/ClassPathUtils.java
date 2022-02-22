@@ -23,6 +23,23 @@ public class ClassPathUtils {
     private static final String JAR = "jar";
 
     /**
+     * Translates a file system-specific path to a Java classpath resource name
+     * that uses '/' as a separator.
+     * 
+     * @param path file system path
+     * @return Java classpath resource name
+     */
+    public static String toResourceName(Path path) {
+        if (path == null) {
+            return null;
+        }
+        if (path.getFileSystem().getSeparator().equals("/")) {
+            return path.toString();
+        }
+        return path.toString().replace(path.getFileSystem().getSeparator(), "/");
+    }
+
+    /**
      * Invokes {@link #consumeAsStreams(ClassLoader, String, Consumer)} passing in
      * an instance of the current thread's context classloader as the classloader
      * from which to load the resources.

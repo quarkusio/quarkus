@@ -715,7 +715,7 @@ quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
 
 == The PojoCodecProvider: easy object to BSON document conversion.
 
-MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos[PojoCodecProvider], with link:{mongodb-doc-root-url}/pojos/#pojo-support[automatic POJO support,
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos[PojoCodecProvider], with link:{mongodb-doc-root-url}/pojos/#pojo-support[automatic POJO support],
 to automatically convert your object to a BSON document.
 
 In case you encounter the `org.bson.codecs.configuration.CodecConfigurationException` exception, it means the codec is not able to

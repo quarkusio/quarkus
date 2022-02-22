@@ -50,11 +50,20 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
             throw new MojoExecutionException("This goal requires a Quarkus extension registry client to be enabled");
         }
 
+        // to support profiles
+        final String emb = System.getProperty("quarkus.bootstrap.effective-model-builder");
+        System.setProperty("quarkus.bootstrap.effective-model-builder", "true");
+
         final Collection<Path> createdDirs = ensureResolvable(new DefaultArtifact(project.getGroupId(),
                 project.getArtifactId(), ArtifactCoords.TYPE_POM, project.getVersion()));
         try {
             processProjectState(quarkusProject);
         } finally {
+            if (emb == null) {
+                System.clearProperty("quarkus.bootstrap.effective-model-builder");
+            } else {
+                System.setProperty("quarkus.bootstrap.effective-model-builder", emb);
+            }
             for (Path p : createdDirs) {
                 IoUtils.recursiveDelete(p);
             }

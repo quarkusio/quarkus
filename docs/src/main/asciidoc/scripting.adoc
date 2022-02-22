@@ -395,7 +395,7 @@ If you have the `native-image` binary installed and `GRAALVM_HOME` set, you can 
 
 [source,shell,subs=attributes+]
 ----
-$ jbang --native quarkusapp
+$ jbang --native quarkusapp.java
 
 [jbang] Building jar...
 [jbang] Post build with io.quarkus.launcher.JBangIntegration

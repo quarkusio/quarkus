@@ -56,9 +56,10 @@ public class MavenPlatformExtensionsResolver implements RegistryPlatformExtensio
                 t = t.getCause();
             }
             final StringBuilder buf = new StringBuilder();
-            buf.append("Failed to resolve Quarkus extension catalog ").append(catalogArtifact);
+            buf.append("Failed to resolve extension catalog of ")
+                    .append(PlatformArtifacts.ensureBomArtifact(platformCoords).toCompactCoords());
             if (repo != null) {
-                buf.append(" from ").append(repo.getId()).append(" (").append(repo.getUrl()).append(")");
+                buf.append(" from Maven repository ").append(repo.getId()).append(" (").append(repo.getUrl()).append(")");
                 final List<RemoteRepository> mirrored = repo.getMirroredRepositories();
                 if (!mirrored.isEmpty()) {
                     buf.append(" which is a mirror of ");

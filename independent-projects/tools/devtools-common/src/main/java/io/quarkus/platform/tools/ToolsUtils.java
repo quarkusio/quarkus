@@ -10,6 +10,7 @@ import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.registry.CatalogMergeUtility;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.selection.OriginPreference;
+import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -112,7 +113,14 @@ public class ToolsUtils {
                 }
             }
             if (platformJson == null) {
-                throw new RuntimeException("Failed to resolve the default platform JSON descriptor", e);
+                final StringBuilder sb = new StringBuilder();
+                sb.append("Failed to resolve extension catalog for ");
+                sb.append(PlatformArtifacts.ensureBomArtifact(new ArtifactCoords(catalogCoords.getGroupId(),
+                        catalogCoords.getArtifactId(), catalogCoords.getClassifier(), catalogCoords.getExtension(),
+                        catalogCoords.getVersion())).toCompactCoords());
+                sb.append(
+                        ". Make sure the groupId, artifactId and version are spelled correctly and the relevant Maven repositories are configured.");
+                throw new RuntimeException(sb.toString(), e);
             }
         }
         ExtensionCatalog catalog;

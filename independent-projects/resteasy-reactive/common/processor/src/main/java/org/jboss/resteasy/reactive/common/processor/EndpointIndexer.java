@@ -178,6 +178,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected final IndexView index;
+    protected final IndexView applicationIndex;
     protected final Map<String, String> existingConverters;
     protected final Map<String, InjectableBean> injectableBeans;
     protected final boolean hasRuntimeConverters;
@@ -199,6 +200,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
+        this.applicationIndex = builder.applicationIndex;
         this.existingConverters = builder.existingConverters;
         this.scannedResourcePaths = builder.scannedResourcePaths;
         this.config = builder.config;
@@ -561,7 +563,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
             String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
                     basicResourceClassInfo.getProduces());
-            produces = applyDefaultProduces(produces, nonAsyncReturnType);
+            produces = applyDefaultProduces(produces, nonAsyncReturnType, httpMethod);
             produces = addDefaultCharsets(produces);
 
             String sseElementType = basicResourceClassInfo.getSseElementType();
@@ -715,8 +717,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean encoded, Type paramType, PARAM parameterResult, String name, String defaultValue,
             ParameterType type, String elementType, boolean single, String signature);
 
-    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
-        setupApplyDefaults(nonAsyncReturnType);
+    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType,
+            DotName httpMethod) {
+        setupApplyDefaults(nonAsyncReturnType, httpMethod);
         if (produces != null && produces.length != 0)
             return produces;
         return applyAdditionalDefaults(nonAsyncReturnType);
@@ -738,7 +741,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return result.toArray(EMPTY_STRING_ARRAY);
     }
 
-    protected void setupApplyDefaults(Type nonAsyncReturnType) {
+    protected void setupApplyDefaults(Type nonAsyncReturnType, DotName httpMethod) {
 
     }
 
@@ -1122,7 +1125,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
                 builder.setOptional(true);
             } else if (convertible) {
-                throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
+                typeHandled = true;
+                elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
+                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             } else {
                 // the "element" type is not of importance as in this case the signature is used at runtime to determine the proper types
                 elementType = DUMMY_ELEMENT_TYPE.toString();
@@ -1246,6 +1251,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<String, BeanFactory<Object>> factoryCreator;
         private BlockingDefault defaultBlocking = BlockingDefault.AUTOMATIC;
         private IndexView index;
+        private IndexView applicationIndex;
         private Map<String, String> existingConverters = new HashMap<>();
         private Map<DotName, String> scannedResourcePaths;
         private ResteasyReactiveConfig config;
@@ -1294,6 +1300,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setIndex(IndexView index) {
             this.index = index;
+            return (B) this;
+        }
+
+        public B setApplicationIndex(IndexView index) {
+            this.applicationIndex = index;
             return (B) this;
         }
 

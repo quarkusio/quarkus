@@ -55,6 +55,7 @@ public class ParameterHandler implements ServerRestHandler {
                 handleResult(result, requestContext, false);
             }
         } catch (Exception e) {
+            log.debug("Error occurred during parameter extraction", e);
             if (e instanceof WebApplicationException) {
                 throw e;
             } else {

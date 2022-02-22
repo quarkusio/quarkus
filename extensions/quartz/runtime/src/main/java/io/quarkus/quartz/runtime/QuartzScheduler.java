@@ -37,6 +37,7 @@ import org.quartz.SchedulerFactory;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger.TriggerState;
 import org.quartz.TriggerBuilder;
+import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.simpl.InitThreadContextClassLoadHelper;
 import org.quartz.simpl.SimpleJobFactory;
@@ -179,8 +180,10 @@ public class QuartzScheduler implements Scheduler {
                             throw new IllegalArgumentException("Invalid schedule configuration: " + scheduled);
                         }
 
+                        JobDetail jobDetail = jobBuilder.build();
                         TriggerBuilder<?> triggerBuilder = TriggerBuilder.newTrigger()
                                 .withIdentity(identity, Scheduler.class.getName())
+                                .forJob(jobDetail)
                                 .withSchedule(scheduleBuilder);
 
                         Long millisToAdd = null;
@@ -194,18 +197,30 @@ public class QuartzScheduler implements Scheduler {
                                     .plusMillis(millisToAdd).toEpochMilli()));
                         }
 
-                        JobDetail job = jobBuilder.build();
                         org.quartz.Trigger trigger = triggerBuilder.build();
-                        if (!scheduler.checkExists(job.getKey())) {
-                            scheduler.scheduleJob(job, trigger);
-                            LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
-                                    scheduled);
-                        } else {
-                            org.quartz.Trigger oldTrigger = scheduler.getTrigger(trigger.getKey());
+                        org.quartz.Trigger oldTrigger = scheduler.getTrigger(trigger.getKey());
+                        if (oldTrigger != null) {
                             scheduler.rescheduleJob(trigger.getKey(),
                                     triggerBuilder.startAt(oldTrigger.getNextFireTime()).build());
                             LOGGER.debugf("Rescheduled business method %s with config %s", method.getMethodDescription(),
                                     scheduled);
+                        } else if (!scheduler.checkExists(jobDetail.getKey())) {
+                            scheduler.scheduleJob(jobDetail, trigger);
+                            LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
+                                    scheduled);
+                        } else {
+                            // TODO remove this code in 3.0, it is only here to ensure migration after the removal of
+                            // "_trigger" suffix and the need to reschedule jobs due to configuration change between build
+                            // and deploy time
+                            oldTrigger = scheduler.getTrigger(new TriggerKey(identity + "_trigger", Scheduler.class.getName()));
+                            if (oldTrigger != null) {
+                                scheduler.deleteJob(jobDetail.getKey());
+                                scheduler.scheduleJob(jobDetail, triggerBuilder.startAt(oldTrigger.getNextFireTime()).build());
+                                LOGGER.debugf(
+                                        "Rescheduled business method %s with config %s due to Trigger '%s' record being renamed after removal of '_trigger' suffix",
+                                        method.getMethodDescription(),
+                                        scheduled, oldTrigger.getKey().getName());
+                            }
                         }
                     }
                 }
@@ -501,12 +516,12 @@ public class QuartzScheduler implements Scheduler {
 
         @Override
         public Instant getFireTime() {
-            return trigger.context.getScheduledFireTime().toInstant();
+            return trigger.context.getFireTime().toInstant();
         }
 
         @Override
         public Instant getScheduledFireTime() {
-            return trigger.context.getFireTime().toInstant();
+            return trigger.context.getScheduledFireTime().toInstant();
         }
 
     }

@@ -480,7 +480,7 @@ function getLoggerClassName(loggerClassName){
 
 function getClassFullAbbreviatedName(sourceClassNameFull, lineNumber, sourceClassNameFullShort) {
     if($('#logstreamColumnsModalSourceClassFullAbbreviatedSwitch').is(":checked")){
-        if (isClickableClassName(sourceClassNameFull)) {
+        if (isClickableClassName(sourceClassNameFull, lineNumber)) {
             return makeClickableClassNameLink(sourceClassNameFull, lineNumber, sourceClassNameFullShort);
         }
         return "<span class='text-secondary'>[" + sourceClassNameFullShort + "]</span>" + tab;
@@ -490,7 +490,7 @@ function getClassFullAbbreviatedName(sourceClassNameFull, lineNumber, sourceClas
 
 function getFullClassName(sourceClassNameFull, lineNumber) {
     if($('#logstreamColumnsModalSourceClassFullSwitch').is(":checked")){
-        if (isClickableClassName(sourceClassNameFull)) {
+        if (isClickableClassName(sourceClassNameFull, lineNumber)) {
             return makeClickableClassNameLink(sourceClassNameFull, lineNumber, sourceClassNameFull);
         }
         return "<span class='text-secondary'>[" + sourceClassNameFull + "]</span>" + tab;
@@ -500,7 +500,7 @@ function getFullClassName(sourceClassNameFull, lineNumber) {
 
 function getClassName(sourceClassNameFull, lineNumber, className) {
     if($('#logstreamColumnsModalSourceClassSwitch').is(":checked")){
-        if (isClickableClassName(sourceClassNameFull)) {
+        if (isClickableClassName(sourceClassNameFull, lineNumber)) {
             return makeClickableClassNameLink(sourceClassNameFull, lineNumber, className);
         }
         return "<span class='text-secondary'>[" + className + "]</span>" + tab;
@@ -508,8 +508,8 @@ function getClassName(sourceClassNameFull, lineNumber, className) {
     return "";
 }
 
-function isClickableClassName(className){
-    if (className !== undefined && appClassLocation(className) && ideKnown()) {
+function isClickableClassName(className, lineNumber){
+    if (lineNumber !== undefined && lineNumber && lineNumber !== "" && className !== undefined && appClassLocation(className) && ideKnown()) {
         return true;
     }
     return false;
@@ -626,8 +626,8 @@ function enhanceStacktrace(stacktrace) {
                     var classMethod = classMethodFileNumberSplit[0];
                     var fileNumber = classMethodFileNumberSplit[1];
                     givenClassName = classMethod.substring(0, classMethod.lastIndexOf('.'));
-                    if(isClickableClassName(givenClassName)){
-                        lineNumber = fileNumber.substring(fileNumber.lastIndexOf(':') + 1, fileNumber.lastIndexOf(')'));
+                    lineNumber = fileNumber.substring(fileNumber.lastIndexOf(':') + 1, fileNumber.lastIndexOf(')'));
+                    if(isClickableClassName(givenClassName, lineNumber)){
                         line = "<a class='text-wrap text-danger clickable-app-class' onclick='openInIDE(\"" + givenClassName + "\",\"" + lineNumber + "\");'><b>" + line + "</b></a>";
                     }
                 }

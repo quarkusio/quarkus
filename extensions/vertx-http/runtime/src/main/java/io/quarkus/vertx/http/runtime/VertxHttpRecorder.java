@@ -59,6 +59,7 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
@@ -72,6 +73,7 @@ import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -91,6 +93,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.Http1xServerConnection;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.JdkSSLEngineOptions;
@@ -762,7 +765,8 @@ public class VertxHttpRecorder {
 
     private static byte[] getFileContent(Path path) throws IOException {
         byte[] data;
-        final InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+        final InputStream resource = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(ClassPathUtils.toResourceName(path));
         if (resource != null) {
             try (InputStream is = resource) {
                 data = doRead(is);
@@ -840,6 +844,7 @@ public class VertxHttpRecorder {
         options.setReusePort(httpConfiguration.soReusePort);
         options.setTcpQuickAck(httpConfiguration.tcpQuickAck);
         options.setTcpCork(httpConfiguration.tcpCork);
+        options.setAcceptBacklog(httpConfiguration.acceptBacklog);
         options.setTcpFastOpen(httpConfiguration.tcpFastOpen);
         options.setCompressionSupported(httpConfiguration.enableCompression);
         options.setDecompressionSupported(httpConfiguration.enableDecompression);
@@ -1202,7 +1207,7 @@ public class VertxHttpRecorder {
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
 
                             Http1xServerConnection conn = new Http1xServerConnection(
-                                    () -> context,
+                                    () -> (ContextInternal) VertxContext.getOrCreateDuplicatedContext(context),
                                     null,
                                     new HttpServerOptions(),
                                     chctx,

@@ -3,14 +3,15 @@ package io.quarkus.hibernate.orm.runtime.schema;
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hibernate.boot.Metadata;
+import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
+import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 import org.hibernate.tool.schema.SourceType;
 import org.hibernate.tool.schema.TargetType;
@@ -71,9 +72,9 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         if (name != null) {
             return name;
         }
-        Object prop = sf.getProperties().get("hibernate.ejb.persistenceUnitName");
-        if (prop != null) {
-            return prop.toString();
+        Object persistenceUnitName = sf.getProperties().get("hibernate.ejb.persistenceUnitName");
+        if (persistenceUnitName != null) {
+            return persistenceUnitName.toString();
         }
         return DataSourceUtil.DEFAULT_DATASOURCE_NAME;
     }
@@ -91,24 +92,24 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         if (!LaunchMode.current().isDevOrTest()) {
             throw new IllegalStateException("Can only be used in dev or test mode");
         }
-        Holder val = metadataMap.get(name);
+        Holder holder = metadataMap.get(name);
 
-        Object prop = val.sessionFactory.getProperties().get("javax.persistence.schema-generation.database.action");
-        if (prop != null && !(prop.toString().equals("none"))) {
+        ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
+        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
+        Object schemaGenerationDatabaseAction = executionOptions.getConfigurationValues()
+                .get("javax.persistence.schema-generation.database.action");
+        if (schemaGenerationDatabaseAction != null && !(schemaGenerationDatabaseAction.toString().equals("none"))) {
             //if this is none we assume another framework is doing this (e.g. flyway)
-            SchemaManagementTool schemaManagementTool = val.sessionFactory.getServiceRegistry()
+            SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
-            SchemaDropper schemaDropper = schemaManagementTool.getSchemaDropper(new HashMap());
-            schemaDropper
-                    .doDrop(val.metadata, new SimpleExecutionOptions(), new SimpleSourceDescriptor(),
-                            new SimpleTargetDescriptor());
-            schemaManagementTool.getSchemaCreator(new HashMap())
-                    .doCreation(val.metadata, new SimpleExecutionOptions(), new SimpleSourceDescriptor(),
-                            new SimpleTargetDescriptor());
+            SchemaDropper schemaDropper = schemaManagementTool.getSchemaDropper(executionOptions.getConfigurationValues());
+            schemaDropper.doDrop(holder.metadata, executionOptions, new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
+            schemaManagementTool.getSchemaCreator(executionOptions.getConfigurationValues())
+                    .doCreation(holder.metadata, executionOptions, new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
         }
         //we still clear caches though
-        val.sessionFactory.getCache().evictAll();
-        val.sessionFactory.getCache().evictQueries();
+        holder.sessionFactory.getCache().evictAll();
+        holder.sessionFactory.getCache().evictQueries();
     }
 
     public static void runPostBootValidation(String name) {
@@ -123,17 +124,19 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             }
 
             //if this is none we assume another framework is doing this (e.g. flyway)
-            SchemaManagementTool schemaManagementTool = val.sessionFactory.getServiceRegistry()
+            ServiceRegistry serviceRegistry = val.sessionFactory.getServiceRegistry();
+            SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
-            SchemaValidator validator = schemaManagementTool.getSchemaValidator(new HashMap());
+            SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
+            SchemaValidator validator = schemaManagementTool.getSchemaValidator(executionOptions.getConfigurationValues());
             try {
-                validator.doValidation(val.metadata, new SimpleExecutionOptions());
+                validator.doValidation(val.metadata, executionOptions);
             } catch (SchemaManagementException e) {
                 log.error("Failed to validate Schema: " + e.getMessage());
-                SchemaMigrator migrator = schemaManagementTool.getSchemaMigrator(new HashMap());
+                SchemaMigrator migrator = schemaManagementTool.getSchemaMigrator(executionOptions.getConfigurationValues());
 
                 StringWriter writer = new StringWriter();
-                migrator.doMigration(val.metadata, new SimpleExecutionOptions(), new TargetDescriptor() {
+                migrator.doMigration(val.metadata, executionOptions, new TargetDescriptor() {
                     @Override
                     public EnumSet<TargetType> getTargetTypes() {
                         return EnumSet.of(TargetType.SCRIPT);
@@ -186,9 +189,15 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
     }
 
     private static class SimpleExecutionOptions implements ExecutionOptions {
+        private final Map<?, ?> configurationValues;
+
+        public SimpleExecutionOptions(ServiceRegistry serviceRegistry) {
+            configurationValues = serviceRegistry.getService(ConfigurationService.class).getSettings();
+        }
+
         @Override
-        public Map getConfigurationValues() {
-            return Collections.emptyMap();
+        public Map<?, ?> getConfigurationValues() {
+            return configurationValues;
         }
 
         @Override

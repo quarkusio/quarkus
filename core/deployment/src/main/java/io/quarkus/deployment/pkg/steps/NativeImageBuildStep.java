@@ -41,8 +41,10 @@ import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
+import io.quarkus.deployment.steps.LocaleProcessor;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 public class NativeImageBuildStep {
 
@@ -84,6 +86,7 @@ public class NativeImageBuildStep {
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
     ArtifactResultBuildItem nativeSourcesResult(NativeConfig nativeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
@@ -109,6 +112,7 @@ public class NativeImageBuildStep {
 
         NativeImageInvokerInfo nativeImageArgs = new NativeImageInvokerInfo.Builder()
                 .setNativeConfig(nativeConfig)
+                .setLocalesBuildTimeConfig(localesBuildTimeConfig)
                 .setOutputTargetBuildItem(outputTargetBuildItem)
                 .setNativeImageProperties(nativeImageProperties)
                 .setExcludeConfigs(excludeConfigs)
@@ -140,7 +144,8 @@ public class NativeImageBuildStep {
     }
 
     @BuildStep
-    public NativeImageBuildItem build(NativeConfig nativeConfig, NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
+    public NativeImageBuildItem build(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig,
+            NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -207,6 +212,7 @@ public class NativeImageBuildStep {
 
             NativeImageInvokerInfo commandAndExecutable = new NativeImageInvokerInfo.Builder()
                     .setNativeConfig(nativeConfig)
+                    .setLocalesBuildTimeConfig(localesBuildTimeConfig)
                     .setOutputTargetBuildItem(outputTargetBuildItem)
                     .setNativeImageProperties(nativeImageProperties)
                     .setExcludeConfigs(excludeConfigs)
@@ -488,6 +494,7 @@ public class NativeImageBuildStep {
 
         static class Builder {
             private NativeConfig nativeConfig;
+            private LocalesBuildTimeConfig localesBuildTimeConfig;
             private OutputTargetBuildItem outputTargetBuildItem;
             private List<NativeImageSystemPropertyBuildItem> nativeImageProperties;
             private List<ExcludeConfigBuildItem> excludeConfigs;
@@ -504,6 +511,11 @@ public class NativeImageBuildStep {
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
+                return this;
+            }
+
+            public Builder setLocalesBuildTimeConfig(LocalesBuildTimeConfig localesBuildTimeConfig) {
+                this.localesBuildTimeConfig = localesBuildTimeConfig;
                 return this;
             }
 
@@ -607,12 +619,20 @@ public class NativeImageBuildStep {
                         }
                     }
                 }
-                if (nativeConfig.userLanguage.isPresent()) {
-                    nativeImageArgs.add("-J-Duser.language=" + nativeConfig.userLanguage.get());
+
+                final String userLanguage = LocaleProcessor.nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig);
+                if (!userLanguage.isEmpty()) {
+                    nativeImageArgs.add("-J-Duser.language=" + userLanguage);
                 }
-                if (nativeConfig.userCountry.isPresent()) {
-                    nativeImageArgs.add("-J-Duser.country=" + nativeConfig.userCountry.get());
+                final String userCountry = LocaleProcessor.nativeImageUserCountry(nativeConfig, localesBuildTimeConfig);
+                if (!userCountry.isEmpty()) {
+                    nativeImageArgs.add("-J-Duser.country=" + userCountry);
                 }
+                final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig, localesBuildTimeConfig);
+                if (!includeLocales.isEmpty()) {
+                    nativeImageArgs.add("-H:IncludeLocales=" + includeLocales);
+                }
+
                 nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding);
 
                 if (enableSslNative) {

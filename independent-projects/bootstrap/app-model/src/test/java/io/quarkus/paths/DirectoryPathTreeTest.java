@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -89,26 +90,39 @@ public class DirectoryPathTreeTest {
     public void acceptExistingRelativeNonNormalizedPath() throws Exception {
         final Path root = resolveTreeRoot("root");
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
-        tree.accept("../root/./other/../README.md", visit -> {
-            assertThat(visit).isNotNull();
-            assertThat(visit.getRelativePath("/")).isEqualTo("README.md");
-            assertThat(visit.getPath()).exists();
-            assertThat(visit.getRoot()).isEqualTo(root);
-            try {
-                assertThat(Files.readString(visit.getPath())).isEqualTo("test readme");
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        assertThatThrownBy(() -> {
+            tree.accept("other/../README.md", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
     }
 
     @Test
-    public void acceptNonExistentRelativeNonNormalizedPath() throws Exception {
+    public void acceptExistingRelativeNonNormalizedPathOutsideTree() throws Exception {
         final Path root = resolveTreeRoot("root");
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
-        tree.accept("../root/./README.md/../non-existent.txt", visit -> {
-            assertThat(visit).isNull();
-        });
+        assertThatThrownBy(() -> {
+            tree.accept("../root/./other/../README.md", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
+    }
+
+    @Test
+    public void acceptNonExistentRelativeNonNormalizedPathOutsideTree() throws Exception {
+        final Path root = resolveTreeRoot("root");
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThatThrownBy(() -> {
+            tree.accept("../root/./README.md/../non-existent.txt", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
     }
 
     @Test

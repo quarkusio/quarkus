@@ -2,6 +2,7 @@ package io.quarkus.paths;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,9 +35,17 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
                         || path.startsWith(FileSystems.getDefault().getSeparator()));
     }
 
-    static void ensureRelativePath(String path) {
+    static void ensureResourcePath(FileSystem fs, String path) {
         if (isAbsolutePath(path)) {
             throw new IllegalArgumentException("Expected a path relative to the root of the path tree but got " + path);
+        }
+        // this is to disallow reading outside the path tree root
+        if (path != null && path.contains("..")) {
+            for (Path pathElement : fs.getPath(path)) {
+                if (pathElement.toString().equals("..")) {
+                    throw new IllegalArgumentException("'..' cannot be used in resource paths, but got " + path);
+                }
+            }
         }
     }
 
@@ -80,22 +89,13 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
         PathTreeVisit.walk(dir, dir, pathFilter, getMultiReleaseMapping(), visitor);
     }
 
-    private String normalize(String path) {
-        ensureRelativePath(path);
-        // this is to disallow reading outside the path tree root
-        if (path != null && path.contains("..")) {
-            final Path absolutePath = dir.resolve(path).normalize().toAbsolutePath();
-            if (absolutePath.startsWith(dir)) {
-                return dir.relativize(absolutePath).toString();
-            }
-            return null;
-        }
-        return path;
+    private void ensureResourcePath(String path) {
+        ensureResourcePath(dir.getFileSystem(), path);
     }
 
     @Override
     protected <T> T apply(String relativePath, Function<PathVisit, T> func, boolean manifestEnabled) {
-        relativePath = normalize(relativePath);
+        ensureResourcePath(relativePath);
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             return func.apply(null);
         }
@@ -108,7 +108,7 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
 
     @Override
     public void accept(String relativePath, Consumer<PathVisit> consumer) {
-        relativePath = normalize(relativePath);
+        ensureResourcePath(relativePath);
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             consumer.accept(null);
             return;
@@ -123,7 +123,7 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
 
     @Override
     public boolean contains(String relativePath) {
-        relativePath = normalize(relativePath);
+        ensureResourcePath(relativePath);
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             return false;
         }
@@ -133,7 +133,7 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
 
     @Override
     public Path getPath(String relativePath) {
-        relativePath = normalize(relativePath);
+        ensureResourcePath(relativePath);
         if (!PathFilter.isVisible(pathFilter, relativePath)) {
             return null;
         }

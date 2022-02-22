@@ -2,6 +2,7 @@ package io.quarkus.paths;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,9 +35,17 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
                         || path.startsWith(FileSystems.getDefault().getSeparator()));
     }
 
-    static void ensureRelativePath(String path) {
+    static void ensureResourcePath(FileSystem fs, String path) {
         if (isAbsolutePath(path)) {
             throw new IllegalArgumentException("Expected a path relative to the root of the path tree but got " + path);
+        }
+        // this is to disallow reading outside the path tree root
+        if (path != null && path.contains("..")) {
+            for (Path pathElement : fs.getPath(path)) {
+                if (pathElement.toString().equals("..")) {
+                    throw new IllegalArgumentException("'..' cannot be used in resource paths, but got " + path);
+                }
+            }
         }
     }
 
@@ -81,15 +90,7 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
     }
 
     private void ensureResourcePath(String path) {
-        ensureRelativePath(path);
-        // this is to disallow reading outside the path tree root
-        if (path != null && path.contains("..")) {
-            for (Path pathElement : dir.getFileSystem().getPath(path)) {
-                if (pathElement.toString().equals("..")) {
-                    throw new IllegalArgumentException("'..' cannot be used in resource paths, but got " + path);
-                }
-            }
-        }
+        ensureResourcePath(dir.getFileSystem(), path);
     }
 
     @Override

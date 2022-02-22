@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.fs.util.ZipUtils;
@@ -83,6 +84,42 @@ public class JarPathTreeTest {
         } catch (IllegalArgumentException e) {
             //expected
         }
+    }
+
+    @Test
+    public void acceptExistingRelativeNonNormalizedPath() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThatThrownBy(() -> {
+            tree.accept("other/../README.md", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
+    }
+
+    @Test
+    public void acceptExistingRelativeNonNormalizedPathOutsideTree() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThatThrownBy(() -> {
+            tree.accept("../root/./other/../README.md", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
+    }
+
+    @Test
+    public void acceptNonExistentRelativeNonNormalizedPathOutsideTree() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThatThrownBy(() -> {
+            tree.accept("../root/./README.md/../non-existent.txt", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
     }
 
     @Test

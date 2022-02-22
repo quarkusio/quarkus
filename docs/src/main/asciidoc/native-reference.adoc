@@ -5,6 +5,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Native Reference Guide
 
+include::./attributes.adoc[]
+
 This guide is a companion to the
 xref:building-native-image.adoc[Building a Native Executable],
 xref:native-and-ssl.adoc[Using SSL With Native Images],
@@ -38,8 +40,8 @@ Aside from system level packages, you'll need:
 * A working container runtime (Docker, podman)
 * The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
-Finally, this guide assumes the use of the Mandrel distribution of GraalVM for building native executables,
-and these are built within a container.
+Finally, this guide assumes the use of the link:https://github.com/graalvm/mandrel[Mandrel distribution] of GraalVM for building native executables,
+and these are built within a container so there is no need for installing Mandrel on the host.
 
 == First Debugging Steps
 
@@ -292,7 +294,7 @@ After copying all the files, invoke the import script:
 docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} -f import.cypher
 ----
 
-Once the import completes (shouldn't take more than a couple of minutes), go to the Neo4j browser,
+Once the import completes (shouldn't take more than a couple of minutes), go to the link:http://localhost:7474[Neo4j browser],
 and you'll be able to observe a small summary of the data in the graph:
 
 image::native-reference-neo4j-db-info.png[Neo4j database information after import]
@@ -1021,7 +1023,149 @@ We can also get a backtrace of the call graph that led us to this state:
 #8  org.acme.GreetingResource::hello(void) () at org/acme/GreetingResource.java:22
 ----
 
-Unfortunately though, running the `list` command doesn’t show us the corresponding source code.
+Similarly, we can get a backtrace of the call graph of other threads.
+
+1. First, we can list the available threads with:
++
+[source,bash]
+----
+(gdb) info threads
+  Id   Target Id                                             Frame 
+  1    Thread 0x7ffff7a58d00 (LWP 1028851) "getting-started" __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x2cd7adc)
+    at futex-internal.c:57
+  2    Thread 0x7ffff62ff640 (LWP 1028852) "gnal Dispatcher" __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x2c8d3a0)
+    at futex-internal.c:57
+* 4    Thread 0x7fffeffff640 (LWP 1028854) "ecutor-thread-0" com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsBackward(org.graalvm.word.Pointer *, org.graalvm.word.Pointer *, org.graalvm.word.UnsignedWord *) () at com/oracle/svm/core/UnmanagedMemoryUtil.java:169
+  5    Thread 0x7fffef7fe640 (LWP 1028855) "-thread-checker" __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x7fffef7fdba0, op=137, expected=0, futex_word=0x7fffe4000e68)
+    at futex-internal.c:57
+  6    Thread 0x7fffeebff640 (LWP 1028856) "ntloop-thread-0" 0x00007ffff7c64c2e in epoll_wait (epfd=11, events=0x2ca6890, maxevents=1024, timeout=1800000)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  7    Thread 0x7fffee1ff640 (LWP 1028857) "ntloop-thread-1" 0x00007ffff7c64c2e in epoll_wait (epfd=14, events=0x2ca98a0, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  8    Thread 0x7fffed9fe640 (LWP 1028858) "ntloop-thread-2" 0x00007ffff7c64c2e in epoll_wait (epfd=17, events=0x2cac8b0, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  9    Thread 0x7fffecfff640 (LWP 1028859) "ntloop-thread-3" 0x00007ffff7c64c2e in epoll_wait (epfd=20, events=0x2caf8c0, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  10   Thread 0x7fffd3fff640 (LWP 1028860) "ntloop-thread-4" 0x00007ffff7c64c2e in epoll_wait (epfd=23, events=0x2cb28d0, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  11   Thread 0x7fffcbfff640 (LWP 1028861) "ntloop-thread-5" 0x00007ffff7c64c2e in epoll_wait (epfd=26, events=0x2cb58e0, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  12   Thread 0x7fffd37fe640 (LWP 1028862) "ntloop-thread-6" 0x00007ffff7c64c2e in epoll_wait (epfd=29, events=0x2cb88f0, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  13   Thread 0x7fffd2ffd640 (LWP 1028863) "ntloop-thread-7" 0x00007ffff7c64c2e in epoll_wait (epfd=32, events=0x2cbb900, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  14   Thread 0x7fffd25ff640 (LWP 1028864) "ceptor-thread-0" 0x00007ffff7c64c2e in epoll_wait (epfd=56, events=0x2cd3980, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  15   Thread 0x7fffd1bff640 (LWP 1028865) "ntloop-thread-8" 0x00007ffff7c64c2e in epoll_wait (epfd=35, events=0x2cbe910, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  16   Thread 0x7fffd11ff640 (LWP 1028866) "ntloop-thread-9" 0x00007ffff7c64c2e in epoll_wait (epfd=38, events=0x2cc1920, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  17   Thread 0x7fffcb7fe640 (LWP 1028867) "tloop-thread-10" 0x00007ffff7c64c2e in epoll_wait (epfd=41, events=0x2cc4930, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  18   Thread 0x7fffcaffd640 (LWP 1028868) "tloop-thread-11" 0x00007ffff7c64c2e in epoll_wait (epfd=44, events=0x2cc7940, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  19   Thread 0x7fffca7fc640 (LWP 1028869) "tloop-thread-12" 0x00007ffff7c64c2e in epoll_wait (epfd=47, events=0x2cca950, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  20   Thread 0x7fffc9ffb640 (LWP 1028870) "tloop-thread-13" 0x00007ffff7c64c2e in epoll_wait (epfd=50, events=0x2ccd960, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  21   Thread 0x7fffc97fa640 (LWP 1028871) "tloop-thread-14" 0x00007ffff7c64c2e in epoll_wait (epfd=53, events=0x2cd0970, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+  22   Thread 0x7fffc8dff640 (LWP 1028872) "tloop-thread-15" 0x00007ffff7c64c2e in epoll_wait (epfd=8, events=0x2ca3880, maxevents=1024, timeout=-1)
+    at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+----
++
+2. select the thread we want to inspect, e.g. thread 1:
++
+[source,bash]
+----
+(gdb) thread 1
+[Switching to thread 1 (Thread 0x7ffff7a58d00 (LWP 1028851))]
+#0  __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x2cd7adc) at futex-internal.c:57
+57	    return INTERNAL_SYSCALL_CANCEL (futex_time64, futex_word, op, expected,
+----
++
+3. and, finally, print the stack trace:
++
+[source,bash]
+----
+(gdb) bt
+#0  __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x2cd7adc) at futex-internal.c:57
+#1  __futex_abstimed_wait_common (futex_word=futex_word@entry=0x2cd7adc, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0, 
+    cancel=cancel@entry=true) at futex-internal.c:87
+#2  0x00007ffff7bdd79f in __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x2cd7adc, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, 
+    private=private@entry=0) at futex-internal.c:139
+#3  0x00007ffff7bdfeb0 in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x2ca07b0, cond=0x2cd7ab0) at pthread_cond_wait.c:504
+#4  ___pthread_cond_wait (cond=0x2cd7ab0, mutex=0x2ca07b0) at pthread_cond_wait.c:619
+#5  0x00000000004e2014 in com.oracle.svm.core.posix.headers.Pthread::pthread_cond_wait () at com/oracle/svm/core/posix/thread/PosixJavaThreads.java:252
+#6  com.oracle.svm.core.posix.thread.PosixParkEvent::condWait(void) () at com/oracle/svm/core/posix/thread/PosixJavaThreads.java:252
+#7  0x0000000000547070 in com.oracle.svm.core.thread.JavaThreads::park(void) () at com/oracle/svm/core/thread/JavaThreads.java:764
+#8  0x0000000000fc5f44 in jdk.internal.misc.Unsafe::park(boolean, long) () at com/oracle/svm/core/thread/Target_jdk_internal_misc_Unsafe_JavaThreads.java:49
+#9  0x0000000000eac1ad in java.util.concurrent.locks.LockSupport::park(java.lang.Object *) () at java/util/concurrent/locks/LockSupport.java:194
+#10 0x0000000000ea5d68 in java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject::awaitUninterruptibly(void) ()
+    at java/util/concurrent/locks/AbstractQueuedSynchronizer.java:2018
+#11 0x00000000008b6b30 in io.quarkus.runtime.ApplicationLifecycleManager::run(io.quarkus.runtime.Application *, java.lang.Class *, java.util.function.BiConsumer *, java.lang.String[] *) ()
+    at io/quarkus/runtime/ApplicationLifecycleManager.java:144
+#12 0x00000000008bc055 in io.quarkus.runtime.Quarkus::run(java.lang.Class *, java.util.function.BiConsumer *, java.lang.String[] *) () at io/quarkus/runtime/Quarkus.java:67
+#13 0x000000000045c88b in io.quarkus.runtime.Quarkus::run () at io/quarkus/runtime/Quarkus.java:41
+#14 io.quarkus.runtime.Quarkus::run () at io/quarkus/runtime/Quarkus.java:120
+#15 0x000000000045c88b in io.quarkus.runner.GeneratedMain::main ()
+#16 com.oracle.svm.core.JavaMainWrapper::runCore () at com/oracle/svm/core/JavaMainWrapper.java:150
+#17 com.oracle.svm.core.JavaMainWrapper::run(int, org.graalvm.nativeimage.c.type.CCharPointerPointer *) () at com/oracle/svm/core/JavaMainWrapper.java:186
+#18 0x000000000048084d in com.oracle.svm.core.code.IsolateEnterStub::JavaMainWrapper_run_5087f5482cc9a6abc971913ece43acb471d2631b(int, org.graalvm.nativeimage.c.type.CCharPointerPointer *)
+    () at com/oracle/svm/core/JavaMainWrapper.java:280
+----
+
+Alternatively, we can list the backtraces of all threads with a single command:
+
+[source,bash]
+----
+(gdb) thread apply all backtrace
+
+Thread 22 (Thread 0x7fffc8dff640 (LWP 1028872) "tloop-thread-15"):
+#0  0x00007ffff7c64c2e in epoll_wait (epfd=8, events=0x2ca3880, maxevents=1024, timeout=-1) at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+#1  0x000000000166e01c in Java_sun_nio_ch_EPoll_wait ()
+#2  0x00000000011bfece in sun.nio.ch.EPoll::wait(int, long, int, int) () at com/oracle/svm/core/stack/JavaFrameAnchors.java:42
+#3  0x00000000011c08d2 in sun.nio.ch.EPollSelectorImpl::doSelect(java.util.function.Consumer *, long) () at sun/nio/ch/EPollSelectorImpl.java:120
+#4  0x00000000011d8977 in sun.nio.ch.SelectorImpl::lockAndDoSelect(java.util.function.Consumer *, long) () at sun/nio/ch/SelectorImpl.java:124
+#5  0x0000000000705720 in sun.nio.ch.SelectorImpl::select () at sun/nio/ch/SelectorImpl.java:141
+#6  io.netty.channel.nio.SelectedSelectionKeySetSelector::select(void) () at io/netty/channel/nio/SelectedSelectionKeySetSelector.java:68
+#7  0x0000000000703c2e in io.netty.channel.nio.NioEventLoop::select(long) () at io/netty/channel/nio/NioEventLoop.java:813
+#8  0x0000000000701a5f in io.netty.channel.nio.NioEventLoop::run(void) () at io/netty/channel/nio/NioEventLoop.java:460
+#9  0x00000000008496df in io.netty.util.concurrent.SingleThreadEventExecutor$4::run(void) () at io/netty/util/concurrent/SingleThreadEventExecutor.java:986
+#10 0x0000000000860762 in io.netty.util.internal.ThreadExecutorMap$2::run(void) () at io/netty/util/internal/ThreadExecutorMap.java:74
+#11 0x0000000000840da4 in io.netty.util.concurrent.FastThreadLocalRunnable::run(void) () at io/netty/util/concurrent/FastThreadLocalRunnable.java:30
+#12 0x0000000000b7dd04 in java.lang.Thread::run(void) () at java/lang/Thread.java:829
+#13 0x0000000000547dcc in com.oracle.svm.core.thread.JavaThreads::threadStartRoutine(org.graalvm.nativeimage.ObjectHandle *) () at com/oracle/svm/core/thread/JavaThreads.java:597
+#14 0x00000000004e15b1 in com.oracle.svm.core.posix.thread.PosixJavaThreads::pthreadStartRoutine(com.oracle.svm.core.thread.JavaThreads$ThreadStartData *) () at com/oracle/svm/core/posix/thread/PosixJavaThreads.java:194
+#15 0x0000000000480984 in com.oracle.svm.core.code.IsolateEnterStub::PosixJavaThreads_pthreadStartRoutine_e1f4a8c0039f8337338252cd8734f63a79b5e3df(com.oracle.svm.core.thread.JavaThreads$ThreadStartData *) () at com/oracle/svm/core/posix/thread/PosixJavaThreads.java:182
+#16 0x00007ffff7be0b1a in start_thread (arg=<optimized out>) at pthread_create.c:443
+#17 0x00007ffff7c65650 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 21 (Thread 0x7fffc97fa640 (LWP 1028871) "tloop-thread-14"):
+#0  0x00007ffff7c64c2e in epoll_wait (epfd=53, events=0x2cd0970, maxevents=1024, timeout=-1) at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+#1  0x000000000166e01c in Java_sun_nio_ch_EPoll_wait ()
+#2  0x00000000011bfece in sun.nio.ch.EPoll::wait(int, long, int, int) () at com/oracle/svm/core/stack/JavaFrameAnchors.java:42
+#3  0x00000000011c08d2 in sun.nio.ch.EPollSelectorImpl::doSelect(java.util.function.Consumer *, long) () at sun/nio/ch/EPollSelectorImpl.java:120
+#4  0x00000000011d8977 in sun.nio.ch.SelectorImpl::lockAndDoSelect(java.util.function.Consumer *, long) () at sun/nio/ch/SelectorImpl.java:124
+#5  0x0000000000705720 in sun.nio.ch.SelectorImpl::select () at sun/nio/ch/SelectorImpl.java:141
+#6  io.netty.channel.nio.SelectedSelectionKeySetSelector::select(void) () at io/netty/channel/nio/SelectedSelectionKeySetSelector.java:68
+#7  0x0000000000703c2e in io.netty.channel.nio.NioEventLoop::select(long) () at io/netty/channel/nio/NioEventLoop.java:813
+#8  0x0000000000701a5f in io.netty.channel.nio.NioEventLoop::run(void) () at io/netty/channel/nio/NioEventLoop.java:460
+#9  0x00000000008496df in io.netty.util.concurrent.SingleThreadEventExecutor$4::run(void) () at io/netty/util/concurrent/SingleThreadEventExecutor.java:986
+#10 0x0000000000860762 in io.netty.util.internal.ThreadExecutorMap$2::run(void) () at io/netty/util/internal/ThreadExecutorMap.java:74
+#11 0x0000000000840da4 in io.netty.util.concurrent.FastThreadLocalRunnable::run(void) () at io/netty/util/concurrent/FastThreadLocalRunnable.java:30
+#12 0x0000000000b7dd04 in java.lang.Thread::run(void) () at java/lang/Thread.java:829
+#13 0x0000000000547dcc in com.oracle.svm.core.thread.JavaThreads::threadStartRoutine(org.graalvm.nativeimage.ObjectHandle *) () at com/oracle/svm/core/thread/JavaThreads.java:597
+#14 0x00000000004e15b1 in com.oracle.svm.core.posix.thread.PosixJavaThreads::pthreadStartRoutine(com.oracle.svm.core.thread.JavaThreads$ThreadStartData *) () at com/oracle/svm/core/posix/thread/PosixJavaThreads.java:194
+#15 0x0000000000480984 in com.oracle.svm.core.code.IsolateEnterStub::PosixJavaThreads_pthreadStartRoutine_e1f4a8c0039f8337338252cd8734f63a79b5e3df(com.oracle.svm.core.thread.JavaThreads$ThreadStartData *) () at com/oracle/svm/core/posix/thread/PosixJavaThreads.java:182
+#16 0x00007ffff7be0b1a in start_thread (arg=<optimized out>) at pthread_create.c:443
+#17 0x00007ffff7c65650 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 20 (Thread 0x7fffc9ffb640 (LWP 1028870) "tloop-thread-13"):
+...
+----
+
+Note, however, that despite being able to get a backtrace we can still not list the source code at point with the `list` command.
 
 [source,bash]
 ----

@@ -21,8 +21,10 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
+import io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.util.ReflectUtil;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
@@ -50,41 +52,76 @@ public class ConfigMappingUtils {
 
             Class<?> configClass = toClass(target.asClass().name());
             String prefix = Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse("");
+            Kind configClassKind = getConfigClassType(instance);
+            processConfigClass(configClass, configClassKind, prefix, true, combinedIndex, generatedClasses, reflectiveClasses,
+                    configClasses);
+        }
+    }
 
-            List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(configClass);
-            Set<String> generatedClassesNames = new HashSet<>();
-            Set<ClassInfo> mappingsInfo = new HashSet<>();
-            configMappingsMetadata.forEach(mappingMetadata -> {
-                generatedClasses.produce(
-                        new GeneratedClassBuildItem(true, mappingMetadata.getClassName(), mappingMetadata.getClassBytes()));
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods(true).build());
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true)
-                                .methods(true).build());
+    public static void processExtensionConfigMapping(
+            Class<?> configClass,
+            String prefix,
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConfigClassBuildItem> configClasses) {
 
-                for (Class<?> parent : getHierarchy(mappingMetadata.getInterfaceType())) {
-                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods(true).build());
-                }
+        processConfigClass(configClass, Kind.MAPPING, prefix, false, combinedIndex, generatedClasses, reflectiveClasses,
+                configClasses);
+    }
 
-                generatedClassesNames.add(mappingMetadata.getClassName());
+    static void processConfigClass(
+            Class<?> configClass,
+            Kind configClassKind,
+            String prefix,
+            boolean isApplicationClass,
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConfigClassBuildItem> configClasses) {
 
-                ClassInfo mappingInfo = combinedIndex.getIndex()
-                        .getClassByName(DotName.createSimple(mappingMetadata.getInterfaceType().getName()));
-                if (mappingInfo != null) {
-                    mappingsInfo.add(mappingInfo);
-                }
-            });
+        List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(configClass);
+        Set<String> generatedClassesNames = new HashSet<>();
+        Set<ClassInfo> mappingsInfo = new HashSet<>();
+        configMappingsMetadata.forEach(mappingMetadata -> {
+            generatedClasses.produce(
+                    new GeneratedClassBuildItem(isApplicationClass, mappingMetadata.getClassName(),
+                            mappingMetadata.getClassBytes()));
+            reflectiveClasses
+                    .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods(true).build());
+            reflectiveClasses
+                    .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true)
+                            .methods(true).build());
 
-            // For implicit converters
-            for (ClassInfo classInfo : mappingsInfo) {
-                for (MethodInfo method : classInfo.methods()) {
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, method.returnType().name().toString()));
-                }
+            for (Class<?> parent : getHierarchy(mappingMetadata.getInterfaceType())) {
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods(true).build());
             }
 
-            configClasses.produce(new ConfigClassBuildItem(configClass, collectTypes(combinedIndex, configClass),
-                    generatedClassesNames, prefix, getConfigClassType(instance)));
+            generatedClassesNames.add(mappingMetadata.getClassName());
+
+            ClassInfo mappingInfo = combinedIndex.getIndex()
+                    .getClassByName(DotName.createSimple(mappingMetadata.getInterfaceType().getName()));
+            if (mappingInfo != null) {
+                mappingsInfo.add(mappingInfo);
+            }
+        });
+
+        // For implicit converters
+        for (ClassInfo classInfo : mappingsInfo) {
+            for (MethodInfo method : classInfo.methods()) {
+                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, method.returnType().name().toString()));
+            }
+        }
+
+        configClasses.produce(new ConfigClassBuildItem(configClass, collectTypes(combinedIndex, configClass),
+                generatedClassesNames, prefix, configClassKind));
+    }
+
+    public static Object newInstance(Class<?> configClass) {
+        if (configClass.isAnnotationPresent(ConfigMapping.class)) {
+            return ReflectUtil.newInstance(ConfigMappingLoader.getImplementationClass(configClass));
+        } else {
+            return ReflectUtil.newInstance(configClass);
         }
     }
 
@@ -97,11 +134,11 @@ public class ConfigMappingUtils {
         }
     }
 
-    private static ConfigClassBuildItem.Kind getConfigClassType(AnnotationInstance instance) {
+    private static Kind getConfigClassType(AnnotationInstance instance) {
         if (instance.name().equals(CONFIG_MAPPING_NAME)) {
-            return ConfigClassBuildItem.Kind.MAPPING;
+            return Kind.MAPPING;
         } else {
-            return ConfigClassBuildItem.Kind.PROPERTIES;
+            return Kind.PROPERTIES;
         }
     }
 

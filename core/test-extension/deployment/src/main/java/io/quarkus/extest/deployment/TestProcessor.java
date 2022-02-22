@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -30,9 +31,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
@@ -56,6 +59,9 @@ import io.quarkus.extest.runtime.config.StaticInitConfigBuilder;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestBuildTimeConfig;
 import io.quarkus.extest.runtime.config.TestConfigRoot;
+import io.quarkus.extest.runtime.config.TestMappingBuildTime;
+import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
+import io.quarkus.extest.runtime.config.TestMappingRunTime;
 import io.quarkus.extest.runtime.config.XmlConfig;
 import io.quarkus.extest.runtime.logging.AdditionalLogHandlerValueFactory;
 import io.quarkus.extest.runtime.runtimeinitializedpackage.RuntimeInitializedClass;
@@ -321,6 +327,62 @@ public final class TestProcessor {
         if (buildTimeConfig.btConfigValueEmpty == null || !buildTimeConfig.btConfigValueEmpty.getValue().equals("")) {
             throw new IllegalStateException("buildTimeConfig.btConfigValueEmpty");
         }
+    }
+
+    @BuildStep
+    void configMapping(BuildProducer<ConfigPropertyBuildItem> configProperties,
+            ConfigurationBuildItem configItem,
+            TestMappingBuildTime testMappingBuildTime,
+            TestMappingBuildTimeRunTime testMappingBuildTimeRunTime) {
+        Map<String, String> buildTimeValues = configItem.getReadResult().getAllBuildTimeValues();
+        Map<String, String> buildTimeRunTimeValues = configItem.getReadResult().getBuildTimeRunTimeVisibleValues();
+
+        if (!testMappingBuildTime.value().equals("value")
+                || !buildTimeValues.getOrDefault("quarkus.mapping.bt.value", "").equals("value")) {
+            throw new IllegalStateException();
+        }
+
+        if (!testMappingBuildTime.group().value().equals("value")
+                || !buildTimeValues.getOrDefault("quarkus.mapping.bt.group.value", "").equals("value")) {
+            throw new IllegalStateException();
+        }
+
+        if (testMappingBuildTime.missing().isPresent()) {
+            throw new IllegalStateException();
+        }
+
+        if (testMappingBuildTime.present().isEmpty() || !testMappingBuildTime.present().get().value().equals("present")
+                || !buildTimeValues.getOrDefault("quarkus.mapping.bt.present.value", "").equals("present")) {
+            throw new IllegalStateException();
+        }
+
+        if (testMappingBuildTime.groups().isEmpty()
+                || !buildTimeValues.getOrDefault("quarkus.mapping.bt.groups[0].value", "").equals("first")
+                || !buildTimeValues.getOrDefault("quarkus.mapping.bt.groups[1].value", "").equals("second")) {
+            throw new IllegalStateException();
+        }
+
+        if (!testMappingBuildTimeRunTime.value().equals("value")
+                || !buildTimeRunTimeValues.getOrDefault("quarkus.mapping.btrt.value", "").equals("value")) {
+            throw new IllegalStateException();
+        }
+
+        if (!testMappingBuildTimeRunTime.group().value().equals("value")
+                || !buildTimeRunTimeValues.getOrDefault("quarkus.mapping.btrt.group.value", "").equals("value")) {
+            throw new IllegalStateException();
+        }
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    void configMappingStatic(TestRecorder recorder, TestMappingBuildTimeRunTime buildTimeRunTime) {
+        recorder.configMappingStatic(buildTimeRunTime);
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void configMappingRuntime(TestRecorder recorder, TestMappingBuildTimeRunTime buildTimeRunTime, TestMappingRunTime runTime) {
+        recorder.configMappingRuntime(buildTimeRunTime, runTime);
     }
 
     /**

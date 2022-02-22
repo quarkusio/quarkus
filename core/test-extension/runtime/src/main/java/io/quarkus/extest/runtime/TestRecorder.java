@@ -8,13 +8,9 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
-import io.quarkus.extest.runtime.config.AnotherPrefixConfig;
-import io.quarkus.extest.runtime.config.FooRuntimeConfig;
-import io.quarkus.extest.runtime.config.PrefixConfig;
-import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
-import io.quarkus.extest.runtime.config.TestRunTimeConfig;
+import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
+import io.quarkus.extest.runtime.config.TestMappingRunTime;
 import io.quarkus.extest.runtime.config.XmlConfig;
-import io.quarkus.extest.runtime.config.named.PrefixNamedConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -25,29 +21,6 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class TestRecorder {
     static final Logger log = Logger.getLogger(TestRecorder.class);
-
-    /**
-     * Instantiate the given class in the given BeanContainer and passes the TestBuildAndRunTimeConfig and TestRunTimeConfig to
-     * it
-     *
-     * @param beanContainer - CDI container
-     * @param beanClass - IConfigConsumer
-     * @param buildTimeConfig - the extension TestBuildAndRunTimeConfig
-     * @param runTimeConfig - the extension TestRunTimeConfig
-     * @see IConfigConsumer#loadConfig(TestBuildAndRunTimeConfig, TestRunTimeConfig, FooRuntimeConfig, PrefixConfig,
-     *      PrefixNamedConfig, AnotherPrefixConfig)
-     */
-    public void configureBeans(BeanContainer beanContainer, Class<IConfigConsumer> beanClass,
-            TestBuildAndRunTimeConfig buildTimeConfig,
-            TestRunTimeConfig runTimeConfig, FooRuntimeConfig fooRuntimeConfig, PrefixConfig prefixConfig,
-            PrefixNamedConfig prefixNamedConfig,
-            AnotherPrefixConfig anotherPrefixConfig) {
-        log.infof("Begin BeanContainerListener callback\n");
-        IConfigConsumer instance = beanContainer.instance(beanClass);
-        instance.loadConfig(buildTimeConfig, runTimeConfig, fooRuntimeConfig, prefixConfig, prefixNamedConfig,
-                anotherPrefixConfig);
-        log.infof("configureBeans, instance=%s\n", instance);
-    }
 
     /**
      * Create a non-CDI based RuntimeXmlConfigService from the XmlConfig
@@ -93,6 +66,34 @@ public class TestRecorder {
     public void validateTypes(Set<Class<?>> typesSet) {
         for (Class<?> type : typesSet) {
             log.debugf("Checking type: %s", type.getName());
+        }
+    }
+
+    public void configMappingStatic(TestMappingBuildTimeRunTime buildTimeRunTime) {
+        if (!buildTimeRunTime.value().equals("value")) {
+            throw new IllegalStateException();
+        }
+
+        if (!buildTimeRunTime.group().value().equals("value")) {
+            throw new IllegalStateException();
+        }
+    }
+
+    public void configMappingRuntime(TestMappingBuildTimeRunTime buildTimeRunTime, TestMappingRunTime runTime) {
+        if (!buildTimeRunTime.value().equals("value")) {
+            throw new IllegalStateException();
+        }
+
+        if (!buildTimeRunTime.group().value().equals("value")) {
+            throw new IllegalStateException();
+        }
+
+        if (!runTime.value().equals("value")) {
+            throw new IllegalStateException();
+        }
+
+        if (!runTime.group().value().equals("value")) {
+            throw new IllegalStateException();
         }
     }
 }

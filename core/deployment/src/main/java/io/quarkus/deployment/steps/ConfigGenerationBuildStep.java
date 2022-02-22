@@ -1,5 +1,6 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.configuration.ConfigMappingUtils.processExtensionConfigMapping;
 import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
@@ -38,6 +39,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
@@ -98,6 +101,26 @@ public class ConfigGenerationBuildStep {
         return new GeneratedResourceBuildItem(ConfigUtils.QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES, out.toByteArray());
     }
 
+    @BuildStep
+    void extensionMappings(ConfigurationBuildItem configItem,
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConfigClassBuildItem> configClasses) {
+
+        List<ConfigClassWithPrefix> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
+        for (ConfigClassWithPrefix buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
+            processExtensionConfigMapping(buildTimeRunTimeMapping.getKlass(), buildTimeRunTimeMapping.getPrefix(),
+                    combinedIndex, generatedClasses, reflectiveClasses, configClasses);
+        }
+
+        final List<ConfigClassWithPrefix> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
+        for (ConfigClassWithPrefix runTimeMapping : runTimeMappings) {
+            processExtensionConfigMapping(runTimeMapping.getKlass(), runTimeMapping.getPrefix(), combinedIndex,
+                    generatedClasses, reflectiveClasses, configClasses);
+        }
+    }
+
     /**
      * Generate the Config class that instantiates MP Config and holds all the config objects
      */
@@ -134,6 +157,15 @@ public class ConfigGenerationBuildStep {
         staticConfigSourceFactories.addAll(staticInitConfigSourceFactories.stream()
                 .map(StaticInitConfigSourceFactoryBuildItem::getFactoryClassName).collect(Collectors.toSet()));
 
+        Set<ConfigClassWithPrefix> staticMappings = new HashSet<>();
+        staticMappings.addAll(staticSafeConfigMappings(configMappings));
+        staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
+
+        Set<ConfigClassWithPrefix> runtimeMappings = new HashSet<>();
+        runtimeMappings.addAll(runtimeConfigMappings(configMappings));
+        runtimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
+        runtimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
+
         RunTimeConfigurationGenerator.GenerateOperation
                 .builder()
                 .setBuildTimeReadResult(configItem.getReadResult())
@@ -147,13 +179,13 @@ public class ConfigGenerationBuildStep {
                 .setStaticConfigSources(staticSafeServices(discoveredConfigSources))
                 .setStaticConfigSourceProviders(staticConfigSourceProviders)
                 .setStaticConfigSourceFactories(staticConfigSourceFactories)
-                .setStaticConfigMappings(staticSafeConfigMappings(configMappings))
+                .setStaticConfigMappings(staticMappings)
                 .setStaticConfigBuilders(staticInitConfigBuilders.stream()
                         .map(StaticInitConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
                 .setRuntimeConfigSources(discoveredConfigSources)
                 .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
                 .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
-                .setRuntimeConfigMappings(runtimeConfigMappings(configMappings))
+                .setRuntimeConfigMappings(runtimeMappings)
                 .setRuntimeConfigBuilders(
                         runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
                 .build()

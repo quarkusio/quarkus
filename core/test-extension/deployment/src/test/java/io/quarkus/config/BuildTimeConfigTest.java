@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -30,6 +32,8 @@ public class BuildTimeConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+            .withConfigurationResource("application.properties")
             .overrideConfigKey("test-map-config", testFile.getAbsolutePath());
 
     /**

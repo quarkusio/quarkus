@@ -1091,7 +1091,12 @@ The generated service can be customized using the following properties:
 | quarkus.knative.readiness-probe                 | Probe                                     |             | ( see Probe )
 | quarkus.knative.sidecars                        | Map<String, Container>                    |             |
 | quarkus.knative.revision-name                   | String                                    |             | 
-| quarkus.knative.traffic                         | Traffic[]                                 |             | ( see Traffic)
+| quarkus.knative.traffic                         | Traffic[]                                 |             | ( see Traffic )
+| quarkus.knative.min-scale                       | int                                       | See link:https://knative.dev/docs/serving/autoscaling/scale-bounds/#lower-bound[link]  |
+| quarkus.knative.max-scale                       | int                                       | See link:https://knative.dev/docs/serving/autoscaling/scale-bounds/#upper-bound[link]  |
+| quarkus.knative.scale-to-zero-enabled           | boolean                                   | See link:https://knative.dev/docs/serving/autoscaling/scale-to-zero/#enable-scale-to-zero[link]  | true
+| quarkus.knative.revision-auto-scaling           | AutoScalingConfig                         |             | ( see AutoScalingConfig )
+| quarkus.knative.global-auto-scaling             | GlobalAutoScalingConfig                   |             | ( see GlobalAutoScalingConfig )
 |====
 
 .Traffic
@@ -1103,6 +1108,24 @@ The generated service can be customized using the following properties:
 | percent         | Logn    | Indicates the percent of traffic that is be routed to this revision                             | 100
 |====
 
+.AutoScalingConfig
+|====
+| Property                      | Type    | Description | Default Value
+| auto-scaler-class             | String  | The auto-scaler class. Possible values: `kpa` for Knative Pod Autoscaler, `hpa` for Horizontal Pod Autoscaler | kpa
+| metric                        | String  | The autoscaling metric to use. Possible values (concurency, rps, cpu)                     | 
+| target                        | int     | This value specifies the autoscaling target                                               |  
+| container-concurrency         | int     | The exact amount of requests allowed to the replica at a time                             | 
+| target-utilization-percentage | int     | This value specifies a percentage of the target to actually be targeted by the autoscaler |  
+|====
+
+.GlobalAutoScalingConfig
+|====
+| Property                      | Type    | Description | Default Value
+| auto-scaler-class             | String  | The auto-scaler class. Possible values: `kpa` for Knative Pod Autoscaler, `hpa` for Horizontal Pod Autoscaler | kpa
+| container-concurrency         | int     | The exact amount of requests allowed to the replica at a time                             | 
+| target-utilization-percentage | int     | This value specifies a percentage of the target to actually be targeted by the autoscaler |  
+| requests-per-second           | Logn    | The requests per second per replica                                                       | 
+|====
 
 === Deployment targets
 

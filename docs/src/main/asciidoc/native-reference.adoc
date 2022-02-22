@@ -294,7 +294,7 @@ After copying all the files, invoke the import script:
 docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} -f import.cypher
 ----
 
-Once the import completes (shouldn't take more than a couple of minutes), go to the Neo4j browser,
+Once the import completes (shouldn't take more than a couple of minutes), go to the link:http://localhost:7474[Neo4j browser],
 and you'll be able to observe a small summary of the data in the graph:
 
 image::native-reference-neo4j-db-info.png[Neo4j database information after import]

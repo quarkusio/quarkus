@@ -5,6 +5,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Native Reference Guide
 
+include::./attributes.adoc[]
+
 This guide is a companion to the
 xref:building-native-image.adoc[Building a Native Executable],
 xref:native-and-ssl.adoc[Using SSL With Native Images],

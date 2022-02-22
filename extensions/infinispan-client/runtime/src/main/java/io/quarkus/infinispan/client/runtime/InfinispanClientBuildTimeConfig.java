@@ -11,6 +11,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class InfinispanClientBuildTimeConfig {
 
     /**
+     * Whether a health check is published in case the smallrye-health extension is present.
+     */
+    @ConfigItem(name = "health.enabled", defaultValue = "true")
+    public boolean healthEnabled;
+
+    /**
      * Sets the bounded entry count for near cache. If this value is 0 or less near cache is disabled.
      */
     @ConfigItem
@@ -19,7 +25,7 @@ public class InfinispanClientBuildTimeConfig {
     @Override
     public String toString() {
         return "InfinispanClientBuildTimeConfig{" +
-                "nearCacheMaxEntries=" + nearCacheMaxEntries +
-                '}';
+                "healthEnabled=" + healthEnabled + ", nearCacheMaxEntries="
+                + nearCacheMaxEntries + '}';
     }
 }

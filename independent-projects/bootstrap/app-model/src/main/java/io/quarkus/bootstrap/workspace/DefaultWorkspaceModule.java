@@ -232,7 +232,7 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
 
     @Override
     public Collection<Dependency> getDirectDependencyConstraints() {
-        return directDepConstraints;
+        return directDepConstraints == null ? Collections.emptyList() : directDepConstraints;
     }
 
     public void setDirectDependencyConstraints(List<Dependency> directDepConstraints) {
@@ -241,7 +241,7 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
 
     @Override
     public Collection<Dependency> getDirectDependencies() {
-        return directDeps;
+        return directDeps == null ? Collections.emptyList() : directDeps;
     }
 
     public void setDirectDependencies(List<Dependency> directDeps) {
@@ -249,7 +249,7 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
     }
 
     public void addDirectDependency(Dependency directDep) {
-        if (directDeps.isEmpty()) {
+        if (directDeps == null || directDeps.isEmpty()) {
             directDeps = new ArrayList<>();
         }
         this.directDeps.add(directDep);

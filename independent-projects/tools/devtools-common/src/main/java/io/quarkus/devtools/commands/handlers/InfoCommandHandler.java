@@ -80,11 +80,17 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
                     if (rectify) {
                         sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
                                 UpdateCommandHandler.REMOVE, platform.imported.toCompactCoords()));
+                        recommendationsAvailable = true;
                     } else {
                         sb.append("  ");
-                        sb.append(platform.imported.toCompactCoords()).append(" | unnecessary");
+                        sb.append(platform.imported.toCompactCoords());
+                        if (!projectState.getExtensions().isEmpty()) {
+                            // The extension check is for modules that are aggregating modules (e.g. parent POMs)
+                            // that import common BOMs. It's however not how it should be done.
+                            sb.append(" | unnecessary");
+                            recommendationsAvailable = true;
+                        }
                     }
-                    recommendationsAvailable = true;
                 } else if (platform.isVersionUpdateRecommended()) {
                     if (rectify) {
                         sb.append(String.format(UpdateCommandHandler.PLATFORM_RECTIFY_FORMAT,
@@ -118,6 +124,7 @@ public class InfoCommandHandler implements QuarkusCommandHandler {
         }
 
         if (projectState.getExtensions().isEmpty()) {
+            log.info("");
             log.info("No Quarkus extensions found among the project dependencies");
             return recommendationsAvailable;
         }

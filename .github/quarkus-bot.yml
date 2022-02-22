@@ -70,40 +70,35 @@ triage:
         && !matches("hibernate.reactive", titleBody)
       notify: [gsmet, Sanne, yrodiere]
       directories:
-        - extensions/hibernate-orm/
-        - integration-tests/common-jpa-entities/
-        - integration-tests/jpa-derby/
-        - integration-tests/jpa-h2/
-        - integration-tests/jpa-mariadb/
-        - integration-tests/jpa-mssql/
-        - integration-tests/jpa-mysql/
-        - integration-tests/jpa-postgresql/
-        - integration-tests/jpa-postgresql-withxml/
-        - integration-tests/jpa-without-entity/
-        - integration-tests/jpa/
-        - integration-tests/infinispan-cache-jpa/
+        # No trailing slashes: we also match sibling directories starting with these names
+        - extensions/hibernate-orm
+        - extensions/hibernate-envers
+        - integration-tests/common-jpa-entities
+        - integration-tests/jpa
+        - integration-tests/hibernate-envers
+        - integration-tests/hibernate-orm-tenancy
+        - integration-tests/infinispan-cache-jpa
     - labels: [area/hibernate-search]
       title: "hibernate.search"
       notify: [gsmet, yrodiere]
       directories:
-        - extensions/hibernate-search-orm-elasticsearch/
-        - extensions/hibernate-search-orm-elasticsearch-aws/
-        - integration-tests/hibernate-search-orm-elasticsearch/
-        - integration-tests/hibernate-search-orm-elasticsearch-aws/
-        - extensions/elasticsearch-rest-client/
-        - extensions/elasticsearch-rest-client-common/
+        # No trailing slashes: we also match sibling directories starting with these names
+        - extensions/hibernate-search
+        - integration-tests/hibernate-search
     - labels: [area/elasticsearch]
       title: "elasticsearch"
       notify: [gsmet, yrodiere, loicmathieu]
       directories:
+        # No trailing slashes: we also match sibling directories starting with these names
         - extensions/elasticsearch
         - integration-tests/elasticsearch
     - labels: [area/hibernate-validator]
       title: "hibernate.validator"
       notify: [gsmet, yrodiere]
       directories:
-        - extensions/hibernate-validator/
-        - integration-tests/hibernate-validator/
+        # No trailing slashes: we also match sibling directories starting with these names
+        - extensions/hibernate-validator
+        - integration-tests/hibernate-validator
     - labels: [area/jaeger]
       title: "jaeger"
       notify: [radcortez]

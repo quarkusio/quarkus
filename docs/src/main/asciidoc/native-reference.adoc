@@ -40,8 +40,8 @@ Aside from system level packages, you'll need:
 * A working container runtime (Docker, podman)
 * The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
-Finally, this guide assumes the use of the Mandrel distribution of GraalVM for building native executables,
-and these are built within a container.
+Finally, this guide assumes the use of the link:https://github.com/graalvm/mandrel[Mandrel distribution] of GraalVM for building native executables,
+and these are built within a container so there is no need for installing Mandrel on the host.
 
 == First Debugging Steps
 

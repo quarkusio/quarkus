@@ -259,17 +259,17 @@ In the `pom.xml` file, the `native` profile contains:
 
 This instructs the failsafe-maven-plugin to run integration-test and indicates the location of the produced native executable.
 
-Then, open the `src/test/java/org/acme/quickstart/NativeGreetingResourceIT.java`. It contains:
+Then, open the `src/test/java/org/acme/quickstart/GreetingResourceIT.java`. It contains:
 
 [source,java]
 ----
 package org.acme.quickstart;
 
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest // <1>
-public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
+@QuarkusIntegrationTest // <1>
+public class GreetingResourceIT extends GreetingResourceTest { // <2>
 
     // Run the same tests
 
@@ -279,7 +279,7 @@ public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
 
-To see the `NativeGreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
+To see the `GreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
 [source,shell]
 ----
 $ ./mvnw verify -Pnative
@@ -298,11 +298,11 @@ $ ./mvnw verify -Pnative
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
-[INFO] Running org.acme.quickstart.NativeGreetingResourceIT
+[INFO] Running org.acme.quickstart.GreetingResourceIT
 Executing [/data/home/gsmet/git/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=build/quarkus.log]
 2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.002s. Listening on: http://[::]:8081
 2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.387 s - in org.acme.quickstart.NativeGreetingResourceIT
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.387 s - in org.acme.quickstart.GreetingResourceIT
 ...
 ----
 
@@ -315,11 +315,11 @@ to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.wait-time=300`.
 
 [WARNING]
 ====
-In the future, `@NativeImageTest` will be deprecated in favor of `@QuarkusIntegrationTest` which provides a superset of the testing
+This procedure was formerly accomplished using the `@NativeImageTest` annotation. `@NativeImageTest` is considered deprecated in favor of `@QuarkusIntegrationTest` which provides a superset of the testing
 capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationTest` can be found in the xref:getting-started-testing.adoc#quarkus-integration-test[Testing Guide].
 ====
 
-By default, native tests runs using the `prod` profile.
+By default, integration tests runs using the `prod` profile.
 This can be overridden using the `quarkus.test.native-image-profile` property.
 For example, in your `application.properties` file, add: `quarkus.test.native-image-profile=test`.
 Alternatively, you can run your tests with: `./mvnw verify -Pnative -Dquarkus.test.native-image-profile=test`.

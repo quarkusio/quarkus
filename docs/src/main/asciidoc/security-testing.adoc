@@ -86,7 +86,7 @@ See xref:security-openid-connect.adoc#integration-testing-security-annotation[Op
 
 [WARNING]
 ====
-The feature is only available for `@QuarkusTest` and will **not** work on a `@NativeImageTest`.
+The feature is only available for `@QuarkusTest` and will **not** work on a `@NativeImageTest` or `@QuarkusIntegrationTest`.
 ====
 
 === Mixing security tests

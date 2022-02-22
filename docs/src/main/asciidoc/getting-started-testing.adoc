@@ -1181,17 +1181,11 @@ be read until Quarkus has started, so the timeout for Quarkus start will be the 
 
 == Native Executable Testing
 
-It is also possible to test native executables using `@NativeImageTest`. This supports all the features mentioned in this
+It is also possible to test native executables using `@QuarkusIntegrationTest`. This supports all the features mentioned in this
 guide except injecting into tests (and the native executable runs in a separate non-JVM process this is not really possible).
 
 
 This is covered in the xref:building-native-image.adoc[Native Executable Guide].
-
-[WARNING]
-====
-Although `@NativeImageTest` is not yet deprecated, it will be in the future as its functionality is covered by `@QuarkusIntegrationTest`
-which is described in the following section.
-====
 
 [#quarkus-integration-test]
 == Using @QuarkusIntegrationTest

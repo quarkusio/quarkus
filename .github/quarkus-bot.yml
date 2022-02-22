@@ -55,15 +55,19 @@ triage:
         - devtools/platform-descriptor-json/src/main/resources/templates/
     - labels: [area/hibernate-reactive, area/persistence]
       title: "hibernate.reactive"
+      expression: |
+        matches("hibernate", title) && matches("reactive", title)
+        && !matches("hibernate.validator", title)
+        && !matches("hibernate.search", title)
       notify: [DavideD, gavinking, Sanne]
       directories:
         - extensions/hibernate-reactive
     - labels: [area/hibernate-orm, area/persistence]
       expression: |
-              matches("hibernate", title)
-              && !matches("hibernate.validator", title)
-              && !matches("hibernate.search", title)
-              && !matches("hibernate.reactive", title)
+        matches("hibernate", title) && !matches("reactive", title)
+        && !matches("hibernate.validator", title)
+        && !matches("hibernate.search", title)
+        && !matches("hibernate.reactive", titleBody)
       notify: [gsmet, Sanne, yrodiere]
       directories:
         - extensions/hibernate-orm/

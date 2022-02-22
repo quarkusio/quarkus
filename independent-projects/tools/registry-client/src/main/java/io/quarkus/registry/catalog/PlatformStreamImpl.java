@@ -83,6 +83,7 @@ public class PlatformStreamImpl extends JsonEntityWithAnySupport implements Plat
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder extends JsonEntityWithAnySupport.Builder implements PlatformStream.Mutable {
         private String id;
         private String name;

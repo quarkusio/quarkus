@@ -63,6 +63,7 @@ public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersion
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder implements RegistryQuarkusVersionsConfig.Mutable {
         protected String recognizedVersionsExpression;
         protected boolean exclusiveProvider;

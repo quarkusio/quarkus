@@ -83,6 +83,7 @@ public class ExtensionOriginImpl implements ExtensionOrigin {
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @JsonIdentityInfo(property = "id", generator = ObjectIdGenerators.PropertyGenerator.class, scope = ExtensionOrigin.class)
     public static class Builder implements ExtensionOrigin.Mutable {
         protected String id;

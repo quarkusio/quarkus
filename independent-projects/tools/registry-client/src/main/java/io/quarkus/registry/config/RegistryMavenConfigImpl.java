@@ -54,6 +54,7 @@ public class RegistryMavenConfigImpl implements RegistryMavenConfig {
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder implements RegistryMavenConfig.Mutable {
 
         protected RegistryMavenRepoConfig repository;

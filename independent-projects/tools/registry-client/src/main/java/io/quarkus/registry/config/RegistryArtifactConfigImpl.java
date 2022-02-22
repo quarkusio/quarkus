@@ -62,6 +62,7 @@ public class RegistryArtifactConfigImpl implements RegistryArtifactConfig {
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder implements RegistryArtifactConfig.Mutable {
         protected boolean disabled;
         protected ArtifactCoords artifact;

@@ -60,6 +60,7 @@ public class RegistryDescriptorConfigImpl implements RegistryDescriptorConfig {
      * Builder.
      * {@literal set*} methods are used for deserialization
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder implements RegistryDescriptorConfig.Mutable {
         protected ArtifactCoords artifact;
 

@@ -95,6 +95,7 @@ public class ExtensionImpl implements Extension {
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder implements Extension.Mutable {
         private String name;
         private String description;

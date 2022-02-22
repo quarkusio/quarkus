@@ -67,6 +67,7 @@ public class PlatformCatalogImpl extends JsonEntityWithAnySupport implements Pla
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder extends JsonEntityWithAnySupport.Builder implements PlatformCatalog.Mutable {
         private Map<String, Platform> platforms;
 

@@ -25,6 +25,7 @@ public class RegistryNonPlatformExtensionsConfigImpl extends RegistryArtifactCon
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder extends RegistryArtifactConfigImpl.Builder
             implements RegistryNonPlatformExtensionsConfig.Mutable {
 

@@ -97,6 +97,7 @@ public class RegistriesConfigImpl implements RegistriesConfig {
      * Builder.
      * {@literal set*} methods are used for deserialization
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @JsonDeserialize(using = RegistriesConfigImpl.Deserializer.class)
     public static class Builder implements RegistriesConfig.Mutable {
         protected boolean debug;

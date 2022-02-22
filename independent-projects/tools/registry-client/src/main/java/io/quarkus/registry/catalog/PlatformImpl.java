@@ -75,6 +75,7 @@ public class PlatformImpl extends JsonEntityWithAnySupport implements Platform {
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder extends JsonEntityWithAnySupport.Builder
             implements Platform.Mutable {
         private String platformKey;

@@ -171,6 +171,7 @@ public class RegistryConfigImpl implements RegistryConfig {
                 '}';
     }
 
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder implements RegistryConfig.Mutable {
         protected String id;
         protected boolean enabled = true;

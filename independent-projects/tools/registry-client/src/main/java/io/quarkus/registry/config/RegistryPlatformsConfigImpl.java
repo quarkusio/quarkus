@@ -63,6 +63,7 @@ public class RegistryPlatformsConfigImpl extends RegistryArtifactConfigImpl impl
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder extends RegistryArtifactConfigImpl.Builder implements RegistryPlatformsConfig.Mutable {
         protected Boolean extensionCatalogsIncluded;
 

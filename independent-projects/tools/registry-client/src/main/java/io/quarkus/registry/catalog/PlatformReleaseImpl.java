@@ -75,6 +75,7 @@ public class PlatformReleaseImpl extends JsonEntityWithAnySupport implements Pla
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder extends JsonEntityWithAnySupport.Builder implements PlatformRelease.Mutable {
         private PlatformReleaseVersion version;
         private List<ArtifactCoords> memberBoms;

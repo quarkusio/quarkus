@@ -74,6 +74,8 @@ public class ExtensionCatalogImpl extends ExtensionOriginImpl implements Extensi
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    @JsonPropertyOrder({ "id", "platform", "bom", "quarkus-core-version", "extensions", "categories", "metadata" })
     public static class Builder extends ExtensionOriginImpl.Builder implements ExtensionCatalog.Mutable {
         private String quarkusCoreVersion;
         private String upstreamQuarkusCoreVersion;

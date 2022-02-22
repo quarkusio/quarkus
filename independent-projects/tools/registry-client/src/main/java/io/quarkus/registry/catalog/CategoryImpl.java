@@ -64,6 +64,7 @@ public class CategoryImpl extends JsonEntityWithAnySupport implements Category {
     /**
      * Builder.
      */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public static class Builder extends JsonEntityWithAnySupport.Builder implements Category.Mutable {
         protected String id;
         protected String name;

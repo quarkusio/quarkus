@@ -788,6 +788,8 @@ gdb -ex 'directory ./target' ./target/getting-started-1.0.0-SNAPSHOT-runner
 ----
 ====
 
+For a more detailed guide about debugging native images please refer to the xref:native-reference.adoc[Native Reference Guide].
+
 [[configuration-reference]]
 == Configuring the Native Executable
 

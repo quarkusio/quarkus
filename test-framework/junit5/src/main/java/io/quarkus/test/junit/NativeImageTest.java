@@ -24,9 +24,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * in native image tests. Such injection is only possible in tests injected with
  * {@link @QuarkusTest} so the test class structure must take this into account.
  *
+ * @deprecated Use {@link @QuarkusIntegrationTest} instead.
  */
 @Target(ElementType.TYPE)
 @ExtendWith({ DisabledOnNativeImageCondition.class, QuarkusTestExtension.class, NativeTestExtension.class })
 @Retention(RetentionPolicy.RUNTIME)
+@Deprecated(since = "2.8.0.Final", forRemoval = true)
 public @interface NativeImageTest {
 }

@@ -92,9 +92,9 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
                 "class BonjourResourceTest",
                 "\"/bonjour\"");
 
-        checkContent(generatedProjectPath.resolve("src/test/java/com/andy/NativeBonjourResourceIT.java"),
+        checkContent(generatedProjectPath.resolve("src/test/java/com/andy/BonjourResourceIT.java"),
                 "package com.andy;",
-                "class NativeBonjourResourceIT extends BonjourResourceTest");
+                "class BonjourResourceIT extends BonjourResourceTest");
     }
 
     private Path generateProject(String buildtool, String language, String extensions, Map<String, String> options)

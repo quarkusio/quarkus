@@ -70,10 +70,12 @@ public class ApplicationDeploymentClasspathBuilder {
                         configContainer.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
 
         // enable the Panache annotation processor on the classpath, if it's found among the dependencies
-        configContainer.getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME).getIncoming()
-                .beforeResolve(annotationProcessors -> {
-                    Set<ResolvedArtifact> compileClasspathArtifacts = configContainer
-                            .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getResolvedConfiguration()
+        configContainer.getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
+                .withDependencies(annotationProcessors -> {
+                    Set<ResolvedArtifact> compileClasspathArtifacts = DependencyUtils
+                            .duplicateConfiguration(project, configContainer
+                                    .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
+                            .getResolvedConfiguration()
                             .getResolvedArtifacts();
                     for (ResolvedArtifact artifact : compileClasspathArtifacts) {
                         if ("quarkus-panache-common".equals(artifact.getName())

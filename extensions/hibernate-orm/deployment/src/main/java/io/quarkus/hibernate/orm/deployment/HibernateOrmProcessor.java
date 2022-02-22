@@ -1109,7 +1109,16 @@ public final class HibernateOrmProcessor {
 
         if (!importFiles.isEmpty()) {
             for (String importFile : importFiles) {
-                Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
+                Path loadScriptPath;
+                try {
+                    loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
+                } catch (RuntimeException e) {
+                    throw new ConfigurationException(
+                            "Unable to interpret path referenced in '"
+                                    + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
+                                    + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
+                                    + "': " + e.getMessage());
+                }
 
                 if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                     // enlist resource if present

@@ -34,7 +34,7 @@
         <quarkus-http.version>4.1.7</quarkus-http.version>
         <micrometer.version>1.8.3</micrometer.version>
         <google-auth.version>0.22.0</google-auth.version>
-        <microprofile-config-api.version>2.0</microprofile-config-api.version>
+        <microprofile-config-api.version>2.0.1</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0.1</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.2</microprofile-context-propagation.version>
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
@@ -43,7 +43,7 @@
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
         <smallrye-common.version>1.10.0</smallrye-common.version>
-        <smallrye-config.version>2.9.0</smallrye-config.version>
+        <smallrye-config.version>2.9.1</smallrye-config.version>
         <smallrye-health.version>3.1.2</smallrye-health.version>
         <smallrye-metrics.version>3.0.4</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.17</smallrye-open-api.version>

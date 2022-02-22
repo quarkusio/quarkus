@@ -3,10 +3,10 @@ package io.quarkus.deployment.runnerjar;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 
-public class SimpleExtAndAppCompileDepsTest extends ExecutableOutputOutcomeTestBase {
+public class SimpleExtAndAppCompileDepsTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsArtifact coreExtRtTransitiveDep = TsArtifact.jar("core-ext-rt-transitive-dep");
         addToExpectedLib(coreExtRtTransitiveDep);

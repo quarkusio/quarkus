@@ -9,6 +9,17 @@ import java.util.List;
 
 public interface ArtifactSources {
 
+    String MAIN = "";
+    String TEST = "tests";
+
+    static ArtifactSources main(SourceDir sources, SourceDir resources) {
+        return new DefaultArtifactSources(MAIN, List.of(sources), List.of(resources));
+    }
+
+    static ArtifactSources test(SourceDir sources, SourceDir resources) {
+        return new DefaultArtifactSources(TEST, List.of(sources), List.of(resources));
+    }
+
     String getClassifier();
 
     Collection<SourceDir> getSourceDirs();

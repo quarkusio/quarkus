@@ -11,6 +11,9 @@ import java.util.regex.Pattern;
 public class PathFilter implements Serializable {
 
     public static boolean isVisible(PathFilter filter, String path) {
+        if (path == null) {
+            return false;
+        }
         if (filter == null) {
             return true;
         }

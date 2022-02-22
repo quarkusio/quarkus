@@ -8,7 +8,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -21,8 +21,8 @@ public class WebJarLocatorRootPathTest extends WebJarLocatorTestSupport {
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "index.html")
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "some/path/test.txt"))
             .overrideConfigKey("quarkus.http.root-path", "/app")
-            .setForcedDependencies(List.of(ArtifactDependency.of("org.webjars", "jquery-ui", JQUERY_UI_VERSION),
-                    ArtifactDependency.of("org.webjars", "momentjs", MOMENTJS_VERSION)));
+            .setForcedDependencies(List.of(Dependency.of("org.webjars", "jquery-ui", JQUERY_UI_VERSION),
+                    Dependency.of("org.webjars", "momentjs", MOMENTJS_VERSION)));
 
     @Test
     public void test() {

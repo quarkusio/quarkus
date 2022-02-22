@@ -7,16 +7,16 @@ import java.util.Set;
 
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.deployment.runnerjar.ExecutableOutputOutcomeTestBase;
+import io.quarkus.deployment.runnerjar.BootstrapFromOriginalJarTestBase;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACTV;
 
-public class UnsatisfiedConditionalDependencyWithTwoConditionsTest extends ExecutableOutputOutcomeTestBase {
+public class UnsatisfiedConditionalDependencyWithTwoConditionsTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsQuarkusExt extA = new TsQuarkusExt("ext-a");
         final TsQuarkusExt extD = new TsQuarkusExt("ext-d");

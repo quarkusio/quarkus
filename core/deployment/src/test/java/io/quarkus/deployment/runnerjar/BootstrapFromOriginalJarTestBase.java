@@ -1,20 +1,23 @@
-package io.quarkus.bootstrap.resolver.update;
+package io.quarkus.deployment.runnerjar;
+
+import java.io.IOException;
+import java.nio.file.Path;
+
+import org.junit.jupiter.api.BeforeEach;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.resolver.ResolverSetupCleanup;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.fs.util.ZipUtils;
-import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
-public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
+public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBase {
 
-    protected TsArtifact appJar;
-    protected boolean createWorkspace;
+    private TsArtifact appJar;
+    private boolean createWorkspace;
 
     protected void createWorkspace() {
         this.createWorkspace = true;
@@ -22,17 +25,14 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
 
     @BeforeEach
     public void initAppModel() throws Exception {
-        appJar = modelApp();
+        appJar = composeApplication();
         appJar.install(repo);
     }
 
-    @Test
-    public void test() throws Exception {
-        rebuild();
-    }
+    protected abstract TsArtifact composeApplication() throws Exception;
 
-    protected void rebuild() throws Exception {
-
+    protected QuarkusBootstrap.Builder initBootstrapBuilder()
+            throws AppModelResolverException, IOException, Exception, BootstrapMavenException {
         final Path ws = workDir.resolve("workspace");
         IoUtils.recursiveDelete(ws);
         final Path outputDir = IoUtils.mkdirs(ws.resolve("target"));
@@ -54,24 +54,6 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
             bootstrap.setLocalProjectDiscovery(true);
             bootstrap.setAppModelResolver(initResolver(LocalProject.loadWorkspace(classesDir)));
         }
-
-        initProps(bootstrap);
-        try {
-            testCreator(bootstrap.build());
-        } catch (Exception e) {
-            assertError(e);
-        }
-
-    }
-
-    protected void assertError(Exception e) throws Exception {
-        throw e;
-    }
-
-    protected abstract TsArtifact modelApp() throws Exception;
-
-    protected abstract void testCreator(QuarkusBootstrap creator) throws Exception;
-
-    protected void initProps(QuarkusBootstrap.Builder builder) {
+        return bootstrap;
     }
 }

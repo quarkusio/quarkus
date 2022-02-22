@@ -5,6 +5,7 @@ import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,16 +15,168 @@ import java.util.Map;
 
 public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
 
-    public static final String MAIN = "";
-    public static final String TEST = "tests";
+    public static Builder builder() {
+        return new DefaultWorkspaceModule().new Builder();
+    }
 
-    private final WorkspaceModuleId id;
-    private final File moduleDir;
-    private final File buildDir;
+    public class Builder implements WorkspaceModule.Mutable, Serializable {
+
+        private Builder() {
+        }
+
+        @Override
+        public Builder setModuleId(WorkspaceModuleId moduleId) {
+            DefaultWorkspaceModule.this.id = moduleId;
+            return this;
+        }
+
+        @Override
+        public Builder setModuleDir(Path moduleDir) {
+            DefaultWorkspaceModule.this.moduleDir = moduleDir.toFile();
+            return this;
+        }
+
+        @Override
+        public Builder setBuildDir(Path buildDir) {
+            DefaultWorkspaceModule.this.buildDir = buildDir.toFile();
+            return this;
+        }
+
+        @Override
+        public Builder setBuildFile(Path buildFile) {
+            DefaultWorkspaceModule.this.buildFiles = PathList.of(buildFile);
+            return this;
+        }
+
+        @Override
+        public Builder addDependencyConstraint(Dependency constraint) {
+            if (DefaultWorkspaceModule.this.directDepConstraints == null) {
+                DefaultWorkspaceModule.this.directDepConstraints = new ArrayList<>();
+            }
+            DefaultWorkspaceModule.this.directDepConstraints.add(constraint);
+            return this;
+        }
+
+        @Override
+        public Builder setDependencyConstraints(List<Dependency> constraints) {
+            DefaultWorkspaceModule.this.directDepConstraints = constraints;
+            return this;
+        }
+
+        @Override
+        public Builder addDependency(Dependency dep) {
+            if (DefaultWorkspaceModule.this.directDeps == null) {
+                DefaultWorkspaceModule.this.directDeps = new ArrayList<>();
+            }
+            DefaultWorkspaceModule.this.directDeps.add(dep);
+            return this;
+        }
+
+        @Override
+        public Builder setDependencies(List<Dependency> deps) {
+            DefaultWorkspaceModule.this.directDeps = deps;
+            return this;
+        }
+
+        @Override
+        public Builder addArtifactSources(ArtifactSources sources) {
+            DefaultWorkspaceModule.this.sourcesSets.put(sources.getClassifier(), sources);
+            return this;
+        }
+
+        @Override
+        public boolean hasMainSources() {
+            return DefaultWorkspaceModule.this.sourcesSets.containsKey(ArtifactSources.MAIN);
+        }
+
+        @Override
+        public boolean hasTestSources() {
+            return DefaultWorkspaceModule.this.sourcesSets.containsKey(ArtifactSources.TEST);
+        }
+
+        @Override
+        public WorkspaceModule build() {
+            final DefaultWorkspaceModule module = DefaultWorkspaceModule.this;
+            if (module.id == null) {
+                throw new IllegalArgumentException("Module id is missing");
+            }
+            module.directDepConstraints = module.directDepConstraints == null ? Collections.emptyList()
+                    : Collections.unmodifiableList(module.directDepConstraints);
+            module.directDeps = module.directDeps == null ? Collections.emptyList()
+                    : Collections.unmodifiableList(module.directDeps);
+            module.sourcesSets = Collections.unmodifiableMap(module.sourcesSets);
+            return module;
+        }
+
+        @Override
+        public WorkspaceModuleId getId() {
+            return DefaultWorkspaceModule.this.getId();
+        }
+
+        @Override
+        public File getModuleDir() {
+            return DefaultWorkspaceModule.this.getModuleDir();
+        }
+
+        @Override
+        public File getBuildDir() {
+            return DefaultWorkspaceModule.this.getBuildDir();
+        }
+
+        @Override
+        public Collection<String> getSourceClassifiers() {
+            return DefaultWorkspaceModule.this.getSourceClassifiers();
+        }
+
+        @Override
+        public boolean hasSources(String classifier) {
+            return DefaultWorkspaceModule.this.hasSources(classifier);
+        }
+
+        @Override
+        public ArtifactSources getSources(String classifier) {
+            return DefaultWorkspaceModule.this.getSources(classifier);
+        }
+
+        @Override
+        public PathCollection getBuildFiles() {
+            return DefaultWorkspaceModule.this.getBuildFiles();
+        }
+
+        @Override
+        public Collection<Dependency> getDirectDependencyConstraints() {
+            return DefaultWorkspaceModule.this.getDirectDependencyConstraints();
+        }
+
+        @Override
+        public Collection<Dependency> getDirectDependencies() {
+            return DefaultWorkspaceModule.this.getDirectDependencies();
+        }
+    }
+
+    private WorkspaceModuleId id;
+    private File moduleDir;
+    private File buildDir;
     private PathCollection buildFiles;
-    private final Map<String, ArtifactSources> sourcesSets = new HashMap<>();
-    private List<Dependency> directDepConstraints = Collections.emptyList();
-    private List<Dependency> directDeps = Collections.emptyList();
+    private Map<String, ArtifactSources> sourcesSets = new HashMap<>();
+    private List<Dependency> directDepConstraints;
+    private List<Dependency> directDeps;
+
+    private DefaultWorkspaceModule() {
+    }
+
+    private DefaultWorkspaceModule(WorkspaceModule module) {
+        id = module.getId();
+        moduleDir = module.getModuleDir();
+        buildDir = module.getBuildDir();
+        buildFiles = module.getBuildFiles().isEmpty() ? null : module.getBuildFiles();
+        for (String classifier : module.getSourceClassifiers()) {
+            sourcesSets.put(classifier, module.getSources(classifier));
+        }
+        directDepConstraints = module.getDirectDependencyConstraints().isEmpty() ? null
+                : new ArrayList<>(module.getDirectDependencyConstraints());
+        directDeps = module.getDirectDependencies().isEmpty() ? null : new ArrayList<>(module.getDirectDependencies());
+    }
 
     public DefaultWorkspaceModule(WorkspaceModuleId id, File moduleDir, File buildDir) {
         super();
@@ -98,6 +251,11 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
             directDeps = new ArrayList<>();
         }
         this.directDeps.add(directDep);
+    }
+
+    @Override
+    public Mutable mutable() {
+        return new DefaultWorkspaceModule(this).new Builder();
     }
 
     @Override

@@ -19,10 +19,10 @@ import io.quarkus.maven.dependency.GACTV;
  * The test allowing to make sure that if we exclude a library from an extension, the
  * exclusion will be also applied to the deployment dependencies.
  */
-public class ExcludeLibDepsTest extends ExecutableOutputOutcomeTestBase {
+public class ExcludeLibDepsTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsArtifact extADep1 = TsArtifact.jar("ext-a-dep-1");
         addToExpectedLib(extADep1);

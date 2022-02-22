@@ -19,24 +19,48 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathTree;
 
 class QuarkusModelBuilderTest {
 
     @Test
-    public void shouldLoadSimpleModuleModel() throws URISyntaxException, IOException {
+    public void shouldLoadSimpleModuleTestModel() throws URISyntaxException, IOException {
         File projectDir = getResourcesProject("builder/simple-module-project");
         final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(projectDir, "TEST");
 
         assertNotNull(quarkusModel);
         assertNotNull(quarkusModel.getApplicationModule());
         assertThat(quarkusModel.getWorkspaceModules()).isEmpty();
+
+        final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();
+        assertThat(appArtifact).isNotNull();
+        assertThat(appArtifact.getWorkspaceModule()).isNotNull();
+        final ArtifactSources testSources = appArtifact.getWorkspaceModule().getTestSources();
+        assertThat(testSources).isNotNull();
     }
 
     @Test
-    public void shouldLoadMultiModuleModel() throws URISyntaxException, IOException {
+    public void shouldLoadSimpleModuleDevModel() throws URISyntaxException, IOException {
+        File projectDir = getResourcesProject("builder/simple-module-project");
+        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(projectDir, "DEVELOPMENT");
+
+        assertNotNull(quarkusModel);
+        assertNotNull(quarkusModel.getApplicationModule());
+        assertThat(quarkusModel.getWorkspaceModules()).isEmpty();
+
+        final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();
+        assertThat(appArtifact).isNotNull();
+        assertThat(appArtifact.getWorkspaceModule()).isNotNull();
+        final ArtifactSources testSources = appArtifact.getWorkspaceModule().getTestSources();
+        assertThat(testSources).isNotNull();
+    }
+
+    @Test
+    public void shouldLoadMultiModuleTestModel() throws URISyntaxException, IOException {
         File projectDir = getResourcesProject("builder/multi-module-project");
 
         final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(new File(projectDir, "application"), "TEST");
@@ -51,6 +75,53 @@ class QuarkusModelBuilderTest {
         for (WorkspaceModule p : projectModules) {
             assertProjectModule(p, new File(projectDir, p.getId().getArtifactId()), false);
         }
+
+        final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();
+        assertThat(appArtifact).isNotNull();
+        assertThat(appArtifact.getWorkspaceModule()).isNotNull();
+        final ArtifactSources testSources = appArtifact.getWorkspaceModule().getTestSources();
+        assertThat(testSources).isNotNull();
+        assertThat(testSources.getSourceDirs().size()).isEqualTo(1);
+        final SourceDir testSrcDir = testSources.getSourceDirs().iterator().next();
+        assertThat(testSrcDir.getDir())
+                .isEqualTo(projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("java"));
+        assertThat(testSources.getResourceDirs().size()).isEqualTo(1);
+        final SourceDir testResourcesDir = testSources.getResourceDirs().iterator().next();
+        assertThat(testResourcesDir.getDir())
+                .isEqualTo(projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("resources"));
+    }
+
+    @Test
+    public void shouldLoadMultiModuleDevModel() throws URISyntaxException, IOException {
+        File projectDir = getResourcesProject("builder/multi-module-project");
+
+        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(new File(projectDir, "application"),
+                "DEVELOPMENT");
+
+        assertNotNull(quarkusModel);
+
+        assertProjectModule(quarkusModel.getApplicationModule(),
+                new File(projectDir, quarkusModel.getApplicationModule().getId().getArtifactId()), true);
+
+        final Collection<WorkspaceModule> projectModules = quarkusModel.getWorkspaceModules();
+        assertEquals(projectModules.size(), 1);
+        for (WorkspaceModule p : projectModules) {
+            assertProjectModule(p, new File(projectDir, p.getId().getArtifactId()), false);
+        }
+
+        final ResolvedDependency appArtifact = quarkusModel.getAppArtifact();
+        assertThat(appArtifact).isNotNull();
+        assertThat(appArtifact.getWorkspaceModule()).isNotNull();
+        final ArtifactSources testSources = appArtifact.getWorkspaceModule().getTestSources();
+        assertThat(testSources).isNotNull();
+        assertThat(testSources.getSourceDirs().size()).isEqualTo(1);
+        final SourceDir testSrcDir = testSources.getSourceDirs().iterator().next();
+        assertThat(testSrcDir.getDir())
+                .isEqualTo(projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("java"));
+        assertThat(testSources.getResourceDirs().size()).isEqualTo(1);
+        final SourceDir testResourcesDir = testSources.getResourceDirs().iterator().next();
+        assertThat(testResourcesDir.getDir())
+                .isEqualTo(projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("resources"));
     }
 
     private void assertProjectModule(WorkspaceModule projectModule, File projectDir, boolean withTests) {

@@ -972,7 +972,7 @@ public class DevMojo extends AbstractMojo {
             appModel = new BootstrapAppModelResolver(resolverBuilder.build())
                     .setDevMode(true)
                     .setCollectReloadableDependencies(!noDeps)
-                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, GACTV.TYPE_JAR,
+                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR,
                             project.getVersion()));
         }
 
@@ -983,7 +983,8 @@ public class DevMojo extends AbstractMojo {
         if (noDeps) {
             addProject(builder, appModel.getAppArtifact(), true);
             appModel.getApplicationModule().getBuildFiles().forEach(p -> builder.watchedBuildFile(p));
-            builder.localArtifact(new GACT(project.getGroupId(), project.getArtifactId(), null, GACTV.TYPE_JAR));
+            builder.localArtifact(
+                    ArtifactKey.gact(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR));
         } else {
             for (ResolvedDependency project : DependenciesFilter.getReloadableModules(appModel)) {
                 addProject(builder, project, project == appModel.getAppArtifact());
@@ -1012,7 +1013,7 @@ public class DevMojo extends AbstractMojo {
         for (Artifact appDep : project.getArtifacts()) {
             // only add the artifact if it's present in the dev mode context
             // we need this to avoid having jars on the classpath multiple times
-            ArtifactKey key = new GACT(appDep.getGroupId(), appDep.getArtifactId(),
+            ArtifactKey key = ArtifactKey.gact(appDep.getGroupId(), appDep.getArtifactId(),
                     appDep.getClassifier(), appDep.getArtifactHandler().getExtension());
             if (!builder.isLocal(key) && parentFirstArtifacts.contains(key)) {
                 builder.classpathEntry(appDep.getFile());

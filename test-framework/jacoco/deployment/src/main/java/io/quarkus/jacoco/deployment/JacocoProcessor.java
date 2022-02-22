@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 
@@ -54,11 +55,17 @@ public class JacocoProcessor {
             //no code coverage for continuous testing, it does not really make sense
             return;
         }
+        final Path outputDirectoryLocation;
 
-        String dataFile = outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
-                + config.dataFile;
-        System.setProperty("jacoco-agent.destfile",
-                dataFile);
+        if (Objects.isNull(outputTargetBuildItem.getOutputDirectory())) {
+            outputDirectoryLocation = Path.of(curateOutcomeBuildItem.getApplicationModel()
+                    .getApplicationModule().getBuildDir().getAbsolutePath());
+        } else {
+            outputDirectoryLocation = outputTargetBuildItem.getOutputDirectory();
+        }
+
+        String dataFile = outputDirectoryLocation + File.separator + config.dataFile;
+        System.setProperty("jacoco-agent.destfile", dataFile);
         if (!config.reuseDataFile) {
             Files.deleteIfExists(Paths.get(dataFile));
         }
@@ -96,9 +103,7 @@ public class JacocoProcessor {
             ReportInfo info = new ReportInfo();
             info.dataFile = dataFile;
 
-            File targetdir = new File(
-                    outputTargetBuildItem.getOutputDirectory().toAbsolutePath().toString() + File.separator
-                            + config.reportLocation);
+            File targetdir = new File(outputDirectoryLocation + File.separator + config.reportLocation);
             info.reportDir = targetdir.getAbsolutePath();
             String includes = StringUtils.join(config.includes.iterator(), ",");
             String excludes = StringUtils.join(config.excludes.orElse(Collections.emptyList()).iterator(), ",");

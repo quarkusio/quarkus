@@ -49,6 +49,8 @@ import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHandler;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
+import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesDeploymentClusterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOptionalResourceDefinitionBuildItem;
 
 public class KubernetesDeployer {
@@ -77,9 +79,25 @@ public class KubernetesDeployer {
         selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
     }
 
+    @BuildStep
+    public void checkEnvironment(Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
+            KubernetesClientBuildItem client,
+            List<GeneratedKubernetesResourceBuildItem> resources,
+            BuildProducer<KubernetesDeploymentClusterBuildItem> deploymentCluster) {
+
+        if (!KubernetesDeploy.INSTANCE.checkSilently()) {
+            return;
+        }
+        String target = selectedDeploymentTarget.map(s -> s.getEntry().getName()).orElse(KUBERNETES);
+        if (target.equals(KUBERNETES)) {
+            deploymentCluster.produce(new KubernetesDeploymentClusterBuildItem(KUBERNETES));
+        }
+    }
+
     @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
     public void deploy(KubernetesClientBuildItem kubernetesClient,
             Capabilities capabilities,
+            List<KubernetesDeploymentClusterBuildItem> deploymentClusters,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             OutputTargetBuildItem outputTarget,
             OpenshiftConfig openshiftConfig,

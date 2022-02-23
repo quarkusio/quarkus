@@ -124,6 +124,13 @@ public class JibConfig {
     public Optional<String> user;
 
     /**
+     * The working directory to use in the generated image.
+     * The default value is chosen to work in accordance with the default base image.
+     */
+    @ConfigItem(defaultValue = "/home/jboss")
+    public String workingDirectory;
+
+    /**
      * Controls the optimization which skips downloading base image layers that exist in a target
      * registry. If the user does not set this property, then read as false.
      *

@@ -2625,7 +2625,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-junit5-vertx</artifactId>
+                <artifactId>quarkus-test-vertx</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -12,7 +12,9 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
@@ -75,7 +77,13 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         CompletableFuture<Object> cf = new CompletableFuture<>();
         RunTestMethodOnContextHandler handler = new RunTestMethodOnContextHandler(actualTestInstance, actualTestMethod,
                 actualTestMethodArgs, uniAsserter, cf);
-        VertxContext.getOrCreateDuplicatedContext(vertx).runOnContext(handler);
+        Context context = vertx.getOrCreateContext();
+        boolean shouldDuplicateContext = shouldContextBeDuplicated(actualTestMethod);
+        if (shouldDuplicateContext) {
+            context = VertxContext.getOrCreateDuplicatedContext(context);
+            VertxContextSafetyToggle.setContextSafe(context, true);
+        }
+        context.runOnContext(handler);
         try {
             return cf.get();
         } catch (InterruptedException e) {
@@ -84,6 +92,15 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         } catch (ExecutionException e) {
             // the test itself threw an exception
             throw e.getCause();
+        }
+    }
+
+    private boolean shouldContextBeDuplicated(Method m) {
+        final RunOnVertxContext runOnVertxContext = m.getAnnotation(RunOnVertxContext.class);
+        if (runOnVertxContext == null) {
+            return false;
+        } else {
+            return runOnVertxContext.duplicateContext();
         }
     }
 

@@ -1,4 +1,4 @@
-package io.quarkus.test.junit.vertx;
+package io.quarkus.test.vertx;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -21,8 +21,7 @@ public class GACTV implements ArtifactCoords, Serializable {
             throw new IllegalArgumentException("One of type, version or separating them ':' is missing from '" + str + "'");
         }
         parts[4] = str.substring(versionSep + 1);
-        GACT.split(str, parts, versionSep);
-        return parts;
+        return GACT.split(str, parts, versionSep);
     }
 
     private final String groupId;

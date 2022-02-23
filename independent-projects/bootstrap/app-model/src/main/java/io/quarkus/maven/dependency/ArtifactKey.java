@@ -34,4 +34,5 @@ public interface ArtifactKey {
         }
         return buf.toString();
     }
+
 }

@@ -1,5 +1,6 @@
 package io.quarkus.maven;
 
+import io.quarkus.maven.dependency.GACT;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -19,8 +20,7 @@ public class ArtifactCoords implements io.quarkus.maven.dependency.ArtifactCoord
             throw new IllegalArgumentException("One of type, version or separating them ':' is missing from '" + str + "'");
         }
         parts[4] = str.substring(versionSep + 1);
-        ArtifactKey.split(str, parts, versionSep);
-        return parts;
+        return GACT.split(str, parts, versionSep);
     }
 
     protected final String groupId;
@@ -93,7 +93,7 @@ public class ArtifactCoords implements io.quarkus.maven.dependency.ArtifactCoord
         if (this == o) {
             return true;
         }
-        if (o == null || !(o instanceof io.quarkus.maven.dependency.ArtifactCoords)) {
+        if (!(o instanceof io.quarkus.maven.dependency.ArtifactCoords)) {
             return false;
         }
         io.quarkus.maven.dependency.ArtifactCoords that = (io.quarkus.maven.dependency.ArtifactCoords) o;

@@ -536,9 +536,6 @@ Edit `src/main/resources/application.properties` and inject the following config
 quarkus.ssl.native=false <1>
 
 quarkus.datasource.db-kind=postgresql <2>
-quarkus.datasource.username=quarkus_test
-quarkus.datasource.password=quarkus_test
-quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus_test
 
 quarkus.hibernate-orm.database.generation=drop-and-create <3>
 quarkus.hibernate-orm.sql-load-script=import.sql <4>
@@ -547,6 +544,11 @@ quarkus.hibernate-search-orm.elasticsearch.version=7 <5>
 quarkus.hibernate-search-orm.elasticsearch.analysis.configurer=bean:myAnalysisConfigurer <6>
 quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create <7>
 quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <8>
+
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test <9>
+%prod.quarkus.datasource.username=quarkus_test
+%prod.quarkus.datasource.password=quarkus_test
+%prod.hibernate-search-orm.elasticsearch.hosts=localhost:9200 <9>
 ----
 <1> We won't use SSL so we disable it to have a more compact native executable.
 <2> Let's create a PostgreSQL datasource.
@@ -561,6 +563,11 @@ Note that, for OpenSearch, you need to prefix the version with `opensearch:`; se
 <8> This means that we wait for the entities to be searchable before considering a write complete.
 On a production setup, the `write-sync` default will provide better performance.
 Using `sync` is especially important when testing as you need the entities to be searchable immediately.
+<9> For development and tests, we rely on <<dev-services,Dev Services>>,
+which means Quarkus will start a PostgreSQL database and Elasticsearch cluster automatically.
+In production mode, however,
+you will want to start a PostgreSQL database and Elasticsearch cluster manually,
+which is why we provide Quarkus with this connection info in the `prod` profile (`%prod.` prefix).
 
 [TIP]
 For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
@@ -570,7 +577,7 @@ For more information about the Hibernate Search extension configuration please r
 Quarkus supports a feature called Dev Services that allows you to start various containers without any config.
 In the case of Elasticsearch this support extends to the default Elasticsearch connection.
 What that means practically, is that if you have not configured `quarkus.hibernate-search-orm.elasticsearch.hosts` Quarkus will automatically
-start an Elasticsearch container when running tests or dev mode, and automatically configure the connection.
+start an Elasticsearch container when running tests or in xref:dev-mode-differences.adoc[dev mode], and automatically configure the connection.
 
 When running the production version of the application, the Elasticsearch connection needs to be configured as normal,
 so if you want to include a production database config in your `application.properties` and continue to use Dev Services
@@ -578,7 +585,7 @@ we recommend that you use the `%prod.` profile to define your Elasticsearch sett
 
 NOTE: Dev Services for Elasticsearch is currently unable to start multiple clusters concurrently, so it only works with the default backend of the default persistence unit: named persistence units or named backends won't be able to take advantage of Dev Services for Elasticsearch.
 
-For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch].
+For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch guide].
 
 == Creating a frontend
 
@@ -611,22 +618,6 @@ INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), 'T
 INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), 'Invisible', 2);
 INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), 'Sunset Park', 2);
 INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), '4 3 2 1', 2);
-----
-
-== Preparing the infrastructure
-
-We need a PostgreSQL instance and an Elasticsearch cluster.
-
-Let's use Docker to start one of each:
-
-[source,bash,subs=attributes+]
-----
-docker run -it --rm=true --name elasticsearch_quarkus_test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:{elasticsearch-version}
-----
-
-[source,bash]
-----
-docker run -it --rm=true --name postgresql_quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:14.1
 ----
 
 == Time to play with your application

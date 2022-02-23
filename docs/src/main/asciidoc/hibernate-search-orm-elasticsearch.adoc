@@ -565,6 +565,21 @@ Using `sync` is especially important when testing as you need the entities to be
 [TIP]
 For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
 
+[[dev-services]]
+=== Dev Services (Configuration Free Databases)
+Quarkus supports a feature called Dev Services that allows you to start various containers without any config.
+In the case of Elasticsearch this support extends to the default Elasticsearch connection.
+What that means practically, is that if you have not configured `quarkus.hibernate-search-orm.elasticsearch.hosts` Quarkus will automatically
+start an Elasticsearch container when running tests or dev mode, and automatically configure the connection.
+
+When running the production version of the application, the Elasticsearch connection needs to be configured as normal,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Elasticsearch settings.
+
+NOTE: Dev Services for Elasticsearch is currently unable to start multiple clusters concurrently, so it only works with the default backend of the default persistence unit: named persistence units or named backends won't be able to take advantage of Dev Services for Elasticsearch.
+
+For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch].
+
 == Creating a frontend
 
 Now let's add a simple web page to interact with our `LibraryResource`.

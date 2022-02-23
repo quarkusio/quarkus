@@ -76,13 +76,6 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         future.subscribe().with(new Consumer<>() {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
-                final long startTime;
-
-                if (requestContext.getCallStatsCollector() != null) {
-                    startTime = System.nanoTime();
-                } else {
-                    startTime = 0L;
-                }
                 Future<HttpClientResponse> sent;
                 if (requestContext.isMultipart()) {
                     Promise<HttpClientRequest> requestPromise = Promise.promise();
@@ -117,7 +110,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
                         requestPromise.complete(httpClientRequest);
                     } catch (Throwable e) {
-                        reportFinish(System.nanoTime() - startTime, e, requestContext);
+                        reportFinish(e, requestContext);
                         requestContext.resume(e);
                         return;
                     }
@@ -151,10 +144,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             int status = clientResponse.statusCode();
                             if (requestContext.getCallStatsCollector() != null) {
                                 if (status >= 500 && status < 600) {
-                                    reportFinish(System.nanoTime() - startTime, new InternalServerErrorException(),
+                                    reportFinish(new InternalServerErrorException(),
                                             requestContext);
                                 } else {
-                                    reportFinish(System.nanoTime() - startTime, null, requestContext);
+                                    reportFinish(null, requestContext);
                                 }
                             }
 
@@ -207,7 +200,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 });
                             }
                         } catch (Throwable t) {
-                            reportFinish(System.nanoTime() - startTime, t, requestContext);
+                            reportFinish(t, requestContext);
                             requestContext.resume(t);
                         }
                     }
@@ -228,11 +221,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             public void accept(Throwable event) {
                 if (event instanceof IOException) {
                     ProcessingException throwable = new ProcessingException(event);
-                    reportFinish(0, throwable, requestContext);
+                    reportFinish(throwable, requestContext);
                     requestContext.resume(throwable);
                 } else {
                     requestContext.resume(event);
-                    reportFinish(0, event, requestContext);
+                    reportFinish(event, requestContext);
                 }
             }
         });
@@ -251,10 +244,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         return false;
     }
 
-    private void reportFinish(long timeInNs, Throwable throwable, RestClientRequestContext requestContext) {
+    private void reportFinish(Throwable throwable, RestClientRequestContext requestContext) {
         ServiceInstance serviceInstance = requestContext.getCallStatsCollector();
         if (serviceInstance != null) {
-            serviceInstance.recordResult(timeInNs, throwable);
+            serviceInstance.recordReply();
+            serviceInstance.recordEnd(throwable);
         }
     }
 
@@ -271,7 +265,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             try {
                 serviceInstance = Stork.getInstance()
                         .getService(serviceName)
-                        .selectServiceInstance();
+                        .selectInstanceAndRecordStart(true);
             } catch (Throwable e) {
                 log.error("Error selecting service instance for serviceName: " + serviceName, e);
                 return Uni.createFrom().failure(e);

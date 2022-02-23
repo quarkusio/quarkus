@@ -11,6 +11,7 @@ import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -41,6 +42,7 @@ import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
+import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -122,8 +124,10 @@ public class Channels {
 
         String loadBalancingPolicy = config.loadBalancingPolicy;
 
+        boolean stork = false;
         if (Stork.STORK.equalsIgnoreCase(nameResolver)) {
             loadBalancingPolicy = Stork.STORK;
+            stork = true;
         }
 
         NettyChannelBuilder builder = NettyChannelBuilder
@@ -187,6 +191,10 @@ public class Channels {
         // Client-side interceptors
         GrpcClientInterceptorContainer interceptorContainer = Arc.container()
                 .instance(GrpcClientInterceptorContainer.class).get();
+        if (stork) {
+            perClientInterceptors = new HashSet<>(perClientInterceptors);
+            perClientInterceptors.add(StorkMeasuringGrpcInterceptor.class.getName());
+        }
         interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors).forEach(builder::intercept);
         interceptorContainer.getSortedGlobalInterceptors().forEach(builder::intercept);
 

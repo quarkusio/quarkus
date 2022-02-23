@@ -71,7 +71,7 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.stork</groupId>
-            <artifactId>stork-load-balancer-response-time</artifactId>
+            <artifactId>stork-load-balancer-least-response-time</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

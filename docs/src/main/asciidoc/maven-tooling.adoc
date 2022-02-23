@@ -532,7 +532,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 `maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
 <5> Use a specific `native` profile for native executable building.
 <6> Enable the `native` package type. The build will therefore produce a native executable.
-<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the xref:building-native-image.adoc[Native executable guide] for more info.
+<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` or `@QuarkusIntegrationTest` will be run against the native executable. See the xref:building-native-image.adoc[Native executable guide] for more info.
 
 [[fast-jar]]
 === Using fast-jar

@@ -166,14 +166,12 @@ public class SmallRyeOpenApiProcessor {
             SmallRyeOpenApiConfig openApiConfig,
             LaunchModeBuildItem launchMode,
             OutputTargetBuildItem outputTargetBuildItem) throws IOException {
-
         // Add any aditional directories if configured
         if (launchMode.getLaunchMode().isDevOrTest() && openApiConfig.additionalDocsDirectory.isPresent()) {
             List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
-                List<String> filesInDir = getResourceFiles(ClassPathUtils.toResourceName(path),
-                        outputTargetBuildItem.getOutputDirectory());
+                List<String> filesInDir = getResourceFiles(path, outputTargetBuildItem.getOutputDirectory());
                 for (String possibleFile : filesInDir) {
                     watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(possibleFile));
                 }
@@ -795,7 +793,7 @@ public class SmallRyeOpenApiProcessor {
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
                 try {
-                    List<String> filesInDir = getResourceFiles(ClassPathUtils.toResourceName(path), target);
+                    List<String> filesInDir = getResourceFiles(path, target);
                     for (String possibleModelFile : filesInDir) {
                         addStaticModelIfExist(results, possibleModelFile);
                     }
@@ -829,29 +827,28 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
-    private List<String> getResourceFiles(String pathName, Path target) throws IOException {
+    private List<String> getResourceFiles(Path resourcePath, Path target) throws IOException {
+        final String resourceName = ClassPathUtils.toResourceName(resourcePath);
         List<String> filenames = new ArrayList<>();
-        if (target == null) {
+        // Here we are resolving the resource dir relative to the classes dir and if it does not exist, we fallback to locating the resource dir on the classpath.
+        // Although the classes dir should already be on the classpath.
+        // In a QuarkusUnitTest the module's classes dir and the test application root could be different directories, is this code here for that reason?   
+        final Path targetResourceDir = target == null ? null : target.resolve("classes").resolve(resourcePath);
+        if (targetResourceDir != null && Files.exists(targetResourceDir)) {
+            try (Stream<Path> paths = Files.list(targetResourceDir)) {
+                return paths.map((t) -> {
+                    return resourceName + "/" + t.getFileName().toString();
+                }).collect(Collectors.toList());
+            }
+        } else {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            try (InputStream inputStream = cl.getResourceAsStream(pathName)) {
+            try (InputStream inputStream = cl.getResourceAsStream(resourceName)) {
                 if (inputStream != null) {
                     try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
                         String resource;
                         while ((resource = br.readLine()) != null) {
-                            filenames.add(pathName + "/" + resource);
+                            filenames.add(resourceName + "/" + resource);
                         }
-                    }
-                }
-            }
-        } else {
-            Path classes = target.resolve("classes");
-            if (classes != null) {
-                Path path = classes.resolve(pathName);
-                if (Files.exists(path)) {
-                    try (Stream<Path> paths = Files.list(path)) {
-                        return paths.map((t) -> {
-                            return pathName + "/" + t.getFileName().toString();
-                        }).collect(Collectors.toList());
                     }
                 }
             }

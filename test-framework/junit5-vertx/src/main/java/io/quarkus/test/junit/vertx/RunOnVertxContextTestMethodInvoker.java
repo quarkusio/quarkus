@@ -9,8 +9,8 @@ import java.util.function.Consumer;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.TestReactiveTransaction;
-import io.quarkus.test.junit.TestMethodInvoker;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;

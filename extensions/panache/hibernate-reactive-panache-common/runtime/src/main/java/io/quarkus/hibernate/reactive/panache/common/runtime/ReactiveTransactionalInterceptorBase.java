@@ -17,7 +17,7 @@ public abstract class ReactiveTransactionalInterceptorBase {
     private static final String JUNIT_TEST_ANN = "org.junit.jupiter.api.Test";
     private static final String JUNIT_BEFORE_EACH_ANN = "org.junit.jupiter.api.BeforeEach";
     private static final String JUNIT_AFTER_EACH_ANN = "org.junit.jupiter.api.AfterEach";
-    private static final String UNI_ASSERTER_CLASS = "io.quarkus.test.junit.vertx.UniAsserter";
+    private static final String UNI_ASSERTER_CLASS = "io.quarkus.test.vertx.UniAsserter";
 
     @SuppressWarnings("unchecked")
     @AroundInvoke

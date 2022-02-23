@@ -61,14 +61,26 @@ public class JarPathTreeTest {
     }
 
     @Test
-    public void acceptAbsolutePath() throws Exception {
+    public void acceptUnixAbsolutePath() throws Exception {
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
         try {
             tree.accept("/README.md", visit -> {
                 fail("Absolute paths aren't allowed");
             });
         } catch (IllegalArgumentException e) {
-            //expected
+            // expected
+        }
+    }
+
+    @Test
+    public void acceptOSSpecificAbsolutePath() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        try {
+            tree.accept(root.resolve("README.md").toAbsolutePath().toString(), visit -> {
+                fail("Absolute paths aren't allowed");
+            });
+        } catch (IllegalArgumentException e) {
+            // expected
         }
     }
 

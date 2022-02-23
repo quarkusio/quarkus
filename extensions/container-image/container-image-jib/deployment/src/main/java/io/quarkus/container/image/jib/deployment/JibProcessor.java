@@ -342,7 +342,7 @@ public class JibProcessor {
         Path componentsPath = sourceJarBuildItem.getPath().getParent();
         Path appLibDir = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN);
 
-        AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/home/jboss");
+        AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get(jibConfig.workingDirectory);
 
         List<String> entrypoint;
         if (jibConfig.jvmEntrypoint.isPresent()) {

@@ -39,6 +39,18 @@ public class HttpServerConfig {
     public Optional<List<String>> ignorePatterns = Optional.empty();
 
     /**
+     * Suppress non-application uris from metrics collection.
+     * This will suppress all metrics for non-application endpoints using
+     * `${quarkus.http.root-path}/${quarkus.http.non-application-root-path}`.
+     *
+     * Suppressing non-application uris is enabled by default.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean suppressNonApplicationUris;
+
+    /**
      * Maximum number of unique URI tag values allowed. After the max number of
      * tag values is reached, metrics with additional tag values are denied by
      * filter.

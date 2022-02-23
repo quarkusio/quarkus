@@ -9,10 +9,12 @@ import com.google.protobuf.EmptyProtos;
 import io.grpc.testing.integration.Messages;
 import io.quarkus.grpc.blocking.BlockingTestServiceGrpc;
 import io.quarkus.grpc.server.services.AssertHelper;
-import io.quarkus.grpc.server.services.BlockingTestService;
+import io.quarkus.grpc.server.services.BlockingBaseExtendingTestService;
+import io.quarkus.grpc.server.services.BlockingBaseTestService;
+import io.quarkus.grpc.server.services.BlockingExtendingExtendingTestService;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class BlockingMethodsTest extends BlockingMethodsBase {
+public class BlockingExtendingExtendingMethodsTest extends BlockingMethodsBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -22,6 +24,7 @@ public class BlockingMethodsTest extends BlockingMethodsBase {
                             .addPackage(EmptyProtos.class.getPackage())
                             .addPackage(Messages.class.getPackage())
                             .addPackage(BlockingTestServiceGrpc.class.getPackage())
-                            .addClasses(BlockingTestService.class, AssertHelper.class))
+                            .addClasses(BlockingBaseTestService.class, BlockingBaseExtendingTestService.class,
+                                    BlockingExtendingExtendingTestService.class, AssertHelper.class))
             .withConfigurationResource("blocking-test-config.properties");
 }

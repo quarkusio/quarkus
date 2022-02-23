@@ -187,25 +187,22 @@ public class BuildpackProcessor {
 
                 }).build();
         log.info("Buildpack build complete");
-
         if (containerImageConfig.isPushExplicitlyEnabled() || pushRequest.isPresent()) {
             if (!containerImageConfig.registry.isPresent()) {
                 log.info("No container image registry was set, so 'docker.io' will be used");
             }
-            Optional<String> r = containerImageConfig.registry;
-            Optional<String> g = containerImageConfig.group;
-            Optional<String> n = containerImageConfig.name;
-
             AuthConfig authConfig = new AuthConfig();
             authConfig.withRegistryAddress(containerImageConfig.registry.orElse("docker.io"));
             containerImageConfig.username.ifPresent(u -> authConfig.withUsername(u));
             containerImageConfig.password.ifPresent(p -> authConfig.withPassword(p));
 
+            log.info("Pushing image to " + authConfig.getRegistryAddress());
             Stream.concat(Stream.of(containerImage.getImage()), containerImage.getAdditionalImageTags().stream()).forEach(i -> {
                 ResultCallback.Adapter<PushResponseItem> adapter = new ResultCallback.Adapter<>();
                 buildpack.getDockerClient().pushImageCmd(i).exec(adapter);
                 try {
                     adapter.awaitCompletion();
+                    log.info("Push complete");
                 } catch (InterruptedException e) {
                     throw new IllegalStateException(e);
                 }

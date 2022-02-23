@@ -37,6 +37,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
@@ -336,5 +337,17 @@ class HibernateSearchElasticsearchProcessor {
     private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));
+    }
+
+    @BuildStep
+    DevservicesElasticsearchBuildItem devServices(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.defaultPersistenceUnit != null && buildTimeConfig.defaultPersistenceUnit.defaultBackend != null
+                && buildTimeConfig.defaultPersistenceUnit.defaultBackend.version.isPresent()) {
+            ElasticsearchVersion version = buildTimeConfig.defaultPersistenceUnit.defaultBackend.version.get();
+            return new DevservicesElasticsearchBuildItem("quarkus.hibernate-search-orm.elasticsearch.hosts",
+                    version.versionString(),
+                    DevservicesElasticsearchBuildItem.Distribution.valueOf(version.distribution().toString().toUpperCase()));
+        }
+        return new DevservicesElasticsearchBuildItem("quarkus.hibernate-search-orm.elasticsearch.hosts");
     }
 }

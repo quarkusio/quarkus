@@ -12,6 +12,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
@@ -74,7 +75,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         CompletableFuture<Object> cf = new CompletableFuture<>();
         RunTestMethodOnContextHandler handler = new RunTestMethodOnContextHandler(actualTestInstance, actualTestMethod,
                 actualTestMethodArgs, uniAsserter, cf);
-        vertx.getOrCreateContext().runOnContext(handler);
+        VertxContext.getOrCreateDuplicatedContext(vertx).runOnContext(handler);
         try {
             return cf.get();
         } catch (InterruptedException e) {

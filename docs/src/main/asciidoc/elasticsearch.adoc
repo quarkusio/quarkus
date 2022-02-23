@@ -261,7 +261,21 @@ quarkus.elasticsearch.hosts = localhost:9200
 
 If you need a more advanced configuration, you can find the comprehensive list of supported configuration properties at the end of this guide.
 
-== Programmatically Configuring Elasticsearch
+[[dev-services]]
+=== Dev Services (Configuration Free Databases)
+Quarkus supports a feature called Dev Services that allows you to start various containers without any config.
+In the case of Elasticsearch this support extends to the default Elasticsearch connection.
+What that means practically is that, if you have not configured `quarkus.elasticsearch.hosts`, Quarkus will automatically
+start an Elasticsearch container when running tests or dev mode, and automatically configure the connection.
+
+When running the production version of the application, the Elasticsearch connection needs to be configured as usual,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Elasticsearch settings.
+
+For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch guide].
+
+
+=== Programmatically Configuring Elasticsearch
 On top of the parametric configuration, you can also programmatically apply additional configuration to the client by implementing a `RestClientBuilder.HttpClientConfigCallback` and annotating it with `ElasticsearchClientConfig`. You may provide multiple implementations and configuration provided by each implementation will be applied in a randomly ordered cascading manner.
 
 For example, when accessing an Elasticsearch cluster that is set up for TLS on the HTTP layer, the client needs to trust the certificate that Elasticsearch is using. The following is an example of setting up the client to trust the CA that has signed the certificate that Elasticsearch is using, when that CA certificate is available in a PKCS#12 keystore.

@@ -25,7 +25,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      * Whether Hibernate Search is enabled.
      */
     @ConfigItem(defaultValue = "true")
-    boolean enabled;
+    public boolean enabled;
 
     /**
      * Default backend

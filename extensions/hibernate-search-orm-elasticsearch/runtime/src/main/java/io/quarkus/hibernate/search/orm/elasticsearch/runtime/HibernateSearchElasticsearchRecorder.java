@@ -56,10 +56,7 @@ public class HibernateSearchElasticsearchRecorder {
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName,
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
-        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
-                .isDefaultPersistenceUnit(persistenceUnitName)
-                        ? runtimeConfig.defaultPersistenceUnit
-                        : runtimeConfig.persistenceUnits.get(persistenceUnitName);
+        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimePuConfig(runtimeConfig, persistenceUnitName);
         return new HibernateSearchIntegrationRuntimeInitListener(puConfig, integrationRuntimeInitListeners);
     }
 
@@ -67,10 +64,17 @@ public class HibernateSearchElasticsearchRecorder {
         return new HibernateSearchIntegrationRuntimeInitListener(null, Collections.emptyList());
     }
 
-    public Supplier<SearchMapping> searchMappingSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+    public Supplier<SearchMapping> searchMappingSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
+            String persistenceUnitName, boolean isDefaultPersistenceUnit) {
         return new Supplier<SearchMapping>() {
             @Override
             public SearchMapping get() {
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimePuConfig(runtimeConfig,
+                        persistenceUnitName);
+                if (config != null && !config.enabled) {
+                    throw new IllegalStateException(
+                            "Cannot retrieve the SearchMapping: Hibernate Search was disabled through configuration properties");
+                }
                 SessionFactory sessionFactory;
                 if (isDefaultPersistenceUnit) {
                     sessionFactory = Arc.container().instance(SessionFactory.class).get();
@@ -83,10 +87,17 @@ public class HibernateSearchElasticsearchRecorder {
         };
     }
 
-    public Supplier<SearchSession> searchSessionSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+    public Supplier<SearchSession> searchSessionSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
+            String persistenceUnitName, boolean isDefaultPersistenceUnit) {
         return new Supplier<SearchSession>() {
             @Override
             public SearchSession get() {
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimePuConfig(runtimeConfig,
+                        persistenceUnitName);
+                if (config != null && !config.enabled) {
+                    throw new IllegalStateException(
+                            "Cannot retrieve the SearchSession: Hibernate Search was disabled through configuration properties");
+                }
                 Session session;
                 if (isDefaultPersistenceUnit) {
                     session = Arc.container().instance(Session.class).get();
@@ -97,6 +108,13 @@ public class HibernateSearchElasticsearchRecorder {
                 return Search.session(session);
             }
         };
+    }
+
+    private HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimePuConfig(
+            HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName) {
+        return PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)
+                ? runtimeConfig.defaultPersistenceUnit
+                : runtimeConfig.persistenceUnits.get(persistenceUnitName);
     }
 
     private static final class HibernateSearchIntegrationDisabledListener

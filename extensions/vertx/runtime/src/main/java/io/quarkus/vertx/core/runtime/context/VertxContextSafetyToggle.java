@@ -87,10 +87,20 @@ public final class VertxContextSafetyToggle {
     /**
      * @param safe set to {@code true} to explicitly mark the current context as safe, or {@code false} to explicitly mark it as
      *        unsafe.
-     * @throws IllegalStateException if there is no current context!
+     * @throws IllegalStateException if there is no current context, or if it's of the wrong type.
      */
-    public static void setCurrentContextSafe(boolean safe) {
+    public static void setCurrentContextSafe(final boolean safe) {
         final io.vertx.core.Context context = Vertx.currentContext();
+        setContextSafe(context, safe);
+    }
+
+    /**
+     * @param safe set to {@code true} to explicitly mark the current context as safe, or {@code false} to explicitly mark it as
+     *        unsafe.
+     * @param context The context to mark.
+     * @throws IllegalStateException if context is null or not of the expected type.
+     */
+    public static void setContextSafe(final Context context, final boolean safe) {
         if (context == null) {
             throw new IllegalStateException("Can't set the context safety flag: no Vert.x context found");
         } else if (!VertxContext.isDuplicatedContext(context)) {

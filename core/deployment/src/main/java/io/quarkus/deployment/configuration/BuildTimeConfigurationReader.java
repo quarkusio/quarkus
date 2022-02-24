@@ -327,9 +327,9 @@ public final class BuildTimeConfigurationReader {
         final Set<String> processedNames = new HashSet<>();
 
         final Map<Class<?>, Object> objectsByClass = new HashMap<>();
-        final Map<String, String> specifiedRunTimeDefaultValues = new TreeMap<>();
-        final Map<String, String> buildTimeRunTimeVisibleValues = new TreeMap<>();
         final Map<String, String> allBuildTimeValues = new TreeMap<>();
+        final Map<String, String> buildTimeRunTimeVisibleValues = new TreeMap<>();
+        final Map<String, String> specifiedRunTimeDefaultValues = new TreeMap<>();
 
         final Map<ConverterType, Converter<?>> convByType = new HashMap<>();
 
@@ -362,10 +362,10 @@ public final class BuildTimeConfigurationReader {
                 nameBuilder.setLength(0);
             }
 
-            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getPrefix).collect(toSet());
-            // sweep-up
             SmallRyeConfig runtimeDefaultsConfig = getConfigForRuntimeDefaults();
-            final Set<String> allProperties = getAllProperties(registeredRoots);
+            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getPrefix).collect(toSet());
+            Set<String> allProperties = getAllProperties(registeredRoots);
+            Set<String> unknownBuildProperties = new HashSet<>();
             for (String propertyName : allProperties) {
                 if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
                     continue;
@@ -449,6 +449,7 @@ public final class BuildTimeConfigurationReader {
                         if (configValue.getValue() != null) {
                             specifiedRunTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
+                        continue;
                     }
                     // also check for the bootstrap properties since those need to be added to specifiedRunTimeDefaultValues as well
                     ni.goToStart();
@@ -459,7 +460,11 @@ public final class BuildTimeConfigurationReader {
                         if (configValue.getValue() != null) {
                             specifiedRunTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
+                        continue;
                     }
+
+                    // If we reach here it means we were not able to match the property (and it shares roots namespace)
+                    unknownBuildProperties.add(propertyName);
                 } else {
                     // it's not managed by us; record it
                     ConfigValue configValue = withoutExpansion(() -> runtimeDefaultsConfig.getConfigValue(propertyName));
@@ -478,6 +483,7 @@ public final class BuildTimeConfigurationReader {
             for (ConfigClassWithPrefix mapping : buildTimeMappings) {
                 Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
                 for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value != null && value.getRawValue() != null) {
                         allBuildTimeValues.put(property, value.getRawValue());
@@ -489,6 +495,7 @@ public final class BuildTimeConfigurationReader {
             for (ConfigClassWithPrefix mapping : buildTimeRunTimeMappings) {
                 Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
                 for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value != null && value.getRawValue() != null) {
                         allBuildTimeValues.put(property, value.getRawValue());
@@ -501,6 +508,7 @@ public final class BuildTimeConfigurationReader {
             for (ConfigClassWithPrefix mapping : runTimeMappings) {
                 Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
                 for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value != null && value.getRawValue() != null) {
                         specifiedRunTimeDefaultValues.put(property, value.getRawValue());
@@ -521,6 +529,7 @@ public final class BuildTimeConfigurationReader {
                     .setBuildTimeMappings(buildTimeMappings)
                     .setBuildTimeRunTimeMappings(buildTimeRunTimeMappings)
                     .setRunTimeMappings(runTimeMappings)
+                    .setUnknownBuildProperties(unknownBuildProperties)
                     .createReadResult();
         }
 
@@ -940,6 +949,8 @@ public final class BuildTimeConfigurationReader {
         final List<ConfigClassWithPrefix> runTimeMappings;
         final Map<Class<?>, ConfigClassWithPrefix> allMappings;
 
+        final Set<String> unknownBuildProperties;
+
         public ReadResult(final Builder builder) {
             this.objectsByClass = builder.getObjectsByClass();
 
@@ -961,6 +972,8 @@ public final class BuildTimeConfigurationReader {
             this.buildTimeRunTimeMappings = builder.getBuildTimeRunTimeMappings();
             this.runTimeMappings = builder.getRunTimeMappings();
             this.allMappings = mappingsToMap(builder);
+
+            this.unknownBuildProperties = builder.getUnknownBuildProperties();
         }
 
         private static Map<Class<?>, RootDefinition> rootsToMap(Builder builder) {
@@ -1045,6 +1058,10 @@ public final class BuildTimeConfigurationReader {
             return allMappings;
         }
 
+        public Set<String> getUnknownBuildProperties() {
+            return unknownBuildProperties;
+        }
+
         public Object requireObjectForClass(Class<?> clazz) {
             Object obj = objectsByClass.get(clazz);
             if (obj == null) {
@@ -1067,6 +1084,7 @@ public final class BuildTimeConfigurationReader {
             private List<ConfigClassWithPrefix> buildTimeMappings;
             private List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
             private List<ConfigClassWithPrefix> runTimeMappings;
+            private Set<String> unknownBuildProperties;
 
             Map<Class<?>, Object> getObjectsByClass() {
                 return objectsByClass;
@@ -1182,6 +1200,15 @@ public final class BuildTimeConfigurationReader {
 
             Builder setRunTimeMappings(final List<ConfigClassWithPrefix> runTimeMappings) {
                 this.runTimeMappings = runTimeMappings;
+                return this;
+            }
+
+            Set<String> getUnknownBuildProperties() {
+                return unknownBuildProperties;
+            }
+
+            Builder setUnknownBuildProperties(final Set<String> unknownBuildProperties) {
+                this.unknownBuildProperties = unknownBuildProperties;
                 return this;
             }
 

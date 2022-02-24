@@ -1,6 +1,7 @@
 package io.quarkus.extest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
@@ -28,6 +29,7 @@ public class UnknownConfigTest {
                 Set<String> properties = logRecords.stream().flatMap(
                         logRecord -> Stream.of(logRecord.getParameters())).map(Object::toString).collect(Collectors.toSet());
                 assertTrue(properties.contains("quarkus.unknown.prop"));
+                assertFalse(properties.contains("quarkus.build.unknown.prop"));
             });
 
     @Inject

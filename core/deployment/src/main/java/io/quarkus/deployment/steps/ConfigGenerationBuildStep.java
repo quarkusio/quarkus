@@ -67,6 +67,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.StaticInitSafe;
+import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ProfileManager;
@@ -140,6 +141,9 @@ public class ConfigGenerationBuildStep {
             List<RunTimeConfigBuilderBuildItem> runTimeConfigBuilders)
             throws IOException {
 
+        reportUnknownBuildProperties(launchModeBuildItem.getLaunchMode(),
+                configItem.getReadResult().getUnknownBuildProperties());
+
         if (liveReloadBuildItem.isLiveReload()) {
             return;
         }
@@ -192,7 +196,17 @@ public class ConfigGenerationBuildStep {
                 .run();
     }
 
-    private List<String> getAdditionalBootstrapConfigSourceProviders(
+    private static void reportUnknownBuildProperties(LaunchMode launchMode, Set<String> unknownBuildProperties) {
+        // So it only reports during the build, because it is very likely that the property is available in runtime
+        // and, it will be caught by the RuntimeConfig and log double warnings
+        if (!launchMode.isDevOrTest()) {
+            for (String unknownProperty : unknownBuildProperties) {
+                ConfigDiagnostic.unknown(unknownProperty);
+            }
+        }
+    }
+
+    private static List<String> getAdditionalBootstrapConfigSourceProviders(
             List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders) {
         if (additionalBootstrapConfigSourceProviders.isEmpty()) {
             return Collections.emptyList();

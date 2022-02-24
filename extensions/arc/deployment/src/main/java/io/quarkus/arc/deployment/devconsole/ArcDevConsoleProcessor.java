@@ -1,5 +1,6 @@
 package io.quarkus.arc.deployment.devconsole;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -108,14 +109,20 @@ public class ArcDevConsoleProcessor {
         for (InterceptorInfo interceptor : validationContext.get(BuildExtension.Key.INTERCEPTORS)) {
             beanInfos.addInterceptor(DevInterceptorInfo.from(interceptor, predicate));
         }
-        for (InterceptorInfo interceptor : validationContext.get(BuildExtension.Key.REMOVED_INTERCEPTORS)) {
-            beanInfos.addRemovedInterceptor(DevInterceptorInfo.from(interceptor, predicate));
+        Collection<InterceptorInfo> removedInterceptors = validationContext.get(BuildExtension.Key.REMOVED_INTERCEPTORS);
+        if (removedInterceptors != null) {
+            for (InterceptorInfo interceptor : removedInterceptors) {
+                beanInfos.addRemovedInterceptor(DevInterceptorInfo.from(interceptor, predicate));
+            }
         }
         for (DecoratorInfo decorator : validationContext.get(BuildExtension.Key.DECORATORS)) {
             beanInfos.addDecorator(DevDecoratorInfo.from(decorator, predicate));
         }
-        for (DecoratorInfo decorator : validationContext.get(BuildExtension.Key.REMOVED_DECORATORS)) {
-            beanInfos.addRemovedDecorator(DevDecoratorInfo.from(decorator, predicate));
+        Collection<DecoratorInfo> removedDecorators = validationContext.get(BuildExtension.Key.REMOVED_DECORATORS);
+        if (removedDecorators != null) {
+            for (DecoratorInfo decorator : removedDecorators) {
+                beanInfos.addRemovedDecorator(DevDecoratorInfo.from(decorator, predicate));
+            }
         }
         beanInfos.sort();
         return new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos);

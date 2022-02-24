@@ -12,7 +12,6 @@ import liquibase.Liquibase;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
-import liquibase.resource.ResourceAccessor;
 
 public class LiquibaseMongodbFactory {
 
@@ -31,8 +30,8 @@ public class LiquibaseMongodbFactory {
     }
 
     public Liquibase createLiquibase() {
-        try {
-            ResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
+        try (ClassLoaderResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(
+                Thread.currentThread().getContextClassLoader())) {
             String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
             if (!HAS_DB.matcher(connectionString).matches()) {
                 connectionString += "/" + this.mongoClientConfig.database.orElseThrow(

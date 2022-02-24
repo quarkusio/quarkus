@@ -12,7 +12,6 @@ import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
-import liquibase.resource.ResourceAccessor;
 
 public class LiquibaseFactory {
 
@@ -29,8 +28,8 @@ public class LiquibaseFactory {
     }
 
     public Liquibase createLiquibase() {
-        try {
-            ResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
+        try (ClassLoaderResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(
+                Thread.currentThread().getContextClassLoader())) {
 
             Database database = DatabaseFactory.getInstance()
                     .findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()));

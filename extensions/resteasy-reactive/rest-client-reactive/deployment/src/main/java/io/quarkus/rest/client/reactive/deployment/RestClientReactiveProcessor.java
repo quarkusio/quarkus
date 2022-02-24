@@ -224,6 +224,7 @@ class RestClientReactiveProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             RestClientReactiveConfig clientConfig) {
         String annotationRegisteredProvidersImpl = AnnotationRegisteredProviders.class.getName() + "Implementation";
         IndexView index = indexBuildItem.getIndex();
@@ -292,6 +293,7 @@ class RestClientReactiveProcessor {
                             + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
                 }
                 ifaceToGeneratedMapper.put(result.interfaceName, result);
+                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
             }
 
             for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {

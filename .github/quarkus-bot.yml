@@ -311,6 +311,15 @@ triage:
       directories:
         - extensions/awt/
         - integration-tests/awt/
+        - integration-tests/no-awt/
+    - labels: [area/securepipeline]
+      expression: |
+              matches("FIPS", titleBody)
+              || matches("SunPKCS11-NSS-FIPS", titleBody)
+              || matches("NSS module", titleBody)
+              || matches("libnss", titleBody)
+      notify: [jerboaa, Karm]
+      notifyInPullRequest: true
     - labels: [area/artemis]
       directories:
         - extensions/artemis-core/

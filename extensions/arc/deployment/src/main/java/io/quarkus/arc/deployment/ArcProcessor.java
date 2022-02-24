@@ -17,6 +17,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.AmbiguousResolutionException;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -32,6 +34,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.AsyncObserverExceptionHandler;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
@@ -51,6 +54,7 @@ import io.quarkus.arc.processor.BeanGenerator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.processor.BeanResolver;
 import io.quarkus.arc.processor.Beans;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.BytecodeTransformer;
@@ -126,6 +130,7 @@ public class ArcProcessor {
     private static final Logger LOGGER = Logger.getLogger(ArcProcessor.class);
 
     static final DotName ADDITIONAL_BEAN = DotName.createSimple(AdditionalBean.class.getName());
+    static final DotName ASYNC_OBSERVER_EXCEPTION_HANDLER = DotName.createSimple(AsyncObserverExceptionHandler.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -726,6 +731,29 @@ public class ArcProcessor {
             }
 
         });
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem unremovableAsyncObserverExceptionHandlers() {
+        // Make all classes implementing AsyncObserverExceptionHandler unremovable
+        return UnremovableBeanBuildItem.beanTypes(Set.of(ASYNC_OBSERVER_EXCEPTION_HANDLER));
+    }
+
+    @BuildStep
+    void validateAsyncObserverExceptionHandlers(ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationErrorBuildItem> errors) {
+        BeanResolver resolver = validationPhase.getBeanProcessor().getBeanDeployment().getBeanResolver();
+        try {
+            BeanInfo bean = resolver.resolveAmbiguity(
+                    resolver.resolveBeans(Type.create(ASYNC_OBSERVER_EXCEPTION_HANDLER, org.jboss.jandex.Type.Kind.CLASS)));
+            if (bean == null) {
+                // This should never happen because of the default impl
+                errors.produce(new ValidationErrorBuildItem(
+                        new UnsatisfiedResolutionException("AsyncObserverExceptionHandler bean not found")));
+            }
+        } catch (AmbiguousResolutionException e) {
+            errors.produce(new ValidationErrorBuildItem(e));
+        }
     }
 
     private void registerListInjectionPointsBeans(BeanRegistrationPhaseBuildItem beanRegistrationPhase,

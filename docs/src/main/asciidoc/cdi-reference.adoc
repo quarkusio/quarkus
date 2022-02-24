@@ -1000,6 +1000,27 @@ In other words, if a method/constructor is annotated `@NoClassInterceptors`, the
 
 This annotation affects only business method interceptors (`@AroundInvoke`) and constructor lifecycle callback interceptors (`@AroundConstruct`).
 
+=== Exceptions Thrown By An Asynchronous Observer Method
+
+If an exception is thrown by an asynchronous observer then the `CompletionStage` returned by the `fireAsync()` method completes exceptionally so that the event producer may react appropriately.
+However, if the event producer does not care then the exception is ignored silently.
+Therefore, Quarkus logs an error message by default.
+It is also possible to implement a custom `AsyncObserverExceptionHandler`.
+A bean that implements this interface should be `@javax.inject.Singleton` or `@javax.enterprise.context.ApplicationScoped`.
+
+.`NoopAsyncObserverExceptionHandler`
+[source, java]
+----
+@Singleton
+public class NoopAsyncObserverExceptionHandler {
+
+  void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext) {
+    // do nothing
+  }
+
+}
+----
+
 [[build_time_apis]]
 == Build Time Extensions
 

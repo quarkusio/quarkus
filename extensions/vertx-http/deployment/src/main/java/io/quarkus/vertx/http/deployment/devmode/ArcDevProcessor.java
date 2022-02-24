@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.deployment.devmode;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +13,8 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.DecoratorInfo;
+import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -34,8 +37,15 @@ public class ArcDevProcessor {
             BuildProducer<ValidationErrorBuildItem> errors) {
 
         List<BeanInfo> removed = new ArrayList<>();
-        removed.addAll(validationPhase.getContext().get(BuildExtension.Key.REMOVED_INTERCEPTORS));
-        removed.addAll(validationPhase.getContext().get(BuildExtension.Key.REMOVED_DECORATORS));
+        Collection<InterceptorInfo> removedInterceptors = validationPhase.getContext()
+                .get(BuildExtension.Key.REMOVED_INTERCEPTORS);
+        if (removedInterceptors != null) {
+            removed.addAll(removedInterceptors);
+        }
+        Collection<DecoratorInfo> removedDecorators = validationPhase.getContext().get(BuildExtension.Key.REMOVED_DECORATORS);
+        if (removedDecorators != null) {
+            removed.addAll(removedDecorators);
+        }
         List<String[]> removedInterceptorsDecorators;
         if (removed.isEmpty()) {
             removedInterceptorsDecorators = Collections.emptyList();

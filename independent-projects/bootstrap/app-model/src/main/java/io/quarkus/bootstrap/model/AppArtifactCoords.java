@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.model;
 import static java.util.Objects.requireNonNull;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACT;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -38,8 +39,7 @@ public class AppArtifactCoords implements ArtifactCoords, Serializable {
             throw new IllegalArgumentException("One of type, version or separating them ':' is missing from '" + str + "'");
         }
         parts[4] = str.substring(versionSep + 1);
-        AppArtifactKey.split(str, parts, versionSep);
-        return parts;
+        return GACT.split(str, parts, versionSep);
     }
 
     protected final String groupId;

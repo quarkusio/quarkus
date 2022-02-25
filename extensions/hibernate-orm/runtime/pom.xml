@@ -135,6 +135,12 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>quarkus-local-cache</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Technically the quarkus-caffeine-runtime belongs as a dependency to the Quarkus Caching layer,
           but since this is currently shaped as a non-quarkus external project I'd rather not have it depend on

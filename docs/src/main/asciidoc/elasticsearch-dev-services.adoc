@@ -58,9 +58,6 @@ quarkus.elasticsearch.devservices.image-name=docker.elastic.co/elasticsearch/ela
 
 == Current limitations
 
-Currently, Elasticsearch Dev Services cannot be used if both Hibernate Search ORM Elasticsearch and an Elasticsearch client extension are used,
-this will result in an exception on startup.
-
 Currently, only the default backend for Hibernate Search Elasticsearch is supported, because Dev Services for Elasticsearch can only start one Elasticsearch container.
 
 == Configuration reference

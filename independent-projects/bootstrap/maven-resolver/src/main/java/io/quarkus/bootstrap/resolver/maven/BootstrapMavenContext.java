@@ -94,9 +94,6 @@ public class BootstrapMavenContext {
     private static final String MAVEN_TOP_LEVEL_PROJECT_BASEDIR = "maven.top-level-basedir";
     private static final String SETTINGS_XML = "settings.xml";
 
-    private static final String userHome = PropertyUtils.getUserHome();
-    private static final File userMavenConfigurationHome = new File(userHome, ".m2");
-
     private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
 
     private boolean artifactTransferLogging;
@@ -211,10 +208,14 @@ public class BootstrapMavenContext {
                         getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
                         () -> {
                             final String quarkusMavenSettings = getProperty(MAVEN_SETTINGS);
-                            return quarkusMavenSettings == null ? new File(userMavenConfigurationHome, SETTINGS_XML)
+                            return quarkusMavenSettings == null ? new File(getUserMavenConfigurationHome(), SETTINGS_XML)
                                     : new File(quarkusMavenSettings);
                         })
                 : userSettings;
+    }
+
+    private static File getUserMavenConfigurationHome() {
+        return new File(PropertyUtils.getUserHome(), ".m2");
     }
 
     private String getProperty(String name) {
@@ -326,7 +327,7 @@ public class BootstrapMavenContext {
             return localRepo;
         }
         localRepo = settings.getLocalRepository();
-        return localRepo == null ? new File(userMavenConfigurationHome, "repository").getAbsolutePath() : localRepo;
+        return localRepo == null ? new File(getUserMavenConfigurationHome(), "repository").getAbsolutePath() : localRepo;
     }
 
     private File resolveSettingsFile(String settingsArg, Supplier<File> supplier) {

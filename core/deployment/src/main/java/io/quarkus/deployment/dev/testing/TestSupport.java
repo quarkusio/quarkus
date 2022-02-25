@@ -374,19 +374,7 @@ public class TestSupport implements TestController {
                     }
                 }
 
-                @Override
-                public void noTests(TestRunResults results) {
-                    allResults.add(results);
-                    runStarted(0);
-                }
             }));
-        }
-        if (testCount.get() == 0) {
-            TestRunResults results = new TestRunResults(runId, classScanResult, classScanResult == null, start,
-                    System.currentTimeMillis(), Collections.emptyMap());
-            for (var i : testRunListeners) {
-                i.noTests(results);
-            }
         }
         for (var i : testRunListeners) {
             i.runStarted(testCount.get());

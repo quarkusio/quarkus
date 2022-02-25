@@ -146,6 +146,7 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().runAllTests();
+                event.response().setStatusCode(204).end();
             }
         });
     }
@@ -178,6 +179,7 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().runFailedTests();
+                event.response().setStatusCode(204).end();
             }
         });
     }
@@ -192,6 +194,7 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().printFullResults();
+                event.response().setStatusCode(204).end();
             }
         });
     }
@@ -235,6 +238,7 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+                event.response().setStatusCode(204).end();
             }
         });
     }

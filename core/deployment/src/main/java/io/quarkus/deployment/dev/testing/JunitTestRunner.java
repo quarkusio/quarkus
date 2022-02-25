@@ -178,21 +178,6 @@ public class JunitTestRunner {
             LauncherDiscoveryRequest request = launchBuilder
                     .build();
             TestPlan testPlan = launcher.discover(request);
-            if (!testPlan.containsTests()) {
-                testState.pruneDeletedTests(allDiscoveredIds, dynamicIds);
-                //nothing to see here
-                for (TestRunListener i : listeners) {
-                    i.noTests(new TestRunResults(runId, classScanResult, classScanResult == null, start,
-                            System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
-                }
-                quarkusTestClasses.close();
-                return new Runnable() {
-                    @Override
-                    public void run() {
-
-                    }
-                };
-            }
             long toRun = testPlan.countTestIdentifiers(TestIdentifier::isTest);
             for (TestRunListener listener : listeners) {
                 listener.runStarted(toRun);
@@ -226,12 +211,17 @@ public class JunitTestRunner {
                         });
 
                         Map<String, Map<UniqueId, TestResult>> resultsByClass = new HashMap<>();
+                        AtomicReference<TestIdentifier> currentNonDynamicTest = new AtomicReference<>();
                         launcher.execute(testPlan, new TestExecutionListener() {
 
                             @Override
                             public void executionStarted(TestIdentifier testIdentifier) {
                                 if (aborted) {
                                     return;
+                                }
+                                boolean dynamic = dynamicIds.contains(UniqueId.parse(testIdentifier.getUniqueId()));
+                                if (!dynamic) {
+                                    currentNonDynamicTest.set(testIdentifier);
                                 }
                                 startTimes.put(testIdentifier, System.currentTimeMillis());
                                 String testClassName = "";
@@ -260,7 +250,7 @@ public class JunitTestRunner {
                                             s -> new HashMap<>());
                                     TestResult result = new TestResult(displayName, testClass.getName(), id,
                                             TestExecutionResult.aborted(null),
-                                            logHandler.captureOutput(), testIdentifier.isTest(), runId, 0);
+                                            logHandler.captureOutput(), testIdentifier.isTest(), runId, 0, true);
                                     results.put(id, result);
                                     if (result.isTest()) {
                                         for (TestRunListener listener : listeners) {
@@ -274,6 +264,9 @@ public class JunitTestRunner {
                             @Override
                             public void dynamicTestRegistered(TestIdentifier testIdentifier) {
                                 dynamicIds.add(UniqueId.parse(testIdentifier.getUniqueId()));
+                                for (TestRunListener listener : listeners) {
+                                    listener.dynamicTestRegistered(testIdentifier);
+                                }
                             }
 
                             @Override
@@ -282,6 +275,7 @@ public class JunitTestRunner {
                                 if (aborted) {
                                     return;
                                 }
+                                boolean dynamic = dynamicIds.contains(UniqueId.parse(testIdentifier.getUniqueId()));
                                 Set<String> touched = touchedClasses.pop();
                                 Class<?> testClass = getTestClassFromSource(testIdentifier.getSource());
                                 String displayName = getDisplayNameFromIdentifier(testIdentifier, testClass);
@@ -306,17 +300,32 @@ public class JunitTestRunner {
                                         testClassUsages.updateTestData(testClassName, id, touched);
                                     }
                                 }
-
                                 Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClassName,
                                         s -> new HashMap<>());
                                 TestResult result = new TestResult(displayName, testClassName, id,
                                         testExecutionResult,
                                         logHandler.captureOutput(), testIdentifier.isTest(), runId,
-                                        System.currentTimeMillis() - startTimes.get(testIdentifier));
-                                results.put(id, result);
+                                        System.currentTimeMillis() - startTimes.get(testIdentifier), true);
+                                if (!results.containsKey(id)) {
+                                    //if a child has failed we may have already marked the parent failed
+                                    results.put(id, result);
+                                }
                                 if (result.isTest()) {
                                     for (TestRunListener listener : listeners) {
                                         listener.testComplete(result);
+                                    }
+                                    if (dynamic && testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
+                                        //if it is dynamic we fail the parent as well for re-runs
+
+                                        RuntimeException failure = new RuntimeException("A child test failed");
+                                        failure.setStackTrace(new StackTraceElement[0]);
+                                        results.put(id,
+                                                new TestResult(currentNonDynamicTest.get().getDisplayName(),
+                                                        result.getTestClass(),
+                                                        currentNonDynamicTest.get().getUniqueIdObject(),
+                                                        TestExecutionResult.failed(failure), List.of(), false, runId, 0,
+                                                        false));
+                                        results.put(UniqueId.parse(currentNonDynamicTest.get().getUniqueId()), result);
                                     }
                                 } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
                                     //if a parent fails we fail the children
@@ -327,7 +336,7 @@ public class JunitTestRunner {
                                                 childId,
                                                 testExecutionResult,
                                                 logHandler.captureOutput(), child.isTest(), runId,
-                                                System.currentTimeMillis() - startTimes.get(testIdentifier));
+                                                System.currentTimeMillis() - startTimes.get(testIdentifier), true);
                                         results.put(childId, result);
                                         if (child.isTest()) {
                                             for (TestRunListener listener : listeners) {

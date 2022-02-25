@@ -11,7 +11,7 @@ public class StatusTypeImpl implements StatusType {
     private final String reasonPhrase;
     private final int status;
 
-    public StatusTypeImpl(int status, String reasonPhrase) {
+    private StatusTypeImpl(int status, String reasonPhrase) {
         this.status = status;
         this.reasonPhrase = reasonPhrase != null ? reasonPhrase : DEFAULT_REASON_PHRASE;
     }
@@ -31,9 +31,16 @@ public class StatusTypeImpl implements StatusType {
         return reasonPhrase;
     }
 
-    public static StatusTypeImpl valueOf(StatusType statusType) {
-        if (statusType instanceof StatusTypeImpl)
-            return (StatusTypeImpl) statusType;
-        return new StatusTypeImpl(statusType.getStatusCode(), statusType.getReasonPhrase());
+    // return an immutable StatusType
+    public static StatusType valueOf(StatusType statusType) {
+        if (statusType instanceof Response.Status || statusType instanceof StatusTypeImpl) {
+            return statusType;
+        }
+        return create(statusType.getStatusCode(), statusType.getReasonPhrase());
+    }
+
+    public static StatusType create(int status, String reasonPhrase) {
+        StatusType statusType = Response.Status.fromStatusCode(status);
+        return statusType != null ? statusType : new StatusTypeImpl(status, reasonPhrase);
     }
 }

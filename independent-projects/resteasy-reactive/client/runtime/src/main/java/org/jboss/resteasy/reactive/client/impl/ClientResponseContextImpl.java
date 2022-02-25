@@ -53,7 +53,7 @@ public class ClientResponseContextImpl implements ClientResponseContext {
 
     @Override
     public StatusType getStatusInfo() {
-        return new StatusTypeImpl(state.getResponseStatus(), state.getResponseReasonPhrase());
+        return StatusTypeImpl.create(state.getResponseStatus(), state.getResponseReasonPhrase());
     }
 
     @Override

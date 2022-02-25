@@ -38,7 +38,8 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
 
     private StatusType determineEffectiveResponseStatus(RestClientRequestContext context,
             ClientRequestContextImpl requestContext) {
-        StatusType effectiveResponseStatus = new StatusTypeImpl(context.getResponseStatus(), context.getResponseReasonPhrase());
+        StatusType effectiveResponseStatus = StatusTypeImpl.create(context.getResponseStatus(),
+                context.getResponseReasonPhrase());
         if (effectiveResponseStatus.getStatusCode() == 0) {
             if (isAbortedWith(requestContext)) {
                 Response abortedWith = requestContext.getAbortedWith();

@@ -43,7 +43,7 @@ public class RestResponseImpl<T> extends RestResponse<T> {
     protected T entity;
     MultivaluedTreeMap<String, Object> headers;
     InputStream entityStream;
-    private StatusTypeImpl statusType;
+    private Response.StatusType statusType;
     private MultivaluedMap<String, String> stringHeaders;
     Annotation[] entityAnnotations;
     protected boolean consumed;
@@ -83,7 +83,7 @@ public class RestResponseImpl<T> extends RestResponse<T> {
     @Override
     public Response.StatusType getStatusInfo() {
         if (statusType == null) {
-            statusType = new StatusTypeImpl(status, reasonPhrase);
+            statusType = StatusTypeImpl.create(status, reasonPhrase);
         }
         return statusType;
     }

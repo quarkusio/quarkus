@@ -45,7 +45,7 @@ public class WebClientApplicationException extends WebApplicationException imple
 
         private DummyResponse(int responseStatus, String responseReasonPhrase) {
             this.responseStatus = responseStatus;
-            this.statusType = new StatusTypeImpl(responseStatus, responseReasonPhrase);
+            this.statusType = StatusTypeImpl.create(responseStatus, responseReasonPhrase);
         }
 
         @Override

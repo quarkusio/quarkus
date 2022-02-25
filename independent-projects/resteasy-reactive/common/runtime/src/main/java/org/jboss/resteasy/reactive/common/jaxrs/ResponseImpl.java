@@ -42,7 +42,7 @@ public class ResponseImpl extends Response {
     protected Object entity;
     MultivaluedTreeMap<String, Object> headers;
     InputStream entityStream;
-    StatusTypeImpl statusType;
+    StatusType statusType;
     MultivaluedMap<String, String> stringHeaders;
     Annotation[] entityAnnotations;
     protected boolean consumed;
@@ -65,7 +65,7 @@ public class ResponseImpl extends Response {
     @Override
     public StatusType getStatusInfo() {
         if (statusType == null) {
-            statusType = new StatusTypeImpl(status, reasonPhrase);
+            statusType = StatusTypeImpl.create(status, reasonPhrase);
         }
         return statusType;
     }

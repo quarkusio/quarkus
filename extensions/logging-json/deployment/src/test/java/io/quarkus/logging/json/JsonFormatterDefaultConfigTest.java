@@ -11,7 +11,6 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-import org.jboss.logmanager.formatters.JsonFormatter;
 import org.jboss.logmanager.formatters.StructuredFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.junit.jupiter.api.Test;
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
+import io.quarkus.logging.json.runtime.JsonFormatter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class JsonFormatterDefaultConfigTest {
@@ -37,6 +37,8 @@ public class JsonFormatterDefaultConfigTest {
         assertThat(jsonFormatter.getExceptionOutputType()).isEqualTo(StructuredFormatter.ExceptionOutputType.DETAILED);
         assertThat(jsonFormatter.getRecordDelimiter()).isEqualTo("\n");
         assertThat(jsonFormatter.isPrintDetails()).isFalse();
+        assertThat(jsonFormatter.getExcludedKeys()).isEmpty();
+        assertThat(jsonFormatter.getAdditionalFields().entrySet()).isEmpty();
     }
 
     public static JsonFormatter getJsonFormatter() {

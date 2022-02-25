@@ -16,7 +16,9 @@
     "id" : "web",
     "name" : "Web",
     "description" : "Category description",
-    "pinned" : [ "blue", "green", "yellow" ]
+    "metadata" : {
+      "pinned" : [ "blue", "green", "yellow" ]
+    }
   } ],
   "metadata" : {
     "project" : {

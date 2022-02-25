@@ -31,17 +31,17 @@ import io.vertx.core.Vertx;
  * The current context can be explicitly marked as safe, or it can
  * be explicitly marked as unsafe; there's a third state which is
  * the default of any new context: unmarked.
- * At this time the default is to consider a {@link Context} to be safe
- * unless the system property {@link #RESTRICT_BY_DEFAULT_PROPERTY} is
- * set to "true"; this is useful to allow gradually expanding the checks
- * and it's likely that we might flip this default in the future,
- * or even remove the system property eventually.
+ * The default is to consider any unmarked {@link Context} to be unsafe
+ * unless the system property {@link #UNRESTRICTED_BY_DEFAULT_PROPERTY} is
+ * set to "true"; flip the default if you know what you're doing and
+ * can't flag the context explicitly, but bear in mind that this will
+ * have a global impact and possibly let other uses go unnoticed as well.
  */
 public final class VertxContextSafetyToggle {
 
     private static final Object ACCESS_TOGGLE_KEY = new Object();
-    public static final String RESTRICT_BY_DEFAULT_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.RESTRICT_BY_DEFAULT";
-    private static final boolean RESTRICT_BY_DEFAULT = Boolean.getBoolean(RESTRICT_BY_DEFAULT_PROPERTY);
+    public static final String UNRESTRICTED_BY_DEFAULT_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.UNRESTRICTED_BY_DEFAULT";
+    private static final boolean UNRESTRICTED_BY_DEFAULT = Boolean.getBoolean(UNRESTRICTED_BY_DEFAULT_PROPERTY);
 
     /**
      * Verifies if the current Vert.x context was flagged as safe
@@ -72,7 +72,7 @@ public final class VertxContextSafetyToggle {
         final Object safeFlag = context.getLocal(ACCESS_TOGGLE_KEY);
         if (safeFlag == Boolean.TRUE) {
             return;
-        } else if (safeFlag == null && !RESTRICT_BY_DEFAULT) {
+        } else if (safeFlag == null && UNRESTRICTED_BY_DEFAULT) {
             //flag was not set, and we're instructed to consider the undefined safeFlag as safe
             return;
         } else {
@@ -87,10 +87,20 @@ public final class VertxContextSafetyToggle {
     /**
      * @param safe set to {@code true} to explicitly mark the current context as safe, or {@code false} to explicitly mark it as
      *        unsafe.
-     * @throws IllegalStateException if there is no current context!
+     * @throws IllegalStateException if there is no current context, or if it's of the wrong type.
      */
-    public static void setCurrentContextSafe(boolean safe) {
+    public static void setCurrentContextSafe(final boolean safe) {
         final io.vertx.core.Context context = Vertx.currentContext();
+        setContextSafe(context, safe);
+    }
+
+    /**
+     * @param safe set to {@code true} to explicitly mark the current context as safe, or {@code false} to explicitly mark it as
+     *        unsafe.
+     * @param context The context to mark.
+     * @throws IllegalStateException if context is null or not of the expected type.
+     */
+    public static void setContextSafe(final Context context, final boolean safe) {
         if (context == null) {
             throw new IllegalStateException("Can't set the context safety flag: no Vert.x context found");
         } else if (!VertxContext.isDuplicatedContext(context)) {

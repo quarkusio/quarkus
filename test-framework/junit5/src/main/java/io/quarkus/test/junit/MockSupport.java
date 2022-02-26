@@ -18,6 +18,9 @@ class MockSupport {
     }
 
     static void popContext() {
+        if (contexts.isEmpty()) {
+            return; // can happen on error in QuarkusTestResourceLifecycleManagers etc.
+        }
         List<Object> val = contexts.pop();
         for (Object i : val) {
             try {

@@ -1,7 +1,13 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -64,13 +70,8 @@ public class DevServicesElasticsearchProcessor {
             return null;
         }
 
-        if (devservicesElasticsearchBuildItems.size() > 1) {
-            throw new BuildException(
-                    "Multiple extensions requesting dev services for Elasticsearch found, which is not yet supported." +
-                            "Please de-activate dev services for Elasticsearch using quarkus.elasticsearch.devservices.enabled.",
-                    Collections.emptyList());
-        }
-        DevservicesElasticsearchBuildItem devservicesElasticsearchBuildItem = devservicesElasticsearchBuildItems.get(0);
+        DevservicesElasticsearchBuildItemsConfiguration buildItemsConfig = new DevservicesElasticsearchBuildItemsConfiguration(
+                devservicesElasticsearchBuildItems);
 
         if (devService != null) {
             boolean shouldShutdownTheServer = !configuration.equals(cfg);
@@ -81,12 +82,11 @@ public class DevServicesElasticsearchProcessor {
             cfg = null;
         }
 
-        String hostsConfigProperty = devservicesElasticsearchBuildItem.getHostsConfigProperty();
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "Elasticsearch Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-            devService = startElasticsearch(configuration, devservicesElasticsearchBuildItem, launchMode,
+            devService = startElasticsearch(configuration, buildItemsConfig, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
                     devServicesConfig.timeout);
             compressor.close();
@@ -118,13 +118,14 @@ public class DevServicesElasticsearchProcessor {
             log.infof(
                     "Dev Services for Elasticsearch started. Other Quarkus applications in dev mode will find the "
                             + "server automatically. For Quarkus applications in production mode, you can connect to"
-                            + " this by starting your application with -D%s=%s",
-                    hostsConfigProperty, getElasticsearchHosts(hostsConfigProperty));
+                            + " this by configuring your application to use %s",
+                    getElasticsearchHosts(buildItemsConfig));
         }
         return devService.toBuildItem();
     }
 
-    public static String getElasticsearchHosts(String hostsConfigProperty) {
+    public static String getElasticsearchHosts(DevservicesElasticsearchBuildItemsConfiguration buildItemsConfiguration) {
+        String hostsConfigProperty = buildItemsConfiguration.hostsConfigProperties.stream().findAny().get();
         return devService.getConfig().get(hostsConfigProperty);
     }
 
@@ -141,7 +142,7 @@ public class DevServicesElasticsearchProcessor {
     }
 
     private DevServicesResultBuildItem.RunningDevService startElasticsearch(ElasticsearchDevServicesBuildTimeConfig config,
-            DevservicesElasticsearchBuildItem devservicesElasticsearchBuildItem,
+            DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) throws BuildException {
         if (!config.enabled.orElse(true)) {
             // explicitly disabled
@@ -149,32 +150,33 @@ public class DevServicesElasticsearchProcessor {
             return null;
         }
 
-        String hostsConfigProperty = devservicesElasticsearchBuildItem.getHostsConfigProperty();
-        // Check if elasticsearch hosts property is set
-        if (ConfigUtils.isPropertyPresent(hostsConfigProperty)) {
-            log.debugf("Not starting dev services for Elasticsearch, the %s property is configured.", hostsConfigProperty);
-            return null;
+        for (String hostsConfigProperty : buildItemConfig.hostsConfigProperties) {
+            // Check if elasticsearch hosts property is set
+            if (ConfigUtils.isPropertyPresent(hostsConfigProperty)) {
+                log.debugf("Not starting dev services for Elasticsearch, the %s property is configured.", hostsConfigProperty);
+                return null;
+            }
         }
 
         if (!isDockerWorking.getAsBoolean()) {
-            log.warnf(
-                    "Docker isn't working, please configure the Elasticsearch hosts property (%s).", hostsConfigProperty);
+            log.warnf("Docker isn't working, please configure the Elasticsearch hosts property (%s).",
+                    displayProperties(buildItemConfig.hostsConfigProperties));
             return null;
         }
 
         // We only support ELASTIC container for now
-        if (devservicesElasticsearchBuildItem.getDistribution() == DevservicesElasticsearchBuildItem.Distribution.OPENSEARCH) {
+        if (buildItemConfig.distribution == DevservicesElasticsearchBuildItem.Distribution.OPENSEARCH) {
             throw new BuildException("Dev services for Elasticsearch didn't support Opensearch", Collections.emptyList());
         }
 
         // Hibernate search Elasticsearch have a version configuration property, we need to check that it is coherent
         // with the image we are about to launch
-        if (devservicesElasticsearchBuildItem.getVersion() != null) {
+        if (buildItemConfig.version != null) {
             String containerTag = config.imageName.substring(config.imageName.indexOf(':') + 1);
-            if (!containerTag.startsWith(devservicesElasticsearchBuildItem.getVersion())) {
+            if (!containerTag.startsWith(buildItemConfig.version)) {
                 throw new BuildException(
                         "Dev services for Elasticsearch detected a version mismatch, container image is " + config.imageName
-                                + " but the configured version is " + devservicesElasticsearchBuildItem.getVersion() +
+                                + " but the configured version is " + buildItemConfig.version +
                                 ". Either configure a different image or disable dev services for Elasticsearch.",
                         Collections.emptyList());
             }
@@ -205,7 +207,7 @@ public class DevServicesElasticsearchProcessor {
             return new DevServicesResultBuildItem.RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
                     container::close,
-                    hostsConfigProperty, container.getHttpHostAddress());
+                    buildPropertiesMap(buildItemConfig, container.getHttpHostAddress()));
         };
 
         return maybeContainerAddress
@@ -213,7 +215,53 @@ public class DevServicesElasticsearchProcessor {
                         Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                         containerAddress.getId(),
                         null,
-                        hostsConfigProperty, containerAddress.getUrl()))
+                        buildPropertiesMap(buildItemConfig, containerAddress.getUrl())))
                 .orElseGet(defaultElasticsearchSupplier);
+    }
+
+    private Map<String, String> buildPropertiesMap(DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
+            String httpHosts) {
+        Map<String, String> propertiesToSet = new HashMap<>();
+        for (String property : buildItemConfig.hostsConfigProperties) {
+            propertiesToSet.put(property, httpHosts);
+        }
+        return propertiesToSet;
+    }
+
+    private String displayProperties(Set<String> hostsConfigProperties) {
+        return String.join(" and ", hostsConfigProperties);
+    }
+
+    private static class DevservicesElasticsearchBuildItemsConfiguration {
+        private Set<String> hostsConfigProperties;
+        private String version;
+        private DevservicesElasticsearchBuildItem.Distribution distribution;
+
+        private DevservicesElasticsearchBuildItemsConfiguration(List<DevservicesElasticsearchBuildItem> buildItems)
+                throws BuildException {
+            hostsConfigProperties = new HashSet<>(buildItems.size());
+
+            // check that all build items agree on the version and distribution to start
+            for (DevservicesElasticsearchBuildItem buildItem : buildItems) {
+                if (version == null) {
+                    version = buildItem.getVersion();
+                } else if (!version.equals(buildItem.getVersion())) {
+                    // safety guard but should never occur as only Hibernate Search ORM Elasticsearch configure the version
+                    throw new BuildException("Multiple extensions request Elasticsearch Dev Services on different version.",
+                            Collections.emptyList());
+                }
+
+                if (distribution == null) {
+                    distribution = buildItem.getDistribution();
+                } else if (!distribution.equals(buildItem.getDistribution())) {
+                    // safety guard but should never occur as only Hibernate Search ORM Elasticsearch configure the distribution
+                    throw new BuildException(
+                            "Multiple extensions request Elasticsearch Dev Services on different distribution.",
+                            Collections.emptyList());
+                }
+
+                hostsConfigProperties.add(buildItem.getHostsConfigProperty());
+            }
+        }
     }
 }

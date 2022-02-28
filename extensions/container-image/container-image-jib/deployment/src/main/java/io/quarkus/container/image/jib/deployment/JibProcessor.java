@@ -39,6 +39,7 @@ import com.google.cloud.tools.jib.api.LogEvent;
 import com.google.cloud.tools.jib.api.RegistryImage;
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
+import com.google.cloud.tools.jib.api.buildplan.FileEntry;
 import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
 import com.google.cloud.tools.jib.api.buildplan.Port;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
@@ -81,6 +82,7 @@ public class JibProcessor {
 
     private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.11";
     private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.11";
+    private static final String DEFAULT_BASE_IMAGE_USER = "185";
 
     private static final String OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP = "io.opentelemetry.context.contextStorageProvider";
 
@@ -411,6 +413,7 @@ public class JibProcessor {
         }
 
         try {
+            Instant now = Instant.now();
 
             JibContainerBuilder jibContainerBuilder = Jib
                     .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername,
@@ -480,15 +483,31 @@ public class JibProcessor {
             }
 
             jibContainerBuilder
-                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)), workDirInContainer)
-                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)), workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)),
+                            workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)),
+                            workDirInContainer);
+            if (JibConfig.DEFAULT_WORKING_DIR.equals(jibConfig.workingDirectory)) {
+                // this layer ensures that the working directory is writeable
+                // see https://github.com/GoogleContainerTools/jib/issues/1270
+                // TODO: is this needed for all working directories?
+                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().addEntry(
+                        new FileEntry(
+                                Files.createTempDirectory("jib"),
+                                AbsoluteUnixPath.get(jibConfig.workingDirectory),
+                                FilePermissions.DEFAULT_FOLDER_PERMISSIONS,
+                                now, DEFAULT_BASE_IMAGE_USER))
+                        .build());
+            }
+
+            jibContainerBuilder
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(getEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
             if (jibConfig.useCurrentTimestamp) {
-                jibContainerBuilder.setCreationTime(Instant.now());
+                jibContainerBuilder.setCreationTime(now);
             }
 
             for (int port : jibConfig.ports) {

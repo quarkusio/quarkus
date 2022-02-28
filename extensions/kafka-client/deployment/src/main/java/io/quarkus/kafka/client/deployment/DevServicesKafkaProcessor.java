@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -52,9 +51,6 @@ public class DevServicesKafkaProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesKafkaProcessor.class);
     private static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
-
-    private static final Pattern STRIMZI_IMAGE_NAME_PATTERN = Pattern
-            .compile("(^.*test-container):(\\d+\\.\\d+\\.\\d+|latest)-kafka-(.*)$");
 
     /**
      * Label to add to shared Dev Service for Kafka running in containers.

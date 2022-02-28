@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class JibConfig {
 
+    public static final String DEFAULT_WORKING_DIR = "/home/jboss";
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
@@ -127,7 +128,7 @@ public class JibConfig {
      * The working directory to use in the generated image.
      * The default value is chosen to work in accordance with the default base image.
      */
-    @ConfigItem(defaultValue = "/home/jboss")
+    @ConfigItem(defaultValue = DEFAULT_WORKING_DIR)
     public String workingDirectory;
 
     /**

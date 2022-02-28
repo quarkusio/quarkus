@@ -421,6 +421,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                             .getDeclaredMethod("setup", boolean.class).invoke(null, false);
                 }
+            } catch (InvocationTargetException e) {
+                throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
             } finally {
                 setCCL(original);
             }
@@ -504,16 +506,18 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         if (!failedBoot) {
             popMockContext();
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
-            for (Object afterEachCallback : afterEachCallbacks) {
-                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                afterEachCallback.getClass().getMethod("afterEach", tuple.getKey())
-                        .invoke(afterEachCallback, tuple.getValue());
-            }
             try {
+                for (Object afterEachCallback : afterEachCallbacks) {
+                    Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                    afterEachCallback.getClass().getMethod("afterEach", tuple.getKey())
+                            .invoke(afterEachCallback, tuple.getValue());
+                }
                 runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                         .getDeclaredMethod("clearURL").invoke(null);
                 runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                         .getDeclaredMethod("tearDown", boolean.class).invoke(null, false);
+            } catch (InvocationTargetException e) {
+                throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
             } finally {
                 setCCL(original);
             }
@@ -711,6 +715,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     beforeClassCallback.getClass().getMethod("beforeClass", Class.class).invoke(beforeClassCallback,
                             runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
                 }
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
             }
@@ -783,7 +789,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             }
         } catch (Exception e) {
-            throw new TestInstantiationException("Failed to create test instance", e);
+            throw new TestInstantiationException("Failed to create test instance",
+                    e instanceof InvocationTargetException ? e.getCause() : e);
         }
     }
 
@@ -1089,6 +1096,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 afterAllCallback.getClass().getMethod("afterAll", quarkusTestContextClass)
                         .invoke(afterAllCallback, quarkusTestContextInstance);
             }
+        } catch (InvocationTargetException e) {
+            throw e.getCause() instanceof Exception ? (Exception) e.getCause() : e;
         } finally {
             setCCL(original);
         }

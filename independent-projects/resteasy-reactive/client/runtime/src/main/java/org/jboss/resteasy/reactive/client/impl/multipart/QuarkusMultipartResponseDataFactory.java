@@ -25,9 +25,7 @@ import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.HttpData;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.MemoryAttribute;
-import io.netty.handler.codec.http.multipart.MemoryFileUpload;
 import io.netty.handler.codec.http.multipart.MixedAttribute;
-import io.netty.handler.codec.http.multipart.MixedFileUpload;
 import io.vertx.core.http.HttpClientResponse;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -240,31 +238,16 @@ public class QuarkusMultipartResponseDataFactory {
     }
 
     // to reuse netty stuff as much as possible, we use FileUpload class to represent the downloaded file
+    // the difference between this and the original is that we always use DiskFileUpload
     public FileUpload createFileUpload(HttpClientResponse response, String name, String filename,
             String contentType, String contentTransferEncoding, Charset charset,
             long size) {
-        if (useDisk) {
-            FileUpload fileUpload = new DiskFileUpload(name, filename, contentType,
-                    contentTransferEncoding, charset, size, baseDir, deleteOnExit);
-            fileUpload.setMaxSize(maxSize);
-            checkHttpDataSize(fileUpload);
-            List<HttpData> list = getList(response);
-            list.add(fileUpload);
-            return fileUpload;
-        }
-        if (checkSize) {
-            FileUpload fileUpload = new MixedFileUpload(name, filename, contentType,
-                    contentTransferEncoding, charset, size, minSize, baseDir, deleteOnExit);
-            fileUpload.setMaxSize(maxSize);
-            checkHttpDataSize(fileUpload);
-            List<HttpData> list = getList(response);
-            list.add(fileUpload);
-            return fileUpload;
-        }
-        MemoryFileUpload fileUpload = new MemoryFileUpload(name, filename, contentType,
-                contentTransferEncoding, charset, size);
+        FileUpload fileUpload = new DiskFileUpload(name, filename, contentType,
+                contentTransferEncoding, charset, size, baseDir, deleteOnExit);
         fileUpload.setMaxSize(maxSize);
         checkHttpDataSize(fileUpload);
+        List<HttpData> list = getList(response);
+        list.add(fileUpload);
         return fileUpload;
     }
 

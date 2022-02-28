@@ -70,7 +70,7 @@ public class OpenTelemetryTestCase {
 
         verifyResource(spanData);
 
-        Assertions.assertEquals("direct", spanData.get("name"));
+        Assertions.assertEquals("/direct", spanData.get("name"));
         Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
         Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -115,7 +115,7 @@ public class OpenTelemetryTestCase {
             Assertions.assertNotNull(spanData.get("spanId"));
 
             if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("nopath")) {
+                    && spanData.get("name").equals("/nopath")) {
                 outsideServerFound = true;
                 // Server Span
                 serverSpanId = (String) spanData.get("spanId");
@@ -123,7 +123,7 @@ public class OpenTelemetryTestCase {
 
                 verifyResource(spanData);
 
-                Assertions.assertEquals("nopath", spanData.get("name"));
+                Assertions.assertEquals("/nopath", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -229,7 +229,7 @@ public class OpenTelemetryTestCase {
             Assertions.assertNotNull(spanData.get("spanId"));
 
             if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("slashpath")) {
+                    && spanData.get("name").equals("/slashpath")) {
                 outsideServerFound = true;
                 // Server Span
                 serverSpanId = (String) spanData.get("spanId");
@@ -237,7 +237,7 @@ public class OpenTelemetryTestCase {
 
                 verifyResource(spanData);
 
-                Assertions.assertEquals("slashpath", spanData.get("name"));
+                Assertions.assertEquals("/slashpath", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -335,7 +335,7 @@ public class OpenTelemetryTestCase {
 
         verifyResource(spanData);
 
-        Assertions.assertEquals("chained", spanData.get("name"));
+        Assertions.assertEquals("/chained", spanData.get("name"));
         Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
         Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -392,7 +392,7 @@ public class OpenTelemetryTestCase {
 
         verifyResource(spanData);
 
-        Assertions.assertEquals("direct", spanData.get("name"));
+        Assertions.assertEquals("/direct", spanData.get("name"));
         Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
         Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -429,7 +429,7 @@ public class OpenTelemetryTestCase {
 
         verifyResource(spanData);
 
-        Assertions.assertEquals("deep/path", spanData.get("name"));
+        Assertions.assertEquals("/deep/path", spanData.get("name"));
         Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
         Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -466,7 +466,7 @@ public class OpenTelemetryTestCase {
 
         verifyResource(spanData);
 
-        Assertions.assertEquals("param/{paramId}", spanData.get("name"));
+        Assertions.assertEquals("/param/{paramId}", spanData.get("name"));
         Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
         Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -511,7 +511,7 @@ public class OpenTelemetryTestCase {
             Assertions.assertNotNull(spanData.get("spanId"));
 
             if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("client/ping/{message}")) {
+                    && spanData.get("name").equals("/client/ping/{message}")) {
                 outsideServerFound = true;
                 // Server Span
                 serverSpanId = (String) spanData.get("spanId");
@@ -519,7 +519,7 @@ public class OpenTelemetryTestCase {
 
                 verifyResource(spanData);
 
-                Assertions.assertEquals("client/ping/{message}", spanData.get("name"));
+                Assertions.assertEquals("/client/ping/{message}", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -538,12 +538,12 @@ public class OpenTelemetryTestCase {
                 Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
                 Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
             } else if (spanData.get("kind").equals(SpanKind.CLIENT.toString())
-                    && spanData.get("name").equals("client/pong/{message}")) {
+                    && spanData.get("name").equals("/client/pong/{message}")) {
                 clientFound = true;
                 // Client span
                 verifyResource(spanData);
 
-                Assertions.assertEquals("client/pong/{message}", spanData.get("name"));
+                Assertions.assertEquals("/client/pong/{message}", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.CLIENT.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -562,12 +562,12 @@ public class OpenTelemetryTestCase {
 
                 clientSpanId = (String) spanData.get("spanId");
             } else if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("client/pong/{message}")) {
+                    && spanData.get("name").equals("/client/pong/{message}")) {
                 clientServerFound = true;
                 // Server span of client
                 verifyResource(spanData);
 
-                Assertions.assertEquals("client/pong/{message}", spanData.get("name"));
+                Assertions.assertEquals("/client/pong/{message}", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -624,7 +624,7 @@ public class OpenTelemetryTestCase {
             Assertions.assertNotNull(spanData.get("spanId"));
 
             if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("client/async-ping/{message}")) {
+                    && spanData.get("name").equals("/client/async-ping/{message}")) {
                 outsideServerFound = true;
                 // Server Span
                 serverSpanId = (String) spanData.get("spanId");
@@ -632,7 +632,7 @@ public class OpenTelemetryTestCase {
 
                 verifyResource(spanData);
 
-                Assertions.assertEquals("client/async-ping/{message}", spanData.get("name"));
+                Assertions.assertEquals("/client/async-ping/{message}", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -651,12 +651,12 @@ public class OpenTelemetryTestCase {
                 Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
                 Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
             } else if (spanData.get("kind").equals(SpanKind.CLIENT.toString())
-                    && spanData.get("name").equals("client/pong/{message}")) {
+                    && spanData.get("name").equals("/client/pong/{message}")) {
                 clientFound = true;
                 // Client span
                 verifyResource(spanData);
 
-                Assertions.assertEquals("client/pong/{message}", spanData.get("name"));
+                Assertions.assertEquals("/client/pong/{message}", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.CLIENT.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -675,12 +675,12 @@ public class OpenTelemetryTestCase {
 
                 clientSpanId = (String) spanData.get("spanId");
             } else if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("client/pong/{message}")) {
+                    && spanData.get("name").equals("/client/pong/{message}")) {
                 clientServerFound = true;
                 // Server span of client
                 verifyResource(spanData);
 
-                Assertions.assertEquals("client/pong/{message}", spanData.get("name"));
+                Assertions.assertEquals("/client/pong/{message}", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -730,7 +730,7 @@ public class OpenTelemetryTestCase {
 
         verifyResource(spanData);
 
-        Assertions.assertEquals("template/path/{value}", spanData.get("name"));
+        Assertions.assertEquals("/template/path/{value}", spanData.get("name"));
         Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
         Assertions.assertTrue((Boolean) spanData.get("ended"));
 

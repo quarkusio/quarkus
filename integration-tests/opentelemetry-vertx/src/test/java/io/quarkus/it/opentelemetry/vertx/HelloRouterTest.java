@@ -55,7 +55,7 @@ class HelloRouterTest {
         assertEquals(1, spans.size());
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
-        assertEquals("hello", spans.get(0).get("name"));
+        assertEquals("/hello", spans.get(0).get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
         assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
         assertEquals("/hello", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
@@ -74,7 +74,7 @@ class HelloRouterTest {
         assertEquals(1, spans.size());
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
-        assertEquals("hello/:name", spans.get(0).get("name"));
+        assertEquals("/hello/:name", spans.get(0).get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
         assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
         assertEquals("/hello/:name", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
@@ -95,7 +95,7 @@ class HelloRouterTest {
         assertEquals(1, spans.size());
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
-        assertEquals("hello", spans.get(0).get("name"));
+        assertEquals("/hello", spans.get(0).get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
         assertEquals(HttpMethod.POST.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
         assertEquals("/hello", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
@@ -137,7 +137,7 @@ class HelloRouterTest {
         assertEquals("bus", ((Map<?, ?>) spans.get(1).get("attributes")).get(MESSAGING_DESTINATION.toString()));
 
         assertEquals(SERVER.toString(), spans.get(2).get("kind"));
-        assertEquals("bus", spans.get(2).get("name"));
+        assertEquals("/bus", spans.get(2).get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(2).get("attributes")).get(HTTP_STATUS_CODE.toString()));
         assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) spans.get(2).get("attributes")).get(HTTP_METHOD.toString()));
         assertEquals("/bus", ((Map<?, ?>) spans.get(2).get("attributes")).get(HTTP_ROUTE.toString()));

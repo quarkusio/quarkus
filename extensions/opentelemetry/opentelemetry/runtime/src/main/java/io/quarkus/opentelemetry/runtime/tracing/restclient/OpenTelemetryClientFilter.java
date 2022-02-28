@@ -123,12 +123,12 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         public String extract(final ClientRequestContext request) {
             String pathTemplate = (String) request.getProperty("UrlPathTemplate");
             if (pathTemplate != null && pathTemplate.length() > 1) {
-                return pathTemplate.substring(1);
+                return pathTemplate;
             }
 
             String uriPath = request.getUri().getPath();
-            if (uriPath.length() > 1) {
-                return uriPath.substring(1);
+            if (uriPath != null && uriPath.length() > 1) {
+                return uriPath;
             }
 
             return "HTTP " + request.getMethod();

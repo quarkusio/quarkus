@@ -151,8 +151,7 @@ public class TracerProcessor {
         if (config.isPropertyPresent("quarkus.http.root-path")) {
             String rootPath = config.getValue("quarkus.http.root-path", new NormalizeRootHttpPathConverter());
             String nonApplicationRootPath = config.getRawValue("quarkus.http.non-application-root-path");
-            // span names don't include the leading slash
-            nonApplicationUris.add(rootPath.substring(1) + nonApplicationRootPath);
+            nonApplicationUris.add(rootPath + nonApplicationRootPath);
         }
         dropNonApplicationUris.produce(new DropNonApplicationUrisBuildItem(nonApplicationUris));
 
@@ -161,12 +160,7 @@ public class TracerProcessor {
         if (staticResources.isPresent()) {
             for (StaticResourcesBuildItem.Entry entry : staticResources.get().getEntries()) {
                 if (!entry.isDirectory()) {
-                    // span names don't include the leading slash
-                    if (entry.getPath().startsWith("/") && entry.getPath().length() > 1) {
-                        resources.add(entry.getPath().substring(1));
-                    } else {
-                        resources.add(entry.getPath());
-                    }
+                    resources.add(entry.getPath());
                 }
             }
         }

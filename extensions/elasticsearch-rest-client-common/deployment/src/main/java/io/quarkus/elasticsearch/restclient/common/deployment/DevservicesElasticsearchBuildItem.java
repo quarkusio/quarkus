@@ -8,8 +8,8 @@ public final class DevservicesElasticsearchBuildItem extends MultiBuildItem {
     private final String version;
     private final Distribution distribution;
 
-    public DevservicesElasticsearchBuildItem(String configItemName) {
-        this.hostsConfigProperty = configItemName;
+    public DevservicesElasticsearchBuildItem(String hostsConfigProperty) {
+        this.hostsConfigProperty = hostsConfigProperty;
         this.version = null;
         this.distribution = Distribution.ELASTIC;
     }

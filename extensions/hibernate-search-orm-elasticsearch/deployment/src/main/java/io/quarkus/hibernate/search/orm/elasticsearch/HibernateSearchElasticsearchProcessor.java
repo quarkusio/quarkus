@@ -342,12 +342,16 @@ class HibernateSearchElasticsearchProcessor {
     @BuildStep
     DevservicesElasticsearchBuildItem devServices(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
         if (buildTimeConfig.defaultPersistenceUnit != null && buildTimeConfig.defaultPersistenceUnit.defaultBackend != null
+        // If the version is not set, the default backend is not in use.
                 && buildTimeConfig.defaultPersistenceUnit.defaultBackend.version.isPresent()) {
             ElasticsearchVersion version = buildTimeConfig.defaultPersistenceUnit.defaultBackend.version.get();
             return new DevservicesElasticsearchBuildItem("quarkus.hibernate-search-orm.elasticsearch.hosts",
                     version.versionString(),
                     DevservicesElasticsearchBuildItem.Distribution.valueOf(version.distribution().toString().toUpperCase()));
+        } else {
+            // Currently we only start dev-services for the default backend of the default persistence unit.
+            // See https://github.com/quarkusio/quarkus/issues/24011
+            return null;
         }
-        return new DevservicesElasticsearchBuildItem("quarkus.hibernate-search-orm.elasticsearch.hosts");
     }
 }

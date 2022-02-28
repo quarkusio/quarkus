@@ -43,13 +43,25 @@ public class MultipartResponseTest {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         MultipartData data = client.getFile();
         assertThat(data.file).exists();
-        verifyWooHooFile(data.file);
+        verifyWooHooFile(data.file, 10000);
         assertThat(data.name).isEqualTo("foo");
         assertThat(data.panda.weight).isEqualTo("huge");
         assertThat(data.panda.height).isEqualTo("medium");
         assertThat(data.panda.mood).isEqualTo("happy");
         assertThat(data.number).isEqualTo(1984);
         assertThat(data.numberz).containsSequence(2008, 2011, 2014);
+    }
+
+    @Test
+    void shouldParseMultipartResponseWithSmallFile() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        MultipartData data = client.getSmallFile();
+        assertThat(data.file).exists();
+        verifyWooHooFile(data.file, 1);
+        assertThat(data.name).isEqualTo("foo");
+        assertThat(data.panda).isNull();
+        assertThat(data.number).isEqualTo(1984);
+        assertThat(data.numberz).isNull();
     }
 
     @Test
@@ -93,7 +105,7 @@ public class MultipartResponseTest {
         assertThat(data.numbers).containsSequence(2008, 2011, 2014);
     }
 
-    void verifyWooHooFile(File file) {
+    void verifyWooHooFile(File file, int expectedTimes) {
         int position = 0;
         try (FileReader reader = new FileReader(file)) {
             int read;
@@ -101,7 +113,7 @@ public class MultipartResponseTest {
                 assertThat((char) read).isEqualTo(WOO_HOO_WOO_HOO_HOO.charAt(position % WOO_HOO_WOO_HOO_HOO.length()));
                 position++;
             }
-            assertThat(position).isEqualTo(WOO_HOO_WOO_HOO_HOO.length() * 10000);
+            assertThat(position).isEqualTo(WOO_HOO_WOO_HOO_HOO.length() * expectedTimes);
         } catch (IOException e) {
             fail("failed to read provided file", e);
         }
@@ -112,6 +124,11 @@ public class MultipartResponseTest {
         @GET
         @Produces(MediaType.MULTIPART_FORM_DATA)
         MultipartData getFile();
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
+        @Path("/small")
+        MultipartData getSmallFile();
 
         @GET
         @Produces(MediaType.MULTIPART_FORM_DATA)
@@ -144,6 +161,19 @@ public class MultipartResponseTest {
             }
             return new MultipartData("foo", file, new Panda("huge", "medium", "happy"),
                     1984, new int[] { 2008, 2011, 2014 });
+        }
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
+        @Path("/small")
+        public MultipartData getSmallFile() throws IOException {
+            File file = File.createTempFile("toDownload", ".txt");
+            file.deleteOnExit();
+            // let's write Woo hoo, woo hoo hoo 1 time
+            try (FileOutputStream out = new FileOutputStream(file)) {
+                out.write(WOO_HOO_WOO_HOO_HOO.getBytes(StandardCharsets.UTF_8));
+            }
+            return new MultipartData("foo", file, null, 1984, null);
         }
 
         @GET

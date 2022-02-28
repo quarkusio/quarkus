@@ -27,6 +27,9 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
+        if (!((ClientRequestContextImpl) requestContext).getRestClientRequestContext().isCheckSuccessfulFamily()) {
+            return;
+        }
         for (ResponseExceptionMapper exceptionMapper : exceptionMappers) {
             if (exceptionMapper.handles(responseContext.getStatus(), responseContext.getHeaders())) {
                 // we have an exception mapper, we don't need the response anymore, we can map it to response right away (I hope :D)

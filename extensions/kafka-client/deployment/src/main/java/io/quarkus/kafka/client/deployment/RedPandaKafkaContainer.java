@@ -39,15 +39,11 @@ final class RedPandaKafkaContainer extends GenericContainer<RedPandaKafkaContain
         }
 
         // For redpanda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/
-        if (dockerImageName.getRepository().equals("vectorized/redpanda")) {
-            withCreateContainerCmdModifier(cmd -> {
-                cmd.withEntrypoint("sh");
-            });
-            withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
-            waitingFor(Wait.forLogMessage(".*Started Kafka API server.*", 1));
-        } else {
-            throw new IllegalArgumentException("Only vectorized/redpanda images are supported");
-        }
+        withCreateContainerCmdModifier(cmd -> {
+            cmd.withEntrypoint("sh");
+        });
+        withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
+        waitingFor(Wait.forLogMessage(".*Started Kafka API server.*", 1));
     }
 
     @Override

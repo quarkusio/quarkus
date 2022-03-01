@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime;
 
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -488,6 +491,7 @@ public class VertxHttpRecorder {
         root = new Handler<HttpServerRequest>() {
             @Override
             public void handle(HttpServerRequest event) {
+                setCurrentContextSafe(true);
                 delegate.handle(new ResumingRequestWrapper(event));
             }
         };
@@ -1207,7 +1211,12 @@ public class VertxHttpRecorder {
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
 
                             Http1xServerConnection conn = new Http1xServerConnection(
-                                    () -> (ContextInternal) VertxContext.getOrCreateDuplicatedContext(context),
+                                    () -> {
+                                        ContextInternal internal = (ContextInternal) VertxContext
+                                                .getOrCreateDuplicatedContext(context);
+                                        setContextSafe(internal, true);
+                                        return internal;
+                                    },
                                     null,
                                     new HttpServerOptions(),
                                     chctx,

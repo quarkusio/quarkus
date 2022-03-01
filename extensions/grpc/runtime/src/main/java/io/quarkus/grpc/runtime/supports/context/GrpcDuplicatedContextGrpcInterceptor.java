@@ -1,5 +1,7 @@
 package io.quarkus.grpc.runtime.supports.context;
 
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -39,6 +41,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         if (capturedVertxContext != null) {
             // If we are not on a duplicated context, create and switch.
             Context local = VertxContext.getOrCreateDuplicatedContext(capturedVertxContext);
+            setContextSafe(local, true);
 
             // Must be sure to call next.startCall on the right context
             return new ListenedOnDuplicatedContext<>(() -> next.startCall(call, headers), local);

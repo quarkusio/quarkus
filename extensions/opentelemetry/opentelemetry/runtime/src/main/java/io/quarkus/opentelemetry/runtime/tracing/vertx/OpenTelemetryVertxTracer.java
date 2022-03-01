@@ -3,6 +3,7 @@ package io.quarkus.opentelemetry.runtime.tracing.vertx;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 
 import java.net.URI;
 import java.util.List;
@@ -154,6 +155,7 @@ public class OpenTelemetryVertxTracer
             io.opentelemetry.context.Context spanContext = clientInstrumenter.start(parentContext,
                     WriteHeadersHttpRequest.request((HttpRequest) request, headers));
             Context duplicatedContext = VertxContext.getOrCreateDuplicatedContext(context);
+            setContextSafe(duplicatedContext, true);
             Scope scope = QuarkusContextStorage.INSTANCE.attach(duplicatedContext, spanContext);
             return SpanOperation.span(duplicatedContext, (HttpRequest) request, spanContext, scope);
         }

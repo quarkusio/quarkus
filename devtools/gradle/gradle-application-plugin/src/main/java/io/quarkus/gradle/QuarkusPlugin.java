@@ -54,6 +54,7 @@ import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusTestNative;
 import io.quarkus.gradle.tasks.QuarkusUpdate;
 import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
+import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 
 public class QuarkusPlugin implements Plugin<Project> {
@@ -299,10 +300,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                             configName).declareConditionalDependencies();
                     deploymentClasspathBuilder.createBuildClasspath(testExtensions, configName);
                 });
-        project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME).getIncoming()
-                .beforeResolve(annotationProcessors -> {
-                    Set<ResolvedArtifact> compileClasspathArtifacts = project.getConfigurations()
-                            .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).getResolvedConfiguration()
+        project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
+                .withDependencies(annotationProcessors -> {
+                    Set<ResolvedArtifact> compileClasspathArtifacts = DependencyUtils
+                            .duplicateConfiguration(project, project.getConfigurations()
+                                    .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
+                            .getResolvedConfiguration()
                             .getResolvedArtifacts();
 
                     // enable the Panache annotation processor on the classpath, if it's found among the dependencies

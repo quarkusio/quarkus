@@ -1,5 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.vertx;
 
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -91,6 +93,7 @@ interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOperation, 
             io.opentelemetry.context.Context spanContext = instrumenter.start(parentContext,
                     writableHeaders((REQ) request, headers));
             Context duplicatedContext = VertxContext.getOrCreateDuplicatedContext(context);
+            setContextSafe(duplicatedContext, true);
             Scope scope = QuarkusContextStorage.INSTANCE.attach(duplicatedContext, spanContext);
             return spanOperation(duplicatedContext, (REQ) request, toMultiMap(headers), spanContext, scope);
         }

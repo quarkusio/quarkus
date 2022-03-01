@@ -59,6 +59,12 @@ public class MockHttpEventServer extends MockEventServer {
         event.setRawPath(ctx.request().path());
         event.setRawQueryString(ctx.request().query());
         for (String header : ctx.request().headers().names()) {
+            if (header.equalsIgnoreCase("Expect")) {
+                String expect = ctx.request().getHeader("Expect");
+                if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
+                    continue;
+                }
+            }
             if (event.getHeaders() == null)
                 event.setHeaders(new HashMap<>());
             List<String> values = ctx.request().headers().getAll(header);

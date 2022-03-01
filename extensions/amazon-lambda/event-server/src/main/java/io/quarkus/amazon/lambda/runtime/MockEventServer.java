@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -22,7 +23,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
 
 public class MockEventServer implements Closeable {
     protected static final Logger log = Logger.getLogger(MockEventServer.class);
@@ -38,6 +38,7 @@ public class MockEventServer implements Closeable {
     public static final String INVOCATION = BASE_PATH + AmazonLambdaApi.API_PATH_INVOCATION;
     public static final String NEXT_INVOCATION = BASE_PATH + AmazonLambdaApi.API_PATH_INVOCATION_NEXT;
     public static final String POST_EVENT = BASE_PATH;
+    public static final String CONTINUE = "100-continue";
     final AtomicBoolean closed = new AtomicBoolean();
 
     public MockEventServer() {
@@ -62,7 +63,17 @@ public class MockEventServer implements Closeable {
     }
 
     public void setupRoutes() {
-        router.route().handler(BodyHandler.create());
+        router.route().handler((context) -> {
+            if (context.get("continue-sent") == null) {
+                String expect = context.request().getHeader(HttpHeaderNames.EXPECT);
+                if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
+                    context.put("continue-sent", true);
+                    context.response().writeContinue();
+                }
+            }
+            context.next();
+        });
+        router.route().handler(new MockBodyHandler());
         router.post(POST_EVENT).handler(this::postEvent);
         router.route(NEXT_INVOCATION).blockingHandler(this::nextEvent);
         router.route(INVOCATION + ":requestId" + AmazonLambdaApi.API_PATH_REQUEUE).handler(this::handleRequeue);

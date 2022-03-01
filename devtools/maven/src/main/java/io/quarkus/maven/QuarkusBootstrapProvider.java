@@ -49,7 +49,7 @@ public class QuarkusBootstrapProvider implements Closeable {
     @Requirement(role = RemoteRepositoryManager.class, optional = false)
     protected RemoteRepositoryManager remoteRepoManager;
 
-    private final Cache<String, QuarkusAppBootstrapProvider> appBootstrapProviders = CacheBuilder.newBuilder()
+    private final Cache<String, QuarkusMavenAppBootstrap> appBootstrapProviders = CacheBuilder.newBuilder()
             .concurrencyLevel(4).softValues().initialCapacity(10).build();
 
     static ArtifactKey getProjectId(MavenProject project) {
@@ -64,25 +64,26 @@ public class QuarkusBootstrapProvider implements Closeable {
         return remoteRepoManager;
     }
 
-    private QuarkusAppBootstrapProvider provider(ArtifactKey projectId, String executionId) {
+    public QuarkusMavenAppBootstrap bootstrapper(QuarkusBootstrapMojo mojo) {
         try {
-            return appBootstrapProviders.get(String.format("%s-%s", projectId, executionId), QuarkusAppBootstrapProvider::new);
+            return appBootstrapProviders.get(String.format("%s-%s", mojo.projectId(), mojo.executionId()),
+                    QuarkusMavenAppBootstrap::new);
         } catch (ExecutionException e) {
-            throw new IllegalStateException("Failed to cache a new instance of " + QuarkusAppBootstrapProvider.class.getName(),
+            throw new IllegalStateException("Failed to cache a new instance of " + QuarkusMavenAppBootstrap.class.getName(),
                     e);
         }
     }
 
     public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)
             throws MojoExecutionException {
-        return provider(mojo.projectId(), mojo.executionId()).bootstrapApplication(mojo, mode);
+        return bootstrapper(mojo).bootstrapApplication(mojo, mode);
     }
 
     public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode) {
         if (appBootstrapProviders.size() == 0) {
             return null;
         }
-        final QuarkusAppBootstrapProvider provider = appBootstrapProviders.getIfPresent(projectId + "-null");
+        final QuarkusMavenAppBootstrap provider = appBootstrapProviders.getIfPresent(projectId + "-null");
         if (provider == null) {
             return null;
         }
@@ -100,7 +101,7 @@ public class QuarkusBootstrapProvider implements Closeable {
         if (appBootstrapProviders.size() == 0) {
             return;
         }
-        for (QuarkusAppBootstrapProvider p : appBootstrapProviders.asMap().values()) {
+        for (QuarkusMavenAppBootstrap p : appBootstrapProviders.asMap().values()) {
             try {
                 p.close();
             } catch (Exception e) {
@@ -109,7 +110,7 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
     }
 
-    private class QuarkusAppBootstrapProvider implements Closeable {
+    public class QuarkusMavenAppBootstrap implements Closeable {
 
         private CuratedApplication prodApp;
         private CuratedApplication devApp;
@@ -132,7 +133,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             }
         }
 
-        protected CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode)
+        private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode)
                 throws MojoExecutionException {
             final Properties projectProperties = mojo.mavenProject().getProperties();
             final Properties effectiveProperties = new Properties();

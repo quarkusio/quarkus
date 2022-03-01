@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecution;
@@ -21,6 +22,7 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.maven.components.BootstrapSessionListener;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.LaunchMode;
@@ -29,6 +31,9 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
+
+    @Component(hint = "quarkus-bootstrap", role = AbstractMavenLifecycleParticipant.class)
+    private BootstrapSessionListener bootstrapSessionListener;
 
     /**
      * The current repository/network configuration of Maven.
@@ -122,7 +127,13 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         if (!beforeExecute()) {
             return;
         }
-        doExecute();
+        try {
+            doExecute();
+        } finally {
+            if (!bootstrapSessionListener.isEnabled()) {
+                bootstrapProvider.bootstrapper(this).close();
+            }
+        }
     }
 
     @Override

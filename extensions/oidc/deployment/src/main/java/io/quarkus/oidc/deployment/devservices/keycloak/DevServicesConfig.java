@@ -33,7 +33,7 @@ public class DevServicesConfig {
      * Note Keycloak-X and Keycloak images are initialized differently.
      * By default, Dev Services for Keycloak will assume it is a Keycloak-X image if the image name contains a 'keycloak-x'
      * string.
-     * Set 'quarkus.devservices.keycloak.keycloak-x-image' to override this check.
+     * Set 'quarkus.keycloak.devservices.keycloak-x-image' to override this check.
      */
     @ConfigItem(defaultValue = "quay.io/keycloak/keycloak-x:16.1.0")
     public String imageName;
@@ -43,7 +43,7 @@ public class DevServicesConfig {
      *
      * By default, Dev Services for Keycloak will assume a Keycloak-X image is used if the image name contains a 'keycloak-x'
      * string.
-     * Set 'quarkus.devservices.keycloak.keycloak-x-image' to override this check which may be necessary if you build custom
+     * Set 'quarkus.keycloak.devservices.keycloak-x-image' to override this check which may be necessary if you build custom
      * Keycloak-X or Keycloak images.
      * You do not need to set this property if the default check works.
      */

@@ -1,14 +1,15 @@
-package io.quarkus.test.junit;
+package io.quarkus.test;
 
 import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * An SPI that allows modules that integrate with {@link QuarkusTestExtension} to alter the invocation of the actual test
+ * An SPI that allows modules that integrate with {@code @QuarkusTest} or {@code @QuarkusUnitTest} to alter the invocation of
+ * the actual test
  * method.
  *
  * Implementations are loaded from the same ClassLoader that loads the actual test method
- * (so NOT the ClassLoader that loads the QuarkusTestExtension) which results in {@link QuarkusTestExtension}
+ * (so NOT the ClassLoader that loads the extension) which results in the extension
  * having to invoke the method with reflection, but otherwise allows the implementation to (mostly) avoid
  * dealing with class-loading.
  */

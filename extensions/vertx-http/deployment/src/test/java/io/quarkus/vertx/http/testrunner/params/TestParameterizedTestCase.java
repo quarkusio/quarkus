@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.restassured.RestAssured;
 
 public class TestParameterizedTestCase {
 
@@ -42,6 +43,13 @@ public class TestParameterizedTestCase {
         Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
+        RestAssured.post("q/dev/io.quarkus.quarkus-vertx-http/tests/runfailed");
+
+        ts = utils.waitForNextCompletion();
+
+        Assertions.assertEquals(1L, ts.getTestsFailed());
+        Assertions.assertEquals(3L, ts.getTestsPassed()); //they are all re-run
+        Assertions.assertEquals(0L, ts.getTestsSkipped());
         test.modifyTestSourceFile(ParamET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {

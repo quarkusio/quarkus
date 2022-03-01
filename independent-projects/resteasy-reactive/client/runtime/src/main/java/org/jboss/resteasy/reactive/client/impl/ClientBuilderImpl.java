@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 import org.jboss.logging.Logger;
@@ -61,6 +62,10 @@ public class ClientBuilderImpl extends ClientBuilder {
     private HttpClientOptions httpClientOptions = new HttpClientOptions();
     private ClientLogger clientLogger = new DefaultClientLogger();
     private String userAgent = "Resteasy Reactive Client";
+
+    public ClientBuilderImpl() {
+        configuration = new ConfigurationImpl(RuntimeType.CLIENT);
+    }
 
     @Override
     public ClientBuilder withConfig(Configuration config) {

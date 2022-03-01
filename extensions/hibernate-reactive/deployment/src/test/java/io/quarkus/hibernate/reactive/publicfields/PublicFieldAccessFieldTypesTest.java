@@ -8,17 +8,14 @@ import javax.inject.Inject;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
 
 /**
  * Checks that public field access is correctly replaced with getter/setter calls,
@@ -37,25 +34,39 @@ public class PublicFieldAccessFieldTypesTest {
     Mutiny.SessionFactory sessionFactory;
 
     @Test
-    public void testFieldAccess()
-            throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    @RunOnVertxContext
+    public void testFieldAccess(UniAsserter asserter) {
         // Ideally we'd write a @ParamaterizedTest and pass the delegates as parameters,
         // but we cannot do that due to JUnit using a different classloader than the test.
         for (FieldAccessEnhancedDelegate delegate : FieldAccessEnhancedDelegate.values()) {
-            doTestFieldAccess(delegate);
+            doTestFieldAccess(delegate, asserter);
         }
     }
 
-    private void doTestFieldAccess(FieldAccessEnhancedDelegate delegate) {
-        long id = sessionFactory.withTransaction((session, tx) -> {
+    private void doTestFieldAccess(final FieldAccessEnhancedDelegate delegate, final UniAsserter asserter) {
+        //First verify we don't pass the assertion when not modifying the entity:
+        asserter.assertThat(() -> sessionFactory.withTransaction((session, tx) -> {
             MyEntity entity = new MyEntity();
             return session.persist(entity).replaceWith(() -> entity.id);
-        }).await().indefinitely();
+        })
+                .chain(id -> sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id))),
+                loadedEntity -> notPassingAssertion(loadedEntity, delegate));
 
-        MyEntity entity = sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id))
-                .await().indefinitely();
-        // Initially the assertion doesn't pass: the value was not set yet
+        // Now again, but modify the entity and assert dirtyness was detected:
+        asserter.assertThat(() -> sessionFactory.withTransaction((session, tx) -> {
+            MyEntity entity = new MyEntity();
+            return session.persist(entity).replaceWith(() -> entity.id);
+        })
+                .chain(id -> sessionFactory
+                        .withTransaction((session, tx) -> session.find(MyEntity.class, id).invoke(delegate::setValue))
+                        .replaceWith(id))
+                .chain(id -> sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id))),
+                delegate::assertValue);
+    }
+
+    // Self-test: initially the assertion doesn't pass: the value was not set yet.
+    // Verify that we would fail the test in such case.
+    private void notPassingAssertion(MyEntity entity, FieldAccessEnhancedDelegate delegate) {
         AssertionError expected = null;
         try {
             delegate.assertValue(entity);
@@ -65,17 +76,6 @@ public class PublicFieldAccessFieldTypesTest {
         if (expected == null) {
             throw new IllegalStateException("This test is buggy: assertions should not pass at this point.");
         }
-
-        sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id)
-                // Since field access is replaced with accessor calls,
-                // we expect this change to be detected by dirty tracking and persisted.
-                .invoke(delegate::setValue))
-                .await().indefinitely();
-
-        entity = sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id))
-                .await().indefinitely();
-        // The above should have persisted a value that passes the assertion.
-        delegate.assertValue(entity);
     }
 
     @Entity

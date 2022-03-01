@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class JibConfig {
 
+    public static final String DEFAULT_WORKING_DIR = "/home/jboss";
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
@@ -124,6 +125,13 @@ public class JibConfig {
     public Optional<String> user;
 
     /**
+     * The working directory to use in the generated image.
+     * The default value is chosen to work in accordance with the default base image.
+     */
+    @ConfigItem(defaultValue = DEFAULT_WORKING_DIR)
+    public String workingDirectory;
+
+    /**
      * Controls the optimization which skips downloading base image layers that exist in a target
      * registry. If the user does not set this property, then read as false.
      *
@@ -187,4 +195,13 @@ public class JibConfig {
      */
     @ConfigItem
     public Optional<String> dockerExecutableName;
+
+    /**
+     * Whether to set the creation time to the actual build time. Otherwise, the creation time
+     * will be set to the Unix epoch (00:00:00, January 1st, 1970 in UTC). See <a href=
+     * "https://github.com/GoogleContainerTools/jib/blob/master/docs/faq.md#why-is-my-image-created-48-years-ago">Jib
+     * FAQ</a> for more information
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useCurrentTimestamp;
 }

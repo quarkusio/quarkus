@@ -1,4 +1,4 @@
-package io.quarkus.test.junit.vertx;
+package io.quarkus.test.vertx;
 
 import java.util.function.Consumer;
 import java.util.function.Function;

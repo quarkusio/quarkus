@@ -220,15 +220,7 @@ public final class IntegrationTestUtil {
 
         final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
         runnerBuilder.setProjectRoot(projectRoot);
-        Path outputDir;
-        try {
-            // this should work for both maven and gradle
-            outputDir = projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
-        } catch (Exception e) {
-            // this shouldn't happen since testClassLocation is usually found under the project dir
-            outputDir = projectRoot;
-        }
-        runnerBuilder.setTargetDirectory(outputDir);
+        runnerBuilder.setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation));
 
         rootBuilder.add(appClassLocation);
         final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");

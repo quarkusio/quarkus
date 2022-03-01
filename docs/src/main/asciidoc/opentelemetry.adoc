@@ -133,11 +133,10 @@ receivers:
         endpoint: otel-collector:55680
 
 exporters:
-  logging:
-
   jaeger:
     endpoint: jaeger-all-in-one:14250
-    insecure: true
+    tls:
+      insecure: true
 
 processors:
   batch:

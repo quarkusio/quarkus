@@ -30,6 +30,12 @@ public class HeaderTest {
         assertThat(client.cookieSub("bar", "bar2").send("bar3", "bar4")).isEqualTo("bar:bar2:bar3:bar4");
     }
 
+    @Test
+    void testNullHeaders() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        assertThat(client.cookieSub("bar", null).send(null, "bar4")).isEqualTo("bar:null:null:bar4");
+    }
+
     @Path("/")
     @ApplicationScoped
     public static class Resource {

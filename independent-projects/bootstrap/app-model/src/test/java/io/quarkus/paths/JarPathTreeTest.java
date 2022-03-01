@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.fs.util.ZipUtils;
@@ -60,14 +61,26 @@ public class JarPathTreeTest {
     }
 
     @Test
-    public void acceptAbsolutePath() throws Exception {
+    public void acceptUnixAbsolutePath() throws Exception {
         final PathTree tree = PathTree.ofDirectoryOrArchive(root);
         try {
             tree.accept("/README.md", visit -> {
                 fail("Absolute paths aren't allowed");
             });
         } catch (IllegalArgumentException e) {
-            //expected
+            // expected
+        }
+    }
+
+    @Test
+    public void acceptOSSpecificAbsolutePath() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        try {
+            tree.accept(root.resolve("README.md").toAbsolutePath().toString(), visit -> {
+                fail("Absolute paths aren't allowed");
+            });
+        } catch (IllegalArgumentException e) {
+            // expected
         }
     }
 
@@ -83,6 +96,42 @@ public class JarPathTreeTest {
         } catch (IllegalArgumentException e) {
             //expected
         }
+    }
+
+    @Test
+    public void acceptExistingRelativeNonNormalizedPath() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThatThrownBy(() -> {
+            tree.accept("other/../README.md", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
+    }
+
+    @Test
+    public void acceptExistingRelativeNonNormalizedPathOutsideTree() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThatThrownBy(() -> {
+            tree.accept("../root/./other/../README.md", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
+    }
+
+    @Test
+    public void acceptNonExistentRelativeNonNormalizedPathOutsideTree() throws Exception {
+        final PathTree tree = PathTree.ofDirectoryOrArchive(root);
+        assertThatThrownBy(() -> {
+            tree.accept("../root/./README.md/../non-existent.txt", visit -> {
+                fail("'..' should lead to an exception that prevents the visitor from being called");
+            });
+        })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("'..' cannot be used in resource paths");
     }
 
     @Test

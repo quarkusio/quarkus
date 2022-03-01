@@ -48,10 +48,14 @@ public class MicrometerRecorder {
     private static final Logger log = Logger.getLogger(MicrometerRecorder.class);
     static final String DEFAULT_EXCEPTION_TAG_VALUE = "none";
     static MicrometerMetricsFactory factory;
+    public static String nonApplicationUri = "/q/";
+    public static String httpRootUri = "/";
 
     /* STATIC_INIT */
-    public RuntimeValue<MeterRegistry> createRootRegistry(MicrometerConfig config) {
+    public RuntimeValue<MeterRegistry> createRootRegistry(MicrometerConfig config, String qUri, String httpUri) {
         factory = new MicrometerMetricsFactory(config, Metrics.globalRegistry);
+        nonApplicationUri = qUri;
+        httpRootUri = httpUri;
         return new RuntimeValue<>(Metrics.globalRegistry);
     }
 

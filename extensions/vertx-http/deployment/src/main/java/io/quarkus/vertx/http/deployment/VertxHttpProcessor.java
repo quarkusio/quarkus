@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.deployment;
 
+import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -46,6 +48,7 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -81,6 +84,18 @@ class VertxHttpProcessor {
     @BuildStep
     NonApplicationRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
         return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.rootPath, httpBuildTimeConfig.nonApplicationRootPath);
+    }
+
+    @BuildStep
+    FrameworkEndpointsBuildItem frameworkEndpoints(NonApplicationRootPathBuildItem nonApplicationRootPath,
+            List<RouteBuildItem> routes) {
+        List<String> frameworkEndpoints = new ArrayList<>();
+        for (RouteBuildItem route : routes) {
+            if (FRAMEWORK_ROUTE.equals(route.getRouteType()) && route.getConfiguredPathInfo() != null) {
+                frameworkEndpoints.add(route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath));
+            }
+        }
+        return new FrameworkEndpointsBuildItem(frameworkEndpoints);
     }
 
     @BuildStep
@@ -168,7 +183,7 @@ class VertxHttpProcessor {
         boolean mainRouterCreated = false;
 
         for (RouteBuildItem route : routes) {
-            if (nonApplicationRootPath.isDedicatedRouterRequired() && route.isFrameworkRoute()) {
+            if (nonApplicationRootPath.isDedicatedRouterRequired() && route.isRouterFramework()) {
                 // Non-application endpoints on a separate path
                 if (!frameworkRouterCreated) {
                     frameworkRouter = recorder.initializeRouter(vertx.getVertx());
@@ -176,7 +191,7 @@ class VertxHttpProcessor {
                 }
 
                 recorder.addRoute(frameworkRouter, route.getRouteFunction(), route.getHandler(), route.getType());
-            } else if (route.isAbsoluteRoute()) {
+            } else if (route.isRouterAbsolute()) {
                 // Add Route to "/"
                 if (!mainRouterCreated) {
                     mainRouter = recorder.initializeRouter(vertx.getVertx());

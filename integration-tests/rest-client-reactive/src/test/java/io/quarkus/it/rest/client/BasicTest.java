@@ -131,13 +131,13 @@ public class BasicTest {
             Assertions.assertNotNull(spanData.get("spanId"));
 
             if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("call-hello-client")) {
+                    && spanData.get("name").equals("/call-hello-client")) {
                 outsideServerFound = true;
                 // Server Span
                 serverSpanId = (String) spanData.get("spanId");
                 serverTraceId = (String) spanData.get("traceId");
 
-                Assertions.assertEquals("call-hello-client", spanData.get("name"));
+                Assertions.assertEquals("/call-hello-client", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -181,11 +181,11 @@ public class BasicTest {
 
                 clientSpanId = (String) spanData.get("spanId");
             } else if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("hello")) {
+                    && spanData.get("name").equals("/hello")) {
                 clientServerFound = true;
                 // Server span of client
 
-                Assertions.assertEquals("hello", spanData.get("name"));
+                Assertions.assertEquals("/hello", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 

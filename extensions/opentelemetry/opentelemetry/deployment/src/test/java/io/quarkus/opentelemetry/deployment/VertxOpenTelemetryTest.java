@@ -90,7 +90,7 @@ public class VertxOpenTelemetryTest {
 
         assertEquals("io.quarkus.vertx.opentelemetry", spans.get(0).getName());
         assertEquals("hello!", spans.get(0).getAttributes().get(stringKey("test.message")));
-        assertEquals("tracer", spans.get(1).getName());
+        assertEquals("/tracer", spans.get(1).getName());
         assertEquals(200, spans.get(1).getAttributes().get(HTTP_STATUS_CODE));
         assertEquals("1.1", spans.get(1).getAttributes().get(HTTP_FLAVOR));
         assertEquals("/tracer?id=1", spans.get(1).getAttributes().get(HTTP_TARGET));

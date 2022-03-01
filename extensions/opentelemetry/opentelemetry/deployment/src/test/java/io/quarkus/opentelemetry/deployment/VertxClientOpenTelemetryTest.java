@@ -64,7 +64,7 @@ public class VertxClientOpenTelemetryTest {
 
         SpanData server = spans.get(0);
         assertEquals(SERVER, server.getKind());
-        assertEquals("hello", server.getName());
+        assertEquals("/hello", server.getName());
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
         assertEquals("/hello", server.getAttributes().get(HTTP_ROUTE));
@@ -96,7 +96,7 @@ public class VertxClientOpenTelemetryTest {
 
         SpanData server = spans.get(0);
         assertEquals(SERVER, server.getKind());
-        assertEquals("hello/:name", server.getName());
+        assertEquals("/hello/:name", server.getName());
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
         assertEquals("/hello/:name", server.getAttributes().get(HTTP_ROUTE));

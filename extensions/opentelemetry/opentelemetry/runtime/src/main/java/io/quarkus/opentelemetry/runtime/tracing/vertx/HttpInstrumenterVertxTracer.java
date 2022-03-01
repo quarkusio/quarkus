@@ -1,25 +1,24 @@
 package io.quarkus.opentelemetry.runtime.tracing.vertx;
 
+import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteSource.FILTER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
 
-import java.net.URI;
 import java.util.List;
 import java.util.function.BiConsumer;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteHolder;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
@@ -82,6 +81,19 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
     }
 
     @Override
+    public <R> void sendResponse(
+            final Context context,
+            final R response,
+            final OpenTelemetryVertxTracer.SpanOperation spanOperation,
+            final Throwable failure,
+            final TagExtractor<R> tagExtractor) {
+
+        HttpRouteHolder.updateHttpRoute(spanOperation.getSpanContext(), FILTER, RouteGetter.ROUTE_GETTER,
+                ((HttpRequestSpan) spanOperation.getRequest()));
+        InstrumenterVertxTracer.super.sendResponse(context, response, spanOperation, failure, tagExtractor);
+    }
+
+    @Override
     public HttpRequest writableHeaders(
             final HttpRequest request, final BiConsumer<String, String> headers) {
         return WriteHeadersHttpRequest.request(request, headers);
@@ -93,12 +105,13 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         InstrumenterBuilder<HttpRequest, HttpResponse> serverBuilder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
-                ServerSpanNameExtractor.create(serverAttributesExtractor));
+                HttpSpanNameExtractor.create(serverAttributesExtractor));
 
         return serverBuilder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(HttpServerAttributesExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(new AdditionalServerAttributesExtractor())
+                .addContextCustomizer(HttpRouteHolder.get())
                 .newServerInstrumenter(new HttpRequestTextMapGetter());
     }
 
@@ -115,6 +128,26 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(HttpClientAttributesExtractor.create(clientAttributesExtractor))
                 .newClientInstrumenter(new HttpRequestTextMapSetter());
+    }
+
+    private static class RouteGetter implements HttpRouteGetter<HttpRequestSpan> {
+        static final RouteGetter ROUTE_GETTER = new RouteGetter();
+
+        @Override
+        public String get(final io.opentelemetry.context.Context context, final HttpRequestSpan requestSpan) {
+            // RESTEasy
+            String route = requestSpan.getContext().getLocal("UrlPathTemplate");
+            if (route == null) {
+                // Vert.x
+                route = requestSpan.getContext().getLocal("VertxRoute");
+            }
+
+            if (route != null && route.length() > 1) {
+                return route;
+            }
+
+            return null;
+        }
     }
 
     private static class ServerAttributesExtractor implements HttpServerAttributesGetter<HttpRequest, HttpResponse> {
@@ -213,37 +246,13 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         }
     }
 
-    // TODO - Ideally this should use HttpSpanNameExtractor, but to keep the name without the slash we use our own.
-    private static class ServerSpanNameExtractor implements SpanNameExtractor<HttpRequest> {
-        private final HttpServerAttributesGetter<HttpRequest, HttpResponse> serverAttributesExtractor;
-
-        ServerSpanNameExtractor(
-                final HttpServerAttributesGetter<HttpRequest, HttpResponse> serverAttributesExtractor) {
-            this.serverAttributesExtractor = serverAttributesExtractor;
-        }
-
-        @Override
-        public String extract(final HttpRequest httpRequest) {
-            if (httpRequest instanceof HttpServerRequest) {
-                String path = URI.create(httpRequest.uri()).getPath();
-                if (path != null && path.length() > 1) {
-                    return path.substring(1);
-                } else {
-                    return "HTTP " + httpRequest.method();
-                }
-            }
-            return null;
-        }
-
-        static SpanNameExtractor<HttpRequest> create(
-                HttpServerAttributesGetter<HttpRequest, HttpResponse> serverAttributesExtractor) {
-            return new ServerSpanNameExtractor(serverAttributesExtractor);
-        }
-    }
-
     private static class AdditionalServerAttributesExtractor implements AttributesExtractor<HttpRequest, HttpResponse> {
         @Override
-        public void onStart(final AttributesBuilder attributes, final HttpRequest httpRequest) {
+        public void onStart(
+                final AttributesBuilder attributes,
+                final io.opentelemetry.context.Context parentContext,
+                final HttpRequest httpRequest) {
+
             if (httpRequest instanceof HttpServerRequest) {
                 set(attributes, HTTP_CLIENT_IP, VertxUtil.extractClientIP((HttpServerRequest) httpRequest));
             }
@@ -252,26 +261,11 @@ class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest
         @Override
         public void onEnd(
                 final AttributesBuilder attributes,
+                final io.opentelemetry.context.Context context,
                 final HttpRequest httpRequest,
                 final HttpResponse httpResponse,
                 final Throwable error) {
 
-            // The UrlPathTemplate is only added to the Vert.x context after the instrumenter start
-            if (httpRequest instanceof HttpRequestSpan) {
-                HttpRequestSpan httpRequestSpan = (HttpRequestSpan) httpRequest;
-                // RESTEasy
-                String route = httpRequestSpan.getContext().getLocal("UrlPathTemplate");
-                if (route == null) {
-                    // Vert.x
-                    route = httpRequestSpan.getContext().getLocal("VertxRoute");
-                }
-
-                if (route != null && route.length() > 1) {
-                    set(attributes, HTTP_ROUTE, route);
-                    Span span = Span.fromContext(httpRequestSpan.getSpanContext());
-                    span.updateName(route.substring(1));
-                }
-            }
         }
     }
 

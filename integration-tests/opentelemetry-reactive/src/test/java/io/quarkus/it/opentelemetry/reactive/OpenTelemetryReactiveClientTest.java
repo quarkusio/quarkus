@@ -64,7 +64,7 @@ public class OpenTelemetryReactiveClientTest {
 
         assertEquals(SpanKind.SERVER.toString(), server.get("kind"));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
-        assertEquals("reactive", server.get("name"));
+        assertEquals("/reactive", server.get("name"));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.getKey()));
         assertEquals("/reactive?name=Naruto", ((Map<?, ?>) server.get("attributes")).get(HTTP_TARGET.getKey()));
         assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
@@ -100,7 +100,7 @@ public class OpenTelemetryReactiveClientTest {
 
         assertEquals(SpanKind.SERVER.toString(), server.get("kind"));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
-        assertEquals("reactive", server.get("name"));
+        assertEquals("/reactive", server.get("name"));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.getKey()));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_TARGET.getKey()));
         assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.getKey()));

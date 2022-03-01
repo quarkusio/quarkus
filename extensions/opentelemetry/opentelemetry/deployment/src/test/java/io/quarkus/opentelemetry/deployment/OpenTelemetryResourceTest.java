@@ -41,7 +41,7 @@ public class OpenTelemetryResourceTest {
                 .body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
-        assertEquals("hello", spans.get(0).getName());
+        assertEquals("/hello", spans.get(0).getName());
         assertEquals(SERVER, spans.get(0).getKind());
         assertEquals("authservice", spans.get(0).getResource().getAttribute(AttributeKey.stringKey("service.name")));
         assertEquals(config.getRawValue("quarkus.uuid"),

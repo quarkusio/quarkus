@@ -16,7 +16,7 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KnativeGlobalContainerConcurrency {
+public class KnativeGlobalContainerConcurrencyTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -40,7 +40,8 @@ public class KnativeGlobalContainerConcurrency {
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
         assertThat(kubernetesList).filteredOn(i -> "ConfigMap".equals(i.getKind())).singleElement().satisfies(c -> {
-            assertThat(c.getMetadata()).satisfies(m -> assertThat(m.getName()).isEqualTo("config-autoscaler"));
+            assertThat(c.getMetadata().getName()).isEqualTo("config-defaults");
+            assertThat(c.getMetadata().getNamespace()).isEqualTo("knative-serving");
             assertThat(c).isInstanceOfSatisfying(ConfigMap.class, m -> {
                 assertThat(m.getData()).contains(entry("container-concurrency", "100"));
             });

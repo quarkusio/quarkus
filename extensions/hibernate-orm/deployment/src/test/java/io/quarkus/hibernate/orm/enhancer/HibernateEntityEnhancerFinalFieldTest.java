@@ -20,14 +20,13 @@ import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
 import org.hibernate.annotations.Immutable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
@@ -41,6 +40,7 @@ public class HibernateEntityEnhancerFinalFieldTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
+                    .addClass(TransactionTestUtils.class)
                     .addClasses(
                             EntityWithFinalField.class,
                             EntityWithEmbeddedIdWithFinalField.class, EntityWithEmbeddedIdWithFinalField.EmbeddableId.class,
@@ -143,17 +143,7 @@ public class HibernateEntityEnhancerFinalFieldTest {
     }
 
     private void inTransaction(Runnable runnable) {
-        try {
-            transaction.begin();
-            try {
-                runnable.run();
-                transaction.commit();
-            } catch (Exception e) {
-                transaction.rollback();
-            }
-        } catch (SystemException | NotSupportedException e) {
-            throw new IllegalStateException("Transaction exception", e);
-        }
+        TransactionTestUtils.inTransaction(transaction, runnable);
     }
 
     @Entity(name = "withfinal")

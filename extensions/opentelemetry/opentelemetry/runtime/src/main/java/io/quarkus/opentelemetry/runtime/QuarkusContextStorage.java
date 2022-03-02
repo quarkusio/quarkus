@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime;
 
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 import static io.smallrye.common.vertx.VertxContext.getOrCreateDuplicatedContext;
 import static io.smallrye.common.vertx.VertxContext.isDuplicatedContext;
 
@@ -85,8 +86,12 @@ public enum QuarkusContextStorage implements ContextStorage {
      */
     @Override
     public Context current() {
-        return Vertx.currentContext() != null ? getOrCreateDuplicatedContext(vertx).getLocal(OTEL_CONTEXT)
-                : DEFAULT_CONTEXT_STORAGE.current();
+        io.vertx.core.Context current = getVertxContext();
+        if (current != null) {
+            return current.getLocal(OTEL_CONTEXT);
+        } else {
+            return DEFAULT_CONTEXT_STORAGE.current();
+        }
     }
 
     /**
@@ -108,6 +113,12 @@ public enum QuarkusContextStorage implements ContextStorage {
      * @return a duplicated Vert.x Context or null.
      */
     private static io.vertx.core.Context getVertxContext() {
-        return Vertx.currentContext() != null ? getOrCreateDuplicatedContext(vertx) : null;
+        io.vertx.core.Context context = Vertx.currentContext();
+        if (context != null) {
+            io.vertx.core.Context dc = getOrCreateDuplicatedContext(context);
+            setContextSafe(dc, true);
+            return dc;
+        }
+        return null;
     }
 }

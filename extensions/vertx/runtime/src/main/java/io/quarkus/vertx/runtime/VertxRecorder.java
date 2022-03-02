@@ -1,5 +1,7 @@
 package io.quarkus.vertx.runtime;
 
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -100,6 +102,7 @@ public class VertxRecorder {
                                 if (invoker.isBlocking()) {
                                     // We need to create a duplicated context from the "context"
                                     Context dup = VertxContext.getOrCreateDuplicatedContext(context);
+                                    setContextSafe(dup, true);
                                     dup.executeBlocking(new Handler<Promise<Object>>() {
                                         @Override
                                         public void handle(Promise<Object> event) {

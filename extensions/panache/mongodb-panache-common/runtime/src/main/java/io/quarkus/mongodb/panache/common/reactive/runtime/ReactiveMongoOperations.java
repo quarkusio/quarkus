@@ -311,6 +311,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     private ReactiveMongoDatabase mongoDatabase(MongoEntity mongoEntity) {
         ReactiveMongoClient mongoClient = clientFromArc(mongoEntity, ReactiveMongoClient.class, true);
+        if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
+            return mongoClient.getDatabase(mongoEntity.database());
+        }
         String databaseName = getDefaultDatabaseName(mongoEntity);
         return mongoClient.getDatabase(databaseName);
     }

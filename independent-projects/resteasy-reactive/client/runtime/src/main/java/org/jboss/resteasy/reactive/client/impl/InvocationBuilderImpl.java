@@ -51,9 +51,6 @@ public class InvocationBuilderImpl implements Invocation.Builder {
         this.httpClient = httpClient;
         this.target = target;
         this.requestSpec = new RequestSpec(configuration);
-        if (restClient.getUserAgent() != null && !restClient.getUserAgent().isEmpty()) {
-            this.requestSpec.headers.header(HttpHeaders.USER_AGENT, restClient.getUserAgent());
-        }
         this.configuration = configuration;
         this.handlerChain = handlerChain;
         this.requestContext = requestContext;
@@ -67,11 +64,13 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public Invocation build(String method) {
+        setUserAgentIfNotSet();
         return new InvocationImpl(method, async(), null);
     }
 
     @Override
     public Invocation build(String method, Entity<?> entity) {
+        setUserAgentIfNotSet();
         return new InvocationImpl(method, async(), entity);
     }
 
@@ -97,6 +96,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public AsyncInvokerImpl async() {
+        setUserAgentIfNotSet();
         return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration,
                 properties, handlerChain, requestContext);
     }
@@ -175,6 +175,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public <T extends RxInvoker> T rx(Class<T> clazz) {
+        setUserAgentIfNotSet();
         if (clazz == MultiInvoker.class) {
             return (T) new MultiInvoker(this);
         } else if (clazz == UniInvoker.class) {
@@ -187,6 +188,13 @@ public class InvocationBuilderImpl implements Invocation.Builder {
         }
         // TCK says we could throw IllegalStateException, or not, it doesn't discriminate, and the spec doesn't say
         return null;
+    }
+
+    private void setUserAgentIfNotSet() {
+        if (!requestSpec.headers.getHeaders().containsKey(HttpHeaders.USER_AGENT)
+                && restClient.getUserAgent() != null && !restClient.getUserAgent().isEmpty()) {
+            this.requestSpec.headers.header(HttpHeaders.USER_AGENT, restClient.getUserAgent());
+        }
     }
 
     @Override

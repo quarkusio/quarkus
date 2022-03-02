@@ -68,6 +68,11 @@ public class HibernateValidatorRecorder {
                         .defaultLocale(localesBuildTimeConfig.defaultLocale)
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
+                if (hibernateValidatorBuildTimeConfig.expressionLanguage.constraintExpressionFeatureLevel.isPresent()) {
+                    configuration.constraintExpressionLanguageFeatureLevel(
+                            hibernateValidatorBuildTimeConfig.expressionLanguage.constraintExpressionFeatureLevel.get());
+                }
+
                 InstanceHandle<ConstraintValidatorFactory> configuredConstraintValidatorFactory = Arc.container()
                         .instance(ConstraintValidatorFactory.class);
                 if (configuredConstraintValidatorFactory.isAvailable()) {

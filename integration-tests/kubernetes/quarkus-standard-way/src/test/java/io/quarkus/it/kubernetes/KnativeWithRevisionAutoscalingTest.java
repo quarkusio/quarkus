@@ -1,10 +1,12 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -15,14 +17,16 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KnativeWithTrafficSplitting {
+public class KnativeWithRevisionAutoscalingTest {
+
+    private static final String NAME = "knative-with-revision-autoscaling";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("knative-with-traffic-splitting")
+            .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("knative-with-traffic-splitting.properties");
+            .withConfigurationResource("knative-with-revision-autoscaling.properties");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -39,21 +43,16 @@ public class KnativeWithTrafficSplitting {
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
         assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
-            assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
-                assertThat(s.getSpec()).satisfies(spec -> {
-                    assertThat(s.getMetadata()).satisfies(m -> {
-                        assertThat(m.getName()).isEqualTo("knative-with-traffic-splitting");
-                    });
+            Service service = (Service) i;
+            assertThat(service.getMetadata().getName()).isEqualTo(NAME);
+            // Issue: https://github.com/quarkusio/quarkus/issues/23832
+            // assertThat(service.getSpec().getTemplate().getSpec().getContainerConcurrency()).isEqualTo(5);
 
-                    assertThat(spec.getTemplate()).satisfies(template -> {
-                        assertThat(template.getMetadata().getName()).isEqualTo("my-revision");
-                    });
-
-                    assertThat(spec.getTraffic()).singleElement().satisfies(t -> {
-                        assertThat(t.getPercent()).isEqualTo(80);
-                    });
-                });
-            });
+            Map<String, String> annotations = service.getSpec().getTemplate().getMetadata().getAnnotations();
+            assertThat(annotations).contains(entry("autoscaling.knative.dev/class", "kpa.autoscaling.knative.dev"));
+            assertThat(annotations).contains(entry("autoscaling.knative.dev/metric", "cpu"));
+            assertThat(annotations).contains(entry("autoscaling.knative.dev/target-utilization-percentage", "55"));
+            assertThat(annotations).contains(entry("autoscaling.knative.dev/target", "80"));
         });
     }
 }

@@ -1,12 +1,10 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,14 +15,14 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KnativeScaleBoundsTest {
+public class KnativeWithTrafficSplittingTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("knative-scale-bounds")
+            .setApplicationName("knative-with-traffic-splitting")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("knative-scale-bounds.properties");
+            .withConfigurationResource("knative-with-traffic-splitting.properties");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -41,10 +39,21 @@ public class KnativeScaleBoundsTest {
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
         assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
-            Service service = (Service) i;
-            Map<String, String> annotations = service.getSpec().getTemplate().getMetadata().getAnnotations();
-            assertThat(annotations).contains(entry("autoscaling.knative.dev/minScale", "3"));
-            assertThat(annotations).contains(entry("autoscaling.knative.dev/maxScale", "5"));
+            assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
+                assertThat(s.getSpec()).satisfies(spec -> {
+                    assertThat(s.getMetadata()).satisfies(m -> {
+                        assertThat(m.getName()).isEqualTo("knative-with-traffic-splitting");
+                    });
+
+                    assertThat(spec.getTemplate()).satisfies(template -> {
+                        assertThat(template.getMetadata().getName()).isEqualTo("my-revision");
+                    });
+
+                    assertThat(spec.getTraffic()).singleElement().satisfies(t -> {
+                        assertThat(t.getPercent()).isEqualTo(80);
+                    });
+                });
+            });
         });
     }
 }

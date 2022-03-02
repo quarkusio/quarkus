@@ -230,7 +230,9 @@ public final class OidcUtils {
     }
 
     public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext routingContext) {
-        builder.addAttribute(RoutingContext.class.getName(), routingContext);
+        if (routingContext != null) {
+            builder.addAttribute(RoutingContext.class.getName(), routingContext);
+        }
     }
 
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, UserInfo userInfo) {

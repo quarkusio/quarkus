@@ -124,6 +124,10 @@ public class DefaultTenantConfigResolver {
 
     private TenantConfigContext getStaticTenantContext(RoutingContext context) {
 
+        if (context == null) {
+            return tenantConfigBean.getDefaultTenant();
+        }
+
         String tenantId = context.get(CURRENT_STATIC_TENANT_ID);
 
         if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {

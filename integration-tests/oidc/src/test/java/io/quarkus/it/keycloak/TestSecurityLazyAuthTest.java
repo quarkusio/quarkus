@@ -23,6 +23,13 @@ public class TestSecurityLazyAuthTest {
     }
 
     @Test
+    @TestSecurity(user = "user1", roles = "viewer")
+    public void testPropagation() {
+        RestAssured.when().get("test-security-propagation").then()
+                .body(is("user1"));
+    }
+
+    @Test
     @TestSecurity(user = "userJwt", roles = "viewer")
     @OidcSecurity(claims = {
             @Claim(key = "email", value = "user@gmail.com")

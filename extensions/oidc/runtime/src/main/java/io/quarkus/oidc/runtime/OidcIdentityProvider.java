@@ -62,7 +62,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             return Uni.createFrom().nullItem();
         }
         RoutingContext vertxContext = HttpSecurityUtils.getRoutingContextAttribute(request);
-        vertxContext.put(AuthenticationRequestContext.class.getName(), context);
+        if (vertxContext == null && request.getToken() instanceof IdTokenCredential) {
+            return Uni.createFrom().failure(new AuthenticationFailedException());
+        } else if (vertxContext != null) {
+            vertxContext.put(AuthenticationRequestContext.class.getName(), context);
+        }
 
         Uni<TenantConfigContext> tenantConfigContext = tenantResolver.resolveContext(vertxContext);
 

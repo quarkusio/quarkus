@@ -214,6 +214,7 @@ public class CounterBean {
 * Passivation and passivating scopes are not supported
 * Interceptor methods on superclasses are not implemented yet
 * `@Interceptors` is not supported
+* Decoration of built-in beans, such as `Event`, is not supported
 
 [[nonstandard_features]]
 == Non-standard Features

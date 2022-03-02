@@ -82,7 +82,7 @@ public class OpenshiftUtils {
 
     /**
      * Merges {@link OpenshiftConfig} with {@link S2iConfig} prioritizing in the former.
-     * 
+     *
      * @param openshiftConfig the Openshift config
      * @param s2iConfig the s2i config
      * @param an instance of {@link OpenshiftConfig} with the merged configuration.

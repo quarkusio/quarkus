@@ -181,7 +181,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     /**
      * Allows implementations to provide extra dependencies that should be enforced on the application.
      * Originally requested by Camel K.
-     * 
+     *
      * @param mode launch mode the application is being bootstrapped in
      * @return list of extra dependencies that should be enforced on the application
      */

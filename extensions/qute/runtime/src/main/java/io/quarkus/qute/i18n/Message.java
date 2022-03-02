@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * Identifies a message bundle method.
  * <p>
  * Each method of a message bundle interface annotated with {@link MessageBundle} must be annotated with this annotation.
- * 
+ *
  * @see MessageBundle
  */
 @Retention(RUNTIME)
@@ -41,13 +41,13 @@ public @interface Message {
     String UNDERSCORED_ELEMENT_NAME = "<<underscored element name>>";
 
     /**
-     * 
+     *
      * @return the key
      */
     String key() default DEFAULT_NAME;
 
     /**
-     * 
+     *
      * @return the message template
      */
     String value();

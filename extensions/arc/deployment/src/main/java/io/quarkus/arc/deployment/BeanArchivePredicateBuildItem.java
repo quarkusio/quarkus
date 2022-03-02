@@ -6,7 +6,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 
 /**
- * 
+ *
  * By default, only explict/implicit bean archives (as defined by the spec) are considered during the bean discovery. However,
  * extensions can register a logic to identify additional bean archives.
  */

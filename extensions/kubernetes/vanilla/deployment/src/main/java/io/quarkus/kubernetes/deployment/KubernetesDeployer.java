@@ -296,7 +296,7 @@ public class KubernetesDeployer {
     /**
      * Obtain everything the APIResourceList from the server and extract all the info we need in order to know how to create /
      * delete the specified generic resource.
-     * 
+     *
      * @param client the client instance to use to query the server.
      * @param resource the generic resource.
      * @return an optional {@link ResourceDefinitionContext} with the resource info or empty if resource could not be matched.

@@ -31,7 +31,7 @@ public class RestClientsContainer {
 
     /**
      * Used in Dev UI
-     * 
+     *
      * @return info about exposed clients
      */
     public RestClientData getClientData() {

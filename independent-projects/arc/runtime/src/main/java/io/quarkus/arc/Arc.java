@@ -12,7 +12,7 @@ public final class Arc {
     private static final AtomicReference<ArcContainerImpl> INSTANCE = new AtomicReference<>();
 
     /**
-     * 
+     *
      * @return the initialized container
      */
     public static ArcContainer initialize() {
@@ -22,7 +22,7 @@ public final class Arc {
                 container = INSTANCE.get();
                 if (container == null) {
                     container = new ArcContainerImpl();
-                    // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init() 
+                    // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
                     INSTANCE.set(container);
                     container.init();
                 }

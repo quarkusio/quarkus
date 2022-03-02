@@ -82,7 +82,7 @@ public final class Types {
         if (typeParam.kind() == Kind.CLASS) {
             ClassInfo classInfo = index.getClassByName(typeParam.name());
             if (classInfo == null && !typeParam.name().toString().contains(".")) {
-                // If not indexed and no package then try the java.lang prefix 
+                // If not indexed and no package then try the java.lang prefix
                 classInfo = index.getClassByName(DotName.createSimple(JAVA_LANG_PREFIX + typeParam.name().toString()));
                 if (classInfo != null) {
                     return Type.create(classInfo.name(), Kind.CLASS);
@@ -95,7 +95,7 @@ public final class Types {
             ParameterizedType parameterizedType = typeParam.asParameterizedType();
             ClassInfo classInfo = index.getClassByName(parameterizedType.name());
             if (classInfo == null && !parameterizedType.name().toString().contains(".")) {
-                // If not indexed and no package then try the java.lang prefix 
+                // If not indexed and no package then try the java.lang prefix
                 classInfo = index.getClassByName(DotName.createSimple(JAVA_LANG_PREFIX + parameterizedType.name().toString()));
             }
             if (classInfo != null) {

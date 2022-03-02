@@ -10,7 +10,7 @@ import java.time.Instant;
 public interface Trigger {
 
     /**
-     * 
+     *
      * @return the identifier
      * @see Scheduled#identity()
      */

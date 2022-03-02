@@ -22,7 +22,7 @@ public class TenantLogout {
         return "Tenant Logout";
     }
 
-    // It is needed for the proactive-auth=false to work: /tenant-logout/logout should match a user initiated logout request 
+    // It is needed for the proactive-auth=false to work: /tenant-logout/logout should match a user initiated logout request
     // which must be handled by `CodeAuthenticationMechanism`.
     // Adding `@Authenticated` gives control to `CodeAuthenticationMechanism` instead of RestEasy.
     @GET

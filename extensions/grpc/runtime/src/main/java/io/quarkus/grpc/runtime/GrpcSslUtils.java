@@ -28,7 +28,7 @@ public class GrpcSslUtils {
 
     /**
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled.
-     * 
+     *
      * @return whether plain text is used.
      */
     static boolean applySslOptions(GrpcServerConfiguration config, HttpServerOptions options)

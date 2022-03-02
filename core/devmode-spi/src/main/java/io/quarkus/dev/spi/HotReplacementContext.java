@@ -30,7 +30,7 @@ public interface HotReplacementContext {
 
     /**
      * Returns the type of the development mode
-     * 
+     *
      * @return the dev mode type
      */
     DevModeType getDevModeType();

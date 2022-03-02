@@ -10,7 +10,7 @@ import org.hibernate.integrator.spi.IntegratorService;
  * This is similar to the default {@link IntegratorService} from Hibernate ORM,
  * except that it doesn't come with default integrators as we prefer explicit
  * control.
- * 
+ *
  * @see org.hibernate.integrator.internal.IntegratorServiceImpl
  * @author Sanne Grinovero <sanne@hibernate.org>
  */

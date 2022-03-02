@@ -12,7 +12,7 @@ import javax.interceptor.InterceptorBinding;
  *
  * This allows the test method to modify the database as required, and then have
  * these changes reverted at the end of the method.
- * 
+ *
  * @see TestTransaction for JTA transactions.
  */
 @InterceptorBinding

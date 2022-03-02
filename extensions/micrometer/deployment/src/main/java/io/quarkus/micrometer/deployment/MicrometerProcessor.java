@@ -146,7 +146,7 @@ public class MicrometerProcessor {
 
             @Override
             public boolean appliesTo(Kind kind) {
-                // @Counted is only applicable to a method 
+                // @Counted is only applicable to a method
                 return kind == Kind.METHOD;
             }
 

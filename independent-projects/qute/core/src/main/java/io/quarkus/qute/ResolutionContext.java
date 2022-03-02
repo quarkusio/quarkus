@@ -4,13 +4,13 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 
+ *
  */
 public interface ResolutionContext {
 
     /**
      * Parse and evaluate the expression.
-     * 
+     *
      * @param expression
      * @return the result
      */
@@ -18,7 +18,7 @@ public interface ResolutionContext {
 
     /**
      * Evaluate the expression.
-     * 
+     *
      * @param expression
      * @return the result
      */
@@ -26,7 +26,7 @@ public interface ResolutionContext {
 
     /**
      * Create a child resolution context.
-     * 
+     *
      * @param data
      * @param extendingBlocks
      * @return a new child resolution context
@@ -34,26 +34,26 @@ public interface ResolutionContext {
     ResolutionContext createChild(Object data, Map<String, SectionBlock> extendingBlocks);
 
     /**
-     * 
+     *
      * @return the data
      */
     Object getData();
 
     /**
-     * 
+     *
      * @return the parent context or null
      */
     ResolutionContext getParent();
 
     /**
-     * 
+     *
      * @param name
      * @return the extending block for the specified name or null
      */
     SectionBlock getExtendingBlock(String name);
 
     /**
-     * 
+     *
      * @param key
      * @return the attribute or null
      * @see TemplateInstance#getAttribute(String)
@@ -61,7 +61,7 @@ public interface ResolutionContext {
     Object getAttribute(String key);
 
     /**
-     * 
+     *
      * @return the evaluator
      */
     Evaluator getEvaluator();

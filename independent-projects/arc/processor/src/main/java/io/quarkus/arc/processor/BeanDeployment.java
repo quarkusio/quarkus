@@ -441,7 +441,7 @@ public class BeanDeployment {
         for (Throwable error : errors) {
             validationContext.addDeploymentProblem(error);
         }
-        // Next, execute all registered validators 
+        // Next, execute all registered validators
         for (BeanDeploymentValidator validator : validators) {
             validator.validate(validationContext);
         }
@@ -498,7 +498,7 @@ public class BeanDeployment {
 
     /**
      * This index was used to discover components (beans, interceptors, qualifiers, etc.) and during type-safe resolution.
-     * 
+     *
      * @return the bean archive index
      */
     public IndexView getBeanArchiveIndex() {
@@ -509,7 +509,7 @@ public class BeanDeployment {
      * This index is optional and is used to discover types during type-safe resolution.
      * <p>
      * Some types may not be part of the bean archive index but are still needed during type-safe resolution.
-     * 
+     *
      * @return the application index or {@code null}
      */
     public IndexView getApplicationIndex() {
@@ -631,7 +631,7 @@ public class BeanDeployment {
     }
 
     /**
-     * 
+     *
      * @param target
      * @param stereotypes
      * @return the computed priority or {@code null}
@@ -1384,7 +1384,7 @@ public class BeanDeployment {
         public ObserverConfigurator configure() {
             ObserverConfigurator configurator = new ObserverConfigurator(beanDeployment::addSyntheticObserver);
             if (extension != null) {
-                // Extension may be null if called directly from the ObserverRegistrationPhaseBuildItem 
+                // Extension may be null if called directly from the ObserverRegistrationPhaseBuildItem
                 configurator.beanClass(DotName.createSimple(extension.getClass().getName()));
             }
             return configurator;

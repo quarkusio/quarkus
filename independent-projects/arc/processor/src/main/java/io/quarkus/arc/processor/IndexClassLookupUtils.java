@@ -20,7 +20,7 @@ final class IndexClassLookupUtils {
     }
 
     /**
-     * 
+     *
      * @param index
      * @param type
      * @return the class for the given type or {@code null} for primitives, arrays and

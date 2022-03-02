@@ -24,7 +24,7 @@ public class TestRecorder {
 
     /**
      * Create a non-CDI based RuntimeXmlConfigService from the XmlConfig
-     * 
+     *
      * @param config - parse XML configuration
      * @return RuntimeValue<RuntimeXmlConfigService>
      */
@@ -49,7 +49,7 @@ public class TestRecorder {
 
     /**
      * Passes the public ket to the PublicKeyProducer for injection into CDI beans at runtime
-     * 
+     *
      * @param publicKey - public key
      * @param beanContainer - CDI bean container
      */
@@ -60,7 +60,7 @@ public class TestRecorder {
 
     /**
      * Access the primitive class types at runtime to validate the build step generated deploy method
-     * 
+     *
      * @param typesSet - primitive classes set
      */
     public void validateTypes(Set<Class<?>> typesSet) {

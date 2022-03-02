@@ -12,7 +12,7 @@ public class DevUiConfig {
 
     /**
      * Grant type which affects how OpenId Connect Dev UI will facilitate the token acquisition.
-     * 
+     *
      * For example: if the grant type is 'code' then an authorization code will be returned directly to Dev UI which will use a
      * code
      * handler to acquire the tokens while a user name and password will have to be entered to request a token using a

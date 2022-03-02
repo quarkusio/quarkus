@@ -12,7 +12,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * This build item can be used to define annotations that will turn a non-static field into an injection point even if no
  * {@link Inject} is declared.
- * 
+ *
  * @see AutoInjectFieldProcessor
  */
 public final class AutoInjectAnnotationBuildItem extends MultiBuildItem {

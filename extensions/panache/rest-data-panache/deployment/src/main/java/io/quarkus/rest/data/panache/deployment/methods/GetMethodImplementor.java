@@ -63,7 +63,7 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
      *
      * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#delete(Object)}
      * and the generated code looks more or less like this:
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;GET

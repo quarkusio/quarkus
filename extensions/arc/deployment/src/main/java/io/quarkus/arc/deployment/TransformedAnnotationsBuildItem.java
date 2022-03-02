@@ -13,7 +13,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * Makes it possible to query transformed annotations for a given annotation target.
- * 
+ *
  * @see AnnotationsTransformer
  */
 public final class TransformedAnnotationsBuildItem extends SimpleBuildItem

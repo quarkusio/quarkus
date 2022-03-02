@@ -14,7 +14,7 @@ public class ReactiveRoutes {
 
     /**
      * The content-type to use to indicate you want to produce an JSON Array response, such as in:
-     * 
+     *
      * <pre>
      * {@code
      * &#64;Route(path = "/heroes", produces = ReactiveRoutes.APPLICATION_JSON_CONTENT_TYPE)
@@ -34,7 +34,7 @@ public class ReactiveRoutes {
 
     /**
      * The content-type to use to indicate you want to produce a server-sent-event (SSE) stream response, such as in:
-     * 
+     *
      * <pre>
      * {@code
      * &#64;Route(path = "/heroes", produces = ReactiveRoutes.EVENT_STREAM_CONTENT_TYPE)
@@ -53,7 +53,7 @@ public class ReactiveRoutes {
     /**
      * The content-type to use to indicate you want to produce <a href="http://ndjson.org/">NDJSON stream</a> response,
      * such as in:
-     * 
+     *
      * <pre>
      * {@code
      * &#64;Route(path = "/heroes", produces = ReactiveRoutes.ND_JSON_CONTENT_TYPE)
@@ -134,7 +134,7 @@ public class ReactiveRoutes {
      * If the item is an Object, then the JSON representation of this object will be written.
      * <p>
      * Example of usage:
-     * 
+     *
      * <pre>
      * &#64;Route(path = "/people")
      * Multi&lt;Person&gt; people(RoutingContext context) {
@@ -146,7 +146,7 @@ public class ReactiveRoutes {
      * </pre>
      *
      * This example produces:
-     * 
+     *
      * <pre>
      *  {"name":"superman", "id":1}
      *  {...}

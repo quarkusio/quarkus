@@ -23,7 +23,7 @@ public class AddPortToOpenshiftConfig extends Configurator<OpenshiftConfigFluent
 
     /**
      * Check if the {@link OpenshiftConfig} already has port.
-     * 
+     *
      * @param config The port.
      * @return True if port with same container port exists.
      */

@@ -259,7 +259,7 @@ class CacheProcessor {
             }
         }
 
-        // Interceptors need to be registered as unremovable due to the rest-client integration - interceptors 
+        // Interceptors need to be registered as unremovable due to the rest-client integration - interceptors
         // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
         if (cacheResult) {
             unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(CacheResultInterceptor.class.getName()));
@@ -276,7 +276,7 @@ class CacheProcessor {
     /**
      * Returns an array containing the positions of the given method parameters annotated with
      * {@link io.quarkus.cache.CacheKey @CacheKey}, or an empty array if no such parameter is found.
-     * 
+     *
      * @param methodInfo method info
      * @return cache key parameters positions
      */

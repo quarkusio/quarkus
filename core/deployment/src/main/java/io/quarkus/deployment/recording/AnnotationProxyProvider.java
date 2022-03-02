@@ -111,7 +111,7 @@ public class AnnotationProxyProvider {
 
         /**
          * Explicit values override the default values from the annotation class.
-         * 
+         *
          * @param name
          * @param value
          * @return self
@@ -123,7 +123,7 @@ public class AnnotationProxyProvider {
 
         /**
          * Explicit default values override the default values from the annotation class.
-         * 
+         *
          * @param name
          * @param value
          * @return self

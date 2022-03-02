@@ -13,7 +13,7 @@ import javax.enterprise.util.TypeLiteral;
 
 /**
  * Represents a container instance.
- * 
+ *
  * @author Martin Kouba
  */
 public interface ArcContainer {
@@ -22,7 +22,7 @@ public interface ArcContainer {
      * Unlike {@link BeanManager#getContext(Class)} this method does not throw
      * {@link javax.enterprise.context.ContextNotActiveException} if there is no active context for the given
      * scope.
-     * 
+     *
      * @param scopeType
      * @return the active context or null
      * @throws IllegalArgumentException if there is more than one active context for the given scope
@@ -30,14 +30,14 @@ public interface ArcContainer {
     InjectableContext getActiveContext(Class<? extends Annotation> scopeType);
 
     /**
-     * 
+     *
      * @param scopeType
      * @return the matching context objects, never null
      */
     List<InjectableContext> getContexts(Class<? extends Annotation> scopeType);
 
     /**
-     * 
+     *
      * @return the set of all supported scopes
      */
     Set<Class<? extends Annotation>> getScopes();
@@ -77,7 +77,7 @@ public interface ArcContainer {
 
     /**
      * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified name.
-     * 
+     *
      * @param name
      * @return a new instance handle
      * @see InjectableBean#getName()
@@ -110,9 +110,9 @@ public interface ArcContainer {
      * Instances of dependent scoped beans obtained with the returned injectable instance must be explicitly destroyed, either
      * via the {@link Instance#destroy(Object)} method invoked upon the same injectable instance or with
      * {@link InstanceHandle#destroy()}.
-     * 
+     *
      * If no qualifier is passed, the <tt>@Default</tt> qualifier is assumed.
-     * 
+     *
      * @param <T>
      * @param type
      * @param qualifiers
@@ -124,9 +124,9 @@ public interface ArcContainer {
      * Instances of dependent scoped beans obtained with the returned injectable instance must be explicitly destroyed, either
      * via the {@link Instance#destroy(Object)} method invoked upon the same injectable instance or with
      * {@link InstanceHandle#destroy()}.
-     * 
+     *
      * If no qualifier is passed, the <tt>@Default</tt> qualifier is assumed.
-     * 
+     *
      * @param <T>
      * @param type
      * @param qualifiers
@@ -152,7 +152,7 @@ public interface ArcContainer {
 
     /**
      * This method never throws {@link ContextNotActiveException}.
-     * 
+     *
      * @return the built-in context for {@link javax.enterprise.context.RequestScoped}
      */
     ManagedContext requestContext();

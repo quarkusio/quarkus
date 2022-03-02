@@ -115,7 +115,7 @@ public interface RegistriesConfig {
     /**
      * Resolve the active registries configuration from
      * system properties, the environment, and defaults.
-     * 
+     *
      * @return immutable RegistriesConfig
      */
     static RegistriesConfig resolveConfig() {

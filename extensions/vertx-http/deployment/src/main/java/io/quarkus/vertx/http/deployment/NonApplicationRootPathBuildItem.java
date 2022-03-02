@@ -146,7 +146,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      * absolute path), and then will resolve the subRoute against that resolved path.
      * This allows a configured subpath to be configured (consistently)
      * as an absolute URI.
-     * 
+     *
      * Given {@literal quarkus.http.root-path=/} and
      * {@literal quarkus.http.non-application-root-path="q"}
      * <ul>

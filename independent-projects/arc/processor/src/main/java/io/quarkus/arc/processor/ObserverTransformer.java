@@ -37,13 +37,13 @@ public interface ObserverTransformer extends BuildExtension {
     interface TransformationContext extends BuildExtension.BuildContext {
 
         /**
-         * 
+         *
          * @return the corresponding observer method or null in case of synthetic observer
          */
         MethodInfo getMethod();
 
         /**
-         * 
+         *
          * @return the observed type
          */
         Type getObservedType();
@@ -55,19 +55,19 @@ public interface ObserverTransformer extends BuildExtension {
         Set<AnnotationInstance> getQualifiers();
 
         /**
-         * 
+         *
          * @return the reception
          */
         Reception getReception();
 
         /**
-         * 
+         *
          * @return the transaction phase
          */
         TransactionPhase getTransactionPhase();
 
         /**
-         * 
+         *
          * @return true if the observer is asynchronous
          */
         boolean isAsync();
@@ -85,7 +85,7 @@ public interface ObserverTransformer extends BuildExtension {
 
         /**
          * Instruct the container to ignore the observer method.
-         * 
+         *
          * @return self
          */
         void veto();
@@ -102,28 +102,28 @@ public interface ObserverTransformer extends BuildExtension {
     interface ObserverTransformation extends AnnotationsTransformation<ObserverTransformation> {
 
         /**
-         * 
+         *
          * @param priority
          * @return self
          */
         ObserverTransformation priority(int priority);
 
         /**
-         * 
+         *
          * @param reception
          * @return self
          */
         ObserverTransformation reception(Reception reception);
 
         /**
-         * 
+         *
          * @param reception
          * @return self
          */
         ObserverTransformation transactionPhase(TransactionPhase transactionPhase);
 
         /**
-         * 
+         *
          * @param value
          * @return
          */

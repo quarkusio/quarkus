@@ -99,7 +99,7 @@ public class FunqyCloudFunctionsBindingRecorder {
 
     /**
      * Handle CloudEventsFunction
-     * 
+     *
      * @param cloudEvent
      */
     public static void handle(CloudEvent cloudEvent) {

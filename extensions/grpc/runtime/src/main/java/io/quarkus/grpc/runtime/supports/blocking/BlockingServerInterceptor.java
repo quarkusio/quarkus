@@ -121,7 +121,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         /**
          * Must be called from within the event loop context
          * If there are deferred events will start executing them in the shared worker context
-         * 
+         *
          * @param delegate
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {

@@ -218,7 +218,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
 
         /**
          * Sets an anonymous identity status.
-         * 
+         *
          * @param anonymous the anonymous status
          * @return This builder
          */

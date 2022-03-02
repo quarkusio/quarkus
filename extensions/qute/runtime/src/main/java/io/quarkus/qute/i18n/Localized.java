@@ -15,7 +15,7 @@ import javax.inject.Qualifier;
 
 /**
  * Marks a localized message bundle interface.
- * 
+ *
  * @see MessageBundle
  */
 @Qualifier

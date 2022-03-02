@@ -172,7 +172,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     /**
      * Resolve application mode for the main application module that might not have a POM file on disk.
-     * 
+     *
      * @param module main application module
      * @return resolved application model
      * @throws AppModelResolverException in case application model could not be resolved

@@ -32,7 +32,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Persist the given entity in the database.
      * This will set it's ID field if not already set.
-     * 
+     *
      * @param entity the entity to insert.
      * @see #persist(Iterable)
      * @see #persist(Stream)
@@ -68,7 +68,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Delete the given entity from the database, if it is already persisted.
-     * 
+     *
      * @param entity the entity to delete.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -83,7 +83,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find an entity of this type by ID.
-     * 
+     *
      * @param id the ID of the entity to find.
      * @return the entity found, or <code>null</code> if not found.
      */
@@ -105,7 +105,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a new {@link ReactivePanacheQuery} instance for the given query
@@ -122,7 +122,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
@@ -140,7 +140,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Map} of named parameters
      * @return a new {@link ReactivePanacheQuery} instance for the given query
@@ -157,7 +157,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
@@ -175,7 +175,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a new {@link ReactivePanacheQuery} instance for the given query
@@ -192,7 +192,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters

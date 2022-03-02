@@ -108,7 +108,7 @@ public class HibernateEnversBuildTimeConfig {
 
     /**
      * Defines the fully qualified class name of the audit strategy to be used.
-     * 
+     *
      * Maps to {@link org.hibernate.envers.configuration.EnversSettings#AUDIT_STRATEGY}.
      */
     @ConfigItem(defaultValue = "org.hibernate.envers.strategy.DefaultAuditStrategy")

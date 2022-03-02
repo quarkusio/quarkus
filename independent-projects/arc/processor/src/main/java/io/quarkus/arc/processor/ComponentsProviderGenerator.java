@@ -76,7 +76,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         MethodCreator getComponents = componentsProvider.getMethodCreator("getComponents", Components.class)
                 .setModifiers(ACC_PUBLIC);
 
-        // Maps a bean to all injection points it is resolved to 
+        // Maps a bean to all injection points it is resolved to
         // Bar -> Foo, Baz
         // Foo -> Baz
         // Interceptor -> Baz
@@ -289,7 +289,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 }
             }
         }
-        // Note that we do not have to process observer injection points because observers are always processed after all beans are ready 
+        // Note that we do not have to process observer injection points because observers are always processed after all beans are ready
         return beanToInjections;
     }
 

@@ -90,7 +90,7 @@ public class InterceptedStaticMethodsProcessor {
             InterceptorResolverBuildItem interceptorResolver, TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
-        // In this step we collect all intercepted static methods, ie. static methods annotated with interceptor bindings  
+        // In this step we collect all intercepted static methods, ie. static methods annotated with interceptor bindings
         Set<DotName> interceptorBindings = interceptorResolver.getInterceptorBindings();
 
         for (ClassInfo clazz : beanArchiveIndex.getIndex().getKnownClasses()) {
@@ -169,7 +169,7 @@ public class InterceptedStaticMethodsProcessor {
             list.add(interceptedStaticMethod);
         }
 
-        // For each declaring class create an initializer class that: 
+        // For each declaring class create an initializer class that:
         // 1. registers all interceptor chains inside an "init_static_intercepted_methods" method
         // 2. adds static methods to invoke the interceptor chain and delegate to the copy of the original static method
         // declaring class -> initializer class

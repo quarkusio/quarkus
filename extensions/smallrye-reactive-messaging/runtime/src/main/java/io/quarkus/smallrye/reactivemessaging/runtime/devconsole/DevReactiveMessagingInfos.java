@@ -21,7 +21,7 @@ import io.smallrye.reactive.messaging.providers.extension.EmitterConfiguration;
 
 public class DevReactiveMessagingInfos {
 
-    // We must use a lazy value because MediatorManager is initialized when the app starts 
+    // We must use a lazy value because MediatorManager is initialized when the app starts
     private final LazyValue<List<DevChannelInfo>> channels;
 
     public DevReactiveMessagingInfos() {

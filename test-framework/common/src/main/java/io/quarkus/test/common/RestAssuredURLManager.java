@@ -184,7 +184,7 @@ public class RestAssuredURLManager {
 
     /**
      * Execute the following code:
-     * 
+     *
      * <pre>
      * {@code
      * RestAssured.config = RestAssured.config().httpClient(

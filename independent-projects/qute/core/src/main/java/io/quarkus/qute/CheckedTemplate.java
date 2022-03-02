@@ -29,17 +29,17 @@ import java.lang.annotation.Target;
  * <p>
  * Example:
  * <p>
- * 
+ *
  * <pre>
  * &#64;Path("item")
  * public class ItemResource {
- * 
+ *
  *     &#64;CheckedTemplate
  *     static class Templates {
  *         // defines a template at ItemResource/item, taking an Item parameter named item
  *         static native TemplateInstance item(Item item);
  *     }
- * 
+ *
  *     &#64;GET
  *     &#64;Path("{id}")
  *     &#64;Produces(MediaType.TEXT_HTML)
@@ -62,22 +62,22 @@ public @interface CheckedTemplate {
 
     /**
      * Example:
-     * 
+     *
      * <pre>
      * &#64;Path("item")
      * public class ItemResource {
-     * 
+     *
      *     &#64;CheckedTemplate(basePath = "items_v1")
      *     static class Templates {
      *         // defines a template at items_v1/item
      *         static native TemplateInstance item(Item item);
-     * 
+     *
      *         // defines a template at items_v1/allItems
      *         static native TemplateInstance allItems(List&lt;Item&gt; items);
      *     }
      * }
      * </pre>
-     * 
+     *
      * @return the base path relative to the templates root
      */
     String basePath() default DEFAULTED;

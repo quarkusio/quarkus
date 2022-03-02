@@ -832,7 +832,7 @@ public class SmallRyeOpenApiProcessor {
         List<String> filenames = new ArrayList<>();
         // Here we are resolving the resource dir relative to the classes dir and if it does not exist, we fallback to locating the resource dir on the classpath.
         // Although the classes dir should already be on the classpath.
-        // In a QuarkusUnitTest the module's classes dir and the test application root could be different directories, is this code here for that reason?   
+        // In a QuarkusUnitTest the module's classes dir and the test application root could be different directories, is this code here for that reason?
         final Path targetResourceDir = target == null ? null : target.resolve("classes").resolve(resourcePath);
         if (targetResourceDir != null && Files.exists(targetResourceDir)) {
             try (Stream<Path> paths = Files.list(targetResourceDir)) {

@@ -86,7 +86,7 @@ public enum BuildTool {
     /**
      * Determine the build tool from the contents of an existing project
      * (pom.xml, build.gradle.kts, build.gradle, etc.)
-     * 
+     *
      * @param projectDirPath The Path to an existing project
      * @return the BuildTool enumeration matched from filesystem content or null;
      */

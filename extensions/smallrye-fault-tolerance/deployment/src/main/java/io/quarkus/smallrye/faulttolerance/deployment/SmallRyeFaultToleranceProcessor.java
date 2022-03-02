@@ -197,7 +197,7 @@ public class SmallRyeFaultToleranceProcessor {
         beans.produce(builder.build());
 
         // TODO FT should be smart enough and only initialize the stuff in the recorder if it's really needed
-        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration - interceptors 
+        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration - interceptors
         // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(FaultToleranceInterceptor.class, QuarkusFaultToleranceOperationProvider.class,

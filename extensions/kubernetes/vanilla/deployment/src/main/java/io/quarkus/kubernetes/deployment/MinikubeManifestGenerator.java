@@ -121,7 +121,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
     /**
      * Creates a {@link Deployment} for the {@link KubernetesConfig}.
-     * 
+     *
      * @param appConfig The session.
      * @return The deployment.
      */
@@ -141,7 +141,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
     /**
      * Creates a {@link LabelSelector} that matches the labels for the {@link KubernetesConfig}.
-     * 
+     *
      * @return A labels selector.
      */
     public LabelSelector createSelector(KubernetesConfig config) {
@@ -152,7 +152,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
     /**
      * Creates a {@link PodTemplateSpec} for the {@link KubernetesConfig}.
-     * 
+     *
      * @param appConfig The sesssion.
      * @return The pod template specification.
      */
@@ -167,7 +167,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
     /**
      * Creates a {@link PodSpec} for the {@link KubernetesConfig}.
-     * 
+     *
      * @param imageConfig The sesssion.
      * @return The pod specification.
      */

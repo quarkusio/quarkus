@@ -11,7 +11,7 @@ public final class Sets {
     /**
      * Unlike {@link Set#of(Object...)} this method does not throw an {@link IllegalArgumentException} if there are duplicate
      * elements.
-     * 
+     *
      * @param <E>
      * @param elements
      * @return the set

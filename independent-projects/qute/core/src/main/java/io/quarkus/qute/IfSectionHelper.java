@@ -531,7 +531,7 @@ public class IfSectionHelper implements SectionHelper {
                         }
                     }
                     highestGroup.add(param);
-                    // Add non-grouped elements 
+                    // Add non-grouped elements
                     if (prevIdx > lastGroupdIdx) {
                         int from = lastGroupdIdx > 0 ? lastGroupdIdx + 1 : 0;
                         int to = op.isBinary() ? prevIdx : prevIdx + 1;

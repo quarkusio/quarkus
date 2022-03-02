@@ -42,7 +42,7 @@ import org.reactivestreams.Subscription;
  *
  * When created, MultiByteHttpData will subscribe to the underlying Multi and request {@link MultiByteHttpData#BUFFER_SIZE}
  * of bytes.
- * 
+ *
  * Before reading the next chunk of data with {@link #getChunk(int)}, the post encoder checks if data {@link #isReady(int)}
  * and if not, triggers {@link #suspend(int)}. That's because a chunk smaller than requested is treated as the end of input.
  * Then, when the requested amount of bytes is ready, or the underlying Multi is completed, `resumption` is executed.
@@ -172,7 +172,7 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
 
     /**
      * check if it is possible to read the next chunk of data of a given size
-     * 
+     *
      * @param chunkSize amount of bytes
      * @return true if the requested amount of bytes is ready to be read or the Multi is completed, i.e. there will be
      *         no more bytes to read
@@ -185,7 +185,7 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
      * {@inheritDoc}
      * <br/>
      * NOTE: should only be invoked when {@link #isReady(int)} returns true
-     * 
+     *
      * @param toRead amount of bytes to read
      * @return ByteBuf with the requested bytes
      */

@@ -137,7 +137,7 @@ class EvaluatorImpl implements Evaluator {
         }
 
         if (resolvers == null) {
-            // Iterate the resolvers lazily 
+            // Iterate the resolvers lazily
             resolvers = this.resolvers.iterator();
         }
 
@@ -165,7 +165,7 @@ class EvaluatorImpl implements Evaluator {
             } else {
                 // If the next part matches the ValueResolvers.orResolver() we can just use the empty NotFound constant
                 // and avoid unnecessary allocations
-                // This optimization should be ok in 99% of cases, for the rest an incomplete NotFound is an acceptable loss 
+                // This optimization should be ok in 99% of cases, for the rest an incomplete NotFound is an acceptable loss
                 Part nextPart = isLastPart ? null : expression.getParts().get(partIndex + 1);
                 if (nextPart != null
                         // is virtual method with a single param
@@ -173,7 +173,7 @@ class EvaluatorImpl implements Evaluator {
                         && nextPart.asVirtualMethod().getParameters().size() == 1
                         // name has less than 3 chars
                         && nextPart.getName().length() < 3
-                        // name is "?:", "or" or ":" 
+                        // name is "?:", "or" or ":"
                         && (nextPart.getName().equals(ValueResolvers.ELVIS)
                                 || nextPart.getName().equals(ValueResolvers.OR)
                                 || nextPart.getName().equals(ValueResolvers.COLON))) {

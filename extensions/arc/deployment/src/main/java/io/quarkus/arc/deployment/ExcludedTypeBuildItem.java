@@ -4,7 +4,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This build item is used to specify types to be excluded from discovery.
- * 
+ *
  * <p>
  * An element value can be:
  * <ul>

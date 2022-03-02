@@ -17,7 +17,7 @@ public final class Annotations {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @param name
      * @return the first matching annotation instance with the given name or null
@@ -35,7 +35,7 @@ public final class Annotations {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @param name
      * @return {@code true} if the given collection contains an annotation instance with the given name, {@code false} otherwise
@@ -45,7 +45,7 @@ public final class Annotations {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @param names
      * @return {@code true} if the given collection contains an annotation instance with any of the given names, {@code false}
@@ -66,7 +66,7 @@ public final class Annotations {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @return the parameter annotations
      */
@@ -75,7 +75,7 @@ public final class Annotations {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @return the annotations for the given kind
      */
@@ -84,7 +84,7 @@ public final class Annotations {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @return the annotations for the given kind and name
      */
@@ -122,7 +122,7 @@ public final class Annotations {
     }
 
     /**
-     * 
+     *
      * @param beanDeployment
      * @param method
      * @param position
@@ -134,7 +134,7 @@ public final class Annotations {
     }
 
     /**
-     * 
+     *
      * @param transformedAnnotations
      * @param method
      * @param position

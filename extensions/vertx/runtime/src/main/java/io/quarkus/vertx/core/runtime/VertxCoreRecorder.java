@@ -250,7 +250,7 @@ public class VertxCoreRecorder {
      *
      * For dev mode it can change, so we don't want to capture the original TCCL (as this would be a leak). For other modes we
      * just want a fixed TCCL, and leaks are not an issue.
-     * 
+     *
      * @param launchMode The launch mode
      * @return The ClassLoader if we are not running in dev mode
      */

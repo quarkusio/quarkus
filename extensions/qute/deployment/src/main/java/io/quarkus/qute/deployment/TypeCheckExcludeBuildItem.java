@@ -10,7 +10,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Makes it possible to intentionally ignore some parts of an expression when performing type-safe validation.
- * 
+ *
  * @see TypeCheck
  */
 public final class TypeCheckExcludeBuildItem extends MultiBuildItem {

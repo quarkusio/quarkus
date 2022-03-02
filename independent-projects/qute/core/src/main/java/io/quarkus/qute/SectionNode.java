@@ -87,7 +87,7 @@ class SectionNode implements TemplateNode {
             this.helperName = helperName;
             this.origin = origin;
             this.blocks = new ArrayList<>();
-            // The main block is always present 
+            // The main block is always present
             addBlock(SectionBlock
                     .builder(SectionHelperFactory.MAIN_BLOCK_NAME, expressionFun, errorFun)
                     .setOrigin(origin));

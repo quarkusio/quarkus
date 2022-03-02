@@ -10,7 +10,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Object allowing the register filters, i.e. handler called on every HTTP request.
  * This object is intended to be used as follows:
- * 
+ *
  * <pre>
  * {@code
  * public void init(@Observes Filters filters) {

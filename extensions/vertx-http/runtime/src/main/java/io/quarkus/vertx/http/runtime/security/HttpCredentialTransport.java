@@ -4,11 +4,11 @@ import java.util.Objects;
 
 /**
  * A representation of HTTP credential transport. In particular this includes things such as:
- * 
+ *
  * Cookies
  * Authorization header
  * POST
- * 
+ *
  * Not that using multiple HTTP authentication mechanisms to use the same credential
  * transport type can lead to unexpected authentication failures as they will not be able to figure out which mechanisms should
  * process which

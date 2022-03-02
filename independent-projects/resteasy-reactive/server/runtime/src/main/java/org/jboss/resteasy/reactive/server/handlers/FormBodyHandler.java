@@ -58,7 +58,7 @@ public class FormBodyHandler implements ServerRestHandler, RuntimeConfigurableSe
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        // in some cases, with sub-resource locators or via request filters, 
+        // in some cases, with sub-resource locators or via request filters,
         // it's possible we've already read the entity
         if (requestContext.getFormData() != null) {
             // let's not set it twice

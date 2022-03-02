@@ -193,9 +193,9 @@ class NettyProcessor {
         }
 
         // IMPLEMENTATION NOTE:
-        // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next() 
-        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method 
-        // is not generated and the invocation upon the client proxy results in an AbstractMethodError 
+        // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next()
+        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method
+        // is not generated and the invocation upon the client proxy results in an AbstractMethodError
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
                 .supplier(boss)
                 .scope(Singleton.class)

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * This object represents the claims property in the authorizer context of a request. The claims object is normally populated
  * by a Cognito User Pool authorizer and contains the following fields:
- * 
+ *
  * <pre>
  * "claims": {
  *     "sub": "42df3b02-29f1-4779-a3e5-eff92ff280b2",

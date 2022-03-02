@@ -74,7 +74,7 @@ public class BeanProcessor {
     // This predicate is used to filter annotations for InjectionPoint metadata
     // Note that we do create annotation literals for all annotations for an injection point that resolves to a @Dependent bean that injects the InjectionPoint metadata
     // The original use case is to ignore JDK annotations that would prevent an application built with JDK 9+ from targeting JDK 8
-    // Such as java.lang.Deprecated 
+    // Such as java.lang.Deprecated
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
 
     private BeanProcessor(Builder builder) {
@@ -362,7 +362,7 @@ public class BeanProcessor {
         /**
          * Set the bean archive index. This index is mandatory and is used to discover components (beans, interceptors,
          * qualifiers, etc.) and during type-safe resolution.
-         * 
+         *
          * @param beanArchiveIndex
          * @return self
          */
@@ -375,7 +375,7 @@ public class BeanProcessor {
          * Set the application index. This index is optional and is also used to discover types during type-safe resolution.
          * <p>
          * Some types may not be part of the bean archive index but are still needed during type-safe resolution.
-         * 
+         *
          * @param applicationIndex
          * @return self
          */
@@ -556,7 +556,7 @@ public class BeanProcessor {
 
         /**
          * Specify the types that should be excluded from discovery.
-         * 
+         *
          * @param predicate
          * @return self
          */
@@ -567,7 +567,7 @@ public class BeanProcessor {
 
         /**
          * A generator can contribute to the generated {@link InjectableBean#isSuppressed()} method body.
-         * 
+         *
          * @param generator
          * @return self
          */

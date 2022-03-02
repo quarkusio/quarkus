@@ -29,7 +29,7 @@ class HierarchyDiscovery {
 
     /**
      * Constructs a new {@link HierarchyDiscovery} instance.
-     * 
+     *
      * @param type the type whose hierarchy will be discovered
      */
     HierarchyDiscovery(Type type) {

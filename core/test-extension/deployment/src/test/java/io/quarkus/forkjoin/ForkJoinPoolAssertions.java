@@ -17,7 +17,7 @@ public class ForkJoinPoolAssertions {
      * It is expected that a Quarkus application running in production mode
      * will have set the io.quarkus.bootstrap.runner.RunnerClassLoader as
      * context classloader on each of them, to prevent problems at runtime.
-     * 
+     *
      * @return true only if all checks are successful.
      */
     static boolean isEachFJThreadUsingQuarkusClassloader() {

@@ -129,7 +129,7 @@ public class SseUtil extends CommonSseUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
-            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations 
+            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
                 // FIXME: spec doesn't really say what headers we should use here
                 writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,

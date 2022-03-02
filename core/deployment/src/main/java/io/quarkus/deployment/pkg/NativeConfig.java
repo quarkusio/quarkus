@@ -72,7 +72,7 @@ public class NativeConfig {
      * It also serves as the default Locale language for the native executable application runtime.
      * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
-     * 
+     *
      * @deprecated Use the global quarkus.default-locale.
      */
     @ConfigItem
@@ -85,7 +85,7 @@ public class NativeConfig {
      * It also serves as the default Locale country for the native executable application runtime.
      * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
-     * 
+     *
      * @deprecated Use the global quarkus.default-locale.
      */
     @ConfigItem

@@ -56,7 +56,7 @@ public final class Expressions {
     }
 
     /**
-     * 
+     *
      * @param value
      * @return the parts
      */
@@ -165,7 +165,7 @@ public final class Expressions {
     }
 
     /**
-     * 
+     *
      * @param buffer
      * @param parts
      * @return true if a new buffer should be created

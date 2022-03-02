@@ -41,7 +41,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
                 "  }\n" +
                 "}");
 
-        // Do a request 
+        // Do a request
         RestAssured.given().when()
                 .accept(MEDIATYPE_JSON)
                 .contentType(MEDIATYPE_JSON)
@@ -102,7 +102,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
 
     @Test
     public void testCodeChange() {
-        // Do a request 
+        // Do a request
         pingTest();
         LOG.info("Initial ping done");
 

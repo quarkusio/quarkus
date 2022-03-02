@@ -13,7 +13,7 @@ class LiteralSupport {
     static final Pattern FLOAT_LITERAL_PATTERN = Pattern.compile("[-+]?[0-9]*\\.?[0-9]+(f|F)");
 
     /**
-     * 
+     *
      * @param literal
      * @return {@link Results.NotFound.EMPTY} if no literal was found, otherwise the literal value
      */

@@ -11,7 +11,7 @@ public final class InjectableReferenceProviders {
 
     /**
      * Unwraps the provider if necessary and invokes {@link Contextual#destroy(Object, CreationalContext)}.
-     * 
+     *
      * @param <T>
      * @param provider
      * @param instance

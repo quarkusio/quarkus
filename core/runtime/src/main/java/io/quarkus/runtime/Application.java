@@ -51,7 +51,7 @@ public abstract class Application implements Closeable {
 
     /**
      * Construct a new instance.
-     * 
+     *
      * @param auxilaryApplication
      */
     protected Application(boolean auxilaryApplication) {

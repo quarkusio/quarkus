@@ -21,21 +21,21 @@ import javax.enterprise.inject.spi.ObserverMethod;
  * The contextual instance is destroyed immediately afterwards for {@link Dependent} beans.
  * <p>
  * The following examples are functionally equivalent.
- * 
+ *
  * <pre>
  * &#064;ApplicationScoped
  * class Bean1 {
  *     void onStart(@Observes StartupEvent event) {
- *         // place the logic here 
+ *         // place the logic here
  *     }
  * }
- * 
+ *
  * &#064;Startup
  * &#064;ApplicationScoped
  * class Bean2 {
  * }
  * </pre>
- * 
+ *
  * @see StartupEvent
  */
 @Target({ TYPE, METHOD, FIELD })
@@ -43,7 +43,7 @@ import javax.enterprise.inject.spi.ObserverMethod;
 public @interface Startup {
 
     /**
-     * 
+     *
      * @return the priority
      * @see javax.annotation.Priority
      */

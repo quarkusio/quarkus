@@ -63,7 +63,7 @@ public class OpenshiftWithS2iTest {
                 .filteredOn(h -> "ImageStream".equals(h.getKind()) && h.getMetadata().getName().equals("openshift-s2i"))
                 .hasSize(1);
 
-        // Has builder image stream 
+        // Has builder image stream
         assertThat(openshiftList)
                 .filteredOn(h -> "ImageStream".equals(h.getKind()) && !h.getMetadata().getName().equals("openshift-s2i"))
                 .singleElement().satisfies(r -> {

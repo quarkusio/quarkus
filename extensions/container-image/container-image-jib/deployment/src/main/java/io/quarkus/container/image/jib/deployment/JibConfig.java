@@ -93,7 +93,7 @@ public class JibConfig {
 
     /**
      * Custom labels to add to the generated image
-     * 
+     *
      * @deprecated Use 'quarkus.container-image.labels' instead
      */
     @ConfigItem
@@ -144,11 +144,11 @@ public class JibConfig {
 
     /**
      * List of target platforms. Each platform is defined using the pattern:
-     * 
+     *
      * <pre>
      *  {@literal <os>|<arch>[/variant]|<os>/<arch>[/variant]}
      * </pre>
-     * 
+     *
      * for example:
      *
      * <pre>

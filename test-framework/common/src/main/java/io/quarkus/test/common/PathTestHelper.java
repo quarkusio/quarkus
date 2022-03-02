@@ -261,10 +261,10 @@ public final class PathTestHelper {
 
     /**
      * Returns the build directory of the project given its base dir and the test classes dir.
-     * 
+     *
      * @param projectRoot project dir
      * @param testClassLocation test dir
-     * 
+     *
      * @return project build dir
      */
     public static Path getProjectBuildDir(Path projectRoot, Path testClassLocation) {

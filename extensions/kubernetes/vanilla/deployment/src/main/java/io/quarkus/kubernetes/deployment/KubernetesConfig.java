@@ -113,7 +113,7 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * The host under which the application is going to be exposed
-     * 
+     *
      * @deprecated Use the {@code quarkus.kubernetes.ingress.host} instead
      */
     @ConfigItem
@@ -256,7 +256,7 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * If true, a Kubernetes Ingress will be created
-     * 
+     *
      * @deprecated Use the {@code quarkus.kubernetes.ingress.expose} instead
      */
     @ConfigItem

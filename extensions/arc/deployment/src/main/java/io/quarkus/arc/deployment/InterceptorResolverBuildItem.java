@@ -31,7 +31,7 @@ public final class InterceptorResolverBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * 
+     *
      * @return the set of all known interceptor bindings
      */
     public Set<DotName> getInterceptorBindings() {

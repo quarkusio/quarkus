@@ -44,7 +44,7 @@ public class MicrometerTimedInterceptor {
         final List<Sample> samples = getSamples(context);
 
         if (samples.isEmpty()) {
-            // This should never happen - at least one @Timed binding must be present  
+            // This should never happen - at least one @Timed binding must be present
             return context.proceed();
         }
 

@@ -12,14 +12,14 @@ import java.util.function.Supplier;
  * Builder for {@link Engine}.
  * <p>
  * If using Qute "standalone" you'll need to create an instance of the {@link Engine} first:
- * 
+ *
  * <pre>
  * Engine engine = Engine.builder()
  *         // add the default set of value resolvers and section helpers
  *         .addDefaults()
  *         .build();
  * </pre>
- * 
+ *
  * This construct is not thread-safe and should not be reused.
  */
 public final class EngineBuilder {
@@ -100,7 +100,7 @@ public final class EngineBuilder {
 
     /**
      * Add the default set of value resolvers.
-     * 
+     *
      * @return self
      * @see #addValueResolver(ValueResolver)
      */
@@ -114,7 +114,7 @@ public final class EngineBuilder {
 
     /**
      * Add the default set of value resolvers and section helpers.
-     * 
+     *
      * @return self
      * @see #addValueResolver(ValueResolver)
      * @see #addSectionHelper(SectionHelperFactory)
@@ -124,7 +124,7 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     *
      * @param resolver
      * @return self
      * @throws IllegalArgumentException if there is a resolver of the same priority for the given namespace
@@ -146,7 +146,7 @@ public final class EngineBuilder {
 
     /**
      * A {@link Reader} instance produced by a locator is immediately closed right after the template content is parsed.
-     * 
+     *
      * @param locator
      * @return self
      * @see Engine#getTemplate(String)
@@ -157,7 +157,7 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     *
      * @param parserHook
      * @return self
      * @see ParserHelper
@@ -168,7 +168,7 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     *
      * @param resultMapper
      * @return self
      */
@@ -178,7 +178,7 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     *
      * @param initializer
      * @return self
      */
@@ -190,7 +190,7 @@ public final class EngineBuilder {
     /**
      * The function is used if no section helper registered via {@link #addSectionHelper(SectionHelperFactory)} matches a
      * section name.
-     * 
+     *
      * @param func
      * @return self
      */
@@ -204,7 +204,7 @@ public final class EngineBuilder {
      * <p>
      * A standalone line is a line that contains at least one section tag, parameter declaration, or comment but no expression
      * and no non-whitespace character.
-     * 
+     *
      * @param value
      * @return self
      */
@@ -218,7 +218,7 @@ public final class EngineBuilder {
      * {@link TemplateException} and the rendering is aborted.
      * <p>
      * Strict rendering is enabled by default.
-     * 
+     *
      * @param value
      * @return self
      */
@@ -233,7 +233,7 @@ public final class EngineBuilder {
      * {@link #addSectionHelper(SectionHelperFactory)}.
      * <p>
      * A valid prefix consists of alphanumeric characters and underscores.
-     * 
+     *
      * @param prefix
      * @return self
      * @see LoopSectionHelper.Factory
@@ -252,7 +252,7 @@ public final class EngineBuilder {
 
     /**
      * The global rendering timeout.
-     * 
+     *
      * @param value Timeout in milliseconds
      * @return self
      */
@@ -264,7 +264,7 @@ public final class EngineBuilder {
     /**
      * If set to {@code true} the timeout (either global or set via the {@code timeout} instance attribute) is also used for
      * asynchronous rendering methods, such as {@link TemplateInstance#createUni()} and {@link TemplateInstance#renderAsync()}.
-     * 
+     *
      * @param value
      * @return self
      */
@@ -274,7 +274,7 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     *
      * @return a new engine instance
      */
     public Engine build() {

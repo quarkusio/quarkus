@@ -311,9 +311,9 @@ public final class OidcUtils {
      *
      * Initialized properties in the current tenant configuration take priority
      * over the same initialized properties in the well-known OpenId Connect provider configuration.
-     * 
+     *
      * Tenant id property of the current tenant must be set before the merge operation.
-     * 
+     *
      * @param tenant current tenant configuration
      * @param provider well-known OpenId Connect provider configuration
      * @return merged configuration

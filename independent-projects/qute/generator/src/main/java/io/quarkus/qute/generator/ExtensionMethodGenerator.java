@@ -53,7 +53,7 @@ import org.jboss.jandex.Type.Kind;
 
 /**
  * Generates value resolvers for static extension methods.
- * 
+ *
  * @see ValueResolver
  * @see NamespaceResolver
  */

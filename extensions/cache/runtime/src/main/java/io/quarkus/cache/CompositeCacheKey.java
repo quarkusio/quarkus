@@ -13,7 +13,7 @@ public class CompositeCacheKey {
 
     /**
      * Constructor.
-     * 
+     *
      * @param keyElements key elements
      * @throws IllegalArgumentException if no key elements are provided
      */

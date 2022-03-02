@@ -10,7 +10,7 @@ import javax.enterprise.context.spi.CreationalContext;
 
 /**
  * A context implementing this interface makes it possible to capture and view its state via the {@link ContextState}.
- * 
+ *
  * It also allows users to destroy all contextual instances within this context.
  */
 public interface InjectableContext extends AlterableContext {
@@ -28,7 +28,7 @@ public interface InjectableContext extends AlterableContext {
 
     /**
      * If the context is active then return the current state.
-     * 
+     *
      * @return the current state or {@code null} if the context is not active
      */
     default ContextState getStateIfActive() {
@@ -38,7 +38,7 @@ public interface InjectableContext extends AlterableContext {
     /**
      * If the context is active then return an existing instance of certain contextual type or create a new instance, otherwise
      * return a null value.
-     * 
+     *
      * This allows for the {@link #isActive()} check and the actual creation to happen in a single method, which gives a
      * performance benefit by performing fewer thread local operations.
      *
@@ -64,7 +64,7 @@ public interface InjectableContext extends AlterableContext {
      * <p>
      * The default implementation is not optimized and does not guarantee proper sychronization. Implementations of this
      * interface are encouraged to provide an optimized implementation of this method.
-     * 
+     *
      * @param state
      */
     default void destroy(ContextState state) {
@@ -78,7 +78,7 @@ public interface InjectableContext extends AlterableContext {
     }
 
     /**
-     * 
+     *
      * @return {@code true} if this context represents a normal scope
      */
     default boolean isNormal() {
@@ -98,7 +98,7 @@ public interface InjectableContext extends AlterableContext {
         /**
          * Context state is typically invalidated once the context to which is belongs is being destroyed.
          * This flag is then used by context propagation to indicate that the given state shouldn't be reused anymore.
-         * 
+         *
          * @return true if the context state is valid, false otherwise
          */
         default boolean isValid() {

@@ -15,9 +15,9 @@ public class QuteConfig {
 
     /**
      * The list of suffixes used when attempting to locate a template file.
-     * 
+     *
      * By default, `engine.getTemplate("foo")` would result in several lookups: `foo`, `foo.html`, `foo.txt`, etc.
-     * 
+     *
      * @asciidoclet
      */
     @ConfigItem(defaultValue = "qute.html,qute.txt,html,txt")

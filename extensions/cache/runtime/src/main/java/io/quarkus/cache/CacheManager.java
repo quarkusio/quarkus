@@ -11,11 +11,11 @@ import java.util.Optional;
  * </p>
  * <p>
  * Code example:
- * 
+ *
  * <pre>
  * {@literal @}ApplicationScoped
  * public class CachedService {
- * 
+ *
  *     {@literal @}Inject
  *     CacheManager cacheManager;
 
@@ -32,14 +32,14 @@ public interface CacheManager {
 
     /**
      * Gets a collection of all cache names.
-     * 
+     *
      * @return names of all caches
      */
     Collection<String> getCacheNames();
 
     /**
      * Gets the cache identified by the given name.
-     * 
+     *
      * @param name cache name
      * @return an {@link Optional} containing the identified cache if it exists, or an empty {@link Optional} otherwise
      */

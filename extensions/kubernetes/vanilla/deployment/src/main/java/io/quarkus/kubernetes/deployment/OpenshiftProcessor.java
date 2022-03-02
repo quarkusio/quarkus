@@ -96,7 +96,7 @@ public class OpenshiftProcessor {
                 if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                     // Images stored in internal openshift registry use the following patttern:
                     // 'image-registry.openshift-image-registry.svc:5000/{{ project name}}/{{ image name }}: {{image version }}.
-                    // So, we need warn users if group does not match currently selected project. 
+                    // So, we need warn users if group does not match currently selected project.
                     containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(OPENSHIFT_INTERNAL_REGISTRY));
                 } else {
                     containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(DOCKERIO_REGISTRY));

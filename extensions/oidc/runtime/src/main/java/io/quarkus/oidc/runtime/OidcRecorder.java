@@ -160,7 +160,7 @@ public class OidcRecorder {
                             Set.of("quarkus.oidc.authorization-path", "quarkus.oidc.token-path"));
                 }
             }
-            // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
+            // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications
             if (!oidcConfig.jwksPath.isPresent() && !oidcConfig.introspectionPath.isPresent()) {
                 if (!oidcConfig.authentication.isIdTokenRequired().orElse(true)
                         && oidcConfig.authentication.isUserInfoRequired().orElse(false)) {

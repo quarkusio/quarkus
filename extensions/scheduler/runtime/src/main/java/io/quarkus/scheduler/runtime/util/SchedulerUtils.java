@@ -112,7 +112,7 @@ public class SchedulerUtils {
      * Adapted from {@link io.smallrye.config.ExpressionConfigSourceInterceptor}
      */
     private static String resolvePropertyExpression(String expr) {
-        // Force the runtime CL in order to make the DEV UI page work  
+        // Force the runtime CL in order to make the DEV UI page work
         final ClassLoader cl = SchedulerUtils.class.getClassLoader();
         final Config config = ConfigProviderResolver.instance().getConfig(cl);
         final Expression expression = Expression.compile(expr, LENIENT_SYNTAX, NO_TRIM);

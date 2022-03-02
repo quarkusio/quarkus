@@ -8,12 +8,12 @@ package io.quarkus.panache.common;
  * <p>
  * Usage:
  * </p>
- * 
+ *
  * <code><pre>
  * Page page = Page.ofSize(25);
  * Page secondPage = page.next();
  * </pre></code>
- * 
+ *
  * @author Stéphane Épardaud
  */
 public class Page {
@@ -30,7 +30,7 @@ public class Page {
 
     /**
      * Builds a page of the given size.
-     * 
+     *
      * @param size the page size
      * @throws IllegalArgumentException if the page size is less than or equal to 0
      * @see #ofSize(int)
@@ -41,7 +41,7 @@ public class Page {
 
     /**
      * Builds a page of the given index and size.
-     * 
+     *
      * @param index the page index (0-based)
      * @param size the page size
      * @throws IllegalArgumentException if the page index is less than 0
@@ -59,7 +59,7 @@ public class Page {
 
     /**
      * Builds a page of the given index and size.
-     * 
+     *
      * @param index the page index (0-based)
      * @param size the page size
      * @throws IllegalArgumentException if the page index is less than 0
@@ -71,7 +71,7 @@ public class Page {
 
     /**
      * Builds a page of the given size.
-     * 
+     *
      * @param size the page size
      * @throws IllegalArgumentException if the page size is less than or equal to 0
      */
@@ -81,7 +81,7 @@ public class Page {
 
     /**
      * Returns a new page with the next page index and the same size.
-     * 
+     *
      * @return a new page with the next page index and the same size.
      * @see #previous()
      */
@@ -91,7 +91,7 @@ public class Page {
 
     /**
      * Returns a new page with the previous page index and the same size, or this page if it is the first page.
-     * 
+     *
      * @return a new page with the next page index and the same size, or this page if it is the first page.
      * @see #next()
      */
@@ -101,7 +101,7 @@ public class Page {
 
     /**
      * Returns a new page with the first page index (0) and the same size, or this page if it is the first page.
-     * 
+     *
      * @return a new page with the first page index (0) and the same size, or this page if it is the first page.
      */
     public Page first() {
@@ -110,7 +110,7 @@ public class Page {
 
     /**
      * Returns a new page at the given page index and the same size, or this page if the page index is the same.
-     * 
+     *
      * @param newIndex the new page index
      * @return a new page at the given page index and the same size, or this page if the page index is the same.
      */

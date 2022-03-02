@@ -26,17 +26,17 @@ public class AsmUtilCopy {
     /**
      * Returns the Java bytecode signature of a given Jandex MethodInfo with no type argument mappings.
      * For example, given this method:
-     * 
+     *
      * <pre>
      * {@code
      * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...} 
+     *  public <R> List<R> method(int a, T t){...}
      * }
      * }
      * </pre>
-     * 
+     *
      * This will return <tt>&lt;R:Ljava/lang/Object;>(ITT;)Ljava/util/List&lt;TR;>;</tt>.
-     * 
+     *
      * @param method the method you want the signature for.
      * @return a bytecode signature for that method.
      */
@@ -47,18 +47,18 @@ public class AsmUtilCopy {
     /**
      * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
      * For example, given this method:
-     * 
+     *
      * <pre>
      * {@code
      * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...} 
+     *  public <R> List<R> method(int a, T t){...}
      * }
      * }
      * </pre>
-     * 
+     *
      * This will return <tt>&lt;R:Ljava/lang/Object;>(ILjava/lang/Integer;)Ljava/util/List&lt;TR;>;</tt> if
      * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
+     *
      * @param method the method you want the signature for.
      * @param typeArgMapper a mapping between type variables and their resolved type.
      * @return a bytecode signature for that method.
@@ -185,7 +185,7 @@ public class AsmUtilCopy {
      * </pre>
      *
      * @param superClass the superclass of the type you want to generate the signature for.
-     * 
+     *
      * @param superClassAsType the superclass as a Jandex Type.
      * @return a bytecode signature for that class.
      */

@@ -16,7 +16,7 @@ abstract class AnnotationsTransformationContext<C extends Collection<AnnotationI
     private C annotations;
 
     /**
-     * 
+     *
      * @param buildContext
      * @param target
      * @param annotations Mutable collection of annotations

@@ -762,7 +762,7 @@ public class DevConsoleProcessor {
                 final Path rootDir = classesDir.getParent();
                 final Path mavenArchiver = rootDir == null ? null : rootDir.resolve("maven-archiver");
                 if (mavenArchiver == null || !mavenArchiver.toFile().canRead()) {
-                    // it's a module output dir and the Maven metadata hasn't been generated 
+                    // it's a module output dir and the Maven metadata hasn't been generated
                     return null;
                 }
                 entry = ArtifactInfoUtil.groupIdAndArtifactId(mavenArchiver);

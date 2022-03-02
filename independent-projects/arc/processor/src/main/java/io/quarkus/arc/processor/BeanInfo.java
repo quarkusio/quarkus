@@ -161,7 +161,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     /**
-     * 
+     *
      * @return the annotation target or an empty optional in case of synthetic beans
      */
     public Optional<AnnotationTarget> getTarget() {
@@ -386,7 +386,7 @@ public class BeanInfo implements InjectionTargetInfo {
     /**
      * Note that the decorators are not available until the bean is fully initialized, i.e. they are available after
      * {@link BeanProcessor#initialize(Consumer, List)}.
-     * 
+     *
      * @return an ordered list of all decorators associated with the bean
      */
     public List<DecoratorInfo> getBoundDecorators() {
@@ -402,8 +402,8 @@ public class BeanInfo implements InjectionTargetInfo {
             }
         }
         // Sort by priority (highest goes first) and by bean class (reversed lexicographic-order)
-        // Highest priority first because the decorators are instantiated in the reverse order, 
-        // i.e. when the subclass constructor is generated the delegate subclass of the first decorator 
+        // Highest priority first because the decorators are instantiated in the reverse order,
+        // i.e. when the subclass constructor is generated the delegate subclass of the first decorator
         // (lower priority) needs a reference to the next decorator in the chain (higher priority)
         // Note that this set must be always reversed compared to the result coming from the BeanInfo#getNextDecorators(DecoratorInfo)
         Collections.sort(bound,

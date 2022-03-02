@@ -86,7 +86,7 @@ public class RegistrySnapshotCatalogCompatibilityTest {
         assertThat(extensionProcessor.getCategories()).isNotNull();
         assertThat(extensionProcessor.getExtendedKeywords()).isNotNull();
         assertThat(extensionProcessor.getCodestartLanguages()).isNotNull();
-        assertThat(extensionProcessor.getTags()).isNotNull();
+        assertThat(extensionProcessor.getSyntheticMetadata()).isNotNull();
         assertThat(extensionProcessor.getKeywords()).isNotNull();
 
         // Just check that no exception is thrown

@@ -105,6 +105,7 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -145,7 +146,9 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.pool.TypePool;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -498,6 +501,7 @@ public final class HibernateOrmProcessor {
     public BytecodeRecorderConstantDefinitionBuildItem pregenProxies(
             JpaModelBuildItem jpaModel,
             JpaModelIndexBuildItem indexBuildItem,
+            TransformedClassesBuildItem transformedClassesBuildItem,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) {
@@ -510,7 +514,8 @@ public final class HibernateOrmProcessor {
             managedClassAndPackageNames.addAll(pud.getManagedClassNames());
         }
         PreGeneratedProxies proxyDefinitions = generatedProxies(managedClassAndPackageNames,
-                indexBuildItem.getIndex(), generatedClassBuildItemBuildProducer, liveReloadBuildItem);
+                indexBuildItem.getIndex(), transformedClassesBuildItem,
+                generatedClassBuildItemBuildProducer, liveReloadBuildItem);
 
         // Make proxies available through a constant;
         // this is a hack to avoid introducing circular dependencies between build steps.
@@ -727,7 +732,6 @@ public final class HibernateOrmProcessor {
     @Record(STATIC_INIT)
     public void build(HibernateOrmRecorder recorder, HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            BuildProducer<BeanContainerListenerBuildItem> buildProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) throws Exception {
@@ -1501,6 +1505,7 @@ public final class HibernateOrmProcessor {
     }
 
     private PreGeneratedProxies generatedProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,
+            TransformedClassesBuildItem transformedClassesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) {
         ProxyCache proxyCache = liveReloadBuildItem.getContextObject(ProxyCache.class);
@@ -1525,7 +1530,9 @@ public final class HibernateOrmProcessor {
             }
             proxyAnnotations.put(i.target().asClass().name().toString(), proxyClass.asClass().name().toString());
         }
-        try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(Thread.currentThread().getContextClassLoader())) {
+        TypePool transformedClassesTypePool = createTransformedClassesTypePool(transformedClassesBuildItem,
+                managedClassAndPackageNames);
+        try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(transformedClassesTypePool)) {
             for (String managedClassOrPackageName : managedClassAndPackageNames) {
                 CachedProxy result;
                 if (proxyCache.cache.containsKey(managedClassOrPackageName)
@@ -1570,6 +1577,27 @@ public final class HibernateOrmProcessor {
             }
         }
         return preGeneratedProxies;
+    }
+
+    // Creates a TypePool that is aware of class transformations applied to entity classes,
+    // so that ByteBuddy can take these transformations into account.
+    // This is especially important when getters/setters are added to entity classes,
+    // because we want those methods to be overridden in proxies to trigger proxy initialization.
+    private TypePool createTransformedClassesTypePool(TransformedClassesBuildItem transformedClassesBuildItem,
+            Set<String> entityClasses) {
+        Map<String, byte[]> transformedClasses = new HashMap<>();
+        for (Set<TransformedClassesBuildItem.TransformedClass> transformedClassSet : transformedClassesBuildItem
+                .getTransformedClassesByJar().values()) {
+            for (TransformedClassesBuildItem.TransformedClass transformedClass : transformedClassSet) {
+                String className = transformedClass.getClassName();
+                if (entityClasses.contains(className)) {
+                    transformedClasses.put(className, transformedClass.getData());
+                }
+            }
+        }
+        return TypePool.Default.of(new ClassFileLocator.Compound(
+                new ClassFileLocator.Simple(transformedClasses),
+                ClassFileLocator.ForClassLoader.of(Thread.currentThread().getContextClassLoader())));
     }
 
     private boolean isModified(String entity, Set<String> changedClasses, IndexView index) {

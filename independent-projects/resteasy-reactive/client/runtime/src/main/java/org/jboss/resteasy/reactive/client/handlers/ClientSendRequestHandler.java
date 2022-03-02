@@ -262,11 +262,15 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         state.setMultipartResponsesData(multipartResponseDataMap);
         if (uri.getScheme() == null) { // invalid URI
             return Uni.createFrom()
-                    .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri.toString() + "'"));
+                    .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
         }
         if (uri.getScheme().startsWith(Stork.STORK)) {
             boolean isHttps = "storks".equals(uri.getScheme());
             String serviceName = uri.getHost();
+            if (serviceName == null) { // invalid URI
+                return Uni.createFrom()
+                        .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
+            }
             Uni<ServiceInstance> serviceInstance;
             try {
                 serviceInstance = Stork.getInstance()
@@ -294,7 +298,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             } catch (MalformedURLException mue) {
                 log.error("Invalid REST Client URL used: '" + uri + "'");
                 return Uni.createFrom()
-                        .failure(new IllegalArgumentException("Invalid REST Client URL used"));
+                        .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
             }
 
             boolean isHttps = "https".equals(uri.getScheme());

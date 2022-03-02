@@ -19,7 +19,9 @@ import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -264,6 +266,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         Object readTimeout = state.getConfiguration().getProperty(QuarkusRestClientProperties.READ_TIMEOUT);
         Uni<RequestOptions> requestOptions;
         state.setMultipartResponsesData(multipartResponseDataMap);
+        if (uri.getScheme() == null) { // invalid URI
+            return Uni.createFrom()
+                    .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri.toString() + "'"));
+        }
         if (uri.getScheme().startsWith(Stork.STORK)) {
             boolean isHttps = "storks".equals(uri.getScheme());
             String serviceName = uri.getHost();
@@ -289,6 +295,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 }
             });
         } else {
+            try {
+                URL ignored = uri.toURL();
+            } catch (MalformedURLException mue) {
+                log.error("Invalid REST Client URL used: '" + uri + "'");
+                return Uni.createFrom()
+                        .failure(new IllegalArgumentException("Invalid REST Client URL used"));
+            }
+
             boolean isHttps = "https".equals(uri.getScheme());
             int port = getPort(isHttps, uri.getPort());
             requestOptions = Uni.createFrom().item(new RequestOptions().setHost(uri.getHost())

@@ -4937,6 +4937,16 @@
                 <version>${awaitility.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility-kotlin</artifactId>
+                <version>${awaitility.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility-scala</artifactId>
+                <version>${awaitility.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>de.flapdoodle.embed</groupId>
                 <artifactId>de.flapdoodle.embed.mongo</artifactId>
                 <version>${flapdoodle.mongo.version}</version>

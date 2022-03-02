@@ -58,7 +58,7 @@ public class FileConfig {
         /**
          * The maximum file size of the log file after which a rotation is executed.
          */
-        @ConfigItem(defaultValueDocumentation = "10")
+        @ConfigItem(defaultValue = "10M")
         Optional<MemorySize> maxFileSize;
 
         /**

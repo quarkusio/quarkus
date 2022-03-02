@@ -34,6 +34,7 @@ import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
+import io.quarkus.extension.gradle.dsl.Capability;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.GACT;
 
@@ -138,6 +139,16 @@ public class ExtensionDescriptorTask extends DefaultTask {
         if (lesserPriorityArtifacts != null && !lesserPriorityArtifacts.isEmpty()) {
             String val = String.join(",", lesserPriorityArtifacts);
             props.put(AppModel.LESSER_PRIORITY_ARTIFACTS, val);
+        }
+
+        List<Capability> capabilities = quarkusExtensionConfiguration.getCapabilities();
+        if (!capabilities.isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            appendCapability(capabilities.get(0), buf);
+            for (int i = 1; i < capabilities.size(); ++i) {
+                appendCapability(capabilities.get(i), buf.append(','));
+            }
+            props.setProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES, buf.toString());
         }
 
         try {
@@ -260,6 +271,20 @@ public class ExtensionDescriptorTask extends DefaultTask {
         if (coreVersion != null) {
             ObjectNode metadata = getMetadataNode(extObject);
             metadata.put("built-with-quarkus-core", coreVersion);
+        }
+    }
+
+    private static void appendCapability(Capability capability, StringBuilder buf) {
+        buf.append(capability.getName());
+        if (!capability.getOnlyIf().isEmpty()) {
+            for (String onlyIf : capability.getOnlyIf()) {
+                buf.append('?').append(onlyIf);
+            }
+        }
+        if (!capability.getOnlyIfNot().isEmpty()) {
+            for (String onlyIfNot : capability.getOnlyIfNot()) {
+                buf.append("?!").append(onlyIfNot);
+            }
         }
     }
 

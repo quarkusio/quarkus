@@ -18,14 +18,9 @@ Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenI
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
-* Docker
 
 == Architecture
 
@@ -48,32 +43,31 @@ The solution is located in the `security-openid-connect-multi-tenancy-quickstart
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-openid-connect-multi-tenancy-quickstart \
-    -Dextensions="oidc,resteasy-jackson" \
-    -DnoExamples
-cd security-openid-connect-multi-tenancy-quickstart
-----
+:create-app-artifact-id: security-openid-connect-multi-tenancy-quickstart
+:create-app-extensions: oidc,resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `oidc` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="oidc"
-----
+:add-extension-extensions: oidc
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-oidc</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-oidc")
 ----
 
 == Writing the application
@@ -277,18 +271,17 @@ For more details, see the Keycloak documentation about how to https://www.keyclo
 
 === Running in Developer Mode
 
-To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`.
+To run the microservice in dev mode, use:
+
+include::includes/devtools/dev.adoc[]
 
 === Running in JVM Mode
 
-When you're done playing with "dev-mode" you can run it as a standard Java application.
+When you're done playing with dev mode, you can run it as a standard Java application.
 
 First compile it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Then run it:
 
@@ -306,12 +299,9 @@ production environment, as the runtime technology is included in
 the produced binary, and optimized to run with minimal resource overhead.
 
 Compilation will take a bit longer, so this step is disabled by default;
-let's build again by enabling the `native` profile:
+let's build again by enabling the native build:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 

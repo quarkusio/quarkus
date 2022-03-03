@@ -18,12 +18,7 @@ In this guide, we demonstrate usage of MicroProfile Fault Tolerance annotations 
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == The Scenario
 
@@ -46,35 +41,33 @@ The solution is located in the `microprofile-fault-tolerance-quickstart` {quicks
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=microprofile-fault-tolerance-quickstart \
-    -DclassName="org.acme.microprofile.faulttolerance.CoffeeResource" \
-    -Dpath="/coffee" \
-    -Dextensions="resteasy,smallrye-fault-tolerance,resteasy-jackson"
-cd microprofile-fault-tolerance-quickstart
-----
+:create-app-artifact-id: microprofile-fault-tolerance-quickstart
+:create-app-extensions: resteasy,smallrye-fault-tolerance,resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven structure, importing the extensions for RESTEasy/JAX-RS and SmallRye Fault Tolerance.
+This command generates a project, importing the extensions for RESTEasy/JAX-RS and SmallRye Fault Tolerance.
 
 If you already have your Quarkus project configured, you can add the `smallrye-fault-tolerance` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
-----
+:add-extension-extensions: smallrye-fault-tolerance
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 ----
 
 == Preparing an Application: REST Endpoint and CDI Bean
@@ -152,7 +145,7 @@ public class CoffeeRepositoryService {
 }
 ----
 
-Finally, edit the `org.acme.microprofile.faulttolerance.CoffeeResource` class as follows:
+Finally, create the `org.acme.microprofile.faulttolerance.CoffeeResource` class as follows:
 
 [source,java]
 ----
@@ -202,10 +195,7 @@ in the `CoffeeResource#coffees()` endpoint method in about 50 % of requests.
 
 Why not check that our application works? Run the Quarkus development server with:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 and open `http://localhost:8080/coffee` in your browser. Make couple of requests (remember, some of them we expect
 to fail). At least some of the requests should show us the list of our coffee samples in JSON, the rest will fail
@@ -487,21 +477,27 @@ of our business logic.
 
 All that is needed to enable the fault tolerance features in Quarkus is:
 
+:devtools-wrapped:
 * adding the `smallrye-fault-tolerance` Quarkus extension to your project using the `quarkus-maven-plugin`:
 +
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
-----
+include::includes/devtools/extension-add.adoc[]
 * or simply adding the following Maven dependency:
 +
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
 </dependency>
 ----
++
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
+----
+:!devtools-wrapped:
 
 == Additional resources
 

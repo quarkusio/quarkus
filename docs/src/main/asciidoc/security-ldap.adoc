@@ -12,12 +12,7 @@ This guide demonstrates how your Quarkus application can use an LDAP server to a
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -47,35 +42,34 @@ The solution is located in the `security-ldap-quickstart` {quickstarts-tree-url}
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-ldap-quickstart \
-    -Dextensions="elytron-security-ldap,resteasy" \
-    -DnoExamples
-cd security-ldap-quickstart
-----
+:create-app-artifact-id: security-ldap-quickstart
+:create-app-extensions: elytron-security-ldap,resteasy
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `elytron-security-ldap` extension
+This command generates a project, importing the `elytron-security-ldap` extension
 which is a `wildfly-elytron-realm-ldap` adapter for Quarkus applications.
 
 If you already have your Quarkus project configured, you can add the `elytron-security-ldap` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="elytron-security-ldap"
-----
+:add-extension-extensions: elytron-security-ldap
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-elytron-security-ldap</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-elytron-security-ldap")
 ----
 
 == Writing the application
@@ -181,6 +175,10 @@ The `elytron-security-ldap` extension requires a dir-context and an identity-map
 == Testing the Application
 
 The application is now protected and the identities are provided by our LDAP server.
+Let's start the application in dev mode:
+
+include::includes/devtools/dev.adoc[]
+
 The very first thing to check is to ensure the anonymous access works.
 
 [source,shell]

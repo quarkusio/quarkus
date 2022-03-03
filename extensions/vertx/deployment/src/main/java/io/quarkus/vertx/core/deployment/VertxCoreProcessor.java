@@ -7,6 +7,7 @@ import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Filter;
@@ -54,12 +55,16 @@ import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.impl.BlockedThreadChecker;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
 class VertxCoreProcessor {
 
     private static final Logger log = Logger.getLogger(VertxCoreProcessor.class);
+
+    private static final Set<String> BLOCKED_THREAD_LOGGER_NAMES = Set.of(
+            "io.vertx.core.impl.BlockedThreadChecker", // Vert.x 4.2-
+            "io.vertx.core.impl.btc.BlockedThreadChecker" // Vert.x 4.3+
+    );
 
     @BuildStep
     NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
@@ -243,7 +248,7 @@ class VertxCoreProcessor {
         try {
             Filter debuggerFilter = createDebuggerFilter();
             LogManager logManager = (LogManager) LogManager.getLogManager();
-            logManager.getLogger(BlockedThreadChecker.class.getName()).setFilter(new Filter() {
+            Filter filter = new Filter() {
 
                 volatile StackTraceElement last;
 
@@ -268,7 +273,11 @@ class VertxCoreProcessor {
                     last = element;
                     return true;
                 }
-            });
+            };
+
+            for (String classname : BLOCKED_THREAD_LOGGER_NAMES) {
+                logManager.getLogger(classname).setFilter(filter);
+            }
         } catch (Throwable t) {
             log.debug("Failed to filter blocked thread checker", t);
         }

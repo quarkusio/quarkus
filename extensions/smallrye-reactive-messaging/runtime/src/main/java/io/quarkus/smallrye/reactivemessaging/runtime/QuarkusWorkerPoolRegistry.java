@@ -56,7 +56,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         }
     }
 
-    private WorkerExecutor getWorker(String workerName) {
+    public WorkerExecutor getWorker(String workerName) {
         Objects.requireNonNull(workerName, "Worker Name not specified");
 
         if (workerExecutors.containsKey(workerName)) {

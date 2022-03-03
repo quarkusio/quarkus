@@ -141,7 +141,7 @@
         <mutiny.version>1.3.1</mutiny.version>
         <kafka3.version>3.1.0</kafka3.version>
         <snappy.version>1.1.8.4</snappy.version>
-        <zookeeper.version>3.5.7</zookeeper.version>
+        <zookeeper.version>3.8.0</zookeeper.version>
         <strimzi-test-container.version>0.100.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.12.13</scala.version>

@@ -22,6 +22,7 @@ import io.dekorate.kubernetes.config.ImageConfigurationBuilder;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
+import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
 import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
 import io.dekorate.openshift.decorator.ApplyReplicasDecorator;
@@ -220,6 +221,7 @@ public class OpenshiftProcessor {
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, i.getImage())));
         });
+        result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
         result.add(new DecoratorBuildItem(OPENSHIFT, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS)));
 
         Stream.concat(config.convertToBuildItems().stream(),

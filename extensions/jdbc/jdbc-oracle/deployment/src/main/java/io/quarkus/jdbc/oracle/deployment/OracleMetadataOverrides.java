@@ -39,7 +39,7 @@ public final class OracleMetadataOverrides {
 
     /**
      * Should match the contents of {@literal reflect-config.json}
-     * 
+     *
      * @param reflectiveClass builItem producer
      */
     @BuildStep

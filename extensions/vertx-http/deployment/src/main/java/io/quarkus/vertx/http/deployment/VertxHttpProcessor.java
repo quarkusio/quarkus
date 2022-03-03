@@ -137,7 +137,7 @@ class VertxHttpProcessor {
         RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter = recorder.createMutinyRouter(httpRouteRouter);
         initialRouter.produce(new InitialRouterBuildItem(httpRouteRouter, mutinyRouter));
 
-        // Also note that we need a client proxy to handle the use case where a bean also @Observes Router 
+        // Also note that we need a client proxy to handle the use case where a bean also @Observes Router
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Router.class)
                 .scope(BuiltinScope.APPLICATION.getInfo())
                 .setRuntimeInit()

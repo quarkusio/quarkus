@@ -17,7 +17,7 @@ public class HelloResource {
 
     @CheckedTemplate
     public static class Templates {
-        // GENERATED    
+        // GENERATED
         //        {
         //            Template template = Arc.container().instance(Engine.class).get().getTemplate("HelloResource/typedTemplate");
         //            TemplateInstance instance = template.instance();

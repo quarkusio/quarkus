@@ -163,7 +163,7 @@ public class DirectoryPathTreeTest {
 
     /**
      * Returns a path relative to src/test/resources/paths/directory-path-tree/
-     * 
+     *
      * @param relative relative path
      * @return Path instance
      */

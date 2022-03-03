@@ -17,19 +17,19 @@ import java.util.regex.Pattern;
  * set via the {@link #setEngine(Engine)} method a default engine is created lazily.
  * <p>
  * Moreover, the convenient {@code fmt()} methods that can be used to format messages easily.
- * 
+ *
  * <pre>
  * Qute.fmt("Hello {}!", "Quarkus");
  * // => Hello Quarkus!
- * 
+ *
  * Qute.fmt("Hello {name} {surname ?: 'Default'}!", Map.of("name", "Martin"));
  * // => Hello Martin Default!
- * 
+ *
  * Qute.fmt("&lt;html&gt;{header}&lt;/html&gt;").contentType("text/html").data("header", "&lt;h1&gt;Header&lt;/h1&gt;").render();
  * // &lt;html&gt;{@literal &lt;}h1{@literal &gt;}Header{@literal &lt;}/h1{@literal &gt;}&lt;/html&gt;
  * // Note that for a "text/html" template the special chars are replaced with html entities by default.
  * </pre>
- * 
+ *
  * @see #fmt(String)
  * @see #fmt(String, Map)
  * @see #fmt(String, Object...)
@@ -45,7 +45,7 @@ public final class Qute {
      * <li>{@link IndexedArgumentsParserHook}</li>
      * <li>{@link HtmlEscaper} registered for {@code text/html} and {@code text/xml} content types</li>
      * </ul>
-     * 
+     *
      * @return the engine
      * @see #setEngine(Engine)
      */
@@ -69,7 +69,7 @@ public final class Qute {
      * {@link #fmt(String, Object...)} method works correcly.
      * <p>
      * The cache is always cleared when a new engine is set.
-     * 
+     *
      * @param engine
      * @see #engine()
      */
@@ -79,7 +79,7 @@ public final class Qute {
     }
 
     /**
-     * 
+     *
      * @param template
      * @param data
      * @return the rendered template
@@ -95,7 +95,7 @@ public final class Qute {
      * <code>{data[n]}</code> where {@code n} is the index of the placeholder. The first placeholder is replace with
      * <code>{data[0]}</code>, the second with <code>{data[1]}</code>, and so on. For example, <code>"Hello {}!"</code> becomes
      * <code>Hello {data[0]}!</code>.
-     * 
+     *
      * @param template
      * @param data
      * @return the rendered template
@@ -105,7 +105,7 @@ public final class Qute {
     }
 
     /**
-     * 
+     *
      * @param template
      * @return a new format object
      */
@@ -115,7 +115,7 @@ public final class Qute {
 
     /**
      * The template cache will be used by default.
-     * 
+     *
      * @see Fmt#cache()
      * @see #clearCache()
      */
@@ -125,7 +125,7 @@ public final class Qute {
 
     /**
      * The template cache will not be used by default.
-     * 
+     *
      * @see Fmt#noCache()
      * @see #clearCache()
      */
@@ -163,7 +163,7 @@ public final class Qute {
          * template and store the instance in the cache.
          * <p>
          * Note that caching greatly improves the performance of formatting, albeit increases the memory usage.
-         * 
+         *
          * @return self
          * @see Qute#clearCache()
          */
@@ -174,7 +174,7 @@ public final class Qute {
 
         /**
          * Do not use the cache, i.e. always parse the template.
-         * 
+         *
          * @return self
          */
         public Fmt noCache() {
@@ -184,7 +184,7 @@ public final class Qute {
 
         /**
          * Set the template content type.
-         * 
+         *
          * @return self
          * @see Variant
          */
@@ -195,7 +195,7 @@ public final class Qute {
 
         /**
          * Set the template variant.
-         * 
+         *
          * @return self
          * @see Variant
          */
@@ -206,7 +206,7 @@ public final class Qute {
 
         /**
          * Set the template instance attribute.
-         * 
+         *
          * @return self
          * @see TemplateInstance#setAttribute(String, Object)
          */
@@ -225,7 +225,7 @@ public final class Qute {
          * <code>{data[n]}</code> where {@code n} is the index of the placeholder. The first placeholder is replace with
          * <code>{data[0]}</code>, the second with <code>{data[1]}</code>, and so on. For example, <code>"Hello {}!"</code>
          * becomes <code>Hello {data[0]}!</code>.
-         * 
+         *
          * @param data
          * @return self
          */
@@ -245,7 +245,7 @@ public final class Qute {
         }
 
         /**
-         * 
+         *
          * @return the rendered template
          */
         public String render() {
@@ -253,7 +253,7 @@ public final class Qute {
         }
 
         /**
-         * 
+         *
          * @return a new template instance
          */
         public TemplateInstance instance() {

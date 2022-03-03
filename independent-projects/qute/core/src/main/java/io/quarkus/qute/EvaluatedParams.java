@@ -14,7 +14,7 @@ public final class EvaluatedParams {
     static final EvaluatedParams EMPTY = new EvaluatedParams(CompletedStage.VOID, new Supplier<?>[0]);
 
     /**
-     * 
+     *
      * @param context
      * @return the evaluated params
      */
@@ -132,7 +132,7 @@ public final class EvaluatedParams {
     }
 
     /**
-     * 
+     *
      * @param varargs
      * @param types
      * @return {@code true} if the parameter types match the type of the evaluated params

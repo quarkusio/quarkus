@@ -73,18 +73,18 @@ public class AsmUtil {
     /**
      * Returns the Java bytecode descriptor of a given Jandex MethodInfo using the given type argument mappings.
      * For example, given this method:
-     * 
+     *
      * <pre>
      * {@code
      * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...} 
+     *  public <R> List<R> method(int a, T t){...}
      * }
      * }
      * </pre>
-     * 
+     *
      * This will return <tt>(ILjava/lang/Integer;)Ljava/util/List;</tt> if
      * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
+     *
      * @param method the method you want the descriptor for.
      * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
      * @return a bytecode descriptor for that method.
@@ -120,7 +120,7 @@ public class AsmUtil {
      * Returns the Java bytecode signature of a given Jandex Type using the given type argument mappings.
      * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List&lt;Ljava/lang/Integer;>;</tt> if
      * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
+     *
      * @param type the type you want the signature for.
      * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
      * @return a bytecode signature for that type.

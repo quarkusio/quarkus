@@ -25,7 +25,7 @@ public @interface GrpcClient {
 
     /**
      * The name is used to configure the gRPC client, e.g. the location, TLS/SSL, etc.
-     * 
+     *
      * @return the client name
      */
     String value() default ELEMENT_NAME;

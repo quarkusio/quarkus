@@ -24,9 +24,9 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Tests that shutdown will wait for current requests to finish, up to the timeout specified.
- * 
+ *
  * This test records the current time, then sends a request to an endpoint that will take 50s to finish.
- * 
+ *
  * After undeploy we verify that less than 50s has elapsed, as the shutdown should have proceeded anyway once
  * the timeout of 100ms was reached.
  */

@@ -5,7 +5,7 @@ import io.quarkus.arc.ManagedContext;
 
 /**
  * Invokes a business method of a bean. The request context is activated if necessary.
- * 
+ *
  * @param <T>
  */
 public interface BeanInvoker<T> {

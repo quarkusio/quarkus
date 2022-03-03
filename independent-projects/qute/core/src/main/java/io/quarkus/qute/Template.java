@@ -17,14 +17,14 @@ public interface Template {
 
     /**
      * Create a new template instance to configure the model data.
-     * 
+     *
      * @return a new template instance
      * @see TemplateInstance.Initializer
      */
     TemplateInstance instance();
 
     /**
-     * 
+     *
      * @param data
      * @return a new template instance
      * @see TemplateInstance#data(Object)
@@ -44,7 +44,7 @@ public interface Template {
     }
 
     /**
-     * 
+     *
      * @param key1
      * @param data1
      * @param key2
@@ -56,7 +56,7 @@ public interface Template {
     }
 
     /**
-     * 
+     *
      * @param key1
      * @param data1
      * @param key2
@@ -70,7 +70,7 @@ public interface Template {
     }
 
     /**
-     * 
+     *
      * @param key1
      * @param data1
      * @param key2
@@ -87,7 +87,7 @@ public interface Template {
     }
 
     /**
-     * 
+     *
      * @param key1
      * @param data1
      * @param key2
@@ -99,7 +99,7 @@ public interface Template {
      * @param key5
      * @param data5
      * @return a new template instance
-     * 
+     *
      */
     default TemplateInstance data(String key1, Object data1, String key2, Object data2, String key3, Object data3, String key4,
             Object data4, String key5, Object data5) {
@@ -115,20 +115,20 @@ public interface Template {
     }
 
     /**
-     * 
+     *
      * @return an immutable list of expressions used in the template
      */
     List<Expression> getExpressions();
 
     /**
      * The id is unique for the engine instance.
-     * 
+     *
      * @return the generated id
      */
     String getGeneratedId();
 
     /**
-     * 
+     *
      * @return the template variant
      */
     Optional<Variant> getVariant();

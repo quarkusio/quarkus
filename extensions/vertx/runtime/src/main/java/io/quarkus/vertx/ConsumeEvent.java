@@ -17,7 +17,7 @@ import io.vertx.core.eventbus.MessageCodec;
  * may return an object that is passed to {@link io.vertx.core.eventbus.Message#reply(Object)}, either directly or via
  * {@link java.util.concurrent.CompletionStage#thenAccept(java.util.function.Consumer)} in case of the method returns a
  * completion stage.
- * 
+ *
  * <pre>
  * &#64;ApplicationScoped
  * class MyService {
@@ -26,19 +26,19 @@ import io.vertx.core.eventbus.MessageCodec;
  *     String echo(String msg) {
  *         return msg.toUpperCase();
  *     }
- * 
+ *
  *     &#64;ConsumeEvent("echoMessage")
  *     void echoMessage(Message<String> msg) {
  *         msg.reply(msg.body().toUpperCase());
  *     }
- * 
+ *
  *     &#64;ConsumeEvent(value = "echoMessageBlocking", blocking = true)
  *     void echoMessageBlocking(Message<String> msg) {
  *         msg.reply(msg.body().toUpperCase());
  *     }
  * }
  * </pre>
- * 
+ *
  * <p>
  * The CDI request context is always active during notification of the registered message consumer.
  * <p>
@@ -49,7 +49,7 @@ import io.vertx.core.eventbus.MessageCodec;
  * <li>if no reply handler is set then the exception is rethrown (and wrapped in a {@link java.lang.RuntimeException} if
  * necessary) and can be handled by the default exception handler, i.e. {@link io.vertx.core.Vertx#exceptionHandler().}</li>
  * </ul>
- * 
+ *
  * @see io.vertx.core.eventbus.EventBus
  */
 @Target(METHOD)
@@ -78,14 +78,14 @@ public @interface ConsumeEvent {
     String value() default "";
 
     /**
-     * 
+     *
      * @return {@code true} if the address should not be propagated across the cluster
      * @see io.vertx.core.eventbus.EventBus#localConsumer(String)
      */
     boolean local() default true;
 
     /**
-     * 
+     *
      * @return {@code true} if the consumer should be invoked as a blocking operation using a worker thread
      * @see io.vertx.core.Vertx#executeBlocking(io.vertx.core.Handler, boolean, io.vertx.core.Handler)
      */
@@ -100,7 +100,7 @@ public @interface ConsumeEvent {
     boolean ordered() default false;
 
     /**
-     * 
+     *
      * @return {@code null} if it should use a default MessageCodec
      * @see io.quarkus.vertx.LocalEventBusCodec
      */

@@ -88,7 +88,7 @@ public class DataSourceReactiveRuntimeConfig {
 
     /**
      * Deprecated: this was removed and is no longer available.
-     * 
+     *
      * @Deprecated
      */
     @ConfigItem

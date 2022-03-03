@@ -37,7 +37,7 @@ public @interface ConfigProperties {
      * For a example:
      *
      * /**
-     * 
+     *
      * <pre>
      * &#64;ConfigProperties(prefix="whatever")
      * public class SomeConfig {

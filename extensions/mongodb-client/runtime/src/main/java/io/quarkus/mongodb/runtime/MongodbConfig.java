@@ -26,7 +26,7 @@ public class MongodbConfig {
      * each cluster have a unique identifier witch must be identified to select the right connection.
      * example:
      * <p>
-     * 
+     *
      * <pre>
      * quarkus.mongodb.cluster1.connection-string = mongodb://mongo1:27017
      * quarkus.mongodb.cluster2.connection-string = mongodb://mongo2:27017,mongodb://mongo3:27017
@@ -34,7 +34,7 @@ public class MongodbConfig {
      * <p>
      * And then use annotations above the instances of MongoClient to indicate which instance we are going to use
      * <p>
-     * 
+     *
      * <pre>
      * {@code
      * &#64;MongoClientName("cluster1")

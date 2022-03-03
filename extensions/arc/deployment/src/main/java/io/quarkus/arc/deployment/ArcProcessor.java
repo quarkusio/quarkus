@@ -427,7 +427,7 @@ public class ArcProcessor {
         // Initialize the type -> bean map
         beanRegistrationPhase.getBeanProcessor().getBeanDeployment().initBeanByTypeMap();
 
-        // Register a synthetic bean for each List<?> with qualifier @All 
+        // Register a synthetic bean for each List<?> with qualifier @All
         List<InjectionPointInfo> listAll = beanRegistrationPhase.getInjectionPoints().stream()
                 .filter(this::isListAllInjectionPoint).collect(Collectors.toList());
         if (!listAll.isEmpty()) {
@@ -687,10 +687,10 @@ public class ArcProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 if (Annotations.contains(ctx.getAnnotations(), DotNames.ALL)) {
-                    // For each injection point annotated with @All add a synthetic qualifier 
+                    // For each injection point annotated with @All add a synthetic qualifier
                     AnnotationTarget target = ctx.getTarget();
                     if (target.kind() == Kind.FIELD) {
-                        // Identifier is a hash of "type + field annotations" 
+                        // Identifier is a hash of "type + field annotations"
                         String id = HashUtil
                                 .sha1(target.asField().type().toString() + target.asField().annotations().toString());
                         ctx.transform().add(DotNames.IDENTIFIED,
@@ -710,7 +710,7 @@ public class ArcProcessor {
                                     paramAnnotations.add(paramAnnotation);
                                 }
                             }
-                            // Identifier is a hash of "type + method param annotations" 
+                            // Identifier is a hash of "type + method param annotations"
                             String id = HashUtil.sha1(method.parameters().get(position) + paramAnnotations.toString());
                             toAdd.add(
                                     AnnotationInstance.create(DotNames.IDENTIFIED,

@@ -44,7 +44,7 @@ import io.smallrye.common.io.jar.JarFiles;
 
 /**
  * Utility for Web resource related operations
- * 
+ *
  * @deprecated Use WebJarBuildItem and WebJarResultsBuildItem instead.
  */
 @Deprecated(forRemoval = true)

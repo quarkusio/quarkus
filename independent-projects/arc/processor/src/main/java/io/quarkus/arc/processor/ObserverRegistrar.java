@@ -18,7 +18,7 @@ public interface ObserverRegistrar extends BuildExtension {
         /**
          * Configure a new synthetic observer. The observer is not added to the deployment unless the
          * {@link ObserverConfigurator#done()} method is called.
-         * 
+         *
          * @return a new synthetic observer configurator
          */
         ObserverConfigurator configure();
@@ -26,7 +26,7 @@ public interface ObserverRegistrar extends BuildExtension {
         /**
          * The returned stream contains all non-synthetic beans (beans derived from classes) and beans
          * registered by other {@link ObserverRegistrar}s before the stream is created.
-         * 
+         *
          * @return a new stream of beans
          */
         BeanStream beans();

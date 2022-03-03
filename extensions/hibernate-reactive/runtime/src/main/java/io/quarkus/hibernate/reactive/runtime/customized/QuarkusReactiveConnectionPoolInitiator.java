@@ -67,7 +67,7 @@ public final class QuarkusReactiveConnectionPoolInitiator
          * when Hibernate ORM is shutdown (it doesn't own the lifecycle of this external component).
          * Therefore there is no need to wait for its shutdown and this method returns an already
          * successfully completed CompletionStage.
-         * 
+         *
          * @return
          */
         @Override

@@ -38,7 +38,7 @@ public interface CodeGenProvider {
 
     /**
      * Trigger code generation
-     * 
+     *
      * @param context code generation context
      * @return true if files were generated/modified
      */

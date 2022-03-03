@@ -11,14 +11,14 @@ import java.util.concurrent.CompletionStage;
 public interface TemplateNode {
 
     /**
-     * 
+     *
      * @param context
      * @return the result node
      */
     CompletionStage<ResultNode> resolve(ResolutionContext context);
 
     /**
-     * 
+     *
      * @return a list of expressions
      */
     default List<Expression> getExpressions() {
@@ -26,13 +26,13 @@ public interface TemplateNode {
     }
 
     /**
-     * 
+     *
      * @return the origin of the node
      */
     Origin getOrigin();
 
     /**
-     * 
+     *
      * @return {@code true} if the node represents a constant
      */
     default boolean isConstant() {
@@ -45,7 +45,7 @@ public interface TemplateNode {
     public interface Origin {
 
         /**
-         * 
+         *
          * @return the line where the node can be found
          */
         int getLine();
@@ -54,7 +54,7 @@ public interface TemplateNode {
          * Note that this information is not available for all nodes.
          * <p>
          * However, it's always available for an expression node.
-         * 
+         *
          * @return the line character the node starts
          */
         int getLineCharacterStart();
@@ -63,7 +63,7 @@ public interface TemplateNode {
          * Note that this information is not available for all nodes.
          * <p>
          * However, it's always available for an expression node.
-         * 
+         *
          * @return the line character the node ends
          */
         int getLineCharacterEnd();
@@ -73,7 +73,7 @@ public interface TemplateNode {
         String getTemplateGeneratedId();
 
         /**
-         * 
+         *
          * @return the template variant
          */
         Optional<Variant> getVariant();

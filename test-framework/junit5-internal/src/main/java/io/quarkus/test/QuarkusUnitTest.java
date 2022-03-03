@@ -176,7 +176,7 @@ public class QuarkusUnitTest
     }
 
     /**
-     * 
+     *
      * @param archiveProducer
      * @return self
      * @see #withApplicationRoot(Consumer)
@@ -188,7 +188,7 @@ public class QuarkusUnitTest
 
     /**
      * Customize the application root.
-     * 
+     *
      * @param applicationRootConsumer
      * @return self
      */
@@ -218,7 +218,7 @@ public class QuarkusUnitTest
     /**
      * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
      * would not otherwise be one.
-     * 
+     *
      * @param archive
      * @return self
      */
@@ -230,7 +230,7 @@ public class QuarkusUnitTest
     /**
      * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
      * would not otherwise be one.
-     * 
+     *
      * @param dependencyConsumer
      * @return self
      */

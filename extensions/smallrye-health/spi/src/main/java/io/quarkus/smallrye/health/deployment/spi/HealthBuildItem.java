@@ -9,7 +9,7 @@ public final class HealthBuildItem extends MultiBuildItem {
     private final boolean enabled;
 
     /**
-     * 
+     *
      * @param healthCheckClass
      * @param enabled
      * @param configRootName This parameter is not used

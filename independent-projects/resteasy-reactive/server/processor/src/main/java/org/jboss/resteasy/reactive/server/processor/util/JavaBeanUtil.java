@@ -58,7 +58,7 @@ public class JavaBeanUtil {
 
     /**
      * Returns the corresponding property name for a getter method name
-     * 
+     *
      * @throws IllegalArgumentException if the method name does not follow the getter name convention
      */
     public static String getPropertyNameFromGetter(String methodName) {

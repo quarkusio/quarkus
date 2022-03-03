@@ -153,7 +153,7 @@ public class OidcClientBuildStep {
 
     /**
      * Creates a Tokens producer class like follows:
-     * 
+     *
      * <pre>
      * &#64;Singleton
      * public class TokensProducer_oidcClientName extends AbstractTokensProducer {
@@ -163,7 +163,7 @@ public class OidcClientBuildStep {
      *     public Tokens produceTokens() {
      *         return awaitTokens();
      *     }
-     * 
+     *
      *     &#64;Override
      *     protected Optional<String> clientId() {
      *         return Optional.of("oidcClientName");

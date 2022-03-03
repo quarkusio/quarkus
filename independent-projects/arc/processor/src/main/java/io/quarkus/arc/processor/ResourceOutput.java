@@ -60,7 +60,7 @@ public interface ResourceOutput {
         SpecialType getSpecialType();
 
         /**
-         * 
+         *
          * @return the textual representation of generated code
          */
         String getSource();

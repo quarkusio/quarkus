@@ -237,18 +237,18 @@ public class AsmUtil {
     /**
      * Returns the Java bytecode descriptor of a given Jandex MethodInfo using the given type argument mappings.
      * For example, given this method:
-     * 
+     *
      * <pre>
      * {@code
      * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...} 
+     *  public <R> List<R> method(int a, T t){...}
      * }
      * }
      * </pre>
-     * 
+     *
      * This will return <tt>(ILjava/lang/Integer;)Ljava/util/List;</tt> if
      * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
+     *
      * @param method the method you want the descriptor for.
      * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
      * @return a bytecode descriptor for that method.
@@ -269,7 +269,7 @@ public class AsmUtil {
      * Returns the Java bytecode descriptor of a given Jandex Type using the given type argument mappings.
      * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List;</tt> if
      * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
+     *
      * @param type the type you want the descriptor for.
      * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
      * @return a bytecode descriptor for that type.
@@ -284,7 +284,7 @@ public class AsmUtil {
      * Returns the Java bytecode signature of a given Jandex Type using the given type argument mappings.
      * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List&lt;Ljava/lang/Integer;>;</tt> if
      * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
+     *
      * @param type the type you want the signature for.
      * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
      * @return a bytecode signature for that type.
@@ -407,7 +407,7 @@ public class AsmUtil {
      * Returns a return bytecode instruction suitable for the given return type descriptor. This will return
      * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
      * and <tt>ARETURN</tt> otherwise;
-     * 
+     *
      * @param typeDescriptor the return type descriptor.
      * @return the correct bytecode return instruction for that return type descriptor.
      */
@@ -436,7 +436,7 @@ public class AsmUtil {
      * Returns a return bytecode instruction suitable for the given return Jandex Type. This will return
      * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
      * and <tt>ARETURN</tt> otherwise;
-     * 
+     *
      * @param jandexType the return Jandex Type.
      * @return the correct bytecode return instruction for that return type descriptor.
      */
@@ -468,7 +468,7 @@ public class AsmUtil {
      * Invokes the proper LDC Class Constant instructions for the given Jandex Type. This will properly create LDC instructions
      * for array types, class/parameterized classes, and primitive types by loading their equivalent <tt>TYPE</tt>
      * constants in their box types, as well as type variables (using the first bound or Object) and Void.
-     * 
+     *
      * @param mv The MethodVisitor on which to visit the LDC instructions
      * @param jandexType the Jandex Type whose Class Constant to load.
      */
@@ -534,7 +534,7 @@ public class AsmUtil {
 
     /**
      * Calls the right boxing method for the given Jandex Type if it is a primitive.
-     * 
+     *
      * @param mv The MethodVisitor on which to visit the boxing instructions
      * @param jandexType The Jandex Type to box if it is a primitive.
      */
@@ -575,7 +575,7 @@ public class AsmUtil {
     /**
      * Returns the bytecode instruction to load the given Jandex Type. This returns the specialised
      * bytecodes <tt>ILOAD, DLOAD, FLOAD and LLOAD</tt> for primitives, or <tt>ALOAD</tt> otherwise.
-     * 
+     *
      * @param jandexType The Jandex Type whose load instruction to return.
      * @return The bytecode instruction to load the given Jandex Type.
      */
@@ -603,7 +603,7 @@ public class AsmUtil {
 
     /**
      * Calls the right unboxing method for the given Jandex Type if it is a primitive.
-     * 
+     *
      * @param mv The MethodVisitor on which to visit the unboxing instructions
      * @param jandexType The Jandex Type to unbox if it is a primitive.
      */
@@ -684,7 +684,7 @@ public class AsmUtil {
 
     /**
      * Returns the Jandex Types of the parameters of the given method descriptor.
-     * 
+     *
      * @param methodDescriptor a method descriptor
      * @return the list of Jandex Type objects representing the parameters of the given method descriptor.
      */
@@ -773,7 +773,7 @@ public class AsmUtil {
     /**
      * Returns the number of underlying bytecode parameters taken by the given Jandex parameter Type.
      * This will be 2 for doubles and longs, 1 otherwise.
-     * 
+     *
      * @param paramType the Jandex parameter Type
      * @return the number of underlying bytecode parameters required.
      */
@@ -791,7 +791,7 @@ public class AsmUtil {
     /**
      * Prints the value pushed on the stack (must be an Object) by the given <tt>valuePusher</tt>
      * to STDERR.
-     * 
+     *
      * @param mv The MethodVisitor to forward printing to.
      * @param valuePusher The function to invoke to push an Object to print on the stack.
      */
@@ -804,7 +804,7 @@ public class AsmUtil {
 
     /**
      * Copy the parameter names to the given MethodVisitor, unless we don't have parameter name info
-     * 
+     *
      * @param mv the visitor to copy to
      * @param method the method to copy from
      */

@@ -13,7 +13,7 @@ import javax.inject.Qualifier;
 public @interface Claim {
     /**
      * The value specifies the id name the claim to inject
-     * 
+     *
      * @return the claim name
      */
     @Nonbinding

@@ -98,7 +98,7 @@ public class PanacheFunctionalityTest {
         // make sure the Jaxb module is loaded
         objectMapper.findAndRegisterModules();
         String personAsString = objectMapper.writeValueAsString(person);
-        // check 
+        // check
         // hence no 'persistence'-attribute
         assertEquals(
                 "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",

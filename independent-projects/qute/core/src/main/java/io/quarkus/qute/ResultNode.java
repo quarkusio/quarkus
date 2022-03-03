@@ -15,7 +15,7 @@ public interface ResultNode {
     });
 
     /**
-     * 
+     *
      * @param resultConsumer
      */
     void process(Consumer<String> resultConsumer);

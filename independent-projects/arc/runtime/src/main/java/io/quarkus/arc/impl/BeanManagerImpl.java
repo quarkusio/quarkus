@@ -149,7 +149,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public boolean isNormalScope(Class<? extends Annotation> annotationType) {
-        // Note that it's possible to register a custom context with a scope annotation that is not annotated with @Scope or @NormalScope 
+        // Note that it's possible to register a custom context with a scope annotation that is not annotated with @Scope or @NormalScope
         return ArcContainerImpl.instance().isNormalScope(annotationType);
     }
 

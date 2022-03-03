@@ -173,7 +173,7 @@ final class ClassConfigPropertiesUtil {
          * Add a method like this:
          *
          * @Produces
-         * 
+         *
          * @Default // (or @ConfigPrefix qualifier)
          * public SomeClass produceSomeClass(Config config) {
          *
@@ -182,7 +182,7 @@ final class ClassConfigPropertiesUtil {
          * or
          *
          * @Produces
-         * 
+         *
          * @Default // (or @ConfigPrefix qualifier)
          * public SomeClass produceSomeClass(Config config, Validator validator) {
          *

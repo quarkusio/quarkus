@@ -333,7 +333,7 @@ public class DecoratorGenerator extends BeanGenerator {
     }
 
     /**
-     * 
+     *
      * @param creator
      * @param qualifiersField
      * @see InjectableDecorator#getDelegateQualifiers()

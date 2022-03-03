@@ -282,7 +282,7 @@ public class GrpcServerRecorder {
 
         public String getImplementationClassName() {
             if (service instanceof Subclass) {
-                // All intercepted services are represented by a generated subclass 
+                // All intercepted services are represented by a generated subclass
                 return service.getClass().getSuperclass().getName();
             }
             return service.getClass().getName();
@@ -428,7 +428,7 @@ public class GrpcServerRecorder {
 
     /**
      * Compression interceptor if needed, null otherwise
-     * 
+     *
      * @param configuration gRPC server configuration
      * @return interceptor or null
      */

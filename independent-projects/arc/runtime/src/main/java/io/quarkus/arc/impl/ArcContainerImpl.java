@@ -587,7 +587,7 @@ public class ArcContainerImpl implements ArcContainer {
         } else if (priorityBeans.size() == 1) {
             return Set.of(priorityBeans.get(0));
         } else {
-            // Keep only the highest priorities 
+            // Keep only the highest priorities
             priorityBeans.sort(ArcContainerImpl::compareAlternativeBeans);
             Integer highest = getAlternativePriority(priorityBeans.get(0));
             priorityBeans.removeIf(bean -> !highest.equals(getAlternativePriority(bean)));

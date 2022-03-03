@@ -92,7 +92,7 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
 
     /**
      * Resolves the web roots based on the webRootConfigurations
-     * 
+     *
      * @throws IOException if an I/O error occurs
      */
     private void resolveWebRoots() throws IOException {

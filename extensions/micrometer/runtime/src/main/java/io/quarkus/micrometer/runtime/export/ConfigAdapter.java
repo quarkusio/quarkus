@@ -29,7 +29,7 @@ public class ConfigAdapter {
      * <li>Replace kebab-case with camelCase in the relevant key</li>
      * <li>Insert the transformed key and the original value into a new map</li>
      * </ul>
-     * 
+     *
      * @param config Quarkus Config
      * @param prefix A String prefix beginning with {@code quarkus.} and ending with {@code .}.
      * @return A map containing transformed keys and associated values
@@ -56,7 +56,7 @@ public class ConfigAdapter {
      * <li>Add the prefix to each key</li>
      * <li>Insert the transformed key and the original value into a new map</li>
      * </ul>
-     * 
+     *
      * @param config A Runtime config map of string keys and properties, e.g.
      *        {@link PrometheusRuntimeConfig#prometheus}
      * @param prefix A String prefix ending with {@code .}, e.g. {@code prometheus.}

@@ -22,7 +22,7 @@ public interface ClassPathElement extends Closeable {
     /**
      * If this classpath element represents a Maven artifact, the method will return its key,
      * otherwise - null.
-     * 
+     *
      * @return the key of the Maven artifact this classpath element represents or null, in case
      *         this element does not represent any Maven artifact
      */
@@ -38,7 +38,7 @@ public interface ClassPathElement extends Closeable {
 
     /**
      * Processes the content of this classpath element and returns a result.
-     * 
+     *
      * @param <T> result type
      * @param func content processing function
      * @return processing result
@@ -70,7 +70,7 @@ public interface ClassPathElement extends Closeable {
 
     /**
      * Checks whether this is a runtime classpath element
-     * 
+     *
      * @return true in case this is a runtime classpath element, otherwise - false
      */
     boolean isRuntime();

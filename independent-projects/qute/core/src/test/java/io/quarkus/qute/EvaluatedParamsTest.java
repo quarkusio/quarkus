@@ -31,7 +31,7 @@ public class EvaluatedParamsTest {
                 new Supplier[] { CompletedStage.of("str") })
                         .parameterTypesMatch(true, new Class[] { Locale.class, Object[].class }));
 
-        // Integer,String does not match Integer,Object[] 
+        // Integer,String does not match Integer,Object[]
         assertFalse(new EvaluatedParams(null,
                 new Supplier[] { CompletedStage.of(10), CompletedStage.of("Foo") })
                         .parameterTypesMatch(false, new Class<?>[] { Integer.class, Object[].class }));

@@ -50,14 +50,14 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Output path. Computed from {@link #targetDirectory} parameter.
-     * 
+     *
      * @see #outputDirectory()
      */
     private Path outputPath;
 
     /**
      * Project root directory. Computed from/within Output path.
-     * 
+     *
      * @see #checkProjectRootAlreadyExists(boolean)
      * @see #projectRoot()
      */
@@ -66,7 +66,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     /**
      * Project directory name, used with {@link #outputPath} to
      * compute {@link #projectRootPath}.
-     * 
+     *
      * @see #setExtensionId(String)
      * @see #setSingleProjectGAV(TargetGAVGroup)
      */
@@ -86,7 +86,7 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Resolve (and create, if necessary) the target output directory.
-     * 
+     *
      * @return the output directory path
      */
     public Path outputDirectory() {
@@ -143,7 +143,7 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Resolve the target output directory. Will throw if the target directory exists
-     * 
+     *
      * @return the project root path
      */
     public Path projectRoot() {
@@ -155,7 +155,7 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Add explicitly specified and sourceType-implied extensions
-     * 
+     *
      * @param extensions Explicitly specified extensions
      * @param sourceType Type of source (Kotlin, Java, Scala)
      */
@@ -174,7 +174,7 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Process code generation options (save values)
-     * 
+     *
      * @param codeGeneration
      */
     public void setCodegenOptions(CodeGenerationGroup codeGeneration) {
@@ -193,7 +193,7 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Create a new single-module project.
-     * 
+     *
      * @param buildTool The build tool the project should use (maven, gradle, jbang)
      * @param targetVersion The target quarkus version
      * @param properties Additional properties that should be used whiel creating the properties

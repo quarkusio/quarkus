@@ -19,7 +19,7 @@ public class InjectionPointProvider implements InjectableReferenceProvider<Injec
 
     /**
      * Set the current injection point for a non-null parameter, remove the threadlocal for null parameter.
-     * 
+     *
      * @param injectionPoint
      * @return the previous injection point or {@code null}
      */

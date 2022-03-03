@@ -287,7 +287,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     // This test determines if the default behavior of returning a 302 should go forward
-    // The only case that shouldn't return a 302 is if the call is a XHR and the 
+    // The only case that shouldn't return a 302 is if the call is a XHR and the
     // user has set the auto direct application property to false indicating that
     // the client application will manually handle the redirect to account for SPA behavior
     private boolean shouldAutoRedirect(TenantConfigContext configContext, RoutingContext context) {

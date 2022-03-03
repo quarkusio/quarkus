@@ -22,7 +22,7 @@ public interface JaxrsClientReactiveEnricher {
      * {@link javax.ws.rs.ext.Provider}, {@code @ClientHeadersFactory}, etc
      *
      * Please note that this won't be invoked for sub-resources
-     * 
+     *
      * @param ctor jaxrs client constructor
      * @param globalTarget WebTarget field of the jaxrs client
      * @param interfaceClass JAXRS-annotated interface for which the client is being generated
@@ -33,7 +33,7 @@ public interface JaxrsClientReactiveEnricher {
 
     /**
      * Method-level alterations
-     * 
+     *
      * @param classCreator creator of the jaxrs stub class
      * @param constructor constructor of the jaxrs stub class
      * @param methodCreator the method that is being generated, e.g. a method corresponding to `@GET Response get()`

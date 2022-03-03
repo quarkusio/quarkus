@@ -4,7 +4,7 @@ import java.time.Instant;
 
 /**
  * This event is fired synchronously and asynchronously when an execution of a scheduled method is skipped.
- * 
+ *
  * @see io.quarkus.scheduler.Scheduled.ConcurrentExecution#SKIP
  * @see io.quarkus.scheduler.Scheduled#skipExecutionIf()
  */

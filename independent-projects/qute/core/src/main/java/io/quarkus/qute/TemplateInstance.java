@@ -14,7 +14,7 @@ public interface TemplateInstance {
 
     /**
      * Attribute key - the timeout for {@link #render()} in milliseconds.
-     * 
+     *
      * @see #getTimeout()
      */
     String TIMEOUT = "timeout";
@@ -32,7 +32,7 @@ public interface TemplateInstance {
     /**
      * Set the the root data object. Invocation of this method removes any data set previously by
      * {@link #data(String, Object)}.
-     * 
+     *
      * @param data
      * @return
      */
@@ -41,7 +41,7 @@ public interface TemplateInstance {
     /**
      * Put the data in a map. The map will be used as the root context object during rendering. Invocation of this
      * method removes the root data object previously set by {@link #data(Object)}.
-     * 
+     *
      * @param key
      * @param data
      * @return self
@@ -49,7 +49,7 @@ public interface TemplateInstance {
     TemplateInstance data(String key, Object data);
 
     /**
-     * 
+     *
      * @param key
      * @param value
      * @return self
@@ -57,7 +57,7 @@ public interface TemplateInstance {
     TemplateInstance setAttribute(String key, Object value);
 
     /**
-     * 
+     *
      * @param key
      * @return the attribute or null
      */
@@ -65,14 +65,14 @@ public interface TemplateInstance {
 
     /**
      * Triggers rendering. Note that this method blocks the current thread!
-     * 
+     *
      * @return the rendered template as string
      */
     String render();
 
     /**
      * Triggers rendering.
-     * 
+     *
      * @return a completion stage that is completed once the rendering finished
      */
     CompletionStage<String> renderAsync();
@@ -82,7 +82,7 @@ public interface TemplateInstance {
      * represents a part of the rendered template.
      * <p>
      * This operation does not trigger rendering. Instead, each subscription triggers a new rendering of the template.
-     * 
+     *
      * @return a new Multi
      * @see Multi#subscribe()
      */
@@ -92,7 +92,7 @@ public interface TemplateInstance {
      * Create a new {@link Uni} that can be used to consume the rendered template.
      * <p>
      * This operation does not trigger rendering. Instead, each subscription triggers a new rendering of the template.
-     * 
+     *
      * @return a new Uni
      * @see Uni#subscribe()
      */
@@ -100,14 +100,14 @@ public interface TemplateInstance {
 
     /**
      * Triggers rendering.
-     * 
+     *
      * @param consumer To consume chunks of the rendered template
      * @return a completion stage that is completed once the rendering finished
      */
     CompletionStage<Void> consume(Consumer<String> consumer);
 
     /**
-     * 
+     *
      * @return the timeout
      * @see TemplateInstance#TIMEOUT
      */
@@ -115,7 +115,7 @@ public interface TemplateInstance {
 
     /**
      * This component can be used to initialize a template instance, i.e. the data and attributes.
-     * 
+     *
      * @see TemplateInstance#data(String, Object)
      * @see TemplateInstance#setAttribute(String, Object)
      */

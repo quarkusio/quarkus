@@ -30,7 +30,7 @@ public class BuildpackConfig {
 
     /**
      * The buildpacks run image to use when building the project
-     * 
+     *
      * When not supplied, the run image is determined by the builder image.
      */
     @ConfigItem
@@ -44,7 +44,7 @@ public class BuildpackConfig {
 
     /**
      * DOCKER_HOST value to use.
-     * 
+     *
      * If not set, the env var DOCKER_HOST is used, if that is not set
      * the value `unix:///var/run/docker.sock' (or 'npipe:///./pipe/docker_engine' for windows) is used.
      */

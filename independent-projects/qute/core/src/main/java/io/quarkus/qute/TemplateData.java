@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * <p>
  * If the {@link #namespace()} is set to a non-empty value then a namespace resolver is automatically generated to access static
  * fields and methos of the target class.
- * 
+ *
  * @see ValueResolver
  * @see NamespaceResolver
  */

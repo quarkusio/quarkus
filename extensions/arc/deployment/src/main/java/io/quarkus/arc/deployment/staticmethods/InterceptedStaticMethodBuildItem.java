@@ -37,7 +37,7 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return the list of interceptors that should be applied
      */
     public List<InterceptorInfo> getInterceptors() {
@@ -45,7 +45,7 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return the set of interceptor bindings
      */
     public Set<AnnotationInstance> getBindings() {
@@ -53,7 +53,7 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return the unique hash that could be used to indentify the method
      */
     public String getHash() {

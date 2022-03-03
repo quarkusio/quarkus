@@ -19,7 +19,7 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 
 /***
  * Processor that handles the generation of ServiceBinding resources.
- * 
+ *
  * Generated ServiceBinding rules:
  *
  * 1. .metadata.name:
@@ -29,7 +29,7 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
  * - app-postgresql-default
  * - app-mysql-default
  * - app-mongodb-default
- * 
+ *
  * 2. .spec.service[*].name:
  * Since services are qualified using apiVersion, we don't need to carry over the [qualifier kind]. In this case the name is
  * just [qualifier name].*
@@ -37,7 +37,7 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
  * Notes:
  *
  * The following pairs are equivallent:
- * 
+ *
  * quarkus.kubernetes-service-binding.services.prostresql-default.xxx=yyy
  * quarkus.kubernetes-service-binding.services.prostresql.xxx=yyy
  *
@@ -46,7 +46,7 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
  *
  * When service are auto bound the minimal from (e.g. persondb) will be used.
  * Users are still able to to tune things using the [kind]-[name] combo to avoid naming clashes.
- * 
+ *
  */
 public class ServiceBindingProcessor {
 
@@ -111,7 +111,7 @@ public class ServiceBindingProcessor {
     /**
      * Create an {@link Optional} {@link ServiceBindingRequirementBuildItem} from a {@link KubernetesServiceBindingConfig}
      * entry.
-     * 
+     *
      * @param applicationName The name of the application.
      * @param serviceId The key of the service.
      * @param config The config instance.
@@ -130,7 +130,7 @@ public class ServiceBindingProcessor {
     /**
      * Create an {@link Optional} {@link ServiceBindingRequirementBuildItem} from a {@link KubernetesServiceBindingConfig}
      * entry.
-     * 
+     *
      * @param applicationName The name of the application.
      * @param defaultsLookupKey The key to use for looking up default apiVersion/kind).
      * @param serviceId The key of the service.
@@ -158,7 +158,7 @@ public class ServiceBindingProcessor {
 
     /**
      * Create an {@link Optional} {@link ServiceBindingRequirementBuildItem} from a {@link ServiceBindingQualifierBuildItem}.
-     * 
+     *
      * @param applicationName The name of the application.
      * @param config The config instance.
      * @param qualifier The qualifier that will be converted to a requirement.

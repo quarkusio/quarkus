@@ -227,7 +227,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * Default TokenStateManager keeps all tokens (ID, access and refresh)
          * returned in the authorization code grant response in a single session cookie by default.
-         * 
+         *
          * Enable this property to minimize a session cookie size
          */
         @ConfigItem(defaultValue = "false")
@@ -501,7 +501,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * If this property is set to 'true' then the original request URI which was used before
          * the authentication will be restored after the user has been redirected back to the application.
-         * 
+         *
          * Note if `redirectPath` property is not set the the original request URI will be restored even if this property is
          * disabled.
          */
@@ -542,7 +542,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Access tokens obtained as part of the code flow will always be verified if `quarkus.oidc.roles.source`
          * property is set to `accesstoken` which means the authorization decision will be based on the roles extracted from the
          * access token.
-         * 
+         *
          * Bearer access tokens are always verified.
          */
         @ConfigItem(defaultValue = "false")

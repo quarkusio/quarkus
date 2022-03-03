@@ -220,7 +220,7 @@ public class AcceptHeaders {
 
     /**
      * Evaluates and removes the accept parameters.
-     * 
+     *
      * <pre>
      * accept-params  = ";" "q" "=" qvalue *( accept-extension )
      * accept-extension = ";" token [ "=" ( token | quoted-string ) ]

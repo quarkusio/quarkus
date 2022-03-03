@@ -142,7 +142,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The host under which the application is going to be exposed
-     * 
+     *
      * @deprecated Use the {@code quarkus.openshift.route.host} instead
      */
     @ConfigItem
@@ -285,7 +285,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * If true, an Openshift Route will be created
-     * 
+     *
      * @deprecated Use the {@code quarkus.openshift.route.exposition} instead
      */
     @ConfigItem

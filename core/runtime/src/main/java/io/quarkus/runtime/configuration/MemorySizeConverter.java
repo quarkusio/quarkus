@@ -39,7 +39,7 @@ public class MemorySizeConverter implements Converter<MemorySize>, Serializable 
      * Convert data size configuration value respecting the following format (shown in regular expression)
      * "[0-9]+[BbKkMmGgTtPpEeZzYy]?"
      * If the value contain no suffix, the size is treated as bytes.
-     * 
+     *
      * @param value - value to convert.
      * @return {@link MemorySize} - a memory size represented by the given value
      */

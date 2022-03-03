@@ -76,7 +76,7 @@ final class InterfaceConfigPropertiesUtil {
 
     /**
      * Add a method like this:
-     * 
+     *
      * <pre>
      *  &#64;Produces
      *  public SomeConfig produceSomeClass(Config config) {

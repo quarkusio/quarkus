@@ -131,7 +131,7 @@ public class DevServicesConfig {
 
     /**
      * Grant type.
-     * 
+     *
      * @deprecated Use {@link DevUiConfig#grant}.
      */
     @Deprecated

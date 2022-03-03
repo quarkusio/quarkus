@@ -391,8 +391,8 @@ public class MessageBundleProcessor {
             }
         };
 
-        // IMPLEMENTATION NOTE: 
-        // We do not support injection of synthetic beans with names 
+        // IMPLEMENTATION NOTE:
+        // We do not support injection of synthetic beans with names
         // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
         Map<String, BeanInfo> namedBeans = beanDiscovery.beanStream().withName()
                 .collect(toMap(BeanInfo::getName, Function.identity()));
@@ -492,7 +492,7 @@ public class MessageBundleProcessor {
                         }
 
                         if (methodPart.isVirtualMethod()) {
-                            // For virtual method validate the number of params first  
+                            // For virtual method validate the number of params first
                             List<Expression> params = methodPart.asVirtualMethod().getParameters();
                             List<Type> methodParams = method.parameters();
 
@@ -851,7 +851,7 @@ public class MessageBundleProcessor {
         ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
         ResultHandle ret = resolve.newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
 
-        // First handle dynamic messages, i.e. the "message" virtual method 
+        // First handle dynamic messages, i.e. the "message" virtual method
         BytecodeCreator dynamicMessage = resolve.ifTrue(resolve.invokeVirtualMethod(Descriptors.EQUALS,
                 resolve.load(MESSAGE), name))
                 .trueBranch();
@@ -906,7 +906,7 @@ public class MessageBundleProcessor {
         dynamicMessage.returnValue(ret);
 
         // Proceed with generated messages
-        // We do group messages to workaround limits of a JVM method body 
+        // We do group messages to workaround limits of a JVM method body
         ResultHandle evaluatedParams = resolve.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE, evalContext);
         final int groupLimit = 300;
         int groupIndex = 0;

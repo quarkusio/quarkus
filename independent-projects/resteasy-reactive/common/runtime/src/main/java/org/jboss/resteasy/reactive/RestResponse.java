@@ -494,7 +494,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
 
     /**
      * Turns this <code>RestResponse</code> into a JAX-RS {@link Response}.
-     * 
+     *
      * @return a JAX-RS {@link Response} representing this response.
      */
     public abstract Response toResponse();
@@ -810,7 +810,7 @@ public abstract class RestResponse<T> implements AutoCloseable {
      * static methods of the RestResponse.ResponseBuilder class, instance methods provide the
      * ability to set metadata. E.g. to create a response that indicates the
      * creation of a new resource:
-     * 
+     *
      * <pre>
      * &#64;POST
      * RestResponse&lt;Void&gt; addWidget(...) {

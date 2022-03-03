@@ -12,7 +12,7 @@ public interface ReflectionRegistration {
 
     /**
      * Register the client proxy for the given bean class if it's needed.
-     * 
+     *
      * @param beanClassName
      * @param clientProxyName
      */
@@ -21,7 +21,7 @@ public interface ReflectionRegistration {
 
     /**
      * Register the intercepted subclass for the given bean class if it's needed.
-     * 
+     *
      * @param beanClassName
      * @param subclassName
      */

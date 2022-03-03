@@ -24,9 +24,9 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Tests that shutdown will wait for current requests to finish.
- * 
+ *
  * This test records the current time, then sends a request to an endpoint that will take 5s to finish.
- * 
+ *
  * After undeploy we verify that at least 5s has elapsed, which verifies that the shutdown wait time
  * has worked correctly
  */

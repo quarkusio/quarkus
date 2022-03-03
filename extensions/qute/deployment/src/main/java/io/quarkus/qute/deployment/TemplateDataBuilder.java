@@ -29,7 +29,7 @@ public final class TemplateDataBuilder {
     }
 
     /**
-     * 
+     *
      * @see TemplateData#ignore()
      * @return self
      */
@@ -39,7 +39,7 @@ public final class TemplateDataBuilder {
     }
 
     /**
-     * 
+     *
      * @see TemplateData#ignoreSuperclasses()
      * @return self
      */

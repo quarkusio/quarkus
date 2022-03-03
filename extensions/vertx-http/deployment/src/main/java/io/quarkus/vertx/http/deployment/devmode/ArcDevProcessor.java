@@ -84,7 +84,7 @@ public class ArcDevProcessor {
     }
 
     // Note that we can't turn ArcConfig into BUILD_AND_RUN_TIME_FIXED because it's referencing IndexDependencyConfig
-    // And we can't split the config due to compatibility reasons 
+    // And we can't split the config due to compatibility reasons
     private Map<String, String> getConfigProperties(ArcConfig arcConfig) {
         Map<String, String> props = new HashMap<>();
         props.put("quarkus.arc.remove-unused-beans", arcConfig.removeUnusedBeans);

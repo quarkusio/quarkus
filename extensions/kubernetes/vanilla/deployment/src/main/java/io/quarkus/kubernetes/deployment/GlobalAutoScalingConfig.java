@@ -12,7 +12,7 @@ public class GlobalAutoScalingConfig {
      * Knative Serving comes with its own autoscaler, the KPA (Knative Pod Autoscaler) but can also be configured to use
      * Kubernetes’ HPA (Horizontal Pod Autoscaler) or even a custom third-party autoscaler.
      * Possible values (kpa, hpa, default: kpa).
-     * 
+     *
      * @return The autoscaler class.
      */
     Optional<AutoScalerClass> autoScalerClass;

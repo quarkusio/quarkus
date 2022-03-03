@@ -191,7 +191,7 @@ public class SubclassGenerator extends AbstractGenerator {
         }
 
         // If a decorator is associated:
-        // 1. Generate the delegate subclass 
+        // 1. Generate the delegate subclass
         // 2. Instantiate the decorator instance, add set the corresponding field
         Map<String, ResultHandle> decoratorToResultHandle;
         if (boundDecorators.isEmpty()) {
@@ -476,7 +476,7 @@ public class SubclassGenerator extends AbstractGenerator {
 
         // Identify the set of methods that should be delegated
         // Note that the delegate subclass must override ALL methods from the delegate type
-        // This is not enough if the delegate type is parameterized 
+        // This is not enough if the delegate type is parameterized
         Set<MethodKey> methods = new HashSet<>();
         Methods.addDelegateTypeMethods(index, delegateTypeClass, methods);
 

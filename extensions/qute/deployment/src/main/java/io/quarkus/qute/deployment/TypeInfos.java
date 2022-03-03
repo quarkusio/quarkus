@@ -59,7 +59,7 @@ final class TypeInfos {
             if (classStr.equals(Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER)) {
                 return new Info(typeInfo, part);
             } else {
-                // TODO make the parsing logic more robust 
+                // TODO make the parsing logic more robust
                 ClassInfo rawClass;
                 Type resolvedType;
                 int arrayDimIdx = classStr.indexOf(ARRAY_DIM);

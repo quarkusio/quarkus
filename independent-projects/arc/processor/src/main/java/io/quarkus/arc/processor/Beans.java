@@ -113,7 +113,7 @@ public final class Beans {
                 priority = annotation.value().asInt();
                 continue;
             }
-            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1 
+            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1
             if ((!isAlternative || priority == null) && annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
                 continue;
@@ -216,7 +216,7 @@ public final class Beans {
                 priority = annotation.value().asInt();
                 continue;
             }
-            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1 
+            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1
             if ((!isAlternative || priority == null) && annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
                 continue;

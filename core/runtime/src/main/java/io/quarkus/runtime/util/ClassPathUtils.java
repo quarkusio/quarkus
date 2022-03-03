@@ -25,7 +25,7 @@ public class ClassPathUtils {
     /**
      * Translates a file system-specific path to a Java classpath resource name
      * that uses '/' as a separator.
-     * 
+     *
      * @param path file system path
      * @return Java classpath resource name
      */

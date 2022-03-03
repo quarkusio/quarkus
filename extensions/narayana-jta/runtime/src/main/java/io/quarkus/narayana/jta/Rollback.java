@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 /**
  * If you annotate your exception with this annotation, the transactional interceptor will
  * use the exception's instructions to force a rollback or not.
- * 
+ *
  * FIXME: move to SPI so it can be used by TransactionalReactive
  */
 @Target(ElementType.TYPE)
@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
 public @interface Rollback {
     /**
      * Specify whether the annotated exception should cause a rollback or not. Defaults to true.
-     * 
+     *
      * @return true if the annotated exception should cause a rollback or not.
      */
     boolean value() default true;

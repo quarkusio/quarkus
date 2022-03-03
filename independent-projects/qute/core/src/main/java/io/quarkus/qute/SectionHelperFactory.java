@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * Factory to create a new {@link SectionHelper} based on the {@link SectionInitContextImpl}.
- * 
+ *
  * @see EngineBuilder#addSectionHelper(SectionHelperFactory)
  */
 public interface SectionHelperFactory<T extends SectionHelper> {
@@ -18,7 +18,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     String MAIN_BLOCK_NAME = "$main";
 
     /**
-     * 
+     *
      * @return the list of default aliases used to match the helper
      * @see #cacheFactoryConfig()
      */
@@ -32,15 +32,15 @@ public interface SectionHelperFactory<T extends SectionHelper> {
      * parameter may be optional. A non-optional parameter that has no value assigned results in a parser error.
      * <p>
      * A section block in a template defines the {@code actual parameters}:
-     * 
+     *
      * <pre>
      * {! The value is "item.isActive". The name is not defined. !}
      * {#if item.isActive}{/}
-     * 
+     *
      * {! The name is "age" and the value is "10". !}
      * {#let age=10}{/}
      * </pre>
-     * 
+     *
      * The actual parameters are parsed taking the factory parameters into account:
      * <ol>
      * <li>Named actual params are processed first and the relevant values are assigned, e.g. the param with name {@code age}
@@ -51,7 +51,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
      * <li>Otherwise, the values are set according to position but params with no default value take precedence.</li>
      * <li>Finally, all unset parameters that define a default value are initialized with the default value.</li>
      * </ol>
-     * 
+     *
      * @return the factory parameters
      * @see #cacheFactoryConfig()
      * @see BlockInfo#getParameters()
@@ -62,7 +62,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
     /**
      * A nested section tag that matches a name of a block will be added as a block to the current section.
-     * 
+     *
      * @return the list of block labels
      * @see #cacheFactoryConfig()
      */
@@ -74,7 +74,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
      * If the return value is {@code true} then {@link #getDefaultAliases()}, {@link #getParameters()} and
      * {@link #getBlockLabels()} methods are called exactly once and the results are cached when the factory is being
      * registered.
-     * 
+     *
      * @return {@code true} the config should be cached, {@code false} otherwise
      */
     default boolean cacheFactoryConfig() {
@@ -85,7 +85,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
      * By default, all unknown nested sections are ignored, ie. sections with labels not present in the
      * {@link #getBlockLabels()}. However, sometimes it might be useful to treat such sections as blocks. See
      * {@link IncludeSectionHelper} for an example.
-     * 
+     *
      * @return true if unknown sections should not be ignored
      */
     default boolean treatUnknownSectionsAsBlocks() {
@@ -93,7 +93,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     }
 
     /**
-     * 
+     *
      * @param context
      * @return a new helper instance
      */
@@ -101,7 +101,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
     /**
      * Initialize a section block.
-     * 
+     *
      * @return a new scope if this section introduces a new scope, or the outer scope
      * @see BlockInfo#addExpression(String, String)
      */
@@ -121,7 +121,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
         /**
          * Undeclared params with default values are included.
-         * 
+         *
          * @return the map of parameters
          */
         Map<String, String> getParameters();
@@ -138,7 +138,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
          * Parse and register an expression for the specified parameter.
          * <p>
          * A registered expression contributes to the {@link Template#getExpressions()}, i.e. can be validated at build time.
-         * 
+         *
          * @param param
          * @param value
          * @return a new expression
@@ -154,7 +154,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     public interface SectionInitContext extends ParserDelegate {
 
         /**
-         * 
+         *
          * @return the parameters of the main block
          */
         default public Map<String, String> getParameters() {
@@ -162,7 +162,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         }
 
         /**
-         * 
+         *
          * @return {@code true} if the main block declares a parameter of the given name
          */
         default public boolean hasParameter(String name) {
@@ -170,7 +170,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         }
 
         /**
-         * 
+         *
          * @return the parameter, or null/{@link Parameter.EMPTY} if the main block does not declare a parameter of the given
          *         name
          */
@@ -179,7 +179,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         }
 
         /**
-         * 
+         *
          * @param name
          * @param defaultValue
          * @return the param or the default value if not specified
@@ -192,7 +192,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         /**
          * Note that the expression must be registered in the {@link SectionHelperFactory#initializeBlock(Scope, BlockInfo)}
          * first.
-         * 
+         *
          * @param parameterName
          * @return an expression registered for the specified param name, or {@code null}
          * @see BlockInfo#addExpression(String, String)
@@ -201,7 +201,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
 
         /**
          * Parse the specified value. The expression is not registered in the template.
-         * 
+         *
          * @param value
          * @return a new expression
          */
@@ -210,7 +210,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         public List<SectionBlock> getBlocks();
 
         /**
-         * 
+         *
          * @param label
          * @return the first block with the given label, or {code null} if no such exists
          */
@@ -224,13 +224,13 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         }
 
         /**
-         * 
+         *
          * @return the engine
          */
         public Engine getEngine();
 
         /**
-         * 
+         *
          * @return the origin of the section start tag
          */
         public default Origin getOrigin() {
@@ -240,7 +240,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     }
 
     /**
-     * 
+     *
      * @see Parameter
      */
     public static final class ParametersInfo implements Iterable<List<Parameter>> {

@@ -55,7 +55,7 @@ import org.jboss.logging.Logger;
 
 /**
  * Generates value resolvers backed by classes.
- * 
+ *
  * @see ValueResolver
  */
 public class ValueResolverGenerator {
@@ -390,7 +390,7 @@ public class ValueResolverGenerator {
                 Match match = entry.getKey();
 
                 // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param 
+                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
                 Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
                 varargsMatches.entrySet().stream()
                         .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
@@ -527,7 +527,7 @@ public class ValueResolverGenerator {
                 Match match = entry.getKey();
 
                 // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param 
+                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
                 Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
                 varargsMatches.entrySet().stream()
                         .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
@@ -944,7 +944,7 @@ public class ValueResolverGenerator {
          * the given field</li>
          * <li>{@code null} if getters are not forced for the given class</li>
          * </ul>
-         * 
+         *
          * @param forceGettersFunction
          * @return self
          */
@@ -1102,7 +1102,7 @@ public class ValueResolverGenerator {
     }
 
     /**
-     * 
+     *
      * @param clazz
      * @return the simple name for the given top-level or nested class
      */
@@ -1131,7 +1131,7 @@ public class ValueResolverGenerator {
      * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would
      * return "Foo$Bar" for the
      * parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to distinguish the nested classes.
-     * 
+     *
      * @param name
      * @return the simple name
      */
@@ -1260,7 +1260,7 @@ public class ValueResolverGenerator {
 
         @Override
         public int compareTo(MethodKey other) {
-            // compare the name, then number of params and param type names 
+            // compare the name, then number of params and param type names
             int res = name.compareTo(other.name);
             if (res == 0) {
                 res = Integer.compare(params.size(), other.params.size());

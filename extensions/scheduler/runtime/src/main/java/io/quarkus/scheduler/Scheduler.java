@@ -36,7 +36,7 @@ public interface Scheduler {
 
     /**
      * Identity must not be null and {@code false} is returned for non-existent identity.
-     * 
+     *
      * @param identity
      * @return {@code true} if the job with the given identity is paused, {@code false} otherwise
      * @see Scheduled#identity()

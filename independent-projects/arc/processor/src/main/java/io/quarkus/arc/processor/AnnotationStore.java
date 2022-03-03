@@ -47,7 +47,7 @@ public final class AnnotationStore {
 
     /**
      * All {@link AnnotationsTransformer}s are applied and the result is cached.
-     * 
+     *
      * @param target
      * @return the annotation instance for the given target
      */
@@ -59,7 +59,7 @@ public final class AnnotationStore {
     }
 
     /**
-     * 
+     *
      * @param target
      * @param name
      * @return the annotation instance if present, {@code null} otherwise
@@ -70,7 +70,7 @@ public final class AnnotationStore {
     }
 
     /**
-     * 
+     *
      * @param target
      * @param name
      * @return {@code true} if the specified target contains the specified annotation, @{code false} otherwise
@@ -81,7 +81,7 @@ public final class AnnotationStore {
     }
 
     /**
-     * 
+     *
      * @param target
      * @param names
      * @return {@code true} if the specified target contains any of the specified annotations, @{code false} otherwise

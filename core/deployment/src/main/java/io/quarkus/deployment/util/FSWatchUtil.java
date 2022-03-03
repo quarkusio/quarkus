@@ -27,7 +27,7 @@ public class FSWatchUtil {
 
     /**
      * in a loop, checks for modifications in the files
-     * 
+     *
      * @param watchers list of {@link Watcher}s
      */
     public void observe(Collection<Watcher> watchers,

@@ -12,7 +12,7 @@ public class DefaultCacheKey {
 
     /**
      * Constructor.
-     * 
+     *
      * @param cacheName cache name
      * @throws NullPointerException if the cache name is {@code null}
      */

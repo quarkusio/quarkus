@@ -17,7 +17,7 @@ public interface BeanResolver {
 
     /**
      * Note that this method does not attempt to resolve the ambiguity.
-     * 
+     *
      * @param requiredType
      * @param requiredQualifiers
      * @return the set of beans which have the given required type and qualifiers
@@ -27,7 +27,7 @@ public interface BeanResolver {
 
     /**
      * Apply the ambiguous dependency resolution rules.
-     * 
+     *
      * @param beans
      * @return the resolved bean, or null
      * @throws AmbiguousResolutionException

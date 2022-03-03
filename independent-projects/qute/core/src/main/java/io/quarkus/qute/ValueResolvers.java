@@ -83,7 +83,7 @@ public final class ValueResolvers {
     /**
      * Returns the default value if the base object is {@code null}, empty {@link Optional} or not found and the base object
      * otherwise.
-     * 
+     *
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
     public static ValueResolver orResolver() {
@@ -134,7 +134,7 @@ public final class ValueResolvers {
      * Returns {@link Results#NotFound} if the base object is falsy and the base object otherwise.
      * <p>
      * Can be used together with {@link #orResolver()} to form a ternary operator.
-     * 
+     *
      * {@code person.isElvis ? 'elvis' : notElvis}
      */
     public static ValueResolver trueResolver() {
@@ -216,7 +216,7 @@ public final class ValueResolvers {
     /**
      * Performs conditional AND on the base object and the first parameter.
      * It's a short-circuiting operation - the parameter is only evaluated if needed.
-     * 
+     *
      * @see Booleans#isFalsy(Object)
      */
     public static ValueResolver logicalAndResolver() {
@@ -245,7 +245,7 @@ public final class ValueResolvers {
     /**
      * Performs conditional OR on the base object and the first parameter.
      * It's a short-circuiting operation - the parameter is only evaluated if needed.
-     * 
+     *
      * @see Booleans#isFalsy(Object)
      */
     public static ValueResolver logicalOrResolver() {

@@ -41,7 +41,7 @@ public class CORSFilter implements Handler<RoutingContext> {
 
     /**
      * Parse the provided allowed origins for any regexes
-     * 
+     *
      * @param allowedOrigins
      * @return a list of compiled regular expressions. If none configured, and empty list is returned
      */
@@ -64,7 +64,7 @@ public class CORSFilter implements Handler<RoutingContext> {
     /**
      * If any regular expression origins are configured, try to match on them.
      * Regular expressions must begin and end with '/'
-     * 
+     *
      * @param allowedOrigins the configured regex origins.
      * @param origin the specified origin
      * @return true if any configured regular expressions match the specified origin, false otherwise

@@ -63,7 +63,7 @@ public class PathHelper {
 
     /**
      * A cheaper (memory-wise) version of replaceEnclosedCurlyBraces(String str).
-     * 
+     *
      * @param str input string
      * @return replaced output
      */

@@ -37,7 +37,7 @@ public class InputHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext context) throws Exception {
-        // in some cases, with sub-resource locators or via request filters, 
+        // in some cases, with sub-resource locators or via request filters,
         // it's possible we've already read the entity
         if (context.hasInputStream()) {
             // let's not set it twice

@@ -23,7 +23,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
 
     /**
      * Uses the {@code /} path separator.
-     * 
+     *
      * @return the path relative to the template root
      */
     public String getPath() {
@@ -32,7 +32,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
 
     /**
      * Uses the system-dependent path separator.
-     * 
+     *
      * @return the full path of the template
      */
     public Path getFullPath() {
@@ -40,7 +40,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return {@code true} if it represents a user tag, {@code false} otherwise
      */
     public boolean isTag() {

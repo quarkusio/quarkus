@@ -42,7 +42,7 @@ public class RedisConfig {
      * And then use the {@link RedisClientName} annotation to select the {@link RedisClient} or
      * {@link io.quarkus.redis.client.reactive.ReactiveRedisClient}.
      * <p>
-     * 
+     *
      * <pre>
      * {@code
      * &#64;RedisClientName("client1")
@@ -63,7 +63,7 @@ public class RedisConfig {
          * The URI provided uses the following schema `redis://[username:password@][host][:port][/database]`
          * Use `quarkus.redis.hosts-provider-name` to provide the hosts programmatically.
          * <p>
-         * 
+         *
          * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
          */
         @ConfigItem(defaultValueDocumentation = "redis://localhost:6379", name = HOSTS_CONFIG_NAME)

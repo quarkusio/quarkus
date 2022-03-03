@@ -19,7 +19,7 @@ public final class InterceptorResolver {
     }
 
     /**
-     * 
+     *
      * @param interceptionType
      * @param bindings
      * @return the list of interceptors for a set of interceptor bindings and a type of interception

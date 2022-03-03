@@ -10,7 +10,7 @@ import io.quarkus.arc.ManagedContext;
 public interface BeanContainer {
 
     /**
-     * 
+     *
      * @param type
      * @param qualifiers
      * @return a bean instance or {@code null} if no matching bean is found
@@ -20,7 +20,7 @@ public interface BeanContainer {
     }
 
     /**
-     * 
+     *
      * @param type
      * @param qualifiers
      * @return a bean instance factory, never {@code null}
@@ -31,7 +31,7 @@ public interface BeanContainer {
      * <pre>
      * ManagedContext requestContext = beanContainer.requestContext();
      * if (requestContext.isActive()) {
-     *     // Perform action 
+     *     // Perform action
      * } else {
      *     try {
      *         requestContext.activate();
@@ -41,7 +41,7 @@ public interface BeanContainer {
      *     }
      * }
      * </pre>
-     * 
+     *
      * @return the context for {@link javax.enterprise.context.RequestScoped}
      * @throws IllegalStateException If the container is not running
      */
@@ -57,7 +57,7 @@ public interface BeanContainer {
         };
 
         /**
-         * 
+         *
          * @return a bean instance or {@code null} if no matching bean is found
          */
         Instance<T> create();

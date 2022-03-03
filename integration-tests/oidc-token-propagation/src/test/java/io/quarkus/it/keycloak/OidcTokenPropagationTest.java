@@ -32,8 +32,8 @@ public class OidcTokenPropagationTest {
         // So at this stage this test only verifies that as far as the token propagation is concerned
         // the exchange grant request is received by Keycloak as per the test configuration.
 
-        // Note this test does pass if Keycloak is started manually, 
-        // 'quarkus' realm, 'quarkus-app' and 'quarkus-app-exchange' clients, and 'alice' user is created 
+        // Note this test does pass if Keycloak is started manually,
+        // 'quarkus' realm, 'quarkus-app' and 'quarkus-app-exchange' clients, and 'alice' user is created
         // and the token-exchange permission is added to the clients as per the Keycloak docs.
         // It can be confirmed by commenting @QuarkusTestResource above
         // and running the tests as 'mvn clean install -Dtest-containers'

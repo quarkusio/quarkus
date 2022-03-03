@@ -14,7 +14,7 @@ public class StringTemplateExtensions {
     /**
      * E.g. {@code strVal.fmt(name,surname)}. The priority must be lower than
      * {@link #fmtInstance(String, String, Locale, Object...)}.
-     * 
+     *
      * @param format
      * @param ignoredPropertyName
      * @param args
@@ -28,7 +28,7 @@ public class StringTemplateExtensions {
     /**
      * E.g. {@code strVal.format(locale,name)}. The priority must be higher than
      * {@link #fmtInstance(String, String, Object...)}.
-     * 
+     *
      * @param format
      * @param ignoredPropertyName
      * @param locale
@@ -42,7 +42,7 @@ public class StringTemplateExtensions {
 
     /**
      * E.g. {@cde str:fmt("Hello %s",name)}. The priority must be lower than {@link #fmt(String, Locale, String, Object...)}.
-     * 
+     *
      * @param ignoredPropertyName
      * @param format
      * @param args
@@ -55,7 +55,7 @@ public class StringTemplateExtensions {
 
     /**
      * E.g. {@code str:fmt(locale,"Hello %s",name)}. The priority must be higher than {@link #fmt(String, String, Object...)}.
-     * 
+     *
      * @param ignoredPropertyName
      * @param locale
      * @param format

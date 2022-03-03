@@ -36,7 +36,7 @@ public @interface DisableIfBuiltWithGraalVMOlderThan {
 
         /**
          * Compares this version with another GraalVM version
-         * 
+         *
          * @return {@code -1} if this version is older than the other version,
          *         {@code +1} if it's newer and {@code 0} if they represent the same version
          */

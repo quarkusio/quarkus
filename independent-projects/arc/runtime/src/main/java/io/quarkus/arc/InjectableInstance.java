@@ -8,7 +8,7 @@ import javax.enterprise.util.TypeLiteral;
 
 /**
  * Enhanced version of {@link Instance}.
- * 
+ *
  * @param <T>
  */
 public interface InjectableInstance<T> extends Instance<T> {
@@ -29,7 +29,7 @@ public interface InjectableInstance<T> extends Instance<T> {
     /**
      * Removes the cached result of the {@link #get()} operation. If the cached result was a contextual reference of
      * a {@link Dependent} bean, destroy the reference as well.
-     * 
+     *
      * @see WithCaching
      */
     void clearCache();
@@ -42,7 +42,7 @@ public interface InjectableInstance<T> extends Instance<T> {
      * <li>not alternatives, except for producer methods and fields of beans that are alternatives,</li>
      * <li>default beans.</li>
      * </ul>
-     * 
+     *
      * @return an iterator over the contextual references of the disambiguated beans
      * @see DefaultBean
      */

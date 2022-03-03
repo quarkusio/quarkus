@@ -52,12 +52,12 @@ public class VertxProducer {
     /**
      * Undeploy verticles backed by contextual instances of {@link ApplicationScoped} beans before the application context is
      * destroyed. Otherwise Vertx may attempt to stop the verticles after the CDI container is shut down.
-     * 
+     *
      * @param event
      * @param beanManager
      */
     void undeployVerticles(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event, BeanManager beanManager) {
-        // Only beans with the AbstractVerticle in the set of bean types are considered - we need a deployment id 
+        // Only beans with the AbstractVerticle in the set of bean types are considered - we need a deployment id
         Set<Bean<?>> beans = beanManager.getBeans(AbstractVerticle.class, Any.Literal.INSTANCE);
         Context applicationContext = beanManager.getContext(ApplicationScoped.class);
         for (Bean<?> bean : beans) {

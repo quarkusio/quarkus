@@ -6,7 +6,7 @@ import java.util.function.Predicate;
 
 /**
  * Definition of a section factory parameter.
- * 
+ *
  * @see ParametersInfo
  * @see SectionHelperFactory#getParameters()
  */
@@ -57,7 +57,7 @@ public final class Parameter {
 
     /**
      * Allows a factory parameter to refuse a value of an unnamed actual parameter.
-     * 
+     *
      * @param value
      * @return {@code true} if the value is acceptable, {@code false} otherwise
      */

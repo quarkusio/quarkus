@@ -7,7 +7,7 @@ public interface ParserHook {
 
     /**
      * This method is invoked before a template contents is parsed
-     * 
+     *
      * @param parserHelper
      */
     void beforeParsing(ParserHelper parserHelper);

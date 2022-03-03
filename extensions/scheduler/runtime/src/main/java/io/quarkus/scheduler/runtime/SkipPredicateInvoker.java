@@ -10,7 +10,7 @@ import io.quarkus.scheduler.SkippedExecution;
 
 /**
  * A scheduled invoker wrapper that skips the execution if the predicate evaluates to true.
- * 
+ *
  * @see Scheduled#skipExecutionIf()
  */
 public final class SkipPredicateInvoker implements ScheduledInvoker {

@@ -135,7 +135,7 @@ public class InjectionPointInfo {
     /**
      * Note that for programmatic lookup, the required type is the type parameter specified at the injection point. For example,
      * the required type for an injection point of type {@code Instance<org.acme.Foo>} is {@code org.acme.Foo}.
-     * 
+     *
      * @return the required type of this injection point
      */
     public Type getRequiredType() {
@@ -148,7 +148,7 @@ public class InjectionPointInfo {
 
     /**
      * This method always returns the original type declared on the injection point, unlike {@link #getRequiredType()}.
-     * 
+     *
      * @return the type specified at the injection point
      */
     public Type getType() {
@@ -187,7 +187,7 @@ public class InjectionPointInfo {
 
     /**
      * For injected params, this method returns the corresponding method and not the param itself.
-     * 
+     *
      * @return the annotation target
      */
     public AnnotationTarget getTarget() {
@@ -203,7 +203,7 @@ public class InjectionPointInfo {
     }
 
     /**
-     * 
+     *
      * @return true if this injection point represents a method parameter annotated with {@code TransientReference} that
      *         resolves to a dependent bean
      */

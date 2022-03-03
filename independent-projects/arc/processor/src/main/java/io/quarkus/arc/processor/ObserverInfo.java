@@ -179,7 +179,7 @@ public class ObserverInfo implements InjectionTargetInfo {
     /**
      * A unique identifier should be used for multiple synthetic observer methods with the same
      * attributes (including the bean class).
-     * 
+     *
      * @return the optional identifier
      */
     public String getId() {
@@ -191,7 +191,7 @@ public class ObserverInfo implements InjectionTargetInfo {
     }
 
     /**
-     * 
+     *
      * @return the class of the declaring bean or the class provided by the configurator for synthetic observers
      */
     public DotName getBeanClass() {
@@ -199,7 +199,7 @@ public class ObserverInfo implements InjectionTargetInfo {
     }
 
     /**
-     * 
+     *
      * @return the declaring bean or null in case of synthetic observer
      */
     public BeanInfo getDeclaringBean() {
@@ -211,7 +211,7 @@ public class ObserverInfo implements InjectionTargetInfo {
     }
 
     /**
-     * 
+     *
      * @return the observer method or null in case of synthetic observer
      */
     public MethodInfo getObserverMethod() {
@@ -219,7 +219,7 @@ public class ObserverInfo implements InjectionTargetInfo {
     }
 
     /**
-     * 
+     *
      * @return the event parameter or null in case of synthetic observer
      */
     public MethodParameterInfo getEventParameter() {

@@ -65,7 +65,7 @@ public class HttpConfiguration {
     /**
      * If this is true then the address, scheme etc will be set from headers forwarded by the proxy server, such as
      * {@code X-Forwarded-For}. This should only be set if you are behind a proxy that sets these headers.
-     * 
+     *
      * @deprecated use quarkus.http.proxy.proxy-address-forwarding instead.
      */
     @Deprecated
@@ -75,7 +75,7 @@ public class HttpConfiguration {
     /**
      * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used,
      * rather than the more common but not standard {@code X-Forwarded-For}.
-     * 
+     *
      * @deprecated use quarkus.http.proxy.allow-forwarded instead.
      */
     @Deprecated
@@ -220,9 +220,9 @@ public class HttpConfiguration {
      *
      * Note that this will attempt to compress all responses, to avoid compressing
      * already compressed content (such as images) you need to set the following header:
-     * 
+     *
      * Content-Encoding: identity
-     * 
+     *
      * Which will tell vert.x not to compress the response.
      */
     @ConfigItem

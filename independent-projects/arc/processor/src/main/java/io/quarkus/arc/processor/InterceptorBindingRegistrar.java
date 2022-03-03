@@ -61,7 +61,7 @@ public interface InterceptorBindingRegistrar extends BuildExtension {
         }
 
         /**
-         * 
+         *
          * @return the name of the annotation that should be considered an interceptor binding
          */
         DotName getName();

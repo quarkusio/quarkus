@@ -1975,7 +1975,7 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     /**
-     * 
+     *
      * @see InjectableReferenceProvider
      */
     static final class ProviderType {
@@ -1991,7 +1991,7 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         /**
-         * 
+         *
          * @return the class name, e.g. {@code org.acme.Foo}
          */
         String className() {
@@ -1999,7 +1999,7 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         /**
-         * 
+         *
          * @return the name used in JVM descriptors, e.g. {@code Lorg/acme/Foo;}
          */
         String descriptorName() {

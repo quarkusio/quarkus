@@ -325,7 +325,7 @@ public class GrpcClientProcessor {
 
             @Override
             public void transform(TransformationContext ctx) {
-                // If annotated with @GrpcClient and no explicit value is used, i.e. @GrpcClient(), 
+                // If annotated with @GrpcClient and no explicit value is used, i.e. @GrpcClient(),
                 // then we need to determine the service name from the annotated element and transform the injection point
                 AnnotationInstance clientAnnotation = Annotations.find(ctx.getQualifiers(), GrpcDotNames.GRPC_CLIENT);
                 if (clientAnnotation != null && clientAnnotation.value() == null) {

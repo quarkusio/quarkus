@@ -110,7 +110,7 @@ public class DevObserverInfo implements Comparable<DevObserverInfo> {
                     ret = declaringClass.compareTo(other.declaringClass);
                 }
                 if (ret == 0) {
-                    // Observers are not synthetic - method name must be present 
+                    // Observers are not synthetic - method name must be present
                     ret = methodName.compareTo(other.methodName);
                 }
             }

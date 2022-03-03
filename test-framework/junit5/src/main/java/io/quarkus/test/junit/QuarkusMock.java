@@ -8,10 +8,10 @@ import org.junit.jupiter.api.TestInstance;
 
 /**
  * Utility class that can be used to mock CDI normal scoped beans.
- * 
+ *
  * This includes beans that are {@link javax.enterprise.context.ApplicationScoped} and
  * {@link javax.enterprise.context.RequestScoped}.
- * 
+ *
  * To use this inject the bean into a test, and then invoke the mock
  * method with your mock.
  *

@@ -54,7 +54,7 @@ public class FileUtil {
      * <p>
      * You should only use this method on Windows-style paths, and not Unix-style
      * paths.
-     * 
+     *
      * @see https://github.com/quarkusio/quarkus/issues/5360
      * @param windowsStylePath A path formatted in Windows-style, e.g. "C:\foo\bar".
      * @return A translated path accepted by Docker, e.g. "//c/foo/bar".

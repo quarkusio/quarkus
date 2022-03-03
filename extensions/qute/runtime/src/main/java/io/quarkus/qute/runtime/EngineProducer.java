@@ -103,7 +103,7 @@ public class EngineProducer {
             builder.strictRendering(true);
         } else {
             builder.strictRendering(false);
-            // If needed use a specific result mapper for the selected strategy  
+            // If needed use a specific result mapper for the selected strategy
             if (runtimeConfig.propertyNotFoundStrategy.isPresent()) {
                 switch (runtimeConfig.propertyNotFoundStrategy.get()) {
                     case THROW_EXCEPTION:

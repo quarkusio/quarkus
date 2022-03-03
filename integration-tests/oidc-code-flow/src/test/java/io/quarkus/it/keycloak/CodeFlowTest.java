@@ -108,7 +108,7 @@ public class CodeFlowTest {
             String endpointLocation = webResponse.getResponseHeaderValue("location");
             URI endpointLocationUri = URI.create(endpointLocation);
 
-            // response from Quarkus 
+            // response from Quarkus
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
             assertEquals(401, webResponse.getStatusCode());
             webClient.getCookieManager().clearCookies();
@@ -156,7 +156,7 @@ public class CodeFlowTest {
     public void testCodeFlowForceHttpsRedirectUriAndPkce() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
-            // Verify X-Forwarded-Prefix header is checked during all the redirects 
+            // Verify X-Forwarded-Prefix header is checked during all the redirects
             webClient.addRequestHeader("X-Forwarded-Prefix", "/xforwarded");
 
             WebResponse webResponse = webClient
@@ -268,7 +268,7 @@ public class CodeFlowTest {
     public void testCodeFlowForceHttpsRedirectUriAndPkceMissingCodeVerifier() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
-            // Verify X-Forwarded-Prefix header is checked during all the redirects 
+            // Verify X-Forwarded-Prefix header is checked during all the redirects
             webClient.addRequestHeader("X-Forwarded-Prefix", "/xforwarded");
 
             WebResponse webResponse = webClient

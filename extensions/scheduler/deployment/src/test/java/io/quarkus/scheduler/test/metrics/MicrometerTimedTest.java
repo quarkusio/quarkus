@@ -95,7 +95,7 @@ public class MicrometerTimedTest {
             latch01.countDown();
         }
 
-        @Timed("foo") // Extension should not override this annotation 
+        @Timed("foo") // Extension should not override this annotation
         @Scheduled(every = "1s")
         void anotherEverySecond() {
             latch02.countDown();

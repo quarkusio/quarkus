@@ -226,7 +226,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     private void escape(char character) {
         if (character != START_DELIMITER && character != END_DELIMITER) {
-            // Invalid escape sequence is just ignored 
+            // Invalid escape sequence is just ignored
             buffer.append(ESCAPE_CHAR);
         }
         buffer.append(character);
@@ -258,7 +258,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             state = State.TEXT;
             processCharacter(character);
         }
-        // Parsing of one-line templates can be optimized 
+        // Parsing of one-line templates can be optimized
         hasLineSeparator = true;
     }
 
@@ -402,7 +402,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             sectionName = sectionName.substring(1, sectionName.length());
 
             SectionNode.Builder lastSection = sectionStack.peek();
-            // Add a section block if the section name matches a section block label 
+            // Add a section block if the section name matches a section block label
             // or does not map to any section helper and the last section treats unknown subsections as blocks
             if (lastSection != null && lastSection.factory.getBlockLabels().contains(sectionName)
                     || (lastSection.factory.treatUnknownSectionsAsBlocks()

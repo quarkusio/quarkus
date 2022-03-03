@@ -142,7 +142,7 @@ public class MailConfig {
 
     /**
      * Set the trust store.
-     * 
+     *
      * @deprecated Use {{@link #truststore} instead.
      */
     @Deprecated
@@ -151,7 +151,7 @@ public class MailConfig {
 
     /**
      * Sets the trust store password if any.
-     * 
+     *
      * @deprecated Use {{@link #truststore} instead.
      */
     @ConfigItem

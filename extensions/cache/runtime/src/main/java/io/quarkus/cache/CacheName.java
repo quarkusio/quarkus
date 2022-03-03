@@ -18,53 +18,53 @@ import javax.inject.Qualifier;
  * </p>
  * <p>
  * Field injection example:
- * 
+ *
  * <pre>
  * {@literal @}ApplicationScoped
  * public class CachedService {
- * 
+ *
  *     {@literal @}CacheName("my-cache")
  *     Cache cache;
- *     
+ *
  *     String getExpensiveValue(Object key) {
  *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
  *         return cacheValue.await().indefinitely();
  *     }
  * }
  * </pre>
- * 
+ *
  * Constructor parameter injection example:
- * 
+ *
  * <pre>
  * {@literal @}ApplicationScoped
  * public class CachedService {
- * 
+ *
  *     private Cache cache;
- * 
+ *
  *     public CachedService(@CacheName("my-cache") Cache cache) {
  *         this.cache = cache;
  *     }
- *     
+ *
  *     String getExpensiveValue(Object key) {
  *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
  *         return cacheValue.await().indefinitely();
  *     }
  * }
  * </pre>
- * 
+ *
  * Method parameter injection example:
- * 
+ *
  * <pre>
  * {@literal @}ApplicationScoped
  * public class CachedService {
- * 
+ *
  *     private Cache cache;
- * 
+ *
  *     {@literal @}Inject
  *     public void setCache(@CacheName("my-cache") Cache cache) {
  *         this.cache = cache;
  *     }
- *     
+ *
  *     String getExpensiveValue(Object key) {
  *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
  *         return cacheValue.await().indefinitely();
@@ -72,7 +72,7 @@ import javax.inject.Qualifier;
  * }
  * </pre>
  * </p>
- * 
+ *
  * @see CacheManager
  */
 @Qualifier

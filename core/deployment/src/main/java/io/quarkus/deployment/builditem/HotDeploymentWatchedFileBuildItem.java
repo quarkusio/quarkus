@@ -25,7 +25,7 @@ public final class HotDeploymentWatchedFileBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return {@code true} if a file change should result in an application restart, {@code false} otherwise
      */
     public boolean isRestartNeeded() {

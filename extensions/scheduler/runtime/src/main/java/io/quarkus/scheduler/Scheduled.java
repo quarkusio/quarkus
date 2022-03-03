@@ -52,7 +52,7 @@ public @interface Scheduled {
      * <p>
      * If the value is not given, Quarkus will generate a unique id.
      * <p>
-     * 
+     *
      * @return the unique identity of the schedule
      */
     String identity() default "";
@@ -91,7 +91,7 @@ public @interface Scheduled {
     long delay() default 0;
 
     /**
-     * 
+     *
      * @return the unit of initial delay
      * @see Scheduled#delay()
      */
@@ -115,7 +115,7 @@ public @interface Scheduled {
     /**
      * Specify the strategy to handle concurrent execution of a scheduled method. By default, a scheduled method can be executed
      * concurrently.
-     * 
+     *
      * @return the concurrent execution strategy
      */
     ConcurrentExecution concurrentExecution() default PROCEED;
@@ -126,7 +126,7 @@ public @interface Scheduled {
      * There must be exactly one bean that has the specified class in its set of bean types, otherwise the build
      * fails. Furthermore, the scope of the bean must be active during execution. If the scope is {@link Dependent} then the
      * bean instance belongs exclusively to the specific scheduled method and is destroyed when the application is shut down.
-     * 
+     *
      * @return the bean class
      */
     Class<? extends SkipPredicate> skipExecutionIf() default Never.class;
@@ -175,13 +175,13 @@ public @interface Scheduled {
     }
 
     /**
-     * 
+     *
      * @see Scheduled#skipExecutionIf()
      */
     interface SkipPredicate {
 
         /**
-         * 
+         *
          * @param execution
          * @return {@code true} if the given execution should be skipped, {@code false} otherwise
          */

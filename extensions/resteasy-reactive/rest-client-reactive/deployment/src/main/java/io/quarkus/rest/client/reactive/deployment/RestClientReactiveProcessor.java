@@ -214,7 +214,7 @@ class RestClientReactiveProcessor {
      * <li>registers all the provider implementations annotated with @Provider using
      * {@link AnnotationRegisteredProviders#addGlobalProvider(Class, int)}</li>
      * </ul>
-     * 
+     *
      *
      * @param indexBuildItem index
      * @param generatedBeans build producer for generated beans

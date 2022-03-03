@@ -28,7 +28,7 @@ public interface HandlerChainCustomizer {
      * Returns an alternate invocation handler for this method.
      *
      * This is only considered for method level customizers
-     * 
+     *
      * @param invoker
      */
     default ServerRestHandler alternateInvocationHandler(EndpointInvoker invoker) {
@@ -39,7 +39,7 @@ public interface HandlerChainCustomizer {
      * Returns an alternate endpoint invoker for this method.
      *
      * This is only considered for method level customizers
-     * 
+     *
      * @param method
      */
     default Supplier<EndpointInvoker> alternateInvoker(ServerResourceMethod method) {

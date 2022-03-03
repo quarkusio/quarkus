@@ -13,14 +13,8 @@ This guide explains how a Quarkus application can leverage the well known Spring
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 * Some familiarity with the Spring Web extension
-
 
 == Solution
 
@@ -35,36 +29,35 @@ The solution is located in the `spring-scheduled-quickstart` {quickstarts-tree-u
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=spring-scheduler-quickstart \
-    -DclassName="org.acme.spring.scheduler.CountResource" \
-    -Dpath="/count" \
-    -Dextensions="resteasy,spring-scheduled"
-cd spring-scheduler-quickstart
-----
+:create-app-artifact-id: spring-scheduler-quickstart
+:create-app-extensions: resteasy,spring-scheduled
+include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven project with a REST endpoint and adds the `spring-scheduled` extension.
 
 If you already have your Quarkus project configured, you can add the `spring-scheduled` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="spring-scheduled"
-----
+:add-extension-extensions: spring-scheduled
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-spring-scheduled</artifactId>
 </dependency>
 ----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-scheduled")
+----
+
 == Creating a scheduled job
 
 In the `org.acme.spring.scheduler` package, create the `CounterBean` class, with the following content:
@@ -112,13 +105,13 @@ public class CounterBean {
     }
 }
 ----
-1. Declare the bean in the _application_ scope. Spring only detects @Scheduled annotations in beans.
-2. The `get()` method allows retrieving the current value.
-3. Use the Spring `@Scheduled` annotation with a cron-like expression to instruct Quarkus to schedule this method run.  In this example we're scheduling a task to be executed at 10:15am every day.
-4. The code is pretty straightforward. Every day at 10:15am, the counter is incremented.
-5. Define a job with a cron-like expression `cron.expr` which is configurable in `application.properties`.
-6. Define a method to be executed at a fixed interval of time. The period is expressed in milliseconds.
-7. Define a job to be executed at a fixed interval of time `fixedRate.expr` which is configurable in `application.properties`.
+<1> Declare the bean in the _application_ scope. Spring only detects @Scheduled annotations in beans.
+<2> The `get()` method allows retrieving the current value.
+<3> Use the Spring `@Scheduled` annotation with a cron-like expression to instruct Quarkus to schedule this method run.  In this example we're scheduling a task to be executed at 10:15am every day.
+<4> The code is pretty straightforward. Every day at 10:15am, the counter is incremented.
+<5> Define a job with a cron-like expression `cron.expr` which is configurable in `application.properties`.
+<6> Define a method to be executed at a fixed interval of time. The period is expressed in milliseconds.
+<7> Define a job to be executed at a fixed interval of time `fixedRate.expr` which is configurable in `application.properties`.
 
 == Updating the application configuration file
 
@@ -130,9 +123,9 @@ cron.expr=*/5 * * * * ?
 fixedRate.expr=1000
 ----
 
-== Updating the resource and the test
+== Creating the resource and the test
 
-Edit the `CountResource` class, and update the content to:
+Create the `CountResource` class with the following content:
 
 [source,java]
 ----
@@ -158,8 +151,8 @@ public class CountResource {
     }
 }
 ----
-1. Inject the `CounterBean`
-2. Send back the current counter value
+<1> Inject the `CounterBean`
+<2> Send back the current counter value
 
 We also need to update the tests. Edit the `CountResourceTest` class to match:
 
@@ -188,11 +181,14 @@ public class CountResourceTest {
 
 }
 ----
-1. Ensure that the response contains `count`
+<1> Ensure that the response contains `count`
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
 In another terminal, run `curl localhost:8080/count` to check the counter value.
 After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
 
@@ -203,8 +199,15 @@ Observe the console to verify that the following messages has been displayed:
 - `Fixed Rate expression configured in application.properties`
 These messages indicate that the executions of methods annotated with `@Scheduled` have been triggered.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+And executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
 
 == Using Property Expressions
 

@@ -11,14 +11,21 @@ Quarkus provides support for properties file based authentication that is intend
 development and testing purposes. It is not recommended that this be used in production as at present only
 plaintext and MD5 hashed passwords are used, and properties files are generally too limited to use in production.
 
-Add the following to your `pom.xml`:
+Add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-elytron-security-properties-file</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-elytron-security-properties-file")
 ----
 
 == Configuration

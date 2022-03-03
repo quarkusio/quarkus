@@ -112,14 +112,14 @@ public class CounterBean {
     }
 }
 ----
-1. Declare the bean in the _application_ scope
-2. The `get()` method allows retrieving the current value.
-3. Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds provided a worker thread is available
+<1> Declare the bean in the _application_ scope
+<2> The `get()` method allows retrieving the current value.
+<3> Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds provided a worker thread is available
 (Quarkus is using 10 worker threads for the scheduler). If it is not available the method invocation should be re-scheduled by default i.e
 it should be invoked as soon as possible. The invocation of the scheduled method does not depend on the status or result of the previous invocation.
-4. The code is pretty straightforward. Every 10 seconds, the counter is incremented.
-5. Define a job with a cron-like expression. The annotated method is executed at 10:15am every day.
-6. Define a job with a cron-like expression `cron.expr` which is configurable in `application.properties`.
+<4> The code is pretty straightforward. Every 10 seconds, the counter is incremented.
+<5> Define a job with a cron-like expression. The annotated method is executed at 10:15am every day.
+<6> Define a job with a cron-like expression `cron.expr` which is configurable in `application.properties`.
 
 == Updating the application configuration file
 
@@ -160,8 +160,8 @@ public class CountResource {
     }
 }
 ----
-1. Inject the `CounterBean`
-2. Send back the current counter value
+<1> Inject the `CounterBean`
+<2> Send back the current counter value
 
 == Package and run the application
 

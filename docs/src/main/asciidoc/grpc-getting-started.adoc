@@ -392,9 +392,8 @@ Then, add to the `build` section the `os-maven-plugin` extension and the `protob
     </plugins>
 </build>
 ----
-
-1. The `protobuf-maven-plugin` that generates stub classes from your gRPC service definition (`proto` files).
-2. The class generation uses a tool named `protoc`, which is OS-specific.
+<1> The `protobuf-maven-plugin` that generates stub classes from your gRPC service definition (`proto` files).
+<2> The class generation uses a tool named `protoc`, which is OS-specific.
 That's why we use the `os-maven-plugin` to target the executable compatible with the operating system.
 
 NOTE: This configuration instructs the `protobuf-maven-plugin` to generate the default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.

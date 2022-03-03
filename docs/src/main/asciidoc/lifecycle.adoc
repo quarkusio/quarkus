@@ -165,8 +165,8 @@ public class AppLifecycleBean {
 
 }
 ----
-1. Method called when the application is starting
-2. Method called when the application is terminating
+<1> Method called when the application is starting
+<2> Method called when the application is terminating
 
 TIP: The events are also called in _dev mode_ between each redeployment.
 
@@ -202,8 +202,8 @@ public class EagerAppBean {
    }
 }
 ----
-1. For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
-2. The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
+<1> For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
+<2> The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
 
 NOTE: `@Dependent` beans are destroyed immediately afterwards to follow the behavior of observers declared on `@Dependent` beans.
 

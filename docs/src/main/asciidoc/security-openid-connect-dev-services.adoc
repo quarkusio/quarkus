@@ -12,7 +12,7 @@ It also describes Dev UI for all OpenID Connect providers which have already bee
 
 == Introduction
 
-Quarkus introduces an experimental `Dev Services For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is started in dev mode with `mvn quarkus:dev` and when the integration tests are running in test mode, but only when no `quarkus.oidc.auth-server-url` property is configured.
+Quarkus introduces an experimental `Dev Services For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is started in dev mode and when the integration tests are running in test mode, but only when no `quarkus.oidc.auth-server-url` property is configured.
 It starts a Keycloak container for both the dev and/or test modes and initializes them by registering the existing Keycloak realm or creating a new realm with the client and users for you to start developing your Quarkus application secured by Keycloak immediately. It will restart the container when the `application.properties` or the realm file changes have been detected.
 
 Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to acquire the tokens from Keycloak and test your Quarkus application.
@@ -21,12 +21,14 @@ If `quarkus.oidc.auth-server-url` is already set then a generic OpenID Connect D
 
 == Dev Services for Keycloak
 
-Start your application without configuring `quarkus.oidc` properties in `application.properties`. You will see in the console something similar to:
+Start your application without configuring `quarkus.oidc` properties in `application.properties` with:
+
+include::includes/devtools/dev.adoc[]
+
+You will see in the console something similar to:
 
 [source,shell]
 ----
-$ mvn quarkus:dev
-
 KeyCloak Dev Services Starting:
 2021-11-02 17:14:24,864 INFO  [org.tes.con.wai.str.HttpWaitStrategy] (build-10) /unruffled_agnesi: Waiting for 60 seconds for URL: http://localhost:32781/auth (where port 32781 maps to container port 8080)
 2021-11-02 17:14:44,170 INFO  [io.qua.oid.dep.dev.key.KeycloakDevServicesProcessor] (build-10) Dev Services for Keycloak started.
@@ -39,12 +41,12 @@ The `quay.io/keycloak/keycloak:15.0.2` image which contains a `Keycloak` distrib
 When logging in the Keycloak admin console, the username is `admin` and the password is `admin`.
 ====
 
-Note that by default, `Dev Services for Keycloak` will not start a new container if it finds a container with a `quarkus-dev-service-keycloak` label and connect to it if this label's value matches the value of the `quarkus.keycloak.devservices.service-name` property (default value is `quarkus`). In such cases you will see a slighty different output:
+Note that by default, `Dev Services for Keycloak` will not start a new container if it finds a container with a `quarkus-dev-service-keycloak` label and connect to it if this label's value matches the value of the `quarkus.keycloak.devservices.service-name` property (default value is `quarkus`). In such cases you will see a slighty different output when running:
+
+include::includes/devtools/dev.adoc[]
 
 [source,shell]
 ----
-$ mvn quarkus:dev
-
 2021-08-27 18:42:43,530 INFO  [io.qua.dev.com.ContainerLocator] (build-15) Dev Services container found: 48fee151a31ddfe32c39965be8f61108587b25ed2f66cdc18bb926d9e2e570c5 (quay.io/keycloak/keycloak:14.0.0). Connecting to: 0.0.0.0:32797.
 2021-08-27 18:42:43,600 INFO  [io.qua.oid.dep.dev.key.KeycloakDevServicesProcessor] (build-15) Dev Services for Keycloak started.
 ...
@@ -94,7 +96,7 @@ If the error occurs then log into Keycloak using the `Keycloak Admin` option and
 
 ===== Test with Swagger UI or GrapghQL UI
 
-You can avoid manually entering the service paths and test your service with `Swagger UI` or `GraphQL UI` if `quarkus-smallrye-openapi` and/or `quarkus-smallrye-graphql` are used in your project. For example, if you run `mvn quarkus-dev` with both `quarkus-smallrye-openapi` and `quarkus-smallrye-graphql` dependencies then you will see the following options after logging in into Keycloak:
+You can avoid manually entering the service paths and test your service with `Swagger UI` or `GraphQL UI` if `quarkus-smallrye-openapi` and/or `quarkus-smallrye-graphql` are used in your project. For example, if you start Quarkus in dev mode with both `quarkus-smallrye-openapi` and `quarkus-smallrye-graphql` dependencies then you will see the following options after logging in into Keycloak:
 
 image::dev-ui-keycloak-test-service-swaggerui-graphql.png[alt=Test your service with Swagger UI or GraphQL UI,role="center"]
 
@@ -244,10 +246,14 @@ If `quarkus.oidc.auth-server-url` points to an already started OpenID Connect pr
 
 Setting `quarkus.oidc.credentials.secret` will mostly likely be required for Keycloak and other providers for the authorization code flow initiated from Dev UI to complete, unless the client identified with `quarkus.oidc.client-id` is configured as a public client in your OpenID Connect provider's administration console.
 
-Run `mvn`quarkus:dev` and you will see the following message:
+Run:
+
+include::includes/devtools/dev.adoc[]
+
+And you will see the following message:
+
 [source,shell]
 ----
-$ mvn quarkus:dev
 ...
 2021-09-07 15:53:42,697 INFO  [io.qua.oid.dep.dev.OidcDevConsoleProcessor] (build-41) OIDC Dev Console: discovering the provider metadata at http://localhost:8180/auth/realms/quarkus/.well-known/openid-configuration
 ...

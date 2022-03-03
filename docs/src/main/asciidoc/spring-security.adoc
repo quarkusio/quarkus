@@ -13,14 +13,8 @@ This guide explains how a Quarkus application can leverage the well known Spring
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 * Some familiarity with the Spring Web extension
-
 
 == Solution
 
@@ -35,30 +29,22 @@ The solution is located in the `spring-security-quickstart` {quickstarts-tree-ur
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=spring-security-quickstart \
-    -DclassName="org.acme.spring.security.GreetingController" \
-    -Dpath="/greeting" \
-    -Dextensions="spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-jackson"
-cd spring-security-quickstart
-----
+:create-app-artifact-id: spring-security-quickstart
+:create-app-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-jackson
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project with a REST endpoint and imports the `spring-web`, `spring-security` and `security-properties-file` extensions.
+This command generates a project which imports the `spring-web`, `spring-security` and `security-properties-file` extensions.
 
 If you already have your Quarkus project configured, you can add the `spring-web`, `spring-security` and `security-properties-file` extensions
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-jackson"
-----
+:add-extension-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-jackson
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -78,12 +64,21 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-web")
+implementation("io.quarkus:quarkus-spring-security")
+implementation("io.quarkus:quarkus-elytron-security-properties-file")
+implementation("io.quarkus:quarkus-resteasy-jackson")
+----
+
 For more information about `security-properties-file`, you can check out the guide of the xref:security-properties.adoc[quarkus-elytron-security-properties-file] extension.
 
 == GreetingController
 
 The Quarkus Maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the JAX-RS ones used by default).
-The `src/main/java/org/acme/spring/web/GreetingController.java` file looks as follows:
+First create a `src/main/java/org/acme/spring/web/GreetingController.java`, a controller with the Spring Web annotations to define our REST endpoint, as follows:
 
 [source,java]
 ----
@@ -135,7 +130,10 @@ public class GreetingControllerTest {
 
 == Package and run the application
 
-Run the application with: `./mvnw quarkus:dev`.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/greeting.
 
 The result should be: `{"message": "hello"}`.
@@ -240,8 +238,9 @@ HTTP ERROR 403
 
 == Run the application as a native executable
 
-You can of course create a native image using the instructions of the xref:building-native-image.adoc[Building a native executable guide].
+You can generate the native executable with:
 
+include::includes/devtools/build-native.adoc[]
 
 == Supported Spring Security functionalities
 

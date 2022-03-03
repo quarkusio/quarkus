@@ -91,7 +91,7 @@ This is done in the `application.properties` configuration file. Edit it to the 
 quarkus.redis.hosts=redis://localhost:6379 <1>
 ----
 
-1. Configure Redis hosts to connect to. Here we connect to the Redis server we started in the previous section
+<1> Configure Redis hosts to connect to. Here we connect to the Redis server we started in the previous section
 
 [NOTE]
 ====
@@ -121,9 +121,8 @@ public class Increment {
     }
 }
 ----
-
-1. The key that will be used as the Redis key
-2. The value held by the Redis key
+<1> The key that will be used as the Redis key
+<2> The value held by the Redis key
 
 
 == Creating the Increment Service
@@ -189,8 +188,8 @@ class IncrementService {
     }
 }
 ----
-1. Inject the Redis synchronous client
-2. Inject the Reactive Redis client
+<1> Inject the Redis synchronous client
+<2> Inject the Reactive Redis client
 
 == Creating the Increment Resource
 
@@ -409,8 +408,7 @@ a key.
 ----
 curl -X POST -H "Content-Type: application/json" -d '{"key":"first","value":10}' http://localhost:8080/increments <1>
 ----
-
-1. We create the first increment, with the key `first` and an initial value of `10`.
+<1> We create the first increment, with the key `first` and an initial value of `10`.
 
 Running the above command should return the result below:
 
@@ -441,8 +439,7 @@ To retrieve an increment using its key, we will have to run the below command:
 ----
 curl http://localhost:8080/increments/first <1>
 ----
-
-1. Running this command, should return the following result:
+<1> Running this command, should return the following result:
 
 [source, json]
 ----
@@ -460,8 +457,7 @@ To increment a value, run the following command:
 ----
 curl -X PUT -H "Content-Type: application/json" -d '27' http://localhost:8080/increments/first <1>
 ----
-
-1. Increment the `first` value by 27.
+<1> Increment the `first` value by 27.
 
 Now, running the command `curl http://localhost:8080/increments/first` should return the following result:
 
@@ -472,8 +468,7 @@ Now, running the command `curl http://localhost:8080/increments/first` should re
   "value": 37 <1>
 }
 ----
-
-1. We see that the value of the `first` key is now `37` which is exactly the result of `10 + 27`, quick maths.
+<1> We see that the value of the `first` key is now `37` which is exactly the result of `10 + 27`, quick maths.
 
 === Deleting a key
 
@@ -483,8 +478,7 @@ Use the command below, to delete an increment given its key.
 ----
 curl -X DELETE  http://localhost:8080/increments/first <1>
 ----
-
-1. Delete the `first` increment.
+<1> Delete the `first` increment.
 
 Now, running the command `curl http://localhost:8080/increments` should return an empty list `[]`
 

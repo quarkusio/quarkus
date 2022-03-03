@@ -38,12 +38,7 @@ API Evolution::
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -65,34 +60,33 @@ The solution is located in the `microprofile-graphql-quickstart` {quickstarts-tr
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=microprofile-graphql-quickstart \
-    -DclassName="org.acme.microprofile.graphql.FilmResource" \
-    -Dextensions="resteasy,graphql"
-cd microprofile-graphql-quickstart
-----
+:create-app-artifact-id: microprofile-graphql-quickstart
+:create-app-extensions: resteasy,graphql
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `smallrye-graphql` extension.
+This command generates a project, importing the `smallrye-graphql` extension.
 
 If you already have your Quarkus project configured, you can add the `smallrye-graphql` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="graphql"
-----
+:add-extension-extensions: graphql
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-graphql</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-graphql")
 ----
 
 == Preparing an Application: GraphQL API
@@ -265,11 +259,9 @@ This way we have created our first queryable API which we will later expand.
 
 == Launch
 
-Launch the quarkus app:
-[source, bash]
-----
-./mvnw compile quarkus:dev
-----
+Launch the quarkus application in dev mode:
+
+include::includes/devtools/dev.adoc[]
 
 == Introspect
 
@@ -829,15 +821,22 @@ When `SomeBusinessException` occurs, the error output will contain the Error cod
 
 If you are using the `smallrye-graphql` extension and the `micrometer` metrics extension is present and metrics are
 enabled, you may encounter a `java.lang.NoClassDefFoundError` as some versions of the `smallrye-graphql` extension
-have runtime requirements on the Microprofile Metrics API.  Add the following Microprofile Metrics API dependency
+have runtime requirements on the Microprofile Metrics API.  Add the following MicroProfile Metrics API dependency
 to resolve the issue:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>org.eclipse.microprofile.metrics</groupId>
-  <artifactId>microprofile-metrics-api</artifactId>
+    <groupId>org.eclipse.microprofile.metrics</groupId>
+    <artifactId>microprofile-metrics-api</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.eclipse.microprofile.metrics:microprofile-metrics-api")
 ----
 
 == Conclusion

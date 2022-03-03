@@ -315,8 +315,8 @@ public class EagerAppBean {
    }
 }
 ----
-1. For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
-2. The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
+<1> For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
+<2> The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
 
 NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the xref:lifecycle.adoc[Application Initialization and Termination] guide.
 

@@ -25,14 +25,8 @@ include::./status-include.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
-* GraalVM installed if you want to build a native executable.
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -76,14 +70,16 @@ image::stork-process.png[Discovery and Selection of services,width=50%, align=ce
 
 == Bootstrapping the project
 
-Create a Quarkus project using your favorite approach, and select the following extensions:
+Create a Quarkus project importing the quarkus-rest-client-reactive and quarkus-resteasy-reactive extensions using your favorite approach:
 
-* quarkus-rest-client-reactive
-* quarkus-resteasy-reactive
+:create-app-artifact-id: stork-quickstart
+:create-app-extensions: quarkus-rest-client-reactive,quarkus-resteasy-reactive
+include::includes/devtools/create-app.adoc[]
 
 In the generated project, also add the following dependencies:
 
-[source, xml, subs=attributes+]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
   <groupId>io.smallrye.stork</groupId>
@@ -93,6 +89,13 @@ In the generated project, also add the following dependencies:
   <groupId>io.smallrye.reactive</groupId>
   <artifactId>smallrye-mutiny-vertx-consul-client</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-service-discovery-consul")
+implementation("io.smallrye.reactive:smallrye-mutiny-vertx-consul-client")
 ----
 
 `stork-service-discovery-consul` provides an implementation of service discovery for Consul.
@@ -333,11 +336,14 @@ docker run --rm --name consul -p 8500:8500 -p 8501:8501 consul:1.7 agent -dev -u
 
 If you start Consul differently, do not forget to edit the application configuration.
 
-Then, package and run the application:
+Then, package the application:
+
+include::includes/devtools/build.adoc[]
+
+And run it:
 
 [source, shell script]
 ----
->  ./mvnw package
 > java -jar target/quarkus-app/quarkus-run.jar
 ----
 
@@ -355,11 +361,14 @@ In another terminal, run:
 
 The responses alternate between `Hello from Red!` and `Hello from Blue!`.
 
-You can compile this application into a native executable and start it with:
+You can compile this application into a native executable:
+
+include::includes/devtools/build-native.adoc[]
+
+And start it with:
 
 [source, shell script]
 ----
-> ./mvnw package -Dnative
 > ./target/stork-getting-started-1.0.0-SNAPSHOT-runner
 ----
 

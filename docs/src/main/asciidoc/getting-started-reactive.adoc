@@ -135,7 +135,7 @@ public class Fruit extends PanacheEntity {
 
 }
 ----
-1. Make sure you import the reactive variant of `PanacheEntity`.
+<1> Make sure you import the reactive variant of `PanacheEntity`.
 
 This class represents `Fruits`.
 It's a straightforward entity with a single field (`name`).

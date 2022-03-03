@@ -18,17 +18,24 @@ Finally both the confidentiality and integrity of the claims can be further enfo
 
 SmallRye JWT Build provides an API for securing JWT claims using all of these options. link:https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J] is used internally to support this API.
 
-== Maven dependency
+== Dependency
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-jwt-build</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId></artifactId>
 </dependency>
 ----
 
-Note you can use Smallrye JWT Build API without having to create Microprofile JWT endpoints supported by `quarkus-smallrye-jwt`.
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-jwt-build")
+----
+
+Note you can use Smallrye JWT Build API without having to create MicroProfile JWT endpoints supported by `quarkus-smallrye-jwt`.
 It can also be excluded from `quarkus-smallrye-jwt` if MP JWT endpoints do not need to generate JWT tokens.
 
 == Create JwtClaimsBuilder and set the claims

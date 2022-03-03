@@ -1,9 +1,12 @@
 package io.quarkus.logging.json.runtime;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.jboss.logmanager.formatters.StructuredFormatter;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -51,4 +54,22 @@ public class JsonConfig {
      */
     @ConfigItem
     boolean printDetails;
+    /**
+     * Override keys with custom values. Omitting this value indicates that no key overrides will be applied.
+     */
+    @ConfigItem
+    Optional<String> keyOverrides;
+
+    /**
+     * Keys to be excluded from the Json output.
+     */
+    @ConfigItem
+    Optional<Set<String>> excludedKeys;
+
+    /**
+     * Additional fields to be appended in the json logs.
+     */
+    @ConfigItem
+    @ConfigDocMapKey("field-name")
+    Map<String, AdditionalFieldConfig> additionalField;
 }

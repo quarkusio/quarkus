@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.Optional;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -15,6 +16,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.bson.Document;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
 
 @Path("/bugs")
 @Produces(MediaType.TEXT_PLAIN)
@@ -26,6 +32,10 @@ public class BugResource {
 
     @Inject
     Bug13301Repository bug13301Repository;
+
+    @Inject
+    @Named("cl2")
+    MongoClient mongoClient;
 
     @GET
     @Path("5274")
@@ -112,5 +122,33 @@ public class BugResource {
 
         Optional<NeedReflectionChild> result = bug13301Repository.find("parent", "François").firstResultOptional();
         return result.isPresent() ? Response.ok().build() : Response.serverError().build();
+    }
+
+    @GET
+    @Path("23813")
+    public Response testDatabaseAndCollectionFromAnnotation() {
+        Bug23813ImperativeEntity bug23813ImperativeEntity = new Bug23813ImperativeEntity();
+        bug23813ImperativeEntity.field = "field";
+        bug23813ImperativeEntity.persist();
+        MongoCollection<Bug23813ImperativeEntity> imperativeCollection = mongoClient.getDatabase("Bug23813ImperativeEntity")
+                .getCollection("TheBug23813ImperativeEntity", Bug23813ImperativeEntity.class);
+        Bug23813ImperativeEntity findBug23813imperativeEntity = imperativeCollection
+                .find(new Document("_id", bug23813ImperativeEntity.id)).first();
+        if (findBug23813imperativeEntity == null) {
+            return Response.status(404).build();
+        }
+
+        Bug23813ReactiveEntity bug23813ReactiveEntity = new Bug23813ReactiveEntity();
+        bug23813ReactiveEntity.field = "field";
+        bug23813ReactiveEntity.persist().await().indefinitely();
+        MongoCollection<Bug23813ReactiveEntity> reactiveCollection = mongoClient.getDatabase("Bug23813ReactiveEntity")
+                .getCollection("TheBug23813ReactiveEntity", Bug23813ReactiveEntity.class);
+        Bug23813ReactiveEntity findBug23813ReactiveEntity = reactiveCollection
+                .find(new Document("_id", bug23813ReactiveEntity.id)).first();
+        if (findBug23813ReactiveEntity == null) {
+            return Response.status(404).build();
+        }
+
+        return Response.ok().build();
     }
 }

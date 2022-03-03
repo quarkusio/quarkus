@@ -55,6 +55,7 @@ public class OpenshiftWithApplicationPropertiesTest {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getEnv()).extracting("name", "value")
                                     .contains(tuple("MY_ENV_VAR", "SOMEVALUE"));
+                            assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
                         });
                     });
             specAssert.extracting("selector").isInstanceOfSatisfying(Map.class, selectorsMap -> {

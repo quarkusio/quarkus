@@ -106,7 +106,7 @@ public class Task extends PanacheEntity { <1>
     }
 }
 ----
-1. Declare the entity using xref:hibernate-orm-panache.adoc[Panache]
+<1> Declare the entity using xref:hibernate-orm-panache.adoc[Panache]
 
 == Creating a scheduled job
 
@@ -133,10 +133,10 @@ public class TaskBean {
     }
 }
 ----
-1. Declare the bean in the _application_ scope
-2. Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds and set the unique identifier for this job.
-3. Create a new `Task` with the current start time.
-4. Persist the task in database using xref:hibernate-orm-panache.adoc[Panache].
+<1> Declare the bean in the _application_ scope
+<2> Use the `@Scheduled` annotation to instruct Quarkus to run this method every 10 seconds and set the unique identifier for this job.
+<3> Create a new `Task` with the current start time.
+<4> Persist the task in database using xref:hibernate-orm-panache.adoc[Panache].
 
 === Scheduling Jobs Programmatically
 
@@ -187,9 +187,9 @@ public class TaskBean {
     }
 }
 ----
-1. Inject the underlying `org.quartz.Scheduler` instance.
-2. Schedule a new job using the Quartz API.
-3. Invoke the `TaskBean#performTask()` method from the job. Jobs are also xref:cdi.adoc[container-managed] beans if they belong to a link:cdi-reference[bean archive].
+<1> Inject the underlying `org.quartz.Scheduler` instance.
+<2> Schedule a new job using the Quartz API.
+<3> Invoke the `TaskBean#performTask()` method from the job. Jobs are also xref:cdi.adoc[container-managed] beans if they belong to a link:cdi-reference[bean archive].
 
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz-configuration-reference>>.  
 
@@ -221,9 +221,8 @@ quarkus.flyway.baseline-on-migrate=true
 quarkus.flyway.baseline-version=1.0
 quarkus.flyway.baseline-description=Quartz
 ----
-
-1. Indicate that the scheduler will be run in clustered mode
-2. Use the database store to persist job related information so that they can be shared between nodes
+<1> Indicate that the scheduler will be run in clustered mode
+<2> Use the database store to persist job related information so that they can be shared between nodes
 
 == Creating a REST resource and a test
 
@@ -249,7 +248,7 @@ public class TaskResource {
     }
 }
 ----
-1. Retrieve the list of created tasks from the database
+<1> Retrieve the list of created tasks from the database
 
 You also have the option to create a `org.acme.quartz.TaskResourceTest` test with the following content:
 
@@ -280,7 +279,7 @@ public class TaskResourceTest {
     }
 }
 ----
-1. Ensure that we have a `200` response and at least one task created
+<1> Ensure that we have a `200` response and at least one task created
 
 == Creating Quartz Tables
 
@@ -308,8 +307,7 @@ http {
         }
 }
 ----
-
-1. Route all traffic to our tasks application
+<1> Route all traffic to our tasks application
 
 == Setting Application Deployment
 
@@ -359,10 +357,9 @@ networks:
   tasks-network:
     driver: bridge
 ----
-
-1. Define the tasks service
-2. Define the nginx load balancer to route incoming traffic to an appropriate node
-3. Define the configuration to run the database
+<1> Define the tasks service
+<2> Define the nginx load balancer to route incoming traffic to an appropriate node
+<3> Define the configuration to run the database
 
 == Running the database
 
@@ -372,8 +369,7 @@ In a separate terminal, run the below command:
 ----
 docker-compose up postgres <1>
 ----
-
-1. Start the database instance using the configuration options supplied in the `docker-compose.yml` file
+<1> Start the database instance using the configuration options supplied in the `docker-compose.yml` file
 
 == Run the application in Dev Mode
 
@@ -405,8 +401,7 @@ Once the build is successful, run the below command:
 ----
 docker-compose up --scale tasks=2 --scale nginx=1 <1>
 ----
-
-1. Start two instances of the application and a load balancer
+<1> Start two instances of the application and a load balancer
 
 After a few seconds, in another terminal, run `curl localhost:8080/tasks` to verify that tasks were only created at different instants and in an interval of 10 seconds.
 

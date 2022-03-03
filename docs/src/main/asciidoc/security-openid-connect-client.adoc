@@ -17,7 +17,7 @@ The access tokens managed by these extensions can be used as HTTP Authorization 
 
 == OidcClient
 
-Add the following Maven dependency:
+Add the following dependency:
 
 [source,xml]
 ----

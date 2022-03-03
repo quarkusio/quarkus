@@ -87,11 +87,11 @@ public class MailResource {
 
 }
 ----
-1. Configure the root path of our HTTP endpoint
-2. Inject the `Mailer` object managed by Quarkus
-3. Create a method that will handle the HTTP GET request on `/mail`
-4. Because we are using RESTEasy Reactive and the _imperative_ mailer, we need to add the `@Blocking` annotation. We will see later the reactive variant.
-5. Create a `Mail` object by configuring the _to_ recipient, the subject and body
+<1> Configure the root path of our HTTP endpoint
+<2> Inject the `Mailer` object managed by Quarkus
+<3> Create a method that will handle the HTTP GET request on `/mail`
+<4> Because we are using RESTEasy Reactive and the _imperative_ mailer, we need to add the `@Blocking` annotation. We will see later the reactive variant.
+<5> Create a `Mail` object by configuring the _to_ recipient, the subject and body
 
 The `MailResource` class implements the HTTP API exposed by our application.
 It handles `GET` request on `http://localhost:8080/mail.
@@ -150,10 +150,10 @@ public Uni<Void> sendEmailUsingReactiveMailer() {       // <3>
         );
 }
 ----
-1. Inject the reactive mailer. The class to import is `io.quarkus.mailer.reactive.ReactiveMailer`.
-2. Configure the path to handle GET request on `/mail/reactive`. Note that because we are using the reactive API, we don't need `@Blocking`
-3. The method returns a `Uni<Void>` which completes when the mail is sent. It does not block the caller thread.
-4. The API is similar to the _imperative_ one except that the `send` method returns a `Uni<Void>`.
+<1> Inject the reactive mailer. The class to import is `io.quarkus.mailer.reactive.ReactiveMailer`.
+<2> Configure the path to handle GET request on `/mail/reactive`. Note that because we are using the reactive API, we don't need `@Blocking`
+<3> The method returns a `Uni<Void>` which completes when the mail is sent. It does not block the caller thread.
+<4> The API is similar to the _imperative_ one except that the `send` method returns a `Uni<Void>`.
 
 Now, in your terminal, run
 

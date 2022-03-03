@@ -119,12 +119,11 @@ public class HttpFunctionTest implements HttpFunction { // <3>
     }
 }
 ----
-
-1. The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
-2. The function must be a CDI bean
-3. This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.HttpFunction`.
-4. Injection works inside your function.
-5. This is standard Google Cloud Function implementation, nothing fancy here.
+<1> The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
+<2> The function must be a CDI bean
+<3> This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.HttpFunction`.
+<4> Injection works inside your function.
+<5> This is standard Google Cloud Function implementation, nothing fancy here.
 
 === The BackgroundFunction
 
@@ -157,13 +156,12 @@ public class BackgroundFunctionStorageTest implements BackgroundFunction<Backgro
     }
 }
 ----
-
-1. The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
-2. The function must be a CDI bean
-3. This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.BackgroundFunction`.
-4. Injection works inside your function.
-5. This is standard Google Cloud Function implementation, nothing fancy here.
-6. This is the class the event will be deserialized to.
+<1> The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
+<2> The function must be a CDI bean
+<3> This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.BackgroundFunction`.
+<4> Injection works inside your function.
+<5> This is standard Google Cloud Function implementation, nothing fancy here.
+<6> This is the class the event will be deserialized to.
 
 === The RawBackgroundFunction
 
@@ -190,12 +188,11 @@ public class RawBackgroundFunctionPubSubTest implements RawBackgroundFunction { 
     }
 }
 ----
-
-1. The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
-2. The function must be a CDI bean
-3. This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.RawBackgroundFunction`.
-4. Injection works inside your function.
-5. This is standard Google Cloud Function implementation, nothing fancy here.
+<1> The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
+<2> The function must be a CDI bean
+<3> This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.RawBackgroundFunction`.
+<4> Injection works inside your function.
+<5> This is standard Google Cloud Function implementation, nothing fancy here.
 
 === The CloudEventsFunction
 
@@ -230,13 +227,12 @@ public class CloudEventStorageTest implements CloudEventsFunction { // <3>
     }
 }
 ----
-
-1. The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
-2. The function must be a CDI bean
-3. This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.CloudEventsFunction`.
-4. Injection works inside your function.
-5. This is standard Google Cloud Function implementation, nothing fancy here except that it receives a `io.cloudevents.CloudEvent`.
-6. This is the storage event inside the Cloud Events.
+<1> The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
+<2> The function must be a CDI bean
+<3> This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.CloudEventsFunction`.
+<4> Injection works inside your function.
+<5> This is standard Google Cloud Function implementation, nothing fancy here except that it receives a `io.cloudevents.CloudEvent`.
+<6> This is the storage event inside the Cloud Events.
 
 == Build and Deploy to Google Cloud
 

@@ -15,12 +15,7 @@ supported. Consider using xref:config-mappings.adoc[Mapping configuration to obj
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Solution
 
@@ -35,30 +30,22 @@ The solution is located in the `spring-boot-properties-quickstart` {quickstarts-
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=spring-boot-properties-quickstart \
-    -DclassName="org.acme.spring.boot.properties.GreetingResource" \
-    -Dpath="/greeting" \
-    -Dextensions="resteasy,spring-boot-properties"
-cd spring-boot-properties-quickstart
-----
+:create-app-artifact-id: spring-boot-properties-quickstart
+:create-app-extensions: resteasy,spring-boot-properties
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project with a REST endpoint and imports the `spring-boot-properties` extension.
+This command generates a project and imports the `spring-boot-properties` extension.
 
 If you already have your Quarkus project configured, you can add the `spring-boot-properties` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="spring-boot-properties"
-----
+:add-extension-extensions: spring-boot-properties
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -66,9 +53,15 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-boot-properties")
+----
+
 == GreetingController
 
-The Quarkus Maven plugin automatically generated a `GreetingResource` JAX-RS resource in the
+First, create a `GreetingResource` JAX-RS resource in the
 `src/main/java/org/acme/spring/boot/properties/GreetingResource.java` file that looks like:
 
 [source,java]
@@ -148,13 +141,23 @@ Run the tests to verify that application still functions correctly.
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application in dev mode with:
+
+include::includes/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/greeting.
 
 Changing the configuration file is immediately reflected.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+And executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
 
 == Default values
 

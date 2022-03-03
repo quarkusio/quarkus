@@ -625,16 +625,6 @@ In this section we'll demonstrate how Wiremock can be leveraged for testing the 
 
 First of all, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
 
-[source,xml]
-----
-<dependency>
-    <groupId>com.github.tomakehurst</groupId>
-    <artifactId>wiremock-jre8</artifactId>
-    <scope>test</scope>
-    <version>${wiremock.version}</version> <1>
-</dependency>
-----
-
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
@@ -645,13 +635,13 @@ First of all, Wiremock needs to be added as a test dependency. For a Maven proje
     <version>${wiremock.version}</version> <1>
 </dependency>
 ----
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("com.github.tomakehurst:wiremock-jre8:$wiremockVersion")
+testImplementation("com.github.tomakehurst:wiremock-jre8:$wiremockVersion") <1>
 ----
-
 <1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
 
 In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`

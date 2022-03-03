@@ -17,12 +17,7 @@ or restarted.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -45,33 +40,33 @@ The solution is located in the `microprofile-health-quickstart`
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=microprofile-health-quickstart \
-    -Dextensions="smallrye-health"
-cd microprofile-health-quickstart
-----
+:create-app-artifact-id: microprofile-health-quickstart
+:create-app-extensions: smallrye-health
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `smallrye-health` extension.
+This command generates a project, importing the `smallrye-health` extension.
 
 If you already have your Quarkus project configured, you can add the `smallrye-health` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-health"
-----
+:add-extension-extensions: smallrye-health
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-health</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
 == Running the health check
@@ -85,9 +80,15 @@ Importing the `smallrye-health` extension directly exposes three REST endpoints:
  
 To check that the `smallrye-health` extension is working as expected:
 
-* start your Quarkus application with `./mvnw compile quarkus:dev`
+:devtools-wrapped:
+
+* start your Quarkus application with:
++
+include::includes/devtools/dev.adoc[]
 * access the `http://localhost:8080/q/health/live` endpoint using your browser or
 `curl http://localhost:8080/q/health/live`
+
+:!devtools-wrapped:
 
 All of the health REST endpoints return a simple JSON object with two fields:
 
@@ -417,20 +418,28 @@ readiness checks are used to tell whether the application is able to process req
 
 All that is needed to enable the SmallRye Health features in Quarkus is:
 
+:devtools-wrapped:
 * adding the `smallrye-health` Quarkus extension to your project using the 
-`quarkus-maven-plugin`: +
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-health"
-----
+`quarkus-maven-plugin`:
++
+include::includes/devtools/extension-add.adoc[]
+:!devtools-wrapped:
 
-* or simply adding the following Maven dependency: +
-[source,xml]
+* or simply adding the following Maven dependency:
++
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-health</artifactId>
 </dependency>
+----
++
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
 == Configuration Reference

@@ -84,11 +84,11 @@ amqp-password=my-password # <4>
 
 mp.messaging.incoming.prices.connector=smallrye-amqp # <5>
 ----
-1. Configures the broker/router host name. You can do it per channel (using the `host` attribute) or globally using `amqp-host`
-2. Configures the broker/router port. You can do it per channel (using the `port` attribute) or globally using `amqp-port`. The default is `5672`.
-3. Configures the broker/router username if required. You can do it per channel (using the `username` attribute) or globally using `amqp-username`.
-4. Configures the broker/router password if required. You can do it per channel (using the `password` attribute) or globally using `amqp-password`.
-5. Instructs the prices channel to be managed by the AMQP connector
+<1> Configures the broker/router host name. You can do it per channel (using the `host` attribute) or globally using `amqp-host`
+<2> Configures the broker/router port. You can do it per channel (using the `port` attribute) or globally using `amqp-port`. The default is `5672`.
+<3> Configures the broker/router username if required. You can do it per channel (using the `username` attribute) or globally using `amqp-username`.
+<4> Configures the broker/router password if required. You can do it per channel (using the `password` attribute) or globally using `amqp-password`.
+<5> Instructs the prices channel to be managed by the AMQP connector
 
 In dev mode and when running tests, xref:amqp-dev-services.adoc[Dev Services for AMQP] automatically starts an AMQP broker.
 
@@ -188,7 +188,7 @@ public static class Consumer {
 
     List<Price> prices = new CopyOnWriteArrayList<>();
 
-    @Incoming("from-amqp")
+    @Incoming("from-amqp") // <1>
     public void consume(JsonObject p) {   // <2>
         Price price = p.mapTo(Price.class);  // <3>
         prices.add(price);
@@ -199,9 +199,9 @@ public static class Consumer {
     }
 }
 ----
-1. The `Price` instances are automatically encoded to JSON by the connector
-2. You can receive it using a `JsonObject`
-3. Then, you can reconstruct the instance using the `mapTo` method
+<1> The `Price` instances are automatically encoded to JSON by the connector
+<2> You can receive it using a `JsonObject`
+<3> Then, you can reconstruct the instance using the `mapTo` method
 
 NOTE: The `mapTo` method uses the Quarkus Jackson mapper. Check xref:rest-json.adoc#json[this guide] to learn more about the mapper configuration.
 

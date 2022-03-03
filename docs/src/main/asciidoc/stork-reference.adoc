@@ -30,12 +30,19 @@ It looks for all the pods backing up a Kubernetes service, but instead of applyi
 
 To use this feature, add the following dependency to your project:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.smallrye.stork</groupId>
     <artifactId>stork-service-discovery-kubernetes</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-service-discovery-kubernetes")
 ----
 
 For each service expected to be exposed as a Kubernetes Service, configure the lookup:
@@ -56,7 +63,8 @@ Stork is extensible, and you can implement your own service discovery mechanism.
 === Dependency
 To implement your Service Discovery Provider, make sure your project depends on Core and Configuration Generator. The former brings classes necessary to implement custom discovery, the latter contains an annotation processor that generates classes needed by Stork.
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.smallrye.stork</groupId>
@@ -68,6 +76,13 @@ To implement your Service Discovery Provider, make sure your project depends on 
     <!-- provided scope is sufficient for the annotation processor -->
     <scope>provided</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-core")
+compileOnly("io.smallrye.stork:stork-configuration-generator")
 ----
 
 [NOTE]
@@ -200,7 +215,8 @@ Stork is extensible, and you can implement your own service selection (load-bala
 === Dependency
 To implement your Load Balancer Provider, make sure your project depends on Core and Configuration Generator. The former brings classes necessary to implement custom load balancer, the latter contains an annotation processor that generates classes needed by Stork.
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.smallrye.stork</groupId>
@@ -212,6 +228,13 @@ To implement your Load Balancer Provider, make sure your project depends on Core
     <!-- provided scope is sufficient for the annotation processor -->
     <scope>provided</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-core")
+compileOnly("io.smallrye.stork:stork-configuration-generator")
 ----
 
 [NOTE]

@@ -62,4 +62,4 @@ Currently, only the default backend for Hibernate Search Elasticsearch is suppor
 
 == Configuration reference
 
-include::{generated-dir}/config/quarkus-elasticsearch-rest-client-common-config-group-elasticsearch-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]

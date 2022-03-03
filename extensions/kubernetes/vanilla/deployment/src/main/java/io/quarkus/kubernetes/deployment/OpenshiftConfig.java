@@ -50,7 +50,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The OpenShift flavor / version to use.
-     * Older versions of OpenShift have minor differrences in the labels and fields they support.
+     * Older versions of OpenShift have minor differences in the labels and fields they support.
      * This option allows users to have their manifests automatically aligned to the OpenShift 'flavor' they use.
      */
     @ConfigItem(defaultValue = "v4")
@@ -107,7 +107,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Map<String, String> annotations;
 
     /**
-     * Whether or not to add the build timestamp to the Kubernetes annotations
+     * Add the build timestamp to the Kubernetes annotations
      * This is a very useful way to have manifests of successive builds of the same
      * application differ - thus ensuring that Kubernetes will apply the updated resources
      */

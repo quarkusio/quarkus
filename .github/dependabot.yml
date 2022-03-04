@@ -48,7 +48,6 @@ updates:
       - dependency-name: com.ibm.db2:jcc
       # Kafka
       - dependency-name: org.apache.kafka:*
-      - dependency-name: org.apache.zookeeper:zookeeper
       - dependency-name: io.strimzi:kafka-oauth-client
       - dependency-name: com.nimbusds:nimbus-jose-jwt
       - dependency-name: io.apicurio:*

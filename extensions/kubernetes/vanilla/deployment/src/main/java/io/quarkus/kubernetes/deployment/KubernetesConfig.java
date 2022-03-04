@@ -286,11 +286,17 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<String> appSecret;
 
     /**
-     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * If set, the config map will be mounted to the application container and its contents will be used for application
      * configuration.
      */
     @ConfigItem
     Optional<String> appConfigMap;
+
+    /**
+     * If set, it will copy the security context configuration provided into the generated pod settings.
+     */
+    @ConfigItem
+    SecurityContextConfig securityContext;
 
     public Optional<String> getPartOf() {
         return partOf;
@@ -484,5 +490,10 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public Optional<ExpositionConfig> getExposition() {
         return Optional.of(ingress);
+    }
+
+    @Override
+    public SecurityContextConfig getSecurityContext() {
+        return securityContext;
     }
 }

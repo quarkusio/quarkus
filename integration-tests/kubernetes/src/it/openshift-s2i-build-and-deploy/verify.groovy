@@ -1,6 +1,5 @@
 import io.dekorate.utils.Serialization
 import io.fabric8.kubernetes.api.model.KubernetesList
-import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.openshift.api.model.BuildConfig
 
 //Check that file exits
@@ -14,7 +13,7 @@ openshiftYml.withInputStream { stream ->
     
     BuildConfig buildConfig = list.items.find{r -> r.kind == "BuildConfig"}
 
-    //Check that ti contains a Deployment named after the project
+    //Check that it contains a BuildConfig named after the project
     assert buildConfig != null
     assert buildConfig.metadata.name == "openshift-s2i-build-and-deploy"
 }

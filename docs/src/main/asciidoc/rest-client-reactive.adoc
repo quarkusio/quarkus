@@ -611,7 +611,9 @@ public class GetTokenReactiveClientHeadersFactory extends ReactiveClientHeadersF
     Service service;
 
     @Override
-    public Uni<MultivaluedMap<String, String>> getHeaders(MultivaluedMap<String, String> incomingHeaders) {
+    public Uni<MultivaluedMap<String, String>> getHeaders(
+            MultivaluedMap<String, String> incomingHeaders,
+            MultivaluedMap<String, String> clientOutgoingHeaders);
         return Uni.createFrom().item(() -> {
             MultivaluedHashMap<String, String> newHeaders = new MultivaluedHashMap<>();
             // perform blocking call

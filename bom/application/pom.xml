@@ -154,7 +154,7 @@
         <kotlin-serialization.version>1.3.2</kotlin-serialization.version>
         <dekorate.version>2.9.0</dekorate.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
-        <awaitility.version>4.1.1</awaitility.version>
+        <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
         <flyway.version>8.5.1</flyway.version>
         <yasson.version>1.0.11</yasson.version>

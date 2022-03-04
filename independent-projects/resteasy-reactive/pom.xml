@@ -65,7 +65,7 @@
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
         <yasson.version>1.0.11</yasson.version>
         <jakarta.json.bind-api.version>1.0.2</jakarta.json.bind-api.version>
-        <awaitility.version>4.1.1</awaitility.version>
+        <awaitility.version>4.2.0</awaitility.version>
         <smallrye-mutiny-vertx-core.version>2.18.1</smallrye-mutiny-vertx-core.version>
     </properties>
 

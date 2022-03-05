@@ -934,7 +934,7 @@ If you need to generate resources for both platforms (vanilla Kubernetes and Ope
 quarkus.kubernetes.deployment-target=kubernetes,openshift
 ----
 
-Following the execution of `./mvnw package -Dquarkus.container-image.build=true ` you will notice amongst the other files that are created, two files named
+Following the execution of `./mvnw package -Dquarkus.container-image.build=true` you will notice amongst the other files that are created, two files named
 `openshift.json` and `openshift.yml` in the `target/kubernetes/` directory.
 
 These manifests can be deployed as is to a running cluster, using `kubectl`:

@@ -11,24 +11,24 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.ZonedDateTimeSerializer;
 
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperCustomizer;
 
 @Singleton
-public class ZonedDateTimeObjectMapperCustomizer implements ObjectMapperCustomizer {
+public class ZonedDateTimeObjectMapperCustomizer implements JsonMapperCustomizer {
 
     @Override
-    public void customize(ObjectMapper objectMapper) {
+    public void customize(JsonMapper.Builder builder) {
         JavaTimeModule customDateModule = new JavaTimeModule();
         customDateModule.addSerializer(ZonedDateTime.class, new ZonedDateTimeSerializer(
                 new DateTimeFormatterBuilder().appendInstant(0).toFormatter().withZone(ZoneId.of("Z"))));
         customDateModule.addDeserializer(ZonedDateTime.class, new ZonedDateTimeEuropeLondonDeserializer());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                .registerModule(customDateModule);
+        builder.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .addModule(customDateModule);
     }
 
     public static class ZonedDateTimeEuropeLondonDeserializer extends JsonDeserializer<ZonedDateTime> {

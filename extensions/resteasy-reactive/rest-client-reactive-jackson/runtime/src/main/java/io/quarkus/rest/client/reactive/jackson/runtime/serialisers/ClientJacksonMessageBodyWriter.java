@@ -14,16 +14,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object> {
 
-    protected final ObjectMapper originalMapper;
+    protected final JsonMapper originalMapper;
     protected final ObjectWriter defaultWriter;
 
     @Inject
-    public ClientJacksonMessageBodyWriter(ObjectMapper mapper) {
+    public ClientJacksonMessageBodyWriter(JsonMapper mapper) {
         this.originalMapper = mapper;
         this.defaultWriter = createDefaultWriter(mapper);
     }

@@ -9,8 +9,8 @@ import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.netty.buffer.ByteBufInputStream;
@@ -25,28 +25,28 @@ import io.vertx.core.spi.json.JsonCodec;
 
 /**
  * The functionality of this class is copied almost verbatim from {@code io.vertx.core.json.jackson.DatabindCodec}.
- * The difference is that this class obtains the ObjectMapper from Arc in order to inherit the
- * user-customized ObjectMapper.
+ * The difference is that this class obtains the JsonMapper from Arc in order to inherit the
+ * user-customized JsonMapper.
  */
 class QuarkusJacksonJsonCodec implements JsonCodec {
 
-    private static final ObjectMapper mapper;
+    private static final JsonMapper mapper;
     // we don't want to create this unless it's absolutely necessary (and it rarely is)
-    private static volatile ObjectMapper prettyMapper;
+    private static volatile JsonMapper prettyMapper;
 
     static {
         ArcContainer container = Arc.container();
         if (container == null) {
             // this can happen in QuarkusUnitTest
-            mapper = new ObjectMapper();
+            mapper = JsonMapper.builder().build();
         } else {
-            ObjectMapper managedMapper = container.instance(ObjectMapper.class).get();
+            JsonMapper managedMapper = container.instance(JsonMapper.class).get();
             if (managedMapper == null) {
                 // TODO: is this too heavy handed? It should never happen but even if it does, it's a mostly recoverable state
-                throw new IllegalStateException("There was no ObjectMapper bean configured");
+                throw new IllegalStateException("There was no JsonMapper bean configured");
             }
-            // We don't want to change settings the settings of the User configured ObjectMapper,
-            // but we do want to inherit all of the user's custom settings, so we copy the ObjectMapper.
+            // We don't want to change settings the settings of the User configured JsonMapper,
+            // but we do want to inherit all of the user's custom settings, so we copy the JsonMapper.
             // Theoretically we could have checked to see if each of the settings
             // we want to apply is already applied, but in practice it doesn't make sense
             // as at the very least InstantSerializer and InstantDeserializer will be different than those provided by the
@@ -72,7 +72,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
         mapper.registerModule(module);
     }
 
-    private ObjectMapper prettyMapper() {
+    private JsonMapper prettyMapper() {
         if (prettyMapper == null) {
             prettyMapper = mapper.copy();
             prettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
@@ -141,7 +141,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
     @Override
     public String toString(Object object, boolean pretty) throws EncodeException {
         try {
-            ObjectMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper;
+            JsonMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper;
             return mapper.writeValueAsString(object);
         } catch (Exception e) {
             throw new EncodeException("Failed to encode as JSON: " + e.getMessage(), e);
@@ -151,7 +151,7 @@ class QuarkusJacksonJsonCodec implements JsonCodec {
     @Override
     public Buffer toBuffer(Object object, boolean pretty) throws EncodeException {
         try {
-            ObjectMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper;
+            JsonMapper mapper = pretty ? prettyMapper() : QuarkusJacksonJsonCodec.mapper;
             return Buffer.buffer(mapper.writeValueAsBytes(object));
         } catch (Exception e) {
             throw new EncodeException("Failed to encode as JSON: " + e.getMessage(), e);

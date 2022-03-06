@@ -12,7 +12,6 @@ import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.ext.Provider;
 
@@ -28,17 +27,10 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
 /**
  * A client filter for the JAX-RS Client and MicroProfile REST Client that records OpenTelemetry data.
- *
- * For the Resteasy Reactive Client, we skip the OpenTelemetry registration, since this can be handled by the
- * {@link io.quarkus.opentelemetry.runtime.tracing.vertx.OpenTelemetryVertxTracer}. In theory, this wouldn't be an
- * issue, because the OpenTelemetry Instrumenter detects two Client Span and merge both together, but they need to be
- * executed with the same OpenTelemetry Context. Right now, the Reactive REST Client filters are executed outside the
- * Vert.x Context, so we are unable to propagate the OpenTelemetry Context. This is also not a big issue, because the
- * correct OpenTelemetry data will be populated in Vert.x. The only missing piece is the route name available in
- * io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityHandler, which is not propagated to Vert.x.
  */
 @Unremovable
 @Provider
@@ -47,7 +39,15 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     public static final String REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT = "otel.span.client.parentContext";
     public static final String REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE = "otel.span.client.scope";
 
-    private Instrumenter<ClientRequestContext, ClientResponseContext> instrumenter;
+    /**
+     * Property stored in the Client Request context to retrieve the captured Vert.x context.
+     * This context is captured and stored by the Reactive REST Client.
+     *
+     * We use this property to avoid having to depend on the Reactive REST Client explicitly.
+     */
+    private static final String VERTX_CONTEXT_PROPERTY = "__context";
+
+    private final Instrumenter<ClientRequestContext, ClientResponseContext> instrumenter;
 
     // RESTEasy requires no-arg constructor for CDI injection: https://issues.redhat.com/browse/RESTEASY-1538
     // In Reactive Rest Client this is the constructor called. In the classic is the next one with injection.
@@ -72,17 +72,22 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
     @Override
     public void filter(final ClientRequestContext request) {
-        if (isReactiveClient(request)) {
-            return;
-        }
-
         Context parentContext = Context.current();
         if (instrumenter.shouldStart(parentContext, request)) {
             Context spanContext = instrumenter.start(parentContext, request);
-            Scope scope = spanContext.makeCurrent();
+            Scope scope = QuarkusContextStorage.INSTANCE.attach(getVertxContext(request), spanContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT, spanContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT, parentContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE, scope);
+        }
+    }
+
+    private static io.vertx.core.Context getVertxContext(final ClientRequestContext request) {
+        io.vertx.core.Context vertxContext = (io.vertx.core.Context) request.getProperty(VERTX_CONTEXT_PROPERTY);
+        if (vertxContext == null) {
+            return QuarkusContextStorage.getVertxContext();
+        } else {
+            return vertxContext;
         }
     }
 
@@ -106,7 +111,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     }
 
     static boolean isReactiveClient(final ClientRequestContext request) {
-        return "Resteasy Reactive Client".equals(request.getHeaderString(HttpHeaders.USER_AGENT));
+        return request.getProperty(VERTX_CONTEXT_PROPERTY) != null;
     }
 
     private static class ClientRequestContextTextMapSetter implements TextMapSetter<ClientRequestContext> {

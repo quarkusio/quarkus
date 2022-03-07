@@ -19,10 +19,10 @@ Currently, the following database servers are supported:
 
 [NOTE]
 ====
-The Reactive SQL Client for Oracle is considered _experimental_.
+The Reactive SQL Client for Oracle is considered _tech preview_.
 
-In _experimental_ mode, early feedback is requested to mature the idea.
-There is no guarantee of stability nor long term presence in the platform until the solution matures.
+In _tech preview_ mode, early feedback is requested to mature the idea.
+There is no guarantee of stability in the platform until the solution matures.
 Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
 ====
 

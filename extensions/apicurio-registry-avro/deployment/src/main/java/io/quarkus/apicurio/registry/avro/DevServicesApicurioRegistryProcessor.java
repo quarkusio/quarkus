@@ -157,7 +157,8 @@ public class DevServicesApicurioRegistryProcessor {
 
         // Starting the broker
         return apicurioRegistryContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
-                .map(containerAddress -> new ApicurioRegistry(containerAddress.getUrl(), null))
+                // address does not have the URL Scheme - just the host:port, so prepend http://
+                .map(address -> new ApicurioRegistry("http://" + address.getUrl(), null))
                 .orElseGet(() -> {
                     ApicurioRegistryContainer container = new ApicurioRegistryContainer(
                             DockerImageName.parse(config.imageName), config.fixedExposedPort,

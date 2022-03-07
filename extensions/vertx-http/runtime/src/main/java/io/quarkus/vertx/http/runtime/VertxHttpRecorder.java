@@ -41,6 +41,7 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -263,7 +264,16 @@ public class VertxHttpRecorder {
 
         if (startVirtual) {
             initializeVirtual(vertx.get());
-            shutdown.addShutdownTask(() -> virtualBootstrap = null);
+            shutdown.addShutdownTask(() -> {
+                try {
+                    virtualBootstrapChannel.channel().close().sync();
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Unable to close virtualBootstrapChannel");
+                } finally {
+                    virtualBootstrapChannel = null;
+                    virtualBootstrap = null;
+                }
+            });
         }
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled)) {
@@ -1189,6 +1199,7 @@ public class VertxHttpRecorder {
     }
 
     protected static ServerBootstrap virtualBootstrap;
+    protected static ChannelFuture virtualBootstrapChannel;
     public static VirtualAddress VIRTUAL_HTTP = new VirtualAddress("netty-virtual-http");
 
     private static void initializeVirtual(Vertx vertxRuntime) {
@@ -1235,7 +1246,7 @@ public class VertxHttpRecorder {
 
         // Start the server.
         try {
-            virtualBootstrap.bind(VIRTUAL_HTTP).sync();
+            virtualBootstrapChannel = virtualBootstrap.bind(VIRTUAL_HTTP).sync();
         } catch (InterruptedException e) {
             throw new RuntimeException("failed to bind virtual http");
         }

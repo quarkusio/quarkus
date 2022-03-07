@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import javax.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
+import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.SseUtil;
 import org.jboss.resteasy.reactive.server.core.StreamingUtil;
@@ -243,7 +244,12 @@ public class PublisherResponseHandler implements ServerRestHandler {
             // media type negotiation and fixed entity writer set up, perhaps it's better than
             // cancelling the normal route?
             // or make this SSE produce build-time
-            MediaType[] mediaTypes = requestContext.getTarget().getProduces().getSortedOriginalMediaTypes();
+            ServerMediaType produces = requestContext.getTarget().getProduces();
+            if (produces == null) {
+                throw new IllegalStateException(
+                        "Negotiation or dynamic media type not supported yet for Multi: please use the @Produces annotation when returning a Multi");
+            }
+            MediaType[] mediaTypes = produces.getSortedOriginalMediaTypes();
             if (mediaTypes.length != 1) {
                 throw new IllegalStateException(
                         "Negotiation or dynamic media type not supported yet for Multi: please use a single @Produces annotation");

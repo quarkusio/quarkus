@@ -503,6 +503,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @ConfigItem
     SecurityContextConfig securityContext;
 
+    /**
+     * Debug configuration to be set in pods.
+     */
+    DebugConfig remoteDebug;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }
@@ -522,9 +527,9 @@ public class OpenshiftConfig implements PlatformConfiguration {
     }
 
     public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {
-        boolean implictlyEnabled = ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities)
+        boolean implicitlyEnabled = ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities)
                 .filter(c -> c.contains(OPENSHIFT) || c.contains(S2I)).isPresent();
-        return containerImageConfig.builder.map(b -> b.equals(OPENSHIFT) || b.equals(S2I)).orElse(implictlyEnabled);
+        return containerImageConfig.builder.map(b -> b.equals(OPENSHIFT) || b.equals(S2I)).orElse(implicitlyEnabled);
     }
 
     public DeploymentResourceKind getDeploymentResourceKind() {

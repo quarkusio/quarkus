@@ -45,7 +45,7 @@ export JRELEASER_PROJECT_VERSION=${VERSION}
 export JRELEASER_BRANCH=${BRANCH}
 export JRELEASER_CHOCOLATEY_GITHUB_BRANCH=${BRANCH}
 
-jbang org.jreleaser:jreleaser:1.0.0-M1 full-release \
+jbang org.jreleaser:jreleaser:1.0.0-M3 full-release \
   --git-root-search \
   -od target
 

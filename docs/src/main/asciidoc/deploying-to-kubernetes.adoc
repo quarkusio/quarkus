@@ -729,6 +729,10 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.resources.limits.cpu            | String                                    |             |
 | quarkus.kubernetes.resources.limits.memory         | String                                    |             |
 | quarkus.kubernetes.security-context                | SecurityContext                           |             | ( see SecurityContext )
+| quarkus.kubernetes.remote-debug.enabled            | boolean                                   |             | false
+| quarkus.kubernetes.remote-debug.transport          | String                                    |             | dt_socket
+| quarkus.kubernetes.remote-debug.address-port       | int                                       |             | 5005
+| quarkus.kubernetes.remote-debug.suspend            | String                                    |             | n
 |====
 
 Properties that use non-standard types, can be referenced by expanding the property.
@@ -1046,6 +1050,10 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.route.annotations               | Map<String, String>                       |             |
 | quarkus.openshift.headless                        | boolean                                   |             | false
 | quarkus.openshift.security-context                | SecurityContext                           |             | ( see SecurityContext )
+| quarkus.openshift.remote-debug.enabled            | boolean                                   |             | false
+| quarkus.openshift.remote-debug.transport          | String                                    |             | dt_socket
+| quarkus.openshift.remote-debug.address-port       | int                                       |             | 5005
+| quarkus.openshift.remote-debug.suspend            | String                                    |             | n
 |====
 
 [#knative]
@@ -1266,6 +1274,21 @@ This assumes that a `.kube/config` is available in your user directory that poin
 In other words the extension will use whatever cluster `kubectl` uses. The same applies to credentials.
 
 At the moment no additional options are provided for further customization.
+
+=== Remote Debugging
+
+To remotely debug applications that are running on a kubernetes environment, we need to deploy the application as described in the previous section and add as new property: `quarkus.kubernetes.remote-debug.enabled=true`. This property will automatically configure the Java application to append the java agent configuration (for example: `-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005`) and also the service resource to listen using the java agent port.
+
+After your application has been deployed with the debug enabled, next you need to tunnel the traffic from your local host machine to the specified port of the java agent:
+
+[source,bash,subs=attributes+]
+----
+kubectl port-forward svc/<application name> 5005:5005
+----
+
+Using this command, you'll forward the traffic from the "localhost:5005" to the kubernetes service running the java agent using the port "5005" which is the one that the java agent uses by default for remote debugging. You can also configure another java agent port using the property `quarkus.kubernetes.remote-debug.address-port`.
+
+Finally, all you need to do is to configure your favorite IDE to attach the java agent process that is forwarded to `localhost:5005` and start to debug your application. For example, in IntelliJ IDEA, you can follow https://www.jetbrains.com/help/idea/tutorial-remote-debug.html:[this tutorial] to debug remote applications.
 
 == Using existing resources
 

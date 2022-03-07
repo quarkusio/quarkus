@@ -102,6 +102,12 @@ public class VanillaKubernetesProcessor {
             result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(value)));
         });
         result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator((config.ingress))));
+
+        // Handle remote debug configuration for container ports
+        if (config.remoteDebug.enabled) {
+            result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(config.remoteDebug.buildDebugPort())));
+        }
+
         return result;
 
     }
@@ -179,6 +185,12 @@ public class VanillaKubernetesProcessor {
         Integer port = ports.stream().filter(p -> HTTP_PORT.equals(p.getName())).map(KubernetesPortBuildItem::getPort)
                 .findFirst().orElse(DEFAULT_HTTP_PORT);
         result.add(new DecoratorBuildItem(KUBERNETES, new ApplyHttpGetActionPortDecorator(name, name, port)));
+
+        // Handle remote debug configuration
+        if (config.remoteDebug.enabled) {
+            result.add(new DecoratorBuildItem(KUBERNETES, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+                    config.remoteDebug.buildJavaToolOptionsEnv())));
+        }
 
         return result;
     }

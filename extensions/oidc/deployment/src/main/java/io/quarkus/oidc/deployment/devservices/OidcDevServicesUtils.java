@@ -8,6 +8,7 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
@@ -19,7 +20,10 @@ public final class OidcDevServicesUtils {
     }
 
     public static WebClient createWebClient(Vertx vertx) {
-        return WebClient.create(new io.vertx.mutiny.core.Vertx(vertx));
+        WebClientOptions options = new WebClientOptions();
+        options.setTrustAll(true);
+        options.setVerifyHost(false);
+        return WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
     }
 
     public static String getPasswordAccessToken(WebClient client,

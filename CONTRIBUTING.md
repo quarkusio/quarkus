@@ -447,9 +447,9 @@ Then you can build the `docs` module specifically:
 ./mvnw -f docs clean install
 ```
 
-You can check the output of the build in the `target/generated-docs/` directory.
+You can check the output of the build in the `docs/target/generated-docs/` directory.
 
-You can build the documentation this way as many times as needed, just avoid doing a `mvn clean` at the root level because you would lose the configuration properties documentation includes.
+You can build the documentation this way as many times as needed, just avoid doing a `./mvnw clean` at the root level because you would lose the configuration properties documentation includes.
 
 ### Referencing a new guide in the index
 

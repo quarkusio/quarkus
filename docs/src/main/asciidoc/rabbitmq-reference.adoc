@@ -356,16 +356,16 @@ public RabbitMQOptions getNamedOptions() {
         .setSsl(true)
         .setPemKeyCertOptions(keycert)
         .setPemTrustOptions(trust)
-        .setUser("user1");
-        .setPassword("password1");
-        .setHost("localhost");
-        .setPort(5672);
-        .setVirtualHost("vhost1");
-        .setConnectionTimeout(6000); // in milliseconds
-        .setRequestedHeartbeat(60); // in seconds
-        .setHandshakeTimeout(6000); // in milliseconds
-        .setRequestedChannelMax(5);
-        .setNetworkRecoveryInterval(500); // in milliseconds
+        .setUser("user1")
+        .setPassword("password1")
+        .setHost("localhost")
+        .setPort(5672)
+        .setVirtualHost("vhost1")
+        .setConnectionTimeout(6000) // in milliseconds
+        .setRequestedHeartbeat(60) // in seconds
+        .setHandshakeTimeout(6000) // in milliseconds
+        .setRequestedChannelMax(5)
+        .setNetworkRecoveryInterval(500) // in milliseconds
         .setAutomaticRecoveryEnabled(true);
 }
 ----

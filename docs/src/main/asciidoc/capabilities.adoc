@@ -15,7 +15,11 @@ At build time all the capabilities found in the application will be aggregated i
 
 == Declaring capabilities
 
-The `quarkus-bootstrap-maven-plugin:extension-descriptor` Maven goal, that generates the extension descriptor, allows to declare provided capabilities in the following way:
+The `quarkus-bootstrap-maven-plugin:extension-descriptor` Maven goal and the `extensionDescriptor` Gradle task, generating the extension descriptor, allows to declare provided capabilities in the following way:
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Maven
+****
 [source,xml]
 ----
 <plugin>
@@ -29,12 +33,51 @@ The `quarkus-bootstrap-maven-plugin:extension-descriptor` Maven goal, that gener
     </configuration>
 </plugin>
 ----
+****
+
+[role="secondary asciidoc-tabs-sync-gradle-groovy"]
+.Gradle (Groovy DSL)
+****
+[source,groovy,subs=attributes+]
+----
+quarkusExtension {
+    capabilities {
+        capability 'io.quarkus.rest'
+        capability 'io.quarkus.resteasy'
+    }
+}
+----
+
+NOTE: The Gradle extension plugin is still experimental and may change in the future.
+
+****
+
+[role="secondary asciidoc-tabs-sync-gradle-kotlin"]
+.Gradle (Kotlin DSL)
+****
+[source,kotlin,subs=attributes+]
+----
+quarkusExtension {
+    capabilities {
+        capability("io.quarkus.rest")
+        capability("io.quarkus.resteasy")
+    }
+}
+----
+NOTE: The Gradle extension plugin is still experimental and may change in the future.
+****
 
 In this case, the extension is declaring two capabilities.
+
+
 
 === Declaring conditional capabilities
 
 A capability may be provided only if a certain condition is satisfied, e.g. if a certain configuration option is enabled or based on some other condition. This could be expressed in the following way:
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Maven
+****
 [source,xml]
 ----
 <plugin>
@@ -55,6 +98,40 @@ A capability may be provided only if a certain condition is satisfied, e.g. if a
 <3> provided capability name
 
 NOTE: `providesIf` allows listing multiple `<positive>` as well as `<negative>` elements.
+
+****
+
+[role="secondary asciidoc-tabs-sync-gradle-groovy"]
+.Gradle (Groovy DSL)
+****
+[source,groovy,subs=attributes+]
+----
+quarkusExtension {
+    capabilities {
+        capability 'io.quarkus.container.image.openshift' onlyIf ['io.quarkus.container.image.openshift.deployment.OpenshiftBuild'] <1>
+    }
+}
+----
+<1> condition that must be resolved to `true` by a class implementing `java.util.function.BooleanSupplier`
+
+NOTE: It is possible to specify `onlyIfNot` conditions as well.
+****
+
+[role="secondary asciidoc-tabs-sync-gradle-kotlin"]
+.Gradle (Kotlin DSL)
+****
+[source,kotlin,subs=attributes+]
+----
+quarkusExtension {
+    capabilities {
+        capability("io.quarkus.container.image.openshift").onlyIf(["io.quarkus.container.image.openshift.deployment.OpenshiftBuild"]) <1>
+    }
+}
+----
+<1> condition that must be resolved to `true` by a class implementing `java.util.function.BooleanSupplier`
+
+NOTE: It is possible to specify `onlyIfNot` conditions as well.
+****
 
 In this case, `io.quarkus.container.image.openshift.deployment.OpenshiftBuild` should be included in one of the extension deployment dependencies and implement `java.util.function.BooleanSupplier`. At build time, the Quarkus bootstrap will create an instance of it and register `io.quarkus.container.image.openshift` capability only if its `getAsBoolean()` method returns true. 
 

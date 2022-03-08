@@ -16,6 +16,7 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactiveRequestContext {
@@ -30,7 +31,9 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         super(deployment, providers, context, requestContext, handlerChain, abortHandlerChain, devModeTccl,
                 vertxContextPropsToCopy);
         this.association = currentIdentityAssociation;
-        VertxContextSafetyToggle.setCurrentContextSafe(true);
+        if (VertxContext.isOnDuplicatedContext()) {
+            VertxContextSafetyToggle.setCurrentContextSafe(true);
+        }
     }
 
     protected void handleRequestScopeActivation() {

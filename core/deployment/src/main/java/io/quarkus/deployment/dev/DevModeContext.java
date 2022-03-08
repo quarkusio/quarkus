@@ -211,8 +211,8 @@ public class DevModeContext implements Serializable {
 
     public List<ModuleInfo> getAllModules() {
         List<ModuleInfo> ret = new ArrayList<>();
-        ret.add(applicationRoot);
         ret.addAll(additionalModules);
+        ret.add(applicationRoot);
         return ret;
     }
 

@@ -226,9 +226,9 @@ scala.version: scala version
 
 scala-maven-plugin.version: scala maven plugin version
 
-MAVEN_COMPILER_PLUGIN_VERSION("maven-compiler-plugin.version"),
+maven-compiler-plugin.version: Maven compiler plugin version
 
-MAVEN_SUREFIRE_PLUGIN_VERSION("maven-surefire-plugin.version"),
+maven-surefire-plugin.version: Maven surefire plugin version
 ----
 
 === Naming Convention for files

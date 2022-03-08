@@ -22,8 +22,23 @@ public abstract class ReactiveClientHeadersFactory implements ClientHeadersFacto
      *
      * @see ClientHeadersFactory#update(MultivaluedMap, MultivaluedMap)
      */
-    public abstract Uni<MultivaluedMap<String, String>> getHeaders(MultivaluedMap<String, String> incomingHeaders,
-            MultivaluedMap<String, String> clientOutgoingHeaders);
+    public Uni<MultivaluedMap<String, String>> getHeaders(MultivaluedMap<String, String> incomingHeaders,
+            MultivaluedMap<String, String> clientOutgoingHeaders) {
+        return getHeaders(incomingHeaders);
+    }
+
+    /**
+     * @deprecated Will be removed in Quarkus 2.8. Implement and use
+     *             {@link ReactiveClientHeadersFactory#getHeaders(MultivaluedMap, MultivaluedMap)} instead
+     *
+     * @param incomingHeaders the map of headers from the inbound JAX-RS request. This will be an empty map if the
+     *        associated client interface is not part of a JAX-RS request.
+     * @return a Uni with a map of HTTP headers to merge with the clientOutgoingHeaders to be sent to the remote service.
+     */
+    @Deprecated
+    public Uni<MultivaluedMap<String, String>> getHeaders(MultivaluedMap<String, String> incomingHeaders) {
+        throw new IllegalStateException(getClass() + " does not implement either of the getHeaders() methods");
+    }
 
     @Override
     public final MultivaluedMap<String, String> update(MultivaluedMap<String, String> incomingHeaders,

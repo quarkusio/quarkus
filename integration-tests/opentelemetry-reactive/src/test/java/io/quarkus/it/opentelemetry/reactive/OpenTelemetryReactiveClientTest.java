@@ -71,10 +71,8 @@ public class OpenTelemetryReactiveClientTest {
         assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) server.get("attributes")).get(HTTP_METHOD.getKey()));
 
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        // TODO - radcortez - Requires a fix to pass in the UrlPathTemplate in the Vert.x Context. Check:
-        // io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityHandler
-        // org.jboss.resteasy.reactive.client.AsyncResultUni
-        //assertEquals("reactive", client.get("name"));
+        assertEquals("/reactive", client.get("name"));
+
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
     }
@@ -107,10 +105,8 @@ public class OpenTelemetryReactiveClientTest {
         assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) server.get("attributes")).get(HTTP_METHOD.getKey()));
 
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        // TODO - radcortez - Requires a fix to pass in the UrlPathTemplate in the Vert.x Context. Check:
-        // io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityHandler
-        // org.jboss.resteasy.reactive.client.AsyncResultUni
-        //assertEquals("reactive", client.get("name"));
+        assertEquals("/reactive", client.get("name"));
+
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
     }

@@ -116,7 +116,7 @@ public class FormAuthParametersTestCase {
     }
 
     @Test
-    public void testFormAuthFailure() {
+    public void testFormAuthFailureWrongPassword() {
         CookieFilter cookies = new CookieFilter();
         RestAssured
                 .given()
@@ -131,5 +131,21 @@ public class FormAuthParametersTestCase {
                 .statusCode(302)
                 .header("location", containsString("/error"));
 
+    }
+
+    @Test
+    public void testFormAuthFailureWrongRedirect() {
+        CookieFilter cookies = new CookieFilter();
+        RestAssured
+                .given()
+                .filter(cookies)
+                .when()
+                .cookies("redirect-location", "http://localhost")
+                .formParam("username", "admin")
+                .formParam("password", "admin")
+                .post("/auth")
+                .then()
+                .assertThat()
+                .statusCode(401);
     }
 }

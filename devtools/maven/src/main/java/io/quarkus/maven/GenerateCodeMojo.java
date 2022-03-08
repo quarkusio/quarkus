@@ -65,9 +65,10 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
         }
 
         ClassLoader originalTccl = Thread.currentThread().getContextClassLoader();
+        CuratedApplication curatedApplication = null;
         try {
 
-            final CuratedApplication curatedApplication = bootstrapApplication(launchMode);
+            curatedApplication = bootstrapApplication(launchMode);
 
             QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
@@ -85,6 +86,10 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
         } catch (Exception any) {
             throw new MojoExecutionException("Quarkus code generation phase has failed", any);
         } finally {
+            // in case of test mode, we can't share the bootstrapped app with the testing plugins, so we are closing it right away
+            if (test && curatedApplication != null) {
+                curatedApplication.close();
+            }
             Thread.currentThread().setContextClassLoader(originalTccl);
         }
     }

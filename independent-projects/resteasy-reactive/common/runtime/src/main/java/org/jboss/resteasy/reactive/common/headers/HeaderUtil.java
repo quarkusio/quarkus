@@ -28,9 +28,10 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
 /**
  * These work for MultivaluedMap with String and Object
  */
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class HeaderUtil {
 
-    private static final ClassValue<RuntimeDelegate.HeaderDelegate> HEADER_DELEGATE_CACHE = new ClassValue() {
+    private static final ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = new ClassValue<>() {
         @Override
         protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
             return RuntimeDelegate.getInstance().createHeaderDelegate(type);
@@ -41,7 +42,11 @@ public class HeaderUtil {
         if (obj instanceof String) {
             return (String) obj;
         } else {
-            return HEADER_DELEGATE_CACHE.get(obj.getClass()).toString(obj);
+            RuntimeDelegate.HeaderDelegate delegate = HEADER_DELEGATE_CACHE.get(obj.getClass());
+            if (delegate != null) {
+                return delegate.toString(obj);
+            }
+            return obj.toString();
         }
     }
 

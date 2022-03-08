@@ -2067,9 +2067,9 @@ However, the `io.quarkus.qute.i18n.MessageBundle#locale()` can be used to specif
 Additionally, there are two ways to define a localized bundle:
 
 1. Create an interface that extends the default interface that is annotated with `@Localized`
-2. Create an UTF-8 encoded file located in `src/main/resources/messages`; e.g. `msg_de.properties`.
+2. Create an UTF-8 encoded file located in the `src/main/resources/messages` directory of an application archive; e.g. `msg_de.properties`.
 
-TIP: A localized interface is the preferred solution mainly due to the possibility of easy refactoring.
+TIP: While a localized interface enables easy refactoring an external file might be more convenient in many situations.
 
 .Localized Interface Example
 [source,java]
@@ -2088,7 +2088,7 @@ public interface GermanAppMessages extends AppMessages {
 <1> The value is the locale tag string (IETF).
 <2> The value is the localized template.
 
-Message bundle files must be encoded in UTF-8.
+Message bundle files must be encoded in _UTF-8_.
 The file name consists of the relevant bundle name (e.g. `msg`) and underscore followed by the locate tag (IETF).
 The file format is very simple: each line represents either a key/value pair with the equals sign used as a separator or a comment (line starts with `#`).
 Blank lines are ignored.

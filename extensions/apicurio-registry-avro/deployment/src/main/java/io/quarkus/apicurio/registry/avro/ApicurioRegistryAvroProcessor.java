@@ -12,6 +12,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class ApicurioRegistryAvroProcessor {
@@ -62,6 +63,13 @@ public class ApicurioRegistryAvroProcessor {
         services.produce(
                 new ServiceProviderBuildItem(ApicurioHttpClientProvider.class.getName(),
                         "io.apicurio.rest.client.VertxHttpClientProvider"));
+    }
+
+    @BuildStep
+    void ignoreIncludedOpenAPIDocument(BuildProducer<IgnoreStaticDocumentBuildItem> ignoreStaticDocumentProducer) {
+        // This will ignore the OpenAPI Document in META-INF/openapi.yaml in the apicurio-registry-common dependency
+        ignoreStaticDocumentProducer.produce(new IgnoreStaticDocumentBuildItem(
+                ".*/io/apicurio/apicurio-registry-common/.*/apicurio-registry-common-.*.jar.*"));
     }
 
     @BuildStep

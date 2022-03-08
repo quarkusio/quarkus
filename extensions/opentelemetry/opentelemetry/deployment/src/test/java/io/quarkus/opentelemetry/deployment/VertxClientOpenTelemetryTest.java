@@ -114,6 +114,18 @@ public class VertxClientOpenTelemetryTest {
         assertEquals(server.getParentSpanId(), client.getSpanId());
     }
 
+    @Test
+    void uri() throws Exception {
+        HttpResponse<Buffer> response = WebClient.create(vertx)
+                .get(uri.getPort(), uri.getHost(), "/hello?q=g\\+\\+&dataOnly=true")
+                .send()
+                .toCompletionStage().toCompletableFuture()
+                .get();
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
+        assertEquals(2, spans.size());
+    }
+
     @ApplicationScoped
     public static class HelloRouter {
         @Inject

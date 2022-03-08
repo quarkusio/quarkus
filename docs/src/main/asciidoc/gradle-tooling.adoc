@@ -501,6 +501,18 @@ quarkus {
 
 ====
 
+== Running integration tests
+
+Quarkus integration tests (annotated with `@QuarkusIntegrationTest`) will run on the artifact produced by Quarkus.
+Those tests can be placed in a `src/integrationTest/java` directory and executed using:
+
+[source, bash]
+----
+./gradlew quarkusIntTest
+----
+
+This task depends on both `check` and `quarkusBuild` tasks. The final artifact will be produced before running tests.
+
 == Using fast-jar
 
 `fast-jar` is now the default quarkus package type. The result of `./gradlew build` command is a new directory under `build` named `quarkus-app`.

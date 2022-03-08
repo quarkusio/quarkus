@@ -14,7 +14,6 @@ public class MultiSourceProjectTest extends QuarkusGradleWrapperTestBase {
         final BuildResult buildResult = runGradleWrapper(projectDir, ":clean", ":test");
 
         assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-
     }
 
 }

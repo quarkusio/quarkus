@@ -436,7 +436,7 @@ public class BeanDeployment {
         // Validate the bean deployment
         List<Throwable> errors = new ArrayList<>();
         // First, validate all beans internally
-        validateBeans(errors, validators, bytecodeTransformerConsumer);
+        validateBeans(errors, bytecodeTransformerConsumer);
         ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
         for (Throwable error : errors) {
             validationContext.addDeploymentProblem(error);
@@ -1275,8 +1275,7 @@ public class BeanDeployment {
         return decorators;
     }
 
-    private void validateBeans(List<Throwable> errors, List<BeanDeploymentValidator> validators,
-            Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
+    private void validateBeans(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
 
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
         Set<DotName> classesReceivingNoArgsCtor = new HashSet<>();
@@ -1290,7 +1289,7 @@ public class BeanDeployment {
                 }
                 named.add(bean);
             }
-            bean.validate(errors, validators, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
+            bean.validate(errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
         }
 
         if (!namedBeans.isEmpty()) {

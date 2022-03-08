@@ -597,8 +597,8 @@ public final class Beans {
         }
     }
 
-    static void validateBean(BeanInfo bean, List<Throwable> errors, List<BeanDeploymentValidator> validators,
-            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, Set<DotName> classesReceivingNoArgsCtor) {
+    static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            Set<DotName> classesReceivingNoArgsCtor) {
 
         if (bean.isClassBean()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();

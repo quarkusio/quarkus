@@ -150,7 +150,7 @@ public final class Results {
                 builder.append("\"").append(name);
                 if (!params.isEmpty()) {
                     builder.append("(");
-                    builder.append(getParams().stream().map(Expression::toOriginalString).collect(Collectors.joining(",")));
+                    builder.append(params.stream().map(Expression::toOriginalString).collect(Collectors.joining(",")));
                     builder.append(")");
                 }
                 builder.append("\" not found");

@@ -147,13 +147,13 @@ public class OpenshiftProcessor {
             baseImage.ifPresent(b -> {
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, null));
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
-                        String.join(" ", config.jvmArguments), null));
+                        String.join(" ", config.getEffectiveJvmArguments()), null));
             });
             //In all other cases its the responsibility of the image to set those up correctly.
             if (!baseImage.isPresent()) {
                 List<String> cmd = new ArrayList<>();
                 cmd.add("java");
-                cmd.addAll(config.jvmArguments);
+                cmd.addAll(config.getEffectiveJvmArguments());
                 cmd.addAll(Arrays.asList("-jar", pathToJar));
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar("JAVA_APP_JAR", pathToJar, null));
                 commandProducer.produce(KubernetesCommandBuildItem.command(cmd));

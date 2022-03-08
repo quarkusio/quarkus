@@ -525,6 +525,7 @@ public class JibProcessor {
 
     private List<String> determineEffectiveJvmArguments(JibConfig jibConfig, Optional<AppCDSResultBuildItem> appCDSResult) {
         List<String> effectiveJvmArguments = new ArrayList<>(jibConfig.jvmArguments);
+        jibConfig.jvmAdditionalArguments.ifPresent(effectiveJvmArguments::addAll);
         if (appCDSResult.isPresent()) {
             boolean containsAppCDSOptions = false;
             for (String effectiveJvmArgument : effectiveJvmArguments) {
@@ -567,7 +568,7 @@ public class JibProcessor {
             // when there is no custom entry point, we just set everything up for a regular java run
             if (!jibConfig.jvmEntrypoint.isPresent()) {
                 javaContainerBuilder
-                        .addJvmFlags(jibConfig.jvmArguments)
+                        .addJvmFlags(determineEffectiveJvmArguments(jibConfig, Optional.empty()))
                         .setMainClass(mainClassBuildItem.getClassName());
             }
 

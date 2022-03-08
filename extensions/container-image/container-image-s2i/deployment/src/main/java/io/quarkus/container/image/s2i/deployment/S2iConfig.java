@@ -1,6 +1,7 @@
 package io.quarkus.container.image.s2i.deployment;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,10 +40,16 @@ public class S2iConfig {
     public String baseNativeImage;
 
     /**
-     * Additional JVM arguments to pass to the JVM when starting the application
+     * The JVM arguments to pass to the JVM when starting the application
      */
     @ConfigItem(defaultValue = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
+
+    /**
+     * Additional JVM arguments to pass to the JVM when starting the application
+     */
+    @ConfigItem
+    public Optional<List<String>> jvmAdditionalArguments;
 
     /**
      * Additional arguments to pass when starting the native application
@@ -100,6 +107,15 @@ public class S2iConfig {
      */
     public boolean hasDefaultBaseNativeImage() {
         return baseNativeImage.equals(DEFAULT_BASE_NATIVE_IMAGE);
+    }
+
+    /**
+     * @return the effective JVM arguments to use by getting the jvmArguments and the jvmAdditionalArguments properties.
+     */
+    public List<String> getEffectiveJvmArguments() {
+        List<String> effectiveJvmArguments = new ArrayList<>(jvmArguments);
+        jvmAdditionalArguments.ifPresent(effectiveJvmArguments::addAll);
+        return effectiveJvmArguments;
     }
 
 }

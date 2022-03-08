@@ -31,6 +31,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
+import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -156,9 +157,10 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) throws IOException {
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         // To map from smallrye and mp config to quarkus
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(OpenApiConfigMapping.class.getName()));
+        serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(OASFactoryResolver.class.getName()));
     }
 
     @BuildStep

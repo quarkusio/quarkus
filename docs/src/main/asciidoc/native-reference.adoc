@@ -74,11 +74,10 @@ quarkus.container-image.group=test
 
 == First Debugging Steps
 
-As a first step, build the native executable for the application:
+As a first step, change to the project directory and build the native executable for the application:
 
 [source,bash,subs=attributes+]
 ----
-cd debugging-native
 ./mvnw package -DskipTests -Pnative
 ----
 
@@ -96,7 +95,9 @@ In another:
 curl -w '\n' http://localhost:8080/hello
 ----
 
-We can obtain basic extra information while building the native executable by adding additional native-image build options using `-Dquarkus.native.additional-build-args`, e.g.
+The rest of this section explores ways to build the native executable with extra information,
+but first, stop the running application.
+We can obtain this information while building the native executable by adding additional native-image build options using `-Dquarkus.native.additional-build-args`, e.g.
 
 [source,bash,subs=attributes+]
 ----
@@ -215,11 +216,10 @@ Using docker in the non-Linux environment, you can create an image using this Do
 docker build -t fedora-tools:v1 .
 ----
 
-Then, run the Docker container as:
+Then, go to the root of the project and run the Docker container we have just created as:
 
 [source,bash]
 ----
-cd debugging-native
 docker run -t -i --rm -v ${PWD}:/data -p 8080:8080 fedora-tools:v1
 ----
 
@@ -729,11 +729,10 @@ Is it appending the characters? Is it deleting it? Is it checking whether the th
 Since we're dealing with a linux native executable,
 we can use tools like `perf` directly.
 To use `perf`,
-start the tools container created earlier as a privileged user:
+go to the root of the project and start the tools container created earlier as a privileged user:
 
 [source,bash]
 ----
-cd debugging-native
 docker run --privileged -t -i --rm -v ${PWD}:/data -p 8080:8080 fedora-tools:v1
 ----
 
@@ -1061,11 +1060,10 @@ Segfault detected, aborting process. Use runtime option -R:-InstallSegfaultHandl
 The omitted output above contains clues to what caused the issue,
 but in this exercise we are going to assume that no information was provided.
 Let’s try to debug the segmentation fault using `gdb`.
-To do that, first enter the tools container:
+To do that, go to the root of the project and enter the tools container:
 
 [source,bash]
 ----
-cd debugging-native
 docker run -t -i --rm -v ${PWD}:/data -p 8080:8080 fedora-tools:v1 /bin/bash
 ----
 

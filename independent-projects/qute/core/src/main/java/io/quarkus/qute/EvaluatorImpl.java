@@ -86,13 +86,20 @@ class EvaluatorImpl implements Evaluator {
 
     private CompletionStage<Object> resolveNamespace(EvalContext context, ResolutionContext resolutionContext,
             Iterator<Part> parts, Iterator<NamespaceResolver> resolvers, Expression expression) {
+        // Use the next matching namespace resolver
         NamespaceResolver resolver = resolvers.next();
         return resolver.resolve(context).thenCompose(r -> {
             if (Results.isNotFound(r)) {
+                // Result not found
                 if (resolvers.hasNext()) {
+                    // Try the next matching resolver
                     return resolveNamespace(context, resolutionContext, parts, resolvers, expression);
                 } else {
-                    if (strictRendering && !parts.hasNext()) {
+                    // No other matching namespace resolver exist
+                    if (parts.hasNext()) {
+                        // Continue to the next part of the expression
+                        return resolveReference(false, r, parts, resolutionContext, expression, 0);
+                    } else if (strictRendering) {
                         throw propertyNotFound(r, expression);
                     }
                     return Results.notFound(context);

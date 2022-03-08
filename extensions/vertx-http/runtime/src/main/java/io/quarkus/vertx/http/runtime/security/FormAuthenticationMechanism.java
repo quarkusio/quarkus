@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import java.util.function.Consumer;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -118,6 +120,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         Cookie redirect = exchange.getCookie(locationCookie);
         String location;
         if (redirect != null) {
+            verifyRedirectBackLocation(exchange.request().absoluteURI(), redirect.getValue());
             redirect.setSecure(exchange.request().isSSL());
             location = redirect.getValue();
             exchange.response().addCookie(redirect.setMaxAge(0));
@@ -127,6 +130,18 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         exchange.response().setStatusCode(302);
         exchange.response().headers().add(HttpHeaderNames.LOCATION, location);
         exchange.response().end();
+    }
+
+    protected void verifyRedirectBackLocation(String requestURIString, String redirectUriString) {
+        URI requestUri = URI.create(requestURIString);
+        URI redirectUri = URI.create(redirectUriString);
+        if (!requestUri.getAuthority().equals(redirectUri.getAuthority())
+                || !requestUri.getScheme().equals(redirectUri.getScheme())) {
+            log.errorf("Location cookie value %s does not match the current request URI %s's scheme, host or port",
+                    redirectUriString,
+                    requestURIString);
+            throw new AuthenticationCompletionException();
+        }
     }
 
     protected void storeInitialLocation(final RoutingContext exchange) {

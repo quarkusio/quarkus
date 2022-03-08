@@ -192,39 +192,39 @@ input.provided-code[].name|tags|title|description|related-guide: list of selecte
 
 [source,bash]
 ----
-BOM_GROUP_ID("quarkus.platform.group-id"),
+quarkus.platform.group-id: BOM groupId
 
-BOM_ARTIFACT_ID("quarkus.platform.artifact-id"),
+quarkus.platform.artifact-id: BOM ArtifactId
 
-BOM_VERSION("quarkus.platform.version"),
+quarkus.platform.version: BOM Version
 
-PROJECT_GROUP_ID("project.group-id"),
+project.group-id: Project groupId
 
-PROJECT_ARTIFACT_ID("project.artifact-id"),
+project.artifact-id: project ArtifactId
 
-PROJECT_VERSION("project.version"),
+project.version: Project Version
 
-PROJECT_PACKAGE_NAME("project.package-name"),
+project.package-name: Project Package name
 
-QUARKUS_MAVEN_PLUGIN_GROUP_ID("quarkus.maven-plugin.group-id"),
+quarkus.maven-plugin.group-id: Quarkus Maven plugin groupId
 
-QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID("quarkus.maven-plugin.artifact-id"),
+quarkus.maven-plugin.artifact-id: Quarkus Maven plugin ArtifactId
 
-QUARKUS_MAVEN_PLUGIN_VERSION("quarkus.maven-plugin.version"),
+quarkus.maven-plugin.version: Quarkus Maven plugin version.
 
-QUARKUS_GRADLE_PLUGIN_ID("quarkus.gradle-plugin.id"),
+quarkus.gradle-plugin.id: Quarkus gradle pluginId
 
-QUARKUS_GRADLE_PLUGIN_VERSION("quarkus.gradle-plugin.version"),
+quarkus.gradle-plugin.version: Quarkus gradle plugin version
 
-QUARKUS_VERSION("quarkus.version"),
+quarkus.version: Quarkus version
 
-JAVA_VERSION("java.version"),
+java.version: Java version
 
-KOTLIN_VERSION("kotlin.version"),
+kotlin.version: Kotlin version
 
-SCALA_VERSION("scala.version"),
+scala.version: scala version
 
-SCALA_MAVEN_PLUGIN_VERSION("scala-maven-plugin.version"),
+scala-maven-plugin.version: scala maven plugin version
 
 MAVEN_COMPILER_PLUGIN_VERSION("maven-compiler-plugin.version"),
 

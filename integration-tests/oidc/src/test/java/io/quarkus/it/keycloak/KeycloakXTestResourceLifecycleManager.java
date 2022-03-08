@@ -42,7 +42,7 @@ public class KeycloakXTestResourceLifecycleManager implements QuarkusTestResourc
     @SuppressWarnings("resource")
     @Override
     public Map<String, String> start() {
-        keycloak = new GenericContainer<>("quay.io/keycloak/keycloak-x:" + KEYCLOAK_VERSION)
+        keycloak = new GenericContainer<>("quay.io/keycloak/keycloak:" + KEYCLOAK_VERSION)
                 .withExposedPorts(8080, 8443)
                 .withEnv("KEYCLOAK_ADMIN", "admin")
                 .withEnv("KEYCLOAK_ADMIN_PASSWORD", "admin")

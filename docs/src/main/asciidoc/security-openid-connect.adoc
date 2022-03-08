@@ -165,7 +165,7 @@ Example configuration:
 
 [source,properties]
 ----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=backend-service
 quarkus.oidc.client-secret=secret
 
@@ -185,10 +185,12 @@ To start a Keycloak Server you can use Docker and just run the following command
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak version}
+docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
+where `keycloak.version` should be set to `17.0.0` or higher.
+
+You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
 
 Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
@@ -264,7 +266,7 @@ order to access the application resources:
 [source,bash]
 ----
 export access_token=$(\
-    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
@@ -300,7 +302,7 @@ In order to access the admin endpoint you should obtain a token for the `admin` 
 [source,bash]
 ----
 export access_token=$(\
-    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
@@ -395,9 +397,9 @@ However, there could be cases where JWT tokens must be verified via the introspe
 
 [source, properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+# Token Introspection endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/tokens/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
@@ -502,7 +504,7 @@ For example, here is how you can use `keycloak.js` to authenticate the users and
 <head>
     <title>keycloak-spa</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="http://localhost:8180/auth/js/keycloak.js"></script>
+    <script src="http://localhost:8180/js/keycloak.js"></script>
     <script>
         var keycloak = new Keycloak();
         keycloak.init({onLoad: 'login-required'}).success(function () {
@@ -550,15 +552,15 @@ Alternatively, if the discovery endpoint is not available or you would like to s
 
 [source, properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token
+# Token endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/token
 quarkus.oidc.token-path=/protocol/openid-connect/token
-# JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
+# JWK set endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/certs
 quarkus.oidc.jwks-path=/protocol/openid-connect/certs
-# UserInfo endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
+# UserInfo endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/userinfo
 quarkus.oidc.user-info-path=/protocol/openid-connect/userinfo
-# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+# Token Introspection endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/tokens/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
@@ -706,7 +708,7 @@ public class CustomOidcWireMockStubTest {
 
     @Test
     public void testInvalidBearerToken() {
-        wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
+        wireMockServer.stubFor(WireMock.post("/realms/quarkus/protocol/openid-connect/token/introspect")
                 .withRequestBody(matching(".*token=invalid_token.*"))
                 .willReturn(WireMock.aResponse().withStatus(400)));
 
@@ -751,14 +753,14 @@ But if you already have all the required `quarkus-oidc` properties configured th
 
 [source,properties]
 ----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 ----
 
 If a custom realm file has to be imported into Keycloak before running the tests then you can configure `Dev Services for Keycloak` as follows:
 
 [source,properties]
 ----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 

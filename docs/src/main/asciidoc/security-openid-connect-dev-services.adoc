@@ -30,11 +30,9 @@ You will see in the console something similar to:
 [source,shell]
 ----
 KeyCloak Dev Services Starting:
-2021-11-02 17:14:24,864 INFO  [org.tes.con.wai.str.HttpWaitStrategy] (build-10) /unruffled_agnesi: Waiting for 60 seconds for URL: http://localhost:32781/auth (where port 32781 maps to container port 8080)
+2021-11-02 17:14:24,864 INFO  [org.tes.con.wai.str.HttpWaitStrategy] (build-10) /unruffled_agnesi: Waiting for 60 seconds for URL: http://localhost:32781 (where port 32781 maps to container port 8080)
 2021-11-02 17:14:44,170 INFO  [io.qua.oid.dep.dev.key.KeycloakDevServicesProcessor] (build-10) Dev Services for Keycloak started.
 ----
-
-The `quay.io/keycloak/keycloak:15.0.2` image which contains a `Keycloak` distribution powered by `WildFly` is currently used to start a container by default. See the <<keycloak-initialization, Keycloak Initialization>> section for more details about the image selection.
 
 [IMPORTANT]
 ====
@@ -138,7 +136,7 @@ You will also see in the Dev UI console something similar to:
 
 [source,shell]
 ----
-2021-07-19 17:58:11,407 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Using password grant to get a token from 'http://localhost:32818/auth/realms/quarkus/protocol/openid-connect/token' for user 'alice' in realm 'quarkus' with client id 'quarkus-app'
+2021-07-19 17:58:11,407 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Using password grant to get a token from 'http://localhost:32818/realms/quarkus/protocol/openid-connect/token' for user 'alice' in realm 'quarkus' with client id 'quarkus-app'
 2021-07-19 17:58:11,533 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Test token: eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ6Z2tDazJQZ1JaYnVlVG5kcTFKSW1sVnNoZ2hhbWhtbnBNcXU0QUt5MnJBIn0.ey...
 2021-07-19 17:58:11,536 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Sending token to 'http://localhost:8080/api/admin'
 2021-07-19 17:58:11,674 INFO  [io.qua.oid.dep.dev.key.KeycloakDevConsolePostHandler] (security-openid-connect-quickstart-dev.jar) (DEV Console action) Result: 200
@@ -189,8 +187,8 @@ Please see xref:security-openid-connect.adoc#integration-testing-keycloak-devser
 [[keycloak-initialization]]
 === Keycloak Initialization
 
-The `quay.io/keycloak/keycloak-x:16.0.0` image which contains a `Keycloak-X` distribution powered by `Quarkus` is used to start a container by default.
-`quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image name. For example, set it to `quay.io/keycloak/keycloak:16.0.0` to use a `Keycloak` distribution powered by `WildFly`.
+The `quay.io/keycloak/keycloak:17.0.0` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
+`quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image name. For example, set it to `quay.io/keycloak/keycloak:17.0.0-legacy` to use a Keycloak distribution powered by WildFly.
 
 `Dev Services for Keycloak` will initialize a launched Keycloak server next.
 
@@ -255,7 +253,7 @@ And you will see the following message:
 [source,shell]
 ----
 ...
-2021-09-07 15:53:42,697 INFO  [io.qua.oid.dep.dev.OidcDevConsoleProcessor] (build-41) OIDC Dev Console: discovering the provider metadata at http://localhost:8180/auth/realms/quarkus/.well-known/openid-configuration
+2021-09-07 15:53:42,697 INFO  [io.qua.oid.dep.dev.OidcDevConsoleProcessor] (build-41) OIDC Dev Console: discovering the provider metadata at http://localhost:8180/realms/quarkus/.well-known/openid-configuration
 ...
 ----
 

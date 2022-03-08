@@ -208,12 +208,12 @@ public class CustomTenantResolver implements TenantResolver {
 [source,properties]
 ----
 # Default Tenant Configuration
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=multi-tenant-client
 quarkus.oidc.application-type=web-app
 
 # Tenant A Configuration
-quarkus.oidc.tenant-a.auth-server-url=http://localhost:8180/auth/realms/tenant-a
+quarkus.oidc.tenant-a.auth-server-url=http://localhost:8180/realms/tenant-a
 quarkus.oidc.tenant-a.client-id=multi-tenant-client
 quarkus.oidc.tenant-a.application-type=web-app
 
@@ -253,10 +253,12 @@ To start a Keycloak Server you can use Docker and just run the following command
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak version}
+docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
+where `keycloak.version` should be set to `17.0.0` or higher.
+
+You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
 
 Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
@@ -428,7 +430,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         final OidcTenantConfig config = new OidcTenantConfig();
 
         config.setTenantId("tenant-c");
-        config.setAuthServerUrl("http://localhost:8180/auth/realms/tenant-c");
+        config.setAuthServerUrl("http://localhost:8180/realms/tenant-c");
         config.setClientId("multi-tenant-client");
         OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();
 

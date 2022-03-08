@@ -82,7 +82,7 @@ public class KeycloakDevServicesProcessor {
 
     private static final int KEYCLOAK_PORT = 8080;
 
-    private static final String KEYCLOAK_X_IMAGE_NAME = "keycloak-x";
+    private static final String KEYCLOAK_LEGACY_IMAGE_VERSION_PART = "-legacy";
 
     private static final String KEYCLOAK_ADMIN_USER = "admin";
     private static final String KEYCLOAK_ADMIN_PASSWORD = "admin";
@@ -325,7 +325,7 @@ public class KeycloakDevServicesProcessor {
     private static boolean isKeycloakX(DockerImageName dockerImageName) {
         return capturedDevServicesConfiguration.keycloakXImage.isPresent()
                 ? capturedDevServicesConfiguration.keycloakXImage.get()
-                : dockerImageName.getUnversionedPart().contains(KEYCLOAK_X_IMAGE_NAME);
+                : !dockerImageName.getVersionPart().endsWith(KEYCLOAK_LEGACY_IMAGE_VERSION_PART);
     }
 
     private String getSharedContainerUrl(ContainerAddress containerAddress) {

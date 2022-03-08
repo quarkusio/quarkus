@@ -5,7 +5,6 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -303,9 +302,8 @@ public class OpenTelemetryVertxTracer
         @Override
         public String extract(final HttpRequest httpRequest) {
             if (httpRequest instanceof HttpServerRequest) {
-                String path = URI.create(httpRequest.uri()).getPath();
-                if (path != null && path.length() > 1) {
-                    return path.substring(1);
+                if (httpRequest.uri() != null && httpRequest.uri().length() > 1) {
+                    return httpRequest.uri().substring(1);
                 } else {
                     return "HTTP " + httpRequest.method();
                 }

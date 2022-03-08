@@ -1121,7 +1121,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 typeHandled = true;
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                 if (convertible) {
-                    handleOptionalParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                    String genericElementType = null;
+                    if (pt.arguments().get(0).kind() == Kind.PARAMETERIZED_TYPE) {
+                        genericElementType = toClassName(pt.arguments().get(0).asParameterizedType().arguments().get(0),
+                                currentClassInfo, actualEndpointInfo, index);
+                    }
+
+                    handleOptionalParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                            genericElementType);
                 }
                 builder.setOptional(true);
             } else if (convertible) {
@@ -1212,7 +1219,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, PARAM builder, String elementType) {
+            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType) {
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,

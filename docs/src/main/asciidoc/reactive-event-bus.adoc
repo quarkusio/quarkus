@@ -422,5 +422,5 @@ Uni<String> greeting(MyName name) {
     return Uni.createFrom().item(() -> "Hello "+name.getName());
 }
 ----
-1. Set the name of the codec to use to send the message
-2. Set the codec to use to receive the message
+<1> Set the name of the codec to use to send the message
+<2> Set the codec to use to receive the message

@@ -1,0 +1,15 @@
+ifndef::devtools-no-maven[]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+----
+./mvnw test
+----
+endif::[]
+ifdef::devtools-wrapped[+]
+ifndef::devtools-no-gradle[]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew test
+----
+endif::[]

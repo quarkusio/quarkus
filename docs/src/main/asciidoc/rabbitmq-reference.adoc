@@ -69,11 +69,11 @@ rabbitmq-password=my-password # <4>
 
 mp.messaging.incoming.prices.connector=smallrye-rabbitmq # <5>
 ----
-1. Configures the broker host name. You can do it per channel (using the `host` attribute) or globally using `rabbitmq-host`
-2. Configures the broker port. You can do it per channel (using the `port` attribute) or globally using `rabbitmq-port`. The default is `5672`.
-3. Configures the broker username if required. You can do it per channel (using the `username` attribute) or globally using `rabbitmq-username`.
-4. Configures the broker password if required. You can do it per channel (using the `password` attribute) or globally using `rabbitmq-password`.
-5. Instructs the prices channel to be managed by the RabbitMQ connector
+<1> Configures the broker host name. You can do it per channel (using the `host` attribute) or globally using `rabbitmq-host`
+<2> Configures the broker port. You can do it per channel (using the `port` attribute) or globally using `rabbitmq-port`. The default is `5672`.
+<3> Configures the broker username if required. You can do it per channel (using the `username` attribute) or globally using `rabbitmq-username`.
+<4> Configures the broker password if required. You can do it per channel (using the `password` attribute) or globally using `rabbitmq-password`.
+<5> Instructs the prices channel to be managed by the RabbitMQ connector
 
 In dev mode and when running tests, xref:rabbitmq-dev-services.adoc[Dev Services for RabbitMQ] automatically starts a RabbitMQ broker.
 
@@ -197,9 +197,9 @@ public static class Consumer {
     }
 }
 ----
-1. The `Price` instances are automatically encoded to JSON by the connector
-2. You can receive it using a `JsonObject`
-3. Then, you can reconstruct the instance using the `mapTo` method
+<1> The `Price` instances are automatically encoded to JSON by the connector
+<2> You can receive it using a `JsonObject`
+<3> Then, you can reconstruct the instance using the `mapTo` method
 
 NOTE: The `mapTo` method uses the Quarkus Jackson mapper. Check xref:rest-json.adoc#json[this guide] to learn more about the mapper configuration.
 
@@ -356,16 +356,16 @@ public RabbitMQOptions getNamedOptions() {
         .setSsl(true)
         .setPemKeyCertOptions(keycert)
         .setPemTrustOptions(trust)
-        .setUser("user1");
-        .setPassword("password1");
-        .setHost("localhost");
-        .setPort(5672);
-        .setVirtualHost("vhost1");
-        .setConnectionTimeout(6000); // in milliseconds
-        .setRequestedHeartbeat(60); // in seconds
-        .setHandshakeTimeout(6000); // in milliseconds
-        .setRequestedChannelMax(5);
-        .setNetworkRecoveryInterval(500); // in milliseconds
+        .setUser("user1")
+        .setPassword("password1")
+        .setHost("localhost")
+        .setPort(5672)
+        .setVirtualHost("vhost1")
+        .setConnectionTimeout(6000) // in milliseconds
+        .setRequestedHeartbeat(60) // in seconds
+        .setHandshakeTimeout(6000) // in milliseconds
+        .setRequestedChannelMax(5)
+        .setNetworkRecoveryInterval(500) // in milliseconds
         .setAutomaticRecoveryEnabled(true);
 }
 ----

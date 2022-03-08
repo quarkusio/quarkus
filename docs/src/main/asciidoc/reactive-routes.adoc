@@ -373,7 +373,7 @@ Multi<String> hellos(RoutingContext context) {
     return Multi.createFrom().items("hello", "world", "!");  // <1>
 }
 ----
-1. Produces `helloworld!`
+<1> Produces `helloworld!`
 
 The method can return:
 

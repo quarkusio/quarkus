@@ -10,12 +10,15 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.util.ArrayList;
@@ -326,9 +329,29 @@ public class ServerEndpointIndexer
     }
 
     protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType) {
-        ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters);
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, String genericElementType) {
+        ParameterConverterSupplier converter = null;
+
+        if (genericElementType != null) {
+            ParameterConverterSupplier genericTypeConverter = extractConverter(genericElementType, index, existingConverters,
+                    errorLocation, hasRuntimeConverters);
+            if (LIST.toString().equals(elementType)) {
+                converter = new ListConverter.ListSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            } else if (SET.toString().equals(elementType)) {
+                converter = new SetConverter.SetSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            } else if (SORTED_SET.toString().equals(elementType)) {
+                converter = new SortedSetConverter.SortedSetSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            }
+        }
+
+        if (converter == null) {
+            // If no generic type provided or element type is not supported, then we try to use a custom runtime converter:
+            converter = extractConverter(elementType, index, existingConverters, errorLocation, hasRuntimeConverters);
+        }
+
         builder.setConverter(new OptionalConverter.OptionalSupplier(converter));
     }
 

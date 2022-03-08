@@ -25,8 +25,10 @@ release:
     name: quarkus
     tagName: "{{projectVersion}}"
     overwrite: false
-    update: true
-    updateSections: [ ASSETS ]
+    update:
+      enabled: true
+      sections:
+        - ASSETS
     skipTag: true
     changelog:
       enabled: false
@@ -36,7 +38,9 @@ release:
 distributions:
   quarkus:
     type: JAVA_BINARY
-    executable: quarkus
+    executable:
+      name: quarkus
+      windowsExtension: bat
     executableExtension: bat
     tags:
       - quarkus
@@ -63,6 +67,7 @@ packagers:
     continueOnError: true
     remoteBuild: true
     iconUrl: https://quarkus.io/assets/images/chocolatey-app-icon.png
+    packageVersion: '{{projectVersionMajor}}.{{projectVersionMinor}}.{{projectVersionPatch}}'
 
 announce:
   sdkman:

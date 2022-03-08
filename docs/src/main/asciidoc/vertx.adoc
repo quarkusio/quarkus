@@ -56,15 +56,16 @@ If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an i
 Click on https://code.quarkus.io/?a=quarkus-getting-started-vertx&nc=true&e=resteasy-reactive-jackson&e=vertx[this link] to configure your application.
 It selected a few extensions:
 
-* `resteasy-reactive-jackson`, which also brings `resteasy reactive`. We are going to use it to expose our HTTP endpoints.
+* `resteasy-reactive-jackson`, which also brings `resteasy-reactive`. We are going to use it to expose our HTTP endpoints.
 * `vertx`, which provides access to the underlying managed Vert.x
 
 Click on the `Generate your application` button, download the zip file and unzip it.
 Then, open the project in your favorite IDE.
 
-If you open the generated `pom.xml` file, you can see the selected extensions:
+If you open the generated build file, you can see the selected extensions:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
@@ -76,14 +77,28 @@ If you open the generated `pom.xml` file, you can see the selected extensions:
 </dependency>
 ----
 
-While you are in the `pom.xml`, add the following dependency:
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+implementation("io.quarkus:quarkus-vertx")
+----
 
-[source, xml]
+While you are in your build file, add the following dependency:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
   <groupId>io.smallrye.reactive</groupId>
   <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.reactive:smallrye-mutiny-vertx-web-client")
 ----
 
 This dependency provides the Vert.x Web Client, which we will be using to implement the `/web` endpoint.
@@ -116,10 +131,10 @@ public class VertxResource {
     }
 }
 ----
-1. Declare the root HTTP path.
-2. We use constructor injection to receive the managed Vert.x instance. Field injection works too.
-3. Receives the Vert.x instance as a constructor parameter
-4. Store the managed Vert.x instance into a field.
+<1> Declare the root HTTP path.
+<2> We use constructor injection to receive the managed Vert.x instance. Field injection works too.
+<3> Receives the Vert.x instance as a constructor parameter
+<4> Store the managed Vert.x instance into a field.
 
 With this, we can start implementing the endpoints.
 
@@ -148,18 +163,14 @@ public Uni<String> readShortFile() {                                            
             .onItem().transform(content -> content.toString(StandardCharsets.UTF_8));  // <4>
 }
 ----
-1. This endpoint handles HTTP `GET` request on path `/lorem` (so the full path will be `vertx/lorem`)
-2. As the Vert.x API is asynchronous, our method returns a `Uni`. The content is written into the HTTP response when the asynchronous operation represented by the Uni completes.
-3. We use the Vert.x file system API to read the created file
-4. Once the file is read, the content is stored in an in-memory buffer.  We transform this buffer into a String.
+<1> This endpoint handles HTTP `GET` request on path `/lorem` (so the full path will be `vertx/lorem`)
+<2> As the Vert.x API is asynchronous, our method returns a `Uni`. The content is written into the HTTP response when the asynchronous operation represented by the Uni completes.
+<3> We use the Vert.x file system API to read the created file
+<4> Once the file is read, the content is stored in an in-memory buffer.  We transform this buffer into a String.
 
 In a terminal, navigate to the root of the project and run:
 
-
-[source, bash]
-----
-> ./mvnw quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 In another terminal, run:
 
@@ -220,11 +231,11 @@ public Multi<String> readLargeFile() {                                          
                     + "\n------------\n");                                           // <5>
 }
 ----
-1. This time, we return a Multi as we want to stream the chunks
-2. We open the file using the `open` method. It returns a `Uni<AsyncFile>`
-3. When the file is opened, we retrieve a `Multi` which will contain the chunks.
-4. For each chunk, we produce a String
-5. To visually see the chunks in the response, we append a separator
+<1> This time, we return a Multi as we want to stream the chunks
+<2> We open the file using the `open` method. It returns a `Uni<AsyncFile>`
+<3> When the file is opened, we retrieve a `Multi` which will contain the chunks.
+<4> For each chunk, we produce a String
+<5> To visually see the chunks in the response, we append a separator
 
 Then, in a terminal, run:
 
@@ -275,10 +286,10 @@ public Uni<String> hello(@QueryParam("name") String name) {     // <2>
             .onItem().transform(response -> response.body());   // <4>
 }
 ----
-1. Inject the event bus. Alternatively you can use `vertx.eventBus()`.
-2. We receive a _name_ as a query parameter
-3. We use the `request` method to initiate the request-reply interaction. We send the name to the "greetings" address.
-4. When the response is received, we extract the body and return it as the HTTP response
+<1> Inject the event bus. Alternatively you can use `vertx.eventBus()`.
+<2> We receive a _name_ as a query parameter
+<3> We use the `request` method to initiate the request-reply interaction. We send the name to the "greetings" address.
+<4> When the response is received, we extract the body and return it as the HTTP response
 
 Now, we need the other side: the component receiving the name and replying.
 Create the `src/main/java/org/acme/GreetingService.java` file with the following content:
@@ -300,10 +311,10 @@ public class GreetingService {
     }
 }
 ----
-1. Declaring a CDI Bean in the Application scope. Quarkus will create a single instance of this class.
-2. Use the `@ConsumeEvent` annotation to declare a consumer. It is possible to use the Vert.x API directly too. TODO LINK REF
-3. Receive the message payload as a method parameter. The returned object will be the reply.
-4. Return the response. This response is sent back to the `VertxResource` class
+<1> Declaring a CDI Bean in the Application scope. Quarkus will create a single instance of this class.
+<2> Use the `@ConsumeEvent` annotation to declare a consumer. It is possible to use the Vert.x API directly too. TODO LINK REF
+<3> Receive the message payload as a method parameter. The returned object will be the reply.
+<4> Return the response. This response is sent back to the `VertxResource` class
 
 Let's try this.
 In a terminal, run:
@@ -344,8 +355,8 @@ public VertxResource(Vertx vertx) {
     this.client = WebClient.create(vertx); // <2>
 }
 ----
-1. Store the `WebClient`, so we will be able to use it in our HTTP endpoint
-2. Create the `WebClient`. Be sure to use the `io.vertx.mutiny.ext.web.client.WebClient` class
+<1> Store the `WebClient`, so we will be able to use it in our HTTP endpoint
+<2> Create the `WebClient`. Be sure to use the `io.vertx.mutiny.ext.web.client.WebClient` class
 
 Let's now implement a new HTTP endpoint that queries the Wikipedia API to retrieve the pages about Quarkus in the different languages.
 Add the following method to the `VertxResource` class:
@@ -363,10 +374,10 @@ public Uni<JsonArray> retrieveDataFromWikipedia() {                     // <1>
                                         .getJsonArray("langlinks"));
 }
 ----
-1. This endpoint returns a JSON Array. Vert.x provides a convenient way to manipulate JSON Object and Array. More details about these in xref:vertx-reference.adoc#using-vert-x-json[the reference guide].
-2. Send a `GET` request to the Wikipedia API
-3. Once the response is received, extract it as a JSON Object
-4. Extract the `langlinks` array from the response.
+<1> This endpoint returns a JSON Array. Vert.x provides a convenient way to manipulate JSON Object and Array. More details about these in xref:vertx-reference.adoc#using-vert-x-json[the reference guide].
+<2> Send a `GET` request to the Wikipedia API
+<3> Once the response is received, extract it as a JSON Object
+<4> Extract the `langlinks` array from the response.
 
 Then, invoke the endpoint using:
 

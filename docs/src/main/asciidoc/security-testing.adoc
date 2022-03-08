@@ -38,15 +38,22 @@ quarkus.oauth2.introspection-url=http://host:port/introspect
 == Test Security Extension
 
 Quarkus provides explicit support for testing with different users, and with the security subsystem disabled. To use
-this you must include the `quarkus-test-security` artifact:
+this you must include the `quarkus-test-security` dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-security</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-security")
 ----
 
 This artifact provides the `io.quarkus.test.security.TestSecurity` annotation, that can be applied to test methods and

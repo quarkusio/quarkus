@@ -20,13 +20,8 @@ Please read the xref:security-openid-connect-multitenancy.adoc[Using OpenID Conn
 
 === Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 
 === Architecture
 
@@ -49,32 +44,31 @@ The solution is located in the `security-openid-connect-web-authentication-quick
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-openid-connect-web-authentication-quickstart \
-    -Dextensions="resteasy,oidc" \
-    -DnoExamples
-cd security-openid-connect-web-authentication-quickstart
-----
+:create-app-artifact-id: security-openid-connect-web-authentication-quickstart
+:create-app-extensions: resteasy,oidc
+include::includes/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `oidc` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="oidc"
-----
+:add-extension-extensions: oidc
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-oidc</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-oidc")
 ----
 
 === Writing the application
@@ -193,16 +187,15 @@ Import the {quickstarts-tree-url}/security-openid-connect-web-authentication-qui
 
 === Running the Application in Dev and JVM modes
 
-To run the application in a dev mode, use `./mvnw clean compile quarkus:dev`.
+To run the application in a dev mode, use:
 
-When you're done playing with the `dev` mode you can run it as a standard Java application.
+include::includes/devtools/dev.adoc[]
+
+When you're done playing with dev mode you can run it as a standard Java application.
 
 First compile it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Then run it:
 
@@ -220,12 +213,9 @@ production environment, as the runtime technology is included in
 the produced binary, and optimized to run with minimal resource overhead.
 
 Compilation will take a bit longer, so this step is disabled by default;
-let's build again by enabling the `native` profile:
+let's build again by enabling the native build:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 
@@ -805,13 +795,20 @@ You can have Quarkus OIDC `web-app` applications access **Google Cloud services*
 It is super easy to do with https://github.com/quarkiverse[Quarkiverse] https://github.com/quarkiverse/quarkiverse-google-cloud-services[Google Cloud Services], only add
 the https://github.com/quarkiverse/quarkiverse-google-cloud-services/releases/latest[latest tag] service dependency, for example:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkiverse.googlecloudservices</groupId>
-  <artifactId>quarkus-google-cloud-bigquery</artifactId>
-  <version>${quarkiverse.googlecloudservices.version}</version>
+    <groupId>io.quarkiverse.googlecloudservices</groupId>
+    <artifactId>quarkus-google-cloud-bigquery</artifactId>
+    <version>${quarkiverse.googlecloudservices.version}</version>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkiverse.googlecloudservices:quarkus-google-cloud-bigquery:${quarkiverse.googlecloudservices.version}")
 ----
 
 and configure Google OIDC properties:
@@ -1028,7 +1025,8 @@ quarkus.oidc.tls.trust-store-password=${trust-store-password}
 
 Start by adding the following dependencies to your test project:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>net.sourceforge.htmlunit</groupId>
@@ -1048,18 +1046,32 @@ Start by adding the following dependencies to your test project:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("net.sourceforge.htmlunit:htmlunit")
+testImplementation("io.quarkus:quarkus-junit5")
+----
+
 [[integration-testing-wiremock]]
 ==== Wiremock
 
 Add the following dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-oidc-server</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-oidc-server")
 ----
 
 Prepare the REST test endpoints, set `application.properties`, for example:
@@ -1166,7 +1178,8 @@ Use `KeycloakTestResourceLifecycleManager` for your tests only if there is a goo
 
 Start with adding the following dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -1175,9 +1188,15 @@ Start with adding the following dependency:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-keycloak-server")
+----
+
 which provides `io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager` - an implementation of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which starts a Keycloak container.
 
-And configure `maven.surefire.plugin` as follows:
+And configure the Maven Surefire plugin as follows:
 
 [source,xml]
 ----
@@ -1196,7 +1215,7 @@ And configure `maven.surefire.plugin` as follows:
 </plugin>
 ----
 
-(and similarly `maven.failsafe.plugin` when testing in native image).
+(and similarly the Maven Failsafe plugin when testing in native image).
 
 And now set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section above.
 The only difference is the name of `QuarkusTestResource`:

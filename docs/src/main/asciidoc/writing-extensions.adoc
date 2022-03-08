@@ -1297,7 +1297,7 @@ public class SomeConfig {
     }
 }
 ----
-1. Override the default `Boolean` converter and use the provided converter which accepts a `YES` or `NO` config values.
+<1> Override the default `Boolean` converter and use the provided converter which accepts a `YES` or `NO` config values.
 
 
 The corresponding `application.properties` will look like.
@@ -1349,7 +1349,7 @@ public class SomeLogConfig {
     Level level;
 }
 ----
-1. Use the default converter (built in or a custom converter) to convert `Level.class` enum.
+<1> Use the default converter (built in or a custom converter) to convert `Level.class` enum.
 =====
 
 
@@ -3031,8 +3031,7 @@ public class SomeConfig {
     Map<String, CaffeineNamespaceConfig> namespace;
 }
 ----
-
-1. This will generate a configuration map key named `quarkus.some."cache-name"` instead of `quarkus.some."namespace"`.
+<1> This will generate a configuration map key named `quarkus.some."cache-name"` instead of `quarkus.some."namespace"`.
 ====
 
 === Writing section documentation
@@ -3049,8 +3048,7 @@ See the code  example below:
 @ConfigDocSection <1>
 public ConfigGroupConfig configGroup;
 ----
-
-1. This will add a section documentation for the `configGroup` config item in the generated documentation.
+<1> This will add a section documentation for the `configGroup` config item in the generated documentation.
 Section's title and introduction will be derived from the javadoc of the configuration item. The first sentence from the javadoc is considered as the section title and the remaining sentences used as section introduction.
 You can also use the `@asciidoclet` tag as shown above.
 

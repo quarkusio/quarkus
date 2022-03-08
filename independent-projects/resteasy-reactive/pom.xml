@@ -60,7 +60,7 @@
         <rest-assured.version>4.5.1</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
-        <jackson.version>2.13.1</jackson.version>
+        <jackson.version>2.13.2</jackson.version>
         <smallrye-stork.version>1.1.0</smallrye-stork.version>
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
         <yasson.version>1.0.11</yasson.version>

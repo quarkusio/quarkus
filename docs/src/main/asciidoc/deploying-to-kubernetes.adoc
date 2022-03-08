@@ -973,6 +973,8 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.working-dir                     | String                                    |             |
 | quarkus.openshift.command                         | String[]                                  |             |
 | quarkus.openshift.arguments                       | String[]                                  |             |
+| quarkus.openshift.jvm-arguments                   | String[]                                  | The JVM arguments to pass to the JVM when starting the application            | -Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager
+| quarkus.openshift.jvm-additional-arguments        | String[]                                  | Additional JVM arguments to pass to the JVM when starting the application            |
 | quarkus.openshift.replicas                        | int                                       |             | 1
 | quarkus.openshift.service-account                 | String                                    |             |
 | quarkus.openshift.ports                           | Map<String, Port>                         |             |

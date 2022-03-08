@@ -55,10 +55,16 @@ public class S2iConfig {
     public String baseNativeImage;
 
     /**
-     * Additional JVM arguments to pass to the JVM when starting the application
+     * The JVM arguments to pass to the JVM when starting the application
      */
     @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
+
+    /**
+     * Additional JVM arguments to pass to the JVM when starting the application
+     */
+    @ConfigItem
+    public Optional<List<String>> jvmAdditionalArguments;
 
     /**
      * Additional arguments to pass when starting the native application

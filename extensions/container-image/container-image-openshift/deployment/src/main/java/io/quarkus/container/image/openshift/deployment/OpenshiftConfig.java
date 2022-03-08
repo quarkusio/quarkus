@@ -1,6 +1,7 @@
 package io.quarkus.container.image.openshift.deployment;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,10 +68,16 @@ public class OpenshiftConfig {
     public String nativeDockerfile;
 
     /**
-     * Additional JVM arguments to pass to the JVM when starting the application
+     * The JVM arguments to pass to the JVM when starting the application
      */
     @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
+
+    /**
+     * Additional JVM arguments to pass to the JVM when starting the application
+     */
+    @ConfigItem
+    public Optional<List<String>> jvmAdditionalArguments;
 
     /**
      * Additional arguments to pass when starting the native application
@@ -144,8 +151,17 @@ public class OpenshiftConfig {
      *
      * @returns true if nativeDockerfile is the default
      */
-    public boolean hasDefaultativeDockerfile() {
+    public boolean hasDefaultNativeDockerfile() {
         return nativeDockerfile.equals(DEFAULT_NATIVE_DOCKERFILE);
+    }
+
+    /**
+     * @return the effective JVM arguments to use by getting the jvmArguments and the jvmAdditionalArguments properties.
+     */
+    public List<String> getEffectiveJvmArguments() {
+        List<String> effectiveJvmArguments = new ArrayList<>(jvmArguments);
+        jvmAdditionalArguments.ifPresent(effectiveJvmArguments::addAll);
+        return effectiveJvmArguments;
     }
 
 }

@@ -113,13 +113,13 @@ public class S2iProcessor {
                     concatUnixPaths(jarDirectory, "lib"), OPENSHIFT));
             envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getClasspathEnvVar(), classpath, OPENSHIFT));
             envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
-                    String.join(" ", s2iConfig.jvmArguments), OPENSHIFT));
+                    String.join(" ", s2iConfig.getEffectiveJvmArguments()), OPENSHIFT));
         });
 
         if (!baseImage.isPresent()) {
             List<String> cmd = new ArrayList<>();
             cmd.add("java");
-            cmd.addAll(s2iConfig.jvmArguments);
+            cmd.addAll(s2iConfig.getEffectiveJvmArguments());
             cmd.addAll(Arrays.asList("-jar", pathToJar, "-cp", classpath));
             commandProducer.produce(KubernetesCommandBuildItem.command(cmd));
         }

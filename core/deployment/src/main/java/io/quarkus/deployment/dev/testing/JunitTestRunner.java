@@ -53,6 +53,7 @@ import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.engine.reporting.ReportEntry;
 import org.junit.platform.engine.support.descriptor.ClassSource;
 import org.junit.platform.engine.support.descriptor.MethodSource;
+import org.junit.platform.launcher.EngineFilter;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.PostDiscoveryFilter;
@@ -105,6 +106,8 @@ public class JunitTestRunner {
     private final Set<String> excludeTags;
     private final Pattern include;
     private final Pattern exclude;
+    private final List<String> includeEngines;
+    private final List<String> excludeEngines;
     private final boolean failingTestsOnly;
     private final TestType testType;
 
@@ -124,6 +127,8 @@ public class JunitTestRunner {
         this.excludeTags = new HashSet<>(builder.excludeTags);
         this.include = builder.include;
         this.exclude = builder.exclude;
+        this.includeEngines = builder.includeEngines;
+        this.excludeEngines = builder.excludeEngines;
         this.failingTestsOnly = builder.failingTestsOnly;
         this.testType = builder.testType;
     }
@@ -167,6 +172,11 @@ public class JunitTestRunner {
                 launchBuilder.filters(new RegexFilter(false, include));
             } else if (exclude != null) {
                 launchBuilder.filters(new RegexFilter(true, exclude));
+            }
+            if (!includeEngines.isEmpty()) {
+                launchBuilder.filters(EngineFilter.includeEngines(includeEngines));
+            } else if (!excludeEngines.isEmpty()) {
+                launchBuilder.filters(EngineFilter.excludeEngines(excludeEngines));
             }
             if (!additionalFilters.isEmpty()) {
                 launchBuilder.filters(additionalFilters.toArray(new PostDiscoveryFilter[0]));
@@ -744,6 +754,8 @@ public class JunitTestRunner {
         private List<String> excludeTags = Collections.emptyList();
         private Pattern include;
         private Pattern exclude;
+        private List<String> includeEngines = Collections.emptyList();
+        private List<String> excludeEngines = Collections.emptyList();
         private boolean failingTestsOnly;
 
         public Builder setRunId(long runId) {
@@ -813,6 +825,16 @@ public class JunitTestRunner {
 
         public Builder setExclude(Pattern exclude) {
             this.exclude = exclude;
+            return this;
+        }
+
+        public Builder setIncludeEngines(List<String> includeEngines) {
+            this.includeEngines = includeEngines;
+            return this;
+        }
+
+        public Builder setExcludeEngines(List<String> excludeEngines) {
+            this.excludeEngines = excludeEngines;
             return this;
         }
 

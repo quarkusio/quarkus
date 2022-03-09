@@ -59,6 +59,8 @@ public class ModuleTestRunner {
                         .setExcludeTags(testSupport.excludeTags)
                         .setInclude(testSupport.include)
                         .setExclude(testSupport.exclude)
+                        .setIncludeEngines(testSupport.includeEngines)
+                        .setExcludeEngines(testSupport.excludeEngines)
                         .setTestType(testSupport.testType)
                         .setModuleInfo(moduleInfo)
                         .addListener(listener)

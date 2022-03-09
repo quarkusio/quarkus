@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -142,6 +143,7 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Unauthorized
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
@@ -342,6 +344,7 @@ public class ResteasyReactiveProcessor {
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
             List<MethodScannerBuildItem> methodScanners,
             List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
+            List<ContextTypeBuildItem> contextTypeBuildItems,
             Capabilities capabilities)
             throws NoSuchMethodException {
 
@@ -399,7 +402,7 @@ public class ResteasyReactiveProcessor {
                                     methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
                             .setIndex(index)
                             .setApplicationIndex(applicationIndexBuildItem.getIndex())
-                            .addContextTypes(CONTEXT_TYPES)
+                            .addContextTypes(additionalContextTypes(contextTypeBuildItems))
                             .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                             .setEndpointInvokerFactory(
                                     new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
@@ -586,6 +589,18 @@ public class ResteasyReactiveProcessor {
         }
 
         handleDateFormatReflection(reflectiveClass, index);
+    }
+
+    private Collection<DotName> additionalContextTypes(List<ContextTypeBuildItem> contextTypeBuildItems) {
+        if (contextTypeBuildItems.isEmpty()) {
+            return CONTEXT_TYPES;
+        }
+        Set<DotName> contextTypes = new HashSet<>(CONTEXT_TYPES.size() + contextTypeBuildItems.size());
+        contextTypes.addAll(CONTEXT_TYPES);
+        for (ContextTypeBuildItem bi : contextTypeBuildItems) {
+            contextTypes.add(bi.getType());
+        }
+        return contextTypes;
     }
 
     private void handleDateFormatReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, IndexView index) {

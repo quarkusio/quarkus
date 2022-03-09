@@ -15,61 +15,40 @@ include::./status-include.adoc[]
 
 == Installing the CLI
 
-You can install the Quarkus CLI via:
+The Quarkus CLI is available in several developer-oriented package managers such as:
 
-* <<homebrew,Homebrew>>
-* <<jbang,JBang>>
-* <<sdkman,SDKMAN!>>
+* https://sdkman.io[SDKMAN!]
+* https://brew.sh[Homebrew]
+* https://community.chocolatey.org/packages/quarkus[Chocolatey]
 
-More alternatives such as https://chocolatey.org[Chocolatey] will be made available soon.
+If you already use (or want to use) one of these tools, it is the simplest way to install the Quarkus CLI and keep it updated.
 
-[[homebrew]]
-=== Installing with Homebrew
+In addition to these package managers, the Quarkus CLI is also installable via https://www.jbang.dev[JBang].
+Choose the alternative that is the most practical for you:
 
-https://brew.sh[Homebrew] is a package manager for macOS (and Linux).
+* JBang - for Linux, macOS and Windows
+* SDKMAN! - for Linux and macOS
+* Homebrew - for Linux and macOS
+* Chocolatey - for Windows
 
-You can use Homebrew to install (and update) the Quarkus CLI.
+[role="primary asciidoc-tabs-sync-jbang"]
+.JBang
+****
+The Quarkus CLI is available as a jar installable using https://jbang.dev[JBang]. 
 
-[NOTE]
-====
-Make sure you have a JDK installed before installing the Quarkus CLI.
-We haven't added an explicit dependency as we wanted to make sure you could use your preferred JDK version.
-
-You can install a JDK with `brew install openjdk` for Java 17 or `brew install openjdk@11` for Java 11.
-====
-
-To install the Quarkus CLI using Homebrew, run the following command:
-
-[source,shell]
-----
-brew install quarkusio/tap/quarkus
-----
-
-It will install the latest version of the Quarkus CLI.
-This command can also be used to update the Quarkus CLI.
-
-Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
-
-[source,shell,subs=attributes+]
-----
-quarkus --version
-{quarkus-version}
-----
-
-[[jbang]]
-=== Installing with JBang
-
-The Quarkus CLI is currently available as a jar installable using https://jbang.dev[JBang]. 
+JBang will use your existing Java or install one for you if needed.
 
 On Linux, macOS, and Windows (using WSL or bash compatible shell like Cygwin or MinGW)
 [source,bash]
 ----
+curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/
 curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio
 ----
 
 On Windows using Powershell:
 [source,powershell]
 ----
+iex "& { $(iwr https://ps.jbang.dev) } trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/"
 iex "& { $(iwr https://ps.jbang.dev) } app install --fresh --force quarkus@quarkusio"
 ----
 
@@ -110,10 +89,11 @@ have a JBang version older than v0.56.0 installed. Please remove or upgrade it t
 
 If you are installing JBang for the first time, start a new session to update your `PATH`.
 ====
+****
 
-[[sdkman]]
-=== Installing with SDKMAN!
-
+[role="secondary asciidoc-tabs-sync-sdkman"]
+.SDKMAN!
+****
 https://sdkman.io/[SDKMAN!] can be used to manage development environments.
 It can manage parallel versions of multiple Software Development Kits on most Unix based systems,
 making it a very good alternative to keep multiple JDK versions handy.
@@ -123,9 +103,13 @@ With SDKMAN!, you can also install popular Java tools, including the Quarkus CLI
 [NOTE]
 ====
 Make sure you have https://sdkman.io/jdks[a JDK installed] before installing the Quarkus CLI.
+
+To list the available versions of Java, use `sdk list java`.
+You can then install the version of OpenJDK you want with `sdk install java x.y.z-open`
+(or the JDK of another vendor if it is your preference).
 ====
 
-To install the Quarkus CLI using SDKMAN!, just run:
+To install the Quarkus CLI using SDKMAN!, run the following command:
 
 [source,shell]
 ----
@@ -133,7 +117,6 @@ sdk install quarkus
 ----
 
 It will install the latest version of the Quarkus CLI.
-SDKMAN! will let you know when new versions are available so updates will be straightforward.
 
 Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
 
@@ -142,6 +125,97 @@ Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --versi
 quarkus --version
 {quarkus-version}
 ----
+
+SDKMAN! will let you know when new versions are available so updates will be straightforward:
+
+[source,shell]
+----
+sdk upgrade quarkus
+----
+****
+
+[role="secondary asciidoc-tabs-sync-homebrew"]
+.Homebrew
+****
+https://brew.sh[Homebrew] is a package manager for macOS (and Linux).
+
+You can use Homebrew to install (and update) the Quarkus CLI.
+
+[NOTE]
+====
+Make sure you have a JDK installed before installing the Quarkus CLI.
+We haven't added an explicit dependency as we wanted to make sure you could use your preferred JDK version.
+
+You can install a JDK with `brew install openjdk` for Java 17 or `brew install openjdk@11` for Java 11.
+====
+
+To install the Quarkus CLI using Homebrew, run the following command:
+
+[source,shell]
+----
+brew install quarkusio/tap/quarkus
+----
+
+It will install the latest version of the Quarkus CLI.
+This command can also be used to update the Quarkus CLI.
+
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
+
+[source,shell,subs=attributes+]
+----
+quarkus --version
+{quarkus-version}
+----
+
+You can upgrade the Quarkus CLI with:
+
+[source,shell]
+----
+brew update <1>
+brew upgrade quarkus <2>
+----
+<1> Update all package definitions and Homebrew itself
+<2> Upgrade Quarkus CLI to the latest version
+****
+
+[role="secondary asciidoc-tabs-sync-chocolatey"]
+.Chocolatey
+****
+https://chocolatey.org[Chocolatey] is a package manager for Windows.
+
+You can use Chocolatey to install (and update) the Quarkus CLI.
+
+[NOTE]
+====
+Make sure you have a JDK installed before installing the Quarkus CLI.
+
+You can install a JDK with `choco install ojdkbuild17` for Java 17 or `choco install ojdkbuild11` for Java 11.
+====
+
+To install the Quarkus CLI using Chocolatey, run the following command:
+
+[source,shell]
+----
+choco install quarkus
+----
+
+It will install the latest version of the Quarkus CLI.
+
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
+
+[source,shell,subs=attributes+]
+----
+quarkus --version
+{quarkus-version}
+----
+
+You can upgrade the Quarkus CLI with:
+
+[source,shell]
+----
+choco upgrade quarkus
+----
+****
 
 == Using the CLI
 

@@ -1,6 +1,7 @@
 package io.quarkus.jackson.runtime;
 
 import java.time.ZoneId;
+import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -52,4 +53,34 @@ public class JacksonBuildTimeConfig {
      */
     @ConfigItem
     public Optional<JsonInclude.Include> serializationInclusion;
+
+    /**
+     * Enable/disable Jackson serialization ({@code com.fasterxml.jackson.databind.SerializationFeature}) features.
+     */
+    @ConfigItem
+    public Map<String, Boolean> serialization;
+
+    /**
+     * Enable/disable Jackson deserialization ({@code com.fasterxml.jackson.databind.DeserializationFeature}) features.
+     */
+    @ConfigItem
+    public Map<String, Boolean> deserialization;
+
+    /**
+     * Enable/disable Jackson general purpose mapping ({@code com.fasterxml.jackson.databind.MapperFeature}) features.
+     */
+    @ConfigItem
+    public Map<String, Boolean> mapper;
+
+    /**
+     * Enable/disable Jackson parser ({@code com.fasterxml.jackson.core.JsonParser.Feature}) features.
+     */
+    @ConfigItem
+    public Map<String, Boolean> parser;
+
+    /**
+     * Enable/disable Jackson generator ({@code com.fasterxml.jackson.core.JsonGenerator.Feature}) features.
+     */
+    @ConfigItem
+    public Map<String, Boolean> generator;
 }

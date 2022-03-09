@@ -104,7 +104,7 @@ public class OracleDevServicesProcessor {
                 // in this case we expose the URL using the network alias we created in 'configure'
                 // and the container port since the application communicating with this container
                 // won't be doing port mapping
-                return "jdbc:oracle:thin//" + hostName + ":" + PORT + ":" + getDatabaseName();
+                return "jdbc:oracle:thin:" + "@" + hostName + ":" + PORT + "/" + getDatabaseName();
             } else {
                 return super.getJdbcUrl();
             }

@@ -112,7 +112,7 @@ public enum QuarkusContextStorage implements ContextStorage {
      *
      * @return a duplicated Vert.x Context or null.
      */
-    private static io.vertx.core.Context getVertxContext() {
+    public static io.vertx.core.Context getVertxContext() {
         io.vertx.core.Context context = Vertx.currentContext();
         if (context != null) {
             io.vertx.core.Context dc = getOrCreateDuplicatedContext(context);

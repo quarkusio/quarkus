@@ -271,13 +271,13 @@ public class QuarkusBootstrapProvider implements Closeable {
             final String groupId = coordsArr[0];
             final String artifactId = coordsArr[1];
             String classifier = "";
-            String type = GACTV.TYPE_JAR;
+            String type = ArtifactCoords.TYPE_JAR;
             String version = null;
             if (coordsArr.length == 3) {
                 version = coordsArr[2];
             } else if (coordsArr.length > 3) {
                 classifier = coordsArr[2] == null ? "" : coordsArr[2];
-                type = coordsArr[3] == null ? "jar" : coordsArr[3];
+                type = coordsArr[3] == null ? ArtifactCoords.TYPE_JAR : coordsArr[3];
                 if (coordsArr.length > 4) {
                     version = coordsArr[4];
                 }

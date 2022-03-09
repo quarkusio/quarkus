@@ -110,7 +110,7 @@ public class DockerProcessor {
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled()) {
+        if (containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
             return;
         }
 

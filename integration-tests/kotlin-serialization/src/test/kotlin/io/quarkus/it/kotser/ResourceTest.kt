@@ -13,19 +13,23 @@ import javax.ws.rs.core.MediaType
 @QuarkusTest
 open class ResourceTest {
     @Test
+    fun testGetFlow() {
+        When {
+            get("/flow")
+        } Then {
+            statusCode(200)
+            body(`is`("""[{"name":"Jim Halpert","defaulted":"hi there!"}]"""))
+        }
+    }
+
+    @Test
     fun testGet() {
-         When {
-             get("/")
-         } Then {
-             statusCode(200)
-             body(`is`(
-                 """
-                    {
-                      "name": "Jim Halpert",
-                      "defaulted": "hi there!"
-                    }""".trimIndent()
-             ))
-         }
+        When {
+            get("/")
+        } Then {
+            statusCode(200)
+            body(`is`("""{"name":"Jim Halpert","defaulted":"hi there!"}"""))
+        }
     }
 
     @Test
@@ -34,13 +38,7 @@ open class ResourceTest {
             get("/suspend")
         } Then {
             statusCode(200)
-            body(`is`(
-                """
-                    {
-                      "name": "Jim Halpert",
-                      "defaulted": "hi there!"
-                    }""".trimIndent()
-            ))
+            body(`is`("""{"name":"Jim Halpert","defaulted":"hi there!"}"""))
         }
     }
 
@@ -50,15 +48,7 @@ open class ResourceTest {
             get("/suspendList")
         } Then {
             statusCode(200)
-            body(`is`(
-                """
-[
-  {
-    "name": "Jim Halpert",
-    "defaulted": "hi there!"
-  }
-]
-""".trimIndent()))
+            body(`is`("""[{"name":"Jim Halpert","defaulted":"hi there!"}]"""))
         }
     }
 
@@ -71,11 +61,7 @@ open class ResourceTest {
             post("/")
         } Then {
             statusCode(200)
-            body(`is`("""
-                {
-                  "name": "Pam Halpert",
-                  "defaulted": "hi there!"
-                }""".trimIndent()))
+            body(`is`("""{"name":"Pam Halpert","defaulted":"hi there!"}"""))
         }
     }
 

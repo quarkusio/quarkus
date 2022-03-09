@@ -61,6 +61,7 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        // if the category changes, please also update DisableLoggingAutoFeature in the runtime module
         filters.produce(new LogCleanupFilterBuildItem(
                 "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrationService", "HSEARCH000034"));
     }

@@ -3,13 +3,16 @@ package io.quarkus.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -791,12 +794,16 @@ public class QuarkusUnitTest
             customApplicationProperties = new Properties();
         }
         try {
-            try (InputStream in = ClassLoader.getSystemResourceAsStream(resourceName)) {
+            URL systemResource = ClassLoader.getSystemResource(resourceName);
+            if (systemResource == null) {
+                throw new FileNotFoundException("Resource '" + resourceName + "' not found");
+            }
+            try (InputStream in = systemResource.openStream()) {
                 customApplicationProperties.load(in);
             }
             return this;
         } catch (IOException e) {
-            throw new RuntimeException("Could not load resource: '" + resourceName + "'");
+            throw new UncheckedIOException("Could not load resource: '" + resourceName + "'", e);
         }
     }
 

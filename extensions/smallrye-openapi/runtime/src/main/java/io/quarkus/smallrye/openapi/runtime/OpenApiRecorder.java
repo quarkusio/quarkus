@@ -8,7 +8,9 @@ import java.util.function.Supplier;
 
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
+import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -18,6 +20,7 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OpenApiRecorder {
+    private static final Logger log = Logger.getLogger(OpenApiRecorder.class);
     final RuntimeValue<HttpConfiguration> configuration;
 
     public OpenApiRecorder(RuntimeValue<HttpConfiguration> configuration) {
@@ -26,6 +29,9 @@ public class OpenApiRecorder {
 
     public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig) {
         if (runtimeConfig.enable) {
+            if (!configuration.getValue().corsEnabled && LaunchMode.NORMAL == LaunchMode.current()) {
+                log.info("Default CORS properties will be used, please use 'quarkus.http.cors' properties instead");
+            }
             return new OpenApiHandler(configuration.getValue().corsEnabled);
         } else {
             return new OpenApiNotFoundHandler();

@@ -200,7 +200,7 @@
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>9.20</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.nimbus.version>9.21</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.4</java-buildpack-client.version>
     </properties>
 

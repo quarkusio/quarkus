@@ -25,9 +25,9 @@ public class DefaultTokenStateManager implements TokenStateManager {
         sb.append(encryptToken(tokens.getIdToken(), routingContext, oidcConfig));
         if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
             if (!oidcConfig.tokenStateManager.splitTokens) {
-                sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                sb.append(OidcUtils.COOKIE_DELIM)
                         .append(encryptToken(tokens.getAccessToken(), routingContext, oidcConfig))
-                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append(OidcUtils.COOKIE_DELIM)
                         .append(encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig));
             } else {
                 CodeAuthenticationMechanism.createCookie(routingContext,
@@ -45,9 +45,9 @@ public class DefaultTokenStateManager implements TokenStateManager {
             }
         } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {
             if (!oidcConfig.tokenStateManager.splitTokens) {
-                sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                sb.append(OidcUtils.COOKIE_DELIM)
                         .append("")
-                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append(OidcUtils.COOKIE_DELIM)
                         .append(encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig));
             } else {
                 if (tokens.getRefreshToken() != null) {
@@ -65,7 +65,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<AuthorizationCodeTokens> requestContext) {
-        String[] tokens = CodeAuthenticationMechanism.COOKIE_PATTERN.split(tokenState);
+        String[] tokens = OidcUtils.parseCookieValue(tokenState);
         String idToken = decryptToken(tokens[0], routingContext, oidcConfig);
 
         String accessToken = null;

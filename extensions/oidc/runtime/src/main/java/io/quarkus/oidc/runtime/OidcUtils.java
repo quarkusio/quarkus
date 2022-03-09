@@ -46,8 +46,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public final class OidcUtils {
-    private static final Logger LOG = Logger.getLogger(OidcUtils.class);
-
+    public static final String QUARKUS_IDENTITY_EXPIRE_TIME = "quarkus.identity.expire-time";
     public static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
     public static final String USER_INFO_ATTRIBUTE = "userinfo";
     public static final String INTROSPECTION_ATTRIBUTE = "introspection";
@@ -58,13 +57,14 @@ public final class OidcUtils {
     public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
+    static final String COOKIE_DELIM = "|";
 
+    private static final Logger LOG = Logger.getLogger(OidcUtils.class);
     /**
      * This pattern uses a positive lookahead to split an expression around the forward slashes
      * ignoring those which are located inside a pair of the double quotes.
      */
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
-    public static final String QUARKUS_IDENTITY_EXPIRE_TIME = "quarkus.identity.expire-time";
 
     private OidcUtils() {
 
@@ -422,5 +422,24 @@ public final class OidcUtils {
         jwe.setKey(key);
         jwe.setCompactSerialization(jweString);
         return jwe.getPlaintextString();
+    }
+
+    public static String[] parseCookieValue(String value) {
+        StringTokenizer tokens = new StringTokenizer(value, COOKIE_DELIM, true);
+        List<String> parsedValue = new LinkedList<>();
+        int delimeterCount = 0;
+        while (tokens.hasMoreTokens()) {
+            String token = tokens.nextToken();
+            if (token.equals(COOKIE_DELIM)) {
+                if (++delimeterCount == 2) {
+                    token = "";
+                } else {
+                    continue;
+                }
+            }
+            delimeterCount = 0;
+            parsedValue.add(token);
+        }
+        return parsedValue.toArray(new String[0]);
     }
 }

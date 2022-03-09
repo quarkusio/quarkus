@@ -412,4 +412,42 @@ public class OidcUtilsTest {
         }
     }
 
+    @Test
+    public void testParseCookieValueOneToken() throws Exception {
+        String[] values = OidcUtils.parseCookieValue("1");
+        assertEquals(1, values.length);
+        assertEquals("1", values[0]);
+    }
+
+    @Test
+    public void testParseCookieValueTwoTokens() throws Exception {
+        String[] values = OidcUtils.parseCookieValue("1|2");
+        assertEquals(2, values.length);
+        assertEquals("1", values[0]);
+        assertEquals("2", values[1]);
+    }
+
+    @Test
+    public void testParseCookieValueThreeTokensOneEmpty() throws Exception {
+        String[] values = OidcUtils.parseCookieValue("1||3");
+        assertEquals(3, values.length);
+        assertEquals("1", values[0]);
+        assertEquals("", values[1]);
+        assertEquals("3", values[2]);
+    }
+
+    @Test
+    public void testParseCookieValueThreeTokens() throws Exception {
+        String[] values = OidcUtils.parseCookieValue("1|2|3");
+        assertEquals(3, values.length);
+        assertEquals("1", values[0]);
+        assertEquals("2", values[1]);
+        assertEquals("3", values[2]);
+    }
+
+    @Test
+    public void testParseEmptyCookieValue() throws Exception {
+        String[] values = OidcUtils.parseCookieValue("");
+        assertEquals(0, values.length);
+    }
 }

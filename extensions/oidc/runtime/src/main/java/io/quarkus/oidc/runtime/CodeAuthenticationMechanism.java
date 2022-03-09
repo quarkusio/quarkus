@@ -17,7 +17,6 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.ErrorCodes;
@@ -57,8 +56,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final String AMP = "&";
     static final String EQ = "=";
     static final String UNDERSCORE = "_";
-    static final String COOKIE_DELIM = "|";
-    static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
     static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final String STATE_COOKIE_RESTORE_PATH = "restore-path";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
@@ -137,7 +134,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private Uni<SecurityIdentity> processRedirectFromOidc(RoutingContext context, OidcTenantConfig oidcTenantConfig,
             IdentityProviderManager identityProviderManager, Cookie stateCookie, MultiMap requestParams) {
-        String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
+        String[] parsedStateCookieValue = OidcUtils.parseCookieValue(stateCookie.getValue());
         OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
 
         if (!isStateValid(requestParams, parsedStateCookieValue[0])) {
@@ -657,7 +654,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
             extraStateValue.setCodeVerifier(pkceCodeVerifier);
             if (!extraStateValue.isEmpty()) {
-                cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
+                cookieValue += (OidcUtils.COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
             }
         }
         createCookie(context, configContext.oidcConfig, getStateCookieName(configContext.oidcConfig), cookieValue, 60 * 30);

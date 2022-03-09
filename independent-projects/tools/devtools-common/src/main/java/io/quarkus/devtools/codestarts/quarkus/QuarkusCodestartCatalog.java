@@ -4,7 +4,6 @@ import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodesta
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent.CODE;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
-import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getCodestartName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 
 import io.quarkus.devtools.codestarts.Codestart;
@@ -237,11 +236,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     public static Map<String, Extension> buildExtensionsMapping(
             Collection<Extension> extensions) {
         final Map<String, Extension> map = new HashMap<>(extensions.size());
-        extensions.forEach(e -> {
-            if (getCodestartName(e) != null) {
-                map.put(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId(), e);
-            }
-        });
+        extensions.forEach(e -> map.put(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId(), e));
         return map;
     }
 

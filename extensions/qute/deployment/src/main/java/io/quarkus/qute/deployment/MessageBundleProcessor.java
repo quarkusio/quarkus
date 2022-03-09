@@ -51,6 +51,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -123,7 +124,7 @@ public class MessageBundleProcessor {
         Map<String, ClassInfo> found = new HashMap<>();
         List<MessageBundleBuildItem> bundles = new ArrayList<>();
         List<DotName> localizedInterfaces = new ArrayList<>();
-        Set<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem, watchedFiles);
+        List<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem, watchedFiles);
 
         // First collect all interfaces annotated with @MessageBundle
         for (AnnotationInstance bundleAnnotation : index.getAnnotations(Names.BUNDLE)) {
@@ -1054,32 +1055,66 @@ public class MessageBundleProcessor {
         return defaultLocale;
     }
 
-    private Set<Path> findMessageFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    private List<Path> findMessageFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) throws IOException {
-        return applicationArchivesBuildItem.getRootArchive().apply(tree -> {
-            final Path messagesPath = tree.getPath(MESSAGES);
-            if (messagesPath == null) {
-                return Collections.emptySet();
-            }
-            Set<Path> messageFiles = new HashSet<>();
-            try (Stream<Path> files = Files.list(messagesPath)) {
-                Iterator<Path> iter = files.iterator();
-                while (iter.hasNext()) {
-                    Path filePath = iter.next();
-                    if (Files.isRegularFile(filePath)) {
-                        messageFiles.add(filePath);
-                        String messageFilePath = messagesPath.relativize(filePath).toString();
-                        if (File.separatorChar != '/') {
-                            messageFilePath = messageFilePath.replace(File.separatorChar, '/');
-                        }
-                        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFilePath));
-                    }
+
+        Map<String, List<Path>> messageFileNameToPath = new HashMap<>();
+
+        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+            archive.accept(tree -> {
+                final Path messagesPath = tree.getPath(MESSAGES);
+                if (messagesPath == null) {
+                    return;
                 }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                try (Stream<Path> files = Files.list(messagesPath)) {
+                    Iterator<Path> iter = files.iterator();
+                    while (iter.hasNext()) {
+                        Path filePath = iter.next();
+                        if (Files.isRegularFile(filePath)) {
+                            String messageFileName = messagesPath.relativize(filePath).toString();
+                            if (File.separatorChar != '/') {
+                                messageFileName = messageFileName.replace(File.separatorChar, '/');
+                            }
+                            List<Path> paths = messageFileNameToPath.get(messageFileName);
+                            if (paths == null) {
+                                paths = new ArrayList<>();
+                                messageFileNameToPath.put(messageFileName, paths);
+                            }
+                            paths.add(filePath);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        }
+
+        if (messageFileNameToPath.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Check duplicates
+        List<Entry<String, List<Path>>> duplicates = messageFileNameToPath.entrySet().stream()
+                .filter(e -> e.getValue().size() > 1).collect(Collectors.toList());
+        if (!duplicates.isEmpty()) {
+            StringBuilder builder = new StringBuilder("Duplicate localized files found:");
+            for (Entry<String, List<Path>> e : duplicates) {
+                builder.append("\n\t- ")
+                        .append(e.getKey())
+                        .append(": ")
+                        .append(e.getValue());
             }
-            return messageFiles;
-        });
+            throw new IllegalStateException(builder.toString());
+        }
+
+        // Hot deployment
+        for (String messageFileName : messageFileNameToPath.keySet()) {
+            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFileName));
+        }
+
+        List<Path> messageFiles = new ArrayList<>();
+        messageFileNameToPath.values().forEach(messageFiles::addAll);
+        return messageFiles;
     }
 
     private static class AppClassPredicate implements Predicate<String> {

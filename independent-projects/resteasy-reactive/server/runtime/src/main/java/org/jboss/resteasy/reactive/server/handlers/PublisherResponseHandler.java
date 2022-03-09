@@ -66,7 +66,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
     private static class ChunkedStreamingMultiSubscriber extends StreamingMultiSubscriber {
 
-        private static final String LINE_SEPARATOR = "/n";
+        private static final String LINE_SEPARATOR = "\n";
 
         private boolean isFirstItem = true;
 

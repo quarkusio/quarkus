@@ -117,8 +117,8 @@ public class SseTestCase {
         when().get(uri.toString() + "sse/ndjson/multi")
                 .then().statusCode(HttpStatus.SC_OK)
                 // @formatter:off
-                .body(is("{\"name\":\"hello\"}/n"
-                            + "{\"name\":\"stef\"}/n"))
+                .body(is("{\"name\":\"hello\"}\n"
+                            + "{\"name\":\"stef\"}\n"))
                 // @formatter:on
                 .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_NDJSON));
     }
@@ -128,8 +128,8 @@ public class SseTestCase {
         when().get(uri.toString() + "sse/stream-json/multi")
                 .then().statusCode(HttpStatus.SC_OK)
                 // @formatter:off
-                .body(is("{\"name\":\"hello\"}/n"
-                        + "{\"name\":\"stef\"}/n"))
+                .body(is("{\"name\":\"hello\"}\n"
+                        + "{\"name\":\"stef\"}\n"))
                 // @formatter:on
                 .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_STREAM_JSON));
     }

@@ -440,7 +440,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final String providesCapabilities = extProps.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
         if (providesCapabilities != null) {
             modelBuilder
-                    .addExtensionCapabilities(CapabilityContract.providesCapabilities(extensionCoords, providesCapabilities));
+                    .addExtensionCapabilities(CapabilityContract.of(extensionCoords, providesCapabilities, null));
         }
         return true;
     }

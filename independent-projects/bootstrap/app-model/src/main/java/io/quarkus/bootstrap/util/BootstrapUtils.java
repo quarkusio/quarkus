@@ -65,7 +65,8 @@ public class BootstrapUtils {
         }
         builder.setAppArtifact(appArtifact);
         builder.setCapabilitiesContracts(appModel.getExtensionCapabilities().stream()
-                .map(c -> new CapabilityContract(c.getExtension(), new ArrayList<>(c.getProvidesCapabilities())))
+                .map(c -> new CapabilityContract(c.getExtension(), new ArrayList<>(c.getProvidesCapabilities()),
+                        new ArrayList<>(c.getRequiresCapabilities())))
                 .collect(Collectors.toMap(CapabilityContract::getExtension, Function.identity())));
         builder.setPlatformImports(appModel.getPlatforms());
         appModel.getDependencies().forEach(d -> {

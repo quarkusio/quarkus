@@ -87,8 +87,8 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         run(true);
 
         final CapabilityErrors error = new CapabilityErrors();
-        error.addConflict("sunshine", "org.acme:alt-quarkus-ext::jar:1.0-SNAPSHOT");
-        error.addConflict("sunshine", "org.acme:acme-quarkus-ext::jar:1.0-SNAPSHOT");
+        error.addConflict("sunshine", "org.acme:alt-quarkus-ext:1.0-SNAPSHOT");
+        error.addConflict("sunshine", "org.acme:acme-quarkus-ext:1.0-SNAPSHOT");
         String response = DevModeTestUtils.getHttpResponse("/hello", true);
         assertThat(response).contains(error.report());
 
@@ -120,6 +120,36 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         }
         final String altDep = buf.toString();
         filter(runnerPom, Collections.singletonMap(acmeDep, altDep));
+        assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
+    }
+
+    @Test
+    public void testCapabilitiesMissing() throws MavenInvocationException, IOException {
+        testDir = getTargetDir("projects/capabilities-missing");
+        final File runnerPom = new File(testDir, "runner/pom.xml");
+        if (!runnerPom.exists()) {
+            fail("Failed to locate runner/pom.xml in " + testDir);
+        }
+        run(true);
+
+        final CapabilityErrors error = new CapabilityErrors();
+        error.addMissing("sunshine", "org.acme:acme-quarkus-ext:1.0-SNAPSHOT");
+        String response = DevModeTestUtils.getHttpResponse("/hello", true);
+        assertThat(response).contains(error.report());
+
+        final StringWriter buf = new StringWriter();
+        try (BufferedWriter writer = new BufferedWriter(buf)) {
+            writer.write("        <dependency>");
+            writer.newLine();
+            writer.write("            <groupId>org.acme</groupId>");
+            writer.newLine();
+            writer.write("            <artifactId>alt-quarkus-ext</artifactId>");
+            writer.newLine();
+            writer.write("        </dependency>");
+            writer.newLine();
+        }
+        final String acmeDep = buf.toString();
+        filter(runnerPom, Collections.singletonMap("<!-- missing -->", acmeDep));
         assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
     }
 

@@ -22,6 +22,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.capabilities.CapabilitiesConfig;
 import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.BufferedReader;
@@ -34,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -135,7 +135,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private String deployment;
 
     @Parameter(required = false)
-    List<CapabilityConfig> capabilities = Collections.emptyList();
+    CapabilitiesConfig capabilities = new CapabilitiesConfig();
 
     @Parameter(required = true, defaultValue = "${project.build.outputDirectory}/META-INF/quarkus-extension.yaml")
     private File extensionFile;
@@ -263,13 +263,23 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         }
 
-        if (!capabilities.isEmpty()) {
+        if (!capabilities.getProvides().isEmpty()) {
             final StringBuilder buf = new StringBuilder();
-            appendCapability(capabilities.get(0), buf);
-            for (int i = 1; i < capabilities.size(); ++i) {
-                appendCapability(capabilities.get(i), buf.append(','));
+            final Iterator<CapabilityConfig> i = capabilities.getProvides().iterator();
+            appendCapability(i.next(), buf);
+            while (i.hasNext()) {
+                appendCapability(i.next(), buf.append(','));
             }
             props.setProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES, buf.toString());
+        }
+        if (!capabilities.getRequires().isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            final Iterator<CapabilityConfig> i = capabilities.getRequires().iterator();
+            appendCapability(i.next(), buf);
+            while (i.hasNext()) {
+                appendCapability(i.next(), buf.append(','));
+            }
+            props.setProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES, buf.toString());
         }
 
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
@@ -577,13 +587,22 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     }
 
     private void addCapabilities(ObjectNode extObject) throws MojoExecutionException {
-        if (capabilities.isEmpty()) {
-            return;
+        ObjectNode capsNode = null;
+        if (!capabilities.getProvides().isEmpty()) {
+            capsNode = getMetadataNode(extObject).putObject("capabilities");
+            final ArrayNode provides = capsNode.putArray("provides");
+            for (CapabilityConfig cap : capabilities.getProvides()) {
+                provides.add(cap.getName());
+            }
         }
-        final ObjectNode capsNode = getMetadataNode(extObject).putObject("capabilities");
-        final ArrayNode provides = capsNode.putArray("provides");
-        for (CapabilityConfig cap : capabilities) {
-            provides.add(cap.getName());
+        if (!capabilities.getRequires().isEmpty()) {
+            if (capsNode == null) {
+                capsNode = getMetadataNode(extObject).putObject("capabilities");
+            }
+            final ArrayNode requires = capsNode.putArray("requires");
+            for (CapabilityConfig cap : capabilities.getRequires()) {
+                requires.add(cap.getName());
+            }
         }
     }
 

@@ -56,6 +56,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanRecorder;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);
@@ -236,4 +237,11 @@ class InfinispanClientProcessor {
         return UnremovableBeanBuildItem.beanTypes(BaseMarshaller.class, EnumMarshaller.class, MessageMarshaller.class,
                 RawProtobufMarshaller.class, FileDescriptorSource.class);
     }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(InfinispanClientBuildTimeConfig buildTimeConfig) {
+        return new HealthBuildItem("io.quarkus.infinispan.client.runtime.health.InfinispanHealthCheck",
+                buildTimeConfig.healthEnabled);
+    }
+
 }

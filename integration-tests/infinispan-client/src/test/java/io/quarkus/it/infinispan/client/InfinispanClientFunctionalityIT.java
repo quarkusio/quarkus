@@ -6,6 +6,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
  * @author William Burns
  */
 @QuarkusIntegrationTest
-public class InfinispanClientFunctionalityInGraalITCase extends InfinispanClientFunctionalityTest {
+public class InfinispanClientFunctionalityIT extends InfinispanClientFunctionalityTest {
 
 }

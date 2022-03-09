@@ -31,7 +31,12 @@ public class InfinispanTestResource implements QuarkusTestResourceLifecycleManag
         HOTROD_PORT = Optional.ofNullable(initArgs.get(PORT_ARG)).map(Integer::parseInt).orElse(DEFAULT_PORT);
         USER = Optional.ofNullable(initArgs.get(USER_ARG)).orElse(DEFAULT_USER);
         PASSWORD = Optional.ofNullable(initArgs.get(PASSWORD_ARG)).orElse(DEFAULT_PASSWORD);
-        ARTIFACTS = Optional.ofNullable(initArgs.get(ARTIFACTS_ARG).split(",")).orElse(new String[0]);
+        String artifacts = initArgs.get(ARTIFACTS_ARG);
+        if (artifacts == null) {
+            ARTIFACTS = new String[0];
+        } else {
+            ARTIFACTS = artifacts.split(",");
+        }
     }
 
     @Override

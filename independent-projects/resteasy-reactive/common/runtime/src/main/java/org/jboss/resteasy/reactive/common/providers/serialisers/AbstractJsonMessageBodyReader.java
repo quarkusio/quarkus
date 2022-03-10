@@ -21,7 +21,8 @@ public abstract class AbstractJsonMessageBodyReader implements MessageBodyReader
         }
         String subtype = mediaType.getSubtype();
         boolean isApplicationMediaType = "application".equals(mediaType.getType());
-        return (isApplicationMediaType && "json".equalsIgnoreCase(subtype) || subtype.endsWith("+json"))
+        return (isApplicationMediaType && "json".equalsIgnoreCase(subtype) || subtype.endsWith("+json")
+                || subtype.equalsIgnoreCase("x-ndjson"))
                 || (mediaType.isWildcardSubtype() && (mediaType.isWildcardType() || isApplicationMediaType));
     }
 }

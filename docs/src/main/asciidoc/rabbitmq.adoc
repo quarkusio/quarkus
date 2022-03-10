@@ -4,6 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started to SmallRye Reactive Messaging with RabbitMQ
+:extension-status: preview
 
 include::./attributes.adoc[]
 

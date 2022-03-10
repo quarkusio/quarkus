@@ -281,7 +281,7 @@ public class SecurityOverrideFilter implements ContainerRequestFilter {
 
 == Disabling Authorization
 
-If you have a good reason to disable the authorization (for example, when testing) then you can register a custom `AuthorizationController`:
+If you have a good reason to disable the authorization then you can register a custom `AuthorizationController`:
 
 [source,java]
 ----
@@ -297,6 +297,13 @@ public class DisabledAuthController extends AuthorizationController {
         return !disableAuthorization;
     }
 }
+----
+
+For manual testing Quarkus provides a convenient config property to disable authorization in dev mode. This property has the exact same effect as the custom `AuthorizationController` shown above, but is only available in dev mode:
+
+[source,properties]
+----
+quarkus.security.auth.enabled-in-dev-mode=false
 ----
 
 Please also see xref:security-testing.adoc#testing-security[TestingSecurity Annotation] section on how to disable the security checks using `TestSecurity` annotation.

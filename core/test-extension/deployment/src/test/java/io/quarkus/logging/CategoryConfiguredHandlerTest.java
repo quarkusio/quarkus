@@ -3,11 +3,15 @@ package io.quarkus.logging;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
-import java.util.logging.*;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
-import org.jboss.logmanager.handlers.FileHandler;
+import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -39,7 +43,7 @@ public class CategoryConfiguredHandlerTest {
         Logger categoryLogger = logManager.getLogger("io.quarkus.category");
         assertThat(categoryLogger).isNotNull();
         assertThat(categoryLogger.getHandlers()).hasSize(2).extracting("class").containsExactlyInAnyOrder(ConsoleHandler.class,
-                FileHandler.class);
+                SizeRotatingFileHandler.class);
 
         Logger otherCategoryLogger = logManager.getLogger("io.quarkus.othercategory");
         assertThat(otherCategoryLogger).isNotNull();

@@ -539,9 +539,10 @@ public class DeploymentInjectingDependencyVisitor {
             appBuilder.handleExtensionProperties(props, runtimeArtifact.toString());
 
             final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
-            if (providesCapabilities != null) {
+            final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);
+            if (providesCapabilities != null || requiresCapabilities != null) {
                 appBuilder.addExtensionCapabilities(
-                        CapabilityContract.providesCapabilities(toGactv(runtimeArtifact), providesCapabilities));
+                        CapabilityContract.of(toCompactCoords(runtimeArtifact), providesCapabilities, requiresCapabilities));
             }
         }
     }
@@ -661,8 +662,16 @@ public class DeploymentInjectingDependencyVisitor {
                 .setResolvedPaths(artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath()));
     }
 
-    private static String toGactv(Artifact a) {
-        return a.getGroupId() + ":" + a.getArtifactId() + ":" + a.getClassifier() + ":" + a.getExtension() + ":"
-                + a.getVersion();
+    private static String toCompactCoords(Artifact a) {
+        final StringBuilder b = new StringBuilder();
+        b.append(a.getGroupId()).append(':').append(a.getArtifactId()).append(':');
+        if (!a.getClassifier().isEmpty()) {
+            b.append(a.getClassifier()).append(':');
+        }
+        if (!ArtifactCoords.TYPE_JAR.equals(a.getExtension())) {
+            b.append(a.getExtension()).append(':');
+        }
+        b.append(a.getVersion());
+        return b.toString();
     }
 }

@@ -7,4 +7,6 @@ public interface ExtensionCapabilities {
     String getExtension();
 
     Collection<String> getProvidesCapabilities();
+
+    Collection<String> getRequiresCapabilities();
 }

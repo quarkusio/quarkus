@@ -121,6 +121,7 @@ public class ObserverGenerator extends AbstractGenerator {
             for (org.jboss.jandex.Type paramType : observer.getObserverMethod().parameters()) {
                 sigBuilder.append(paramType.name().toString());
             }
+            sigBuilder.append(observer.getDeclaringBean().getIdentifier());
         }
 
         StringBuilder baseName = new StringBuilder();

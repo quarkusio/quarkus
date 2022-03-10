@@ -56,6 +56,10 @@ class RequestContext implements ManagedContext {
     public <T> T getIfActive(Contextual<T> contextual, Function<Contextual<T>, CreationalContext<T>> creationalContextFun) {
         Objects.requireNonNull(contextual, "Contextual must not be null");
         Objects.requireNonNull(creationalContextFun, "CreationalContext supplier must not be null");
+        InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        if (!Scopes.scopeMatches(this, bean)) {
+            throw Scopes.scopeDoesNotMatchException(this, bean);
+        }
         RequestContextState ctxState = currentContext.get();
         if (ctxState == null) {
             // Thread local not set - context is not active!
@@ -88,6 +92,10 @@ class RequestContext implements ManagedContext {
     @Override
     public <T> T get(Contextual<T> contextual) {
         Objects.requireNonNull(contextual, "Contextual must not be null");
+        InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        if (!Scopes.scopeMatches(this, bean)) {
+            throw Scopes.scopeDoesNotMatchException(this, bean);
+        }
         Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get().value;
         if (ctx == null) {
             // Thread local not set - context is not active!

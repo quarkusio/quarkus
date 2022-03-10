@@ -1,5 +1,6 @@
 package io.quarkus.arc.test.contexts.request;
 
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -8,8 +9,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.test.ArcTestContainer;
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.control.RequestContextController;
 import org.junit.jupiter.api.Test;
@@ -19,7 +23,7 @@ public class RequestContextTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(Controller.class, ControllerClient.class,
-            ContextObserver.class);
+            ContextObserver.class, Boom.class);
 
     @Test
     public void testRequestContext() {
@@ -181,6 +185,26 @@ public class RequestContextTest {
             fail();
         } catch (ContextNotActiveException expected) {
         }
+    }
+
+    @Test
+    public void testGet() {
+        ManagedContext requestContext = Arc.container().requestContext();
+        requestContext.activate();
+        try {
+            InjectableBean<Boom> boomBean = Arc.container().instance(Boom.class).getBean();
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> requestContext.get(boomBean));
+            assertThatIllegalArgumentException()
+                    .isThrownBy(() -> requestContext.get(boomBean, new CreationalContextImpl<>(boomBean)));
+        } finally {
+            requestContext.terminate();
+        }
+    }
+
+    @ApplicationScoped
+    public static class Boom {
+
     }
 
 }

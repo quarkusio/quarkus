@@ -54,7 +54,9 @@ public class LdapRecorder {
         DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
                 dirContext.url,
                 dirContext.principal.orElse(null),
-                dirContext.password.orElse(null));
+                dirContext.password.orElse(null),
+                dirContext.connectTimeout,
+                dirContext.readTimeout);
         return () -> dirContextFactory.obtainDirContext(dirContext.referralMode);
     }
 

@@ -69,6 +69,7 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
@@ -266,6 +267,11 @@ public class JibProcessor {
                 dockerDaemonImage.setDockerExecutable(Paths.get(jibConfigExecutableName.get()));
             } else if (dockerConfigExecutableName.isPresent()) {
                 dockerDaemonImage.setDockerExecutable(Paths.get(dockerConfigExecutableName.get()));
+            } else {
+                // detect the container runtime instead of falling back to 'docker' as the default
+                ContainerRuntimeUtil.ContainerRuntime detectedContainerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
+                log.infof("Using %s to run the native image builder", detectedContainerRuntime.getExecutableName());
+                dockerDaemonImage.setDockerExecutable(Paths.get(detectedContainerRuntime.getExecutableName()));
             }
             containerizer = Containerizer.to(dockerDaemonImage);
         }

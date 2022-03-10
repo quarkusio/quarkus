@@ -1,8 +1,10 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.processor;
 
+import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_NDJSON;
+import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_STREAM_JSON;
+
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -126,29 +128,29 @@ public class ResteasyReactiveJacksonProcessor {
 
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(ServerJacksonMessageBodyReader.class.getName(), Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON, APPLICATION_STREAM_JSON)));
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(VertxJsonArrayMessageBodyReader.class.getName(),
                         JsonArray.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON, APPLICATION_STREAM_JSON)));
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(VertxJsonObjectMessageBodyReader.class.getName(),
                         JsonObject.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON, APPLICATION_STREAM_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(getJacksonMessageBodyWriter(applicationNeedsSpecialJacksonFeatures),
                         Object.class.getName(),
-                        List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON,
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON,
                                 RestMediaType.APPLICATION_STREAM_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(VertxJsonArrayMessageBodyWriter.class.getName(),
                         JsonArray.class.getName(),
-                        List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON,
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON,
                                 RestMediaType.APPLICATION_STREAM_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(VertxJsonObjectMessageBodyWriter.class.getName(),
                         JsonObject.class.getName(),
-                        List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON,
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON,
                                 RestMediaType.APPLICATION_STREAM_JSON)));
     }
 
@@ -165,7 +167,7 @@ public class ResteasyReactiveJacksonProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             BuildProducer<JacksonFeatureBuildItem> jacksonFeaturesProducer,
             ResteasyReactiveServerJacksonRecorder recorder, ShutdownContextBuildItem shutdown) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
         Collection<ClassInfo> resourceClasses = resourceScanningResultBuildItem.get().getResult().getScannedResources()

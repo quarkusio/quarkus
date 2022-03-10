@@ -1,6 +1,8 @@
 package io.quarkus.rest.client.reactive.jackson.deployment;
 
 import static io.quarkus.deployment.Feature.REST_CLIENT_REACTIVE_JACKSON;
+import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_NDJSON;
+import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_STREAM_JSON;
 
 import java.util.Collections;
 import java.util.List;
@@ -48,15 +50,15 @@ public class RestClientReactiveJacksonProcessor {
 
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(JacksonBasicMessageBodyReader.class.getName(), Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON, APPLICATION_STREAM_JSON)));
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(VertxJsonArrayBasicMessageBodyReader.class.getName(),
                         JsonArray.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON, APPLICATION_STREAM_JSON)));
         additionalReaders
                 .produce(new MessageBodyReaderBuildItem(VertxJsonObjectBasicMessageBodyReader.class.getName(),
                         JsonObject.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                        List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON, APPLICATION_STREAM_JSON)));
         additionalWriters
                 .produce(new MessageBodyWriterBuildItem(ClientJacksonMessageBodyWriter.class.getName(), Object.class.getName(),
                         Collections.singletonList(MediaType.APPLICATION_JSON)));

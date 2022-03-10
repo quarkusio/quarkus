@@ -74,6 +74,20 @@ public class TestConfig {
     public Optional<String> excludePattern;
 
     /**
+     * Test engine ids that should be included for continuous testing.
+     */
+    @ConfigItem
+    public Optional<List<String>> includeEngines;
+
+    /**
+     * Test engine ids that should be excluded by default with continuous testing.
+     *
+     * This is ignored if include-engines has been set.
+     */
+    @ConfigItem
+    public Optional<List<String>> excludeEngines;
+
+    /**
      * Disable the testing status/prompt message at the bottom of the console
      * and log these messages to STDOUT instead.
      *

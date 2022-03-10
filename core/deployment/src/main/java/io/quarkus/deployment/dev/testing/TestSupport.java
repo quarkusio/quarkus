@@ -56,6 +56,8 @@ public class TestSupport implements TestController {
     volatile List<String> excludeTags = Collections.emptyList();
     volatile Pattern include = null;
     volatile Pattern exclude = null;
+    volatile List<String> includeEngines = Collections.emptyList();
+    volatile List<String> excludeEngines = Collections.emptyList();
     volatile boolean displayTestOutput;
     volatile Boolean explicitDisplayTestOutput;
     volatile boolean brokenOnlyMode;
@@ -71,6 +73,8 @@ public class TestSupport implements TestController {
     String appPropertiesExcludeTags;
     String appPropertiesIncludePattern;
     String appPropertiesExcludePattern;
+    String appPropertiesIncludeEngines;
+    String appPropertiesExcludeEngines;
     String appPropertiesTestType;
     private TestConfig config;
     private volatile boolean closed;
@@ -442,6 +446,8 @@ public class TestSupport implements TestController {
                 String excludeTags = p.getProperty("quarkus.test.exclude-tags");
                 String includePattern = p.getProperty("quarkus.test.include-pattern");
                 String excludePattern = p.getProperty("quarkus.test.exclude-pattern");
+                String includeEngines = p.getProperty("quarkus.test.include-engines");
+                String excludeEngines = p.getProperty("quarkus.test.exclude-engines");
                 String testType = p.getProperty("quarkus.test.type");
                 if (!firstRun) {
                     if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
@@ -474,6 +480,22 @@ public class TestSupport implements TestController {
                             exclude = Pattern.compile(excludePattern);
                         }
                     }
+                    if (!Objects.equals(includeEngines, appPropertiesIncludeEngines)) {
+                        if (includeEngines == null) {
+                            this.includeEngines = Collections.emptyList();
+                        } else {
+                            this.includeEngines = Arrays.stream(includeEngines.split(",")).map(String::trim)
+                                    .collect(Collectors.toList());
+                        }
+                    }
+                    if (!Objects.equals(excludeEngines, appPropertiesExcludeEngines)) {
+                        if (excludeEngines == null) {
+                            this.excludeEngines = Collections.emptyList();
+                        } else {
+                            this.excludeEngines = Arrays.stream(excludeEngines.split(",")).map(String::trim)
+                                    .collect(Collectors.toList());
+                        }
+                    }
                     if (!Objects.equals(testType, appPropertiesTestType)) {
                         if (testType == null) {
                             this.testType = TestType.ALL;
@@ -486,6 +508,8 @@ public class TestSupport implements TestController {
                 appPropertiesExcludeTags = excludeTags;
                 appPropertiesIncludePattern = includePattern;
                 appPropertiesExcludePattern = excludePattern;
+                appPropertiesIncludeEngines = includeEngines;
+                appPropertiesExcludeEngines = excludeEngines;
                 appPropertiesTestType = testType;
                 break;
             }
@@ -527,6 +551,11 @@ public class TestSupport implements TestController {
     public void setPatterns(String include, String exclude) {
         this.include = include == null ? null : Pattern.compile(include);
         this.exclude = exclude == null ? null : Pattern.compile(exclude);
+    }
+
+    public void setEngines(List<String> includeEngines, List<String> excludeEngines) {
+        this.includeEngines = includeEngines;
+        this.excludeEngines = excludeEngines;
     }
 
     public TestSupport setConfiguredDisplayTestOutput(boolean displayTestOutput) {

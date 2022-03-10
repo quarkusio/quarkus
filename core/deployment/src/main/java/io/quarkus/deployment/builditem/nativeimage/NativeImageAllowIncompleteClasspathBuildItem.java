@@ -4,10 +4,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * If any build item of this type is produced, the native-image build tool
- * will run with {@literal --allow-incomplete-classpath} set.
+ * will run with {@literal --allow-incomplete-classpath} set for versions prior to 22.1 or
+ * without {@literal --link-at-build-time} set for versions later than 22.0.
  * <p>
  * This should be strongly discouraged as it makes diagnostics of any issue
- * much more complex, and we have it seen affect error message of code
+ * much more complex, and we have seen it affect error messages of code
  * seemingly unrelated to the code which is having the broken classpath.
  * <p>
  * Use of this build item will trigger a warning during build.

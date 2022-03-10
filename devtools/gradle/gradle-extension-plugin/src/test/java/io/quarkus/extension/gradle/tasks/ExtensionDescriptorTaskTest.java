@@ -142,9 +142,10 @@ public class ExtensionDescriptorTaskTest {
     public void shouldGenerateDescriptorWithCapabilities() throws IOException {
         String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
                 "capabilities { \n" +
-                        "   capability 'org.acme:ext-a:0.1.0' \n" +
-                        "   capability 'org.acme:ext-b:0.1.0' onlyIf(['org.acme:ext-b:0.1.0']) onlyIfNot(['org.acme:ext-c:0.1.0']) \n"
+                        "   provides 'org.acme:ext-a:0.1.0' \n" +
+                        "   provides 'org.acme:ext-b:0.1.0' onlyIf(['org.acme:ext-b:0.1.0']) onlyIfNot(['org.acme:ext-c:0.1.0']) \n"
                         +
+                        "   requires 'sunshine' onlyIf(['org.acme:ext-b:0.1.0']) \n" +
                         "}\n");
 
         TestUtils.writeFile(buildFile, buildFileContent);
@@ -156,5 +157,7 @@ public class ExtensionDescriptorTaskTest {
         Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
         assertThat(extensionProperty).containsEntry("provides-capabilities",
                 "org.acme:ext-a:0.1.0,org.acme:ext-b:0.1.0?org.acme:ext-b:0.1.0?!org.acme:ext-c:0.1.0");
+        assertThat(extensionProperty).containsEntry("requires-capabilities",
+                "sunshine?org.acme:ext-b:0.1.0");
     }
 }

@@ -5,15 +5,26 @@ import java.util.List;
 
 public class Capabilities {
 
-    private List<Capability> capabilities = new ArrayList<>(0);
+    private List<Capability> provided = new ArrayList<>(0);
+    private List<Capability> required = new ArrayList<>(0);
 
-    public Capability capability(String name) {
+    public Capability provides(String name) {
         Capability capability = new Capability(name);
-        capabilities.add(capability);
+        provided.add(capability);
         return capability;
     }
 
-    public List<Capability> getCapabilities() {
-        return capabilities;
+    public Capability requires(String name) {
+        Capability capability = new Capability(name);
+        required.add(capability);
+        return capability;
+    }
+
+    public List<Capability> getProvidedCapabilities() {
+        return provided;
+    }
+
+    public List<Capability> getRequiredCapabilities() {
+        return required;
     }
 }

@@ -8,6 +8,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -141,14 +142,24 @@ public class ExtensionDescriptorTask extends DefaultTask {
             props.put(AppModel.LESSER_PRIORITY_ARTIFACTS, val);
         }
 
-        List<Capability> capabilities = quarkusExtensionConfiguration.getCapabilities();
-        if (!capabilities.isEmpty()) {
+        if (!quarkusExtensionConfiguration.getProvidedCapabilities().isEmpty()) {
             final StringBuilder buf = new StringBuilder();
-            appendCapability(capabilities.get(0), buf);
-            for (int i = 1; i < capabilities.size(); ++i) {
-                appendCapability(capabilities.get(i), buf.append(','));
+            final Iterator<Capability> i = quarkusExtensionConfiguration.getProvidedCapabilities().iterator();
+            appendCapability(i.next(), buf);
+            while (i.hasNext()) {
+                appendCapability(i.next(), buf.append(','));
             }
             props.setProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES, buf.toString());
+        }
+
+        if (!quarkusExtensionConfiguration.getRequiredCapabilities().isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            final Iterator<Capability> i = quarkusExtensionConfiguration.getRequiredCapabilities().iterator();
+            appendCapability(i.next(), buf);
+            while (i.hasNext()) {
+                appendCapability(i.next(), buf.append(','));
+            }
+            props.setProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES, buf.toString());
         }
 
         try {

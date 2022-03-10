@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
@@ -29,6 +30,7 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
     }
 
     @Test
+    @Disabled("See https://github.com/quarkusio/quarkus/pull/24201#issuecomment-1063800991")
     void testExtensionsOrder() {
         final ExtensionCatalog catalog = getExtensionsCatalog();
         assertThat(getProcessedCategoriesInOrder(catalog).get(0).getSortedExtensions())

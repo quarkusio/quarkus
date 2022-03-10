@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -35,6 +36,8 @@ public class QuarkusTestNestedTestCase {
     private static final AtomicInteger COUNT_AFTER_ALL = new AtomicInteger(0);
     private static final String EXPECTED_OUTER_VALUE = "set from outer";
     private static final String EXPECTED_INNER_VALUE = "set from inner";
+    private static final String EXPECTED_SECOND_LEVEL_FIRST_INNER_VALUE = "set from second level first inner";
+    private static final String EXPECTED_SECOND_LEVEL_SECOND_INNER_VALUE = "set from second level second inner";
 
     String outerValue;
 
@@ -74,9 +77,9 @@ public class QuarkusTestNestedTestCase {
         @Order(1)
         void testOne() {
             assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-            assertEquals(5, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+            assertEquals(7, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
             assertEquals(2, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
-            assertEquals(3, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+            assertEquals(5, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
         }
 
@@ -84,9 +87,9 @@ public class QuarkusTestNestedTestCase {
         @Order(2)
         void testTwo() {
             assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-            assertEquals(7, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+            assertEquals(9, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
             assertEquals(3, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
-            assertEquals(5, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+            assertEquals(7, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
         }
 
@@ -99,6 +102,38 @@ public class QuarkusTestNestedTestCase {
         @AfterEach
         void afterEach() {
             COUNT_AFTER_EACH.incrementAndGet();
+        }
+
+        @Nested
+        @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+        @TestMethodOrder(OrderAnnotation.class)
+        class SecondLevelInnerNested {
+
+            private final AtomicInteger SECOND_LEVEL_COUNTER = new AtomicInteger(0);
+
+            String secondLevelInnerValue;
+
+            @BeforeEach
+            void beforeEach() {
+                SECOND_LEVEL_COUNTER.incrementAndGet();
+                secondLevelInnerValue = EXPECTED_SECOND_LEVEL_FIRST_INNER_VALUE;
+            }
+
+            @Test
+            @Order(1)
+            void testOne() {
+                // assertEquals(1, SECOND_LEVEL_COUNTER.get(), "SECOND_LEVEL_COUNTER");
+                assertEquals(1, SECOND_LEVEL_COUNTER.get(), "SECOND_LEVEL_COUNTER");
+            }
+
+            @Test
+            @Order(2)
+            void testSecondLevelAndInnerAndOuterValues() {
+                assertEquals(2, SECOND_LEVEL_COUNTER.get(), "SECOND_LEVEL_COUNTER");
+                assertEquals(EXPECTED_INNER_VALUE, innerValue);
+                assertEquals(EXPECTED_OUTER_VALUE, outerValue);
+                assertEquals(EXPECTED_SECOND_LEVEL_FIRST_INNER_VALUE, secondLevelInnerValue);
+            }
         }
     }
 
@@ -123,6 +158,23 @@ public class QuarkusTestNestedTestCase {
         void afterEach() {
             COUNT_AFTER_EACH.incrementAndGet();
         }
+
+        @Nested
+        class SecondLevelInnerNested {
+
+            String secondLevelInnerValue;
+
+            @BeforeEach
+            void beforeEach() {
+                secondLevelInnerValue = EXPECTED_SECOND_LEVEL_SECOND_INNER_VALUE;
+            }
+
+            @Test
+            void testSecondLevelAndInnerAndOuterValues() {
+                assertEquals(EXPECTED_OUTER_VALUE, outerValue);
+                assertEquals(EXPECTED_SECOND_LEVEL_SECOND_INNER_VALUE, secondLevelInnerValue);
+            }
+        }
     }
 
     @AfterEach
@@ -133,9 +185,9 @@ public class QuarkusTestNestedTestCase {
     @AfterAll
     static void afterAll() {
         assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-        assertEquals(9, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+        assertEquals(15, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
         assertEquals(4, COUNT_TEST.get(), "COUNT_TEST");
-        assertEquals(9, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+        assertEquals(15, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
         assertEquals(0, COUNT_AFTER_ALL.getAndIncrement(), "COUNT_AFTER_ALL");
     }
 }

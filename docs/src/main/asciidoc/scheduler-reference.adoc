@@ -22,22 +22,23 @@ NOTE: If you add the `quarkus-quartz` dependency to your project the lightweight
 
 == Scheduled Methods
 
-If you annotate a method with `@io.quarkus.scheduler.Scheduled` it is automatically scheduled for invocation.
-In fact, such a method must be a non-private non-static method of a CDI bean. 
-As a consequence of being a method of a CDI bean a scheduled method can be annotated with interceptor bindings, such as `@javax.transaction.Transactional` and `@org.eclipse.microprofile.metrics.annotation.Counted`.
+A method annotated with `@io.quarkus.scheduler.Scheduled` is automatically scheduled for invocation.
+A scheduled method must not be abstract or private.
+It may be either static or non-static.
+A scheduled method can be annotated with interceptor bindings, such as `@javax.transaction.Transactional` and `@org.eclipse.microprofile.metrics.annotation.Counted`.
 
-NOTE: If there is no CDI scope defined on the declaring class then `@Singleton` is used. 
+NOTE: If there is a bean class that has no scope and declares at least one non-static method annotated with `@Scheduled` then `@Singleton` is used.
 
 Furthermore, the annotated method must return `void` and either declare no parameters or one parameter of type `io.quarkus.scheduler.ScheduledExecution`.
 
 TIP: The annotation is repeatable so a single method could be scheduled multiple times.
-TIP: A CDI event of type `io.quarkus.scheduler.SuccessfulExecution` is fired synchronously and asynchronously when an execution of a scheduled method is successful.
-TIP: A CDI event of type `io.quarkus.scheduler.FailedExecution` is fired synchronously and asynchronously  when an execution of a scheduled method throw an exception.
+
+TIP: A CDI event of type `io.quarkus.scheduler.SuccessfulExecution` is fired synchronously and asynchronously when an execution of a scheduled method is successful. A CDI event of type `io.quarkus.scheduler.FailedExecution` is fired synchronously and asynchronously  when an execution of a scheduled method throws an exception.
 
 
 === Triggers
 
-A trigger is defined either by the `@Scheduled#cron()` or by the `@Scheduled#every()` attributes.
+A trigger is defined either by the `@Scheduled#cron()` or by the `@Scheduled#every()` attribute.
 If both are specified, the cron expression takes precedence.
 If none is specified, the build fails with an `IllegalStateException`.
 
@@ -124,9 +125,9 @@ void myMethod() { }
 
 === Identity
 
-By default, a unique id is generated for each scheduled method.
-This id is used in log messages and during debugging.
-Sometimes a possibility to specify an explicit id may come in handy.
+By default, a unique identifier is generated for each scheduled method.
+This identifier is used in log messages, during debugging and as a parameter of some `io.quarkus.scheduler.Scheduler` methods.
+Therefore, a possibility to specify an explicit identifier may come in handy.
 
 .Identity Example
 [source,java]

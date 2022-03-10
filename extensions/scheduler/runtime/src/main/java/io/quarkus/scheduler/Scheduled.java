@@ -15,9 +15,9 @@ import javax.enterprise.context.Dependent;
 import io.quarkus.scheduler.Scheduled.Schedules;
 
 /**
- * Marks a business method to be automatically scheduled and invoked by the container.
+ * Identifies a method of a bean class that is automatically scheduled and invoked by the container.
  * <p>
- * The target business method must be non-private and non-static.
+ * A scheduled method is a non-abstract non-private method of a bean class. It may be either static or non-static.
  * <p>
  * The schedule is defined either by {@link #cron()} or by {@link #every()} attribute. If both are specified, the cron
  * expression takes precedence.

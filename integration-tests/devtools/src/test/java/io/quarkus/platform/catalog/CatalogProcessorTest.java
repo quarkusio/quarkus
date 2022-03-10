@@ -20,24 +20,21 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
 
     @Test
     void testCategoryOrder() {
-        final ExtensionCatalog catalog = getExtensionsCatalog();
+        final ExtensionCatalog catalog = newFakeExtensionCatalog();
         assertThat(getProcessedCategoriesInOrder(catalog))
                 .map(ProcessedCategory::getCategory)
                 .map(Category::getId)
-                .startsWith("web", "data", "messaging", "core", "reactive", "cloud", "observability", "security",
-                        "serialization", "miscellaneous", "compatibility", "alt-languages");
+                .startsWith("web", "core", "reactive", "serialization", "compatibility", "alt-languages", "uncategorized");
     }
 
     @Test
     void testExtensionsOrder() {
-        final ExtensionCatalog catalog = getExtensionsCatalog();
+        final ExtensionCatalog catalog = newFakeExtensionCatalog();
         assertThat(getProcessedCategoriesInOrder(catalog).get(0).getSortedExtensions())
                 .map(Extension::getArtifact)
                 .map(ArtifactCoords::getArtifactId)
                 .startsWith("quarkus-resteasy", "quarkus-resteasy-jackson",
-                        "quarkus-resteasy-jsonb", "quarkus-vertx-graphql",
-                        "quarkus-grpc", "quarkus-hibernate-validator",
-                        "quarkus-rest-client-mutiny");
+                        "quarkus-resteasy-jsonb", "quarkus-resteasy-reactive");
     }
 
     @Test

@@ -2,7 +2,7 @@ package io.quarkus.maven;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
 
@@ -50,12 +50,11 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
 
     @Override
     protected void doExecute() throws MojoExecutionException, MojoFailureException {
-        String projectDir = mavenProject().getBasedir().getAbsolutePath();
-        Path sourcesDir = Paths.get(projectDir, "src", "main");
-        generateCode(sourcesDir, path -> mavenProject().addCompileSourceRoot(path.toString()), false);
+        generateCode(getParentDirs(mavenProject().getCompileSourceRoots()),
+                path -> mavenProject().addCompileSourceRoot(path.toString()), false);
     }
 
-    void generateCode(Path sourcesDir,
+    void generateCode(PathCollection sourceParents,
             Consumer<Path> sourceRegistrar,
             boolean test) throws MojoFailureException, MojoExecutionException {
 
@@ -78,7 +77,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                     Path.class, Path.class,
                     Consumer.class, ApplicationModel.class, Properties.class, String.class,
                     boolean.class);
-            initAndRun.invoke(null, deploymentClassLoader, PathList.of(sourcesDir),
+            initAndRun.invoke(null, deploymentClassLoader, sourceParents,
                     generatedSourcesDir(test), buildDir().toPath(),
                     sourceRegistrar, curatedApplication.getApplicationModel(), mavenProject().getProperties(),
                     launchMode.name(),
@@ -92,6 +91,20 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             }
             Thread.currentThread().setContextClassLoader(originalTccl);
         }
+    }
+
+    protected PathCollection getParentDirs(List<String> sourceDirs) {
+        if (sourceDirs.size() == 1) {
+            return PathList.of(Path.of(sourceDirs.get(0)).getParent());
+        }
+        final PathList.Builder builder = PathList.builder();
+        for (int i = 0; i < sourceDirs.size(); ++i) {
+            final Path parentDir = Path.of(sourceDirs.get(i)).getParent();
+            if (!builder.contains(parentDir)) {
+                builder.add(parentDir);
+            }
+        }
+        return builder.build();
     }
 
     private Path generatedSourcesDir(boolean test) {

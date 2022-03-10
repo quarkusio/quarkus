@@ -146,7 +146,7 @@ public class BootstrapAppModelFactory {
                 if (mavenArtifactResolver == null) {
                     final BootstrapMavenContext mvnCtx = createBootstrapMavenContext();
                     if (managingProject == null) {
-                        managingProject = mvnCtx.getCurrentProjectArtifact("pom");
+                        managingProject = mvnCtx.getCurrentProjectArtifact(ArtifactCoords.TYPE_POM);
                     }
                     mvn = new MavenArtifactResolver(mvnCtx);
                 } else {

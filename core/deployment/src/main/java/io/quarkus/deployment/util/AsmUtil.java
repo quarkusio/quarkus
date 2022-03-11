@@ -61,11 +61,16 @@ public class AsmUtil {
             getType(Long.class),
             getType(Double.class));
     public static final Map<org.objectweb.asm.Type, org.objectweb.asm.Type> WRAPPER_TO_PRIMITIVE = new HashMap<>();
+    public static final Map<Character, String> PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL;
 
     static {
         for (int i = 0; i < AsmUtil.PRIMITIVES.size(); i++) {
             AsmUtil.WRAPPER_TO_PRIMITIVE.put(AsmUtil.WRAPPERS.get(i), AsmUtil.PRIMITIVES.get(i));
         }
+        PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL = Map.of(
+                'Z', "boolean", 'B', "byte", 'C', "char",
+                'D', "double", 'F', "float", 'I', "int",
+                'J', "long", 'S', "short");
     }
 
     public static org.objectweb.asm.Type autobox(org.objectweb.asm.Type primitive) {
@@ -698,50 +703,22 @@ public class AsmUtil {
             char c = chars[i];
             switch (c) {
                 case 'Z':
-                    args.add(Type.create(DotName.createSimple("boolean"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'B':
-                    args.add(Type.create(DotName.createSimple("byte"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'C':
-                    args.add(Type.create(DotName.createSimple("char"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'D':
-                    args.add(Type.create(DotName.createSimple("double"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'F':
-                    args.add(Type.create(DotName.createSimple("float"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'I':
-                    args.add(Type.create(DotName.createSimple("int"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'J':
-                    args.add(Type.create(DotName.createSimple("long"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'S':
-                    args.add(Type.create(DotName.createSimple("short"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
+                    final Type type;
+                    if (dimensions == 0) {
+                        type = Type.create(DotName.createSimple(PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL.get(c)),
+                                Kind.PRIMITIVE);
+                    } else {
+                        DotName dotName = DotName.createSimple("[".repeat(dimensions) + c);
+                        type = Type.create(dotName, Kind.ARRAY);
+                    }
+                    args.add(type);
                     dimensions = 0;
                     start = i + 1;
                     break;

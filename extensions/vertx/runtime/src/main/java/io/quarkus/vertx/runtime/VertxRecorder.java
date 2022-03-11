@@ -1,6 +1,7 @@
 package io.quarkus.vertx.runtime;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -120,7 +121,11 @@ public class VertxRecorder {
                                         }
                                     }, invoker.isOrdered(), null);
                                 } else {
-                                    // Will run on the context used for the consumer registration
+                                    // Will run on the context used for the consumer registration.
+                                    // It's a duplicated context, but we need to mark it as safe.
+                                    // The safety comes from the fact that it's instantiated by Vert.x for every
+                                    // message.
+                                    setCurrentContextSafe(true);
                                     try {
                                         invoker.invoke(m);
                                     } catch (Exception e) {

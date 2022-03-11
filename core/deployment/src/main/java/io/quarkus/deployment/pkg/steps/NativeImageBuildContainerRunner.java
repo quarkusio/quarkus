@@ -1,7 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,7 +14,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ProcessUtil;
 
 public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRunner {
@@ -23,14 +22,14 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
     private static final Logger log = Logger.getLogger(NativeImageBuildContainerRunner.class);
 
     final NativeConfig nativeConfig;
-    protected final NativeConfig.ContainerRuntime containerRuntime;
+    protected final ContainerRuntimeUtil.ContainerRuntime containerRuntime;
     String[] baseContainerRuntimeArgs;
     protected final String outputPath;
     private final String containerName;
 
     public NativeImageBuildContainerRunner(NativeConfig nativeConfig, Path outputDir) {
         this.nativeConfig = nativeConfig;
-        containerRuntime = nativeConfig.containerRuntime.orElseGet(NativeImageBuildContainerRunner::detectContainerRuntime);
+        containerRuntime = nativeConfig.containerRuntime.orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
         log.infof("Using %s to run the native image builder", containerRuntime.getExecutableName());
 
         this.baseContainerRuntimeArgs = new String[] { "--env", "LANG=C", "--rm" };
@@ -41,8 +40,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     @Override
     public void setup(boolean processInheritIODisabled) {
-        if (containerRuntime == NativeConfig.ContainerRuntime.DOCKER
-                || containerRuntime == NativeConfig.ContainerRuntime.PODMAN) {
+        if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.DOCKER
+                || containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN) {
             // we pull the docker image in order to give users an indication of which step the process is at
             // it's not strictly necessary we do this, however if we don't the subsequent version command
             // will appear to block and no output will be shown
@@ -123,53 +122,6 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                 .of(Stream.of(containerRuntime.getExecutableName()), Stream.of(dockerCmd), Stream.of(baseContainerRuntimeArgs),
                         containerRuntimeArgs.stream(), Stream.of(nativeConfig.getEffectiveBuilderImage()), command.stream())
                 .flatMap(Function.identity()).toArray(String[]::new);
-    }
-
-    /**
-     * @return {@link NativeConfig.ContainerRuntime#DOCKER} if it's available, or {@link NativeConfig.ContainerRuntime#PODMAN}
-     *         if the podman
-     *         executable exists in the environment or if the docker executable is an alias to podman
-     * @throws IllegalStateException if no container runtime was found to build the image
-     */
-    public static NativeConfig.ContainerRuntime detectContainerRuntime() {
-        // Docker version 19.03.14, build 5eb3275d40
-        String dockerVersionOutput = getVersionOutputFor(NativeConfig.ContainerRuntime.DOCKER);
-        boolean dockerAvailable = dockerVersionOutput.contains("Docker version");
-        // Check if Podman is installed
-        // podman version 2.1.1
-        String podmanVersionOutput = getVersionOutputFor(NativeConfig.ContainerRuntime.PODMAN);
-        boolean podmanAvailable = podmanVersionOutput.startsWith("podman version");
-        if (dockerAvailable) {
-            // Check if "docker" is an alias to "podman"
-            if (dockerVersionOutput.equals(podmanVersionOutput)) {
-                return NativeConfig.ContainerRuntime.PODMAN;
-            }
-            return NativeConfig.ContainerRuntime.DOCKER;
-        } else if (podmanAvailable) {
-            return NativeConfig.ContainerRuntime.PODMAN;
-        } else {
-            throw new IllegalStateException("No container runtime was found to run the native image builder. "
-                    + "Make sure you have Docker or Podman installed in your environment.");
-        }
-    }
-
-    private static String getVersionOutputFor(NativeConfig.ContainerRuntime containerRuntime) {
-        Process versionProcess = null;
-        try {
-            ProcessBuilder pb = new ProcessBuilder(containerRuntime.getExecutableName(), "--version")
-                    .redirectErrorStream(true);
-            versionProcess = pb.start();
-            versionProcess.waitFor();
-            return new String(FileUtil.readFileContents(versionProcess.getInputStream()), StandardCharsets.UTF_8);
-        } catch (IOException | InterruptedException e) {
-            // If an exception is thrown in the process, just return an empty String
-            log.debugf(e, "Failure to read version output from %s", containerRuntime.getExecutableName());
-            return "";
-        } finally {
-            if (versionProcess != null) {
-                versionProcess.destroy();
-            }
-        }
     }
 
 }

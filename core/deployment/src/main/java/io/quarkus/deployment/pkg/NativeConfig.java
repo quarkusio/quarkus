@@ -2,10 +2,10 @@ package io.quarkus.deployment.pkg;
 
 import java.io.File;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -229,7 +229,7 @@ public class NativeConfig {
      * a container build is always done.
      */
     @ConfigItem
-    public Optional<ContainerRuntime> containerRuntime;
+    public Optional<ContainerRuntimeUtil.ContainerRuntime> containerRuntime;
 
     /**
      * Options to pass to the container runtime
@@ -440,18 +440,6 @@ public class NativeConfig {
          */
         @ConfigItem
         public Optional<List<String>> additionalArgs;
-    }
-
-    /**
-     * Supported Container runtimes
-     */
-    public static enum ContainerRuntime {
-        DOCKER,
-        PODMAN;
-
-        public String getExecutableName() {
-            return this.name().toLowerCase();
-        }
     }
 
     /**

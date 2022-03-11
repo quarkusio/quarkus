@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -631,19 +632,26 @@ public class RuntimeResourceDeployment {
             return returnType;
         if (returnType instanceof ParameterizedType) {
             ParameterizedType type = (ParameterizedType) returnType;
+            Type firstTypeArgument = type.getActualTypeArguments()[0];
             if (type.getRawType() == CompletionStage.class) {
-                return getEffectiveReturnType(type.getActualTypeArguments()[0]);
+                return getEffectiveReturnType(firstTypeArgument);
             }
             if (type.getRawType() == Uni.class) {
-                return getEffectiveReturnType(type.getActualTypeArguments()[0]);
+                return getEffectiveReturnType(firstTypeArgument);
             }
             if (type.getRawType() == Multi.class) {
-                return getEffectiveReturnType(type.getActualTypeArguments()[0]);
+                return getEffectiveReturnType(firstTypeArgument);
             }
             if (type.getRawType() == RestResponse.class) {
-                return getEffectiveReturnType(type.getActualTypeArguments()[0]);
+                return getEffectiveReturnType(firstTypeArgument);
             }
             return returnType;
+        }
+        if (returnType instanceof WildcardType) {
+            Type[] bounds = ((WildcardType) returnType).getLowerBounds();
+            if (bounds.length > 0)
+                return getRawType(bounds[0]);
+            return getRawType(((WildcardType) returnType).getUpperBounds()[0]);
         }
         throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }

@@ -25,14 +25,14 @@ public class ReceptionIfExistsTest {
     @Test
     public void testObserver() {
         ArcContainer container = Arc.container();
-        container.beanManager().fireEvent("foo");
+        container.beanManager().getEvent().fire("foo");
         assertEquals(1, EVENTS.size());
         assertEquals(DependentObserver.class.getName() + "foo", EVENTS.get(0));
 
         // Activate the request context but the instance still does not exist
         EVENTS.clear();
         container.requestContext().activate();
-        container.beanManager().fireEvent("foo");
+        container.beanManager().getEvent().fire("foo");
         assertEquals(1, EVENTS.size());
         assertEquals(DependentObserver.class.getName() + "foo", EVENTS.get(0));
         container.requestContext().deactivate();
@@ -42,7 +42,7 @@ public class ReceptionIfExistsTest {
         container.requestContext().activate();
         // Force bean instance creation
         container.instance(RequestScopedObserver.class).get().ping();
-        container.beanManager().fireEvent("foo");
+        container.beanManager().getEvent().fire("foo");
         assertEquals(2, EVENTS.size());
         assertEquals(RequestScopedObserver.class.getName() + "foo", EVENTS.get(0));
         assertEquals(DependentObserver.class.getName() + "foo", EVENTS.get(1));

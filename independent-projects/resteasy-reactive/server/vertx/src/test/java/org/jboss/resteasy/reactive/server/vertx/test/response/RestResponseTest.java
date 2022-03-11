@@ -27,6 +27,10 @@ public class RestResponseTest {
                 .then().statusCode(200)
                 .and().body(Matchers.equalTo("Hello"))
                 .and().contentType("text/plain");
+        RestAssured.get("/rest-response-wildcard")
+                .then().statusCode(200)
+                .and().body(Matchers.equalTo("Hello"))
+                .and().contentType("text/plain");
         RestAssured.get("/rest-response-full")
                 .then()
                 .statusCode(200)

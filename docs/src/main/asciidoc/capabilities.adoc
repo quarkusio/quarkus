@@ -51,11 +51,13 @@ The `quarkus-bootstrap-maven-plugin:extension-descriptor` Maven goal and the `ex
 ----
 quarkusExtension {
     capabilities {
-        capability 'io.quarkus.rest'
-        capability 'io.quarkus.resteasy'
+        provides 'io.quarkus.rest' <1>
+        requires 'io.quarkus.resteasy' <2>
     }
 }
 ----
+<1> the extension provides the `io.quarkus.hibernate.orm` capability (multiple `provides` elements are allowed)
+<2> the extension requires the `io.quarkus.agroal` capability to be provided to function properly (multiple `requires` elements are allowed)
 
 NOTE: The Gradle extension plugin is still experimental and may change in the future.
 
@@ -68,11 +70,14 @@ NOTE: The Gradle extension plugin is still experimental and may change in the fu
 ----
 quarkusExtension {
     capabilities {
-        capability("io.quarkus.rest")
-        capability("io.quarkus.resteasy")
+        provides("io.quarkus.rest") <1>
+        requires("io.quarkus.resteasy") <2>
     }
 }
 ----
+<1> the extension provides the `io.quarkus.hibernate.orm` capability (multiple `provides` elements are allowed)
+<2> the extension requires the `io.quarkus.agroal` capability to be provided to function properly (multiple `requires` elements are allowed)
+
 NOTE: The Gradle extension plugin is still experimental and may change in the future.
 ****
 
@@ -115,13 +120,13 @@ The corresponding `requiresIf` element is also supported.
 ----
 quarkusExtension {
     capabilities {
-        capability 'io.quarkus.container.image.openshift' onlyIf ['io.quarkus.container.image.openshift.deployment.OpenshiftBuild'] <1>
+        provides 'io.quarkus.container.image.openshift' onlyIf ['io.quarkus.container.image.openshift.deployment.OpenshiftBuild'] <1>
     }
 }
 ----
 <1> condition that must be resolved to `true` by a class implementing `java.util.function.BooleanSupplier`
 
-NOTE: It is possible to specify `onlyIfNot` conditions as well.
+NOTE: It is possible to specify `onlyIfNot` conditions as well. Conditions can also be set for required capabilities.
 ****
 
 [role="secondary asciidoc-tabs-sync-gradle-kotlin"]
@@ -131,13 +136,13 @@ NOTE: It is possible to specify `onlyIfNot` conditions as well.
 ----
 quarkusExtension {
     capabilities {
-        capability("io.quarkus.container.image.openshift").onlyIf(["io.quarkus.container.image.openshift.deployment.OpenshiftBuild"]) <1>
+        provides("io.quarkus.container.image.openshift").onlyIf(["io.quarkus.container.image.openshift.deployment.OpenshiftBuild"]) <1>
     }
 }
 ----
 <1> condition that must be resolved to `true` by a class implementing `java.util.function.BooleanSupplier`
 
-NOTE: It is possible to specify `onlyIfNot` conditions as well.
+NOTE: It is possible to specify `onlyIfNot` conditions as well. . Conditions can also be set for required capabilities.
 ****
 
 In this case, `io.quarkus.container.image.openshift.deployment.OpenshiftBuild` should be included in one of the extension deployment dependencies and implement `java.util.function.BooleanSupplier`. At build time, the Quarkus bootstrap will create an instance of it and register `io.quarkus.container.image.openshift` capability only if its `getAsBoolean()` method returns true. 

@@ -99,8 +99,12 @@ public class QuarkusExtensionConfiguration {
         this.dependencyCondition = dependencyCondition;
     }
 
-    public List<Capability> getCapabilities() {
-        return capabilities.getCapabilities();
+    public List<Capability> getProvidedCapabilities() {
+        return capabilities.getProvidedCapabilities();
+    }
+
+    public List<Capability> getRequiredCapabilities() {
+        return capabilities.getRequiredCapabilities();
     }
 
     public void capabilities(Action<Capabilities> capabilitiesAction) {

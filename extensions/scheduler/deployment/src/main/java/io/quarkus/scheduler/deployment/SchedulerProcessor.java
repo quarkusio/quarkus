@@ -10,8 +10,6 @@ import static org.jboss.jandex.AnnotationValue.createStringValue;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,9 +85,6 @@ import io.quarkus.scheduler.runtime.SimpleScheduler;
 import io.quarkus.scheduler.runtime.devconsole.SchedulerDevConsoleRecorder;
 import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 
-/**
- * @author Martin Kouba
- */
 public class SchedulerProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(SchedulerProcessor.class);
@@ -114,9 +109,12 @@ public class SchedulerProcessor {
 
     @BuildStep
     AutoAddScopeBuildItem autoAddScope() {
-        return AutoAddScopeBuildItem.builder().containsAnnotations(SCHEDULED_NAME, SCHEDULES_NAME)
+        // We add @Singleton to any bean class that has no scope annotation and declares at least one non-static method annotated with @Scheduled
+        return AutoAddScopeBuildItem.builder()
+                .anyMethodMatches(m -> !Modifier.isStatic(m.flags())
+                        && (m.hasAnnotation(SCHEDULED_NAME) || m.hasAnnotation(SCHEDULES_NAME)))
                 .defaultScope(BuiltinScope.SINGLETON)
-                .reason("Found scheduled business methods").build();
+                .reason("Found non-static scheduled business methods").build();
     }
 
     @BuildStep
@@ -124,7 +122,27 @@ public class SchedulerProcessor {
             TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
-        // We need to collect all business methods annotated with @Scheduled first
+        // First collect static scheduled methods
+        List<AnnotationInstance> schedules = new ArrayList<>(beanArchives.getIndex().getAnnotations(SCHEDULED_NAME));
+        for (AnnotationInstance annotationInstance : beanArchives.getIndex().getAnnotations(SCHEDULES_NAME)) {
+            for (AnnotationInstance scheduledInstance : annotationInstance.value().asNestedArray()) {
+                // We need to set the target of the containing instance
+                schedules.add(AnnotationInstance.create(scheduledInstance.name(), annotationInstance.target(),
+                        scheduledInstance.values()));
+            }
+        }
+        for (AnnotationInstance annotationInstance : schedules) {
+            if (annotationInstance.target().kind() != METHOD) {
+                continue;
+            }
+            MethodInfo method = annotationInstance.target().asMethod();
+            if (Modifier.isStatic(method.flags())) {
+                scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules));
+                LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
+            }
+        }
+
+        // Then collect all business methods annotated with @Scheduled
         for (BeanInfo bean : beanDiscovery.beanStream().classBeans()) {
             collectScheduledMethods(beanArchives.getIndex(), transformedAnnotations, bean,
                     bean.getTarget().get().asClass(),
@@ -136,10 +154,14 @@ public class SchedulerProcessor {
             ClassInfo beanClass, BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         for (MethodInfo method : beanClass.methods()) {
+            if (Modifier.isStatic(method.flags())) {
+                // Ignore static methods
+                continue;
+            }
             List<AnnotationInstance> schedules = null;
             AnnotationInstance scheduledAnnotation = transformedAnnotations.getAnnotation(method, SCHEDULED_NAME);
             if (scheduledAnnotation != null) {
-                schedules = Collections.singletonList(scheduledAnnotation);
+                schedules = List.of(scheduledAnnotation);
             } else {
                 AnnotationInstance schedulesAnnotation = transformedAnnotations.getAnnotation(method, SCHEDULES_NAME);
                 if (schedulesAnnotation != null) {
@@ -174,13 +196,16 @@ public class SchedulerProcessor {
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             MethodInfo method = scheduledMethod.getMethod();
-
-            if (Modifier.isPrivate(method.flags()) || Modifier.isStatic(method.flags())) {
-                errors.add(new IllegalStateException("@Scheduled method must be non-private and non-static: "
+            if (Modifier.isAbstract(method.flags())) {
+                errors.add(new IllegalStateException("@Scheduled method must not be abstract: "
                         + method.declaringClass().name() + "#" + method.name() + "()"));
                 continue;
             }
-
+            if (Modifier.isPrivate(method.flags())) {
+                errors.add(new IllegalStateException("@Scheduled method must not be private: "
+                        + method.declaringClass().name() + "#" + method.name() + "()"));
+                continue;
+            }
             // Validate method params and return type
             List<Type> params = method.parameters();
             if (params.size() > 1
@@ -212,7 +237,7 @@ public class SchedulerProcessor {
     @BuildStep
     public List<UnremovableBeanBuildItem> unremovableBeans() {
         // Beans annotated with @Scheduled should never be removed
-        return Arrays.asList(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SCHEDULED_NAME)),
+        return List.of(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SCHEDULED_NAME)),
                 new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SCHEDULES_NAME)));
     }
 
@@ -320,20 +345,22 @@ public class SchedulerProcessor {
 
         BeanInfo bean = scheduledMethod.getBean();
         MethodInfo method = scheduledMethod.getMethod();
+        boolean isStatic = Modifier.isStatic(method.flags());
+        ClassInfo implClazz = isStatic ? method.declaringClass() : bean.getImplClazz();
 
         String baseName;
-        if (bean.getImplClazz().enclosingClass() != null) {
-            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + NESTED_SEPARATOR
-                    + DotNames.simpleName(bean.getImplClazz());
+        if (implClazz.enclosingClass() != null) {
+            baseName = DotNames.simpleName(implClazz.enclosingClass()) + NESTED_SEPARATOR
+                    + DotNames.simpleName(implClazz);
         } else {
-            baseName = DotNames.simpleName(bean.getImplClazz().name());
+            baseName = DotNames.simpleName(implClazz.name());
         }
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
         for (Type i : method.parameters()) {
             sigBuilder.append(i.name().toString());
         }
-        String generatedName = DotNames.internalPackageNameWithTrailingSlash(bean.getImplClazz().name()) + baseName
+        String generatedName = DotNames.internalPackageNameWithTrailingSlash(implClazz.name()) + baseName
                 + INVOKER_SUFFIX + "_" + method.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
 
@@ -344,33 +371,47 @@ public class SchedulerProcessor {
         // The descriptor is: void invokeBean(Object execution)
         MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class)
                 .addException(Exception.class);
-        // InjectableBean<Foo: bean = Arc.container().bean("1");
-        // InstanceHandle<Foo> handle = Arc.container().instance(bean);
-        // handle.get().ping();
-        ResultHandle containerHandle = invoke
-                .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle beanHandle = invoke.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(ArcContainer.class, "bean", InjectableBean.class, String.class),
-                containerHandle, invoke.load(bean.getIdentifier()));
-        ResultHandle instanceHandle = invoke.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, InjectableBean.class),
-                containerHandle, beanHandle);
-        ResultHandle beanInstanceHandle = invoke
-                .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
-        if (method.parameters().isEmpty()) {
-            invoke.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class),
-                    beanInstanceHandle);
+
+        if (isStatic) {
+            if (method.parameters().isEmpty()) {
+                invoke.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), void.class));
+            } else {
+                invoke.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), void.class,
+                                ScheduledExecution.class),
+                        invoke.getMethodParam(0));
+            }
         } else {
-            invoke.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
-                            ScheduledExecution.class),
-                    beanInstanceHandle, invoke.getMethodParam(0));
-        }
-        // handle.destroy() - destroy dependent instance afterwards
-        if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
-            invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class),
-                    instanceHandle);
+            // InjectableBean<Foo: bean = Arc.container().bean("1");
+            // InstanceHandle<Foo> handle = Arc.container().instance(bean);
+            // handle.get().ping();
+            ResultHandle containerHandle = invoke
+                    .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+            ResultHandle beanHandle = invoke.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(ArcContainer.class, "bean", InjectableBean.class, String.class),
+                    containerHandle, invoke.load(bean.getIdentifier()));
+            ResultHandle instanceHandle = invoke.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, InjectableBean.class),
+                    containerHandle, beanHandle);
+            ResultHandle beanInstanceHandle = invoke
+                    .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+                            instanceHandle);
+            if (method.parameters().isEmpty()) {
+                invoke.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), void.class),
+                        beanInstanceHandle);
+            } else {
+                invoke.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), void.class,
+                                ScheduledExecution.class),
+                        beanInstanceHandle, invoke.getMethodParam(0));
+            }
+            // handle.destroy() - destroy dependent instance afterwards
+            if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
+                invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class),
+                        instanceHandle);
+            }
         }
         invoke.returnValue(null);
 

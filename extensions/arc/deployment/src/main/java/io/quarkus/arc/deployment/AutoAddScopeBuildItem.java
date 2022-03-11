@@ -2,11 +2,13 @@ package io.quarkus.arc.deployment;
 
 import java.util.Collection;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -173,6 +175,25 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
             return and((clazz, annotations, index) -> {
                 for (DotName annotation : annotationNames) {
                     if (clazz.annotations().containsKey(annotation)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+
+        /**
+         * The class declares a method that matches the given predicate.
+         * <p>
+         * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
+         *
+         * @param predicate
+         * @return self
+         */
+        public Builder anyMethodMatches(Predicate<MethodInfo> predicate) {
+            return and((clazz, annotations, index) -> {
+                for (MethodInfo method : clazz.methods()) {
+                    if (predicate.test(method)) {
                         return true;
                     }
                 }

@@ -22,6 +22,10 @@ public final class ScheduledBusinessMethodItem extends MultiBuildItem {
         this.schedules = schedules;
     }
 
+    /**
+     *
+     * @return the bean or {@code null} for a static method
+     */
     public BeanInfo getBean() {
         return bean;
     }

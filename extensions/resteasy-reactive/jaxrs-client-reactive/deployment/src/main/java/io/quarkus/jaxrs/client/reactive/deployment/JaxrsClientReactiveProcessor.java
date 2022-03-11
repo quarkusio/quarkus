@@ -1,6 +1,5 @@
 package io.quarkus.jaxrs.client.reactive.deployment;
 
-import static io.quarkus.deployment.Feature.JAXRS_CLIENT_REACTIVE;
 import static org.jboss.jandex.Type.Kind.ARRAY;
 import static org.jboss.jandex.Type.Kind.CLASS;
 import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
@@ -125,7 +124,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -191,11 +189,6 @@ public class JaxrsClientReactiveProcessor {
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
     public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
             .ofMethod(MultipartResponseDataBase.class, "addFiller", void.class, FieldFiller.class);
-
-    @BuildStep
-    void addFeature(BuildProducer<FeatureBuildItem> features) {
-        features.produce(new FeatureBuildItem(JAXRS_CLIENT_REACTIVE));
-    }
 
     @BuildStep
     void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {

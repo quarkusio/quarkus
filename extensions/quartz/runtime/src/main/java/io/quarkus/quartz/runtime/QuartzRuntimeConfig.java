@@ -1,5 +1,7 @@
 package io.quarkus.quartz.runtime;
 
+import java.time.Duration;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -24,6 +26,12 @@ public class QuartzRuntimeConfig {
      */
     @ConfigItem(defaultValue = "5")
     public int threadPriority;
+
+    /**
+     * Defines how late the schedulers should be to be considered misfired.
+     */
+    @ConfigItem(defaultValue = "60")
+    public Duration misfireThreshold;
 
     /**
      * Scheduler can be started in different modes: normal, forced or halted.

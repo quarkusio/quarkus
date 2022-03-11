@@ -178,14 +178,6 @@ public class SchedulerProcessor {
                 LOGGER.debugf("Found scheduled business method %s declared on %s", method, bean);
             }
         }
-
-        DotName superClassName = beanClass.superName();
-        if (superClassName != null) {
-            ClassInfo superClass = index.getClassByName(superClassName);
-            if (superClass != null) {
-                collectScheduledMethods(index, transformedAnnotations, bean, superClass, scheduledBusinessMethods);
-            }
-        }
     }
 
     @BuildStep

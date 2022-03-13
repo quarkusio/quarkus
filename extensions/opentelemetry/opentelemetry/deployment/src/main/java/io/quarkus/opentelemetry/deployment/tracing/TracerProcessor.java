@@ -42,6 +42,8 @@ import io.quarkus.opentelemetry.runtime.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingClientInterceptor;
+import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
@@ -71,6 +73,16 @@ public class TracerProcessor {
         @Override
         public boolean getAsBoolean() {
             return IS_MICROMETER_EXTENSION_AVAILABLE;
+        }
+    }
+
+    static class GrpcExtensionAvailable implements BooleanSupplier {
+        private static final boolean IS_GRPC_EXTENSION_AVAILABLE = isClassPresent(
+                "io.quarkus.grpc.runtime.GrpcServerRecorder");
+
+        @Override
+        public boolean getAsBoolean() {
+            return IS_GRPC_EXTENSION_AVAILABLE;
         }
     }
 
@@ -165,6 +177,12 @@ public class TracerProcessor {
             }
         }
         dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
+    }
+
+    @BuildStep(onlyIf = { TracerEnabled.class, GrpcExtensionAvailable.class })
+    void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)

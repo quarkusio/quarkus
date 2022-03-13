@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.RequestScoped;
 
+import io.smallrye.common.vertx.ContextLocals;
+
 @RequestScoped
 public class RequestScopeBean {
     private static final AtomicInteger idSequence = new AtomicInteger();
@@ -13,6 +15,7 @@ public class RequestScopeBean {
     @PostConstruct
     public void setUp() {
         id = idSequence.getAndIncrement();
+        ContextLocals.put("context-id", id);
     }
 
     public int getId() {

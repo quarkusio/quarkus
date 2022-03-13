@@ -1,6 +1,7 @@
 ---
 # The format of this file is documented here:
 # https://github.com/quarkusio/quarkus-bot#triage-issues
+features: [ALL]
 triage:
   discussions:
     monitoredCategories: [33575230]

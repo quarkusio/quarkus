@@ -2249,7 +2249,7 @@ If multiple extensions register a feature of the same name the build fails.
 
 The feature name should also map to a label in the extension's `devtools/common/src/main/filtered/extensions.json` entry so that
 the feature name displayed by the startup line matches a label that one can used to select the extension when creating a project
-using the Quarkus maven plugin as shown in this example taken from the xref:rest-json.adoc[Writing JSON REST Services] guide where the `resteasy-jackson` feature is referenced:
+using the Quarkus maven plugin as shown in this example taken from the xref:rest-json.adoc[Writing JSON REST Services] guide where the `resteasy-reactive-jackson` feature is referenced:
 
 [source,bash,subs=attributes+]
 ----
@@ -2258,7 +2258,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-json \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy,resteasy-jackson"
+    -Dextensions="resteasy-reactive,resteasy-reactive-jackson"
 cd rest-json
 ----
 

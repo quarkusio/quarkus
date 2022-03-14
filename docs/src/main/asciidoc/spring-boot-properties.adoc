@@ -31,7 +31,7 @@ The solution is located in the `spring-boot-properties-quickstart` {quickstarts-
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-boot-properties-quickstart
-:create-app-extensions: resteasy,spring-boot-properties
+:create-app-extensions: resteasy-reactive,spring-boot-properties
 include::includes/devtools/create-app.adoc[]
 
 This command generates a project and imports the `spring-boot-properties` extension.

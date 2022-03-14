@@ -64,7 +64,7 @@ First, we need a new project.
 Create a new project with the following command:
 
 :create-app-artifact-id: security-keycloak-authorization-quickstart
-:create-app-extensions: oidc,keycloak-authorization,resteasy-jackson
+:create-app-extensions: oidc,keycloak-authorization,resteasy-reactive-jackson
 include::includes/devtools/create-app.adoc[]
 
 This command generates a project, importing the `keycloak-authorization` extension which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.

@@ -38,10 +38,10 @@ The solution is located in the `validation-quickstart` {quickstarts-tree-url}/va
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: validation-quickstart
-:create-app-extensions: resteasy,resteasy-jackson,hibernate-validator
+:create-app-extensions: resteasy-reactive-jackson,hibernate-validator
 include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson and Hibernate Validator/Bean Validation extensions.
+This command generates a Maven structure importing the RESTEasy Reactive/JAX-RS, Jackson and Hibernate Validator/Bean Validation extensions.
 
 If you already have your Quarkus project configured, you can add the `hibernate-validator` extension
 to your project by running the following command in your project base directory:
@@ -354,7 +354,7 @@ You can configure this behavior by adding the following configuration in your `a
 quarkus.default-locale=fr-FR
 ----
 
-If you are using RESTEasy, in the context of a JAX-RS endpoint, Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
+If you are using RESTEasy Reactive, in the context of a JAX-RS endpoint, Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
 provided the supported locales have been properly specified in the `application.properties`:
 
 [source, properties]

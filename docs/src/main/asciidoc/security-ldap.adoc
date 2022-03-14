@@ -43,7 +43,7 @@ The solution is located in the `security-ldap-quickstart` {quickstarts-tree-url}
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-ldap-quickstart
-:create-app-extensions: elytron-security-ldap,resteasy
+:create-app-extensions: elytron-security-ldap,resteasy-reactive
 include::includes/devtools/create-app.adoc[]
 
 This command generates a project, importing the `elytron-security-ldap` extension

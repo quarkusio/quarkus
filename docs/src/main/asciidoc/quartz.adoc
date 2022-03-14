@@ -38,7 +38,7 @@ The solution is located in the `quartz-quickstart` {quickstarts-tree-url}/quartz
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: quartz-quickstart
-:create-app-extensions: resteasy,quartz,hibernate-orm-panache,flyway,resteasy-jackson,jdbc-postgresql
+:create-app-extensions: resteasy-reactive-jackson,quartz,hibernate-orm-panache,flyway,jdbc-postgresql
 include::includes/devtools/create-app.adoc[]
 
 It generates:

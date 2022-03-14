@@ -34,8 +34,9 @@ Edit the `pom.xml` file to add the Quarkus gRPC extension dependency (just under
 </dependency>
 ----
 
-By default the `quarkus-grpc` extension relies on reactive programming model, in this guide we will follow reactive approach.
-Under the dependencies section of your `pom.xml` file replace the `quarkus-resteasy` dependency with:
+By default the `quarkus-grpc` extension relies on the reactive programming model.
+In this guide we will follow a reactive approach.
+Under the dependencies section of your `pom.xml` file, make sure you have the RESTEasy Reactive dependency:
 
 [source,xml]
 ----
@@ -277,7 +278,6 @@ import io.smallrye.mutiny.Uni;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -295,7 +295,7 @@ public class ExampleResource {
 
     @GET
     @Path("/{name}")
-    public Uni<String> hello(@PathParam("name") String name) {
+    public Uni<String> hello(String name) {
         return hello.sayHello(HelloRequest.newBuilder().setName(name).build())
                 .onItem().transform(helloReply -> helloReply.getMessage());  // <3>
     }

@@ -22,7 +22,7 @@ include::includes/devtools/prerequisites.adoc[]
 First, we need a new project that contains the OpenShift extension. This can be done using the following command:
 
 :create-app-artifact-id: openshift-quickstart
-:create-app-extensions: resteasy,openshift
+:create-app-extensions: resteasy-reactive,openshift
 :create-app-code:
 include::includes/devtools/create-app.adoc[]
 

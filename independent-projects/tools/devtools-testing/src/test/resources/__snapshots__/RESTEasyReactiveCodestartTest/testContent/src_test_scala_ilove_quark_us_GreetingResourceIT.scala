@@ -3,4 +3,4 @@ package ilove.quark.us
 import io.quarkus.test.junit.QuarkusIntegrationTest
 
 @QuarkusIntegrationTest
-class ReactiveGreetingResourceIT extends ReactiveGreetingResourceTest
+class GreetingResourceIT extends GreetingResourceTest

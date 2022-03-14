@@ -48,7 +48,7 @@ Open a terminal and run the following command:
 For Linux & MacOS users
 
 :create-app-artifact-id: debugging-native
-:create-app-extensions: resteasy,container-image-docker
+:create-app-extensions: resteasy-reactive,container-image-docker
 :create-app-code:
 include::includes/devtools/create-app.adoc[]
 
@@ -78,7 +78,7 @@ As a first step, change to the project directory and build the native executable
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative
+./mvnw package -DskipTests -Dnative
 ----
 
 Run the application to verify it works as expected. In one terminal:
@@ -101,7 +101,7 @@ We can obtain this information while building the native executable by adding ad
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.additional-build-args=--native-image-info
 ----
 
@@ -156,7 +156,7 @@ or whether some third party jar has some native-image configuration embedded in 
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.additional-build-args=--verbose
 ----
 
@@ -172,7 +172,7 @@ One may also combine multiple native build options by separating with a comma, e
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.additional-build-args=--native-image-info,--verbose
 ----
 
@@ -258,7 +258,7 @@ Optionally, the native build process can generate reports that show what goes in
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.enable-reports
 ----
 
@@ -276,7 +276,7 @@ The CSV output can be enabled by adding `-H:PrintAnalysisCallTreeType=CSV` to th
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.enable-reports \
     -Dquarkus.native.additional-build-args=-H:PrintAnalysisCallTreeType=CSV
 ----
@@ -524,7 +524,7 @@ Rebuild the binary using:
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative
+./mvnw package -DskipTests -Dnative
 ----
 
 Run the application in one terminal
@@ -554,8 +554,6 @@ To see this in action, add this REST resource:
 ----
 package org.acme;
 
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.ws.rs.GET;
@@ -584,7 +582,7 @@ public class EncryptDecryptResource {
 
     @GET
     @Path("/{message}")
-    public String encryptDecrypt(@PathParam String message) throws Exception {
+    public String encryptDecrypt(String message) throws Exception {
         KeyPair keyPair = KEY_PAIR_GEN.generateKeyPair();
 
         byte[] text = message.getBytes(StandardCharsets.UTF_8);
@@ -606,7 +604,7 @@ When trying to rebuild the application, you’ll encounter an error:
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative
+./mvnw package -DskipTests -Dnative
 ...
 Error: Unsupported features in 2 methods
 Detailed message:
@@ -635,7 +633,7 @@ As suggested by the message, let's start by adding an option to track object ins
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.additional-build-args="--trace-object-instantiation=java.security.SecureRandom"
 ...
 Error: Unsupported features in 2 methods
@@ -719,7 +717,7 @@ Recompile the application, rebuild the binary and run it. Attempting a simple cu
 
 [source,bash,subs=attributes+]
 ----
-$ ./mvnw package -DskipTests -Pnative
+$ ./mvnw package -DskipTests -Dnative
 ...
 $ docker run -i --rm -p 8080:8080 test/debugging-native:1.0.0-SNAPSHOT
 ...
@@ -822,7 +820,7 @@ From outside the tools container, execute:
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.debug.enabled \
     -Dquarkus.native.additional-build-args=-H:-DeleteLocalSymbols
 ----
@@ -938,7 +936,7 @@ Build the native executable with debug info:
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.debug.enabled \
     -Dquarkus.native.additional-build-args=-H:-DeleteLocalSymbols
 ----
@@ -1044,7 +1042,7 @@ To verify this compile and run the example application:
 
 [source,bash,subs=attributes+]
 ----
-$ ./mvnw package -DskipTests -Pnative
+$ ./mvnw package -DskipTests -Dnative
 ...
 $ docker run -i --rm -p 8080:8080 test/debugging-native:1.0.0-SNAPSHOT
 ...
@@ -1121,7 +1119,7 @@ On top of that, add `-H:-OmitInlinedMethodDebugLineInfo` option to avoid inlined
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.debug.enabled \
     -Dquarkus.native.additional-build-args=-H:-OmitInlinedMethodDebugLineInfo
 ...
@@ -1465,7 +1463,7 @@ To generate the native executable using these flags, do the following:
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative
+./mvnw package -DskipTests -Dnative
     -Dquarkus.native.additional-build-args=-H:+PreserveFramePointer,-H:-DeleteLocalSymbols
 ----
 
@@ -1518,7 +1516,7 @@ To debug this process, simply add `--debug-attach=*:8000` as an additional build
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative \
+./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.additional-build-args=--debug-attach=*:8000
 ----
 
@@ -1529,7 +1527,7 @@ so you can remote debug this process by adding the `--vm.agentlib:jdwp=transport
 
 [source,bash,subs=attributes+]
 ----
-$ ./mvnw package -DskipTests -Pnative \
+$ ./mvnw package -DskipTests -Dnative \
     -Dquarkus.native.additional-build-args=--vm.agentlib:jdwp=transport=dt_socket\\,server=y\\,suspend=y\\,address=*:8000
 ----
 
@@ -1552,7 +1550,7 @@ E.g.
 
 [source,bash,subs=attributes+]
 ----
-./mvnw package -DskipTests -Pnative -Dquarkus.native.container-build=true \
+./mvnw package -DskipTests -Dnative -Dquarkus.native.container-build=true \
     -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor} \
     -Dquarkus.native.enable-vm-inspection=true
 ----

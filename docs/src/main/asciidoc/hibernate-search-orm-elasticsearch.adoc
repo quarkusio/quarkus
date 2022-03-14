@@ -43,7 +43,7 @@ The provided solution contains a few additional elements such as tests and testi
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: hibernate-search-orm-elasticsearch-quickstart
-:create-app-extensions: hibernate-orm-panache,jdbc-postgresql,hibernate-search-orm-elasticsearch,resteasy-jackson
+:create-app-extensions: hibernate-orm-panache,jdbc-postgresql,hibernate-search-orm-elasticsearch,resteasy-reactive-jackson
 include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the following extensions:
@@ -51,7 +51,7 @@ This command generates a Maven structure importing the following extensions:
  * Hibernate ORM with Panache,
  * the PostgreSQL JDBC driver,
  * Hibernate Search + Elasticsearch,
- * RESTEasy and Jackson.
+ * RESTEasy Reactive and Jackson.
 
 If you already have your Quarkus project configured, you can add the `hibernate-search-orm-elasticsearch` extension
 to your project by running the following command in your project base directory:
@@ -182,19 +182,26 @@ Create the `org.acme.hibernate.search.elasticsearch.LibraryResource` class:
 ----
 package org.acme.hibernate.search.elasticsearch;
 
+import java.util.List;
+import java.util.Optional;
+
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import javax.transaction.Transactional;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.acme.hibernate.search.elasticsearch.model.Author;
 import org.acme.hibernate.search.elasticsearch.model.Book;
-import org.jboss.resteasy.annotations.jaxrs.FormParam;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
+import org.hibernate.search.mapper.orm.session.SearchSession;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestQuery;
+
+import io.quarkus.runtime.StartupEvent;
 
 @Path("/library")
 public class LibraryResource {
@@ -203,7 +210,7 @@ public class LibraryResource {
     @Path("book")
     @Transactional
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public void addBook(@FormParam String title, @FormParam Long authorId) {
+    public void addBook(@RestForm String title, @RestForm Long authorId) {
         Author author = Author.findById(authorId);
         if (author == null) {
             return;
@@ -221,7 +228,7 @@ public class LibraryResource {
     @DELETE
     @Path("book/{id}")
     @Transactional
-    public void deleteBook(@PathParam Long id) {
+    public void deleteBook(Long id) {
         Book book = Book.findById(id);
         if (book != null) {
             book.author.books.remove(book);
@@ -233,7 +240,7 @@ public class LibraryResource {
     @Path("author")
     @Transactional
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public void addAuthor(@FormParam String firstName, @FormParam String lastName) {
+    public void addAuthor(@RestForm String firstName, @RestForm String lastName) {
         Author author = new Author();
         author.firstName = firstName;
         author.lastName = lastName;
@@ -244,7 +251,7 @@ public class LibraryResource {
     @Path("author/{id}")
     @Transactional
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public void updateAuthor(@PathParam Long id, @FormParam String firstName, @FormParam String lastName) {
+    public void updateAuthor(Long id, @RestForm String firstName, @RestForm String lastName) {
         Author author = Author.findById(id);
         if (author == null) {
             return;
@@ -257,7 +264,7 @@ public class LibraryResource {
     @DELETE
     @Path("author/{id}")
     @Transactional
-    public void deleteAuthor(@PathParam Long id) {
+    public void deleteAuthor(Long id) {
         Author author = Author.findById(id);
         if (author != null) {
             author.delete();
@@ -266,7 +273,7 @@ public class LibraryResource {
 }
 ----
 
-Nothing out of the ordinary here: it is just good old Hibernate ORM with Panache operations in a standard JAX-RS service.
+Nothing out of the ordinary here: it is just good old Hibernate ORM with Panache operations in a REST service.
 
 In fact, the interesting part is that we will need to add very few elements to make our full text search application working.
 
@@ -489,13 +496,13 @@ And then we can add the following methods (and a few ``import``s):
     @GET
     @Path("author/search") // <3>
     @Transactional
-    public List<Author> searchAuthors(@QueryParam String pattern, // <4>
-            @QueryParam Optional<Integer> size) {
+    public List<Author> searchAuthors(@RestQuery String pattern, // <4>
+            @RestQuery Optional<Integer> size) {
         return searchSession.search(Author.class) // <5>
                 .where(f ->
                     pattern == null || pattern.trim().isEmpty() ?
-                            f.matchAll() : // <6>
-                            f.simpleQueryString()
+                        f.matchAll() : // <6>
+                        f.simpleQueryString()
                                 .fields("firstName", "lastName", "books.title").matching(pattern) // <7>
                 )
                 .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <8>
@@ -509,7 +516,7 @@ All the upcoming updates coming through Hibernate ORM operations will be synchro
 If you don't import data manually in the database, you don't need that:
 the mass indexer should then only be used when you change your indexing configuration (adding a new field, changing an analyzer's configuration...) and you want the new configuration to be applied to your existing entities.
 <3> This is where the magic begins: just adding the annotations to our entities makes them available for full text search: we can now query the index using the Hibernate Search DSL.
-<4> Use the `org.jboss.resteasy.annotations.jaxrs.QueryParam` annotation type to avoid repeating the parameter name.
+<4> Use the `org.jboss.resteasy.reactive.RestQuery` annotation type to avoid repeating the parameter name.
 <5> We indicate that we are searching for ``Author``s.
 <6> We create a predicate: if the pattern is empty, we use a `matchAll()` predicate.
 <7> If we have a valid pattern, we create a https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html[`simpleQueryString()`] predicate on the `firstName`, `lastName` and `books.title` fields matching our pattern.

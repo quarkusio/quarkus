@@ -33,7 +33,7 @@ The solution is located in the `opentelemetry-quickstart` {quickstarts-tree-url}
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: opentelemetry-quickstart
-:create-app-extensions: resteasy,quarkus-opentelemetry-exporter-otlp
+:create-app-extensions: resteasy-reactive,quarkus-opentelemetry-exporter-otlp
 include::includes/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry-exporter-otlp` extension,

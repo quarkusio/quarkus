@@ -74,7 +74,7 @@ First, make sure your project has the `quarkus-reactive-pg-client` extension ena
 If you are creating a new project, use the following command:
 
 :create-app-artifact-id: reactive-pg-client-quickstart
-:create-app-extensions: resteasy,reactive-pg-client,resteasy-mutiny
+:create-app-extensions: resteasy-reactive,reactive-pg-client
 include::includes/devtools/create-app.adoc[]
 
 If you have an already created project, the `reactive-pg-client` extension can be added to an existing Quarkus project with the `add-extension` command:
@@ -101,10 +101,7 @@ implementation("io.quarkus:quarkus-reactive-pg-client")
 
 === Mutiny
 
-Reactive REST endpoints in your application that return Uni or Multi need `Mutiny support for RESTEasy` extension (`io.quarkus:quarkus-resteasy-mutiny`) to work properly:
-
-:add-extension-extensions: resteasy-mutiny
-include::includes/devtools/extension-add.adoc[]
+RESTEasy Reactive includes supports for Mutiny types (e.g. `Uni` and `Multi`) out of the box.
 
 [TIP]
 ====
@@ -115,7 +112,7 @@ If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an i
 === JSON Binding
 
 We will expose `Fruit` instances over HTTP in the JSON format.
-Consequently, you also need to add the `quarkus-resteasy-jackson` extension:
+Consequently, you also need to add the `quarkus-resteasy-reactive-jackson` extension:
 
 :add-extension-extensions: resteasy-jackson
 include::includes/devtools/extension-add.adoc[]
@@ -127,14 +124,14 @@ If you prefer not to use the command line, manually add the dependency to your b
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-jackson")
+implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 
 Of course, this is only a requirement for this guide, not any application using the Reactive PostgreSQL Client.
@@ -318,7 +315,7 @@ And in the JAX-RS resource:
 ----
 @GET
 @Path("{id}")
-public Uni<Response> getSingle(@PathParam Long id) {
+public Uni<Response> getSingle(Long id) {
     return Fruit.findById(client, id)
             .onItem().transform(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND)) // <1>
             .onItem().transform(ResponseBuilder::build); // <2>
@@ -377,7 +374,7 @@ And to handle the HTTP `DELETE` method in the web resource:
 ----
 @DELETE
 @Path("{id}")
-public Uni<Response> delete(@PathParam Long id) {
+public Uni<Response> delete(Long id) {
     return Fruit.delete(client, id)
             .onItem().transform(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
             .onItem().transform(status -> Response.status(status).build());

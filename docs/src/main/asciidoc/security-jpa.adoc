@@ -41,7 +41,7 @@ The solution is located in the `security-jpa-quickstart` {quickstarts-tree-url}/
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-jpa-quickstart
-:create-app-extensions: security-jpa,jdbc-postgresql,resteasy,hibernate-orm-panache
+:create-app-extensions: security-jpa,jdbc-postgresql,resteasy-reactive,hibernate-orm-panache
 include::includes/devtools/create-app.adoc[]
 
 [NOTE]

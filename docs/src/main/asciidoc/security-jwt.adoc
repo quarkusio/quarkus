@@ -36,7 +36,7 @@ The solution is located in the `security-jwt-quickstart` {quickstarts-tree-url}/
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-jwt-quickstart
-:create-app-extensions: resteasy,resteasy-jackson,smallrye-jwt,smallrye-jwt-build
+:create-app-extensions: resteasy-reactive-jackson,smallrye-jwt,smallrye-jwt-build
 include::includes/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `smallrye-jwt` extension, which includes the {mp-jwt} support.
@@ -124,7 +124,7 @@ public class TokenSecuredResource {
     }
 
     private boolean hasJwt() {
-	return jwt.getClaimNames() != null;
+        return jwt.getClaimNames() != null;
     }
 }
 ----
@@ -156,7 +156,7 @@ and you should see output similar to:
 Listening for transport dt_socket at address: 5005
 2020-07-15 16:09:50,883 INFO  [io.quarkus] (Quarkus Main Thread) security-jwt-quickstart 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 1.073s. Listening on: http://0.0.0.0:8080
 2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
-2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, mutiny, resteasy, resteasy-jackson, security, smallrye-context-propagation, smallrye-jwt, vertx, vertx-web]
+2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, mutiny, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-context-propagation, smallrye-jwt, vertx, vertx-web]
 ----
 
 Now that the REST endpoint is running, we can access it using a command line tool like curl:
@@ -571,7 +571,7 @@ And executed using `java -jar target/quarkus-app/quarkus-run.jar`:
 ----
 $ java -jar target/quarkus-app/quarkus-run.jar
 2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, smallrye-jwt]
+2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-jwt]
 ----
 
 You can also generate the native executable with:
@@ -600,7 +600,7 @@ include::includes/devtools/build-native.adoc[]
 
 $ ./target/security-jwt-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, smallrye-jwt]
+2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-jwt]
 ----
 
 === Explore the Solution

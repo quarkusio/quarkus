@@ -19,7 +19,7 @@ To scaffold a Gradle project you can either use the xref:cli-tooling.adoc[Quarku
 [source, bash]
 ----
 quarkus create app my-groupId:my-artifactId \
-    --extension=resteasy,resteasy-jackson \
+    --extension=resteasy-reactive,resteasy-reactive-jackson \
     --gradle
 ----
 
@@ -34,7 +34,7 @@ _For more information about how to install the Quarkus CLI and use it, please re
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=my-groupId \
     -DprojectArtifactId=my-artifactId \
-    -Dextensions="resteasy,resteasy-jackson" \
+    -Dextensions="resteasy-reactive,resteasy-reactive-jackson" \
     -DbuildTool=gradle
 ----
 

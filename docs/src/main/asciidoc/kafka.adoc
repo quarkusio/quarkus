@@ -185,7 +185,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.annotations.SseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @Path("/prices")
 public class PriceResource {
@@ -197,7 +197,7 @@ public class PriceResource {
     @GET
     @Path("/prices")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType("text/plain")
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Multi<Double> stream() {
         return prices;
     }
@@ -211,7 +211,7 @@ in this example exposing it as a Server-Sent Events endpoint.
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above, RESTEasy endpoint handles that for you.
+In the example above, the RESTEasy Reactive endpoint handles that for you.
 ====
 
 Following types can be injected as channels:

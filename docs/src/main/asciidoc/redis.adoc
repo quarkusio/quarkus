@@ -38,7 +38,7 @@ The solution is located in the `redis-quickstart` {quickstarts-tree-url}/redis-q
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: redis-quickstart
-:create-app-extensions: redis-client,resteasy-jackson,resteasy-mutiny
+:create-app-extensions: redis-client,resteasy-reactive-jackson
 include::includes/devtools/create-app.adoc[]
 
 This command generates a new project, importing the Redis extension.
@@ -201,7 +201,6 @@ package org.acme.redis;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.POST;
@@ -229,19 +228,19 @@ public class IncrementResource {
 
     @GET
     @Path("/{key}")
-    public Increment get(@PathParam("key") String key) {
+    public Increment get(String key) {
         return new Increment(key, Integer.valueOf(service.get(key)));
     }
 
     @PUT
     @Path("/{key}")
-    public void increment(@PathParam("key") String key, Integer value) {
+    public void increment(String key, Integer value) {
         service.increment(key, value);
     }
 
     @DELETE
     @Path("/{key}")
-    public Uni<Void> delete(@PathParam("key") String key) {
+    public Uni<Void> delete(String key) {
         return service.del(key);
     }
 }

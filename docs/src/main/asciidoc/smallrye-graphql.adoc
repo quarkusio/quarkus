@@ -61,7 +61,7 @@ The solution is located in the `microprofile-graphql-quickstart` {quickstarts-tr
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: microprofile-graphql-quickstart
-:create-app-extensions: resteasy,graphql
+:create-app-extensions: graphql
 include::includes/devtools/create-app.adoc[]
 
 This command generates a project, importing the `smallrye-graphql` extension.

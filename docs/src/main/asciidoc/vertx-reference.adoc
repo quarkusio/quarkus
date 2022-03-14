@@ -141,7 +141,7 @@ To learn more about the usage of the Vert.x Mutiny API, refer to https://smallry
 
 === Example of usage
 
-This section gives an example using the Vert.x `WebClient`.
+This section gives an example using the Vert.x `WebClient` in the context of a RESTEasy Reactive application.
 As indicated in the table above, add the following dependency to your project:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -174,7 +174,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import io.smallrye.mutiny.Uni;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -194,7 +193,7 @@ public class ResourceUsingWebClient {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{name}")
-    public Uni<JsonObject> getFruitData(@PathParam("name") String name) {
+    public Uni<JsonObject> getFruitData(String name) {
         return client.getAbs("https://.../api/fruit/" + name)
                 .send()
                 .onItem().transform(resp -> {
@@ -268,21 +267,19 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-
 @Path("/hello")
 @Produces(MediaType.APPLICATION_JSON)
 public class VertxJsonResource {
 
     @GET
     @Path("{name}/object")
-    public JsonObject jsonObject(@PathParam String name) {
+    public JsonObject jsonObject(String name) {
         return new JsonObject().put("Hello", name);
     }
 
     @GET
     @Path("{name}/array")
-    public JsonArray jsonArray(@PathParam String name) {
+    public JsonArray jsonArray(String name) {
         return new JsonArray().add("Hello").add(name);
     }
 }
@@ -660,7 +657,6 @@ package org.acme.vertx;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -677,7 +673,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return bus.<String>request("greeting", name)        // <2>
                 .onItem().transform(Message::body);
     }
@@ -714,7 +710,7 @@ So you can exchange objects as follows:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(String name) {
     return bus.<String>request("greeting", new MyName(name))
         .onItem().transform(Message::body);
 }
@@ -732,7 +728,7 @@ If you want to use a specific codec, you need to set it on both ends explicitly:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(String name) {
     return bus.<String>request("greeting", name,
         new DeliveryOptions().setCodecName(MyNameCodec.class.getName())) // <1>
         .onItem().transform(Message::body);
@@ -762,7 +758,6 @@ package org.acme.vertx;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -779,7 +774,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return bus.<String>request("greeting", name)            // <1>
                 .onItem().transform(Message::body);            // <2>
     }

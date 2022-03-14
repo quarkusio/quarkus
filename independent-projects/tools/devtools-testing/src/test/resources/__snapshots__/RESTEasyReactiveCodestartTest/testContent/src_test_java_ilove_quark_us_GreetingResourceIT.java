@@ -3,7 +3,7 @@ package ilove.quark.us;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
-public class ReactiveGreetingResourceIT extends ReactiveGreetingResourceTest {
+public class GreetingResourceIT extends GreetingResourceTest {
 
     // Execute the same tests but in native mode.
 }

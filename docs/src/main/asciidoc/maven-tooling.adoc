@@ -8,6 +8,21 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :devtools-no-gradle:
 
+[[introduction]]
+== Introduction
+
+Maven tooling in Quarkus relies on a plugin that the Quarkus team developed to provide an enjoyable developer experience.
+While it is recommended to <<project-creation,scaffold>> new projects, you can find how to
+<<build-tool-maven,configure the plugin>> manually below.
+
+Many of the plugin's goals are also available as commands in a separate command-line interface tool called `quarkus`.
+
+[NOTE]
+====
+By default, the Quarkus Maven plugin is only triggered on the `package` phase of the build process. It's therefore not
+enough to simply `compile` the project.
+====
+
 [[project-creation]]
 == Creating a new project
 

@@ -541,7 +541,8 @@ public class VertxHttpRecorder {
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
-        HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode);
+        HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
+                websocketSubProtocols);
 
         if (httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED && sslConfig == null) {
             throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");
@@ -662,7 +663,7 @@ public class VertxHttpRecorder {
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
      */
     private static HttpServerOptions createSslOptions(HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
-            LaunchMode launchMode)
+            LaunchMode launchMode, List<String> websocketSubProtocols)
             throws IOException {
         if (!httpConfiguration.hostEnabled) {
             return null;
@@ -700,9 +701,6 @@ public class VertxHttpRecorder {
                 serverOptions.setAlpnVersions(Arrays.asList(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
             }
         }
-        serverOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
-        serverOptions.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
-        serverOptions.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
         setIdleTimeout(httpConfiguration, serverOptions);
 
         if (!certificates.isEmpty() && !keys.isEmpty()) {
@@ -745,18 +743,32 @@ public class VertxHttpRecorder {
         }
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
-        serverOptions.setHost(httpConfiguration.host);
         int sslPort = httpConfiguration.determineSslPort(launchMode);
         // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
         serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
-        serverOptions.setReusePort(httpConfiguration.soReusePort);
-        serverOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
-        serverOptions.setTcpCork(httpConfiguration.tcpCork);
-        serverOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
-        serverOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
+
+        applyCommonOptions(serverOptions, httpConfiguration, websocketSubProtocols);
 
         return serverOptions;
+    }
+
+    private static void applyCommonOptions(HttpServerOptions httpServerOptions, HttpConfiguration httpConfiguration,
+            List<String> websocketSubProtocols) {
+        httpServerOptions.setHost(httpConfiguration.host);
+        setIdleTimeout(httpConfiguration, httpServerOptions);
+        httpServerOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
+        httpServerOptions.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
+        httpServerOptions.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
+        httpServerOptions.setWebSocketSubProtocols(websocketSubProtocols);
+        httpServerOptions.setReusePort(httpConfiguration.soReusePort);
+        httpServerOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
+        httpServerOptions.setTcpCork(httpConfiguration.tcpCork);
+        httpServerOptions.setAcceptBacklog(httpConfiguration.acceptBacklog);
+        httpServerOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
+        httpServerOptions.setCompressionSupported(httpConfiguration.enableCompression);
+        httpServerOptions.setDecompressionSupported(httpConfiguration.enableDecompression);
+        httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
     }
 
     private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,
@@ -849,22 +861,11 @@ public class VertxHttpRecorder {
         }
         // TODO other config properties
         HttpServerOptions options = new HttpServerOptions();
-        options.setHost(httpConfiguration.host);
         int port = httpConfiguration.determinePort(launchMode);
         options.setPort(port == 0 ? -1 : port);
-        setIdleTimeout(httpConfiguration, options);
-        options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
-        options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
-        options.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
-        options.setWebSocketSubProtocols(websocketSubProtocols);
-        options.setReusePort(httpConfiguration.soReusePort);
-        options.setTcpQuickAck(httpConfiguration.tcpQuickAck);
-        options.setTcpCork(httpConfiguration.tcpCork);
-        options.setAcceptBacklog(httpConfiguration.acceptBacklog);
-        options.setTcpFastOpen(httpConfiguration.tcpFastOpen);
-        options.setCompressionSupported(httpConfiguration.enableCompression);
-        options.setDecompressionSupported(httpConfiguration.enableDecompression);
-        options.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
+
+        applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+
         return options;
     }
 
@@ -874,12 +875,9 @@ public class VertxHttpRecorder {
             return null;
         }
         HttpServerOptions options = new HttpServerOptions();
-        options.setHost(httpConfiguration.domainSocket);
-        setIdleTimeout(httpConfiguration, options);
-        options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
-        options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
-        options.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
-        options.setWebSocketSubProtocols(websocketSubProtocols);
+
+        applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+
         return options;
     }
 

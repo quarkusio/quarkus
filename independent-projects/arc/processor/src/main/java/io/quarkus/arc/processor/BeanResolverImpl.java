@@ -27,7 +27,7 @@ import org.jboss.jandex.WildcardType;
 
 class BeanResolverImpl implements BeanResolver {
 
-    private final BeanDeployment beanDeployment;
+    protected final BeanDeployment beanDeployment;
 
     private final Map<TypeAndQualifiers, List<BeanInfo>> resolved;
 
@@ -69,6 +69,32 @@ class BeanResolverImpl implements BeanResolver {
         }
     }
 
+    @Override
+    public boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
+        return matches(bean, typeAndQualifiers.type, typeAndQualifiers.qualifiers);
+    }
+
+    @Override
+    public boolean matches(BeanInfo bean, Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
+        // Bean has all the required qualifiers and a bean type that matches the required type
+        return matchesType(bean, requiredType) && Beans.hasQualifiers(bean, requiredQualifiers);
+    }
+
+    @Override
+    public boolean matchesType(BeanInfo bean, Type requiredType) {
+        BeanResolver beanResolver = getBeanResolver(bean);
+        for (Type beanType : bean.getTypes()) {
+            if (beanResolver.matches(requiredType, beanType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected BeanResolver getBeanResolver(BeanInfo bean) {
+        return bean.getDeployment().beanResolver;
+    }
+
     List<BeanInfo> resolve(TypeAndQualifiers typeAndQualifiers) {
         return resolved.computeIfAbsent(typeAndQualifiers, this::findMatching);
     }
@@ -78,7 +104,7 @@ class BeanResolverImpl implements BeanResolver {
         //optimisation for the simple class case
         Collection<BeanInfo> potentialBeans = potentialBeans(typeAndQualifiers.type);
         for (BeanInfo b : potentialBeans) {
-            if (Beans.matches(b, typeAndQualifiers)) {
+            if (matches(b, typeAndQualifiers)) {
                 resolved.add(b);
             }
         }
@@ -90,7 +116,7 @@ class BeanResolverImpl implements BeanResolver {
         //optimisation for the simple class case
         Collection<BeanInfo> potentialBeans = potentialBeans(type);
         for (BeanInfo b : potentialBeans) {
-            if (Beans.matchesType(b, type)) {
+            if (matchesType(b, type)) {
                 resolved.add(b);
             }
         }
@@ -104,7 +130,7 @@ class BeanResolverImpl implements BeanResolver {
         return beanDeployment.getBeans();
     }
 
-    boolean matches(Type requiredType, Type beanType) {
+    public boolean matches(Type requiredType, Type beanType) {
         return matchesNoBoxing(Types.box(requiredType), Types.box(beanType));
     }
 

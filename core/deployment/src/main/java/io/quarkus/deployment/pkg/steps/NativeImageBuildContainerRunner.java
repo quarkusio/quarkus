@@ -15,6 +15,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.deployment.util.ProcessUtil;
 
@@ -130,7 +131,9 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
      *         if the podman
      *         executable exists in the environment or if the docker executable is an alias to podman
      * @throws IllegalStateException if no container runtime was found to build the image
+     * @deprecated Use {@link ContainerRuntimeUtil#detectContainerRuntime()} instead
      */
+    @Deprecated(since = "2.7", forRemoval = true)
     public static NativeConfig.ContainerRuntime detectContainerRuntime() {
         // Docker version 19.03.14, build 5eb3275d40
         String dockerVersionOutput = getVersionOutputFor(NativeConfig.ContainerRuntime.DOCKER);

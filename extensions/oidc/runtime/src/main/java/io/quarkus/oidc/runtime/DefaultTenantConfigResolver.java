@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import javax.annotation.PostConstruct;
@@ -59,6 +61,8 @@ public class DefaultTenantConfigResolver {
     private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext = new BlockingTaskRunner<OidcTenantConfig>();
 
     private volatile boolean securityEventObserved;
+
+    private ConcurrentHashMap<String, TokenVerificationResult> backChannelLogoutTokens = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void verifyResolvers() {
@@ -217,6 +221,14 @@ public class DefaultTenantConfigResolver {
 
     boolean isEnableHttpForwardedPrefix() {
         return enableHttpForwardedPrefix;
+    }
+
+    public Map<String, TokenVerificationResult> getBackChannelLogoutTokens() {
+        return backChannelLogoutTokens;
+    }
+
+    public TenantConfigBean getTenantConfigBean() {
+        return tenantConfigBean;
     }
 
 }

@@ -9,12 +9,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.WebRequest;
+import com.gargoylesoftware.htmlunit.WebResponse;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
@@ -26,6 +29,8 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
@@ -73,7 +78,30 @@ public class CodeFlowAuthorizationTest {
             page = form.getInputByValue("login").click();
 
             assertEquals("alice", page.getBody().asText());
+
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
+
+            page = webClient.getPage("http://localhost:8081/code-flow-form-post");
+            assertEquals("alice", page.getBody().asText());
+
+            // Session is still active
+            assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
+
+            // request a back channel logout
+            RestAssured.given()
+                    .when().contentType(ContentType.URLENC).body("logout_token=" + OidcWiremockTestResource.getLogoutToken())
+                    .post("/back-channel-logout")
+                    .then()
+                    .statusCode(200);
+
+            // Confirm 302 is returned and the session cookie is null
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/code-flow-form-post").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+
+            assertNull(getSessionCookie(webClient, "code-flow-form-post"));
+
             webClient.getCookieManager().clearCookies();
         }
     }

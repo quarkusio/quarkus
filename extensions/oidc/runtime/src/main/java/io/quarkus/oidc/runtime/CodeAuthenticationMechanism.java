@@ -15,10 +15,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
@@ -43,12 +43,9 @@ import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
-import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonObject;
@@ -66,7 +63,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
     static final String NO_OIDC_COOKIES_AVAILABLE = "no_oidc_cookies";
-    static final String FORM_URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
     private static final String INTERNAL_IDTOKEN_HEADER = "internal";
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
@@ -97,32 +93,18 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         // if the state cookie is available then try to complete the code flow and start a new session
         if (stateCookie != null) {
             if (ResponseMode.FORM_POST == oidcTenantConfig.authentication.responseMode.orElse(ResponseMode.QUERY)) {
-                String contentType = context.request().getHeader("Content-Type");
-                if (context.request().method() == HttpMethod.POST
-                        && contentType != null
-                        && (contentType.equals(FORM_URL_ENCODED_CONTENT_TYPE)
-                                || contentType.startsWith(FORM_URL_ENCODED_CONTENT_TYPE + ";"))) {
-                    context.request().setExpectMultipart(true);
-                    return Uni.createFrom().emitter(new Consumer<UniEmitter<? super MultiMap>>() {
-                        @Override
-                        public void accept(UniEmitter<? super MultiMap> t) {
-                            context.request().endHandler(new Handler<Void>() {
+                if (OidcUtils.isFormUrlEncodedRequest(context)) {
+                    return OidcUtils.getFormUrlEncodedData(context).onItem()
+                            .transformToUni(new Function<MultiMap, Uni<? extends SecurityIdentity>>() {
                                 @Override
-                                public void handle(Void event) {
-                                    t.complete(context.request().formAttributes());
+                                public Uni<? extends SecurityIdentity> apply(MultiMap requestParams) {
+                                    return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
+                                            stateCookie,
+                                            requestParams);
                                 }
                             });
-                            context.request().resume();
-                        }
-                    }).onItem().transformToUni(new Function<MultiMap, Uni<? extends SecurityIdentity>>() {
-                        @Override
-                        public Uni<? extends SecurityIdentity> apply(MultiMap requestParams) {
-                            return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager, stateCookie,
-                                    requestParams);
-                        }
-                    });
                 }
-                LOG.debug("HTTP POST and " + FORM_URL_ENCODED_CONTENT_TYPE
+                LOG.debug("HTTP POST and " + HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString()
                         + " content type must be used with the form_post response mode");
                 return Uni.createFrom().failure(new AuthenticationFailedException());
             } else {
@@ -218,6 +200,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .chain(new Function<AuthorizationCodeTokens, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<? extends SecurityIdentity> apply(AuthorizationCodeTokens session) {
+                        if (isBackChannelLogoutPendingAndValid(configContext, session.getIdToken())) {
+                            return OidcUtils
+                                    .removeSessionCookie(context, configContext.oidcConfig, sessionCookie.getName(),
+                                            resolver.getTokenStateManager())
+                                    .chain(new Function<Void, Uni<? extends SecurityIdentity>>() {
+                                        @Override
+                                        public Uni<SecurityIdentity> apply(Void t) {
+                                            return Uni.createFrom().nullItem();
+                                        }
+                                    });
+
+                        }
+
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), session);
                         return authenticate(identityProviderManager, context,
@@ -271,6 +266,47 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     }
 
                 });
+    }
+
+    private boolean isBackChannelLogoutPendingAndValid(TenantConfigContext configContext, String idToken) {
+        TokenVerificationResult backChannelLogoutTokenResult = resolver.getBackChannelLogoutTokens()
+                .remove(configContext.oidcConfig.getTenantId().get());
+        if (backChannelLogoutTokenResult != null) {
+            // Verify IdToken signature first before comparing the claim values
+            try {
+                TokenVerificationResult idTokenResult = configContext.provider.verifyJwtToken(idToken);
+
+                String idTokenIss = idTokenResult.localVerificationResult.getString(Claims.iss.name());
+                String logoutTokenIss = backChannelLogoutTokenResult.localVerificationResult.getString(Claims.iss.name());
+                if (logoutTokenIss != null && !logoutTokenIss.equals(idTokenIss)) {
+                    LOG.debugf("Logout token issuer does not match the ID token issuer");
+                    return false;
+                }
+                String idTokenSub = idTokenResult.localVerificationResult.getString(Claims.sub.name());
+                String logoutTokenSub = backChannelLogoutTokenResult.localVerificationResult.getString(Claims.sub.name());
+                if (logoutTokenSub != null && idTokenSub != null && !logoutTokenSub.equals(idTokenSub)) {
+                    LOG.debugf("Logout token subject does not match the ID token subject");
+                    return false;
+                }
+                String idTokenSid = idTokenResult.localVerificationResult
+                        .getString(OidcConstants.BACK_CHANNEL_LOGOUT_SID_CLAIM);
+                String logoutTokenSid = backChannelLogoutTokenResult.localVerificationResult
+                        .getString(OidcConstants.BACK_CHANNEL_LOGOUT_SID_CLAIM);
+                if (logoutTokenSid != null && idTokenSid != null && !logoutTokenSid.equals(idTokenSid)) {
+                    LOG.debugf("Logout token session id does not match the ID token session id");
+                    return false;
+                }
+            } catch (InvalidJwtException ex) {
+                // Let IdentityProvider deal with it again, but just removing the session cookie without
+                // doing a logout token check against a verified ID token is not possible.
+                LOG.debugf("Unable to complete the back channel logout request for the tenant %s",
+                        configContext.oidcConfig.tenantId.get());
+                return false;
+            }
+
+            return true;
+        }
+        return false;
     }
 
     private boolean isInternalIdToken(String idToken, TenantConfigContext configContext) {
@@ -604,6 +640,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         final long sessionMaxAge = maxAge;
                         context.put(SESSION_MAX_AGE_PARAM, maxAge);
                         context.put(TenantConfigContext.class.getName(), configContext);
+                        // Just in case, remove the stale Back-Channel Logout data if the previous session was not terminated correctly
+                        resolver.getBackChannelLogoutTokens().remove(configContext.oidcConfig.tenantId.get());
+
                         return resolver.getTokenStateManager()
                                 .createTokenState(context, configContext.oidcConfig, tokens, createTokenStateRequestContext)
                                 .map(new Function<String, Void>() {

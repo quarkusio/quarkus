@@ -468,6 +468,25 @@ quarkus.oidc.logout.post-logout-uri-param=returnTo
 quarkus.oidc.logout.extra-params.client_id=${quarkus.oidc.client-id}
 ----
 
+[[back-channel-logout]]
+==== Back-Channel Logout
+
+link:https://openid.net/specs/openid-connect-backchannel-1_0.html[Back-Channel Logout] is used by OpenId Connect providers to logout the current user from all the applications this user is currently logged in, bypassing the user agent.
+
+You can configure Quarkus to support `Back-Channel Logout` as follows:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+quarkus.oidc.client-id=frontend
+quarkus.oidc.credentials.secret=secret
+quarkus.oidc.application-type=web-app
+
+quarkus.oidc.logout.backchannel.path=/back-channel-logout
+----
+
+Absolute `Back-Channel Logout` URL is calculated by adding `quarkus.oidc.back-channel-logout.path` to the current endpoint URL, for example, `http://localhost:8080/back-channel-logout`. You will need to configure this URL in the Admin Console of your OpenId Connect Provider.
+
 [[local-logout]]
 ==== Local Logout
 

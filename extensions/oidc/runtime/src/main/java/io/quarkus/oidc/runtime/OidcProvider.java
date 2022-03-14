@@ -7,10 +7,12 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.consumer.ErrorCodeValidator;
+import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
@@ -87,22 +89,39 @@ public class OidcProvider implements Closeable {
     }
 
     public TokenVerificationResult verifySelfSignedJwtToken(String token) throws InvalidJwtException {
-        return verifyJwtTokenInternal(token, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver());
+        return verifyJwtTokenInternal(token, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver(), true);
     }
 
     public TokenVerificationResult verifyJwtToken(String token) throws InvalidJwtException {
-        return verifyJwtTokenInternal(token, ASYMMETRIC_ALGORITHM_CONSTRAINTS, asymmetricKeyResolver);
+        return verifyJwtTokenInternal(token, ASYMMETRIC_ALGORITHM_CONSTRAINTS, asymmetricKeyResolver, true);
+    }
+
+    public TokenVerificationResult verifyLogoutJwtToken(String token) throws InvalidJwtException {
+        final boolean enforceExpReq = !oidcConfig.token.age.isPresent();
+        TokenVerificationResult result = verifyJwtTokenInternal(token, ASYMMETRIC_ALGORITHM_CONSTRAINTS, asymmetricKeyResolver,
+                enforceExpReq);
+        if (!enforceExpReq) {
+            // Expiry check was skipped during the initial verification but if the logout token contains the exp claim
+            // then it must be verified
+            final Long exp = result.localVerificationResult.getLong(Claims.exp.name());
+            if (exp != null) {
+                verifyExpiry(exp);
+            }
+        }
+        return result;
     }
 
     private TokenVerificationResult verifyJwtTokenInternal(String token, AlgorithmConstraints algConstraints,
-            VerificationKeyResolver verificationKeyResolver) throws InvalidJwtException {
+            VerificationKeyResolver verificationKeyResolver, boolean enforceExpReq) throws InvalidJwtException {
         JwtConsumerBuilder builder = new JwtConsumerBuilder();
 
         builder.setVerificationKeyResolver(verificationKeyResolver);
 
         builder.setJwsAlgorithmConstraints(algConstraints);
 
-        builder.setRequireExpirationTime();
+        if (enforceExpReq) {
+            builder.setRequireExpirationTime();
+        }
         builder.setRequireIssuedAt();
 
         if (issuer != null) {
@@ -137,7 +156,21 @@ public class OidcProvider implements Closeable {
             }
             throw ex;
         }
-        return new TokenVerificationResult(OidcUtils.decodeJwtContent(token), null);
+        TokenVerificationResult result = new TokenVerificationResult(OidcUtils.decodeJwtContent(token), null);
+
+        if (oidcConfig.token.age.isPresent()) {
+            final long now = now() / 1000;
+            // 'iat' is guaranteed to be present if no exception has been thrown by 'verifyJwtTokenInternal'
+            final long iat = result.localVerificationResult.getLong(Claims.iat.name());
+
+            if (now - iat > oidcConfig.token.age.get().toSeconds() + getLifespanGrace()) {
+                final String errorMessage = "Logout token age exceeds the configured token age property";
+                LOG.debugf(errorMessage);
+                throw new InvalidJwtException(errorMessage,
+                        List.of(new ErrorCodeValidator.Error(ErrorCodes.ISSUED_AT_INVALID_PAST, errorMessage)), null);
+            }
+        }
+        return result;
     }
 
     public Uni<TokenVerificationResult> refreshJwksAndVerifyJwtToken(String token) {
@@ -178,19 +211,30 @@ public class OidcProvider implements Closeable {
                         }
                         Long exp = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
                         if (exp != null) {
-                            final int lifespanGrace = client.getOidcConfig().token.lifespanGrace.isPresent()
-                                    ? client.getOidcConfig().token.lifespanGrace.getAsInt()
-                                    : 0;
-                            if (System.currentTimeMillis() / 1000 > exp + lifespanGrace) {
-                                LOG.debugf("Token issued to client %s has expired", oidcConfig.clientId.get());
-                                throw new AuthenticationFailedException();
-                            }
+                            verifyExpiry(exp);
                         }
 
                         return introspectionResult;
                     }
 
                 });
+    }
+
+    private void verifyExpiry(Long exp) {
+        if (now() / 1000 > exp + getLifespanGrace()) {
+            LOG.debugf("Token issued to client %s has expired", oidcConfig.clientId.get());
+            throw new AuthenticationFailedException();
+        }
+    }
+
+    private int getLifespanGrace() {
+        return client.getOidcConfig().token.lifespanGrace.isPresent()
+                ? client.getOidcConfig().token.lifespanGrace.getAsInt()
+                : 0;
+    }
+
+    private static final long now() {
+        return System.currentTimeMillis();
     }
 
     public Uni<UserInfo> getUserInfo(String accessToken) {
@@ -281,7 +325,7 @@ public class OidcProvider implements Closeable {
         }
 
         public Uni<Void> refresh() {
-            final long now = System.currentTimeMillis();
+            final long now = now();
             if (now > lastForcedRefreshTime + forcedJwksRefreshIntervalMilliSecs) {
                 lastForcedRefreshTime = now;
                 return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeySet, Uni<? extends Void>>() {

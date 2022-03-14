@@ -74,6 +74,10 @@ public class OidcRecorder {
     private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,
             OidcTenantConfig oidcConfig, TlsConfig tlsConfig, String tenantId) {
 
+        if (oidcConfig.logout.backchannel.path.isPresent()) {
+            throw new ConfigurationException(
+                    "BackChannel Logout is currently not supported for dynamic tenants");
+        }
         if (!dynamicTenantsConfig.containsKey(tenantId)) {
             Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, tlsConfig, tenantId);
             uniContext.onFailure().transform(t -> logTenantConfigContextFailure(t, tenantId));

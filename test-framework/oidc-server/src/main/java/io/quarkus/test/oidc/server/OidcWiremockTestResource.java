@@ -17,6 +17,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+
 import org.jboss.logging.Logger;
 import org.jose4j.keys.X509Util;
 
@@ -281,9 +284,25 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
                 .audience(TOKEN_AUDIENCE)
+                .subject("123456")
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");
+    }
+
+    public static String getLogoutToken() {
+        return Jwt.issuer(TOKEN_ISSUER)
+                .audience(TOKEN_AUDIENCE)
+                .subject("123456")
+                .claim("events", createEventsClaim())
+                .jws()
+                .keyId("1")
+                .sign("privateKey.jwk");
+    }
+
+    private static JsonObject createEventsClaim() {
+        return Json.createObjectBuilder().add("http://schemas.openid.net/event/backchannel-logout",
+                Json.createObjectBuilder().build()).build();
     }
 
     @Override

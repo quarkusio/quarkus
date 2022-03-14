@@ -493,7 +493,7 @@ import java.util.Set;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
 
-public class MockGreetingProfile implements QuarkusTestProfile {
+public class MockGreetingProfile implements QuarkusTestProfile { <1>
 
     /**
      * Returns additional config to be applied to the test. This
@@ -539,15 +539,16 @@ public class MockGreetingProfile implements QuarkusTestProfile {
      */
     @Override
     public List<TestResourceEntry> testResources() {
-        return Collections.singletonList(new TestResourceEntry(CustomWireMockServerManager.class)); <4>
+        return Collections.singletonList(new TestResourceEntry(CustomWireMockServerManager.class));
     }
 
 
     /**
-     * If this is returns true then only the test resources returned from {@link #testResources()} will be started,
+     * If this returns true then only the test resources returned from {@link #testResources()} will be started,
      * global annotated test resources will be ignored.
      */
-    default boolean disableGlobalTestResources() {
+    @Override
+    public boolean disableGlobalTestResources() {
         return false;
     }
 
@@ -557,21 +558,24 @@ public class MockGreetingProfile implements QuarkusTestProfile {
      * then Quarkus will only execute tests that are annotated with a {@code @TestProfile} that has at least one of the
      * supplied (via the aforementioned system property) tags.
      */
-    default Set<String> tags() {
+    @Override
+    public Set<String> tags() {
         return Collections.emptySet();
     }
 
     /**
      * The command line parameters that are passed to the main method on startup.
      */
-    default String[] commandLineParameters() {
+    @Override
+    public String[] commandLineParameters() {
         return new String[0];
     }
 
     /**
-     * If the main method should be run
+     * If the main method should be run.
      */
-    default boolean runMainMethod() {
+    @Override
+    public boolean runMainMethod() {
         return false;
     }
 
@@ -579,15 +583,18 @@ public class MockGreetingProfile implements QuarkusTestProfile {
      * If this method returns true then all {@code StartupEvent} and {@code ShutdownEvent} observers declared on application
      * beans should be disabled.
      */
-    default boolean disableApplicationLifecycleObservers() {
+    @Override
+    public boolean disableApplicationLifecycleObservers() {
         return false;
     }
 }
 ----
+<1> All these methods have default implementations so just override the ones you need to override.
 
-Now we have defined our profile we need to include it on our test class. We do this with `@TestProfile(MockGreetingProfile.class)`.
+Now we have defined our profile we need to include it on our test class.
+We do this by annotating the test class with `@TestProfile(MockGreetingProfile.class)`.
 
-All the test profile config is stored in a single class, which makes it easy to tell if the previous test ran with the
+All the test profile configuration is stored in a single class, which makes it easy to tell if the previous test ran with the
 same configuration.
 
 === Running specific tests

@@ -2,14 +2,16 @@ package io.quarkus.it.kafka;
 
 import static io.strimzi.test.container.StrimziKafkaContainer.KAFKA_PORT;
 
+import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.containers.Network;
 import org.testcontainers.utility.MountableFile;
 
-import io.quarkus.it.kafka.containers.KeycloakContainer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.keycloak.server.KeycloakContainer;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 public class KafkaKeycloakTestResource implements QuarkusTestResourceLifecycleManager {
@@ -18,16 +20,22 @@ public class KafkaKeycloakTestResource implements QuarkusTestResourceLifecycleMa
     private StrimziKafkaContainer kafka;
     private KeycloakContainer keycloak;
 
+    private static final String KEYCLOAK_REALM_JSON = System.getProperty("keycloak.realm.json");
+
     @Override
     public Map<String, String> start() {
 
         Map<String, String> properties = new HashMap<>();
 
         //Start keycloak container
-        keycloak = new KeycloakContainer();
+        keycloak = new KeycloakContainer()
+                .withNetwork(Network.SHARED)
+                .withNetworkAliases("keycloak")
+                .withFixedPort(8080);
         keycloak.start();
         log.info(keycloak.getLogs());
-        keycloak.createHostsFile();
+        createHostsFile(keycloak);
+        keycloak.createRealmFromPath(KEYCLOAK_REALM_JSON);
 
         //Start kafka container
         this.kafka = new StrimziKafkaContainer("quay.io/strimzi/kafka:latest-kafka-3.0.0")
@@ -36,12 +44,26 @@ public class KafkaKeycloakTestResource implements QuarkusTestResourceLifecycleMa
                 .withNetworkAliases("kafka")
                 .withServerProperties(MountableFile.forClasspathResource("kafkaServer.properties"))
                 .withBootstrapServers(
-                        c -> String.format("JWT://%s:%s", c.getContainerIpAddress(), c.getMappedPort(KAFKA_PORT)));
+                        c -> String.format("JWT://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)));
         this.kafka.start();
         log.info(this.kafka.getLogs());
         properties.put("kafka.bootstrap.servers", this.kafka.getBootstrapServers());
 
         return properties;
+    }
+
+    public void createHostsFile(KeycloakContainer keycloak) {
+        try (FileWriter fileWriter = new FileWriter("target/hosts")) {
+            String dockerHost = keycloak.getHost();
+            if ("localhost".equals(dockerHost)) {
+                fileWriter.write("127.0.0.1 keycloak");
+            } else {
+                fileWriter.write(dockerHost + " keycloak");
+            }
+            fileWriter.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

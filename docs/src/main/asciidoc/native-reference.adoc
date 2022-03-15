@@ -535,7 +535,7 @@ Send a `GET` request multiple times from another terminal:
 
 [source,bash]
 ----
-curl -w '\n' http://localhost:8080/time # run this multiple times
+curl -w '\n' http://localhost:8080/timestamp # run this multiple times
 ----
 
 to see how the current time has been baked into the binary.
@@ -736,7 +736,7 @@ go to the root of the project and start the tools container created earlier as a
 docker run --privileged -t -i --rm -v ${PWD}:/data -p 8080:8080 fedora-tools:v1
 ----
 
-[[NOTE]]
+[NOTE]
 ====
 Note that in order to use `perf` to profile the native executables in the guide,
 the container needs to run as privileged, or with `--cap-add sys_admin`.

@@ -38,7 +38,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.opentelemetry.runtime.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRuntimeConfig;
@@ -56,15 +55,6 @@ public class TracerProcessor {
     private static final DotName SAMPLER = DotName.createSimple(Sampler.class.getName());
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
-
-    public static class TracerEnabled implements BooleanSupplier {
-        OpenTelemetryConfig otelConfig;
-
-        public boolean getAsBoolean() {
-            return otelConfig.tracer.enabled.map(tracerEnabled -> otelConfig.enabled && tracerEnabled)
-                    .orElseGet(() -> otelConfig.enabled);
-        }
-    }
 
     static class MetricsExtensionAvailable implements BooleanSupplier {
         private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresent(

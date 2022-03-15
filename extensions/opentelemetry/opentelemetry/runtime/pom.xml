@@ -111,7 +111,7 @@
                 <configuration>
                     <capabilities>
                         <providesIf>
-                            <positive>io.quarkus.opentelemetry.deployment.tracing.TracerProcessor$TracerEnabled</positive>
+                            <positive>io.quarkus.opentelemetry.deployment.tracing.TracerEnabled</positive>
                             <name>io.quarkus.opentelemetry.tracer</name>
                         </providesIf>
                     </capabilities>

@@ -36,14 +36,6 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 public class OpenTelemetryProcessor {
-    static class OpenTelemetryEnabled implements BooleanSupplier {
-        OpenTelemetryConfig otelConfig;
-
-        public boolean getAsBoolean() {
-            return otelConfig.enabled;
-        }
-    }
-
     static class RestClientAvailable implements BooleanSupplier {
         private static final boolean IS_REST_CLIENT_AVAILABLE = isClassPresent("javax.ws.rs.client.ClientRequestFilter");
 

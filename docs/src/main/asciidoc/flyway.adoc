@@ -46,7 +46,7 @@ In your build file, add the following dependencies:
 <!-- Flyway MariaDB/MySQL specific dependencies -->
 <dependency>
     <groupId>org.flywaydb</groupId>
-    <artifactId>flyway-mariadb</artifactId>
+    <artifactId>flyway-mysql</artifactId>
 </dependency>
 
 <!-- JDBC driver dependencies -->
@@ -62,9 +62,9 @@ In your build file, add the following dependencies:
 // Flyway specific dependencies
 implementation("io.quarkus:quarkus-flyway")
 // Flyway SQL Server specific dependencies
-implementation("org.flywaydb:")
+implementation("org.flywaydb:flyway-sqlserver")
 // Flyway MariaDB/MySQL specific dependencies
-implementation("org.flywaydb:")
+implementation("org.flywaydb:flyway-mysql")
 // JDBC driver dependencies
 implementation("io.quarkus:quarkus-jdbc-postgresql")
 ----

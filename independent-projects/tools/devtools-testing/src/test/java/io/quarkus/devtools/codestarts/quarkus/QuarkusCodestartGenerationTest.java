@@ -82,6 +82,23 @@ class QuarkusCodestartGenerationTest {
     }
 
     @Test
+    void verifyIndexExtensionList(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addData(getGenerationTestInputData())
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy-jackson"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy-jsonb"))
+                .build();
+        final Path projectDir = testDirPath.resolve("verify-index-extensions-list");
+        getCatalog().createProject(input).generate(projectDir);
+
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/resources/META-INF/resources/index.html")
+                .satisfies(checkContains("RESTEasy JAX-RS"))
+                .satisfies(checkContains("RESTEasy Jackson"))
+                .satisfies(checkContains("RESTEasy JSON-B"));
+    }
+
+    @Test
     void generateMavenWithCustomDep(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getGenerationTestInputData())

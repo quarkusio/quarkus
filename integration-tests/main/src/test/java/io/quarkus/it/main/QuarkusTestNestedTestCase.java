@@ -33,6 +33,10 @@ public class QuarkusTestNestedTestCase {
     private static final AtomicInteger COUNT_TEST = new AtomicInteger(0);
     private static final AtomicInteger COUNT_AFTER_EACH = new AtomicInteger(0);
     private static final AtomicInteger COUNT_AFTER_ALL = new AtomicInteger(0);
+    private static final String EXPECTED_OUTER_VALUE = "set from outer";
+    private static final String EXPECTED_INNER_VALUE = "set from inner";
+
+    String outerValue;
 
     @BeforeAll
     static void beforeAll() {
@@ -42,6 +46,7 @@ public class QuarkusTestNestedTestCase {
     @BeforeEach
     void beforeEach() {
         COUNT_BEFORE_EACH.incrementAndGet();
+        outerValue = EXPECTED_OUTER_VALUE;
     }
 
     @Test
@@ -57,9 +62,12 @@ public class QuarkusTestNestedTestCase {
     @TestMethodOrder(OrderAnnotation.class)
     class FirstNested {
 
+        String innerValue;
+
         @BeforeEach
         void beforeEach() {
             COUNT_BEFORE_EACH.incrementAndGet();
+            innerValue = EXPECTED_INNER_VALUE;
         }
 
         @Test
@@ -80,6 +88,12 @@ public class QuarkusTestNestedTestCase {
             assertEquals(3, COUNT_TEST.getAndIncrement(), "COUNT_TEST");
             assertEquals(5, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
             assertEquals(0, COUNT_AFTER_ALL.get(), "COUNT_AFTER_ALL");
+        }
+
+        @Test
+        void testInnerAndOuterValues() {
+            assertEquals(EXPECTED_INNER_VALUE, innerValue);
+            assertEquals(EXPECTED_OUTER_VALUE, outerValue);
         }
 
         @AfterEach
@@ -119,9 +133,9 @@ public class QuarkusTestNestedTestCase {
     @AfterAll
     static void afterAll() {
         assertEquals(1, COUNT_BEFORE_ALL.get(), "COUNT_BEFORE_ALL");
-        assertEquals(7, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
+        assertEquals(9, COUNT_BEFORE_EACH.get(), "COUNT_BEFORE_EACH");
         assertEquals(4, COUNT_TEST.get(), "COUNT_TEST");
-        assertEquals(7, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
+        assertEquals(9, COUNT_AFTER_EACH.get(), "COUNT_AFTER_EACH");
         assertEquals(0, COUNT_AFTER_ALL.getAndIncrement(), "COUNT_AFTER_ALL");
     }
 }

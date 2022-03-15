@@ -5,6 +5,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -22,7 +23,12 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
+        Objects.requireNonNull(contextual, "Contextual must not be null");
+        Objects.requireNonNull(creationalContext, "CreationalContext must not be null");
         InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        if (!Scopes.scopeMatches(this, bean)) {
+            throw Scopes.scopeDoesNotMatchException(this, bean);
+        }
         return (T) instances.computeIfAbsent(bean.getIdentifier(), new Supplier<ContextInstanceHandle<?>>() {
             @Override
             public ContextInstanceHandle<?> get() {
@@ -34,7 +40,11 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual) {
+        Objects.requireNonNull(contextual, "Contextual must not be null");
         InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        if (!Scopes.scopeMatches(this, bean)) {
+            throw Scopes.scopeDoesNotMatchException(this, bean);
+        }
         ContextInstanceHandle<?> handle = instances.getValueIfPresent(bean.getIdentifier());
         return handle != null ? (T) handle.get() : null;
     }

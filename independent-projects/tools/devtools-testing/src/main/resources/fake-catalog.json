@@ -5,6 +5,46 @@
   "derived-from": [],
   "extensions": [
     {
+      "name" : "RESTEasy JSON-B",
+      "description" : "JSON-B serialization support for RESTEasy",
+      "metadata" : {
+        "keywords" : [ "resteasy-jsonb", "jaxrs-json", "resteasy-json", "resteasy", "jaxrs", "json", "jsonb" ],
+        "guide" : "https://quarkus.io/guides/rest-json",
+        "categories" : [ "web", "serialization" ],
+        "status" : "stable",
+        "config" : [ "quarkus.resteasy." ],
+        "built-with-quarkus-core" : "999-FAKE",
+        "capabilities" : {
+          "provides" : [ "io.quarkus.rest.jsonb", "io.quarkus.resteasy.json.jsonb" ]
+        },
+        "extension-dependencies" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-jsonb", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp" ]
+      },
+      "artifact": "io.quarkus:quarkus-resteasy-jsonb::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name" : "RESTEasy Jackson",
+      "description" : "Jackson serialization support for RESTEasy",
+      "metadata" : {
+        "keywords" : [ "resteasy-jackson", "jaxrs-json", "resteasy-json", "resteasy", "jaxrs", "json", "jackson" ],
+        "categories" : [ "web", "serialization" ],
+        "status" : "stable",
+        "config" : [ "quarkus.resteasy.", "quarkus.jackson." ],
+        "built-with-quarkus-core" : "999-FAKE",
+        "capabilities" : {
+          "provides" : [ "io.quarkus.rest.jackson", "io.quarkus.resteasy.json.jackson" ]
+        },
+        "extension-dependencies" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc" ]
+      },
+      "artifact": "io.quarkus:quarkus-resteasy-jackson::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+
+    {
       "name": "RESTEasy Reactive",
       "description": "Reactive implementation of JAX-RS with additional features. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
       "metadata": {

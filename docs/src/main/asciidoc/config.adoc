@@ -32,17 +32,8 @@ The solution is located in the `config-quickstart` {quickstarts-tree-url}/config
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=config-quickstart \
-    -DclassName="org.acme.config.GreetingResource" \
-    -Dpath="/greeting"
-cd config-quickstart
-----
-:create-app-artifact-id: org.acme
-:create-app-extensions: config-quickstart
+:create-app-artifact-id: config-quickstart
+:create-app-extensions: resteasy
 include::includes/devtools/create-app.adoc[]
 
 It generates:

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.vertx.ContextLocals;
 import io.smallrye.common.vertx.VertxContext;
@@ -147,12 +148,14 @@ public class DuplicatedContextTest {
         @ConsumeEvent(value = "context")
         Uni<String> receive(String data) {
             Assertions.assertTrue(Thread.currentThread().getName().contains("vert.x-eventloop"));
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
             return process(data);
         }
 
         private Uni<String> process(String id) {
             Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
@@ -168,6 +171,7 @@ public class DuplicatedContextTest {
                                 Assertions.assertEquals("hey!", msg);
                                 Assertions.assertEquals(id, ContextLocals.get("key", null));
                                 Assertions.assertSame(Vertx.currentContext(), context);
+                                VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
                                 return "OK-" + ContextLocals.get("key", null);
                             }).toCompletionStage());
         }
@@ -176,6 +180,8 @@ public class DuplicatedContextTest {
         @Blocking
         String receiveBlocking(String data) {
             Assertions.assertFalse(Thread.currentThread().getName().contains("vert.x-eventloop"));
+            Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
             return process(data).await().atMost(Duration.ofSeconds(4));
         }
 
@@ -183,6 +189,7 @@ public class DuplicatedContextTest {
         public void consumeSend(String s) {
             Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
@@ -195,6 +202,7 @@ public class DuplicatedContextTest {
         public void consumeSendBlocking(String s) {
             Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
@@ -207,6 +215,7 @@ public class DuplicatedContextTest {
         public void consumePublish1(String s) {
             Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
@@ -219,6 +228,7 @@ public class DuplicatedContextTest {
         public void consumePublish2(String s) {
             Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
@@ -232,6 +242,7 @@ public class DuplicatedContextTest {
         public void consumePublishBlocking1(String s) {
             Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);
@@ -245,6 +256,7 @@ public class DuplicatedContextTest {
         public void consumePublishBlocking2(String s) {
             Context context = Vertx.currentContext();
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+            VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
 
             String val = ContextLocals.get("key", null);
             Assertions.assertNull(val);

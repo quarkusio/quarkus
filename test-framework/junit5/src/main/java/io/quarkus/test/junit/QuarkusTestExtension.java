@@ -655,8 +655,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             Method pushContext = runningQuarkusApplication.getClassLoader().loadClass(MockSupport.class.getName())
                     .getDeclaredMethod("pushContext");
             pushContext.setAccessible(true);
-            pushContext
-                    .invoke(null);
+            pushContext.invoke(null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -668,8 +667,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             Method popContext = runningQuarkusApplication.getClassLoader().loadClass(MockSupport.class.getName())
                     .getDeclaredMethod("popContext");
             popContext.setAccessible(true);
-            popContext
-                    .invoke(null);
+            popContext.invoke(null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -907,15 +905,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         try {
             Class<?> testClassFromTCCL = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
                     Thread.currentThread().getContextClassLoader());
+            Object effectiveTestInstance = actualTestInstance;
             Method newMethod = determineTCCLExtensionMethod(invocationContext.getExecutable(), testClassFromTCCL);
-            boolean methodFromEnclosing = false;
             // this is needed to support before*** and after*** methods that are part of class that encloses the test class
             // (the test class is in this case a @Nested test)
             if ((newMethod == null) && (testClassFromTCCL.getEnclosingClass() != null)) {
-                testClassFromTCCL = testClassFromTCCL.getEnclosingClass();
-                newMethod = determineTCCLExtensionMethod(invocationContext.getExecutable(), testClassFromTCCL);
-                methodFromEnclosing = true;
+                newMethod = determineTCCLExtensionMethod(invocationContext.getExecutable(),
+                        testClassFromTCCL.getEnclosingClass());
+                effectiveTestInstance = outerInstance;
             }
+
             if (newMethod == null) {
                 throw new RuntimeException("Could not find method " + invocationContext.getExecutable() + " on test class");
             }
@@ -988,12 +987,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             }
 
-            Object effectiveTestInstance = actualTestInstance;
-            if (methodFromEnclosing) {
-                // TODO: this is a little dodgy, ideally we would need to use the same constructor that was used for the original object
-                // but it's unlikely(?) we will run into this combo
-                effectiveTestInstance = testClassFromTCCL.getConstructor().newInstance();
-            }
             if (testMethodInvokerToUse != null) {
                 return testMethodInvokerToUse.getClass()
                         .getMethod("invoke", Object.class, Method.class, List.class, String.class)

@@ -36,6 +36,14 @@ Quarkus supports several sources to load authentication information from.
 Basic and Form HTTP-based authentication mechanisms are the core authentication mechanisms supported in Quarkus.
 Please see xref:security-built-in-authentication.adoc#basic-auth[Basic HTTP Authentication] and xref:security-built-in-authentication.adoc#form-auth[Form HTTP Authentication] for more information.
 
+=== WebAuthn Authentication Mechanism
+
+https://webauthn.guide/[WebAuthn] is an authentication mechanism designed to replace passwords. In short, every
+time you write a service for registering new users, or logging them in, instead of asking for a password, you
+use WebAuthn, which will replace the password.
+
+Please see xref:security-webauthn.adoc[our dedicated WebAuthn documentation] for more information.
+
 === Mutual TLS Authentication
 
 Quarkus provides Mutual TLS authentication so that you can authenticate users based on their X.509 certificates.

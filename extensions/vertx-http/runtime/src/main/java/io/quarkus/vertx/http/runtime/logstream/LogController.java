@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.logging.Level;
 
-import org.jboss.logmanager.Level;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 
@@ -78,11 +78,18 @@ public class LogController {
     public static void updateLogLevel(String loggerName, String levelValue) {
         LogContext logContext = LogContext.getLogContext();
         Logger logger = logContext.getLogger(loggerName);
-        if (logger != null) {
-            java.util.logging.Level level = Level.parse(levelValue);
-            logger.setLevel(level);
-            LOG.info("Log level updated [" + loggerName + "] changed to [" + levelValue + "]");
+        java.util.logging.Level level;
+        if (levelValue == null || levelValue.isBlank()) {
+            if (logger.getParent() != null) {
+                level = logger.getParent().getLevel();
+            } else {
+                throw new IllegalArgumentException("The level of the root logger cannot be set to null");
+            }
+        } else {
+            level = Level.parse(levelValue);
         }
+        logger.setLevel(level);
+        LOG.info("Log level updated [" + loggerName + "] changed to [" + levelValue + "]");
     }
 
     private static String getConfiguredLogLevel(Logger logger) {
@@ -100,22 +107,19 @@ public class LogController {
         return getEffectiveLogLevel(logger.getParent());
     }
 
-    public static final List<String> LEVELS = new ArrayList<>();
-
-    static {
-        LEVELS.add(OFF.getName());
-        LEVELS.add(SEVERE.getName());
-        LEVELS.add(ERROR.getName());
-        LEVELS.add(FATAL.getName());
-        LEVELS.add(WARNING.getName());
-        LEVELS.add(WARN.getName());
-        LEVELS.add(INFO.getName());
-        LEVELS.add(DEBUG.getName());
-        LEVELS.add(TRACE.getName());
-        LEVELS.add(CONFIG.getName());
-        LEVELS.add(FINE.getName());
-        LEVELS.add(FINER.getName());
-        LEVELS.add(FINEST.getName());
-        LEVELS.add(ALL.getName());
-    }
+    public static final List<String> LEVELS = List.of(
+            OFF.getName(),
+            SEVERE.getName(),
+            ERROR.getName(),
+            FATAL.getName(),
+            WARNING.getName(),
+            WARN.getName(),
+            INFO.getName(),
+            DEBUG.getName(),
+            TRACE.getName(),
+            CONFIG.getName(),
+            FINE.getName(),
+            FINER.getName(),
+            FINEST.getName(),
+            ALL.getName());
 }

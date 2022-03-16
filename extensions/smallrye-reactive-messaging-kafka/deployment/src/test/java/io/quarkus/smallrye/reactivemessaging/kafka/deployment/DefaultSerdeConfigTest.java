@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
@@ -19,6 +20,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
 import org.assertj.core.groups.Tuple;
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -38,6 +40,8 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -48,9 +52,18 @@ import io.vertx.core.json.JsonArray;
 
 public class DefaultSerdeConfigTest {
     private static void doTest(Tuple[] expectations, Class<?>... classesToIndex) {
+        doTest(null, expectations, classesToIndex);
+    }
+
+    private static void doTest(Config customConfig, Tuple[] expectations, Class<?>... classesToIndex) {
         List<RunTimeConfigurationDefaultBuildItem> configs = new ArrayList<>();
 
         DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classesToIndex)) {
+            @Override
+            Config getConfig() {
+                return customConfig != null ? customConfig : super.getConfig();
+            }
+
             @Override
             boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> list, boolean incoming, String channelName) {
                 return true;
@@ -2465,6 +2478,71 @@ public class DefaultSerdeConfigTest {
         void channel10(List<Message<JacksonDto>> jacksonDto) {
         }
 
+    }
+
+    // ---
+
+    @Test
+    public void connectorConfigNotOverriden() {
+        // @formatter:off
+        Tuple[] expectations1 = {
+                // "mp.messaging.outgoing.channel1.key.serializer" NOT expected, connector config exists
+                tuple("mp.messaging.outgoing.channel1.value.serializer",   "org.apache.kafka.common.serialization.StringSerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer",   "org.apache.kafka.common.serialization.LongDeserializer"),
+                // "mp.messaging.incoming.channel2.value.deserializer" NOT expected, connector config exists
+
+                tuple("mp.messaging.incoming.channel3.key.deserializer",   "org.apache.kafka.common.serialization.LongDeserializer"),
+                // "mp.messaging.incoming.channel3.value.deserializer" NOT expected, connector config exists
+                // "mp.messaging.outgoing.channel4.key.serializer" NOT expected, connector config exists
+                tuple("mp.messaging.outgoing.channel4.value.serializer",   "org.apache.kafka.common.serialization.StringSerializer"),
+        };
+
+        Tuple[] expectations2 = {
+                tuple("mp.messaging.outgoing.channel1.key.serializer",   "org.apache.kafka.common.serialization.LongSerializer"),
+                // "mp.messaging.outgoing.channel1.value.serializer" NOT expected, connector config exists
+
+                // "mp.messaging.incoming.channel2.key.deserializer" NOT expected, connector config exists
+                tuple("mp.messaging.incoming.channel2.value.deserializer",   "org.apache.kafka.common.serialization.StringDeserializer"),
+
+                // "mp.messaging.incoming.channel3.key.deserializer" NOT expected, connector config exists
+                tuple("mp.messaging.incoming.channel3.value.deserializer",   "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.outgoing.channel4.key.serializer",   "org.apache.kafka.common.serialization.LongSerializer"),
+                // "mp.messaging.outgoing.channel4.value.serializer" NOT expected, connector config exists
+        };
+        // @formatter:on
+
+        doTest(new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test", Map.of(
+                        "mp.messaging.connector.smallrye-kafka.key.serializer", "foo.Bar",
+                        "mp.messaging.connector.smallrye-kafka.value.deserializer", "foo.Baz")) {
+                })
+                .build(), expectations1, ConnectorConfigNotOverriden.class);
+
+        doTest(new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test", Map.of(
+                        "mp.messaging.connector.smallrye-kafka.key.deserializer", "foo.Bar",
+                        "mp.messaging.connector.smallrye-kafka.value.serializer", "foo.Baz")) {
+                })
+                .build(), expectations2, ConnectorConfigNotOverriden.class);
+    }
+
+    private static class ConnectorConfigNotOverriden {
+        @Outgoing("channel1")
+        Record<Long, String> method1() {
+            return null;
+        }
+
+        @Incoming("channel2")
+        CompletionStage<?> method2(Record<Long, String> msg) {
+            return null;
+        }
+
+        @Incoming("channel3")
+        @Outgoing("channel4")
+        Record<Long, String> method3(Record<Long, String> msg) {
+            return null;
+        }
     }
 
 }

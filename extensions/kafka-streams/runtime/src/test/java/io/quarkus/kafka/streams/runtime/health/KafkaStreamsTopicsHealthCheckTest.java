@@ -1,9 +1,12 @@
 package io.quarkus.kafka.streams.runtime.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 
+import java.time.Duration;
 import java.util.Collections;
+import java.util.Optional;
 
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,20 +29,21 @@ public class KafkaStreamsTopicsHealthCheckTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        healthCheck.topics = Collections.singletonList("topic");
+        healthCheck.topics = Optional.of(Collections.singletonList("topic"));
+        healthCheck.topicsTimeout = Duration.ofSeconds(10);
         healthCheck.init();
     }
 
     @Test
     public void shouldBeUpIfNoMissingTopic() throws InterruptedException {
-        Mockito.when(manager.getMissingTopics(anyList())).thenReturn(Collections.emptySet());
+        Mockito.when(manager.getMissingTopics(anyList(), any())).thenReturn(Collections.emptySet());
         HealthCheckResponse response = healthCheck.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
     }
 
     @Test
     public void shouldBeDownIfMissingTopic() throws InterruptedException {
-        Mockito.when(manager.getMissingTopics(anyList())).thenReturn(Collections.singleton("topic"));
+        Mockito.when(manager.getMissingTopics(anyList(), any())).thenReturn(Collections.singleton("topic"));
         HealthCheckResponse response = healthCheck.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
     }

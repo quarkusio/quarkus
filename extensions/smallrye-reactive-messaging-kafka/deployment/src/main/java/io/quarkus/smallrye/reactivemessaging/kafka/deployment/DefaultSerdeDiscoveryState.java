@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -26,6 +27,11 @@ class DefaultSerdeDiscoveryState {
     private final Map<String, Boolean> isKafkaConnector = new HashMap<>();
     private final Set<String> alreadyConfigured = new HashSet<>();
 
+    private Boolean connectorHasKeySerializer;
+    private Boolean connectorHasValueSerializer;
+    private Boolean connectorHasKeyDeserializer;
+    private Boolean connectorHasValueDeserializer;
+
     private Boolean hasConfluent;
     private Boolean hasApicurio1;
     private Boolean hasApicurio2;
@@ -33,6 +39,10 @@ class DefaultSerdeDiscoveryState {
 
     DefaultSerdeDiscoveryState(IndexView index) {
         this.index = index;
+    }
+
+    Config getConfig() {
+        return ConfigProvider.getConfig();
     }
 
     boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors, boolean incoming,
@@ -48,11 +58,59 @@ class DefaultSerdeDiscoveryState {
         String channelType = incoming ? "incoming" : "outgoing";
         return isKafkaConnector.computeIfAbsent(channelType + "|" + channelName, ignored -> {
             String connectorKey = "mp.messaging." + channelType + "." + channelName + ".connector";
-            String connector = ConfigProvider.getConfig()
+            String connector = getConfig()
                     .getOptionalValue(connectorKey, String.class)
                     .orElse("ignored");
             return KafkaConnector.CONNECTOR_NAME.equals(connector);
         });
+    }
+
+    boolean shouldNotConfigure(String key) {
+        // if we know at build time that key/value [de]serializer is configured on the connector,
+        // we should NOT emit default configuration for key/value [de]serializer on the channel
+        // (in other words, only a user can explicitly override a connector configuration)
+        //
+        // more config properties could possibly be handled in the same way, but these should suffice for now
+
+        if (key.startsWith("mp.messaging.outgoing.") && key.endsWith(".key.serializer")) {
+            if (connectorHasKeySerializer == null) {
+                connectorHasKeySerializer = getConfig()
+                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".key.serializer",
+                                String.class)
+                        .isPresent();
+            }
+            return connectorHasKeySerializer;
+        }
+        if (key.startsWith("mp.messaging.outgoing.") && key.endsWith(".value.serializer")) {
+            if (connectorHasValueSerializer == null) {
+                connectorHasValueSerializer = getConfig()
+                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".value.serializer",
+                                String.class)
+                        .isPresent();
+            }
+            return connectorHasValueSerializer;
+        }
+
+        if (key.startsWith("mp.messaging.incoming.") && key.endsWith(".key.deserializer")) {
+            if (connectorHasKeyDeserializer == null) {
+                connectorHasKeyDeserializer = getConfig()
+                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".key.deserializer",
+                                String.class)
+                        .isPresent();
+            }
+            return connectorHasKeyDeserializer;
+        }
+        if (key.startsWith("mp.messaging.incoming.") && key.endsWith(".value.deserializer")) {
+            if (connectorHasValueDeserializer == null) {
+                connectorHasValueDeserializer = getConfig()
+                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".value.deserializer",
+                                String.class)
+                        .isPresent();
+            }
+            return connectorHasValueDeserializer;
+        }
+
+        return false;
     }
 
     void ifNotYetConfigured(String key, Runnable runnable) {

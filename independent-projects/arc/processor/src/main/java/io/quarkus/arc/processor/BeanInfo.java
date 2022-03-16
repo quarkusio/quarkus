@@ -454,7 +454,7 @@ public class BeanInfo implements InjectionTargetInfo {
             qualifiers = new HashSet<>();
             Collections.addAll(qualifiers, requiredQualifiers);
         }
-        return Beans.matches(this, requiredType, qualifiers);
+        return beanDeployment.getBeanResolver().matches(this, requiredType, qualifiers);
     }
 
     Consumer<MethodCreator> getCreatorConsumer() {
@@ -590,7 +590,9 @@ public class BeanInfo implements InjectionTargetInfo {
         // A decorator is bound to a bean if the bean is assignable to the delegate injection point
         List<DecoratorInfo> bound = new ArrayList<>();
         for (DecoratorInfo decorator : decorators) {
-            if (Beans.matches(this, decorator.getDelegateInjectionPoint().getTypeAndQualifiers())) {
+            // make sure we use delegate injection point assignability rules in this case
+            if (beanDeployment.delegateInjectionPointResolver.matches(this,
+                    decorator.getDelegateInjectionPoint().getTypeAndQualifiers())) {
                 bound.add(decorator);
             }
         }

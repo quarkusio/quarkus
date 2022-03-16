@@ -35,4 +35,43 @@ public interface BeanResolver {
      */
     BeanInfo resolveAmbiguity(Set<BeanInfo> beans);
 
+    /**
+     * Checks if given {@link BeanInfo} has type and qualifiers matching those in provided
+     * {@link InjectionPointInfo.TypeAndQualifiers}.
+     *
+     * @param bean Candidate bean
+     * @param typeAndQualifiers Required type and qualifiers
+     * @return True if provided {@link BeanInfo} matches given required type and qualifiers, false otherwise
+     */
+    boolean matches(BeanInfo bean, InjectionPointInfo.TypeAndQualifiers typeAndQualifiers);
+
+    /**
+     * Checks if given {@link BeanInfo} has type and qualifiers matching those in provided
+     * {@link InjectionPointInfo.TypeAndQualifiers}.
+     *
+     * @param bean Candidate bean
+     * @param requiredType Required bean type
+     * @param requiredQualifiers Required qualifiers
+     * @return True if provided {@link BeanInfo} matches given required type and qualifiers, false otherwise
+     */
+    boolean matches(BeanInfo bean, Type requiredType, Set<AnnotationInstance> requiredQualifiers);
+
+    /**
+     * Returns true if required and candidate bean type match, false otherwise.
+     *
+     * @param requiredType Required bean type
+     * @param beanType Candidate bean type
+     * @return True if required type and bean type match, false otherwise
+     */
+    boolean matches(Type requiredType, Type beanType);
+
+    /**
+     * Returns true if provided bean matches required type, false otherwise
+     *
+     * @param bean Candidate bean
+     * @param requiredType Required bean type
+     * @return Returns true if given bean matches required type, false otherwise
+     */
+    boolean matchesType(BeanInfo bean, Type requiredType);
+
 }

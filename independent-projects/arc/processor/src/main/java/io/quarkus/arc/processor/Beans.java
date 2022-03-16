@@ -363,23 +363,20 @@ public final class Beans {
         return null;
     }
 
+    /**
+     * Checks if given {@link BeanInfo} has type and qualifiers matching those in provided {@link TypeAndQualifiers}.
+     * Uses standard bean assignability rules; see {@link BeanResolverImpl}.
+     */
     public static boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
-        return matches(bean, typeAndQualifiers.type, typeAndQualifiers.qualifiers);
+        return bean.getDeployment().getBeanResolver().matches(bean, typeAndQualifiers);
     }
 
+    /**
+     * Checks if given {@link BeanInfo} has all the required qualifiers and a bean type that matches required type.
+     * Uses standard bean assignability rules; see {@link BeanResolverImpl}.
+     */
     static boolean matches(BeanInfo bean, Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
-        // Bean has all the required qualifiers and a bean type that matches the required type
-        return matchesType(bean, requiredType) && hasQualifiers(bean, requiredQualifiers);
-    }
-
-    static boolean matchesType(BeanInfo bean, Type requiredType) {
-        BeanResolverImpl beanResolver = bean.getDeployment().beanResolver;
-        for (Type beanType : bean.getTypes()) {
-            if (beanResolver.matches(requiredType, beanType)) {
-                return true;
-            }
-        }
-        return false;
+        return bean.getDeployment().getBeanResolver().matches(bean, requiredType, requiredQualifiers);
     }
 
     static void resolveInjectionPoint(BeanDeployment deployment, InjectionTargetInfo target, InjectionPointInfo injectionPoint,

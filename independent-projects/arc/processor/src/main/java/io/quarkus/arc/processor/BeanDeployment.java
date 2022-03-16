@@ -76,6 +76,7 @@ public class BeanDeployment {
     private final List<ObserverInfo> observers;
 
     final BeanResolverImpl beanResolver;
+    final DelegateInjectionPointResolverImpl delegateInjectionPointResolver;
     private final AssignabilityCheck assignabilityCheck;
 
     private final InterceptorResolver interceptorResolver;
@@ -190,6 +191,7 @@ public class BeanDeployment {
 
         this.assignabilityCheck = new AssignabilityCheck(beanArchiveIndex, applicationIndex);
         this.beanResolver = new BeanResolverImpl(this);
+        this.delegateInjectionPointResolver = new DelegateInjectionPointResolverImpl(this);
         this.interceptorResolver = new InterceptorResolver(this);
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
         this.failOnInterceptedPrivateMethod = builder.failOnInterceptedPrivateMethod;
@@ -520,6 +522,10 @@ public class BeanDeployment {
         return beanResolver;
     }
 
+    public BeanResolver getDelegateInjectionPointResolver() {
+        return delegateInjectionPointResolver;
+    }
+
     public AssignabilityCheck getAssignabilityCheck() {
         return assignabilityCheck;
     }
@@ -580,10 +586,6 @@ public class BeanDeployment {
                 return Collections.emptyList();
             }
         }
-    }
-
-    BeanResolverImpl beanResolver() {
-        return beanResolver;
     }
 
     ClassInfo getInterceptorBinding(DotName name) {

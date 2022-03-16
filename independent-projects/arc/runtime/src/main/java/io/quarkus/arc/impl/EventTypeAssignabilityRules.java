@@ -16,10 +16,16 @@ import java.util.Set;
  */
 final class EventTypeAssignabilityRules {
 
+    private static final EventTypeAssignabilityRules INSTANCE = new EventTypeAssignabilityRules();
+
+    public static EventTypeAssignabilityRules instance() {
+        return INSTANCE;
+    }
+
     private EventTypeAssignabilityRules() {
     }
 
-    static boolean matches(Type observedType, Set<? extends Type> eventTypes) {
+    public boolean matches(Type observedType, Set<? extends Type> eventTypes) {
         for (Type eventType : eventTypes) {
             if (matches(observedType, eventType)) {
                 return true;
@@ -28,11 +34,11 @@ final class EventTypeAssignabilityRules {
         return false;
     }
 
-    static boolean matches(Type observedType, Type eventType) {
+    public boolean matches(Type observedType, Type eventType) {
         return matchesNoBoxing(Types.boxedType(observedType), Types.boxedType(eventType));
     }
 
-    static boolean matchesNoBoxing(Type observedType, Type eventType) {
+    boolean matchesNoBoxing(Type observedType, Type eventType) {
         if (observedType instanceof TypeVariable<?>) {
             /*
              * An event type is considered assignable to a type variable if the event type is assignable to the upper bound, if
@@ -63,8 +69,8 @@ final class EventTypeAssignabilityRules {
         return false;
     }
 
-    private static boolean matches(TypeVariable<?> observedType, Type eventType) {
-        for (Type bound : BeanTypeAssignabilityRules.getUppermostTypeVariableBounds(observedType)) {
+    private boolean matches(TypeVariable<?> observedType, Type eventType) {
+        for (Type bound : BeanTypeAssignabilityRules.instance().getUppermostTypeVariableBounds(observedType)) {
             if (!CovariantTypes.isAssignableFrom(bound, eventType)) {
                 return false;
             }
@@ -72,7 +78,7 @@ final class EventTypeAssignabilityRules {
         return true;
     }
 
-    private static boolean matches(ParameterizedType observedType, ParameterizedType eventType) {
+    private boolean matches(ParameterizedType observedType, ParameterizedType eventType) {
         if (!observedType.getRawType().equals(eventType.getRawType())) {
             return false;
         }
@@ -91,7 +97,7 @@ final class EventTypeAssignabilityRules {
      * A parameterized event type is considered assignable to a parameterized observed event type if they have identical raw
      * type and for each parameter:
      */
-    private static boolean parametersMatch(Type observedParameter, Type eventParameter) {
+    private boolean parametersMatch(Type observedParameter, Type eventParameter) {
         if (Types.isActualType(observedParameter) && Types.isActualType(eventParameter)) {
             /*
              * the observed event type parameter is an actual type with identical raw type to the event type parameter, and, if
@@ -126,8 +132,8 @@ final class EventTypeAssignabilityRules {
         return false;
     }
 
-    private static boolean parametersMatch(TypeVariable<?> observedParameter, Type eventParameter) {
-        for (Type bound : BeanTypeAssignabilityRules.getUppermostTypeVariableBounds(observedParameter)) {
+    private boolean parametersMatch(TypeVariable<?> observedParameter, Type eventParameter) {
+        for (Type bound : BeanTypeAssignabilityRules.instance().getUppermostTypeVariableBounds(observedParameter)) {
             if (!CovariantTypes.isAssignableFrom(bound, eventParameter)) {
                 return false;
             }
@@ -135,9 +141,9 @@ final class EventTypeAssignabilityRules {
         return true;
     }
 
-    private static boolean parametersMatch(WildcardType observedParameter, Type eventParameter) {
-        return (BeanTypeAssignabilityRules.lowerBoundsOfWildcardMatch(eventParameter, observedParameter)
-                && BeanTypeAssignabilityRules.upperBoundsOfWildcardMatch(observedParameter, eventParameter));
+    private boolean parametersMatch(WildcardType observedParameter, Type eventParameter) {
+        return (BeanTypeAssignabilityRules.instance().lowerBoundsOfWildcardMatch(eventParameter, observedParameter)
+                && BeanTypeAssignabilityRules.instance().upperBoundsOfWildcardMatch(observedParameter, eventParameter));
 
     }
 }

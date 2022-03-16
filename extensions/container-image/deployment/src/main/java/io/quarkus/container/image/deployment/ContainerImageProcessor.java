@@ -1,11 +1,15 @@
 package io.quarkus.container.image.deployment;
 
+import static io.quarkus.container.image.deployment.util.EnablementUtil.*;
+
 import java.util.Collections;
 import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
+import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.container.spi.FallbackContainerImageRegistryBuildItem;
 import io.quarkus.container.spi.ImageReference;
 import io.quarkus.deployment.Capabilities;
@@ -22,9 +26,14 @@ public class ContainerImageProcessor {
     private static final Logger log = Logger.getLogger(ContainerImageProcessor.class);
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
-    void failForNativeSources(BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
-        throw new IllegalArgumentException(
-                "The Container Image extensions are incompatible with the 'native-sources' package type.");
+    void failForNativeSources(ContainerImageConfig containerImageConfig,
+            Optional<ContainerImageBuildRequestBuildItem> buildRequest,
+            Optional<ContainerImagePushRequestBuildItem> pushRequest,
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+        if (buildOrPushContainerImageNeeded(containerImageConfig, buildRequest, pushRequest)) {
+            throw new IllegalArgumentException(
+                    "The Container Image extensions are incompatible with the 'native-sources' package type.");
+        }
     }
 
     @BuildStep

@@ -103,8 +103,8 @@ public class MicrometerTimedInterceptor {
     }
 
     private void stop(List<Sample> samples, String throwableClassName) {
-        for (int i = 0; i < samples.size(); i++) {
-            samples.get(i).stop(throwableClassName);
+        for (Sample sample : samples) {
+            sample.stop(throwableClassName);
         }
     }
 

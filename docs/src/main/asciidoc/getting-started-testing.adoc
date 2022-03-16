@@ -51,10 +51,12 @@ This guide assumes you already have the completed application from the `getting-
 == Recap of HTTP based Testing in JVM mode
 
 If you have started from the Getting Started example you should already have a completed test, including the correct
-`pom.xml` setup.
+tooling setup.
 
-In the `pom.xml` file you should see 2 test dependencies:
-
+In your build file you should see 2 test dependencies:
+[role="primary asciidoc-tabs-sync-maven"]
+.Maven
+****
 [source,xml,subs=attributes+]
 ----
 <dependency>
@@ -68,6 +70,18 @@ In the `pom.xml` file you should see 2 test dependencies:
     <scope>test</scope>
 </dependency>
 ----
+****
+[role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+****
+[source,groovy,subs=attributes+]
+----
+dependencies {
+    testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.rest-assured:rest-assured")
+}
+----
+****
 
 `quarkus-junit5` is required for testing, as it provides the `@QuarkusTest` annotation that controls the testing framework.
 `rest-assured` is not required but is a convenient way to test HTTP endpoints, we also provide integration that automatically
@@ -1207,7 +1221,7 @@ As is the case with `@NativeImageTest`, this is a black box test that supports t
 
 [NOTE]
 ====
-As a test annotated with `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e. via the `maven-failsafe-plugin` if using Maven or an additional task if using Gradle.
+As a test annotated with `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e. via the `maven-failsafe-plugin` if using Maven or the `quarkusIntTest` task if using Gradle.
 These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
 ====
 

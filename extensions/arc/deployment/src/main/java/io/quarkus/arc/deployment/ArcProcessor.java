@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
+import javax.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -422,7 +423,8 @@ public class ArcProcessor {
             List<BeanConfiguratorBuildItem> beanConfigurators,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors) {
 
         for (BeanConfiguratorBuildItem configurator : beanConfigurators) {
             // Just make sure the configurator is processed
@@ -435,6 +437,18 @@ public class ArcProcessor {
         // Register a synthetic bean for each List<?> with qualifier @All
         List<InjectionPointInfo> listAll = beanRegistrationPhase.getInjectionPoints().stream()
                 .filter(this::isListAllInjectionPoint).collect(Collectors.toList());
+        for (InjectionPointInfo injectionPoint : listAll) {
+            // Note that at this point we can be sure that the required type is List<>
+            Type typeParam = injectionPoint.getType().asParameterizedType().arguments().get(0);
+            if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
+                validationErrors.produce(new ValidationErrorBuildItem(
+                        new DefinitionException(
+                                "Wildcard is not a legal type argument for " + injectionPoint.getTargetInfo())));
+            } else if (typeParam.kind() == Type.Kind.TYPE_VARIABLE) {
+                validationErrors.produce(new ValidationErrorBuildItem(new DefinitionException(
+                        "Type variable is not a legal type argument for " + injectionPoint.getTargetInfo())));
+            }
+        }
         if (!listAll.isEmpty()) {
             registerListInjectionPointsBeans(beanRegistrationPhase, listAll, reflectiveMethods, reflectiveFields,
                     unremovableBeans);

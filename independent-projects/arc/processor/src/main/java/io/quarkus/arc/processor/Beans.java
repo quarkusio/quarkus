@@ -3,7 +3,6 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
-import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
 import io.quarkus.gizmo.Gizmo;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -387,20 +386,7 @@ public final class Beans {
         }
         BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
         if (builtinBean != null) {
-            if (BuiltinBean.INJECTION_POINT == builtinBean
-                    && (target.kind() != TargetKind.BEAN || !BuiltinScope.DEPENDENT.is(target.asBean().getScope()))) {
-                errors.add(new DefinitionException("Only @Dependent beans can access metadata about an injection point: "
-                        + injectionPoint.getTargetInfo()));
-            } else if (BuiltinBean.EVENT_METADATA == builtinBean
-                    && target.kind() != TargetKind.OBSERVER) {
-                errors.add(new DefinitionException("EventMetadata can be only injected into an observer method: "
-                        + injectionPoint.getTargetInfo()));
-            } else if (BuiltinBean.INSTANCE == builtinBean
-                    && injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
-                errors.add(
-                        new DefinitionException("An injection point of raw type javax.enterprise.inject.Instance is defined: "
-                                + injectionPoint.getTargetInfo()));
-            }
+            builtinBean.validate(target, injectionPoint, errors::add);
             // Skip built-in beans
             return;
         }

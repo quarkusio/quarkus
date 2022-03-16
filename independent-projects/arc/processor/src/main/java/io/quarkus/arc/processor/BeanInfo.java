@@ -520,8 +520,12 @@ public class BeanInfo implements InjectionTargetInfo {
                 if (injectionPoint.isDelegate() && !isDecorator()) {
                     errors.add(new DeploymentException(String.format(
                             "Only decorators can declare a delegate injection point: %s", this)));
+                } else if (injectionPoint.getType().kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
+                    errors.add(new DefinitionException(String.format("Type variable is not a legal injection point type: %s",
+                            injectionPoint.getTargetInfo())));
+                } else {
+                    Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint, errors);
                 }
-                Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint, errors);
             }
         }
         if (disposer != null) {

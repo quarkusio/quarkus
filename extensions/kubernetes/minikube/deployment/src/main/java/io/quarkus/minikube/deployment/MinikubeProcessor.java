@@ -101,8 +101,8 @@ public class MinikubeProcessor {
     public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config,
             List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
-        KubernetesCommonHelper.combinePorts(ports, config).entrySet().forEach(e -> {
-            result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(e.getValue())));
+        KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
+            result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(value)));
         });
         return result;
     }

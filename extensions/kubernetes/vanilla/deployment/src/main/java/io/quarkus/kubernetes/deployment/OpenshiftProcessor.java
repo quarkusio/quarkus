@@ -129,8 +129,8 @@ public class OpenshiftProcessor {
 
         List<ConfiguratorBuildItem> result = new ArrayList<>();
 
-        KubernetesCommonHelper.combinePorts(ports, config).entrySet().forEach(e -> {
-            result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(e.getValue())));
+        KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
+            result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value)));
         });
         result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator(config.route)));
 

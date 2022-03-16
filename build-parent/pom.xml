@@ -100,7 +100,7 @@
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
         
-        <unboundid-ldap.version>6.0.3</unboundid-ldap.version>
+        <unboundid-ldap.version>6.0.4</unboundid-ldap.version>
 
         <assertj.version>3.22.0</assertj.version>
 

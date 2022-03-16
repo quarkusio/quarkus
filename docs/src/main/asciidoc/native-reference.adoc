@@ -458,6 +458,10 @@ docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} \
   "match (m:Method) <- [*1..10] - (o) where m.name = 'hello' return *"
 ----
 
+For further information, check out this
+link:https://quarkus.io/blog/quarkus-native-neo4j-call-tree[blog post]
+that explores the Quarkus Hibernate ORM quickstart using the techniques explained above.
+
 === Used Packages/Classes/Methods Reports
 
 `used_packages`, `used_classes` and `used_methods` text file reports come in handy when comparing different versions of the application,

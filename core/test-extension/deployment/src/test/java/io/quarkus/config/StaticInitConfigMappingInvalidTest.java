@@ -14,9 +14,9 @@ public class StaticInitConfigMappingInvalidTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(RuntimeInitConfigSource.class)
-                    .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
-                            RuntimeInitConfigSource.class.getName()))
+                    .addClass(RuntimeInitConfigSourceFactory.class)
+                    .addAsServiceProvider("io.smallrye.config.ConfigSourceFactory",
+                            StaticInitConfigSourceFactory.class.getName()))
             .assertException(throwable -> {
             });
 

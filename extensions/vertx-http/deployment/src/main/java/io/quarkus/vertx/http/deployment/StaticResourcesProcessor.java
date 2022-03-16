@@ -30,7 +30,6 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
-import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
 /**

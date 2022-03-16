@@ -1,0 +1,30 @@
+{#include main}
+{#title}Quarkus REST Exception mappers{/title}
+{#style}
+h5{
+background: gainsboro;
+margin-top: 20px;
+margin-bottom: 20px;
+padding: 10px;
+}
+.static{
+margin-top: 5px;
+}
+{/style}
+{#body}
+<h5>Exception mappers</h5>
+{#for mapper in info:exceptionMappers}
+<div class="row">
+    <div class="col">
+        <code>{mapper.exceptionClassName}</code>
+    </div>
+    <div class="col">
+        <code>{mapper.mapperClassName}</code>
+    </div>
+    <div class="col">
+        <code>{mapper.priority}</code>
+    </div>
+</div>
+{/for}
+{/body}
+{/include}

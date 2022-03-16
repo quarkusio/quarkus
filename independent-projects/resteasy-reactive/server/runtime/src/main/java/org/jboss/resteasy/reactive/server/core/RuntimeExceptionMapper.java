@@ -28,7 +28,7 @@ public class RuntimeExceptionMapper {
 
     private static final Logger log = Logger.getLogger(RuntimeExceptionMapper.class);
 
-    private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers;
+    private static Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers;
 
     /**
      * Exceptions that indicate an blocking operation was performed on an IO thread.
@@ -41,7 +41,7 @@ public class RuntimeExceptionMapper {
 
     public RuntimeExceptionMapper(ExceptionMapping mapping, ClassLoader classLoader) {
         try {
-            this.mappers = new HashMap<>();
+            mappers = new HashMap<>();
             for (var i : mapping.mappers.entrySet()) {
                 mappers.put((Class<? extends Throwable>) Class.forName(i.getKey(), false, classLoader), i.getValue());
             }
@@ -246,7 +246,7 @@ public class RuntimeExceptionMapper {
         return null;
     }
 
-    public Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getMappers() {
+    public static Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getMappers() {
         return mappers;
     }
 

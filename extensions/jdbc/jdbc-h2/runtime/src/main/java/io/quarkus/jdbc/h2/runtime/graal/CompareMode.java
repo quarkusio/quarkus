@@ -22,13 +22,11 @@ public final class CompareMode {
                     "Only the default Collator can be currently used in native mode; see https://github.com/oracle/graal/issues/839");
         }
         CompareMode var3 = lastUsed;
-        if (var3 != null) {
-            return var3;
-        } else {
+        if (var3 == null) {
             var3 = new CompareMode(name, strength, binaryUnsigned);
             lastUsed = var3;
-            return var3;
         }
+        return var3;
         //TODO?: Can't create a singleton via @Inject
         //return SINGLE_CHOICE;
     }

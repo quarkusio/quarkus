@@ -106,7 +106,7 @@ public final class AmazonLambdaProcessor {
 
             ClassInfo current = info;
             boolean done = false;
-            boolean streamHandler = info.superName().equals(SKILL_STREAM_HANDLER) ? true : false;
+            boolean streamHandler = info.superName().equals(SKILL_STREAM_HANDLER);
             while (current != null && !done) {
                 for (MethodInfo method : current.methods()) {
                     if (method.name().equals("handleRequest")) {

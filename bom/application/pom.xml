@@ -107,13 +107,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.19.0.Final</wildfly-elytron.version>
         <jboss-threads.version>3.4.2.Final</jboss-threads.version>
-        <vertx.version>4.2.5</vertx.version>
-        <!--
-        Temporary fix, the client 4.2.5 does not work in the context of Quarkus (bug in the client)
-        The fix is shipped with this path release.
-        This property needs to be removed when we will update to Vert.x 4.2.6 or Vert.x 4.3.0
-        -->
-        <vertx.oracle-client.version>4.2.5.1</vertx.oracle-client.version>
+        <vertx.version>4.2.6</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.15</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -286,13 +280,6 @@
                 <version>${vertx.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <!-- Temporarily override the version of the Oracle client, as a bug prevents the usage of the 4.2.5
-                version in Quarkus, instead, use 4.2.5.1. -->
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-oracle-client</artifactId>
-                <version>${vertx.oracle-client.version}</version>
             </dependency>
 
             <!-- gRPC dependencies, imported as a BOM -->

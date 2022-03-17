@@ -195,6 +195,7 @@ public class JunitTestRunner {
             return new Runnable() {
                 @Override
                 public void run() {
+                    final ClassLoader origCl = Thread.currentThread().getContextClassLoader();
                     try {
                         synchronized (JunitTestRunner.this) {
                             testsRunning = true;
@@ -222,6 +223,8 @@ public class JunitTestRunner {
 
                         Map<String, Map<UniqueId, TestResult>> resultsByClass = new HashMap<>();
                         AtomicReference<TestIdentifier> currentNonDynamicTest = new AtomicReference<>();
+
+                        Thread.currentThread().setContextClassLoader(tcl);
                         launcher.execute(testPlan, new TestExecutionListener() {
 
                             @Override
@@ -396,6 +399,7 @@ public class JunitTestRunner {
                                 throw new RuntimeException(e);
                             }
                         } finally {
+                            Thread.currentThread().setContextClassLoader(origCl);
                             synchronized (JunitTestRunner.this) {
                                 testsRunning = false;
                                 if (aborted) {

@@ -58,7 +58,7 @@ public class HttpAuthenticator {
         if (mechanisms.isEmpty()) {
             this.mechanisms = new HttpAuthenticationMechanism[] { new NoAuthenticationMechanism() };
         } else {
-            Collections.sort(mechanisms, new Comparator<HttpAuthenticationMechanism>() {
+            mechanisms.sort(new Comparator<HttpAuthenticationMechanism>() {
                 @Override
                 public int compare(HttpAuthenticationMechanism mech1, HttpAuthenticationMechanism mech2) {
                     //descending order

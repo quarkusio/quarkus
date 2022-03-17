@@ -113,8 +113,8 @@ public class KnativeProcessor {
     @BuildStep
     public List<ConfiguratorBuildItem> createConfigurators(KnativeConfig config, List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
-        KubernetesCommonHelper.combinePorts(ports, config).entrySet().forEach(e -> {
-            result.add(new ConfiguratorBuildItem(new AddPortToKnativeConfig(e.getValue())));
+        KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
+            result.add(new ConfiguratorBuildItem(new AddPortToKnativeConfig(value)));
         });
         return result;
     }

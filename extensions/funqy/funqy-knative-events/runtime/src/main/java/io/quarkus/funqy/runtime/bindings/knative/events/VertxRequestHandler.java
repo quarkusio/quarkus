@@ -306,8 +306,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             outputCloudEvent.extensions()
-                                    .entrySet()
-                                    .forEach(e -> httpResponse.putHeader("ce-" + e.getKey(), e.getValue()));
+                                    .forEach((key, value) -> httpResponse.putHeader("ce-" + key, value));
 
                             String dataContentType = outputCloudEvent.dataContentType();
                             if (dataContentType != null) {

@@ -243,10 +243,6 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             return;
         }
 
-        if (discovery.shouldNotConfigure(key)) {
-            return;
-        }
-
         discovery.ifNotYetConfigured(key, () -> {
             config.produce(new RunTimeConfigurationDefaultBuildItem(key, value));
         });

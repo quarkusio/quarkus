@@ -70,6 +70,8 @@ public class VertxCoreProducerTest {
         AddressResolverConfiguration ar = configuration.resolver;
         ar.cacheMaxTimeToLive = 3;
         ar.cacheNegativeTimeToLive = 1;
+        ar.maxQueries = 2;
+        ar.queryTimeout = Duration.ofMillis(200L);
 
         VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(Arrays.asList(
                 new Consumer<VertxOptions>() {
@@ -80,6 +82,8 @@ public class VertxCoreProducerTest {
                                 AddressResolverOptions.DEFAULT_CACHE_MIN_TIME_TO_LIVE,
                                 vertxOptions.getAddressResolverOptions().getCacheMinTimeToLive());
                         Assertions.assertEquals(1, vertxOptions.getAddressResolverOptions().getCacheNegativeTimeToLive());
+                        Assertions.assertEquals(2, vertxOptions.getAddressResolverOptions().getMaxQueries());
+                        Assertions.assertEquals(200L, vertxOptions.getAddressResolverOptions().getQueryTimeout());
                     }
                 }));
 
@@ -160,6 +164,8 @@ public class VertxCoreProducerTest {
         vc.resolver.cacheMaxTimeToLive = Integer.MAX_VALUE;
         vc.resolver.cacheMinTimeToLive = 0;
         vc.resolver.cacheNegativeTimeToLive = 0;
+        vc.resolver.maxQueries = 4;
+        vc.resolver.queryTimeout = Duration.ofSeconds(5);
         return vc;
     }
 }

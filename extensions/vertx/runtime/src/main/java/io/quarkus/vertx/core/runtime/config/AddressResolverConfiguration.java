@@ -1,5 +1,7 @@
 package io.quarkus.vertx.core.runtime.config;
 
+import java.time.Duration;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -26,4 +28,15 @@ public class AddressResolverConfiguration {
     @ConfigItem(defaultValue = "0")
     public int cacheNegativeTimeToLive;
 
+    /**
+     * The maximum number of queries to be sent during a resolution.
+     */
+    @ConfigItem(defaultValue = "4")
+    public int maxQueries;
+
+    /**
+     * The duration after which a DNS query is considered to be failed.
+     */
+    @ConfigItem(defaultValue = "5S")
+    public Duration queryTimeout;
 }

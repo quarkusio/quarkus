@@ -467,6 +467,8 @@ public class VertxCoreRecorder {
         opts.setCacheMaxTimeToLive(ar.cacheMaxTimeToLive);
         opts.setCacheMinTimeToLive(ar.cacheMinTimeToLive);
         opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive);
+        opts.setMaxQueries(ar.maxQueries);
+        opts.setQueryTimeout(ar.queryTimeout.toMillis());
 
         options.setAddressResolverOptions(opts);
     }

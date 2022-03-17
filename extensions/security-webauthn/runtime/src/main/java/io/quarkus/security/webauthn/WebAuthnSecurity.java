@@ -17,6 +17,7 @@ import io.vertx.ext.auth.webauthn.WebAuthn;
 import io.vertx.ext.auth.webauthn.WebAuthnCredentials;
 import io.vertx.ext.auth.webauthn.WebAuthnOptions;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.impl.Origin;
 
 /**
  * Utility class that allows users to manually login or register users using WebAuthn
@@ -73,7 +74,10 @@ public class WebAuthnSecurity {
                 .authenticatorFetcher(database::fetcher)
                 .authenticatorUpdater(database::updater);
         origin = config.origin.orElse(null);
-        domain = config.domain.orElse(null);
+        if (origin != null) {
+            Origin o = Origin.parse(origin);
+            domain = o.host();
+        }
     }
 
     /**

@@ -37,14 +37,6 @@ public class WebAuthnRunTimeConfig {
     public Optional<String> origin;
 
     /**
-     * TODO: This should be gone, this is synthetic config, once you have the origin, you should parse it and extract
-     *       the domain from it. In Vert.x Web Handler the config does that, so we cache it and don't need to parse it
-     *       on each authentication request
-     */
-    @ConfigItem
-    public Optional<String> domain;
-
-    /**
      * Authenticator Transports allowed by the application. Authenticators can interact with the user web browser
      * through several transports. Applications may want to restrict the transport protocols for extra security
      * hardening reasons.
@@ -160,6 +152,7 @@ public class WebAuthnRunTimeConfig {
      * <a href="https://www.w3.org/TR/webauthn/#sctn-extensions">https://www.w3.org/TR/webauthn/#sctn-extensions</a>.
      *
      * TODO: don't enable this yet and with upcoming Leve3 version vert.x may break this config
+     * see https://github.com/vert-x3/vertx-auth/issues/535
      */
     //private JsonObject extensions;
 

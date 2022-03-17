@@ -15,6 +15,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.webauthn.WebAuthnCredentials;
 import io.vertx.ext.auth.webauthn.impl.attestation.AttestationException;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.impl.Origin;
 
 /**
  * Endpoints for login/register/callback
@@ -41,7 +42,10 @@ public class WebAuthnController {
             IdentityProviderManager identityProviderManager,
             WebAuthnAuthenticationMechanism authMech) {
         origin = config.origin.orElse(null);
-        domain = config.domain.orElse(null);
+        if (origin != null) {
+            Origin o = Origin.parse(origin);
+            domain = o.host();
+        }
         this.security = security;
         this.identityProviderManager = identityProviderManager;
         this.authMech = authMech;

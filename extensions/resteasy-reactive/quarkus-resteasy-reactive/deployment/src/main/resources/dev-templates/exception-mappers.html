@@ -1,30 +1,26 @@
-{#include main}
+{#include main fluid=true}
 {#title}Quarkus REST Exception mappers{/title}
-{#style}
-h5{
-background: gainsboro;
-margin-top: 20px;
-margin-bottom: 20px;
-padding: 10px;
-}
-.static{
-margin-top: 5px;
-}
-{/style}
 {#body}
-<h5>Exception mappers</h5>
-{#for mapper in info:exceptionMappers}
-<div class="row">
-    <div class="col">
-        <code>{mapper.exceptionClassName}</code>
-    </div>
-    <div class="col">
-        <code>{mapper.mapperClassName}</code>
-    </div>
-    <div class="col">
-        <code>{mapper.priority}</code>
-    </div>
+
+<div class="card table-responsive">
+    <table class="table table-hover w-100">
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Priority</th>
+                <th scope="col">Exception</th>
+                <th scope="col">Mapper</th>
+            </tr>
+        </thead>
+        <tbody>
+            {#for mapper in info:exceptionMappers}
+            <tr>
+                <td class="small">{mapper.priority}</td>
+                <td class="small text-break text-danger text-monospace">{mapper.exceptionClassName}</td>
+                <td class="small text-break text-primary text-monospace">{mapper.mapperClassName}</td>
+            </tr>
+            {/for}
+        </tbody>
+    </table>
 </div>
-{/for}
 {/body}
 {/include}

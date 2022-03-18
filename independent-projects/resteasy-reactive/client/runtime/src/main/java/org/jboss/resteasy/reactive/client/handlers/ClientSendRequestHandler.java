@@ -413,6 +413,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
             actualEntity = state.writeEntity(entity, headerMap,
                     state.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR));
+        } else {
+            // some servers don't like the fact that a POST or PUT does not have a method body if there is no content-length header associated
+            if (state.getHttpMethod().equals("POST") || state.getHttpMethod().equals("PUT")) {
+                headerMap.putSingle(HttpHeaders.CONTENT_LENGTH, "0");
+            }
         }
         // set the Vertx headers after we've run the interceptors because they can modify them
         setVertxHeaders(httpClientRequest, headerMap);

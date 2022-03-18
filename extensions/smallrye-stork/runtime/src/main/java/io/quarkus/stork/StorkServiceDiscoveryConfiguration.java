@@ -21,7 +21,7 @@ public class StorkServiceDiscoveryConfiguration {
      * Check the documentation of the selected service discovery type for available parameters.
      *
      */
-    @ConfigItem
+    @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, String> params;
 
 }

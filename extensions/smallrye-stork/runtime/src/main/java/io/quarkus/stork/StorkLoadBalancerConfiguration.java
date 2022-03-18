@@ -21,7 +21,7 @@ public class StorkLoadBalancerConfiguration {
      * Check the documentation of the selected load balancer type for available parameters
      *
      */
-    @ConfigItem
+    @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, String> parameters;
 
 }

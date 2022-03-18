@@ -59,7 +59,7 @@ Each codestart consists of:
 
 - In Quarkus core repo, the extension codestarts are all in the same https://github.com/quarkusio/quarkus/tree/main/devtools/project-core-extension-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[module, window="_blank"].
 
-- RESTEasy, RESTEasy Reactive and Spring Web extension codestarts are part of https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[the base codestarts, window="_blank"].
+- RESTEasy Reactive, RESTEasy and Spring Web extension codestarts are part of https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[the base codestarts, window="_blank"].
 
 - For other extensions, the codestart will typically be located in the runtime module (with special instruction in the `pom.xml` to generate a separate codestart artifact).
 

@@ -50,7 +50,7 @@ The solution is located in the `tests-with-coverage-quickstart` {quickstarts-tre
 Let's start from an empty application created with the Quarkus Maven plugin:
 
 :create-app-artifact-id: tests-with-coverage-quickstart
-:create-app-extensions: resteasy
+:create-app-extensions: resteasy-reactive
 include::includes/devtools/create-app.adoc[]
 
 Now we'll be adding all the elements necessary to have an application that is properly covered with tests.
@@ -349,7 +349,7 @@ In order to run the integration tests as a jar with the Jacoco agent, add the fo
 
 ----
 
-WARNING: Sharing the same value for `quarkus.test.arg-line` might break integration test runs that test different types of Quarkus artifacts. In such cases, the use of maven profiles is advised.
+WARNING: Sharing the same value for `quarkus.test.arg-line` might break integration test runs that test different types of Quarkus artifacts. In such cases, the use of Maven profiles is advised.
 
 == Setting coverage thresholds
 

@@ -229,7 +229,7 @@ public class FruitDto {
 }
 ----
 
-The translation to and from JSON is done automatically by the Quarkus RestEasy extension, which is
+The translation to and from JSON is done automatically by the Quarkus RESTEasy Reactive extension, which is
 included in this guide's pom.xml file. If you want to add it manually to your application, add the
 below snippet to your application's ppm.xml file:
 
@@ -237,11 +237,11 @@ below snippet to your application's ppm.xml file:
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy</artifactId>
+  <artifactId>quarkus-resteasy-reactive</artifactId>
 </dependency>
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-jsonb</artifactId>
+  <artifactId>quarkus-resteasy-jackson</artifactId>
 </dependency>
 ----
 
@@ -514,16 +514,7 @@ NOTE: The `getAll()` method above returns `Multi`, and the `add()` method return
 are the same Mutiny types that we met before; they are automatically recognized by the Quarkus
 reactive REST API, so we don't need to convert them into JSON ourselves.
 
-To effectively integrate the reactive logic with the REST API, your application needs to declare a
-dependency to the Quarkus RestEasy Mutiny extension:
-
-[source,xml]
-----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-mutiny</artifactId>
-</dependency>
-----
+RESTEasy Reactive natively supports the Mutiny reactive types e.g. `Uni` and `Multi`.
 
 This dependency is already included in this guide's pom.xml, but if you are starting a new project
 from scratch, make sure to include it.

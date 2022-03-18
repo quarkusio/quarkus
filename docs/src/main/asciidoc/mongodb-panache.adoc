@@ -434,7 +434,7 @@ public class PersonResource {
 
     @GET
     @Path("/{id}")
-    public Person get(@PathParam("id") String id) {
+    public Person get(String id) {
         return Person.findById(new ObjectId(id));
     }
 
@@ -446,13 +446,13 @@ public class PersonResource {
 
     @PUT
     @Path("/{id}")
-    public void update(@PathParam("id") String id, Person person) {
+    public void update(String id, Person person) {
         person.update();
     }
 
     @DELETE
     @Path("/{id}")
-    public void delete(@PathParam("id") String id) {
+    public void delete(String id) {
         Person person = Person.findById(new ObjectId(id));
         if(person == null) {
             throw new NotFoundException();
@@ -462,7 +462,7 @@ public class PersonResource {
 
     @GET
     @Path("/search/{name}")
-    public Person search(@PathParam("name") String name) {
+    public Person search(String name) {
         return Person.findByName(name);
     }
 
@@ -776,7 +776,7 @@ you need to provide the value by yourself.
 ====
 
 `ObjectId` can be difficult to use if you want to expose its value in your REST service.
-So we created Jackson and JSON-B providers to serialize/deserialize them as a `String` which are automatically registered if your project depends on either the RESTEasy Jackson extension or the RESTEasy JSON-B extension.
+So we created Jackson and JSON-B providers to serialize/deserialize them as a `String` which are automatically registered if your project depends on either the RESTEasy Reactive Jackson extension or the RESTEasy Reactive JSON-B extension.
 
 [IMPORTANT]
 ====
@@ -786,7 +786,7 @@ If you use the standard `ObjectId` ID type, don't forget to retrieve your entity
 ----
 @GET
 @Path("/{id}")
-public Person findById(@PathParam("id") String id) {
+public Person findById(String id) {
     return Person.findById(new ObjectId(id));
 }
 ----
@@ -945,15 +945,15 @@ Uni<Boolean> deleted = ReactivePerson.deleteById(personId);
 Uni<Long> updated = ReactivePerson.update("name", "Mortal").where("status", Status.Alive);
 ----
 
-TIP: If you use MongoDB with Panache in conjunction with RESTEasy, you can directly return a reactive type inside your JAX-RS resource endpoint as long as you include the `quarkus-resteasy-mutiny` extension.
+TIP: If you use MongoDB with Panache in conjunction with RESTEasy Reactive, you can directly return a reactive type inside your JAX-RS resource endpoint.
 
 The same query facility exists for the reactive types, but the `stream()` methods act differently: they return a `Multi` (which implement  a reactive stream `Publisher`) instead of a `Stream`.
 
-It allows more advanced reactive use cases, for example, you can use it to send server-sent events (SSE) via RESTEasy:
+It allows more advanced reactive use cases, for example, you can use it to send server-sent events (SSE) via RESTEasy Reactive:
 
 [source,java]
 ----
-import org.jboss.resteasy.annotations.SseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.reactivestreams.Publisher;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -962,13 +962,13 @@ import javax.ws.rs.Produces;
 @GET
 @Path("/stream")
 @Produces(MediaType.SERVER_SENT_EVENTS)
-@SseElementType(MediaType.APPLICATION_JSON)
+@RestStreamElementType(MediaType.APPLICATION_JSON)
 public Multi<ReactivePerson> streamPersons() {
     return ReactivePerson.streamAll();
 }
 ----
 
-TIP: `@SseElementType(MediaType.APPLICATION_JSON)` tells RESTEasy to serialize the object in JSON.
+TIP: `@RestStreamElementType(MediaType.APPLICATION_JSON)` tells RESTEasy Reactive to serialize the object in JSON.
 
 WARNING: Transactions are not supported for Reactive Entities and Repositories.
 

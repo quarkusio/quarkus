@@ -44,7 +44,7 @@ git clone {quickstarts-clone-url}
 To create a new project:
 
 :create-app-artifact-id: microprofile-metrics-quickstart
-:create-app-extensions: resteasy,smallrye-metrics
+:create-app-extensions: resteasy-reactive,smallrye-metrics
 include::includes/devtools/create-app.adoc[]
 
 This command generates a Quarkus project that uses the `smallrye-metrics` extension.
@@ -91,7 +91,6 @@ import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Gauge;
 import org.eclipse.microprofile.metrics.annotation.Timed;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -108,7 +107,7 @@ public class PrimeNumberChecker {
     @Produces(MediaType.TEXT_PLAIN)
     @Counted(name = "performedChecks", description = "How many primality checks have been performed.")
     @Timed(name = "checksTimer", description = "A measure of how long it takes to perform the primality test.", unit = MetricUnits.MILLISECONDS)
-    public String checkIfPrime(@PathParam long number) {
+    public String checkIfPrime(long number) {
         if (number < 1) {
             return "Only natural numbers can be prime numbers.";
         }

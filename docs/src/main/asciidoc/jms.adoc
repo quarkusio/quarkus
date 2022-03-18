@@ -52,7 +52,7 @@ or download an https://github.com/amqphub/quarkus-qpid-jms-quickstart/archive/ma
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: jms-quickstart
-:create-app-extensions: resteasy,qpid-jms
+:create-app-extensions: resteasy-reactive,qpid-jms
 include::includes/devtools/create-app.adoc[]
 
 This command generates a new project importing the quarkus-qpid-jms extension:
@@ -346,7 +346,7 @@ The Artemis JMS solution is located in the `jms-quickstart` {quickstarts-tree-ur
 Create a new project with the following command:
 
 :create-app-artifact-id: jms-quickstart
-:create-app-extensions: resteasy,artemis-jms
+:create-app-extensions: resteasy-reactive,artemis-jms
 include::includes/devtools/create-app.adoc[]
 
 This creates a new project importing the quarkus-artemis-jms extension:

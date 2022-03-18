@@ -27,7 +27,7 @@ The end result of that process is a running Config Server that will provide the 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-cloud-config-quickstart
-:create-app-extensions: spring-cloud-config-client
+:create-app-extensions: resteasy-reactive,spring-cloud-config-client
 include::includes/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-cloud-config-client` extension.

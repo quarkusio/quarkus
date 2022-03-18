@@ -12,11 +12,17 @@ include::./attributes.adoc[]
 :mutinyapi: https://smallrye.io/smallrye-mutiny/apidocs
 :httpspec: https://tools.ietf.org/html/rfc7231
 :jsonpapi: https://javadoc.io/doc/javax.json/javax.json-api/1.1.4
-:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/4.1.0
-:resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/2.0.0.Final
-:resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/2.0.0.Final
+:vertxapi: https://javadoc.io/doc/io.vertx/vertx-core/latest/index.html
+:resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
+:resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
 
 This guide explains how to write REST Services with RESTEasy Reactive in Quarkus.
+
+[TIP]
+====
+This is the reference guide for RESTEasy Reactive.
+For a more lightweight introduction, please refer to the xref:rest-json.adoc[Writing JSON REST services guides].
+====
 
 == What is RESTEasy Reactive?
 
@@ -1131,6 +1137,16 @@ Importing this module will allow HTTP message bodies to be read from XML
 and serialised to XML, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
+== CORS filter
+
+link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that
+allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
+was served.
+
+Quarkus comes with a CORS filter at the HTTP layer level.
+Read the xref:http-reference.adoc#cors-filter[HTTP Reference Documentation] to learn
+how to use it.
+
 == More advanced usage
 
 Here are some more advanced topics that you may not need to know about initially, but
@@ -1386,6 +1402,8 @@ It may declare any of the following return types:
 
 === Request or response filters
 
+==== Via annotations
+
 You can declare functions which are invoked in the following phases of the request processing:
 
 - Before the endpoint method is identified: pre-routing request filter
@@ -1456,8 +1474,6 @@ class Filters {
 }
 ----
 
-You can also link:{jaxrsspec}#filters[declare request and response filters in the JAX-RS way].
-
 Your filters may declare any of the following parameter types:
 
 .Table Filter parameters
@@ -1496,6 +1512,64 @@ It may declare any of the following return types:
 |===
 
 NOTE: You can restrict the Resource methods for which a filter runs, by using link:{jaxrsapi}/javax/ws/rs/NameBinding.html[`@NameBinding`] meta-annotations.
+
+==== The JAX-RS way
+
+You can also link:{jaxrsspec}#filters[declare request and response filters in the JAX-RS way].
+
+Both HTTP request and response can be intercepted by providing `ContainerRequestFilter` or `ContainerResponseFilter`
+implementations respectively. These filters are suitable for processing the metadata associated with a message: HTTP
+headers, query parameters, media type, and other metadata. They also have the capability to abort the request
+processing, for instance when the user does not have the permissions to access the endpoint.
+
+Let's use `ContainerRequestFilter` to add logging capability to our service. We can do that by implementing
+`ContainerRequestFilter` and annotating it with the `@Provider` annotation:
+
+[source,java]
+----
+package org.acme.rest.json;
+
+import io.vertx.core.http.HttpServerRequest;
+import org.jboss.logging.Logger;
+
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.Provider;
+
+@Provider
+public class LoggingFilter implements ContainerRequestFilter {
+
+    private static final Logger LOG = Logger.getLogger(LoggingFilter.class);
+
+    @Context
+    UriInfo info;
+
+    @Context
+    HttpServerRequest request;
+
+    @Override
+    public void filter(ContainerRequestContext context) {
+
+        final String method = context.getMethod();
+        final String path = info.getPath();
+        final String address = request.remoteAddress().toString();
+
+        LOG.infof("Request %s %s from IP %s", method, path, address);
+    }
+}
+----
+
+Now, whenever a REST method is invoked, the request will be logged into the console:
+
+[source,text]
+----
+2019-06-05 12:44:26,526 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /legumes from IP 127.0.0.1
+2019-06-05 12:49:19,623 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /fruits from IP 0:0:0:0:0:0:0:1
+2019-06-05 12:50:44,019 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request POST /fruits from IP 0:0:0:0:0:0:0:1
+2019-06-05 12:51:04,485 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /fruits from IP 127.0.0.1
+----
 
 === Readers and Writers: mapping entities and HTTP bodies
 
@@ -1727,6 +1801,19 @@ public class FroMageIOInterceptor implements ReaderInterceptor, WriterIntercepto
     }
 }
 ----
+
+==== RESTEasy Reactive and REST Client Reactive interactions
+
+In Quarkus, the RESTEasy Reactive extension and xref:rest-client-reactive.adoc[the REST Client Reactive extension] share the same infrastructure.
+One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
+
+For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
+which might not be the desired behavior.
+
+However, you can change this default behavior and constrain a provider to:
+
+* only consider *server* calls by adding the `@ConstrainedTo(RuntimeType.SERVER)` annotation to your provider;
+* only consider *client* calls by adding the `@ConstrainedTo(RuntimeType.CLIENT)` annotation to your provider.
 
 === Parameter mapping
 
@@ -2113,7 +2200,7 @@ Please note that if a JAX-RS Application has been detected and the method `getCl
 
 == RESTEasy Reactive client
 
-In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile Rest Client implementation that is non-blocking at its core.
+In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile REST Client implementation that is non-blocking at its core.
 
 Please note that the `quarkus-rest-client` extension may not be used with RESTEasy Reactive, use `quarkus-rest-client-reactive` instead.
 

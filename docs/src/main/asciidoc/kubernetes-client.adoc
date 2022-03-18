@@ -95,7 +95,7 @@ public class Pods {
 
     @GET
     @Path("/{namespace}")
-    public List<Pod> pods(@PathParam("namespace") String namespace) {
+    public List<Pod> pods(String namespace) {
         return kubernetesClient.pods().inNamespace(namespace).list().getItems();
     }
 }

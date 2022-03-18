@@ -33,7 +33,7 @@ The solution is located in the `config-quickstart` {quickstarts-tree-url}/config
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: config-quickstart
-:create-app-extensions: resteasy
+:create-app-extensions: resteasy-reactive
 include::includes/devtools/create-app.adoc[]
 
 It generates:

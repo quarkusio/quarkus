@@ -55,11 +55,11 @@ The solution is located in the `security-openid-connect-quickstart` {quickstarts
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-openid-connect-quickstart
-:create-app-extensions: resteasy,oidc,resteasy-jackson
+:create-app-extensions: oidc,resteasy-reactive-jackson
 include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `keycloak` extension
-which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
+This command generates a Maven project, importing the `oidc` extension
+which is an implementation of OIDC for Quarkus.
 
 If you already have your Quarkus project configured, you can add the `oidc` extension
 to your project by running the following command in your project base directory:
@@ -97,7 +97,7 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.resteasy.annotations.cache.NoCache;
+import org.jboss.resteasy.reactive.NoCache;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/api/users")

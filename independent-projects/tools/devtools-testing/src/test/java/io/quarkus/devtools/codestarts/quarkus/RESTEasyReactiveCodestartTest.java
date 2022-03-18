@@ -22,9 +22,9 @@ class RESTEasyReactiveCodestartTest {
 
     @Test
     void testContent() throws Throwable {
-        codestartTest.checkGeneratedSource("org.acme.ReactiveGreetingResource");
-        codestartTest.checkGeneratedTestSource("org.acme.ReactiveGreetingResourceTest");
-        codestartTest.checkGeneratedTestSource("org.acme.ReactiveGreetingResourceIT");
+        codestartTest.checkGeneratedSource("org.acme.GreetingResource");
+        codestartTest.checkGeneratedTestSource("org.acme.GreetingResourceTest");
+        codestartTest.checkGeneratedTestSource("org.acme.GreetingResourceIT");
     }
 
 }

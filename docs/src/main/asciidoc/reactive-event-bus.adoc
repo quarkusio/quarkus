@@ -26,7 +26,7 @@ This mechanism uses the Vert.x EventBus, so you need to enable the `vertx` exten
 If you are creating a new project, set the `extensions` parameter are follows:
 
 :create-app-artifact-id: vertx-quickstart
-:create-app-extensions: vertx,resteasy-mutiny
+:create-app-extensions: vertx,resteasy-reactive
 include::includes/devtools/create-app.adoc[]
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
@@ -238,7 +238,6 @@ package org.acme.vertx;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -255,7 +254,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return bus.<String>request("greeting", name)        // <2>
                 .onItem().transform(Message::body);
     }
@@ -291,7 +290,7 @@ This message is consumed by another bean and the response is sent using the _rep
 First create a new project using:
 
 :create-app-artifact-id: vertx-http-quickstart
-:create-app-extensions: vertx,resteasy-mutiny
+:create-app-extensions: vertx,resteasy-reactive
 include::includes/devtools/create-app.adoc[]
 
 You can already start the application in _dev mode_ using:
@@ -308,7 +307,6 @@ package org.acme.vertx;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -325,7 +323,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return bus.<String>request("greeting", name)            // <1>
                 .onItem().transform(Message::body);            // <2>
     }
@@ -393,7 +391,7 @@ So you can exchange objects as follows:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(String name) {
     return bus.<String>request("greeting", new MyName(name))
         .onItem().transform(Message::body);
 }
@@ -411,7 +409,7 @@ If you want to use a specific codec, you need to explicitly set it on both ends:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(String name) {
     return bus.<String>request("greeting", name,
         new DeliveryOptions().setCodecName(MyNameCodec.class.getName())) // <1>
         .onItem().transform(Message::body);

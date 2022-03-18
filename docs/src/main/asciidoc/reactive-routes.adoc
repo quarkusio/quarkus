@@ -644,7 +644,7 @@ Check the https://vertx.io/docs/vertx-web/java/#_basic_vert_x_web_concepts[Vert.
 [NOTE]
 ====
 `Router` access is provided by the `quarkus-vertx-http` extension.
-If you use `quarkus-resteasy` or `quarkus-reactive-routes`, the extension will be added automatically.
+If you use `quarkus-resteasy-reactive` or `quarkus-reactive-routes`, the extension will be added automatically.
 ====
 
 You can also receive the Mutiny variant of the Router (`io.vertx.mutiny.ext.web.Router`):

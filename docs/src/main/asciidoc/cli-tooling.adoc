@@ -489,7 +489,7 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2021-05-27 10:15:56,032 INFO  [io.quarkus] (Quarkus Main Thread) code-with-quarkus 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 1.387s. Listening on: http://localhost:8080
 2021-05-27 10:15:56,035 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
-2021-05-27 10:15:56,035 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, resteasy, smallrye-context-propagation]
+2021-05-27 10:15:56,035 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation]
 
 --
 Tests paused, press [r] to resume

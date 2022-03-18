@@ -7,6 +7,15 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
+[WARNING]
+====
+This guide is about the multipart support of the REST Client compatible with https://resteasy.dev[RESTEasy Classic] which used to be the default JAX-RS implementation until Quarkus 2.8.
+
+It is now recommended to use RESTEasy Reactive, which supports equally well traditional blocking workloads and reactive workloads.
+For more information about RESTEasy Reactive,
+please see the xref:rest-client-reactive.adoc[REST Client Reactive guide] and, for the server side, the xref:rest-json.adoc[introductory REST JSON guide] or the more detailed xref:resteasy-reactive.adoc[RESTEasy Reactive guide].
+====
+
 RESTEasy has rich support for the `multipart/*` and `multipart/form-data` mime types. The multipart mime format is used to pass lists of content bodies. Multiple content bodies are embedded in one message. `multipart/form-data` is often found in web application HTML Form documents and is generally used to upload files. The form-data format is the same as other multipart formats, except that each inlined piece of content has a name associated with it.
 
 

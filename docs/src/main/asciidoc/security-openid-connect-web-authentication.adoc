@@ -45,7 +45,7 @@ The solution is located in the `security-openid-connect-web-authentication-quick
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-openid-connect-web-authentication-quickstart
-:create-app-extensions: resteasy,oidc
+:create-app-extensions: resteasy-reactive,oidc
 include::includes/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `oidc` extension
@@ -82,6 +82,7 @@ package org.acme.security.openid.connect.web.authentication;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -114,9 +115,10 @@ public class TokenResource {
      * Returns the tokens available to the application. This endpoint exists only for demonstration purposes, you should not
      * expose these tokens in a real application.
      *
-     * @return a map containing the tokens available to the application
+     * @return a HTML page containing the tokens available to the application
      */
     @GET
+    @Produces("text/html")
     public String getTokens() {
         StringBuilder response = new StringBuilder().append("<html>")
                 .append("<body>")

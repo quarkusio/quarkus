@@ -230,11 +230,11 @@ which will run the Kafka Streams pipeline.
 Create another project like so:
 
 :create-app-artifact-id: kafka-streams-quickstart-aggregator
-:create-app-extensions: kafka-streams,resteasy-jackson
+:create-app-extensions: kafka-streams,resteasy-reactive-jackson
 :create-app-post-command: mv kafka-streams-quickstart-aggregator aggregator
 include::includes/devtools/create-app.adoc[]
 
-This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for Jackson.
+This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with the Jackson support for RESTEasy Reactive.
 
 If you already have your Quarkus project configured, you can add the `kafka-streams` extension
 to your project by running the following command in your project base directory:
@@ -726,7 +726,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -743,7 +742,7 @@ public class WeatherStationEndpoint {
 
     @GET
     @Path("/data/{id}")
-    public Response getWeatherStationData(@PathParam("id") int id) {
+    public Response getWeatherStationData(int id) {
         GetWeatherStationDataResult result = interactiveQueries.getWeatherStationData(id);
 
         if (result.getResult().isPresent()) {  // <1>
@@ -947,7 +946,6 @@ import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -968,7 +966,7 @@ public class WeatherStationEndpoint {
     @Path("/data/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getWeatherStationData(@PathParam("id") int id) {
+    public Response getWeatherStationData(int id) {
         GetWeatherStationDataResult result = interactiveQueries.getWeatherStationData(id);
 
         if (result.getResult().isPresent()) {                     // <1>

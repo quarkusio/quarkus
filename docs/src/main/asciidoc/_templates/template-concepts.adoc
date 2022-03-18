@@ -1,0 +1,41 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="concept-..."]
+= Title using sentence capitalization
+////
+TODO: If this is a concept related to an experimental or tech-preview extension, uncomment the following and set the appropriate status (otherwise delete)
+:extension-status: preview
+////
+include::attributes.adoc[]
+
+A short introduction that summarizes or frames the concept.
+This summary should help a reader determine whether or not this document is what they want to read.
+
+////
+TODO: If this is a concept related to an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+////
+
+== Create additional sections
+
+- xref:{doc-guides}/doc-concepts.adoc#concept[Documentation concepts: Concept guides]
+- xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
+
+== Guidelines for a good Concept doc
+
+Explanation/Concept documents should do things that the other parts of the documentation do not.
+
+- Make connections to other things, even to things outside the immediate topic, if that helps explain the concept.
+- Provide background and context in your explanation: explain why things are so - design decisions, historical reasons, technical constraints - draw implications, mention specific examples.
+- Consider alternatives, counter-examples or multiple different approaches to the same question.
+
+== Language tips:
+
+- Explain: "The reason for x is because historically, y…"
+- Offer judgements and even opinions where appropriate.., "W is better than z, because…"
+- Provide context that helps the reader: "An x in system y is analogous to a w in system z. However…"
+- Weigh up alternatives: "Some users prefer w (because z). This can be a good approach, but…"
+- Unfold the machinery’s internal secrets, to help understand why something does what it does: "An x interacts with a y as follows:…"

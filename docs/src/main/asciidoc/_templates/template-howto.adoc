@@ -1,0 +1,43 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+////
+TODO: Title should have an implied "How to.." in front. See
+////
+[id="howto-..."]
+= Title using sentence capitalization
+////
+TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following and set the appropriate status (otherwise delete)
+:extension-status: preview
+////
+include::attributes.adoc[]
+
+How-to guides are goal-oriented, and should help the reader accomplish a task (where there may be forks in the path).
+
+////
+TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+////
+
+== Define the problem
+
+Your user will also be in the middle of something: define the starting-point that they know how to reach and a conclusion that answers a real question.
+
+== Resources
+
+- xref:{doc-guides}/doc-create-howto-tutorial.adoc[Tutorial: Create a How-To]
+- xref:{doc-guides}/doc-concepts.adoc#howto-guide[Documentation concepts: How-to guides]
+- xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference]
+
+== Guidelines for good How-To guides
+
+- Don’t explain concepts; link to a related concept/explainer
+- Be flexible; a how-to guide needs to be adaptable to real-world use-cases.
+- Omit the unnecessary; practical usability is more helpful than completeness.
+
+== Examples
+
+Baeldung tutorials provide solid examples of How-To guides.
+For example, "How to use Jackson annotations" is answered (with variations) here: https://www.baeldung.com/jackson-annotations

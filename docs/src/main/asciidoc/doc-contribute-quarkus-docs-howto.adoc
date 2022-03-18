@@ -1,0 +1,77 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="howto-contribute-quarkus-docs"]
+= How to contribute to Quarkus documentation
+include::attributes.adoc[]
+:toc: preamble
+:asciidoc: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
+:keywords: contributing, docs
+:quarkus-docs: https://github.com/quarkusio/quarkus/tree/main/docs
+:fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
+
+Outline the recommended steps for making successful contributions to Quarkus documentation.
+
+== Prerequisites
+
+Quarkus docs are built from source written using {asciidoc}[Asciidoc], a lightweight markup language.
+
+We suggest you have the following materials nearby:
+
+- An editor or IDE that provides syntax highlighting and previews for asciidoc, either natively or using a plugin.
+- An https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[Asciidoc syntax reference]
+- The xref:{doc-guides}/doc-reference.adoc[Quarkus documentation reference] for required syntax and other conventions.
+
+== Sources
+
+- Documentation for Quarkus core and most extensions is located in the `docs` directory of the {quarkus-docs}[Quarkus GitHub repository].
+- Docs for Quarkiverse or other third-party extensions are pulled directly from those repositories.
+
+== Building and previewing Quarkus documentation
+
+Asciidoc syntax highlighting and the preview provided by an IDE can be sufficient for minor documentation changes.
+For significant changes or any changes related to Quarkus configuration documentation,
+we recommend that you run the build and view the resulting output before submitting your changes for review.
+
+include::{includes}/compile-quarkus-quickly.adoc[tag=quickly-install-docs]
+
+This will produce a few things:
+
+- Generated configuration properties documentation will be located in the  `target/asciidoc/generated/config/` directory.
+- Asciidoc output (html files) will be found in the `docs/target/generated-docs/` directory.
+
+As you make additional changes, you can build the `docs` module specifically to update the generated HTML:
+
+[source,shell]
+----
+$ ./mvnw -f docs clean install
+----
+
+If you change the configuration properties of an extension,
+rebuild that extension first (to regenerate the associated config docs in `target/asciidoc/generated/config/`),
+and then rebuild the `docs` module.
+
+== Creating pull requests for doc updates
+
+:gh-pull-requests-fork: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
+:gh-about-forks: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks
+
+Submit your proposed changes to the core Quarkus docs by {gh-pull-requests-fork}[creating a pull request] against the `main` branch of the Quarkus repository from your own {gh-about-forks}[repository fork].
+
+[TIP]
+Changes to docs for Quarkiverse or other third-party extensions should be submitted as pull requests in respective repository according to its contribution guide.
+
+Reviews for code and documentation have different (but overlapping) participants.
+To simplify collaborative review, either isolate changes to docs in their own PRs,
+or ensure that the PRs has a single, focused purpose.
+For example:
+
+- A single PR that adds a configuration option for an extension and updates related materials (how-to, reference) to explain the change.
+- A single PR for related changes to several docs,
+e.g. updates to ensure a term is used consistently, correcting a recurring error, or moving repeated content into a shared file.
+- If there are extensive code changes as well as documentation changes,
+make a separate PR for the documentation changes and indicate the relationship in the issue description.
+
+Once created, the PR will be tagged automatically as something containing documentation changes.

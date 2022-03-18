@@ -408,6 +408,7 @@ link:{jsonpapi}/javax/json/JsonArray.html[`JsonStructure`], link:{jsonpapi}/java
 
 NOTE: You can add support for more <<readers-writers,body parameter types>>.
 
+[[multipart]]
 === Handling Multipart Form data
 
 To handle HTTP requests that have `multipart/form-data` as their content type, RESTEasy Reactive introduces the 
@@ -1250,6 +1251,7 @@ with `@Blocking` or `@NonBlocking`, and this will set the default for every meth
 Behaviour can still be overridden on a class or method level by annotating them directly, however all endpoints without
 an annotation will now follow the default, no matter their method signature.
 
+[[exception-mapping]]
 === Exception mapping
 
 If your application needs to return non-nominal HTTP codes in error cases, the best is

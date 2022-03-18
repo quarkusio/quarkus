@@ -27,6 +27,6 @@ sed -i 's/<version.jakarta-annotation>1.3.5<\/version.jakarta-annotation>/<versi
 sed -i 's/<version.jpa>2.2.3<\/version.jpa>/<version.jpa>3.0.0<\/version.jpa>/g' "$quarkusPath/independent-projects/arc/pom.xml"
 
 # Execute build and tests to verify functionality
-mvn clean install -f "$quarkusPath/independent-projects/arc/pom.xml"
+./mvnw -B clean install -f "$quarkusPath/independent-projects/arc/pom.xml"
 
 

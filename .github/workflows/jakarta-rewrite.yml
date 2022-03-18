@@ -29,7 +29,7 @@ jobs:
         run: |
           export PATH="$HOME/.jbang/bin:$PATH"
           git checkout -b temp-jakarta-rewrite
-          ./jakarta/sourceTransformScript.sh
+          ./jakarta/transform.sh
           git add .
           git commit -m 'Transform sources to Jakarta'
         shell: bash
@@ -37,7 +37,7 @@ jobs:
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          #force: true
+          force: true
           branch: jakarta-rewrite
       - name: Report status
         if: "always() && github.repository == 'quarkusio/quarkus'"

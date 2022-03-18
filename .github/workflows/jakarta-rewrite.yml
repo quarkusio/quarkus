@@ -33,7 +33,6 @@ jobs:
           git add .
           git commit -m 'Transform sources to Jakarta'
         shell: bash
-        working-directory: quarkus
       - name: Push changes to jakarta-rewrite
         uses: ad-m/github-push-action@v0.6.0
         with:

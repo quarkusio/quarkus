@@ -7,7 +7,7 @@
 # b) update dependencies to their respective EE 9 versions
 # c) add a build and test command that will verify the functionality
 
-quarkusPath="$(dirname `pwd`)"
+quarkusPath="$(pwd)"
 echo "Path to quarkus repo is: $quarkusPath"
 
 # Set up jbang alias, we are using latest released transformer version

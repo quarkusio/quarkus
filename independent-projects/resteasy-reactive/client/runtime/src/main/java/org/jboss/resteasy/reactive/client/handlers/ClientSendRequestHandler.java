@@ -51,6 +51,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartRespons
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -247,6 +248,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         }, new Consumer<>() {
             @Override
             public void accept(Throwable event) {
+                // set some properties to prevent NPEs down the chain
+                requestContext.setResponseHeaders(new MultivaluedTreeMap<>());
+                requestContext.setResponseReasonPhrase("unknown");
+
                 if (event instanceof IOException) {
                     ProcessingException throwable = new ProcessingException(event);
                     reportFinish(throwable, requestContext);

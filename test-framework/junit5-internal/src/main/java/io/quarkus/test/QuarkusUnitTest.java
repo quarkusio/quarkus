@@ -69,8 +69,8 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.test.common.LaunchModeInTests;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -493,7 +493,7 @@ public class QuarkusUnitTest
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         //set the right launch mode in the outer CL, used by the HTTP host config source
-        ProfileManager.setLaunchMode(LaunchMode.TEST);
+        LaunchModeInTests.set(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }

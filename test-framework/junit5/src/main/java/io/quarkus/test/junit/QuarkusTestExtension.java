@@ -83,10 +83,10 @@ import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.DurationConverter;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
 import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.test.common.LaunchModeInTests;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -639,7 +639,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     public void beforeAll(ExtensionContext context) throws Exception {
         currentTestClassStack.push(context.getRequiredTestClass());
         //set the right launch mode in the outer CL, used by the HTTP host config source
-        ProfileManager.setLaunchMode(LaunchMode.TEST);
+        LaunchModeInTests.set(LaunchMode.TEST);
         if (isNativeOrIntegrationTest(context.getRequiredTestClass())) {
             return;
         }

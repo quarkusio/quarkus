@@ -308,8 +308,8 @@ consul.host=localhost
 consul.port=8500
 
 quarkus.stork.my-service.service-discovery.type=consul
-quarkus.stork.my-service.service-discovery.params.consul-host=localhost
-quarkus.stork.my-service.service-discovery.params.consul-port=8500
+quarkus.stork.my-service.service-discovery.consul-host=localhost
+quarkus.stork.my-service.service-discovery.consul-port=8500
 quarkus.stork.my-service.load-balancer.type=round-robin
 ----
 
@@ -318,7 +318,7 @@ The first two lines provide the Consul location used by the `Registration` bean.
 The other properties are related to Stork.
 `stork.my-service.service-discovery` indicates which type of service discovery we will be using to locate the `my-service` service.
 In our case, it's `consul`.
-`quarkus.stork.my-service.service-discovery.params.consul-host` and `quarkus.stork.my-service.service-discovery.params.consul-port` configures the access to Consul.
+`quarkus.stork.my-service.service-discovery.consul-host` and `quarkus.stork.my-service.service-discovery.consul-port` configures the access to Consul.
 Finally, `quarkus.stork.my-service.load-balancer.type` configures the service selection.
 In our case, we use a `round-robin`.
 

@@ -548,5 +548,10 @@ triage:
       notify: [michalszynkiewicz]
       directories:
         - extensions/smallrye-stork/
+    - labels: [area/jakarta]
+      notify: [sanne,maxandersen,gsmet,manovotn,radcortez]
+      notifyInPullRequest: true
+      directories:
+        - jakarta/
   qe:
     notify: [rsvoboda, mjurc]

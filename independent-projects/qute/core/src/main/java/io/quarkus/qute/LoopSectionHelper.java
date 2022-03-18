@@ -142,6 +142,7 @@ public class LoopSectionHelper implements SectionHelper {
         public static final String ITERATION_METADATA_PREFIX_NONE = "<none>";
 
         public static final String HINT_ELEMENT = "<loop-element>";
+        public static final String HINT_METADATA = "<loop-metadata>";
         public static final String HINT_PREFIX = "<loop#";
         private static final String IN = "in";
 
@@ -204,16 +205,16 @@ public class LoopSectionHelper implements SectionHelper {
                     newScope.putBinding(alias, alias + HINT_PREFIX + iterableExpr.getGeneratedId() + ">");
                     // Put bindings for iteration metadata
                     String prefix = prefixValue(alias, metadataPrefix);
-                    newScopeBinding(newScope, prefix, "count", Integer.class.getName());
-                    newScopeBinding(newScope, prefix, "index", Integer.class.getName());
-                    newScopeBinding(newScope, prefix, "indexParity", String.class.getName());
-                    newScopeBinding(newScope, prefix, "hasNext", Boolean.class.getName());
-                    newScopeBinding(newScope, prefix, "isLast", Boolean.class.getName());
-                    newScopeBinding(newScope, prefix, "isFirst", Boolean.class.getName());
-                    newScopeBinding(newScope, prefix, "odd", Boolean.class.getName());
-                    newScopeBinding(newScope, prefix, "isOdd", Boolean.class.getName());
-                    newScopeBinding(newScope, prefix, "even", Boolean.class.getName());
-                    newScopeBinding(newScope, prefix, "isEven", Boolean.class.getName());
+                    putMetadataBinding(newScope, prefix, "count", Integer.class.getName());
+                    putMetadataBinding(newScope, prefix, "index", Integer.class.getName());
+                    putMetadataBinding(newScope, prefix, "indexParity", String.class.getName());
+                    putMetadataBinding(newScope, prefix, "hasNext", Boolean.class.getName());
+                    putMetadataBinding(newScope, prefix, "isLast", Boolean.class.getName());
+                    putMetadataBinding(newScope, prefix, "isFirst", Boolean.class.getName());
+                    putMetadataBinding(newScope, prefix, "odd", Boolean.class.getName());
+                    putMetadataBinding(newScope, prefix, "isOdd", Boolean.class.getName());
+                    putMetadataBinding(newScope, prefix, "even", Boolean.class.getName());
+                    putMetadataBinding(newScope, prefix, "isEven", Boolean.class.getName());
                     return newScope;
                 } else {
                     // Make sure we do not try to validate against the parent context
@@ -226,8 +227,8 @@ public class LoopSectionHelper implements SectionHelper {
             }
         }
 
-        private void newScopeBinding(Scope scope, String prefix, String name, String typeName) {
-            scope.putBinding(prefix != null ? prefix + name : name, Expressions.typeInfoFrom(typeName));
+        private void putMetadataBinding(Scope scope, String prefix, String name, String typeName) {
+            scope.putBinding(prefix != null ? prefix + name : name, Expressions.typeInfoFrom(typeName) + HINT_METADATA);
         }
 
         static String prefixValue(String alias, String metadataPrefix) {

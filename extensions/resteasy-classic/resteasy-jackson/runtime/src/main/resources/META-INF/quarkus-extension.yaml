@@ -1,4 +1,4 @@
-name: "RESTEasy Jackson"
+name: "RESTEasy Classic Jackson"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:

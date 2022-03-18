@@ -104,7 +104,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
                     resteasy = true;
                     assertTrue(
                             line.endsWith(
-                                    String.format("%s", "https://quarkus.io/guides/rest-json")),
+                                    String.format("%s", "https://quarkus.io/guides/resteasy")),
                             "RESTEasy should list as having an guide: " + line);
                 } else if (line.contains("quarkus-hibernate-orm-panache ")) {
                     assertTrue(line.startsWith("✬"), "Panache is a platform extension: " + line);

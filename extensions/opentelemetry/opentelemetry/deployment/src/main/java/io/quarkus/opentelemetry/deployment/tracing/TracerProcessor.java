@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -44,10 +43,9 @@ import io.quarkus.opentelemetry.runtime.tracing.TracerRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingClientInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.runtime.configuration.NormalizeRootHttpPathConverter;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
+import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
-import io.smallrye.config.SmallRyeConfig;
 
 public class TracerProcessor {
     private static final DotName ID_GENERATOR = DotName.createSimple(IdGenerator.class.getName());
@@ -141,20 +139,16 @@ public class TracerProcessor {
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)
-    void dropNames(Optional<StaticResourcesBuildItem> staticResources,
+    void dropNames(
+            Optional<FrameworkEndpointsBuildItem> frameworkEndpoints,
+            Optional<StaticResourcesBuildItem> staticResources,
             BuildProducer<DropNonApplicationUrisBuildItem> dropNonApplicationUris,
             BuildProducer<DropStaticResourcesBuildItem> dropStaticResources) {
 
-        // Drop nonApplicationUris
-        // We don't use the HttpBuildTimeConfig because we don't want to add a dependency to vertx-http and vertx-http
-        // may not even be available.
+        // Drop framework paths
         List<String> nonApplicationUris = new ArrayList<>();
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        if (config.isPropertyPresent("quarkus.http.root-path")) {
-            String rootPath = config.getValue("quarkus.http.root-path", new NormalizeRootHttpPathConverter());
-            String nonApplicationRootPath = config.getRawValue("quarkus.http.non-application-root-path");
-            nonApplicationUris.add(rootPath + nonApplicationRootPath);
-        }
+        frameworkEndpoints.ifPresent(
+                frameworkEndpointsBuildItem -> nonApplicationUris.addAll(frameworkEndpointsBuildItem.getEndpoints()));
         dropNonApplicationUris.produce(new DropNonApplicationUrisBuildItem(nonApplicationUris));
 
         // Drop Static Resources

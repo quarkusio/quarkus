@@ -565,7 +565,7 @@ public class DevConsoleProcessor {
         // Create map of resolved paths
         Map<String, String> resolvedPaths = new HashMap<>();
         for (RouteBuildItem item : allRoutes) {
-            ConfiguredPathInfo resolvedPathBuildItem = item.getDevConsoleResolvedPath();
+            ConfiguredPathInfo resolvedPathBuildItem = item.getConfiguredPathInfo();
             if (resolvedPathBuildItem != null) {
                 resolvedPaths.put(resolvedPathBuildItem.getName(),
                         resolvedPathBuildItem.getEndpointPath(nonApplicationRootPathBuildItem));

@@ -24,12 +24,15 @@ jobs:
       - name: Install JBang
         run: |
           curl -Ls https://sh.jbang.dev | bash -s - app setup
+        shell: bash
       - name: Transform sources
         run: |
+          export PATH="$HOME/.jbang/bin:$PATH"
           git checkout -b temp-jakarta-rewrite
           ./jakarta/sourceTransformScript.sh
           git add .
           git commit -m 'Transform sources to Jakarta'
+        shell: bash
       - name: Push changes to jakarta-rewrite
         uses: ad-m/github-push-action@v0.6.0
         with:

@@ -246,7 +246,7 @@ public class InjectionPointInfo {
                 } else {
                     method = "#" + method;
                 }
-                return target.asMethod().declaringClass().name() + method + "()" + "." + param;
+                return target.asMethod().declaringClass().name() + method + "()" + ":" + param;
             default:
                 return target.toString();
         }

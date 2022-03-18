@@ -606,6 +606,87 @@ jar tvf target/function.zip
     libsunec.so
 ----
 
+== Deploy to AWS Lambda using a Container Image
+
+AWS Lambda supports creating your lambdas by referencing https://docs.aws.amazon.com/lambda/latest/dg/lambda-images.html[container images] rather than uploading ZIP files. This can have some benefits such as bypassing the size limit of the uploaded ZIP files. You can define lambda functions for both native builds as well as regular JVM builds.
+
+=== JVM container image
+
+For a regular JVM distribution you need to base your image off the official AWS Java base images. Below is an example of a Dockerfile that would create a container image from your Quarkus Lambda project. It assumes that `mvn package` has been executed and binaries are available in the `target/` directory:
+
+[source,Dockerfile]
+----
+FROM  public.ecr.aws/lambda/java:11
+
+ADD target/my-service-0.0.1-SNAPSHOT-runner.jar /var/task/lib/my-service.jar
+ADD target/lib/  /var/task/lib/
+
+CMD ["io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest"]
+----
+
+=== Native executable container image
+
+To create a lambda container image that uses the native executable we'll need to do things a little differently. In this case, we won't need to use the `java:11` base image from AWS but instead we'll use a special image that assumes that the runtime environment for the lambda is provided. The example below creates such a container. It assumes that a Maven build has been executed (such as `mvn package -Dnative=true`) and has generated the native binary into the `target/` directory. The binary needs to be named `bootstrap` and be placed in `/var/runtime/`:
+
+[source,Dockerfile]
+----
+FROM  public.ecr.aws/lambda/provided
+
+ADD target/my-service-0.0.1-SNAPSHOT-runner /var/runtime/bootstrap
+RUN chmod ugo+x /var/runtime/bootstrap
+
+CMD ["io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest"]
+----
+
+=== Deploying a container image lambda
+
+Below, you can see how the container images created above can be built and deployed to AWS using the `docker` and `aws` command line tools. These instructions work for both native and jvm container images and assume that the `aws` command line tool has been logged in.
+
+==== Build the Docker image
+
+[source,bash]
+----
+# Assuming we are located in the root directory of the project and created a Dockerfile there
+docker build .
+   [output omitted]
+    => exporting to image                    0.0s
+    => => exporting layers                   0.0s
+    => => writing image sha256:[SOME SHA]    0.0s
+----
+
+==== Create an ECR repository in the users AWS account
+
+[source,bash]
+----
+aws ecr create-repository --repository-name my/test/quarkus-lambda
+----
+
+==== Tag the image using your ECR registry information
+
+[source,bash]
+----
+docker tag [SOME SHA] [YOUR AWS ACCOUNT ID].dkr.ecr.[YOUR AWS ACCOUNT REGION].amazonaws.com/my/test/quarkus-lambda:v1
+----
+
+==== Log Docker into your ECR registry and push the Docker image to it
+
+[source,bash]
+----
+aws ecr get-login-password --region region | docker login --username AWS --password-stdin [YOUR AWS ACCOUNT ID].dkr.ecr.[YOUR AWS ACCOUNT REGION].amazonaws.com
+docker push [YOUR AWS ACCOUNT ID].dkr.ecr.[YOUR AWS ACCOUNT REGION].amazonaws.com/my/test/quarkus-lambda:v1
+----
+
+==== Create the AWS lambda function with the AWS CLI tool
+
+Make sure you reference the image you uploaded previously (assumes that a role exists that can be used to run the lambda). Please note that it is not unlikely that for the JVM lambda function, the default memory limit of `128Mb` will not be enough to run the function. In that case, you can increase the memory limit when creating the function by providing the `--memory-size 256` parameter to your `aws lambda create-function` command. You can also adjust the function in the AWS console after you've created it.
+
+[source,bash]
+----
+aws lambda create-function --function-name my-test-quarkus-lambda-function --package-type Image --code ImageUri=[YOUR AWS ACCOUNT ID].dkr.ecr.[YOUR AWS ACCOUNT REGION].amazonaws.com/my/test/quarkus-lambda:v1 --role arn:aws:iam::[YOUR AWS ACCOUNT ID]:role/[SOME ROLE]
+----
+
+Now you can use the AWS console to view and test your new lambda function.
+
 == Amazon Alexa Integration
 
 To use Alexa with Quarkus native, you need to use the https://github.com/quarkiverse/quarkus-amazon-alexa[Quarkus Amazon Alexa extension hosted at the Quarkiverse Hub].

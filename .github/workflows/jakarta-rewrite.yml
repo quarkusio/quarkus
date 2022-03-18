@@ -40,7 +40,7 @@ jobs:
           #force: true
           branch: jakarta-rewrite
       - name: Report status
-        if: "always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'"
+        if: "always() && github.repository == 'quarkusio/quarkus'"
         shell: bash
         run: |
           curl -Ls https://sh.jbang.dev | bash -s - app setup

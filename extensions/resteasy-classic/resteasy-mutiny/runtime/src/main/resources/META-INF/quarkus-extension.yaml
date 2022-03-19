@@ -6,8 +6,15 @@ metadata:
     - "resteasy-mutiny"
     - "resteasy"
     - "mutiny"
-  guide: "https://quarkus.io/guides/getting-started-reactive#mutiny"
+  guide: "https://quarkus.io/guides/resteasy#reactive"
   categories:
     - "web"
     - "reactive"
   status: "deprecated"
+  codestart:
+    name: "resteasy"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

@@ -13,6 +13,13 @@ metadata:
   - "web"
   - "serialization"
   status: "stable"
+  codestart:
+    name: "resteasy"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
   - "quarkus.resteasy."
   - "quarkus.jackson."

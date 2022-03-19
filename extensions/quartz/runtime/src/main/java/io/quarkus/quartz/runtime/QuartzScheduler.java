@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
@@ -178,6 +179,9 @@ public class QuartzScheduler implements Scheduler {
                             CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
                             if (perJobConfig != null) {
                                 switch (perJobConfig.misfirePolicy) {
+                                    case SMART_POLICY:
+                                        // this is the default, doing nothing
+                                        break;
                                     case IGNORE_MISFIRE_POLICY:
                                         cronScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
                                         break;
@@ -191,10 +195,13 @@ public class QuartzScheduler implements Scheduler {
                                     case SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT:
                                     case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT:
                                     case SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT:
-                                        throw new IllegalArgumentException("configured cron job " + identity
-                                                + " with invalid misfire policy " + perJobConfig.misfirePolicy +
-                                                "\nvalid options are: IGNORE_MISFIRE_POLICY, FIRE_NOW, CRON_TRIGGER_DO_NOTHING");
-
+                                        throw new IllegalArgumentException("Cron job " + identity
+                                                + " configured with invalid misfire policy "
+                                                + perJobConfig.misfirePolicy.dashedName() +
+                                                "\nValid options are: "
+                                                + QuartzMisfirePolicy.validCronValues().stream()
+                                                        .map(QuartzMisfirePolicy::dashedName)
+                                                        .collect(Collectors.joining(", ")));
                                 }
                             }
                             scheduleBuilder = cronScheduleBuilder;
@@ -208,6 +215,9 @@ public class QuartzScheduler implements Scheduler {
                                     .repeatForever();
                             if (perJobConfig != null) {
                                 switch (perJobConfig.misfirePolicy) {
+                                    case SMART_POLICY:
+                                        // this is the default, doing nothing
+                                        break;
                                     case IGNORE_MISFIRE_POLICY:
                                         simpleScheduleBuilder.withMisfireHandlingInstructionIgnoreMisfires();
                                         break;
@@ -227,9 +237,13 @@ public class QuartzScheduler implements Scheduler {
                                         simpleScheduleBuilder.withMisfireHandlingInstructionNextWithRemainingCount();
                                         break;
                                     case CRON_TRIGGER_DO_NOTHING:
-                                        throw new IllegalArgumentException("configured simple job " + identity
-                                                + " with invalid misfire policy CRON_TRIGGER_DO_NOTHING" +
-                                                "\nvalid options are: IGNORE_MISFIRE_POLICY, FIRE_NOW, SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_EXISTING_REPEAT_COUNT, SIMPLE_TRIGGER_RESCHEDULE_NOW_WITH_REMAINING_REPEAT_COUNT, SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_EXISTING_COUNT and SIMPLE_TRIGGER_RESCHEDULE_NEXT_WITH_REMAINING_COUNT");
+                                        throw new IllegalArgumentException("Simple job " + identity
+                                                + " configured with invalid misfire policy "
+                                                + perJobConfig.misfirePolicy.dashedName() +
+                                                "\nValid options are: "
+                                                + QuartzMisfirePolicy.validSimpleValues().stream()
+                                                        .map(QuartzMisfirePolicy::dashedName)
+                                                        .collect(Collectors.joining(", ")));
                                 }
                             }
                             scheduleBuilder = simpleScheduleBuilder;

@@ -93,7 +93,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                         && d.getType().equals("pom"))).isTrue();
 
         assertThat(
-                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-reactive")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);

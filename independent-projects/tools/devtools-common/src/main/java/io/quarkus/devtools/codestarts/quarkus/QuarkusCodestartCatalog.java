@@ -66,7 +66,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     public enum ExtensionCodestart implements DataKey {
         RESTEASY,
-        RESTEAST_REACTIVE,
+        RESTEASY_REACTIVE,
         SPRING_WEB
     }
 
@@ -127,14 +127,15 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 .filter(c -> !isExample(c) || projectInput.getExample() == null || c.matches(projectInput.getExample()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        // include default codestarts if no code selected
+        // include default codestarts if no code selected and no extensions have been selected
         if (projectInput.getAppContent().contains(CODE)
+                && projectInput.getExtensions().isEmpty()
                 && projectCodestarts.stream()
                         .noneMatch(c -> c.getType() == CodestartType.CODE && !c.getSpec().isPreselected())) {
             final Codestart defaultCodestart = codestarts.stream()
-                    .filter(c -> c.matches(ExtensionCodestart.RESTEASY.key()))
+                    .filter(c -> c.matches(ExtensionCodestart.RESTEASY_REACTIVE.key()))
                     .findFirst().orElseThrow(() -> new CodestartStructureException(
-                            ExtensionCodestart.RESTEASY.key() + " codestart not found"));
+                            ExtensionCodestart.RESTEASY_REACTIVE.key() + " codestart not found"));
             final String languageName = findLanguageName(projectCodestarts);
             if (defaultCodestart.implementsLanguage(languageName)) {
                 projectCodestarts.add(defaultCodestart);

@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-jackson</artifactId>
     <name>Quarkus - RESTEasy - Jackson - Runtime</name>
-    <description>Jackson serialization support for RESTEasy</description>
+    <description>Jackson serialization support for RESTEasy Classic</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

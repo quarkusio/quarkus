@@ -51,8 +51,8 @@ public class CliProjectMavenTest {
         String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy</artifactId>"),
-                "pom.xml should contain quarkus-resteasy:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy-reactive</artifactId>"),
+                "pom.xml should contain quarkus-resteasy-reactive:\n" + pomContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 

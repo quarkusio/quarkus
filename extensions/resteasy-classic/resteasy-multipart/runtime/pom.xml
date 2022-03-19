@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-multipart</artifactId>
     <name>Quarkus - RESTEasy - Multipart - Runtime</name>
-    <description>Multipart support for RESTEasy</description>
+    <description>Multipart support for RESTEasy Classic</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

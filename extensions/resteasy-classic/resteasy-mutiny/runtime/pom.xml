@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-mutiny</artifactId>
     <name>Quarkus - RESTEasy - Mutiny - Runtime</name>
-    <description>Mutiny support for RESTEasy server</description>
+    <description>Mutiny support for RESTEasy Classic server</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

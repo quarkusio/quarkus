@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-jsonb</artifactId>
     <name>Quarkus - RESTEasy - JSON-B - Runtime</name>
-    <description>JSON-B serialization support for RESTEasy</description>
+    <description>JSON-B serialization support for RESTEasy Classic</description>
 
     <dependencies>
         <dependency>

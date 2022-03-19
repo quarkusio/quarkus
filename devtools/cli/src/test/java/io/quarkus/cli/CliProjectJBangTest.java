@@ -10,11 +10,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 
 import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
+@DisabledForJreRange(min = JRE.JAVA_17)
 public class CliProjectJBangTest {
     static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
             .resolve("target/test-project/CliProjectJBangTest");

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.TemplateException;
+import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.test.QuarkusUnitTest;
@@ -17,7 +18,7 @@ public class MessageBundleExpressionValidationTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(WrongBundle.class, Item.class)
+                    .addClasses(WrongBundle.class, Item.class, MyGlobals.class)
                     .addAsResource(new StringAsset(
                             // foo is not a parameter of WrongBundle.hello()
                             "hello=Hallo {foo}!"),
@@ -51,9 +52,16 @@ public class MessageBundleExpressionValidationTest {
     @MessageBundle
     public interface WrongBundle {
 
-        // item has no "foo" property, "bar" and "baf" are not parameters
-        @Message("Hello {item.foo} {bar} {#each item.names}{it}{it.baz}{baf}{/each}")
+        // item has no "foo" property, "bar" and "baf" are not parameters, string has no "baz" property
+        @Message("Hello {item.foo} {bar} {#each item.names}{it}{it.baz}{it_hasNext}{baf}{/each}{level}")
         String hello(Item item);
+
+    }
+
+    @TemplateGlobal
+    static class MyGlobals {
+
+        static int level = 5;
 
     }
 

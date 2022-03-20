@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
 
 public class KafkaStreamsTopicsHealthCheckTest {
@@ -29,8 +30,12 @@ public class KafkaStreamsTopicsHealthCheckTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        healthCheck.topics = Optional.of(Collections.singletonList("topic"));
-        healthCheck.topicsTimeout = Duration.ofSeconds(10);
+
+        KafkaStreamsRuntimeConfig kafkaStreamsRuntimeConfig = new KafkaStreamsRuntimeConfig();
+        kafkaStreamsRuntimeConfig.topics = Optional.of(Collections.singletonList("topic"));
+        kafkaStreamsRuntimeConfig.topicsTimeout = Duration.ofSeconds(10);
+        healthCheck.kafkaStreamsRuntimeConfig = kafkaStreamsRuntimeConfig;
+
         healthCheck.init();
     }
 

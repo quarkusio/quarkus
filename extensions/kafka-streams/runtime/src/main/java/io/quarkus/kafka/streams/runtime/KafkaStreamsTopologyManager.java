@@ -32,7 +32,7 @@ public class KafkaStreamsTopologyManager {
 
         try {
             ListTopicsResult topics = adminClient.listTopics();
-            Set<String> topicNames = topics.names().get(timeout.toSeconds(), TimeUnit.SECONDS);
+            Set<String> topicNames = topics.names().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
             if (topicNames.containsAll(topicsToCheck)) {
                 return Collections.emptySet();

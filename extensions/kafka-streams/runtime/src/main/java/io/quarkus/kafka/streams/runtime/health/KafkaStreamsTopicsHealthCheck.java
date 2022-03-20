@@ -3,7 +3,6 @@ package io.quarkus.kafka.streams.runtime.health;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -11,13 +10,13 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 import org.jboss.logging.Logger;
 
+import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
 
 @Readiness
@@ -26,21 +25,19 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
 
     private static final Logger LOGGER = Logger.getLogger(KafkaStreamsTopicsHealthCheck.class.getName());
 
-    @ConfigProperty(name = "quarkus.kafka-streams.topics")
-    protected Optional<List<String>> topics;
-
-    @ConfigProperty(name = "quarkus.kafka-streams.topics.timeout", defaultValue = "PT10S")
-    protected Duration topicsTimeout;
+    @Inject
+    KafkaStreamsRuntimeConfig kafkaStreamsRuntimeConfig;
 
     @Inject
-    protected KafkaStreamsTopologyManager manager;
+    KafkaStreamsTopologyManager manager;
 
     private List<String> trimmedTopics;
 
     @PostConstruct
     public void init() {
-        if (topicsTimeout.compareTo(Duration.ZERO) > 0) {
-            trimmedTopics = topics.orElseThrow(() -> new IllegalArgumentException("Missing list of topics"))
+        if (kafkaStreamsRuntimeConfig.topicsTimeout.compareTo(Duration.ZERO) > 0) {
+            trimmedTopics = kafkaStreamsRuntimeConfig.topics
+                    .orElseThrow(() -> new IllegalArgumentException("Missing list of topics"))
                     .stream()
                     .map(String::trim)
                     .collect(Collectors.toList());
@@ -52,7 +49,7 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Kafka Streams topics health check").up();
         if (trimmedTopics != null) {
             try {
-                Set<String> missingTopics = manager.getMissingTopics(trimmedTopics, topicsTimeout);
+                Set<String> missingTopics = manager.getMissingTopics(trimmedTopics, kafkaStreamsRuntimeConfig.topicsTimeout);
                 List<String> availableTopics = new ArrayList<>(trimmedTopics);
                 availableTopics.removeAll(missingTopics);
 

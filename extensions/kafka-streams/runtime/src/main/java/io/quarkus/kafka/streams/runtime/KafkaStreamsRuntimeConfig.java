@@ -50,7 +50,7 @@ public class KafkaStreamsRuntimeConfig {
      * Timeout to wait for topic names to be returned from admin client.
      * If set to 0 (or negative), {@code topics} check is ignored.
      */
-    @ConfigItem(defaultValue = "PT10S")
+    @ConfigItem(defaultValue = "10S")
     public Duration topicsTimeout;
 
     /**

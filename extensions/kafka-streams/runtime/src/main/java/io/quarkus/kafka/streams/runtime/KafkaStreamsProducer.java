@@ -322,7 +322,7 @@ public class KafkaStreamsProducer {
         while (!shutdown) {
             try {
                 ListTopicsResult topics = adminClient.listTopics();
-                Set<String> existingTopics = topics.names().get(timeout.toSeconds(), TimeUnit.SECONDS);
+                Set<String> existingTopics = topics.names().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
                 if (existingTopics.containsAll(topicsToAwait)) {
                     LOGGER.debug("All expected topics created: " + topicsToAwait);

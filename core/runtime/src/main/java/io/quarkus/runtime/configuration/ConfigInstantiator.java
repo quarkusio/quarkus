@@ -24,6 +24,7 @@ import org.eclipse.microprofile.config.spi.Converter;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.Converters;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -60,7 +61,16 @@ public class ConfigInstantiator {
         }
 
         final Class<?> cls = o.getClass();
-        final String name = dashify(cls.getSimpleName().substring(0, cls.getSimpleName().length() - clsNameSuffix.length()));
+        final String name;
+        ConfigRoot configRoot = cls.getAnnotation(ConfigRoot.class);
+        if (configRoot != null && !configRoot.name().equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+            name = configRoot.name();
+            if (name.startsWith("<<")) {
+                throw new IllegalArgumentException("Found unsupported @ConfigRoot.name = " + name + " on " + cls);
+            }
+        } else {
+            name = dashify(cls.getSimpleName().substring(0, cls.getSimpleName().length() - clsNameSuffix.length()));
+        }
         handleObject(QUARKUS_PROPERTY_PREFIX + name, o, config, gatherQuarkusPropertyNames(config));
     }
 

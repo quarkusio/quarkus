@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -91,7 +90,6 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.CategoryBuildTimeConfig;
 import io.quarkus.runtime.logging.CleanupFilterConfig;
-import io.quarkus.runtime.logging.InheritableLevel;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.logging.LogCleanupFilterElement;
 import io.quarkus.runtime.logging.LogConfig;
@@ -108,8 +106,6 @@ public final class LoggingResourceProcessor {
     private static final MethodDescriptor IS_MIN_LEVEL_ENABLED = MethodDescriptor.ofMethod(MIN_LEVEL_COMPUTE_CLASS_NAME,
             "isMinLevelEnabled",
             boolean.class, int.class, String.class);
-
-    private static final Logger log = Logger.getLogger(LoggingResourceProcessor.class);
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
@@ -364,8 +360,8 @@ public final class LoggingResourceProcessor {
                 BytecodeCreator current = mc;
                 for (Map.Entry<String, CategoryBuildTimeConfig> entry : categories.entrySet()) {
                     final String category = entry.getKey();
-                    final int categoryLevelIntValue = getLogMinLevel(entry.getKey(), entry.getValue(), categories, rootMinLevel)
-                            .intValue();
+                    final int categoryLevelIntValue = LoggingSetupRecorder
+                            .getLogLevel(category, categories, CategoryBuildTimeConfig::getMinLevel, rootMinLevel).intValue();
 
                     ResultHandle equalsResult = current.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class),
@@ -397,24 +393,6 @@ public final class LoggingResourceProcessor {
                 isInfoOrHigherBranch.falseBranch().returnValue(isInfoOrHigherBranch.falseBranch().load(false));
             }
         }
-    }
-
-    private static Level getLogMinLevel(String categoryName, CategoryBuildTimeConfig categoryConfig,
-            Map<String, CategoryBuildTimeConfig> categories,
-            Level rootMinLevel) {
-        if (Objects.isNull(categoryConfig))
-            return rootMinLevel;
-
-        final InheritableLevel inheritableLevel = categoryConfig.minLevel;
-        if (!inheritableLevel.isInherited())
-            return inheritableLevel.getLevel();
-
-        int lastDotIndex = categoryName.lastIndexOf('.');
-        if (lastDotIndex == -1)
-            return rootMinLevel;
-
-        String parent = categoryName.substring(0, lastDotIndex);
-        return getLogMinLevel(parent, categories.get(parent), categories, rootMinLevel);
     }
 
     private static void generateDefaultLoggerNode(ClassOutput output) {

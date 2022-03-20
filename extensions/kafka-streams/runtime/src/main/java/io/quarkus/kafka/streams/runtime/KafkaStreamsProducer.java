@@ -168,20 +168,18 @@ public class KafkaStreamsProducer {
             kafkaStreams.setUncaughtExceptionHandler(uncaughtExceptionHandlerListener.get());
         }
 
-        executorService.execute(new Runnable() {
-
-            @Override
-            public void run() {
+        executorService.execute(() -> {
+            if (runtimeConfig.topicsTimeout.compareTo(Duration.ZERO) > 0) {
                 try {
-                    waitForTopicsToBeCreated(adminClient, runtimeConfig.getTrimmedTopics());
+                    waitForTopicsToBeCreated(adminClient, runtimeConfig.getTrimmedTopics(), runtimeConfig.topicsTimeout);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return;
                 }
-                if (!shutdown) {
-                    LOGGER.debug("Starting Kafka Streams pipeline");
-                    kafkaStreams.start();
-                }
+            }
+            if (!shutdown) {
+                LOGGER.debug("Starting Kafka Streams pipeline");
+                kafkaStreams.start();
             }
         });
 
@@ -318,13 +316,13 @@ public class KafkaStreamsProducer {
         return inetSocketAddress.getHostString() + ":" + inetSocketAddress.getPort();
     }
 
-    private static void waitForTopicsToBeCreated(Admin adminClient, Collection<String> topicsToAwait)
+    private static void waitForTopicsToBeCreated(Admin adminClient, Collection<String> topicsToAwait, Duration timeout)
             throws InterruptedException {
         Set<String> lastMissingTopics = null;
         while (!shutdown) {
             try {
                 ListTopicsResult topics = adminClient.listTopics();
-                Set<String> existingTopics = topics.names().get(10, TimeUnit.SECONDS);
+                Set<String> existingTopics = topics.names().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
                 if (existingTopics.containsAll(topicsToAwait)) {
                     LOGGER.debug("All expected topics created: " + topicsToAwait);

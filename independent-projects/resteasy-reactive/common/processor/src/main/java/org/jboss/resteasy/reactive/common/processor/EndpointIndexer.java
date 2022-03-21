@@ -8,15 +8,18 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CHARACTER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETABLE_FUTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONFIGURATION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DEFAULT_VALUE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DOUBLE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DUMMY_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FLOAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INTEGER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
@@ -27,6 +30,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
@@ -40,7 +44,12 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_INTEGER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRODUCES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PROVIDERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
@@ -49,12 +58,17 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_SSE_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SECURITY_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE_EVENT_SINK;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRANSACTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.lang.reflect.Modifier;
@@ -113,19 +127,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     // NOTE: sync with ContextProducer and ContextParamExtractor
     private static final Set<DotName> DEFAULT_CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             // spec
-            ResteasyReactiveDotNames.URI_INFO,
-            ResteasyReactiveDotNames.HTTP_HEADERS,
-            ResteasyReactiveDotNames.REQUEST,
-            ResteasyReactiveDotNames.SECURITY_CONTEXT,
-            ResteasyReactiveDotNames.PROVIDERS,
-            ResteasyReactiveDotNames.RESOURCE_CONTEXT,
-            ResteasyReactiveDotNames.CONFIGURATION,
-            ResteasyReactiveDotNames.SSE,
-            ResteasyReactiveDotNames.SSE_EVENT_SINK,
+            URI_INFO,
+            HTTP_HEADERS,
+            REQUEST,
+            SECURITY_CONTEXT,
+            PROVIDERS,
+            RESOURCE_CONTEXT,
+            CONFIGURATION,
+            SSE,
+            SSE_EVENT_SINK,
             // extras
-            ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT,
+            SERVER_REQUEST_CONTEXT,
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
-            ResteasyReactiveDotNames.RESOURCE_INFO)));
+            RESOURCE_INFO)));
 
     private static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME, OFFSET_TIME,
             OFFSET_DATE_TIME, ZONED_DATE_TIME);
@@ -401,7 +415,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
 
         DotName superClassName = currentClassInfo.superName();
-        if (superClassName != null && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)) {
+        if (superClassName != null && !superClassName.equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
@@ -489,7 +503,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
-                boolean encoded = anns.containsKey(ResteasyReactiveDotNames.ENCODED);
+                boolean encoded = anns.containsKey(ENCODED);
                 Type paramType = currentMethodInfo.parameters().get(i);
                 String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
@@ -581,6 +595,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         sseElementType = defaultProducesForType[0];
                     }
                 } else if (MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
+                    if (RESPONSE.equals(nonAsyncReturnType.name())) {
+                        throw new DeploymentException(
+                                String.format(
+                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s'",
+                                        RESPONSE,
+                                        REST_RESPONSE,
+                                        currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo));
+                    }
+
                     // Handle multipart form data responses
                     ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());
                     returnsMultipart = multipartReturnTypeIndexerExtension.handleMultipartForReturnType(additionalWriters,
@@ -874,7 +897,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             case WILDCARD_TYPE:
                 WildcardType wildcardType = indexType.asWildcardType();
                 Type extendsBound = wildcardType.extendsBound();
-                if (extendsBound.name().equals(ResteasyReactiveDotNames.OBJECT)) {
+                if (extendsBound.name().equals(OBJECT)) {
                     // this is a super bound type that we don't support
                     throw new RuntimeException("Cannot handle wildcard type " + indexType);
                 }

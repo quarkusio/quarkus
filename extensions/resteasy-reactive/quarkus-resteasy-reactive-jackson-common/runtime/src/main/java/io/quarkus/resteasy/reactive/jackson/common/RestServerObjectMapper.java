@@ -9,7 +9,7 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
 
 /**
- * Qualifier Annotation that specializes production, customization, and injection of `server` ObjectMapper. If an ObjectMapper
+ * Qualifier Annotation that specializes production, customization, and injection of the REST server ObjectMapper. If an ObjectMapper
  * is produced with this qualifier, it is used by the quarkus-resteasy-reactive extension for serialization and deserialization.
  * Otherwise, quarkus-resteasy-reactive uses the unqualified `ObjectMapper` instance.
  */

@@ -9,9 +9,9 @@ import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
 
 /**
- * Qualifier Annotation that specializes production, customization, and injection of `client` ObjectMapper. If an ObjectMapper
- * is produced with this qualifier, it is used by the quarkus-jaxrs-client-reactive extension for serialization and
- * deserialization. Otherwise, quarkus-resteasy-reactive uses the unqualified `ObjectMapper` instance.
+ * Qualifier Annotation that specializes production, customization, and injection of the REST Client ObjectMapper. If an ObjectMapper
+ * is produced with this qualifier, it is used by the quarkus-rest-client-reactive extension for serialization and
+ * deserialization. Otherwise, quarkus-rest-client-reactive uses the unqualified `ObjectMapper` instance.
  */
 @Qualifier
 @Retention(RetentionPolicy.RUNTIME)

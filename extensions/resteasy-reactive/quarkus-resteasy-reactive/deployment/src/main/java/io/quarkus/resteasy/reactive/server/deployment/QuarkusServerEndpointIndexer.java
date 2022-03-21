@@ -169,7 +169,7 @@ public class QuarkusServerEndpointIndexer
         if (!capabilities.isCapabilityWithPrefixMissing("io.quarkus.resteasy.reactive.json")) {
             return;
         }
-        if (hasJson(method) || isDefaultJson()) {
+        if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson())) {
             LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
                     + info.name()
                     + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' or 'quarkus-resteasy-reactive-jsonb'.");
@@ -188,6 +188,12 @@ public class QuarkusServerEndpointIndexer
 
     private boolean hasJson(ServerResourceMethod method) {
         return hasJson(method.getProduces()) || hasJson(method.getConsumes()) || isJson(method.getStreamElementType());
+    }
+
+    private boolean hasNoTypesDefined(ServerResourceMethod method) {
+        return (method.getProduces() == null || method.getProduces().length == 0) &&
+                (method.getConsumes() == null || method.getConsumes().length == 0) &&
+                (method.getStreamElementType() == null);
     }
 
     private boolean hasJson(String[] types) {

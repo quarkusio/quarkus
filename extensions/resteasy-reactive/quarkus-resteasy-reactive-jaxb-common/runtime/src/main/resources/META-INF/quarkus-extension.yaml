@@ -1,0 +1,4 @@
+name: "RESTEasy Reactive JAXB Common"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  unlisted: true

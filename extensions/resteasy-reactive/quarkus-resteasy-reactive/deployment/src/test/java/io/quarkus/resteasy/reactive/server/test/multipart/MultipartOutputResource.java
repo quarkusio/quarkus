@@ -8,6 +8,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.RestResponse;
+
 @Path("/multipart/output")
 public class MultipartOutputResource {
 
@@ -30,6 +32,19 @@ public class MultipartOutputResource {
         response.setValues(RESPONSE_VALUES);
         response.active = RESPONSE_ACTIVE;
         return response;
+    }
+
+    @GET
+    @Path("/rest-response")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public RestResponse<MultipartOutputResponse> restResponse() {
+        MultipartOutputResponse response = new MultipartOutputResponse();
+        response.setName(RESPONSE_NAME);
+        response.setSurname(RESPONSE_SURNAME);
+        response.setStatus(RESPONSE_STATUS);
+        response.setValues(RESPONSE_VALUES);
+        response.active = RESPONSE_ACTIVE;
+        return RestResponse.ResponseBuilder.ok(response).header("foo", "bar").build();
     }
 
     @GET

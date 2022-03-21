@@ -225,7 +225,8 @@ public class QuarkusMultipartResponseDecoder {
                 }
             }
         } else {
-            multipartDataBoundary = null;
+            destroy();
+            throw new ErrorDataDecoderException("Unable to parse multipart response - No delimiter specified");
         }
         currentStatus = MultiPartStatus.HEADERDELIMITER;
 

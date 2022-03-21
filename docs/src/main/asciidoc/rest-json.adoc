@@ -246,15 +246,15 @@ public class CustomObjectMapper {
 ----
 
 There is one unqualified `ObjectMapper` instance provided by the quarkus-jackson extension.  Your code may produce two additional
-`ObjectMapper` instances. The client `ObjectMapper` instance is qualified by the `@RestClientObjectMapper` annotation. The server
+`ObjectMapper` instances. The REST client `ObjectMapper` instance is qualified by the `@RestClientObjectMapper` annotation. The REST server
 `ObjectMapper` instance is qualified by the `@RestServerObjectMapper` annotation.
 
-If the client `ObjectMapper` instance is available, it is used by the quarkus-jaxrs-client-reactive extension for serialization
-and deserialization.  If the client instance is not provided, then quarkus-resteasy-reactive uses the unqualified `ObjectMapper`
+If the REST client `ObjectMapper` instance is available, it is used by the quarkus-rest-client-reactive extension for serialization
+and deserialization.  If the REST client instance is not provided, then quarkus-rest-client-reactive uses the unqualified `ObjectMapper`
 instance.
 
-If the server `ObjectMapper` is available, it is used by the quarkus-resteasy-reactive extension for serialization and
-deserialization.  If the server instance is not provided, then quarkus-resteasy-reactive uses the unqualified `ObjectMapper`
+If the REST server `ObjectMapper` is available, it is used by the quarkus-resteasy-reactive extension for serialization and
+deserialization.  If the REST server instance is not provided, then quarkus-resteasy-reactive uses the unqualified `ObjectMapper`
 instance.
 
 You can produce, inject, and customize each of these instances independently.  The following snippet demonstrates how to inject

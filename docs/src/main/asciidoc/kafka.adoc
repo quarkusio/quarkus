@@ -1310,9 +1310,7 @@ import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 
 public class ListOfFruitDeserializer extends ObjectMapperDeserializer<List<Fruit>> {
     public ListOfFruitDeserializer() {
-        TypeReference<List<Fruit>> listType = new TypeReference<>() {
-        };
-        super(listType);
+        super(new TypeReference<List<Fruit>>() {});
     }
 }
 ----
@@ -1389,8 +1387,7 @@ import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 
 public class ListOfFruitDeserializer extends JsonbDeserializer<List<Fruit>> {
     public ListOfFruitDeserializer() {
-        Type listType = new ArrayList<MyEntity>() {}.getClass().getGenericSuperclass();
-        super(listType);
+        super(new ArrayList<MyEntity>() {}.getClass().getGenericSuperclass());
     }
 }
 ----

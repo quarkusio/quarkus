@@ -1,6 +1,8 @@
 
 package io.quarkus.container.image.docker.deployment;
 
+import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
+import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 
 import java.io.BufferedReader;
@@ -73,12 +75,9 @@ public class DockerProcessor {
             @SuppressWarnings("unused") // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
-            return;
-        }
-
-        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
-                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        boolean buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
+        boolean pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -104,7 +103,7 @@ public class DockerProcessor {
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out, reader,
                 false,
-                pushRequest.isPresent(), packageConfig);
+                pushContainerImage, packageConfig);
 
         // a pull is not required when using this image locally because the docker strategy always builds the container image
         // locally before pushing it to the registry
@@ -125,12 +124,9 @@ public class DockerProcessor {
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
-            return;
-        }
-
-        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
-                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        boolean buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
+        boolean pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -147,7 +143,7 @@ public class DockerProcessor {
 
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
-                pushRequest.isPresent(), packageConfig);
+                pushContainerImage, packageConfig);
 
         // a pull is not required when using this image locally because the docker strategy always builds the container image
         // locally before pushing it to the registry

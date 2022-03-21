@@ -728,6 +728,7 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.resources.requests.memory       | String                                    |             |
 | quarkus.kubernetes.resources.limits.cpu            | String                                    |             |
 | quarkus.kubernetes.resources.limits.memory         | String                                    |             |
+| quarkus.kubernetes.security-context                | SecurityContext                           |             | ( see SecurityContext )
 |====
 
 Properties that use non-standard types, can be referenced by expanding the property.
@@ -810,6 +811,38 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property    | Type     | Description       | Default Value
 | hostnames   | String[] | list of hostnames |
+|====
+
+.SecurityContext
+|====
+| Property               | Type                                    | Description | Default Value
+| se-linux-options       | SeLinuxOptions                          |             |
+| windows-options        | WindowsOptions                          |             |
+| run-as-user            | long                                    |             |
+| run-as-group           | long                                    |             |
+| run-as-non-root        | boolean                                 |             |
+| supplemental-groups    | long[]                                  |             |
+| fs-group               | long                                    |             |
+| sysctls                | Map<String, String>                     |             | 
+| fs-group-change-policy | String                                  |             |
+|====
+
+.SeLinuxOptions
+|====
+| Property  | Type     | Description   | Default Value
+| level     | String   |               |
+| role      | String   |               |
+| user      | String   |               |
+| type      | String   |               |
+|====
+
+.WindowsOptions
+|====
+| Property                  | Type     | Description   | Default Value
+| gmsa-credential-spec-name | String   |               |
+| gmsa-credential-spec      | String   |               |
+| run-as-user-name          | String   |               |
+| host-process              | boolean  |               |
 |====
 
 ==== Mounts and Volumes
@@ -1012,6 +1045,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.route.host                      | String                                    |             |
 | quarkus.openshift.route.annotations               | Map<String, String>                       |             |
 | quarkus.openshift.headless                        | boolean                                   |             | false
+| quarkus.openshift.security-context                | SecurityContext                           |             | ( see SecurityContext )
 |====
 
 [#knative]
@@ -1115,6 +1149,7 @@ The generated service can be customized using the following properties:
 | quarkus.knative.scale-to-zero-enabled           | boolean                                   | See link:https://knative.dev/docs/serving/autoscaling/scale-to-zero/#enable-scale-to-zero[link]  | true
 | quarkus.knative.revision-auto-scaling           | AutoScalingConfig                         |             | ( see AutoScalingConfig )
 | quarkus.knative.global-auto-scaling             | GlobalAutoScalingConfig                   |             | ( see GlobalAutoScalingConfig )
+| quarkus.knative.security-context                | SecurityContext                           |             | ( see SecurityContext )
 |====
 
 .Traffic

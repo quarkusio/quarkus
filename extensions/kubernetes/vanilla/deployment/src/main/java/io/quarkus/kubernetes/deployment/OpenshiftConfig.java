@@ -497,6 +497,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @ConfigItem
     Optional<String> appConfigMap;
 
+    /**
+     * If set, it will copy the security context configuration provided into the generated pod settings.
+     */
+    @ConfigItem
+    SecurityContextConfig securityContext;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }
@@ -508,6 +514,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @Override
     public Optional<ExpositionConfig> getExposition() {
         return Optional.of(route);
+    }
+
+    @Override
+    public SecurityContextConfig getSecurityContext() {
+        return securityContext;
     }
 
     public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {

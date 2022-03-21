@@ -8,6 +8,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -15,6 +16,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +52,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 public class RestClientRequestContext extends AbstractResteasyReactiveContext<RestClientRequestContext, ClientRestHandler> {
 
     private static final String MP_INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
+    private static final String TMP_FILE_PATH_KEY = "tmp_file_path";
 
     private final HttpClient httpClient;
     // Changeable by the request filter
@@ -451,6 +454,26 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public boolean isMultipart() {
         return entity != null && entity.getEntity() instanceof QuarkusMultipartForm;
+    }
+
+    public boolean isFileDownload() {
+        if (responseType == null) {
+            return false;
+        }
+        Class<?> rawType = responseType.getRawType();
+        return File.class.equals(rawType) || Path.class.equals(rawType);
+    }
+
+    public String getTmpFilePath() {
+        return (String) getProperties().get(TMP_FILE_PATH_KEY);
+    }
+
+    public void setTmpFilePath(String tmpFilePath) {
+        getProperties().put(TMP_FILE_PATH_KEY, tmpFilePath);
+    }
+
+    public void clearTmpFilePath() {
+        getProperties().remove(TMP_FILE_PATH_KEY);
     }
 
     public Map<String, Object> getClientFilterProperties() {

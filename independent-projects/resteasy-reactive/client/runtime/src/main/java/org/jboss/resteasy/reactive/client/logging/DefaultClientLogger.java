@@ -27,9 +27,9 @@ public class DefaultClientLogger implements ClientLogger {
     }
 
     @Override
-    public void logRequest(HttpClientRequest request, Buffer body, boolean multipart) {
-        if (multipart) {
-            log.debugf("Request: %s %s Headers[%s], Body omitted, a multipart message",
+    public void logRequest(HttpClientRequest request, Buffer body, boolean omitBody) {
+        if (omitBody) {
+            log.debugf("Request: %s %s Headers[%s], Body omitted",
                     request.getMethod(), request.absoluteURI(), asString(request.headers()));
         } else if (body == null || body.length() == 0) {
             log.debugf("Request: %s %s Headers[%s], Empty body",

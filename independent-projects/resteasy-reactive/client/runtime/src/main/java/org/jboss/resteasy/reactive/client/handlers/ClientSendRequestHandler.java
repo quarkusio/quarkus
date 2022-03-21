@@ -5,6 +5,7 @@ import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.Stork;
 import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -12,12 +13,15 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.AsyncFile;
+import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
+import io.vertx.core.streams.Pump;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -215,25 +219,89 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 }
                                 requestContext.resume();
                             } else {
-                                clientResponse.bodyHandler(new Handler<>() {
-                                    @Override
-                                    public void handle(Buffer buffer) {
-                                        if (loggingScope != LoggingScope.NONE) {
-                                            clientLogger.logResponse(clientResponse, false);
-                                        }
-                                        try {
-                                            if (buffer.length() > 0) {
-                                                requestContext.setResponseEntityStream(
-                                                        new ByteArrayInputStream(buffer.getBytes()));
-                                            } else {
-                                                requestContext.setResponseEntityStream(null);
+                                if (requestContext.isFileDownload()) {
+                                    // when downloading a file we copy the bytes to the file system and manually set the entity type
+                                    // this is needed because large files can cause OOM or exceed the InputStream limit (of 2GB)
+
+                                    clientResponse.pause();
+                                    Vertx vertx = Vertx.currentContext().owner();
+                                    vertx.fileSystem().createTempFile("rest-client", "",
+                                            new Handler<>() {
+                                                @Override
+                                                public void handle(AsyncResult<String> tempFileCreation) {
+                                                    if (tempFileCreation.failed()) {
+                                                        reportFinish(System.nanoTime() - startTime, tempFileCreation.cause(),
+                                                                requestContext);
+                                                        requestContext.resume(tempFileCreation.cause());
+                                                        return;
+                                                    }
+                                                    String tmpFilePath = tempFileCreation.result();
+                                                    vertx.fileSystem().open(tmpFilePath,
+                                                            new OpenOptions().setWrite(true),
+                                                            new Handler<>() {
+                                                                @Override
+                                                                public void handle(AsyncResult<AsyncFile> asyncFileOpened) {
+                                                                    if (asyncFileOpened.failed()) {
+                                                                        reportFinish(System.nanoTime() - startTime,
+                                                                                asyncFileOpened.cause(), requestContext);
+                                                                        requestContext.resume(asyncFileOpened.cause());
+                                                                        return;
+                                                                    }
+                                                                    final AsyncFile tmpAsyncFile = asyncFileOpened.result();
+                                                                    final Pump downloadPump = Pump.pump(clientResponse,
+                                                                            tmpAsyncFile);
+                                                                    downloadPump.start();
+
+                                                                    clientResponse.resume();
+                                                                    clientResponse.endHandler(new Handler<>() {
+                                                                        public void handle(Void event) {
+                                                                            tmpAsyncFile.flush(new Handler<>() {
+                                                                                public void handle(AsyncResult<Void> flushed) {
+                                                                                    if (flushed.failed()) {
+                                                                                        reportFinish(
+                                                                                                System.nanoTime() - startTime,
+                                                                                                flushed.cause(),
+                                                                                                requestContext);
+                                                                                        requestContext.resume(flushed.cause());
+                                                                                        return;
+                                                                                    }
+
+                                                                                    if (loggingScope != LoggingScope.NONE) {
+                                                                                        clientLogger.logRequest(
+                                                                                                httpClientRequest, null, false);
+                                                                                    }
+
+                                                                                    requestContext.setTmpFilePath(tmpFilePath);
+                                                                                    requestContext.resume();
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    });
+                                                                }
+                                                            });
+                                                }
+                                            });
+                                } else {
+                                    clientResponse.bodyHandler(new Handler<>() {
+                                        @Override
+                                        public void handle(Buffer buffer) {
+                                            if (loggingScope != LoggingScope.NONE) {
+                                                clientLogger.logResponse(clientResponse, false);
                                             }
-                                            requestContext.resume();
-                                        } catch (Throwable t) {
-                                            requestContext.resume(t);
+                                            try {
+                                                if (buffer.length() > 0) {
+                                                    requestContext.setResponseEntityStream(
+                                                            new ByteArrayInputStream(buffer.getBytes()));
+                                                } else {
+                                                    requestContext.setResponseEntityStream(null);
+                                                }
+                                                requestContext.resume();
+                                            } catch (Throwable t) {
+                                                requestContext.resume(t);
+                                            }
                                         }
-                                    }
-                                });
+                                    });
+                                }
                             }
                         } catch (Throwable t) {
                             reportFinish(System.nanoTime() - startTime, t, requestContext);

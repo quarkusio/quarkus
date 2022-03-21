@@ -38,6 +38,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanArchivePredicateBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -462,6 +463,7 @@ public class GrpcServerProcessor {
             GrpcBuildTimeConfig buildTimeConfig,
             ShutdownContextBuildItem shutdown,
             List<BindableServiceBuildItem> bindables,
+            List<RecorderBeanInitializedBuildItem> orderEnforcer,
             LaunchModeBuildItem launchModeBuildItem,
             VertxBuildItem vertx) {
 

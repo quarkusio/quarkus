@@ -29,6 +29,7 @@ import org.hibernate.loader.BatchFetchStyle;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Feature;
@@ -185,7 +186,8 @@ public final class HibernateReactiveProcessor {
     @Record(RUNTIME_INIT)
     PersistenceProviderSetUpBuildItem setUpPersistenceProviderAndWaitForVertxPool(HibernateReactiveRecorder recorder,
             HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
-            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems) {
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
+            BuildProducer<RecorderBeanInitializedBuildItem> orderEnforcer) {
         recorder.initializePersistenceProvider(hibernateOrmRuntimeConfig,
                 HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
         return new PersistenceProviderSetUpBuildItem();

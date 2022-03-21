@@ -51,7 +51,7 @@ public class QueryParamNoTemplateTestCase {
                 .get()
                 .await()
                 .indefinitely();
-        Assertions.assertEquals("{foo&bar},%FF", data);
+        Assertions.assertEquals("%FF,{foo&bar}", data);
     }
 
     public static class Endpoint {

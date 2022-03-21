@@ -879,12 +879,31 @@ public class UriBuilderImpl extends UriBuilder {
             throw new IllegalArgumentException("Name parameter is null");
         if (values == null)
             throw new IllegalArgumentException("Values parameter is null");
+
+        if (queryParamMode == MultiQueryParamMode.COMMA_SEPARATED) {
+            sb.append(Encode.encodeQueryParamAsIs(name)).append("=");
+        }
         for (Object value : values) {
             if (value == null)
                 throw new IllegalArgumentException("Value is null");
+
             sb.append(prefix);
-            prefix = "&";
-            sb.append(Encode.encodeQueryParamAsIs(name)).append("=").append(Encode.encodeQueryParamAsIs(value.toString()));
+            switch (queryParamMode) {
+                case MULTI_PAIRS:
+                    prefix = "&";
+                    sb.append(Encode.encodeQueryParamAsIs(name)).append("=")
+                            .append(Encode.encodeQueryParamAsIs(value.toString()));
+                    break;
+                case COMMA_SEPARATED:
+                    prefix = ",";
+                    sb.append(Encode.encodeQueryParamAsIs(value.toString()));
+                    break;
+                case ARRAY_PAIRS:
+                    prefix = "&";
+                    sb.append(Encode.encodeQueryParamAsIs(name)).append("[]=")
+                            .append(Encode.encodeQueryParamAsIs(value.toString()));
+                    break;
+            }
         }
 
         query = sb.toString();

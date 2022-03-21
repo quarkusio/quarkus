@@ -2328,11 +2328,10 @@ public class JaxrsClientReactiveProcessor {
                         Class.class, java.lang.reflect.Type.class, Annotation[].class),
                 client, paramArray, notNullValue.loadClassFromTCCL(componentType), genericType, paramAnnotations);
 
-        ResultHandle targetImpl = notNullValue.checkCast(target, WebTargetImpl.class);
-        notNullValue.assign(result, notNullValue.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(WebTargetImpl.class, "queryParamNoTemplate", WebTargetImpl.class,
+        notNullValue.assign(result, notNullValue.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
                         String.class, Object[].class),
-                targetImpl, notNullValue.load(paramName), paramArray));
+                target, notNullValue.load(paramName), paramArray));
 
         BytecodeCreator nullValue = isValueNull.trueBranch();
         nullValue.assign(result, nullValue.loadNull());

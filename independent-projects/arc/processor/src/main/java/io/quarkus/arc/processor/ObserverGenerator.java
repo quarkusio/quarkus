@@ -260,7 +260,7 @@ public class ObserverGenerator extends AbstractGenerator {
 
     protected void implementGetBeanClass(ClassCreator observerCreator, DotName beanClass) {
         MethodCreator getBeanClass = observerCreator.getMethodCreator("getBeanClass", Class.class).setModifiers(ACC_PUBLIC);
-        getBeanClass.returnValue(getBeanClass.loadClassFromTCCL(beanClass.toString()));
+        getBeanClass.returnValue(getBeanClass.loadClass(beanClass.toString()));
     }
 
     protected void implementGetPriority(ClassCreator observerCreator, ObserverInfo observer) {
@@ -434,12 +434,12 @@ public class ObserverGenerator extends AbstractGenerator {
             ResultHandle argsArray = notify.newArray(Object.class, notify.load(referenceHandles.length));
             for (int i = 0; i < referenceHandles.length; i++) {
                 notify.writeArrayValue(paramTypesArray, i,
-                        notify.loadClassFromTCCL(observer.getObserverMethod().parameters().get(i).name().toString()));
+                        notify.loadClass(observer.getObserverMethod().parameters().get(i).name().toString()));
                 notify.writeArrayValue(argsArray, i, referenceHandles[i]);
             }
             reflectionRegistration.registerMethod(observer.getObserverMethod());
             notify.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                    notify.loadClassFromTCCL(observer.getObserverMethod().declaringClass().name().toString()),
+                    notify.loadClass(observer.getObserverMethod().declaringClass().name().toString()),
                     notify.load(observer.getObserverMethod().name()),
                     paramTypesArray, declaringProviderInstanceHandle, argsArray);
         } else {

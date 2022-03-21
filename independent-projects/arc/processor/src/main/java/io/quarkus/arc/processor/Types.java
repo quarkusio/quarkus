@@ -165,28 +165,28 @@ public final class Types {
         } else if (Kind.PRIMITIVE.equals(type.kind())) {
             switch (type.asPrimitiveType().primitive()) {
                 case INT:
-                    creator.assign(variable, creator.loadClassFromTCCL(int.class));
+                    creator.assign(variable, creator.loadClass(int.class));
                     break;
                 case LONG:
-                    creator.assign(variable, creator.loadClassFromTCCL(long.class));
+                    creator.assign(variable, creator.loadClass(long.class));
                     break;
                 case BOOLEAN:
-                    creator.assign(variable, creator.loadClassFromTCCL(boolean.class));
+                    creator.assign(variable, creator.loadClass(boolean.class));
                     break;
                 case BYTE:
-                    creator.assign(variable, creator.loadClassFromTCCL(byte.class));
+                    creator.assign(variable, creator.loadClass(byte.class));
                     break;
                 case CHAR:
-                    creator.assign(variable, creator.loadClassFromTCCL(char.class));
+                    creator.assign(variable, creator.loadClass(char.class));
                     break;
                 case DOUBLE:
-                    creator.assign(variable, creator.loadClassFromTCCL(double.class));
+                    creator.assign(variable, creator.loadClass(double.class));
                     break;
                 case FLOAT:
-                    creator.assign(variable, creator.loadClassFromTCCL(float.class));
+                    creator.assign(variable, creator.loadClass(float.class));
                     break;
                 case SHORT:
-                    creator.assign(variable, creator.loadClassFromTCCL(short.class));
+                    creator.assign(variable, creator.loadClass(short.class));
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + type);

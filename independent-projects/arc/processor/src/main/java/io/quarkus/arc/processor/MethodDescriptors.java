@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableBean.Kind;
 import io.quarkus.arc.InjectableContext;
@@ -79,6 +80,8 @@ public final class MethodDescriptors {
     public static final MethodDescriptor SET_ADD = MethodDescriptor.ofMethod(Set.class, "add", boolean.class, Object.class);
 
     public static final MethodDescriptor LIST_ADD = MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class);
+
+    public static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);
 
     public static final MethodDescriptor OBJECT_EQUALS = MethodDescriptor.ofMethod(Object.class, "equals", boolean.class,
             Object.class);
@@ -264,6 +267,10 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INSTANCES_LIST_OF_HANDLES = MethodDescriptor
             .ofMethod(Instances.class, "listOfHandles", List.class, InjectableBean.class, Type.class, Type.class,
                     Set.class, CreationalContextImpl.class, Set.class, Member.class, int.class);
+
+    public static final MethodDescriptor COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE = MethodDescriptor.ofMethod(
+            ComponentsProvider.class, "unableToLoadRemovedBeanType",
+            void.class, String.class, Throwable.class);
 
     private MethodDescriptors() {
     }

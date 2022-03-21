@@ -47,6 +47,7 @@ import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
@@ -222,6 +223,7 @@ public class OpenshiftProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
@@ -265,6 +267,7 @@ public class OpenshiftProcessor {
                     jar.getPath());
         }
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
     }
 
     private String getContextRoot(String outputDirName, boolean isFastJar, BuildStrategy buildStrategy) {
@@ -287,6 +290,7 @@ public class OpenshiftProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             NativeImageBuildItem nativeImage) {
 
         OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
@@ -321,6 +325,7 @@ public class OpenshiftProcessor {
         createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, out.getOutputDirectory(),
                 nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
     }
 
     public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,

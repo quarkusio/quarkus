@@ -1,25 +1,24 @@
 package io.quarkus.jdbc.postgresql.runtime;
 
+import static io.quarkus.kubernetes.service.binding.runtime.JdbcDatasourceUtil.QUARKUS_DATASOURCE_JDBC_URL;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.jboss.logging.Logger;
-
+import io.quarkus.kubernetes.service.binding.runtime.JdbcDatasourceUtil;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBinding;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConfigSource;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter;
 
-public class PostgreSqlServiceBindingConverter implements ServiceBindingConverter {
-    public static final String QUARKUS_DATASOURCE_JDBC_URL = "quarkus.datasource.jdbc.url";
+public class PostgreSQLServiceBindingConverter implements ServiceBindingConverter {
+
     public static final String BINDING_TYPE = "postgresql";
-    private static final Logger log = Logger.getLogger(PostgreSqlServiceBindingConverter.class);
     public static final String SSL_MODE = "sslmode";
     public static final String SSL_ROOT_CERT = "sslrootcert";
     public static final String OPTIONS = "options";
@@ -33,10 +32,7 @@ public class PostgreSqlServiceBindingConverter implements ServiceBindingConverte
         }
         ServiceBinding binding = matchingByType.get();
 
-        Optional<Map<String, String>> properties = buildBindingProperties(matchingByType, BINDING_TYPE);
-        if (!properties.isPresent()) {
-            return Optional.empty();
-        }
+        Map<String, String> properties = JdbcDatasourceUtil.getServiceBindingProperties(binding, BINDING_TYPE);
         //process ssl params
         //https://www.postgresql.org/docs/14/libpq-connect.html
         StringBuilder sslparam = new StringBuilder();
@@ -98,50 +94,14 @@ public class PostgreSqlServiceBindingConverter implements ServiceBindingConverte
 
         if (!"".equals(combinedOptions)) {
             //append sslmode and options to the URL
-            properties.get().put(QUARKUS_DATASOURCE_JDBC_URL,
-                    properties.get().get(QUARKUS_DATASOURCE_JDBC_URL) + "?" + combinedOptions);
+            properties.put(QUARKUS_DATASOURCE_JDBC_URL,
+                    properties.get(QUARKUS_DATASOURCE_JDBC_URL) + "?" + combinedOptions);
         }
 
-        return Optional.of(new ServiceBindingConfigSource(BINDING_TYPE + "-k8s-service-binding-source", properties.get()));
+        return Optional.of(new ServiceBindingConfigSource(BINDING_TYPE + "-k8s-service-binding-source", properties));
     }
 
     private String encode(String str) throws UnsupportedEncodingException {
         return URLEncoder.encode(str, StandardCharsets.UTF_8.toString());
-    }
-
-    private Optional<Map<String, String>> buildBindingProperties(Optional<ServiceBinding> matchingByType, String urlType) {
-        if (!matchingByType.isPresent()) {
-            return Optional.empty();
-        }
-
-        Map<String, String> properties = new HashMap<>();
-        ServiceBinding binding = matchingByType.get();
-
-        String username = binding.getProperties().get("username");
-        if (username != null) {
-            properties.put("quarkus.datasource.username", username);
-        } else {
-            log.debug("Property 'username' was not found");
-        }
-        String password = binding.getProperties().get("password");
-        if (password != null) {
-            properties.put("quarkus.datasource.password", password);
-        } else {
-            log.debug("Property 'password' was not found");
-        }
-        String host = binding.getProperties().get("host");
-        String port = binding.getProperties().get("port");
-        String database = binding.getProperties().get("database");
-        if ((host != null) && (database != null)) {
-            String portPart = "";
-            if (port != null) {
-                portPart = ":" + port;
-            }
-            properties.put(QUARKUS_DATASOURCE_JDBC_URL, String.format("jdbc:%s://%s%s/%s", urlType, host, portPart, database));
-        } else {
-            log.debug("One or more of 'host' or 'database' properties were not found");
-        }
-
-        return Optional.of(properties);
     }
 }

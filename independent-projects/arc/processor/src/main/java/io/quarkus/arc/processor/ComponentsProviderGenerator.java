@@ -115,7 +115,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                                 SETUP_PACKAGE));
             }
             getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, transitiveBindingsHandle,
-                    getComponents.loadClassFromTCCL(entry.getKey().toString()), bindingsHandle);
+                    getComponents.loadClass(entry.getKey().toString()), bindingsHandle);
         }
 
         ResultHandle beansHandle = getComponents.invokeInterfaceMethod(

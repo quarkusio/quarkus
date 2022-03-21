@@ -15,6 +15,8 @@
           "io.quarkus:quarkus-resteasy-reactive-links",
           "io.quarkus:quarkus-rest-client-reactive",
           "io.quarkus:quarkus-rest-client-reactive-jackson",
+          "io.quarkus:quarkus-rest-client-reactive-jsonb",
+          "io.quarkus:quarkus-rest-client-reactive-jaxb",
           "io.quarkus:quarkus-rest-client-reactive-kotlin-serialization",
           "io.quarkus:quarkus-resteasy",
           "io.quarkus:quarkus-resteasy-jackson",

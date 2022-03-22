@@ -17,4 +17,9 @@ public class CategoryBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "inherit")
     public InheritableLevel minLevel;
+
+    // for method refs
+    public InheritableLevel getMinLevel() {
+        return minLevel;
+    }
 }

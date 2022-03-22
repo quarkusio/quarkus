@@ -117,8 +117,13 @@ public class MockHttpEventServer extends MockEventServer {
                 HttpServerResponse response = pending.response();
                 if (res.getHeaders() != null) {
                     for (Map.Entry<String, String> header : res.getHeaders().entrySet()) {
-                        for (String val : header.getValue().split(",")) {
-                            response.headers().add(header.getKey(), val);
+                        if (canHaveCommaValue(header.getKey())) {
+                            response.headers().add(header.getKey(), header.getValue());
+
+                        } else {
+                            for (String val : header.getValue().split(",")) {
+                                response.headers().add(header.getKey(), val);
+                            }
                         }
                     }
                 }

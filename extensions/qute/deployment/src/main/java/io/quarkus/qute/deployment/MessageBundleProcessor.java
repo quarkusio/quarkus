@@ -212,9 +212,7 @@ public class MessageBundleProcessor {
                 if (Modifier.isInterface(localized.flags())) {
                     if (!localizedInterfaces.contains(localized.name())) {
                         throw new MessageBundleException(
-                                String.format(
-                                        "A localized message bundle interface must extend a message bundle interface: "
-                                                + localized));
+                                "A localized message bundle interface must extend a message bundle interface: " + localized);
                     }
                 } else {
                     throw new MessageBundleException("@Localized must be declared on an interface: " + localized);

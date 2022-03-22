@@ -4,11 +4,14 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Security with WebAuthn
+:extension-status: preview
 
 include::./attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can use WebAuthn authentication instead of 
 passwords.
+
+include::./status-include.adoc[]
 
 == Prerequisites
 

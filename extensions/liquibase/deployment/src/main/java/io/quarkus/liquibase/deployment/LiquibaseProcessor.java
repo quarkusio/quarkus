@@ -222,6 +222,7 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.9.xsd",
@@ -235,6 +236,7 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.6.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.7.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.8.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.9.xsd",
                 "liquibase.build.properties"));
 
         // liquibase resource bundles

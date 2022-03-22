@@ -92,6 +92,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
@@ -494,7 +495,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    public ProxyDefinitionsBuildItem pregenProxies(
+    public BytecodeRecorderConstantDefinitionBuildItem pregenProxies(
             JpaModelBuildItem jpaModel,
             JpaModelIndexBuildItem indexBuildItem,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
@@ -510,7 +511,26 @@ public final class HibernateOrmProcessor {
         }
         PreGeneratedProxies proxyDefinitions = generatedProxies(managedClassAndPackageNames,
                 indexBuildItem.getIndex(), generatedClassBuildItemBuildProducer, liveReloadBuildItem);
-        return new ProxyDefinitionsBuildItem(proxyDefinitions);
+
+        // Make proxies available through a constant;
+        // this is a hack to avoid introducing circular dependencies between build steps.
+        //
+        // If we just passed the proxy definitions to #build as a normal build item,
+        // we would have the following dependencies:
+        //
+        // #pregenProxies => ProxyDefinitionsBuildItem => #build => BeanContainerListenerBuildItem
+        // => Arc container init => BeanContainerBuildItem
+        // => some RestEasy Reactive Method => BytecodeTransformerBuildItem
+        // => build step that transforms bytecode => TransformedClassesBuildItem
+        // => #pregenProxies
+        //
+        // Since the dependency from #preGenProxies to #build is only a static init thing
+        // (#build needs to pass the proxy definitions to the recorder),
+        // we get rid of the circular dependency by defining a constant
+        // to pass the proxy definitions to the recorder.
+        // That way, the dependency is only between #pregenProxies
+        // and the build step that generates the bytecode of bytecode recorders.
+        return new BytecodeRecorderConstantDefinitionBuildItem(PreGeneratedProxies.class, proxyDefinitions);
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -554,7 +574,6 @@ public final class HibernateOrmProcessor {
             JpaModelBuildItem jpaModel,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationBuildItems,
-            ProxyDefinitionsBuildItem proxyDefinitions,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             LaunchModeBuildItem launchMode) throws Exception {
@@ -620,8 +639,7 @@ public final class HibernateOrmProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses,
-                                proxyDefinitions.getProxies())));
+                        recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses)));
     }
 
     private void validateHibernatePropertiesNotUsed() {

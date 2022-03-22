@@ -21,6 +21,7 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.resteasy.reactive.server.runtime.EndpointScoresSupplier;
 import io.quarkus.resteasy.reactive.server.runtime.ExceptionMappersSupplier;
+import io.quarkus.resteasy.reactive.server.runtime.ParamConverterProvidersSupplier;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
@@ -35,6 +36,13 @@ public class ResteasyReactiveDevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     public DevConsoleRuntimeTemplateInfoBuildItem exceptionMappers(CurateOutcomeBuildItem curateOutcomeBuildItem) {
         return new DevConsoleRuntimeTemplateInfoBuildItem("exceptionMappers", new ExceptionMappersSupplier(), this.getClass(),
+                curateOutcomeBuildItem);
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public DevConsoleRuntimeTemplateInfoBuildItem paramConverterProviders(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("paramConverterProviders", new ParamConverterProvidersSupplier(),
+                this.getClass(),
                 curateOutcomeBuildItem);
     }
 

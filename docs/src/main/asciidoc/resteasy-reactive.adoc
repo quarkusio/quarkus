@@ -183,14 +183,14 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 
 @Retention(RetentionPolicy.RUNTIME)
-@HttpMethod("FROMAGE")
-@interface FROMAGE {
+@HttpMethod("CHEESE")
+@interface CHEESE {
 }
 
 @Path("")
 public class Endpoint {
 
-    @FROMAGE
+    @CHEESE
     public String hello() {
         return "Hello, Cheese World!";
     }
@@ -596,11 +596,11 @@ public class Endpoint {
         // HTTP OK status with text/plain content type
         return ResponseBuilder.ok("Hello, World!", MediaType.TEXT_PLAIN_TYPE)
          // set a response header
-         .header("X-FroMage", "Camembert")
+         .header("X-Cheese", "Camembert")
          // set the Expires response header to two days from now
          .expires(Date.from(Instant.now().plus(Duration.ofDays(2))))
          // send a new cookie
-         .cookie(new NewCookie("Flavour", "praliné"))
+         .cookie(new NewCookie("Flavour", "chocolate"))
          // end of builder API
          .build();
     }
@@ -630,7 +630,7 @@ import javax.ws.rs.Path;
 public class Endpoint {
 
     @ResponseStatus(201)
-    @ResponseHeader(name = "X-FroMage", value = "Camembert")
+    @ResponseHeader(name = "X-Cheese", value = "Camembert")
     @GET
     public String hello() {
         return "Hello, World!";
@@ -1267,17 +1267,17 @@ import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 
-@Path("fromages/{fromage}")
+@Path("cheeses/{cheese}")
 public class Endpoint {
 
     @GET
-    public String findFromage(String fromage) {
-        if(fromage == null)
+    public String findCheese(String cheese) {
+        if(cheese == null)
             // send a 400
             throw new BadRequestException();
-        if(!fromage.equals("camembert"))
+        if(!cheese.equals("camembert"))
             // send a 404
-            throw new NotFoundException("Unknown cheese: " + fromage);
+            throw new NotFoundException("Unknown cheese: " + cheese);
         return "Camembert is a very nice cheese";
     }
 }
@@ -1329,7 +1329,7 @@ class CheeseService {
     }
 }
 
-@Path("fromages/{fromage}")
+@Path("cheeses/{cheese}")
 public class Endpoint {
 
     @Inject
@@ -1341,11 +1341,11 @@ public class Endpoint {
     }
     
     @GET
-    public String findFromage(String fromage) {
-        if(fromage == null)
+    public String findCheese(String cheese) {
+        if(cheese == null)
             // send a 400
             throw new BadRequestException();
-        return cheeses.findCheese(fromage);
+        return cheeses.findCheese(cheese);
     }
 } 
 ----
@@ -1590,7 +1590,7 @@ and link:{jaxrsapi}/javax/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`] 
 which are responsible for defining which Java type they map from/to, for which media types,
 and how they turn HTTP bodies to/from Java instances of that type.
 
-For example, if we have our own `FroMage` type on our endpoint:
+For example, if we have our own `Cheese` type on our endpoint:
 
 [source,java]
 ----
@@ -1600,10 +1600,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 
-class FroMage {
+class Cheese {
     public String name;
     
-    public FroMage(String name) {
+    public Cheese(String name) {
         this.name = name;
     }
 }
@@ -1612,13 +1612,13 @@ class FroMage {
 public class Endpoint {
 
     @GET
-    public FroMage sayCheese() {
-        return new FroMage("Cheeeeeese");
+    public Cheese sayCheese() {
+        return new Cheese("Cheeeeeese");
     }
 
     @PUT
-    public void addCheese(FroMage fromage) {
-        System.err.println("Received a new cheese: " + fromage.name);
+    public void addCheese(Cheese cheese) {
+        System.err.println("Received a new cheese: " + cheese.name);
     }
 }
 ----
@@ -1645,41 +1645,41 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class FroMageBodyHandler implements MessageBodyReader<FroMage>, 
-                                           MessageBodyWriter<FroMage> {
+public class CheeseBodyHandler implements MessageBodyReader<Cheese>, 
+                                           MessageBodyWriter<Cheese> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, 
                                Annotation[] annotations, MediaType mediaType) {
-        return type == FroMage.class;
+        return type == Cheese.class;
     }
 
     @Override
-    public void writeTo(FroMage t, Class<?> type, Type genericType, 
+    public void writeTo(Cheese t, Class<?> type, Type genericType, 
                         Annotation[] annotations, MediaType mediaType,
                         MultivaluedMap<String, Object> httpHeaders, 
                         OutputStream entityStream)
             throws IOException, WebApplicationException {
-        entityStream.write(("[FroMageV1]" + t.name)
+        entityStream.write(("[CheeseV1]" + t.name)
                            .getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, 
                               Annotation[] annotations, MediaType mediaType) {
-        return type == FroMage.class;
+        return type == Cheese.class;
     }
 
     @Override
-    public FroMage readFrom(Class<FroMage> type, Type genericType, 
+    public Cheese readFrom(Class<Cheese> type, Type genericType, 
                             Annotation[] annotations, MediaType mediaType,
                             MultivaluedMap<String, String> httpHeaders,
                             InputStream entityStream)
             throws IOException, WebApplicationException {
         String body = new String(entityStream.readAllBytes(), StandardCharsets.UTF_8);
-        if(body.startsWith("[FroMageV1]"))
-            return new FroMage(body.substring(11));
-        throw new IOException("Invalid fromage: " + body);
+        if(body.startsWith("[CheeseV1]"))
+            return new Cheese(body.substring(11));
+        throw new IOException("Invalid cheese: " + body);
     }
 
 }
@@ -1712,21 +1712,21 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 @Provider
-public class FroMageBodyHandler implements MessageBodyReader<FroMage>, 
-                                           ServerMessageBodyWriter<FroMage> {
+public class CheeseBodyHandler implements MessageBodyReader<Cheese>, 
+                                           ServerMessageBodyWriter<Cheese> {
 
     // …
 
     @Override
     public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, 
                                MediaType mediaType) {
-        return type == FroMage.class;
+        return type == Cheese.class;
     }
 
     @Override
-    public void writeResponse(FroMage t, ServerRequestContext context) 
+    public void writeResponse(Cheese t, ServerRequestContext context) 
       throws WebApplicationException, IOException {
-        context.serverResponse().end("[FroMageV1]" + t.name);
+        context.serverResponse().end("[CheeseV1]" + t.name);
     }
 }
 ----
@@ -1761,8 +1761,8 @@ public class Endpoint {
     }
 
     @PUT
-    public void addCheese(String fromage) {
-        System.err.println("Received a new cheese: " + fromage);
+    public void addCheese(String cheese) {
+        System.err.println("Received a new cheese: " + cheese);
     }
 }
 ----
@@ -1783,7 +1783,7 @@ import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
 @Provider
-public class FroMageIOInterceptor implements ReaderInterceptor, WriterInterceptor {
+public class CheeseIOInterceptor implements ReaderInterceptor, WriterInterceptor {
 
     @Override
     public void aroundWriteTo(WriterInterceptorContext context)
@@ -2075,10 +2075,10 @@ import javax.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-class FroMage {
+class Cheese {
     public String name;
     @JsonCreator
-    public FroMage(String name) {
+    public Cheese(String name) {
         this.name = name;
     }
     @Override
@@ -2092,20 +2092,20 @@ public class Endpoint {
 
     @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
     @GET
-    public FroMage get() {
-        return new FroMage("Morbier");
+    public Cheese get() {
+        return new Cheese("Morbier");
     }
 
     @Consumes(MediaType.TEXT_PLAIN)
     @PUT
-    public FroMage putString(String cheese) {
-        return new FroMage(cheese);
+    public Cheese putString(String cheese) {
+        return new Cheese(cheese);
     }
 
     @Consumes(MediaType.APPLICATION_JSON)
     @PUT
-    public FroMage putJson(FroMage fromage) {
-        return fromage;
+    public Cheese putJson(Cheese cheese) {
+        return cheese;
     }
 }
 ----

@@ -2,6 +2,9 @@ package io.quarkus.amazon.lambda.runtime;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +42,21 @@ public class MockEventServer implements Closeable {
     public static final String NEXT_INVOCATION = BASE_PATH + AmazonLambdaApi.API_PATH_INVOCATION_NEXT;
     public static final String POST_EVENT = BASE_PATH;
     public static final String CONTINUE = "100-continue";
+    private static final Set<String> COMMA_VALUE_HEADERS;
+
+    static {
+        COMMA_VALUE_HEADERS = new HashSet<>();
+        COMMA_VALUE_HEADERS.add("date");
+        COMMA_VALUE_HEADERS.add("last-modified");
+        COMMA_VALUE_HEADERS.add("expires");
+        COMMA_VALUE_HEADERS.add("if-modified-since");
+        COMMA_VALUE_HEADERS.add("if-unmodified-since");
+    }
+
+    public static boolean canHaveCommaValue(String header) {
+        return COMMA_VALUE_HEADERS.contains(header.toLowerCase(Locale.ROOT));
+    }
+
     final AtomicBoolean closed = new AtomicBoolean();
 
     public MockEventServer() {

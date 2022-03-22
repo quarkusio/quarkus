@@ -109,10 +109,10 @@ public interface PanacheRepositoryBase<Entity, Id> {
     }
 
     /**
-     * FFlushes all pending changes to the database using the default EntityManager.
+     * Flushes all pending changes to the database using the EntityManager for the <Entity> entity class.
      */
     default void flush() {
-        INSTANCE.getEntityManager().flush();
+        getEntityManager().flush();
     }
 
     // Queries

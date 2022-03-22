@@ -90,6 +90,11 @@ public class ResteasyReactiveScanningProcessor {
     }
 
     @BuildStep
+    public MethodScannerBuildItem compressionSupport() {
+        return new MethodScannerBuildItem(new CompressionScanner());
+    }
+
+    @BuildStep
     public ResourceInterceptorsContributorBuildItem scanForInterceptors(CombinedIndexBuildItem combinedIndexBuildItem,
             ApplicationResultBuildItem applicationResultBuildItem) {
         return new ResourceInterceptorsContributorBuildItem(new Consumer<ResourceInterceptors>() {

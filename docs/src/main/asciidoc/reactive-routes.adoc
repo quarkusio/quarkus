@@ -682,6 +682,26 @@ public class MyFilters {
 <1> The `RouteFilter#value()` defines the priority used to sort the filters - filters with higher priority are called first.
 <2> The filter is likely required to call the `next()` method to continue the chain.
 
+== HTTP Compression
+
+The body of an HTTP response is not compressed by default.
+You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
+
+If compression support is enabled then the response body is compressed if:
+
+- the route method is annotated with `@io.quarkus.vertx.http.Compressed`, or
+- the `Content-Type` header is set and the value is a compressed media type as configured via `quarkus.http.compress-media-types`.
+
+The response body is never compressed if:
+
+- the route method is annotated with `@io.quarkus.vertx.http.Uncompressed`, or
+- the `Content-Type` header is not set.
+
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+
+NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
+
 == Adding OpenAPI and Swagger UI
 
 You can add support for link:https://www.openapis.org/[OpenAPI] and link:https://swagger.io/tools/swagger-ui/[Swagger UI] by using the `quarkus-smallrye-openapi` extension.

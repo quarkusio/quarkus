@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-security-webauthn</artifactId>
     <name>Quarkus - Security WebAuthn - Runtime</name>
-    <description>Secure your applications with WebAuthn.</description>
+    <description>Secure your applications with WebAuthn</description>
     <dependencies>
         <dependency>
             <groupId>org.jboss.spec.javax.ws.rs</groupId>
@@ -47,7 +47,7 @@
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
-                        <provides>io.quarkus.security.jpa</provides>
+                        <provides>io.quarkus.security.webauthn</provides>
                     </capabilities>
                 </configuration>
             </plugin>

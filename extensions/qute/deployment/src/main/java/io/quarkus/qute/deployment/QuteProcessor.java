@@ -774,7 +774,7 @@ public class QuteProcessor {
                 }
             }
         } else {
-            if (INJECT_NAMESPACE.equals(namespace)) {
+            if (INJECT_NAMESPACE.equals(namespace) || CDI_NAMESPACE.equals(namespace)) {
                 // Skip the first part - the name of the bean, e.g. for {inject:foo.name} we start validation with "name"
                 match.setValues(rootClazz, Type.create(rootClazz.name(), org.jboss.jandex.Type.Kind.CLASS));
             } else if (templateData != null) {

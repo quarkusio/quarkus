@@ -41,6 +41,12 @@ public final class ValueResolvers {
     public static ValueResolver listResolver() {
         return new ValueResolver() {
 
+            @Override
+            public int getPriority() {
+                // Use this resolver before collectionResolver()
+                return WithPriority.DEFAULT_PRIORITY + 1;
+            }
+
             public boolean appliesTo(EvalContext context) {
                 return ValueResolver.matchClass(context, List.class);
             }
@@ -397,7 +403,8 @@ public final class ValueResolvers {
 
     private static CompletionStage<Object> listResolveAsync(EvalContext context) {
         List<?> list = (List<?>) context.getBase();
-        switch (context.getName()) {
+        String name = context.getName();
+        switch (name) {
             case "get":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0))
@@ -445,7 +452,14 @@ public final class ValueResolvers {
                             });
                 }
             default:
-                return Results.notFound(context);
+                // Try to use the name as an index
+                int index;
+                try {
+                    index = Integer.parseInt(name);
+                } catch (NumberFormatException e) {
+                    return Results.notFound(context);
+                }
+                return CompletedStage.of(list.get(index));
         }
     }
 

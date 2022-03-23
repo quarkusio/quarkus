@@ -35,29 +35,42 @@ build_module () {
   echo "Installed newly built $pomPath"
 }
 
+# Sets the EDITING variable to the file being edited by set_property
+edit_begin () {
+  EDITING="$quarkusPath/$1"
+}
+
+# Finds a particular property and replaces its value
+set_property () {
+  if [ "$#" -ne 2 ]; then
+      echo "Requires two parameters"
+  fi
+  local propName=$1
+  local propValue=$2
+  sed -i "s/<$propName>.*<\/$propName>/<$propName>$propValue<\/$propName>/g" "$EDITING"
+}
+
 # Arc project transformation
 transform_module "independent-projects/arc"
 
 # Now we need to update CDI, JTA, JPA and common annotations artifacts
-sed -e 's/<version.cdi>2.0.2<\/version.cdi>/<version.cdi>3.0.0<\/version.cdi>/g' \
-    -e 's/<version.jta>1.3.3<\/version.jta>/<version.jta>2.0.0<\/version.jta>/g' \
-    -e 's/<version.jakarta-annotation>1.3.5<\/version.jakarta-annotation>/<version.jakarta-annotation>2.0.0<\/version.jakarta-annotation>/g' \
-    -e 's/<version.jpa>2.2.3<\/version.jpa>/<version.jpa>3.0.0<\/version.jpa>/g' \
- -i "$quarkusPath/independent-projects/arc/pom.xml"
-
+edit_begin "independent-projects/arc/pom.xml"
+set_property "version.cdi" "3.0.0"
+set_property "version.jta" "2.0.0"
+set_property "version.jakarta-annotation" "2.0.0"
+set_property "version.jpa" "3.0.0"
 
 # Test & install modified Arc
 build_module "independent-projects/arc"
 
 # Switch parent BOM to Jakarta artifacts
-
-sed -e 's/<jakarta.inject-api.version>1.0<\/jakarta.inject-api.version>/<jakarta.inject-api.version>2.0.0<\/jakarta.inject-api.version>/g' \
-    -e 's/<jakarta.interceptor-api.version>1.2.5<\/jakarta.interceptor-api.version>/<jakarta.interceptor-api.version>2.0.0<\/jakarta.interceptor-api.version>/g' \
-    -e 's/<jakarta.transaction-api.version>1.3.3<\/jakarta.transaction-api.version>/<jakarta.transaction-api.version>2.0.0<\/jakarta.transaction-api.version>/g' \
-    -e 's/<jakarta.enterprise.cdi-api.version>2.0.2<\/jakarta.enterprise.cdi-api.version>/<jakarta.enterprise.cdi-api.version>3.0.0<\/jakarta.enterprise.cdi-api.version>/g' \
-    -e 's/<jakarta.annotation-api.version>1.3.5<\/jakarta.annotation-api.version>/<jakarta.annotation-api.version>2.0.0<\/jakarta.annotation-api.version>/g' \
-    -e 's/<jakarta.persistence-api.version>2.2.3<\/jakarta.persistence-api.version>/<jakarta.persistence-api.version>3.0.0<\/jakarta.persistence-api.version>/g' \
- -i $BOM
+edit_begin "bom/application/pom.xml"
+set_property "jakarta.inject-api.version" "2.0.0"
+set_property "jakarta.interceptor-api.version" "2.0.0"
+set_property "jakarta.transaction-api.version" "2.0.0"
+set_property "jakarta.enterprise.cdi-api.version" "3.0.0"
+set_property "jakarta.annotation-api.version" "2.0.0"
+set_property "jakarta.persistence-api.version" "3.0.0"
 
 # Install the modified BOM:
 build_module "bom/application"

@@ -298,6 +298,11 @@ public class KubernetesConfig implements PlatformConfiguration {
     @ConfigItem
     SecurityContextConfig securityContext;
 
+    /**
+     * Debug configuration to be set in pods.
+     */
+    DebugConfig remoteDebug;
+
     public Optional<String> getPartOf() {
         return partOf;
     }

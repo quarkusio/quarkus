@@ -198,9 +198,25 @@ public class QuarkusPlugin implements Plugin<Project> {
                     TaskProvider<Task> testClassesTask = tasks.named(JavaPlugin.TEST_CLASSES_TASK_NAME);
                     TaskProvider<Task> testResourcesTask = tasks.named(JavaPlugin.PROCESS_TEST_RESOURCES_TASK_NAME);
 
-                    quarkusGenerateCode.configure(task -> task.dependsOn(resourcesTask));
-                    quarkusGenerateCodeDev.configure(task -> task.dependsOn(resourcesTask));
-                    quarkusGenerateCodeTests.configure(task -> task.dependsOn(resourcesTask));
+                    quarkusGenerateCode.configure(task -> {
+                        task.dependsOn(resourcesTask);
+                        task.setCompileClasspath(
+                                project.getConfigurations().getByName(
+                                        ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.NORMAL)));
+                    });
+                    quarkusGenerateCodeDev.configure(task -> {
+                        task.dependsOn(resourcesTask);
+                        task.setCompileClasspath(
+                                project.getConfigurations().getByName(
+                                        ApplicationDeploymentClasspathBuilder
+                                                .getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT)));
+                    });
+                    quarkusGenerateCodeTests.configure(task -> {
+                        task.dependsOn(resourcesTask);
+                        task.setCompileClasspath(
+                                project.getConfigurations().getByName(
+                                        ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.TEST)));
+                    });
 
                     quarkusDev.configure(task -> {
                         task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,

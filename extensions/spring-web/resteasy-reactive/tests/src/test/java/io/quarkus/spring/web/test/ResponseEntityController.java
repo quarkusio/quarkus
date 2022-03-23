@@ -21,7 +21,7 @@ public class ResponseEntityController {
         return ResponseEntity.ok("hello world");
     }
 
-    @GetMapping(value = "/json", produces = "application/json")
+    @GetMapping(value = "/json")
     public ResponseEntity<SomeClass> jsonPlusHeaders() {
         return ResponseEntity.ok().header("custom-header", "somevalue").body(new SomeClass("dummy"));
     }
@@ -29,5 +29,18 @@ public class ResponseEntityController {
     @GetMapping(value = "/json2", produces = "application/json")
     public ResponseEntity<?> responseEntityWithoutType() {
         return ResponseEntity.ok().body(new SomeClass("dummy"));
+    }
+
+    @GetMapping(value = "/custom-json")
+    public ResponseEntity<SomeClass> customJson() {
+        return ResponseEntity.ok().header("custom-header", "somevalue").header("content-type", "application/jsontest")
+                .body(new SomeClass("dummy"));
+    }
+
+    @GetMapping(value = "/content-type")
+    public ResponseEntity<SomeClass> contentType() {
+        return ResponseEntity.ok().header("custom-header", "somevalue")
+                .contentType(org.springframework.http.MediaType.valueOf("application/jsontest"))
+                .body(new SomeClass("dummy"));
     }
 }

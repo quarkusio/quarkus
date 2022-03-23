@@ -147,7 +147,9 @@ class HibernateValidatorProcessor {
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
             additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyContextLocaleResolver"));
+                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.locale.ResteasyContextLocaleResolver"));
             syntheticBeanBuildItems.produce(SyntheticBeanBuildItem.configure(ResteasyConfigSupport.class)
                     .scope(Singleton.class)
                     .unremovable()
@@ -159,7 +161,15 @@ class HibernateValidatorProcessor {
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveEndPointValidationInterceptor"));
             additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveContextLocaleResolver"));
+                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.locale.VertxLocaleResolver"));
+        }
+        if (capabilities.isPresent(Capability.SMALLRYE_GRAPHQL)) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.locale.VertxLocaleResolver"));
         }
 
         // A constraint validator with an injection point but no scope is added as @Dependent

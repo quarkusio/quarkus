@@ -25,6 +25,7 @@ public class QuarkusResteasyReactiveDotNames {
     private static final String[] PACKAGES_IGNORED_FOR_REFLECTION = {
             // JSON-P
             "javax.json.",
+            "jakarta.json.",
             // Jackson
             "com.fasterxml.jackson.databind.",
             // JAX-RS

@@ -8,6 +8,7 @@ import javax.ws.rs.core.MediaType;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageFormDataBase;
@@ -82,6 +83,16 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
 
         assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
         assertContainsFile(response, "file", MediaType.APPLICATION_OCTET_STREAM, "lorem.txt");
+    }
+
+    @EnabledIfSystemProperty(named = "test-resteasy-reactive-large-files", matches = "true")
+    @Test
+    public void testWithLargeFiles() {
+        RestAssured.given()
+                .get("/multipart/output/with-large-file")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200);
     }
 
     @Test

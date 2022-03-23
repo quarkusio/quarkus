@@ -1,0 +1,10 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.bootstrap
+displayName: Adjust bootstrap
+recipeList:
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.apache.maven
+      artifactId: maven-plugin-api
+      exclusionGroupId: javax.inject
+      exclusionArtifactId: javax.inject

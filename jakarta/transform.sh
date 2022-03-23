@@ -10,6 +10,18 @@
 quarkusPath="$(pwd)"
 echo "Path to quarkus repo is: $quarkusPath"
 
+# Prepare OpenRewrite - we temporarily build a local version as we need a patch
+git clone git@github.com:gsmet/rewrite.git target/rewrite
+pushd target/rewrite
+git checkout remove-exclusion-dependency-management
+./gradlew -x test publishToMavenLocal
+popd
+
+git clone git@github.com:openrewrite/rewrite-maven-plugin.git target/rewrite-maven-plugin
+pushd target/rewrite-maven-plugin
+mvn clean install -DskipTests -DskipITs
+popd
+
 # Set up jbang alias, we are using latest released transformer version
 jbang alias add --name transform org.eclipse.transformer:org.eclipse.transformer.cli:0.2.0
 
@@ -29,4 +41,5 @@ sed -i 's/<version.jpa>2.2.3<\/version.jpa>/<version.jpa>3.0.0<\/version.jpa>/g'
 # Execute build and tests to verify functionality
 ./mvnw -B clean install -f "$quarkusPath/independent-projects/arc/pom.xml"
 
-
+# Bootstrap
+./mvnw rewrite:run -f "$quarkusPath/independent-projects/bootstrap/pom.xml"

@@ -106,7 +106,7 @@ The yaml, json, xml and sql changeLog file formats are also supported.
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext
     https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
     http://www.liquibase.org/xml/ns/dbchangelog
-    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
 
     <changeSet author="quarkus" id="1">
         <createTable tableName="quarkus">

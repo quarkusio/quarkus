@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {

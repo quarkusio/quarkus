@@ -109,7 +109,8 @@ public final class EngineBuilder {
                 ValueResolvers.mapEntryResolver(), ValueResolvers.collectionResolver(), ValueResolvers.listResolver(),
                 ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
                 ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver(), ValueResolvers.orEmpty(),
-                ValueResolvers.arrayResolver());
+                ValueResolvers.arrayResolver(), ValueResolvers.plusResolver(), ValueResolvers.minusResolver(),
+                ValueResolvers.modResolver(), ValueResolvers.numberValueResolver());
     }
 
     /**

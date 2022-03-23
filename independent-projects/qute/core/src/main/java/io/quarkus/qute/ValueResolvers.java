@@ -361,6 +361,187 @@ public final class ValueResolvers {
         };
     }
 
+    public static ValueResolver numberValueResolver() {
+        return new ValueResolver() {
+
+            public boolean appliesTo(EvalContext context) {
+                Object base = context.getBase();
+                String name = context.getName();
+                return base != null
+                        && (base instanceof Number)
+                        && context.getParams().isEmpty()
+                        && ("intValue".equals(name) || "longValue".equals(name) || "floatValue".equals(name)
+                                || "doubleValue".equals(name) || "byteValue".equals(name) || "shortValue".equals(name));
+            }
+
+            @Override
+            public CompletionStage<Object> resolve(EvalContext context) {
+                switch (context.getName()) {
+                    case "intValue":
+                        return CompletedStage.of(((Number) context.getBase()).intValue());
+                    case "longValue":
+                        return CompletedStage.of(((Number) context.getBase()).longValue());
+                    case "floatValue":
+                        return CompletedStage.of(((Number) context.getBase()).floatValue());
+                    case "doubleValue":
+                        return CompletedStage.of(((Number) context.getBase()).doubleValue());
+                    case "byteValue":
+                        return CompletedStage.of(((Number) context.getBase()).byteValue());
+                    case "shortValue":
+                        return CompletedStage.of(((Number) context.getBase()).shortValue());
+                    default:
+                        throw new IllegalArgumentException();
+                }
+            }
+        };
+    }
+
+    public static ValueResolver plusResolver() {
+        return new IntArithmeticResolver() {
+
+            @Override
+            protected boolean appliesToName(String name) {
+                return "plus".equals(name) || "+".equals(name);
+            }
+
+            @Override
+            protected Object compute(Long op1, Long op2) {
+                return op1 + op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Long op2) {
+                return op1 + op2;
+            }
+
+            @Override
+            protected Object compute(Long op1, Integer op2) {
+                return op1 + op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Integer op2) {
+                return op1 + op2;
+            }
+
+        };
+
+    }
+
+    public static ValueResolver minusResolver() {
+        return new IntArithmeticResolver() {
+
+            @Override
+            protected boolean appliesToName(String name) {
+                return "minus".equals(name) || "-".equals(name);
+            }
+
+            @Override
+            protected Object compute(Long op1, Long op2) {
+                return op1 - op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Long op2) {
+                return op1 - op2;
+            }
+
+            @Override
+            protected Object compute(Long op1, Integer op2) {
+                return op1 - op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Integer op2) {
+                return op1 - op2;
+            }
+
+        };
+    }
+
+    public static ValueResolver modResolver() {
+        return new IntArithmeticResolver() {
+
+            @Override
+            protected boolean appliesToName(String name) {
+                return "mod".equals(name);
+            }
+
+            @Override
+            protected Object compute(Long op1, Long op2) {
+                return op1 % op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Long op2) {
+                return op1 % op2;
+            }
+
+            @Override
+            protected Object compute(Long op1, Integer op2) {
+                return op1 % op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Integer op2) {
+                return op1 % op2;
+            }
+
+        };
+    }
+
+    static abstract class IntArithmeticResolver implements ValueResolver {
+
+        public boolean appliesTo(EvalContext context) {
+            Object base = context.getBase();
+            return base != null
+                    && (base instanceof Integer || base instanceof Long)
+                    && context.getParams().size() == 1
+                    && appliesToName(context.getName());
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
+                @Override
+                public Object apply(Object param) {
+                    Object base = context.getBase();
+                    if (param instanceof Integer) {
+                        Integer intParam = (Integer) param;
+                        if (base instanceof Integer) {
+                            return compute((Integer) base, intParam);
+                        } else if (base instanceof Long) {
+                            return compute((Long) base, intParam);
+                        } else {
+                            throw new IllegalStateException("Unsupported base operand: " + base.getClass());
+                        }
+                    } else if (param instanceof Long) {
+                        Long longParam = (Long) param;
+                        if (base instanceof Integer) {
+                            return compute((Integer) base, longParam);
+                        } else if (base instanceof Long) {
+                            return compute((Long) base, longParam);
+                        } else {
+                            throw new IllegalStateException("Unsupported base operand: " + base.getClass());
+                        }
+                    }
+                    return Results.notFound(context);
+                }
+            });
+        }
+
+        protected abstract boolean appliesToName(String name);
+
+        protected abstract Object compute(Integer op1, Integer op2);
+
+        protected abstract Object compute(Long op1, Integer op2);
+
+        protected abstract Object compute(Integer op1, Long op2);
+
+        protected abstract Object compute(Long op1, Long op2);
+
+    }
+
     private static Object takeArray(int n, Object sourceArray) {
         int size = Array.getLength(sourceArray);
         if (n < 1 || n > size) {

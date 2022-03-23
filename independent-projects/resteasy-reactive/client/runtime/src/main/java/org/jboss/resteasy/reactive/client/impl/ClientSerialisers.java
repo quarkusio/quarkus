@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import io.vertx.core.buffer.Buffer;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -104,10 +103,10 @@ public class ClientSerialisers extends Serialisers {
 
         if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
             if (writerInterceptors == null) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                VertxBufferOutputStream out = new VertxBufferOutputStream();
                 writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
-                        entity.getMediaType(), headerMap, baos);
-                return Buffer.buffer(baos.toByteArray());
+                        entity.getMediaType(), headerMap, out);
+                return out.getBuffer();
             } else {
                 return runClientWriterInterceptors(entityObject, entityClass, entityType, entity.getAnnotations(),
                         entity.getMediaType(), headerMap, writer, writerInterceptors, properties, serialisers,

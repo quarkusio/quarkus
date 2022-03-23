@@ -198,6 +198,24 @@ public class BasicMappingTest {
     }
 
     @Test
+    public void verifyJsonContentResponseEntityWithCustomJsonHeader() {
+        when().get(ResponseEntityController.CONTROLLER_PATH + "/custom-json")
+                .then()
+                .statusCode(200)
+                .contentType("application/jsontest")
+                .header("custom-header", "somevalue");
+    }
+
+    @Test
+    public void verifyJsonContentResponseEntityWithContentType() {
+        when().get(ResponseEntityController.CONTROLLER_PATH + "/content-type")
+                .then()
+                .statusCode(200)
+                .contentType("application/jsontest")
+                .header("custom-header", "somevalue");
+    }
+
+    @Test
     public void verifyEmptyContentResponseStatus() {
         when().get(ResponseStatusController.CONTROLLER_PATH + "/noContent")
                 .then()

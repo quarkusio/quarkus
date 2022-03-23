@@ -1,23 +1,22 @@
-package io.quarkus.hibernate.validator.runtime.jaxrs;
+package io.quarkus.hibernate.validator.runtime.locale;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
-
-import javax.ws.rs.core.HttpHeaders;
 
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolverContext;
 
 abstract class AbstractLocaleResolver implements LocaleResolver {
 
-    protected abstract HttpHeaders getHeaders();
+    protected abstract Map<String, List<String>> getHeaders();
 
     @Override
     public Locale resolve(LocaleResolverContext context) {
         Optional<List<Locale.LanguageRange>> localePriorities = getAcceptableLanguages();
         if (!localePriorities.isPresent()) {
-            return context.getDefaultLocale();
+            return null;
         }
 
         List<Locale> resolvedLocales = Locale.filter(localePriorities.get(), context.getSupportedLocales());
@@ -25,13 +24,13 @@ abstract class AbstractLocaleResolver implements LocaleResolver {
             return resolvedLocales.get(0);
         }
 
-        return context.getDefaultLocale();
+        return null;
     }
 
     private Optional<List<Locale.LanguageRange>> getAcceptableLanguages() {
-        HttpHeaders httpHeaders = getHeaders();
+        Map<String, List<String>> httpHeaders = getHeaders();
         if (httpHeaders != null) {
-            List<String> acceptLanguageList = httpHeaders.getRequestHeader("Accept-Language");
+            List<String> acceptLanguageList = httpHeaders.get("Accept-Language");
             if (acceptLanguageList != null && !acceptLanguageList.isEmpty()) {
                 return Optional.of(Locale.LanguageRange.parse(acceptLanguageList.get(0)));
             }

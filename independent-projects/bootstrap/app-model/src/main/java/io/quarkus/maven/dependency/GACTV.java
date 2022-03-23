@@ -15,6 +15,10 @@ public class GACTV implements ArtifactCoords, Serializable {
         return new GACTV(groupId, artifactId, null, TYPE_POM, version);
     }
 
+    public static ArtifactCoords jar(String groupId, String artifactId, String version) {
+        return new GACTV(groupId, artifactId, null, TYPE_JAR, version);
+    }
+
     protected static String[] split(String str, String[] parts) {
         final int versionSep = str.lastIndexOf(':');
         if (versionSep <= 0 || versionSep == str.length() - 1) {

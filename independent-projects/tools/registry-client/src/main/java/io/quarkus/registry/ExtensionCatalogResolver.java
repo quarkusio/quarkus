@@ -420,8 +420,8 @@ public class ExtensionCatalogResolver {
         int platformIndex = 0;
         for (Platform platform : pc.getPlatforms()) {
             platformIndex++;
+            int releaseIndex = 0;
             for (PlatformStream stream : platform.getStreams()) {
-                int releaseIndex = 0;
                 for (PlatformRelease release : stream.getReleases()) {
                     releaseIndex++;
                     final String quarkusVersion = release.getQuarkusCoreVersion();
@@ -775,8 +775,8 @@ public class ExtensionCatalogResolver {
             RegistryExtensionResolver registry, int platformIndex,
             Platform p) throws RegistryResolutionException {
 
+        int releaseIndex = 0;
         for (PlatformStream s : p.getStreams()) {
-            int releaseIndex = 0;
             for (PlatformRelease r : s.getReleases()) {
                 ++releaseIndex;
                 int memberIndex = 0;

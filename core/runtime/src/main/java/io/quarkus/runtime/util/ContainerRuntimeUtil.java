@@ -1,4 +1,4 @@
-package io.quarkus.deployment.util;
+package io.quarkus.runtime.util;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -47,7 +47,7 @@ public final class ContainerRuntimeUtil {
                     .redirectErrorStream(true);
             versionProcess = pb.start();
             versionProcess.waitFor();
-            return new String(FileUtil.readFileContents(versionProcess.getInputStream()), StandardCharsets.UTF_8);
+            return new String(versionProcess.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException | InterruptedException e) {
             // If an exception is thrown in the process, just return an empty String
             log.debugf(e, "Failure to read version output from %s", containerRuntime.getExecutableName());

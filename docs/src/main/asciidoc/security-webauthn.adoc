@@ -519,7 +519,7 @@ in `src/main/resources/META-INF/resources/index.html`:
   <head>
     <meta charset="UTF-8">
     <title>Login</title>
-    <script src="/webauthn/webauthn.js" type="text/javascript" charset="UTF-8"></script>
+    <script src="/q/webauthn/webauthn.js" type="text/javascript" charset="UTF-8"></script>
     <style>
      .container {
       display: grid;
@@ -563,7 +563,7 @@ in `src/main/resources/META-INF/resources/index.html`:
       <li><a href="/api/public">Public API</a></li>
       <li><a href="/api/users/me">User API</a></li>
       <li><a href="/api/admin">Admin API</a></li>
-      <li><a href="/webauthn/logout">Logout</a></li>
+      <li><a href="/q/webauthn/logout">Logout</a></li>
     </nav>
     <div class="container">
      <div class="item">
@@ -589,9 +589,9 @@ in `src/main/resources/META-INF/resources/index.html`:
     </div>
     <script type="text/javascript">
       const webAuthn = new WebAuthn({
-        callbackPath: '/webauthn/callback',
-        registerPath: '/webauthn/register',
-        loginPath: '/webauthn/login'
+        callbackPath: '/q/webauthn/callback',
+        registerPath: '/q/webauthn/register',
+        loginPath: '/q/webauthn/login'
       });
       
       const result = document.getElementById('result');
@@ -683,7 +683,7 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 === Obtain a registration challenge
 
-`POST /webauthn/register`: Set up and obtain a registration challenge
+`POST /q/webauthn/register`: Set up and obtain a registration challenge
 
 [source,json]
 .Request
@@ -731,7 +731,7 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 === Obtain a login challenge
 
-`POST /webauthn/login`: Set up and obtain a login challenge
+`POST /q/webauthn/login`: Set up and obtain a login challenge
 
 [source,json]
 .Request
@@ -768,7 +768,7 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 
 === Trigger a registration
 
-`POST /webauthn/callback`: Trigger a registration
+`POST /q/webauthn/callback`: Trigger a registration
 
 [source,json]
 .Request
@@ -788,7 +788,7 @@ This returns a 204 with no body.
 
 === Trigger a login
 
-`POST /webauthn/callback`: Trigger a login
+`POST /q/webauthn/callback`: Trigger a login
 
 [source,json]
 .Request
@@ -810,24 +810,24 @@ This returns a 204 with no body.
 
 === Logout
 
-`GET /webauthn/logout`: Logs you out
+`GET /q/webauthn/logout`: Logs you out
 
 This returns a 302 redirect to the root URI of your application.
 
 == WebAuthn JavaScript library
 
 Because there's so much JavaScript needed to set WebAuthn up in the browser, the Quarkus WebAuthn extension ships with
-a JavaScript library to help you talk to the WebAuthn endpoints, at `/webauthn/webauthn.js`. You can set it up like this:
+a JavaScript library to help you talk to the WebAuthn endpoints, at `/q/webauthn/webauthn.js`. You can set it up like this:
 
 [source,javascript]
 ----
-<script src="/webauthn/webauthn.js" type="text/javascript" charset="UTF-8"></script>
+<script src="/q/webauthn/webauthn.js" type="text/javascript" charset="UTF-8"></script>
 <script type="text/javascript">
   // configure where our endpoints are
   const webAuthn = new WebAuthn({
-    callbackPath: '/webauthn/callback',
-    registerPath: '/webauthn/register',
-    loginPath: '/webauthn/login'
+    callbackPath: '/q/webauthn/callback',
+    registerPath: '/q/webauthn/register',
+    loginPath: '/q/webauthn/login'
   });
   // use the webAuthn APIs here
 </script>

@@ -20,6 +20,7 @@ import io.quarkus.security.webauthn.WebAuthnIdentityProvider;
 import io.quarkus.security.webauthn.WebAuthnRecorder;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
 import io.quarkus.security.webauthn.WebAuthnTrustedIdentityProvider;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 
@@ -46,8 +47,10 @@ class QuarkusSecurityWebAuthnProcessor {
     public void setup(
             WebAuthnRecorder recorder,
             VertxWebRouterBuildItem vertxWebRouterBuildItem,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter());
+            BeanContainerBuildItem beanContainerBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+        recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter(),
+                nonApplicationRootPathBuildItem.getNonApplicationRootPath());
     }
 
     @BuildStep(onlyIf = IsEnabled.class)

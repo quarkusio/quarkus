@@ -31,7 +31,7 @@ public class WebAuthnRecorder {
         this.config = config;
     }
 
-    public void setupRoutes(BeanContainer beanContainer, RuntimeValue<Router> routerValue) {
+    public void setupRoutes(BeanContainer beanContainer, RuntimeValue<Router> routerValue, String prefix) {
         WebAuthnSecurity security = beanContainer.instance(WebAuthnSecurity.class);
         WebAuthnAuthenticationMechanism authMech = beanContainer.instance(WebAuthnAuthenticationMechanism.class);
         IdentityProviderManager identityProviderManager = beanContainer.instance(IdentityProviderManager.class);
@@ -39,11 +39,12 @@ public class WebAuthnRecorder {
         Router router = routerValue.getValue();
         BodyHandler bodyHandler = BodyHandler.create();
         // FIXME: paths configurable
-        router.post("/webauthn/login").handler(bodyHandler).handler(controller::login);
-        router.post("/webauthn/register").handler(bodyHandler).handler(controller::register);
-        router.post("/webauthn/callback").handler(bodyHandler).handler(controller::callback);
-        router.get("/webauthn/webauthn.js").handler(controller::javascript);
-        router.get("/webauthn/logout").handler(controller::logout);
+        // prefix is the non-application root path, ends with a slash: defaults to /q/
+        router.post(prefix + "webauthn/login").handler(bodyHandler).handler(controller::login);
+        router.post(prefix + "webauthn/register").handler(bodyHandler).handler(controller::register);
+        router.post(prefix + "webauthn/callback").handler(bodyHandler).handler(controller::callback);
+        router.get(prefix + "webauthn/webauthn.js").handler(controller::javascript);
+        router.get(prefix + "webauthn/logout").handler(controller::logout);
     }
 
     public Supplier<WebAuthnAuthenticationMechanism> setupWebAuthnAuthenticationMechanism() {

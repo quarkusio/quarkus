@@ -17,6 +17,6 @@ public class WebAuthnTest {
 
     @Test
     public void testJavaScriptFile() {
-        RestAssured.get("/webauthn/webauthn.js").then().statusCode(200).body(Matchers.startsWith("\"use strict\";"));
+        RestAssured.get("/q/webauthn/webauthn.js").then().statusCode(200).body(Matchers.startsWith("\"use strict\";"));
     }
 }

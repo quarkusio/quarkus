@@ -1,6 +1,6 @@
 package io.quarkus.narayana.interceptor;
 
-import io.quarkus.narayana.jta.Rollback;
+import io.quarkus.transaction.annotations.Rollback;
 
 // prevent a rollback to counter the default
 @Rollback(false)

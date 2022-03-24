@@ -1165,6 +1165,39 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testModuleCompileOrder() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/multimodule-parent-dep", "projects/multimodule-compile-order");
+        runAndCheck("-Dquarkus.bootstrap.effective-model-builder");
+
+        assertThat(DevModeTestUtils.getHttpResponse("/app/hello/")).isEqualTo("hello");
+
+        // modify classes in all the modules and make sure they are compiled in a correct order
+        File resource = new File(testDir, "level0/src/main/java/org/acme/level0/Level0Service.java");
+        filter(resource, Collections.singletonMap("getGreeting()", "getGreeting(String name)"));
+        filter(resource, Collections.singletonMap("return greeting;", "return greeting + \" \" + name;"));
+
+        resource = new File(testDir, "level1/src/main/java/org/acme/level1/Level1Service.java");
+        filter(resource, Collections.singletonMap("getGreetingFromLevel0()", "getGreetingFromLevel0(String name)"));
+        filter(resource, Collections.singletonMap("level0Service.getGreeting()", "level0Service.getGreeting(name)"));
+
+        resource = new File(testDir, "level2/submodule/src/main/java/org/acme/level2/submodule/Level2Service.java");
+        filter(resource, Collections.singletonMap("getGreetingFromLevel1()", "getGreetingFromLevel1(String name)"));
+        filter(resource,
+                Collections.singletonMap("level1Service.getGreetingFromLevel0()", "level1Service.getGreetingFromLevel0(name)"));
+
+        resource = new File(testDir, "runner/src/main/java/org/acme/rest/HelloResource.java");
+        filter(resource, Collections.singletonMap("level0Service.getGreeting()",
+                "level0Service.getGreeting(\"world\")"));
+        filter(resource, Collections.singletonMap("level2Service.getGreetingFromLevel1()",
+                "level2Service.getGreetingFromLevel1(\"world\")"));
+
+        await()
+                .pollDelay(300, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello world"));
+    }
+
+    @Test
     public void testThatGenerateCodeGoalIsNotTriggeredIfNotConfigured() throws IOException, MavenInvocationException {
         testDir = initProject("projects/classic-no-generate");
         // the skip parameter triggers a log statement by the generate goal,

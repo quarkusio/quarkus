@@ -48,7 +48,7 @@ public class BasicLoggingEnabler implements BeforeAllCallback {
     }
 
     @Override
-    public void beforeAll(ExtensionContext context) {
+    public synchronized void beforeAll(ExtensionContext context) {
         if (enabled == null) {
             enabled = context.getConfigurationParameter(CFGKEY_ENABLED).map(Boolean::valueOf).orElse(Boolean.TRUE);
         }

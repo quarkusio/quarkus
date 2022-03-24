@@ -25,6 +25,14 @@ public class GrpcCommonProcessor {
         for (ClassInfo message : messages) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, message.name().toString()));
         }
+
+        // We also need to include enums.
+        Collection<ClassInfo> enums = combinedIndex.getIndex()
+                .getAllKnownSubclasses(GrpcDotNames.PROTOCOL_MESSAGE_ENUM);
+        for (ClassInfo en : enums) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, en.name().toString()));
+        }
+
         Collection<ClassInfo> builders = combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.MESSAGE_BUILDER);
         for (ClassInfo builder : builders) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, builder.name().toString()));

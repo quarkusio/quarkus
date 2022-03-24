@@ -51,8 +51,6 @@
         <assertj.version>3.22.0</assertj.version>
         <jackson.version>2.13.1</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
-        <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
-        <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
         <junit.version>5.8.2</junit.version>
         <commons-compress.version>1.21</commons-compress.version>
         <jboss-logging.version>3.4.3.Final</jboss-logging.version>

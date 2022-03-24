@@ -55,7 +55,7 @@ public class ProxyFactory<T> {
         if (!findConstructor(superClass, configuration.isAllowPackagePrivate(), true)) {
             throw new IllegalArgumentException(
                     "A proxy cannot be created for class " + this.superClassName
-                            + " because it does contain a no-arg constructor");
+                            + " because it does not declare a no-arg constructor");
         }
         if (Modifier.isFinal(superClass.getModifiers())) {
             throw new IllegalArgumentException(
@@ -88,7 +88,7 @@ public class ProxyFactory<T> {
                 //ctor needs to be @Inject or the only constructor
                 if (constructor.isAnnotationPresent(Inject.class)
                         || (ctors.length == 1 && constructor.getParameterCount() > 0)) {
-                    if (!isModifiedCorrect(allowPackagePrivate, constructor)) {
+                    if (!isModifierCorrect(allowPackagePrivate, constructor)) {
                         return false;
                     }
                     //if we have a constructor with only simple arguments (i.e. that also have a no-arg constructor)
@@ -110,13 +110,13 @@ public class ProxyFactory<T> {
         for (Constructor<?> constructor : ctors) {
             if (constructor.getParameterCount() == 0) {
                 injectConstructor = constructor;
-                return isModifiedCorrect(allowPackagePrivate, constructor);
+                return isModifierCorrect(allowPackagePrivate, constructor);
             }
         }
         return false;
     }
 
-    private boolean isModifiedCorrect(boolean allowPackagePrivate, Constructor<?> constructor) {
+    private boolean isModifierCorrect(boolean allowPackagePrivate, Constructor<?> constructor) {
         if (allowPackagePrivate) {
             return !Modifier.isPrivate(constructor.getModifiers());
         }

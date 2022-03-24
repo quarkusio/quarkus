@@ -56,6 +56,10 @@ public class PersistentLoginManager {
     }
 
     public RestoreResult restore(RoutingContext context) {
+        return restore(context, cookieName);
+    }
+
+    public RestoreResult restore(RoutingContext context, String cookieName) {
         Cookie existing = context.getCookie(cookieName);
         // If there is no credential cookie, we have nothing to restore.
         if (existing == null) {
@@ -100,6 +104,11 @@ public class PersistentLoginManager {
     }
 
     public void save(SecurityIdentity identity, RoutingContext context, RestoreResult restoreResult, boolean secureCookie) {
+        save(identity.getPrincipal().getName(), context, cookieName, restoreResult, secureCookie);
+    }
+
+    public void save(String value, RoutingContext context, String cookieName, RestoreResult restoreResult,
+            boolean secureCookie) {
         if (restoreResult != null) {
             if (!restoreResult.newCookieNeeded) {
                 return;
@@ -115,7 +124,7 @@ public class PersistentLoginManager {
             log.debugf("The new cookie will expire at %s", new Date(timeout).toString());
             contents.append(timeout);
             contents.append(":");
-            contents.append(identity.getPrincipal().getName());
+            contents.append(value);
             byte[] encrypted = cipher.doFinal(contents.toString().getBytes(StandardCharsets.UTF_8));
             ByteBuffer message = ByteBuffer.allocate(1 + iv.length + encrypted.length);
             message.put((byte) iv.length);
@@ -127,6 +136,16 @@ public class PersistentLoginManager {
             throw new RuntimeException(e);
         }
 
+    }
+
+    public void clear(RoutingContext ctx) {
+        // Vert.x sends back a set-cookie with max-age and expiry but no path, so we have to set it first,
+        // otherwise web clients don't clear it
+        Cookie cookie = ctx.request().getCookie(cookieName);
+        if (cookie != null) {
+            cookie.setPath("/");
+        }
+        ctx.response().removeCookie(cookieName);
     }
 
     public static class RestoreResult {

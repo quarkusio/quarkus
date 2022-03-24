@@ -383,6 +383,28 @@ public class BytecodeRecorderTestCase {
         }
     }
 
+    @Test
+    public void testConstantInjection() throws Exception {
+        runTest(generator -> {
+            generator.registerConstant(TestJavaBean.class, new TestJavaBean("Some string", 42));
+            TestRecorderWithTestJavaBeanInjectedInConstructor recorder = generator
+                    .getRecordingProxy(TestRecorderWithTestJavaBeanInjectedInConstructor.class);
+            recorder.retrieveConstant();
+        }, new TestJavaBean("Some string", 42));
+    }
+
+    @Test
+    public void testConstantInjectionAndSubstitution() throws Exception {
+        runTest(generator -> {
+            generator.registerConstant(NonSerializable.class, new NonSerializable("Some string", 42));
+            generator.registerSubstitution(NonSerializable.class, NonSerializable.Serialized.class,
+                    NonSerializable.Substitution.class);
+            TestRecorderWithNonSerializableInjectedInConstructor recorder = generator
+                    .getRecordingProxy(TestRecorderWithNonSerializableInjectedInConstructor.class);
+            recorder.retrieveConstant();
+        }, new NonSerializable("Some string", 42));
+    }
+
     private static class TestClassOutput implements ClassOutput {
         private final TestClassLoader tcl;
 

@@ -914,7 +914,7 @@ public final class ExtensionLoader {
                                                             return new RuntimeValue<>(object);
                                                         }
                                                     }
-                                                    throw new RuntimeException("Cannot inject type " + s);
+                                                    return null;
                                                 })
                                         : null;
                                 for (int i = 0; i < methodArgs.length; i++) {

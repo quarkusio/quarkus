@@ -19,8 +19,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * A factory that can generate proxies of a class.
@@ -90,17 +88,6 @@ public class ProxyFactory<T> {
                         || (ctors.length == 1 && constructor.getParameterCount() > 0)) {
                     if (!isModifierCorrect(allowPackagePrivate, constructor)) {
                         return false;
-                    }
-                    //if we have a constructor with only simple arguments (i.e. that also have a no-arg constructor)
-                    //then we will use that, and just create the types
-                    //this allows us to create proxys for recorders that use constructor injection for config objects
-                    for (var i : constructor.getParameterTypes()) {
-                        if (!(i.isAnnotationPresent(ConfigRoot.class) || i == RuntimeValue.class)) {
-                            return false;
-                        }
-                        if (!findConstructor(i, allowPackagePrivate, false)) {
-                            return false;
-                        }
                     }
                     injectConstructor = constructor;
                     return true;
@@ -271,9 +258,18 @@ public class ProxyFactory<T> {
                 args[0] = handler;
                 Class<?>[] parameterTypes = this.constructor.getParameterTypes();
                 for (int i = 1; i < constructor.getParameterCount(); ++i) {
-                    Constructor<?> ctor = parameterTypes[i].getConstructor();
-                    ctor.setAccessible(true);
-                    args[i] = ctor.newInstance();
+                    Constructor<?> paramConstructor = null;
+                    try {
+                        paramConstructor = parameterTypes[i].getConstructor();
+                    } catch (NoSuchMethodException e) {
+                        // We won't use the constructor
+                    }
+                    if (paramConstructor != null) {
+                        paramConstructor.setAccessible(true);
+                        args[i] = paramConstructor.newInstance();
+                    } else {
+                        args[i] = null;
+                    }
                 }
                 return (T) constructor.newInstance(args);
             } catch (Exception e) {

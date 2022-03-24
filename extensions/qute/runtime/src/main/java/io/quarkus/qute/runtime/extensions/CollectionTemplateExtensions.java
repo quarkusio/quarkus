@@ -5,10 +5,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.NoSuchElementException;
 
 import javax.enterprise.inject.Vetoed;
 
-import io.quarkus.qute.Results;
 import io.quarkus.qute.TemplateExtension;
 
 @Vetoed // Make sure no bean is created from this class
@@ -19,15 +19,9 @@ public class CollectionTemplateExtensions {
         return list.get(index);
     }
 
-    @SuppressWarnings("unchecked")
     @TemplateExtension(matchRegex = "\\d{1,10}")
     static <T> T getByIndex(List<T> list, String index) {
-        int idx = Integer.parseInt(index);
-        if (idx >= list.size()) {
-            // Be consistent with property resolvers
-            return (T) Results.NotFound.from(index);
-        }
-        return list.get(idx);
+        return list.get(Integer.parseInt(index));
     }
 
     static <T> Iterator<T> reversed(List<T> list) {
@@ -70,6 +64,20 @@ public class CollectionTemplateExtensions {
     // and makes it possible to validate expressions derived from {list.orEmpty}
     static <T> Collection<T> orEmpty(Collection<T> iterable) {
         return iterable != null ? iterable : Collections.emptyList();
+    }
+
+    static <T> T first(List<T> list) {
+        if (list.isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        return list.get(0);
+    }
+
+    static <T> T last(List<T> list) {
+        if (list.isEmpty()) {
+            throw new NoSuchElementException();
+        }
+        return list.get(list.size() - 1);
     }
 
 }

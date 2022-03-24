@@ -1599,7 +1599,7 @@ Quarkus provides a set of built-in extension methods.
 
 TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket notation for keys that are not legal identifiers: `{map['my key']}`.
 
-===== Collections
+==== Lists
 
 * `get(index)`: Returns the element at the specified position in a list
 ** `{list.get(0)}`
@@ -1612,6 +1612,12 @@ TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket n
 
 * `takeLast`: Returns the last `n` elements from the given list; throws an `IndexOutOfBoundsException` if `n` is out of range
 ** `{#for r in recordsList.takeLast(3)}`
+
+* `first`: Returns the first element of the given list; throws an `NoSuchElementException` if the list is empty
+** `{recordsList.first}`
+
+* `last`: Returns the last element of the given list; throws an `NoSuchElementException` if the list is empty
+** `{recordsList.last}`
 
 TIP: A list element can be accessed directly via an index: `{list.10}` or even `{list[10]}`.
 

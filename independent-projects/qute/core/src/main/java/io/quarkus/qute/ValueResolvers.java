@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -410,12 +411,8 @@ public final class ValueResolvers {
                     return context.evaluate(context.getParams().get(0))
                             .thenApply(r -> {
                                 try {
-                                    int idx = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
-                                    if (idx >= list.size()) {
-                                        // Be consistent with property resolvers
-                                        return Results.NotFound.from(context);
-                                    }
-                                    return list.get(idx);
+                                    int n = r instanceof Integer ? (Integer) r : Integer.parseInt(r.toString());
+                                    return list.get(n);
                                 } catch (NumberFormatException e) {
                                     return Results.NotFound.from(context);
                                 }
@@ -451,6 +448,16 @@ public final class ValueResolvers {
                                 }
                             });
                 }
+            case "first":
+                if (list.isEmpty()) {
+                    throw new NoSuchElementException();
+                }
+                return CompletedStage.of(list.get(0));
+            case "last":
+                if (list.isEmpty()) {
+                    throw new NoSuchElementException();
+                }
+                return CompletedStage.of(list.get(list.size() - 1));
             default:
                 // Try to use the name as an index
                 int index;

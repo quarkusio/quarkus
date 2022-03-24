@@ -220,8 +220,31 @@
                         <skip>${format.skip}</skip>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.openrewrite.maven</groupId>
+                    <artifactId>rewrite-maven-plugin</artifactId>
+                    <version>4.21.0-SNAPSHOT</version>
+                    <configuration>
+                        <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                        <activeStyles>
+                            <style>io.quarkus.style.maven</style>
+                        </activeStyles>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>io.quarkus.jakarta-versions</recipe>
+                        <recipe>io.quarkus.maven.javax.versions</recipe>
+                    </activeRecipes>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <distributionManagement>

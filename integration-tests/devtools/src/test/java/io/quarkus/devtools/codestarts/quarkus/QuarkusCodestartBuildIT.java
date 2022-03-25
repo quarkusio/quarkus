@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,7 +32,6 @@ import io.quarkus.devtools.testing.WrapperRunner;
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled("uses https://stage.code.quarkus.io/api which is not available currently")
 class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     private static final Path testDirPath = Paths.get("target/quarkus-codestart-build-test");

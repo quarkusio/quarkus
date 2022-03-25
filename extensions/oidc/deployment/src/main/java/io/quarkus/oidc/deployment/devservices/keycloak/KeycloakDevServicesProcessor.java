@@ -3,6 +3,7 @@ package io.quarkus.oidc.deployment.devservices.keycloak;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -58,6 +60,7 @@ import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -407,7 +410,8 @@ public class KeycloakDevServicesProcessor {
             if (keycloakX) {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
-                withCommand(KEYCLOAK_QUARKUS_START_CMD);
+                withCommand(KEYCLOAK_QUARKUS_START_CMD
+                        + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_WILDFLY_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
@@ -521,21 +525,55 @@ public class KeycloakDevServicesProcessor {
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", null, capturedDevServicesConfiguration.webClienTimeout);
 
-            HttpResponse<Buffer> response = client.postAbs(keycloakUrl + "/admin/realms")
+            HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
                     .sendBuffer(Buffer.buffer().appendString(JsonSerialization.writeValueAsString(realm)))
                     .await().atMost(capturedDevServicesConfiguration.webClienTimeout);
 
-            if (response.statusCode() > 299) {
-                LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), response.statusCode(),
-                        response.statusMessage());
+            if (createRealmResponse.statusCode() > 299) {
+                LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), createRealmResponse.statusCode(),
+                        createRealmResponse.statusMessage());
             }
+
+            Uni<Integer> realmStatusCodeUni = client.getAbs(keycloakUrl + "/realms/" + realm.getRealm())
+                    .send().onItem()
+                    .transform(resp -> {
+                        LOG.debugf("Realm status: %d", resp.statusCode());
+                        if (resp.statusCode() == 200) {
+                            return 200;
+                        } else {
+                            throw new RealmEndpointAccessException(resp.statusCode());
+                        }
+                    }).onFailure(realmEndpointNotAvailable())
+                    .retry()
+                    .withBackOff(Duration.ofSeconds(2), Duration.ofSeconds(2))
+                    .expireIn(10 * 1000)
+                    .onFailure().transform(t -> t.getCause());
+            realmStatusCodeUni.await().atMost(Duration.ofSeconds(10));
         } catch (Throwable t) {
             LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
         } finally {
             client.close();
         }
+    }
+
+    @SuppressWarnings("serial")
+    static class RealmEndpointAccessException extends RuntimeException {
+        private final int errorStatus;
+
+        public RealmEndpointAccessException(int errorStatus) {
+            this.errorStatus = errorStatus;
+        }
+
+        public int getErrorStatus() {
+            return errorStatus;
+        }
+    }
+
+    public static Predicate<? super Throwable> realmEndpointNotAvailable() {
+        return t -> (t instanceof ConnectException
+                || (t instanceof RealmEndpointAccessException && ((RealmEndpointAccessException) t).getErrorStatus() == 404));
     }
 
     private Map<String, String> getUsers(Map<String, String> configuredUsers, boolean createRealm) {

@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Hibernate Search guide
-:hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/
+:hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.1/reference/en-US/html_single/
 include::./attributes.adoc[]
 
 You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You're at the right place.

@@ -109,9 +109,11 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.with()
                 .queryParam("q", "qv")
                 .header("h", "123")
+                .header("h2", "a")
+                .header("h3", "b")
                 .formParam("f", "fv")
                 .post("/simple/params/pv")
-                .then().body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv"));
+                .then().statusCode(200).body(Matchers.equalTo("params: p: pv, q: qv, h: 123, h2: a, h3: b, f: fv"));
     }
 
     @Test

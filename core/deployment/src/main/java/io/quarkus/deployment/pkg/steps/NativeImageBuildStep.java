@@ -42,7 +42,6 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.steps.LocaleProcessor;
-import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 
@@ -313,7 +312,7 @@ public class NativeImageBuildStep {
         }
 
         for (ResolvedDependency depArtifact : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
-            if (depArtifact.getType().equals(GACTV.TYPE_JAR)) {
+            if (depArtifact.isJar()) {
                 for (Path resolvedDep : depArtifact.getResolvedPaths()) {
                     if (!Files.isDirectory(resolvedDep)) {
                         // Do we need to handle transformed classes?

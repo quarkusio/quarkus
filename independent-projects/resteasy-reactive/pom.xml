@@ -56,7 +56,7 @@
         <rest-assured.version>4.4.0</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
-        <jackson.version>2.13.1</jackson.version>
+        <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
         <smallrye-stork.version>1.0.0</smallrye-stork.version>
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
         <yasson.version>1.0.11</yasson.version>
@@ -78,7 +78,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>${jackson.version}</version>
+                <version>${jackson-bom.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>

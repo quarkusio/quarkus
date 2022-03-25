@@ -1394,3 +1394,18 @@ For `@QuarkusIntegrationTest` tests that result in launcher the application as a
 This can be used by `QuarkusTestResourceLifecycleManager` that need to launch additional containers that the application will communicate with.
 ====
 
+== Troubleshooting
+
+=== Junit 5 parameterized tests failing on Java 16 and newer
+
+`@ParameterizedTest`s in JUnit 5 can fail with a `java.lang.IllegalStateException` (or
+`com.thoughtworks.xstream.converters.ConversionException` in older Quarkus versions) with a message `No converter available`
+for new-ish collection types like `java.util.Arrays$ArrayList` or other "JDK internal" collection types like
+`java.util.ImmutableCollections$List12`.
+
+Possible workarounds:
+* Refactor the parameter values to use "older" types like `java.util.ArrayList` or `java.util.HashSet` or `java.util.HashMap`
+* or add the `--add-opens` option to your build scripts to the declaration of the `maven-surefire-plugin` or Gradle's test worker execution.
+
+Since `quarkus-junit5` uses [X-stream](https://github.com/x-stream/xstream) under the covers, there's no immediate
+solution available, unfortunately.

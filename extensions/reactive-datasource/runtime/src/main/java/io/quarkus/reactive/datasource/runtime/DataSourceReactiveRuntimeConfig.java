@@ -33,6 +33,18 @@ public class DataSourceReactiveRuntimeConfig {
     public OptionalInt maxSize = OptionalInt.empty();
 
     /**
+     * When a new connection object is created, the pool assigns it an event loop.
+     * <p>
+     * When {@code #event-loop-size} is set to a strictly positive value, the pool assigns as many event loops as specified, in
+     * a round-robin fashion.
+     * By default, the number of event loops configured or calculated by Quarkus is used.
+     * If {@code #event-loop-size} is set to zero or a negative value, the pool assigns the current event loop to the new
+     * connection.
+     */
+    @ConfigItem
+    public OptionalInt eventLoopSize = OptionalInt.empty();
+
+    /**
      * Whether all server certificates should be trusted.
      */
     @ConfigItem(defaultValue = "false")

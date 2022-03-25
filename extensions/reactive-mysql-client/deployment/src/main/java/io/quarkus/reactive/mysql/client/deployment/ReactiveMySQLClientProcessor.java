@@ -36,6 +36,7 @@ import io.quarkus.reactive.mysql.client.runtime.DataSourcesReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.Pool;
@@ -49,6 +50,7 @@ class ReactiveMySQLClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             MySQLPoolRecorder recorder,
             VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
@@ -61,13 +63,13 @@ class ReactiveMySQLClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_MYSQL_CLIENT));
 
-        createPoolIfDefined(recorder, vertx, shutdown, mySQLPool, vertxPool, syntheticBeans,
+        createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, mySQLPool, vertxPool, syntheticBeans,
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactiveMySQLConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
-            createPoolIfDefined(recorder, vertx, shutdown, mySQLPool, vertxPool, syntheticBeans, dataSourceName,
+            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, mySQLPool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMySQLConfig, defaultDataSourceDbKindBuildItems,
                     curateOutcomeBuildItem);
@@ -117,6 +119,7 @@ class ReactiveMySQLClientProcessor {
 
     private void createPoolIfDefined(MySQLPoolRecorder recorder,
             VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<MySQLPoolBuildItem> mySQLPool,
             BuildProducer<VertxPoolBuildItem> vertxPool,
@@ -136,6 +139,7 @@ class ReactiveMySQLClientProcessor {
         }
 
         RuntimeValue<MySQLPool> pool = recorder.configureMySQLPool(vertx.getVertx(),
+                eventLoopCount.getEventLoopCount(),
                 dataSourceName,
                 dataSourcesRuntimeConfig,
                 dataSourcesReactiveRuntimeConfig,

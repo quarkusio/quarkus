@@ -37,6 +37,7 @@ import io.quarkus.reactive.pg.client.runtime.DataSourcesReactivePostgreSQLConfig
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Pool;
@@ -61,6 +62,7 @@ class ReactivePgClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             PgPoolRecorder recorder,
             VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
@@ -73,13 +75,13 @@ class ReactivePgClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_PG_CLIENT));
 
-        createPoolIfDefined(recorder, vertx, shutdown, pgPool, vertxPool, syntheticBeans,
+        createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, pgPool, vertxPool, syntheticBeans,
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactivePostgreSQLConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
-            createPoolIfDefined(recorder, vertx, shutdown, pgPool, vertxPool, syntheticBeans, dataSourceName,
+            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, pgPool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactivePostgreSQLConfig, defaultDataSourceDbKindBuildItems,
                     curateOutcomeBuildItem);
@@ -124,6 +126,7 @@ class ReactivePgClientProcessor {
 
     private void createPoolIfDefined(PgPoolRecorder recorder,
             VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<PgPoolBuildItem> pgPool,
             BuildProducer<VertxPoolBuildItem> vertxPool,
@@ -143,6 +146,7 @@ class ReactivePgClientProcessor {
         }
 
         RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(),
+                eventLoopCount.getEventLoopCount(),
                 dataSourceName,
                 dataSourcesRuntimeConfig,
                 dataSourcesReactiveRuntimeConfig,

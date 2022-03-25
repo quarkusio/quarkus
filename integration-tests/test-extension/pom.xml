@@ -34,6 +34,11 @@
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
     <dependency>

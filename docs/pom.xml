@@ -2716,7 +2716,7 @@
                             <script>${project.basedir}/../.github/quarkusbuilditemdoc.java</script>
                             <args>
                                 <arg>--outputFile ${project.basedir}/../target/asciidoc/generated/config/quarkus-all-build-items.adoc</arg>
-                                <arg>--dirs ${project.basedir}/../core/deployment ${project.basedir}/../core/test-extension ${project.basedir}/../extensions</arg>
+                                <arg>--dirs ${project.basedir}/../core/deployment ${project.basedir}/../extensions</arg>
                             </args>
                         </configuration>
                     </execution>

@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.panache.kotlin
 
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations.implementationInjectionMissing
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import io.quarkus.panache.common.Parameters
@@ -86,7 +85,7 @@ interface PanacheRepositoryBase<Entity : Any, Id: Any> {
     fun isPersistent(entity: Entity): Boolean = INSTANCE.isPersistent(entity)
 
     /**
-     * Flushes all pending changes to the database using the default EntityManager.
+     * Flushes all pending changes to the database using the EntityManager for the <Entity> entity class.
      */
     fun flush() {
         getEntityManager().flush()

@@ -61,7 +61,7 @@ This command generates a new project importing the quarkus-qpid-jms extension:
 .pom.xml
 ----
 <dependency>
-    <groupId>io.quarkus</groupId>
+    <groupId>org.amqphub.quarkus</groupId>
     <artifactId>quarkus-qpid-jms</artifactId>
 </dependency>
 ----
@@ -69,7 +69,7 @@ This command generates a new project importing the quarkus-qpid-jms extension:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-qpid-jms")
+implementation("org.amqphub.quarkus:quarkus-qpid-jms")
 ----
 
 [#starting-the-broker]

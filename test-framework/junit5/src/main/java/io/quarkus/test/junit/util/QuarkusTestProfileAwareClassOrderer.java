@@ -36,8 +36,8 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * {@link #CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST} to {@code 10_}.
  * <p/>
  * The secondary order suffix can be changed via {@value #CFGKEY_SECONDARY_ORDERER}, e.g. a value of
- * {@link org.junit.jupiter.api.ClassOrderer.ClassOrderer.Random} will order the test classes within one group randomly instead
- * by class name.
+ * {@link org.junit.jupiter.api.ClassOrderer.Random org.junit.jupiter.api.ClassOrderer$Random} will order the test classes
+ * within one group randomly instead by class name.
  * <p/>
  * {@link #getCustomOrderKey(ClassDescriptor, ClassOrdererContext)} can be overridden to provide a custom order number for a
  * given test class, e.g. based on {@link org.junit.jupiter.api.Tag} or something else.
@@ -56,22 +56,24 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
     protected static final String DEFAULT_ORDER_PREFIX_NON_QUARKUS_TEST = "60_";
 
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST = "junit.quarkus.orderer.prefix.quarkus-test";
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "2.7.0.CR1")
     static final String _CFGKEY_ORDER_PREFIX_QUARKUS_TEST = "quarkus.test.orderer.prefix.quarkus-test";
 
     static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "junit.quarkus.orderer.prefix.quarkus-test-with-profile";
-    @Deprecated
+    @Deprecated(forRemoval = true, since = "2.7.0.CR1")
     static final String _CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_PROFILE = "quarkus.test.orderer.prefix.quarkus-test-with-profile";
 
-    static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "quarkus.test.orderer.prefix.quarkus-test-with-restricted-resource";
-    @Deprecated
-    static final String _CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "junit.quarkus.orderer.prefix.quarkus-test-with-restricted-resource";
+    static final String CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "junit.quarkus.orderer.prefix.quarkus-test-with-restricted-resource";
+    @Deprecated(forRemoval = true, since = "2.7.0.CR1")
+    static final String _CFGKEY_ORDER_PREFIX_QUARKUS_TEST_WITH_RESTRICTED_RES = "quarkus.test.orderer.prefix.quarkus-test-with-restricted-resource";
 
-    static final String CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "quarkus.test.orderer.prefix.non-quarkus-test";
-    @Deprecated
-    static final String _CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "junit.quarkus.orderer.prefix.non-quarkus-test";
+    static final String CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "junit.quarkus.orderer.prefix.non-quarkus-test";
+    @Deprecated(forRemoval = true, since = "2.7.0.CR1")
+    static final String _CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST = "quarkus.test.orderer.prefix.non-quarkus-test";
 
-    static final String CFGKEY_SECONDARY_ORDERER = "quarkus.test.orderer.secondary-orderer";
+    static final String CFGKEY_SECONDARY_ORDERER = "junit.quarkus.orderer.secondary-orderer";
+    @Deprecated(forRemoval = true, since = "2.8.0.Final")
+    static final String _CFGKEY_SECONDARY_ORDERER = "quarkus.test.orderer.secondary-orderer";
 
     @Override
     public void orderClasses(ClassOrdererContext context) {
@@ -145,13 +147,12 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
     }
 
     private ClassOrderer buildSecondaryOrderer(ClassOrdererContext context) {
-        return context.getConfigurationParameter(CFGKEY_SECONDARY_ORDERER)
+        return Optional.ofNullable(getConfigParam(CFGKEY_SECONDARY_ORDERER, _CFGKEY_SECONDARY_ORDERER, null, context))
                 .map(fqcn -> {
                     try {
                         return (ClassOrderer) Class.forName(fqcn).getDeclaredConstructor().newInstance();
                     } catch (ReflectiveOperationException e) {
-                        throw new IllegalArgumentException(
-                                "Failed to instantiate " + fqcn + " (defined by " + CFGKEY_SECONDARY_ORDERER + ")", e);
+                        throw new IllegalArgumentException("Failed to instantiate " + fqcn, e);
                     }
                 })
                 .orElseGet(ClassOrderer.ClassName::new);
@@ -176,7 +177,7 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
      * @return optional custom order key for the given test class
      * @deprecated use {@link #getCustomOrderKey(ClassDescriptor, ClassOrdererContext, String)} instead
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(forRemoval = true, since = "2.7.0.CR1")
     protected Optional<String> getCustomOrderKey(ClassDescriptor classDescriptor, ClassOrdererContext context) {
         return Optional.empty();
     }

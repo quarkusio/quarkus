@@ -3,14 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
+        <artifactId>quarkus-integration-test-test-extension</artifactId>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-core-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-test-extension-parent</artifactId>
-    <name>Quarkus - Core - Test Extension</name>
+    <artifactId>quarkus-integration-test-test-extension-extension-parent</artifactId>
+    <name>Quarkus - Integration Tests - Test Extension - Extension</name>
     <packaging>pom</packaging>
 
     <properties>
@@ -35,6 +35,4 @@
             </plugin>
         </plugins>
     </build>
-
-
 </project>

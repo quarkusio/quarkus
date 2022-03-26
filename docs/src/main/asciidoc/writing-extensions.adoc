@@ -2214,7 +2214,7 @@ Otherwise, Quarkus attempts to monitor the extension classes and this may result
 Remember to add `IndexDependencyBuildItem` artifacts to your `@BuildStep`.
 
 === Sample Test Extension
-We have an extension that is used to test for regressions in the extension processing. It is located in {quarkus-tree-url}/core/test-extension directory. In this section we touch on some of the tasks an extension
+We have an extension that is used to test for regressions in the extension processing. It is located in {quarkus-tree-url}/integration-tests/test-extension/extension directory. In this section we touch on some of the tasks an extension
 author will typically need to perform using the test-extension code to illustrate how the task could be done.
 
 ==== Features and Capabilities
@@ -2538,7 +2538,7 @@ Now that you have recorded the creation of a service during the build phase, you
 <6> Runtime recorder registers an invocation of the service instance `stopService` method with the Quarkus `ShutdownContext`.
 
 The code for the `RuntimeXmlConfigService` can be viewed here:
-{quarkus-blob-url}/core/test-extension/runtime/src/main/java/io/quarkus/extest/runtime/RuntimeXmlConfigService.java[RuntimeXmlConfigService.java]
+{quarkus-blob-url}/integration-tests/test-extension/extension/runtime/src/main/java/io/quarkus/extest/runtime/RuntimeXmlConfigService.java[RuntimeXmlConfigService.java]
 
 The testcase for validating that the `RuntimeXmlConfigService` has started can be found in the `testRuntimeXmlConfigService` test of `ConfiguredBeanTest` and `NativeImageIT`.
 

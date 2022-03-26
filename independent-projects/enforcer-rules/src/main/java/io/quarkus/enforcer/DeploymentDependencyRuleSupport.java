@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -107,14 +109,26 @@ public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
         }
 
         Properties extProperties = new Properties();
-        try (ZipFile zipFile = new ZipFile(artifactFile)) {
-            ZipEntry entry = zipFile.getEntry(EXT_PROPERTIES_PATH);
-            if (entry == null) {
-                return Optional.empty();
+        if (artifactFile.isDirectory()) {
+            Path extPropertiesPath = artifactFile.toPath().resolve(EXT_PROPERTIES_PATH);
+            try (InputStreamReader isr = new InputStreamReader(Files.newInputStream(extPropertiesPath),
+                    StandardCharsets.UTF_8)) {
+                extProperties.load(isr);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to read " + EXT_PROPERTIES_PATH + " from " + artifactFile, e);
             }
-            extProperties.load(new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read " + EXT_PROPERTIES_PATH + " from " + artifactFile, e);
+        } else {
+            try (ZipFile zipFile = new ZipFile(artifactFile)) {
+                ZipEntry entry = zipFile.getEntry(EXT_PROPERTIES_PATH);
+                if (entry == null) {
+                    return Optional.empty();
+                }
+                try (InputStreamReader isr = new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8)) {
+                    extProperties.load(isr);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to read " + EXT_PROPERTIES_PATH + " from " + artifactFile, e);
+            }
         }
 
         String deploymentGAV = extProperties.getProperty("deployment-artifact");

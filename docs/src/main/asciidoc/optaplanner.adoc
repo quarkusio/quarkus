@@ -440,12 +440,12 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
         };
     }
 
-    private Constraint roomConflict(ConstraintFactory constraintFactory) {
+    Constraint roomConflict(ConstraintFactory constraintFactory) {
         // A room can accommodate at most one lesson at the same time.
 
         // Select a lesson ...
         return constraintFactory
-                .from(Lesson.class)
+                .forEach(Lesson.class)
                 // ... and pair it with another lesson ...
                 .join(Lesson.class,
                         // ... in the same timeslot ...
@@ -458,9 +458,9 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                 .penalize("Room conflict", HardSoftScore.ONE_HARD);
     }
 
-    private Constraint teacherConflict(ConstraintFactory constraintFactory) {
+    Constraint teacherConflict(ConstraintFactory constraintFactory) {
         // A teacher can teach at most one lesson at the same time.
-        return constraintFactory.from(Lesson.class)
+        return constraintFactory.forEach(Lesson.class)
                 .join(Lesson.class,
                         Joiners.equal(Lesson::getTimeslot),
                         Joiners.equal(Lesson::getTeacher),
@@ -468,9 +468,9 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                 .penalize("Teacher conflict", HardSoftScore.ONE_HARD);
     }
 
-    private Constraint studentGroupConflict(ConstraintFactory constraintFactory) {
+    Constraint studentGroupConflict(ConstraintFactory constraintFactory) {
         // A student can attend at most one lesson at the same time.
-        return constraintFactory.from(Lesson.class)
+        return constraintFactory.forEach(Lesson.class)
                 .join(Lesson.class,
                         Joiners.equal(Lesson::getTimeslot),
                         Joiners.equal(Lesson::getStudentGroup),

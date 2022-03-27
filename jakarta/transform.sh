@@ -3,8 +3,6 @@
 set -e -u -o pipefail
 shopt -s failglob
 
-# This script is used to gradually transform Quarkus bits from javax to jakarta namespaces and update dependencies
-
 # Each transformed module/project is expected to:
 # a) execute Eclipse Transformer command to transform relevant directory
 # b) update dependencies to their respective EE 9 versions
@@ -38,11 +36,29 @@ git checkout jakarta
 mvn clean install -DskipTests -DskipITs
 popd
 
+# Build Kotlin Maven Plugin to allow skipping main compilation
+# (skipping test compilation is supported but not main)
+rm -rf target/kotlin
+git clone -b v1.6.10-jakarta --depth 1 git@github.com:gsmet/kotlin.git target/kotlin
+pushd target/kotlin/libraries/tools/kotlin-maven-plugin
+mvn clean install -DskipTests -DskipITs
+popd
+
 # Set up jbang alias, we are using latest released transformer version
 jbang alias add --name transform org.eclipse.transformer:org.eclipse.transformer.cli:0.2.0
 
 start_module () {
   echo "# $1"
+}
+
+clean_project () {
+  find . -name 'target' -exec rm -rf {} +
+}
+
+clean_maven_repository () {
+  if [ -d ~/.m2/repository/io/quarkus ]; then
+    find ~/.m2/repository/io/quarkus -name '999-SNAPSHOT' -exec rm -rf {} +
+  fi
 }
 
 # Function to help transform a particular Maven module using Eclipse Transformer
@@ -123,78 +139,86 @@ set_property () {
   sed -i "s/<$propName>.*<\/$propName>/<$propName>$propValue<\/$propName>/g" "$EDITING"
 }
 
-# Install root parent
-./mvnw clean install -N
+###############################
+###############################
 
-# Install utility projects
-build_module_no_tests "independent-projects/ide-config"
-build_module_no_tests "independent-projects/enforcer-rules"
-build_module_no_tests "independent-projects/revapi"
+# OpenRewrite phase - we rewrite the whole repository in one go
+clean_maven_repository
+clean_project
 
-# ArC
-start_module "ArC"
-transform_module "independent-projects/arc"
-rewrite_module "independent-projects/arc"
-build_module "independent-projects/arc"
+## let's build what's required to be able to run the rewrite
+./mvnw -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -am clean install -DskipTests -DskipITs
 
-# Bootstrap
-start_module "Bootstrap"
-rewrite_module "independent-projects/bootstrap/bom"
-rewrite_module "independent-projects/bootstrap"
+## we cannot rewrite some of the modules for various reasons but we rewrite most of them
+./mvnw rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -Dno-test-modules -Drewrite.pomCacheEnabled=false
+
+## remove banned dependencies
 remove_banned_dependency "independent-projects/bootstrap" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/bootstrap" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
-build_module "independent-projects/bootstrap"
-
-# Qute
-build_module_no_tests "independent-projects/qute"
-
-# Tools
 remove_banned_dependency "independent-projects/tools" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/tools" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
-build_module_no_tests "independent-projects/tools"
-rewrite_module "independent-projects/tools/devtools-common"
-rewrite_module "independent-projects/tools"
-build_module "independent-projects/tools"
-
-## Starting here, we don't run the tests until post cleanup phase, use build_module_no_tests
-## and then add another build of your module after the Clean up phase
-
-# BOM
-start_module "BOM"
-rewrite_module "bom/application"
-build_module_no_tests "bom/application"
-build_module_only_no_tests "bom/test"
-
-# Build parent
-start_module "Build parent"
 remove_banned_dependency "build-parent" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "build-parent" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "build-parent" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
 update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
-build_module_no_tests "build-parent"
 
-# Needed for core
+## cleanup phase - needs to be done once everything has been rewritten
+rewrite_module_cleanup "bom/application"
+
+## we get rid of everything that has been built previously, we want to start clean
+clean_maven_repository
+
+# Tranformation phase
+
+## Install root parent
+./mvnw clean install -N
+
+## Install utility projects
+build_module_no_tests "independent-projects/ide-config"
+build_module_no_tests "independent-projects/enforcer-rules"
+build_module_no_tests "independent-projects/revapi"
+
+## ArC
+start_module "ArC"
+transform_module "independent-projects/arc"
+build_module "independent-projects/arc"
+
+## Bootstrap
+start_module "Bootstrap"
+build_module "independent-projects/bootstrap"
+
+## Qute
+start_module "Qute"
+build_module_no_tests "independent-projects/qute"
+
+## Tools
+start_module "Tools"
+build_module "independent-projects/tools"
+
+# BOM
+start_module "BOM"
+build_module "bom/application"
+build_module "bom/test"
+
+# Build parent
+start_module "Build parent"
+build_module "build-parent"
+
+# Core
+start_module "Core"
+
+## Needed for core
 build_module_only_no_tests devtools
 build_module_no_tests "devtools/platform-descriptor-json-plugin"
 build_module_no_tests "devtools/platform-properties"
 
-# Core
+## Core
 transform_module "core"
-build_module_no_tests "core"
 build_module_no_tests "core"
 
 # Test framework
+start_module "Test framework"
 transform_module "test-framework"
-
-## Clean up phase
-## This removes the dependencies that shouldn't be there anymore - we need to do that once everything has been rewritten
-rewrite_module_cleanup "bom/application"
-
-# Build
-build_module "bom/application"
-build_module "bom/test"
-build_module "build-parent"
-build_module "core"
 build_module_only_no_tests "test-framework"
 build_module "test-framework/common"
 build_module "test-framework/devmode-test-utils"
@@ -204,21 +228,17 @@ build_module "test-framework/junit5-internal"
 build_module "test-framework/maven"
 
 # Extensions
+start_module "Extensions"
 transform_module "extensions"
 build_module_only_no_tests "extensions"
 build_module_only_no_tests "extensions/vertx-http"
 build_module "extensions/vertx-http/dev-console-runtime-spi"
 build_module "extensions/vertx-http/dev-console-spi"
-# couldn't find a way to apply a rewrite here because we can't build the runtime module without the deployment module around :/
-# I'm working on a different approach but let's live with it for now as I'm not sure my approach will fly and I want to unblock other people
-sed -i 's@<groupId>org.jboss.spec.javax.ejb</groupId>@<groupId>jakarta.ejb</groupId>@' extensions/arc/deployment/pom.xml
-sed -i 's@<artifactId>jboss-ejb-api_3.1_spec</artifactId>@<artifactId>jakarta.ejb-api</artifactId>@' extensions/arc/deployment/pom.xml
-sed -i 's@<version>1.0.2.Final</version>@<version>4.0.0</version>@' extensions/arc/deployment/pom.xml
 build_module "extensions/arc"
 
 exit 1
 
-# These ones require ArC and Munity extensions
+# These ones require ArC and Mutiny extensions
 #build_module "test-framework/junit5-mockito-config"
 #build_module "test-framework/junit5-mockito"
 
@@ -226,12 +246,3 @@ exit 1
 #transform_module "devtools"
 #build_module_no_tests "devtools"
 
-# For later, now that I moved it out of core
-#rewrite_module "core/test-extension/runtime"
-
-## Arc Extension [Incomplete: other modules need to go first]
-
-# transform_module "extensions/arc/runtime"
-# transform_module "extensions/arc/deployment"
-# build_module "extensions/arc/runtime"
-# build_module "extensions/arc/deployment"

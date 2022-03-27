@@ -496,6 +496,7 @@
         </pluginManagement>
         <plugins>
             <plugin>
+                <inherited>false</inherited>
                 <groupId>org.openrewrite.maven</groupId>
                 <artifactId>rewrite-maven-plugin</artifactId>
                 <configuration>

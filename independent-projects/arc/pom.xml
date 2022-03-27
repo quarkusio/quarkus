@@ -306,13 +306,22 @@
                     <version>4.21.0-SNAPSHOT</version>
                     <configuration>
                         <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
-                        <activeRecipes>
-                            <recipe>io.quarkus.jakarta-versions</recipe>
-                        </activeRecipes>
                     </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <inherited>false</inherited>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>io.quarkus.jakarta-versions</recipe>
+                    </activeRecipes>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <distributionManagement>

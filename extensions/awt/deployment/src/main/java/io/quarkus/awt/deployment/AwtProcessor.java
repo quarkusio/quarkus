@@ -2,29 +2,19 @@ package io.quarkus.awt.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.WINDOWS;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
-import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
-import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 class AwtProcessor {
-
-    private static final String IIO_PLUGIN_I18N = "iio-plugin.properties";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -45,98 +35,20 @@ class AwtProcessor {
                         "See https://bugs.openjdk.java.net/browse/JDK-8254024");
     }
 
-    /**
-     * TODO:
-     *
-     * The problem is that even if we bring I18N into the fold , e.g.
-     * runtimeInit.accept(new RuntimeInitializedClassBuildItem("com.sun.imageio.plugins.common.I18N"));
-     * (or ReflectiveClassBuildItem on the calling class, e.g. BMPReader)
-     *
-     * so as this works:
-     * https://github.com/openjdk/jdk11u-dev/blob/jdk-11.0.13%2B7/src/java.desktop/share/classes/com/sun/imageio/plugins/common/I18NImpl.java#L54
-     *
-     * there is no such property file in the native image:
-     * https://github.com/openjdk/jdk11u-dev/blob/jdk-11.0.13%2B7/src/java.desktop/share/classes/com/sun/imageio/plugins/common/iio-plugin.properties
-     *
-     * hence, it ends up with a NPE anyway.
-     *
-     * Trying to bring it in as a NativeImageResourceBuildItem does not help, likely due to it
-     * being in an unexported module? i.e. all this is fruitless:
-     *
-     * .produce(new NativeImageResourceBuildItem("iio-plugin.properties"));
-     * .produce(new NativeImageResourceBuildItem("classes/com/sun/imageio/plugins/common/iio-plugin.properties"));
-     * .produce(new NativeImageResourceBuildItem("com/sun/imageio/plugins/common/iio-plugin.properties"));
-     * .produce(new NativeImageResourceBuildItem("/iio-plugin.properties"));
-     * .produce(new NativeImageResourceBuildItem("/classes/com/sun/imageio/plugins/common/iio-plugin.properties"));
-     * .produce(new NativeImageResourceBuildItem("/com/sun/imageio/plugins/common/iio-plugin.properties"));
-     *
-     * Current workaround:
-     *
-     * The undermentioned code yanks the property file from the host JDK and bakes it into the image
-     * and the accompanying substitution Target_com_sun_imageio_plugins_common_I18NImpl loads it.
-     *
-     * "It Works", although it is potentially problematic as your GRAALVM_HOME might not be your JAVA_HOME,
-     * so your iio-plugin.properties might come from e.g. JDK 11.0.x you run the maven build with,
-     * although the classes in com.sun.imageio.plugins* will come from your GRAALVM_HOME, having
-     * native-image potentially built with a very different JDK version.
-     *
-     * Even if your local JAVA_HOME and GRAALVM_HOME is the same, there is still a discrepancy when
-     * executed in a container builder image: Again, com.sun.imageio.plugins* classes come from the
-     * Mandrel/Graal distro in the container, while your iio-plugin.properties comes from the local
-     * JDK.
-     *
-     * Example:
-     *
-     * Test run of:
-     *
-     * ./mvnw -o clean verify -f integration-tests/pom.xml -pl awt -Pnative -Dquarkus.native.container-build=true \
-     * -Dquarkus.native.builder-image=registry.access.redhat.com/quarkus/mandrel-21-rhel8:latest
-     *
-     * intentionally triggers an error that should have a message associated with it from the iio-plugin.properties file.
-     * It works as expected, although the file was taken from a local host JDK I have purposely modified to append "KARM"
-     * to the message:
-     *
-     * Caused by: javax.imageio.IIOException: New BMP version not implemented yet KARM.
-     * at com.sun.imageio.plugins.bmp.BMPImageReader.readHeader(BMPImageReader.java:584)
-     * at com.sun.imageio.plugins.bmp.BMPImageReader.read(BMPImageReader.java:830)
-     *
-     * TODO: I would like to take the property file from the Graal/Mandrel distro, always, regardless of the build
-     * being done locally or in a container.
-     */
-    @BuildStep
-    GeneratedResourceBuildItem yankI18NPropertiesFromHostJDK(BuildProducer<NativeImageResourceBuildItem> nibProducer,
-            NativeConfig nativeConfig)
-            throws IOException {
-
-        /*
-         * Nicer, does the same, but does not work with JDK17
-         * try (final InputStream i = Class.forName("com.sun.imageio.plugins.common.I18N").getResourceAsStream(IIO_PLUGIN_I18N);
-         * final ByteArrayOutputStream o = new ByteArrayOutputStream()) {
-         * o.writeBytes(Objects.requireNonNull(i, IIO_PLUGIN_I18N + " not found").readAllBytes());
-         * nibProducer.produce(new NativeImageResourceBuildItem(IIO_PLUGIN_I18N));
-         * return new GeneratedResourceBuildItem(IIO_PLUGIN_I18N, o.toByteArray());
-         * }
-         */
-
-        final Path pathToModule = Path.of(nativeConfig.graalvmHome.orElse(nativeConfig.javaHome.getAbsolutePath()),
-                "jmods", "java.desktop.jmod");
-        try (final FileSystem fileSystem = ZipUtils.newFileSystem(pathToModule);
-                final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            out.writeBytes(Files.readAllBytes(
-                    fileSystem.getPath("classes/com/sun/imageio/plugins/common/" + IIO_PLUGIN_I18N)));
-            nibProducer.produce(new NativeImageResourceBuildItem(IIO_PLUGIN_I18N));
-            return new GeneratedResourceBuildItem(IIO_PLUGIN_I18N, out.toByteArray());
-        }
-
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void i18NProperties(
+            BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
+        resourcePatternsBuildItemBuildProducer
+                .produce(NativeImageResourcePatternsBuildItem.builder().includePattern(".*/iio-plugin.*properties$").build());
     }
 
     @BuildStep
     ReflectiveClassBuildItem setupReflectionClasses() {
         return new ReflectiveClassBuildItem(false, false,
-
                 "sun.awt.X11.XToolkit",
                 "sun.awt.X11FontManager",
-                "sun.awt.X11GraphicsEnvironment");
+                "sun.awt.X11GraphicsEnvironment",
+                "com.sun.imageio.plugins.common.I18N");
     }
 
     @BuildStep

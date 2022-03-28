@@ -197,7 +197,7 @@ Log in as the `admin` user to access the Keycloak Administration Console. Userna
 Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
 NOTE: If you want to use the Keycloak Admin Client to configure your server from your application you need to include the
-`quarkus-keycloak-admin-client` extension.
+either `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
 
 [[keycloak-dev-mode]]
 === Running the Application in Dev mode

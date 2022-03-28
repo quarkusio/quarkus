@@ -34,6 +34,7 @@ import javax.inject.Inject;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
@@ -72,10 +73,15 @@ public final class IntegrationTestUtil {
         Class<?> current = testClass;
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {
-                Inject injectAnnotation = field.getAnnotation(Inject.class);
-                if (injectAnnotation != null) {
+                if (field.getAnnotation(Inject.class) != null) {
                     throw new JUnitException(
                             "@Inject is not supported in @NativeImageTest and @QuarkusIntegrationTest tests. Offending field is "
+                                    + field.getDeclaringClass().getTypeName() + "."
+                                    + field.getName());
+                }
+                if (field.getAnnotation(ConfigProperty.class) != null) {
+                    throw new JUnitException(
+                            "@ConfigProperty is not supported in @NativeImageTest and @QuarkusIntegrationTest tests. Offending field is "
                                     + field.getDeclaringClass().getTypeName() + "."
                                     + field.getName());
                 }

@@ -7,6 +7,14 @@ This directory contains scripts and configuration files to automate the migratio
 `jakarta/transform.sh` is the main script to run.
 It has to be run from the root of the Quarkus repository.
 
+If you are offline and can't fetch the external projects, do:
+```
+export REWRITE_OFFLINE=true
+jakarta/transform.sh
+```
+Obviously, you need to have run a full build before.
+Also keep in mind you should run a full build from time to time to get the potential updates to OpenRewrite.
+
 It consists of several steps that leverage various tools:
 
 - [OpenRewrite](https://github.com/openrewrite/rewrite) - rewrites the POM files

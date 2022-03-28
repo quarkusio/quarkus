@@ -13,36 +13,38 @@ if [ ! -f dco.txt ]; then
     exit 1
 fi
 
-# Prepare OpenRewrite - we temporarily build a local version as we need a patch
-rm -rf target/rewrite
-git clone git@github.com:gsmet/rewrite.git target/rewrite
-pushd target/rewrite
-git checkout jakarta
-./gradlew -x test -x javadoc publishToMavenLocal
-popd
+if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
+  # Prepare OpenRewrite - we temporarily build a local version as we need a patch
+  rm -rf target/rewrite
+  git clone git@github.com:gsmet/rewrite.git target/rewrite
+  pushd target/rewrite
+  git checkout jakarta
+  ./gradlew -x test -x javadoc publishToMavenLocal
+  popd
 
-rm -rf target/rewrite-maven-plugin
-git clone git@github.com:gsmet/rewrite-maven-plugin.git target/rewrite-maven-plugin
-pushd target/rewrite-maven-plugin
-git checkout jakarta
-./mvnw clean install -DskipTests -DskipITs
-popd
+  rm -rf target/rewrite-maven-plugin
+  git clone git@github.com:gsmet/rewrite-maven-plugin.git target/rewrite-maven-plugin
+  pushd target/rewrite-maven-plugin
+  git checkout jakarta
+  ./mvnw clean install -DskipTests -DskipITs
+  popd
 
-# Build SmallRye Config (temporary)
-rm -rf target/smallrye-config
-git clone git@github.com:smallrye/smallrye-config.git target/smallrye-config
-pushd target/smallrye-config
-git checkout jakarta
-mvn clean install -DskipTests -DskipITs
-popd
+  # Build SmallRye Config (temporary)
+  rm -rf target/smallrye-config
+  git clone git@github.com:smallrye/smallrye-config.git target/smallrye-config
+  pushd target/smallrye-config
+  git checkout jakarta
+  mvn clean install -DskipTests -DskipITs
+  popd
 
-# Build Kotlin Maven Plugin to allow skipping main compilation
-# (skipping test compilation is supported but not main)
-rm -rf target/kotlin
-git clone -b v1.6.10-jakarta --depth 1 git@github.com:gsmet/kotlin.git target/kotlin
-pushd target/kotlin/libraries/tools/kotlin-maven-plugin
-mvn clean install -DskipTests -DskipITs
-popd
+  # Build Kotlin Maven Plugin to allow skipping main compilation
+  # (skipping test compilation is supported but not main)
+  rm -rf target/kotlin
+  git clone -b v1.6.10-jakarta --depth 1 git@github.com:gsmet/kotlin.git target/kotlin
+  pushd target/kotlin/libraries/tools/kotlin-maven-plugin
+  mvn clean install -DskipTests -DskipITs
+  popd
+fi
 
 # Set up jbang alias, we are using latest released transformer version
 jbang alias add --name transform org.eclipse.transformer:org.eclipse.transformer.cli:0.2.0

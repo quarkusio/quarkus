@@ -19,6 +19,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jaxrs.client.reactive.runtime.ParameterAnnotationsSupplier;
+import io.quarkus.jaxrs.client.reactive.runtime.ParameterGenericTypesSupplier;
 
 class ClassRestClientContext implements AutoCloseable {
 
@@ -110,11 +111,11 @@ class ClassRestClientContext implements AutoCloseable {
                 return methodGenericTypeField;
             }
 
-            ResultHandle javaMethodGenericParametersHandle = clinit.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(Method.class, "getGenericParameterTypes", java.lang.reflect.Type[].class),
+            ResultHandle javaMethodGenericParametersHandle = clinit.newInstance(MethodDescriptor.ofConstructor(
+                    ParameterGenericTypesSupplier.class, Method.class),
                     clinit.readStaticField(methodStaticFields.get(methodIndex)));
             FieldDescriptor javaMethodGenericParametersField = FieldDescriptor.of(classCreator.getClassName(),
-                    "javaMethodGenericParameters" + methodIndex, java.lang.reflect.Type[].class);
+                    "javaMethodGenericParameters" + methodIndex, Supplier.class);
             classCreator.getFieldCreator(javaMethodGenericParametersField)
                     .setModifiers(Modifier.PUBLIC | Modifier.FINAL | Modifier.STATIC);
             clinit.writeStaticField(javaMethodGenericParametersField, javaMethodGenericParametersHandle);

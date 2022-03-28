@@ -1,6 +1,5 @@
 package io.quarkus.jaxrs.client.reactive.deployment;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -19,6 +18,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.jaxrs.client.reactive.runtime.ParameterAnnotationsSupplier;
 
 class ClassRestClientContext implements AutoCloseable {
 
@@ -84,11 +84,11 @@ class ClassRestClientContext implements AutoCloseable {
                 return methodParamAnnotationsField;
             }
 
-            ResultHandle javaMethodParamAnnotationsHandle = clinit.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(Method.class, "getParameterAnnotations", Annotation[][].class),
+            ResultHandle javaMethodParamAnnotationsHandle = clinit.newInstance(MethodDescriptor.ofConstructor(
+                    ParameterAnnotationsSupplier.class, Method.class),
                     clinit.readStaticField(methodStaticFields.get(methodIndex)));
             FieldDescriptor javaMethodParamAnnotationsField = FieldDescriptor.of(classCreator.getClassName(),
-                    "javaMethodParameterAnnotations" + methodIndex, Annotation[][].class);
+                    "javaMethodParameterAnnotations" + methodIndex, Supplier.class);
             classCreator.getFieldCreator(javaMethodParamAnnotationsField)
                     .setModifiers(Modifier.PUBLIC | Modifier.FINAL | Modifier.STATIC);
             clinit.writeStaticField(javaMethodParamAnnotationsField, javaMethodParamAnnotationsHandle);

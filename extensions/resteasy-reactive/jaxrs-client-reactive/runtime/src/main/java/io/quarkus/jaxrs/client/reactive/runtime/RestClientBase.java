@@ -6,6 +6,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
@@ -19,8 +20,9 @@ public abstract class RestClientBase implements Closeable {
     }
 
     @SuppressWarnings("unused") // used by generated code
-    public <T> Object[] convertParamArray(T[] value, Class<T> type, Type genericType, Annotation[] annotations) {
-        ParamConverter<T> converter = getConverter(type, genericType, annotations);
+    public <T> Object[] convertParamArray(T[] value, Class<T> type, Type genericType,
+            Supplier<Annotation[][]> methodAnnotations, int paramIndex) {
+        ParamConverter<T> converter = getConverter(type, genericType, methodAnnotations, paramIndex);
 
         if (converter == null) {
             return value;
@@ -35,8 +37,9 @@ public abstract class RestClientBase implements Closeable {
     }
 
     @SuppressWarnings("unused") // used by generated code
-    public <T> Object convertParam(T value, Class<T> type, Type genericType, Annotation[] annotations) {
-        ParamConverter<T> converter = getConverter(type, genericType, annotations);
+    public <T> Object convertParam(T value, Class<T> type, Type genericType, Supplier<Annotation[][]> methodAnnotations,
+            int paramIndex) {
+        ParamConverter<T> converter = getConverter(type, genericType, methodAnnotations, paramIndex);
         if (converter != null) {
             return converter.toString(value);
         } else {
@@ -44,12 +47,13 @@ public abstract class RestClientBase implements Closeable {
         }
     }
 
-    private <T> ParamConverter<T> getConverter(Class<T> type, Type genericType, Annotation[] annotations) {
+    private <T> ParamConverter<T> getConverter(Class<T> type, Type genericType, Supplier<Annotation[][]> methodAnnotations,
+            int paramIndex) {
         ParamConverterProvider converterProvider = providerForClass.get(type);
 
         if (converterProvider == null) {
             for (ParamConverterProvider provider : paramConverterProviders) {
-                ParamConverter<T> converter = provider.getConverter(type, genericType, annotations);
+                ParamConverter<T> converter = provider.getConverter(type, genericType, methodAnnotations.get()[paramIndex]);
                 if (converter != null) {
                     providerForClass.put(type, provider);
                     return converter;
@@ -57,7 +61,7 @@ public abstract class RestClientBase implements Closeable {
             }
             providerForClass.put(type, NO_PROVIDER);
         } else if (converterProvider != NO_PROVIDER) {
-            return converterProvider.getConverter(type, genericType, annotations);
+            return converterProvider.getConverter(type, genericType, methodAnnotations.get()[paramIndex]);
         }
         return null;
     }

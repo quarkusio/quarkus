@@ -17,6 +17,7 @@ import io.smallrye.reactive.messaging.annotations.Channel;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttributes;
 import io.smallrye.reactive.messaging.annotations.Emitter;
+import io.smallrye.reactive.messaging.annotations.EmitterFactoryFor;
 import io.smallrye.reactive.messaging.annotations.Incomings;
 import io.smallrye.reactive.messaging.annotations.Merge;
 import io.smallrye.reactive.messaging.annotations.OnOverflow;
@@ -49,6 +50,7 @@ public final class ReactiveMessagingDotNames {
     static final DotName ACKNOWLEDGMENT = DotName.createSimple(Acknowledgment.class.getName());
     static final DotName MERGE = DotName.createSimple(Merge.class.getName());
     static final DotName BROADCAST = DotName.createSimple(Broadcast.class.getName());
+    static final DotName EMITTER_FACTORY_FOR = DotName.createSimple(EmitterFactoryFor.class.getName());
 
     static final DotName INCOMING_CONNECTOR_FACTORY = DotName.createSimple(IncomingConnectorFactory.class.getName());
     static final DotName OUTGOING_CONNECTOR_FACTORY = DotName.createSimple(OutgoingConnectorFactory.class.getName());

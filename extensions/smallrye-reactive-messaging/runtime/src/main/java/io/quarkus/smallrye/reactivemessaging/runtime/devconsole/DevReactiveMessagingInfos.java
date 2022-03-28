@@ -15,9 +15,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
+import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
 import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
-import io.smallrye.reactive.messaging.providers.extension.EmitterConfiguration;
 
 public class DevReactiveMessagingInfos {
 
@@ -47,10 +47,10 @@ public class DevReactiveMessagingInfos {
                 }
 
                 for (EmitterConfiguration emitter : context.getEmitterConfigurations()) {
-                    publishers.put(emitter.name,
+                    publishers.put(emitter.name(),
                             new Component(ComponentType.EMITTER,
-                                    emitter.broadcast ? "<span class=\"annotation\">&#64;Broadcast</span> "
-                                            : "" + asCode(DevConsoleRecorder.EMITTERS.get(emitter.name))));
+                                    emitter.broadcast() ? "<span class=\"annotation\">&#64;Broadcast</span> "
+                                            : "" + asCode(DevConsoleRecorder.EMITTERS.get(emitter.name()))));
                 }
                 for (ChannelConfiguration channel : context.getChannelConfigurations()) {
                     consumers.computeIfAbsent(channel.channelName, fun)

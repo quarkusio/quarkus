@@ -74,13 +74,13 @@ import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRe
 import io.quarkus.smallrye.reactivemessaging.runtime.WorkerConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactory;
 import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactoryInterceptor;
+import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingLivenessCheck;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingReadinessCheck;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingStartupCheck;
 import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
-import io.smallrye.reactive.messaging.providers.extension.EmitterConfiguration;
 
 public class SmallRyeReactiveMessagingProcessor {
 

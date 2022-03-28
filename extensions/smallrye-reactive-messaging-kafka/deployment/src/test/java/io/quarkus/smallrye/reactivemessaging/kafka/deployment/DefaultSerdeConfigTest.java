@@ -51,6 +51,7 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
 import io.smallrye.reactive.messaging.kafka.Record;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -2673,6 +2674,26 @@ public class DefaultSerdeConfigTest {
         void method3(CustomDto payload) {
 
         }
+    }
+
+    @Test
+    void kafkaTransactions() {
+        // @formatter:off
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.tx.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.tx.transactional.id", "${quarkus.application.name}-tx"),
+                tuple("mp.messaging.outgoing.tx.enable.idempotence", "true"),
+                tuple("mp.messaging.outgoing.tx.acks", "all"),
+        };
+        doTest(expectations, TransactionalProducer.class);
+
+    }
+
+    private static class TransactionalProducer {
+
+        @Channel("tx")
+        KafkaTransactions<String> kafkaTransactions;
+
     }
 
 }

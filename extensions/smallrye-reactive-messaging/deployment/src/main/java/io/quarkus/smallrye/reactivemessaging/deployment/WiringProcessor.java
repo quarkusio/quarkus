@@ -88,10 +88,17 @@ public class WiringProcessor {
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer) {
 
+        Map<String, AnnotationInstance> emitterFactories = new HashMap<>();
         // We need to collect all business methods annotated with @Incoming/@Outgoing first
         for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
             // TODO: add support for inherited business methods
             //noinspection OptionalGetWithoutIsPresent
+            AnnotationInstance emitterFactory = transformedAnnotations.getAnnotation(bean.getTarget().get(),
+                    ReactiveMessagingDotNames.EMITTER_FACTORY_FOR);
+            if (emitterFactory != null) {
+                emitterFactories.put(emitterFactory.value().asClass().name().toString(), emitterFactory);
+            }
+
             for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
                 // @Incoming is repeatable
                 AnnotationInstance incoming = transformedAnnotations.getAnnotation(method,
@@ -131,31 +138,33 @@ public class WiringProcessor {
                     ReactiveMessagingDotNames.CHANNEL);
             Optional<AnnotationInstance> legacyChannel = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
                     ReactiveMessagingDotNames.LEGACY_CHANNEL);
-            boolean isEmitter = injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.EMITTER);
-            boolean isMutinyEmitter = injectionPoint.getRequiredType().name()
-                    .equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
+
+            String injectionType = injectionPoint.getRequiredType().name().toString();
+            AnnotationInstance emitterType = emitterFactories.get(injectionType);
+
             boolean isLegacyEmitter = injectionPoint.getRequiredType().name()
                     .equals(ReactiveMessagingDotNames.LEGACY_EMITTER);
 
-            if (isEmitter || isMutinyEmitter) {
-                // New emitter from the spec, or Mutiny emitter
-                handleEmitter(transformedAnnotations, appChannels, emitters, validationErrors, injectionPoint, broadcast,
-                        channel, ReactiveMessagingDotNames.ON_OVERFLOW);
+            if (emitterType != null) {
+                if (isLegacyEmitter) {
+                    // Deprecated Emitter from SmallRye (emitter, channel and on overflow have been added to the spec)
+                    handleEmitter(transformedAnnotations, appChannels, emitters, validationErrors, injectionPoint,
+                            emitterType, broadcast, legacyChannel, ReactiveMessagingDotNames.LEGACY_ON_OVERFLOW);
+                } else {
+                    // New emitter from the spec, or Mutiny emitter
+                    handleEmitter(transformedAnnotations, appChannels, emitters, validationErrors, injectionPoint,
+                            emitterType, broadcast, channel, ReactiveMessagingDotNames.ON_OVERFLOW);
+                }
+            } else {
+                if (channel.isPresent()) {
+                    handleChannelInjection(appChannels, channels, channel.get());
+                }
+
+                if (legacyChannel.isPresent()) {
+                    handleChannelInjection(appChannels, channels, legacyChannel.get());
+                }
             }
 
-            if (isLegacyEmitter) {
-                // Deprecated Emitter from SmallRye (emitter, channel and on overflow have been added to the spec)
-                handleEmitter(transformedAnnotations, appChannels, emitters, validationErrors, injectionPoint, broadcast,
-                        legacyChannel, ReactiveMessagingDotNames.LEGACY_ON_OVERFLOW);
-            }
-
-            if (channel.isPresent() && !(isEmitter || isMutinyEmitter)) {
-                handleChannelInjection(appChannels, channels, channel.get());
-            }
-
-            if (legacyChannel.isPresent() && !isLegacyEmitter) {
-                handleChannelInjection(appChannels, channels, legacyChannel.get());
-            }
         }
 
     }
@@ -175,6 +184,7 @@ public class WiringProcessor {
             BuildProducer<InjectedEmitterBuildItem> emitters,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             InjectionPointInfo injectionPoint,
+            AnnotationInstance emitterType,
             Optional<AnnotationInstance> broadcast,
             Optional<AnnotationInstance> annotation,
             DotName onOverflowAnnotation) {
@@ -187,7 +197,7 @@ public class WiringProcessor {
             String channelName = annotation.get().value().asString();
             Optional<AnnotationInstance> overflow = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
                     onOverflowAnnotation);
-            createEmitter(appChannels, emitters, injectionPoint, channelName, overflow, broadcast);
+            createEmitter(appChannels, emitters, injectionPoint, channelName, emitterType, overflow, broadcast);
         }
     }
 
@@ -365,13 +375,17 @@ public class WiringProcessor {
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private void createEmitter(BuildProducer<ChannelBuildItem> appChannels, BuildProducer<InjectedEmitterBuildItem> emitters,
+    private void createEmitter(BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<InjectedEmitterBuildItem> emitters,
             InjectionPointInfo injectionPoint,
             String channelName,
+            AnnotationInstance emitter,
             Optional<AnnotationInstance> overflow,
             Optional<AnnotationInstance> broadcast) {
         LOGGER.debugf("Emitter injection point '%s' detected, channel name: '%s'",
                 injectionPoint.getTargetInfo(), channelName);
+
+        String emitterTypeName = emitter.value().asClass().name().toString();
 
         boolean hasBroadcast = false;
         int awaitSubscribers = -1;
@@ -390,12 +404,10 @@ public class WiringProcessor {
             strategy = annotation.value().asString();
         }
 
-        boolean isMutinyEmitter = injectionPoint.getRequiredType().name()
-                .equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
         produceOutgoingChannel(appChannels, channelName);
         emitters.produce(
                 InjectedEmitterBuildItem
-                        .of(channelName, isMutinyEmitter, strategy, bufferSize, hasBroadcast, awaitSubscribers));
+                        .of(channelName, emitterTypeName, strategy, bufferSize, hasBroadcast, awaitSubscribers));
     }
 
 }

@@ -25,7 +25,6 @@ Note that this script also builds:
 - A patched version of OpenRewrite (while waiting for integration of our patches)
 - A patched version of the Rewrite Maven Plugin (to point to the patched OpenRewrite version)
 - A patched version of the Kotlin Maven Plugin (to allow skipping the `main` compilation, it's required for the OpenRewrite run)
-- SmallRye Config while waiting for a CR2
 
 ## Approach
 

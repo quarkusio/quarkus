@@ -192,7 +192,7 @@ recipeList:
       newValue: 3.0
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-config.version
-      newValue: 3.0.0-SNAPSHOT
+      newValue: 3.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
       newValue: 4.0.0-RC1

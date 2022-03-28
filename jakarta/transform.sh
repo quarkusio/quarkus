@@ -30,12 +30,12 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   popd
 
   # Build SmallRye Config (temporary)
-  rm -rf target/smallrye-config
-  git clone git@github.com:smallrye/smallrye-config.git target/smallrye-config
-  pushd target/smallrye-config
-  git checkout jakarta
-  mvn clean install -DskipTests -DskipITs
-  popd
+  #rm -rf target/smallrye-config
+  #git clone git@github.com:smallrye/smallrye-config.git target/smallrye-config
+  #pushd target/smallrye-config
+  #git checkout jakarta
+  #mvn clean install -DskipTests -DskipITs
+  #popd
 
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)

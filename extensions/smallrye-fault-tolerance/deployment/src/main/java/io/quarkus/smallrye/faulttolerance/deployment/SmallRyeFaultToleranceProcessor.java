@@ -201,7 +201,8 @@ public class SmallRyeFaultToleranceProcessor {
         // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(FaultToleranceInterceptor.class, QuarkusFaultToleranceOperationProvider.class,
-                        QuarkusExistingCircuitBreakerNames.class, CdiFaultToleranceSpi.Dependencies.class)
+                        QuarkusExistingCircuitBreakerNames.class, CdiFaultToleranceSpi.EagerDependencies.class,
+                        CdiFaultToleranceSpi.LazyDependencies.class)
                 .build());
 
         if (!metricsCapability.isPresent()) {

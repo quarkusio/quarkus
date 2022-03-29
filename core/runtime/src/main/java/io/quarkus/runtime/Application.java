@@ -11,6 +11,7 @@ import org.wildfly.common.lock.Locks;
 
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.runtime.shutdown.ShutdownHooks;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
 
 /**
@@ -199,6 +200,7 @@ public abstract class Application implements Closeable {
         }
         Timing.staticInitStopped(auxilaryApplication);
         try {
+            ShutdownHooks.runShutdown();
             ShutdownRecorder.runShutdown();
             doStop();
         } finally {

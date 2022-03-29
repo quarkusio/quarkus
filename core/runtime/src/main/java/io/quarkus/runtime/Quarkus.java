@@ -2,11 +2,13 @@ package io.quarkus.runtime;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.launcher.QuarkusLauncher;
+import io.quarkus.runtime.shutdown.ShutdownHooks;
 
 /**
  * The entry point for applications that use a main method. Quarkus will shut down when the main method returns.
@@ -183,4 +185,32 @@ public class Quarkus {
             app.awaitShutdown();
         }
     }
+
+    /**
+     * Registers a shutdown hook which runs on application shutdown and
+     * waits indefinitely on completion.
+     * <p>
+     * Registered hooks are run in reverse order of registration.
+     *
+     * @param runnable the shutdown hook to run on shutdown.
+     */
+    public static void addShutdownHook(Runnable runnable) {
+        ShutdownHooks.registerShutdownHook(runnable);
+    }
+
+    /**
+     * Registers a shutdown hook which runs on application shutdown and
+     * waits if necessary for at most the given time on completion.
+     * <p>
+     * Registered hooks are run in reverse order of registration.
+     *
+     * @param runnable the shutdown hook to run on shutdown.
+     * @param timeout the maximum time to wait.
+     * @param unit the time unit of the timeout argument.
+     * @throws IllegalArgumentException if the value of timeout is negative or unit is null.
+     */
+    public static void addShutdownHook(Runnable runnable, long timeout, TimeUnit unit) {
+        ShutdownHooks.registerShutdownHook(runnable, timeout, unit);
+    }
+
 }

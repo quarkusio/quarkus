@@ -55,7 +55,7 @@ public class HibernateValidatorRecorder {
 
                 LocaleResolver localeResolver = null;
                 InstanceHandle<LocaleResolver> configuredLocaleResolver = Arc.container()
-                        .instance(LocaleResolver.class);
+                        .instance("locale-resolver-wrapper");
                 if (configuredLocaleResolver.isAvailable()) {
                     localeResolver = configuredLocaleResolver.get();
                     configuration.localeResolver(localeResolver);

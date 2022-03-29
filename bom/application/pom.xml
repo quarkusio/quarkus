@@ -40,10 +40,10 @@
         <microprofile-lra.version>1.0</microprofile-lra.version>
         <smallrye-common.version>1.10.0</smallrye-common.version>
         <smallrye-config.version>2.9.2</smallrye-config.version>
-        <smallrye-health.version>3.2.0</smallrye-health.version>
+        <smallrye-health.version>3.2.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.4</smallrye-metrics.version>
         <smallrye-open-api.version>2.1.22</smallrye-open-api.version>
-        <smallrye-graphql.version>1.4.3</smallrye-graphql.version>
+        <smallrye-graphql.version>1.4.4</smallrye-graphql.version>
         <smallrye-opentracing.version>2.1.0</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.3.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>3.3.3</smallrye-jwt.version>
@@ -95,7 +95,7 @@
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.15</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.1.0</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.1.1</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -121,7 +121,7 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.3.3</postgresql-jdbc.version>
-        <mariadb-jdbc.version>2.7.5</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.0.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.28</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -177,7 +177,7 @@
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.9.2</antlr.version>
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
-        <keycloak.version>17.0.0</keycloak.version>
+        <keycloak.version>17.0.1</keycloak.version>
         <logstash-gelf.version>1.15.0</logstash-gelf.version>
         <checker-qual.version>3.21.3</checker-qual.version>
         <error-prone-annotations.version>2.11.0</error-prone-annotations.version>
@@ -839,6 +839,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-keycloak-admin-client-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

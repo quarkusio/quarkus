@@ -956,6 +956,8 @@ the `-f` argument, if it was specified.
 [[project-info]]
 == Quarkus project info
 
+NOTE: This goal was introduced in Quarkus Maven plugin 2.7.0.Final and can be used in projects that are based on Quarkus version 2.0.0.Final or later.
+
 The Quarkus Maven plugin includes a goal called `info` (currently marked as 'experimental') that logs Quarkus-specific information about the project, such as: the imported Quarkus platform BOMs and the Quarkus extensions found among the project dependencies.
 In a multi-module project `quarkus:info` will assume that the current module, in which it is executed, is the main module of the application.
 
@@ -1030,6 +1032,8 @@ NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in th
 
 [[project-update]]
 == Quarkus project update
+
+NOTE: This goal was introduced in Quarkus Maven plugin 2.7.0.Final and can be used in projects that are based on Quarkus version 2.0.0.Final or later.
 
 The `quarkus:update` goal (currently marked as 'experimental') provided by the Quarkus Maven plugin can be used to check whether there are Quarkus-related updates available for a project, such as: new releases of the relevant Quarkus platform BOMs and non-platform Quarkus extensions present in the project. In a multi-module project the `update` goal is meant to be executed from the main Quarkus application module.
 

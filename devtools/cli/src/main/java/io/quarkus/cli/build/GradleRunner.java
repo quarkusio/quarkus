@@ -126,6 +126,32 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
+    public Integer info(boolean perModule) {
+        ArrayDeque<String> args = new ArrayDeque<>();
+        args.add("quarkusInfo");
+        if (perModule) {
+            args.add("--per-module");
+        }
+        return run(prependExecutable(args));
+    }
+
+    @Override
+    public Integer update(boolean rectify, boolean recommendedState, boolean perModule) throws Exception {
+        ArrayDeque<String> args = new ArrayDeque<>();
+        args.add("quarkusUpdate");
+        if (rectify) {
+            args.add("--rectify");
+        }
+        if (recommendedState) {
+            args.add("--recommended-state");
+        }
+        if (perModule) {
+            args.add("--per-module");
+        }
+        return run(prependExecutable(args));
+    }
+
+    @Override
     public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, runMode.isBatchMode());

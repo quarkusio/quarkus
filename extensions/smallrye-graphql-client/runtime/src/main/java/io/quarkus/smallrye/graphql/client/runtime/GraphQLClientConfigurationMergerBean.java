@@ -74,6 +74,9 @@ public class GraphQLClientConfigurationMergerBean {
         quarkusConfig.proxyUsername.ifPresent(transformed::setProxyUsername);
         quarkusConfig.proxyPassword.ifPresent(transformed::setProxyPassword);
         quarkusConfig.maxRedirects.ifPresent(transformed::setMaxRedirects);
+        quarkusConfig.executeSingleResultOperationsOverWebsocket
+                .ifPresent(transformed::setExecuteSingleOperationsOverWebsocket);
+        quarkusConfig.websocketInitializationTimeout.ifPresent(transformed::setWebsocketInitializationTimeout);
         return transformed;
     }
 

@@ -11,8 +11,8 @@ import java.util.List;
 import org.apache.commons.lang3.SystemUtils;
 
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContainerRunner {
 

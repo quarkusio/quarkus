@@ -134,6 +134,11 @@ public class OpenshiftProcessor {
         });
         result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator(config.route)));
 
+        // Handle remote debug configuration for container ports
+        if (config.remoteDebug.enabled) {
+            result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(config.remoteDebug.buildDebugPort())));
+        }
+
         if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
                 && !capabilities.isPresent("io.quarkus.openshift")
                 && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
@@ -279,6 +284,13 @@ public class OpenshiftProcessor {
                         new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry)));
             });
         }
+
+        // Handle remote debug configuration
+        if (config.remoteDebug.enabled) {
+            result.add(new DecoratorBuildItem(OPENSHIFT, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+                    config.remoteDebug.buildJavaToolOptionsEnv())));
+        }
+
         return result;
     }
 }

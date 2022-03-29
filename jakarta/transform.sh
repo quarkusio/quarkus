@@ -16,14 +16,14 @@ fi
 if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   # Prepare OpenRewrite - we temporarily build a local version as we need a patch
   rm -rf target/rewrite
-  git clone git@github.com:gsmet/rewrite.git target/rewrite
+  git clone https://github.com/gsmet/rewrite.git target/rewrite
   pushd target/rewrite
   git checkout jakarta
   ./gradlew -x test -x javadoc publishToMavenLocal
   popd
 
   rm -rf target/rewrite-maven-plugin
-  git clone git@github.com:gsmet/rewrite-maven-plugin.git target/rewrite-maven-plugin
+  git clone https://github.com/gsmet/rewrite-maven-plugin.git target/rewrite-maven-plugin
   pushd target/rewrite-maven-plugin
   git checkout jakarta
   ./mvnw clean install -DskipTests -DskipITs
@@ -31,7 +31,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
 
   # Build SmallRye Config (temporary)
   #rm -rf target/smallrye-config
-  #git clone git@github.com:smallrye/smallrye-config.git target/smallrye-config
+  #git clone https://github.com/smallrye/smallrye-config.git target/smallrye-config
   #pushd target/smallrye-config
   #git checkout jakarta
   #mvn clean install -DskipTests -DskipITs
@@ -40,7 +40,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
   rm -rf target/kotlin
-  git clone -b v1.6.10-jakarta --depth 1 git@github.com:gsmet/kotlin.git target/kotlin
+  git clone -b v1.6.10-jakarta --depth 1 https://github.com/gsmet/kotlin.git target/kotlin
   pushd target/kotlin/libraries/tools/kotlin-maven-plugin
   mvn clean install -DskipTests -DskipITs
   popd

@@ -615,8 +615,7 @@ This configuration option would recognize strings in this format (shown as a reg
 
 Once GZip support has been enabled you can use it on an endpoint by adding the `@org.jboss.resteasy.annotations.GZIP` annotation to your endpoint method.
 
-If you want to compress everything then we recommended that you use the `quarkus.http.enable-compression=true` setting instead to globally enable
-compression support.
+NOTE: The configuration property `quarkus.http.enable-compression` has no effect on compression support of RESTEasy Classic endpoints.
 
 == Multipart Support
 

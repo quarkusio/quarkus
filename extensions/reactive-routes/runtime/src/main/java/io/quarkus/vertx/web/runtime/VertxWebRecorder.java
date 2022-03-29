@@ -1,9 +1,14 @@
 package io.quarkus.vertx.web.runtime;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.HttpCompression;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
@@ -11,6 +16,12 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class VertxWebRecorder {
+
+    final RuntimeValue<HttpConfiguration> httpConfiguration;
+
+    public VertxWebRecorder(RuntimeValue<HttpConfiguration> httpConfiguration) {
+        this.httpConfiguration = httpConfiguration;
+    }
 
     @SuppressWarnings("unchecked")
     public Handler<RoutingContext> createHandler(String handlerClassName) {
@@ -26,6 +37,17 @@ public class VertxWebRecorder {
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException
                 | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create route handler: " + handlerClassName, e);
+        }
+    }
+
+    public Handler<RoutingContext> compressRouteHandler(Handler<RoutingContext> routeHandler, HttpCompression compression) {
+        if (httpConfiguration.getValue().enableCompression) {
+            return new HttpCompressionHandler(routeHandler, compression,
+                    compression == HttpCompression.UNDEFINED
+                            ? Set.copyOf(httpConfiguration.getValue().compressMediaTypes.orElse(List.of()))
+                            : Set.of());
+        } else {
+            return routeHandler;
         }
     }
 

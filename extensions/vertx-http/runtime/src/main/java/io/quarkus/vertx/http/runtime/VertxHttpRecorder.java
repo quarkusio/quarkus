@@ -337,6 +337,18 @@ public class VertxHttpRecorder {
             defaultRouteHandler.accept(httpRouteRouter.route().order(DEFAULT_ROUTE_ORDER));
         }
 
+        if (httpConfiguration.enableCompression) {
+            httpRouteRouter.route().order(0).handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext ctx) {
+                    // Add "Content-Encoding: identity" header that disables the compression
+                    // This header can be removed to enable the compression
+                    ctx.response().putHeader(HttpHeaders.CONTENT_ENCODING, HttpHeaders.IDENTITY);
+                    ctx.next();
+                }
+            });
+        }
+
         httpRouteRouter.route().last().failureHandler(
                 new QuarkusErrorHandler(launchMode.isDevOrTest(), httpConfiguration.unhandledErrorContentTypeDefault));
 
@@ -767,6 +779,9 @@ public class VertxHttpRecorder {
         httpServerOptions.setAcceptBacklog(httpConfiguration.acceptBacklog);
         httpServerOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
         httpServerOptions.setCompressionSupported(httpConfiguration.enableCompression);
+        if (httpConfiguration.compressionLevel.isPresent()) {
+            httpServerOptions.setCompressionLevel(httpConfiguration.compressionLevel.getAsInt());
+        }
         httpServerOptions.setDecompressionSupported(httpConfiguration.enableDecompression);
         httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
     }

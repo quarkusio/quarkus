@@ -5,6 +5,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.vertx.http.Compressed;
+import io.quarkus.vertx.http.Uncompressed;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Param;
@@ -50,5 +52,7 @@ final class DotNames {
     static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
     static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
+    static final DotName COMPRESSED = DotName.createSimple(Compressed.class.getName());
+    static final DotName UNCOMPRESSED = DotName.createSimple(Uncompressed.class.getName());
 
 }

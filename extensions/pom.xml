@@ -115,7 +115,6 @@
         <!-- Security -->
         <module>security</module>
         <module>security-jpa</module>
-        <module>security-webauthn</module>
         <module>elytron-security-common</module>
         <module>elytron-security</module>
         <module>elytron-security-jdbc</module>

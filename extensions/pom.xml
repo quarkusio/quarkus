@@ -78,6 +78,7 @@
         <module>redis-client</module>
 
         <!-- Data access and validation -->
+        <module>transaction-annotations</module>
         <module>narayana-jta</module>
         <module>narayana-stm</module>
         <module>narayana-lra</module>

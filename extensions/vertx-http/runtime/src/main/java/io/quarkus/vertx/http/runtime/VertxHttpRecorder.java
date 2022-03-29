@@ -66,6 +66,7 @@ import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.http.cdi.VertxHttpListeningEvent;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
 import io.quarkus.vertx.http.runtime.devmode.VertxHttpHotReplacementSetup;
@@ -591,6 +592,8 @@ public class VertxHttpRecorder {
 
             String deploymentId = futureResult.get();
             VertxCoreRecorder.setWebDeploymentId(deploymentId);
+            Arc.container().beanManager().getEvent().select(VertxHttpListeningEvent.class)
+                    .fire(new VertxHttpListeningEvent(httpServerOptions, domainSocketOptions, sslConfig));
             closeTask = new Runnable() {
                 @Override
                 public synchronized void run() {

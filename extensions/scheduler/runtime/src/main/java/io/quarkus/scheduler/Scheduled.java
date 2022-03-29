@@ -11,7 +11,11 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.Dependent;
+import javax.enterprise.event.Observes;
+import javax.inject.Singleton;
 
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled.Schedules;
 
 /**
@@ -197,6 +201,29 @@ public @interface Scheduled {
         @Override
         public boolean test(ScheduledExecution execution) {
             return false;
+        }
+
+    }
+
+    /**
+     * Execution is skipped if the application is not running (either not started or already shutdown).
+     */
+    @Singleton
+    class ApplicationNotRunning implements SkipPredicate {
+
+        private volatile boolean running;
+
+        void started(@Observes StartupEvent event) {
+            this.running = true;
+        }
+
+        void shutdown(@Observes ShutdownEvent event) {
+            this.running = false;
+        }
+
+        @Override
+        public boolean test(ScheduledExecution execution) {
+            return !running;
         }
 
     }

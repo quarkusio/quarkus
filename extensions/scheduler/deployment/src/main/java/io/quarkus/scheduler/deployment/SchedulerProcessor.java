@@ -103,7 +103,7 @@ public class SchedulerProcessor {
     @BuildStep
     void beans(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         if (capabilities.isMissing(Capability.QUARTZ)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem(SimpleScheduler.class));
+            additionalBeans.produce(new AdditionalBeanBuildItem(SimpleScheduler.class, Scheduled.ApplicationNotRunning.class));
         }
     }
 

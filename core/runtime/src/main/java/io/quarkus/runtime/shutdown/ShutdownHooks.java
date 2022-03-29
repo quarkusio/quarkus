@@ -32,7 +32,7 @@ public class ShutdownHooks {
     private static class ShutdownHook implements Runnable {
 
         private final Runnable runnable;
-        private Long timeout = -1L;
+        private long timeout = -1L;
         private TimeUnit unit = TimeUnit.MILLISECONDS;
 
         public ShutdownHook(Runnable runnable) {

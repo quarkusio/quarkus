@@ -25,7 +25,7 @@ recipeList:
   # EL
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.el-impl.version
-      newValue: 4.0.1
+      newValue: 4.0.2
   # CDI
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.cdi
@@ -41,7 +41,10 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.interceptor-api.version
       newValue: 2.0.0
-  # JAX-RS - See below
+  # JAX-RS - See below for the specs
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: resteasy.version
+      newValue: 6.0.0.Final
   # JAXB - See below
   # JSON
   - org.openrewrite.maven.ChangePropertyValue:
@@ -66,6 +69,9 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
       newValue: 5.0.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: quarkus-http.version
+      newValue: 5.0.0-SNAPSHOT
   # Transaction
   - org.openrewrite.maven.ChangePropertyValue:
       key: version.jta
@@ -77,6 +83,9 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.validation-api.version
       newValue: 3.0.1
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: hibernate-validator.version
+      newValue: 7.0.4.Final
   # Websockets
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.websocket-api.version
@@ -124,6 +133,16 @@ recipeList:
       propertyName: jboss-jaxrs-api_2.1_spec.version
   - org.openrewrite.maven.RemoveProperty:
       propertyName: jboss-jaxb-api_2.3_spec.version
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-jaxrs-switch
+displayName: Switch JAX-RS version
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.spec.javax.ws.rs
+      oldArtifactId: jboss-jaxrs-api_2.1_spec
+      newGroupId: org.jboss.spec.javax.ws.rs
+      newArtifactId: jboss-jaxrs-api_3.0_spec
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxb-switch
@@ -295,3 +314,40 @@ recipeList:
       newGroupId: jakarta.ejb
       newArtifactId: jakarta.ejb-api
       newVersion: 4.0.0
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.bom.resteasy-microprofile
+displayName: Add RESTEasy MicroProfile Config to BOM
+recipeList:
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: org.jboss.resteasy.microprofile
+      artifactId: microprofile-config
+      version: "${resteasy-microprofile.version}"
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.resteasy
+      oldArtifactId: resteasy-client-microprofile
+      newGroupId: org.jboss.resteasy.microprofile
+      newArtifactId: microprofile-rest-client
+      newVersion: "${resteasy-microprofile.version}"
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: resteasy-microprofile.version
+      newValue: 2.0.0.Beta1
+      addIfMissing: true
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.resteasy-common
+displayName: Add RESTEasy MicroProfile Config to RESTEasy Common
+recipeList:
+  - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
+      groupId: org.jboss.resteasy.microprofile
+      artifactId: microprofile-config
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.rest-client
+displayName: Add RESTEasy MicroProfile Config to RESTEasy Common
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.resteasy
+      oldArtifactId: resteasy-client-microprofile
+      newGroupId: org.jboss.resteasy.microprofile
+      newArtifactId: microprofile-rest-client

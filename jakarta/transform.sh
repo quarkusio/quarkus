@@ -3,6 +3,9 @@
 set -e -u -o pipefail
 shopt -s failglob
 
+# Use `export REWRITE_OFFLINE=true` to avoid building components from external repositories
+# Use `export REWRITE_NO_TESTS=true` to avoid running the tests (useful when you just want a quick transformation)
+
 # Each transformed module/project is expected to:
 # a) execute Eclipse Transformer command to transform relevant directory
 # b) update dependencies to their respective EE 9 versions
@@ -36,6 +39,14 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   #git checkout jakarta
   #mvn clean install -DskipTests -DskipITs
   #popd
+
+  # Build Quarkus HTTP (temporary)
+  rm -rf target/quarkus-http
+  git clone https://github.com/quarkusio/quarkus-http.git target/quarkus-http
+  pushd target/quarkus-http
+  git checkout jakarta-rewrite
+  mvn clean install -DskipTests -DskipITs
+  popd
 
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
@@ -76,6 +87,19 @@ transform_module () {
   echo "    > Transformation done"
 }
 
+tranform_kotlin_module () {
+  # this is very ad hoc but hopefully it will be good enough
+  for package in javax.inject javax.enterprise javax.ws.rs javax.annotation; do
+    local newPackage=${package/javax/jakarta}
+    find $1 -name '*.kt' | xargs sed -i "s@import ${package}\.@import ${newPackage}.@g"
+  done
+}
+
+convert_service_file () {
+  local newName=${1/javax/jakarta}
+  mv $1 $newName
+}
+
 # Rewrite a module with OpenRewrite
 rewrite_module () {
   local modulePath="$1"
@@ -109,7 +133,11 @@ update_banned_dependency_advanced () {
 # Build, test and install a particular maven module (chosen by relative path)
 build_module () {
   local pomPath="$1/pom.xml"
-  ./mvnw -B clean install -f "$pomPath"
+  if [ "${REWRITE_NO_TESTS-false}" != "true" ]; then
+    ./mvnw -B clean install -f "$pomPath"
+  else
+    ./mvnw -B clean install -f "$pomPath" -DskipTests -DskipITs
+  fi
   echo "  - Installed newly built $pomPath"
 }
 
@@ -152,7 +180,7 @@ clean_project
 ./mvnw -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -am clean install -DskipTests -DskipITs
 
 ## we cannot rewrite some of the modules for various reasons but we rewrite most of them
-./mvnw rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -Dno-test-modules -Drewrite.pomCacheEnabled=false
+./mvnw -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -Dno-test-modules -Drewrite.pomCacheEnabled=false
 
 ## remove banned dependencies
 remove_banned_dependency "independent-projects/bootstrap" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
@@ -163,6 +191,11 @@ remove_banned_dependency "build-parent" 'javax.inject:javax.inject' 'we allow ja
 remove_banned_dependency "build-parent" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "build-parent" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
 update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
+
+## some additional wild changes to clean up at some point
+sed -i 's@FilterConfigSourceImpl@FilterConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
+sed -i 's@ServletConfigSourceImpl@ServletConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
+sed -i 's@ServletContextConfigSourceImpl@ServletContextConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
 
 ## cleanup phase - needs to be done once everything has been rewritten
 rewrite_module_cleanup "bom/application"
@@ -196,6 +229,15 @@ build_module_no_tests "independent-projects/qute"
 ## Tools
 start_module "Tools"
 build_module "independent-projects/tools"
+
+## RESTEasy Reactive
+start_module "Tools"
+transform_module "independent-projects/resteasy-reactive"
+# TODO: probably something we need to push back to the Eclipse Transformer
+convert_service_file independent-projects/resteasy-reactive/common/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.RuntimeDelegate
+convert_service_file 'independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.sse.SseEventSource$Builder'
+convert_service_file independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.client.ClientBuilder
+build_module "independent-projects/resteasy-reactive"
 
 # BOM
 start_module "BOM"
@@ -237,8 +279,57 @@ build_module_only_no_tests "extensions/vertx-http"
 build_module "extensions/vertx-http/dev-console-runtime-spi"
 build_module "extensions/vertx-http/dev-console-spi"
 build_module "extensions/arc"
+build_module "extensions/smallrye-context-propagation"
+build_module "extensions/mutiny"
+build_module "extensions/netty"
+build_module "extensions/vertx"
+build_module "extensions/security"
+build_module_only_no_tests "extensions/kubernetes"
+build_module "extensions/kubernetes/spi"
+build_module "extensions/vertx-http"
+build_module "extensions/jsonp"
+build_module "extensions/jaxrs-spi"
+build_module "extensions/undertow"
+build_module "extensions/jsonb"
+build_module "extensions/jackson"
+build_module "extensions/jaxp"
+build_module "extensions/jaxb"
+build_module "extensions/apache-httpclient"
+
+# this will be simplified once we can get all RESTEasy Classic to compile fine
+build_module_only_no_tests "extensions/resteasy-classic"
+build_module "extensions/resteasy-classic/resteasy-common"
+build_module "extensions/resteasy-classic/resteasy-server-common"
+build_module "extensions/resteasy-classic/resteasy"
+build_module "extensions/resteasy-classic/resteasy-jsonb"
+build_module "extensions/resteasy-classic/resteasy-jackson"
+build_module "extensions/resteasy-classic/resteasy-jaxb"
+build_module "extensions/resteasy-classic/resteasy-links"
+build_module "extensions/resteasy-classic/resteasy-mutiny-common"
+build_module "extensions/resteasy-classic/resteasy-mutiny"
+
+build_module_only_no_tests "extensions/resteasy-reactive"
+build_module_only_no_tests "extensions/resteasy-reactive/quarkus-resteasy-reactive-common"
+build_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-common/spi-deployment"
+
+build_module "extensions/hibernate-validator"
 
 exit 1
+
+# TODO for more RESTEasy
+build_module_only_no_tests "extensions/panache"
+build_module "extensions/panache/panache-common"
+build_module_only_no_tests "extensions/hibernate-validator"
+build_module "extensions/hibernate-validator/spi"
+# WIP here
+build_module "extensions/elytron-security-properties-file"
+build_module "extensions/reactive-routes"
+build_module "extensions/qute"
+
+exit 1
+
+# RESTEasy Reactive
+#tranform_kotlin_module "extensions/resteasy-reactive"
 
 # These ones require ArC and Mutiny extensions
 #build_module "test-framework/junit5-mockito-config"

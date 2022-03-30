@@ -43,7 +43,7 @@ public class QuartzBuildTimeConfig {
     /**
      * The name of the datasource to use.
      * <p>
-     * Optionally needed when using the `db` store type.
+     * Optionally needed when using the `jdbc-tx` or `jdbc-cmt` store types.
      * If not specified, defaults to using the default datasource.
      */
     @ConfigItem(name = "datasource")

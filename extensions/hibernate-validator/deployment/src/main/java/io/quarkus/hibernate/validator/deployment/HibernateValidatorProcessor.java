@@ -364,11 +364,8 @@ class HibernateValidatorProcessor {
                 AbstractMessageInterpolator.CONTRIBUTOR_VALIDATION_MESSAGES };
 
         for (String potentialHibernateValidatorResourceBundle : potentialHibernateValidatorResourceBundles) {
-            for (ClassPathElement cpe : QuarkusClassLoader.getElements(potentialHibernateValidatorResourceBundle, false)) {
-                if (cpe.isRuntime()) {
-                    resourceBundles.produce(new NativeImageResourceBundleBuildItem(potentialHibernateValidatorResourceBundle));
-                    break;
-                }
+            if (QuarkusClassLoader.isResourcePresentAtRuntime(potentialHibernateValidatorResourceBundle)) {
+                resourceBundles.produce(new NativeImageResourceBundleBuildItem(potentialHibernateValidatorResourceBundle));
             }
         }
     }

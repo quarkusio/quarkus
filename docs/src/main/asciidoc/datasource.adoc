@@ -44,8 +44,8 @@ If you want a better understanding of how all this works, this guide has a lot m
 === Zero Config Setup (Dev Services)
 
 When testing or running in dev mode Quarkus can even provide you with a zero config database out of the box, a feature
-we refer to as Dev Services. Depending on your database type you may need docker installed in order to use this feature. Dev Services
-is supported for the following open source databases:
+we refer to as Dev Services. Depending on your database type you may need docker installed in order to use this feature.
+Dev Services is supported for the following databases:
 
 * DB2 (container) (requires license acceptance)
 * Derby (in-process)

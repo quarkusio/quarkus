@@ -783,6 +783,14 @@ The team believes this isn't a big deal as it's trivial to inject the Session vi
 handling the binding into a ThreadLocal yourself, making this a legacy feature.
 This limitation might be resolved in the future, if someone opens a ticket for it and provides a reasonable use case to justify the need.
 
+JNDI::
+The JNDI technology is commonly used in other runtimes to integrate different components.
+A common use case is Java Enterprise servers to bind the TransactionManager and the Datasource components to a name, and then have Hibernate ORM
+configured to look these components up by name.
+But in Quarkus this use case doesn't apply as components are injected directly, making JNDI support an unnecessary legacy.
+As a precaution, to avoid unexpected use of JNDI, the whole support for JNDI has been disabled in the Hibernate ORM extension for Quarkus.
+This is both a security precaution and an optimisation.
+
 === Other notable differences
 
 Format of `import.sql`::

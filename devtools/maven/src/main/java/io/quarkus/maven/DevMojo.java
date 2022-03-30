@@ -46,6 +46,7 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
@@ -345,6 +346,9 @@ public class DevMojo extends AbstractMojo {
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
 
+    @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
+    MojoExecution mojoExecution;
+
     /**
      * console attributes, used to restore the console state
      */
@@ -549,7 +553,7 @@ public class DevMojo extends AbstractMojo {
         final PluginDescriptor pluginDescr = getPluginDescriptor();
         executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(),
                 test ? QUARKUS_GENERATE_CODE_TESTS_GOAL : QUARKUS_GENERATE_CODE_GOAL,
-                Collections.singletonMap("mode", LaunchMode.DEVELOPMENT.name()));
+                Map.of("mode", LaunchMode.DEVELOPMENT.name(), QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false"));
     }
 
     private void initClassIndexes() throws MojoExecutionException {
@@ -557,7 +561,7 @@ public class DevMojo extends AbstractMojo {
     }
 
     private PluginDescriptor getPluginDescriptor() {
-        return (PluginDescriptor) getPluginContext().get("pluginDescriptor");
+        return mojoExecution.getMojoDescriptor().getPluginDescriptor();
     }
 
     private void triggerCompile(boolean test, boolean prepareNeeded) throws MojoExecutionException {

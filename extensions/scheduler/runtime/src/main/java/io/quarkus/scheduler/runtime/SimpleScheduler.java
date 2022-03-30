@@ -45,6 +45,10 @@ import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.runtime.util.SchedulerUtils;
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 @Typed(Scheduler.class)
 @Singleton
@@ -57,17 +61,19 @@ public class SimpleScheduler implements Scheduler {
 
     private final ScheduledExecutorService scheduledExecutor;
     private final ExecutorService executor;
+    private final Vertx vertx;
     private volatile boolean running;
     private final List<ScheduledTask> scheduledTasks;
     private final boolean enabled;
 
     public SimpleScheduler(SchedulerContext context, SchedulerRuntimeConfig schedulerRuntimeConfig,
             Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successExecutionEvent,
-            Event<FailedExecution> failedExecutionEvent) {
+            Event<FailedExecution> failedExecutionEvent, Vertx vertx) {
         this.running = true;
         this.enabled = schedulerRuntimeConfig.enabled;
         this.scheduledTasks = new ArrayList<>();
         this.executor = context.getExecutor();
+        this.vertx = vertx;
 
         if (!schedulerRuntimeConfig.enabled) {
             this.scheduledExecutor = null;
@@ -142,7 +148,7 @@ public class SimpleScheduler implements Scheduler {
         ZonedDateTime now = ZonedDateTime.now();
         LOG.tracef("Check triggers at %s", now);
         for (ScheduledTask task : scheduledTasks) {
-            task.execute(now, executor);
+            task.execute(now, executor, vertx);
         }
     }
 
@@ -288,26 +294,40 @@ public class SimpleScheduler implements Scheduler {
             this.invoker = invoker;
         }
 
-        void execute(ZonedDateTime now, ExecutorService executor) {
+        void execute(ZonedDateTime now, ExecutorService executor, Vertx vertx) {
             if (!trigger.isRunning()) {
                 return;
             }
             ZonedDateTime scheduledFireTime = trigger.evaluate(now);
             if (scheduledFireTime != null) {
-                try {
-                    executor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                invoker.invoke(new SimpleScheduledExecution(now, scheduledFireTime, trigger));
-                            } catch (Throwable t) {
-                                // already logged by the StatusEmitterInvoker
+                if (invoker.isBlocking()) {
+                    try {
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                doInvoke(now, scheduledFireTime);
                             }
+                        });
+                    } catch (RejectedExecutionException e) {
+                        LOG.warnf("Rejected execution of a scheduled task for trigger %s", trigger);
+                    }
+                } else {
+                    Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
+                    context.runOnContext(new Handler<Void>() {
+                        @Override
+                        public void handle(Void event) {
+                            doInvoke(now, scheduledFireTime);
                         }
                     });
-                } catch (RejectedExecutionException e) {
-                    LOG.warnf("Rejected execution of a scheduled task for trigger %s", trigger);
                 }
+            }
+        }
+
+        void doInvoke(ZonedDateTime now, ZonedDateTime scheduledFireTime) {
+            try {
+                invoker.invoke(new SimpleScheduledExecution(now, scheduledFireTime, trigger));
+            } catch (Throwable t) {
+                // already logged by the StatusEmitterInvoker
             }
         }
 

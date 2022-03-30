@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -66,17 +68,20 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
-import io.quarkus.scheduler.runtime.ScheduledInvoker;
+import io.quarkus.scheduler.runtime.DefaultInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerContext;
@@ -88,11 +93,6 @@ import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 public class SchedulerProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(SchedulerProcessor.class);
-
-    static final DotName SCHEDULED_NAME = DotName.createSimple(Scheduled.class.getName());
-    static final DotName SCHEDULES_NAME = DotName.createSimple(Scheduled.Schedules.class.getName());
-    static final DotName SKIP_NEVER_NAME = DotName.createSimple(Scheduled.Never.class.getName());
-    static final DotName SKIP_PREDICATE = DotName.createSimple(Scheduled.SkipPredicate.class.getName());
 
     static final Type SCHEDULED_EXECUTION_TYPE = Type.create(DotName.createSimple(ScheduledExecution.class.getName()),
             Kind.CLASS);
@@ -112,7 +112,8 @@ public class SchedulerProcessor {
         // We add @Singleton to any bean class that has no scope annotation and declares at least one non-static method annotated with @Scheduled
         return AutoAddScopeBuildItem.builder()
                 .anyMethodMatches(m -> !Modifier.isStatic(m.flags())
-                        && (m.hasAnnotation(SCHEDULED_NAME) || m.hasAnnotation(SCHEDULES_NAME)))
+                        && (m.hasAnnotation(SchedulerDotNames.SCHEDULED_NAME)
+                                || m.hasAnnotation(SchedulerDotNames.SCHEDULES_NAME)))
                 .defaultScope(BuiltinScope.SINGLETON)
                 .reason("Found non-static scheduled business methods").build();
     }
@@ -123,8 +124,9 @@ public class SchedulerProcessor {
             BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         // First collect static scheduled methods
-        List<AnnotationInstance> schedules = new ArrayList<>(beanArchives.getIndex().getAnnotations(SCHEDULED_NAME));
-        for (AnnotationInstance annotationInstance : beanArchives.getIndex().getAnnotations(SCHEDULES_NAME)) {
+        List<AnnotationInstance> schedules = new ArrayList<>(
+                beanArchives.getIndex().getAnnotations(SchedulerDotNames.SCHEDULED_NAME));
+        for (AnnotationInstance annotationInstance : beanArchives.getIndex().getAnnotations(SchedulerDotNames.SCHEDULES_NAME)) {
             for (AnnotationInstance scheduledInstance : annotationInstance.value().asNestedArray()) {
                 // We need to set the target of the containing instance
                 schedules.add(AnnotationInstance.create(scheduledInstance.name(), annotationInstance.target(),
@@ -137,7 +139,8 @@ public class SchedulerProcessor {
             }
             MethodInfo method = annotationInstance.target().asMethod();
             if (Modifier.isStatic(method.flags())) {
-                scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules));
+                scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules,
+                        transformedAnnotations.getAnnotation(method, SchedulerDotNames.NON_BLOCKING) != null));
                 LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
             }
         }
@@ -159,11 +162,13 @@ public class SchedulerProcessor {
                 continue;
             }
             List<AnnotationInstance> schedules = null;
-            AnnotationInstance scheduledAnnotation = transformedAnnotations.getAnnotation(method, SCHEDULED_NAME);
+            AnnotationInstance scheduledAnnotation = transformedAnnotations.getAnnotation(method,
+                    SchedulerDotNames.SCHEDULED_NAME);
             if (scheduledAnnotation != null) {
                 schedules = List.of(scheduledAnnotation);
             } else {
-                AnnotationInstance schedulesAnnotation = transformedAnnotations.getAnnotation(method, SCHEDULES_NAME);
+                AnnotationInstance schedulesAnnotation = transformedAnnotations.getAnnotation(method,
+                        SchedulerDotNames.SCHEDULES_NAME);
                 if (schedulesAnnotation != null) {
                     schedules = new ArrayList<>();
                     for (AnnotationInstance scheduledInstance : schedulesAnnotation.value().asNestedArray()) {
@@ -174,7 +179,8 @@ public class SchedulerProcessor {
                 }
             }
             if (schedules != null) {
-                scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(bean, method, schedules));
+                scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(bean, method, schedules,
+                        transformedAnnotations.getAnnotation(method, SchedulerDotNames.NON_BLOCKING) != null));
                 LOGGER.debugf("Found scheduled business method %s declared on %s", method, bean);
             }
         }
@@ -206,9 +212,10 @@ public class SchedulerProcessor {
                         "Invalid scheduled business method parameters %s [method: %s, bean: %s]", params,
                         method, scheduledMethod.getBean())));
             }
-            if (!method.returnType().kind().equals(Type.Kind.VOID)) {
+            if (!isValidReturnType(method.returnType())) {
                 errors.add(new IllegalStateException(
-                        String.format("Scheduled business method must return void [method: %s, bean: %s]",
+                        String.format(
+                                "Scheduled business method must return void, CompletionStage<Void> or Uni<Void> [method: %s, bean: %s]",
                                 method, scheduledMethod.getBean())));
             }
             // Validate cron() and every() expressions
@@ -226,11 +233,26 @@ public class SchedulerProcessor {
         }
     }
 
+    private boolean isValidReturnType(Type returnType) {
+        if (returnType.kind() == Kind.VOID) {
+            return true;
+        }
+        if (SchedulerDotNames.COMPLETION_STAGE.equals(returnType.name())
+                && returnType.asParameterizedType().arguments().get(0).name().equals(SchedulerDotNames.VOID)) {
+            return true;
+        }
+        if (SchedulerDotNames.UNI.equals(returnType.name())
+                && returnType.asParameterizedType().arguments().get(0).name().equals(SchedulerDotNames.VOID)) {
+            return true;
+        }
+        return false;
+    }
+
     @BuildStep
     public List<UnremovableBeanBuildItem> unremovableBeans() {
         // Beans annotated with @Scheduled should never be removed
-        return List.of(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SCHEDULED_NAME)),
-                new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SCHEDULES_NAME)));
+        return List.of(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SchedulerDotNames.SCHEDULED_NAME)),
+                new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SchedulerDotNames.SCHEDULES_NAME)));
     }
 
     @BuildStep
@@ -301,7 +323,7 @@ public class SchedulerProcessor {
 
             return new AnnotationsTransformerBuildItem(AnnotationsTransformer.builder()
                     .appliesTo(METHOD)
-                    .whenContainsAny(List.of(SCHEDULED_NAME, SCHEDULES_NAME))
+                    .whenContainsAny(List.of(SchedulerDotNames.SCHEDULED_NAME, SchedulerDotNames.SCHEDULES_NAME))
                     .whenContainsNone(List.of(micrometerTimed,
                             mpTimed, DotName.createSimple("org.eclipse.microprofile.metrics.annotation.SimplyTimed")))
                     .transform(context -> {
@@ -357,55 +379,80 @@ public class SchedulerProcessor {
                 + HashUtil.sha1(sigBuilder.toString());
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(ScheduledInvoker.class)
-                .build();
+                .superClass(DefaultInvoker.class).build();
 
-        // The descriptor is: void invokeBean(Object execution)
-        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class)
+        // The descriptor is: CompletionStage invoke(ScheduledExecution execution)
+        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", CompletionStage.class, ScheduledExecution.class)
                 .addException(Exception.class);
 
+        // Use a try-catch block and return failed future if an exception is thrown
+        TryBlock tryBlock = invoke.tryBlock();
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+        catchBlock.returnValue(catchBlock.invokeStaticMethod(
+                MethodDescriptor.ofMethod(CompletableFuture.class, "failedStage", CompletionStage.class, Throwable.class),
+                catchBlock.getCaughtException()));
+
+        String returnTypeStr = DescriptorUtils.typeToString(method.returnType());
+        ResultHandle res;
         if (isStatic) {
             if (method.parameters().isEmpty()) {
-                invoke.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), void.class));
+                res = tryBlock.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr));
             } else {
-                invoke.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), void.class,
+                res = tryBlock.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
                                 ScheduledExecution.class),
-                        invoke.getMethodParam(0));
+                        tryBlock.getMethodParam(0));
             }
         } else {
-            // InjectableBean<Foo: bean = Arc.container().bean("1");
+            // InjectableBean<Foo> bean = Arc.container().bean("foo1");
             // InstanceHandle<Foo> handle = Arc.container().instance(bean);
             // handle.get().ping();
-            ResultHandle containerHandle = invoke
+            ResultHandle containerHandle = tryBlock
                     .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-            ResultHandle beanHandle = invoke.invokeInterfaceMethod(
+            ResultHandle beanHandle = tryBlock.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(ArcContainer.class, "bean", InjectableBean.class, String.class),
-                    containerHandle, invoke.load(bean.getIdentifier()));
-            ResultHandle instanceHandle = invoke.invokeInterfaceMethod(
+                    containerHandle, tryBlock.load(bean.getIdentifier()));
+            ResultHandle instanceHandle = tryBlock.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, InjectableBean.class),
                     containerHandle, beanHandle);
-            ResultHandle beanInstanceHandle = invoke
+            ResultHandle beanInstanceHandle = tryBlock
                     .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                             instanceHandle);
             if (method.parameters().isEmpty()) {
-                invoke.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), void.class),
+                res = tryBlock.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr),
                         beanInstanceHandle);
             } else {
-                invoke.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), void.class,
+                res = tryBlock.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
                                 ScheduledExecution.class),
-                        beanInstanceHandle, invoke.getMethodParam(0));
+                        beanInstanceHandle, tryBlock.getMethodParam(0));
             }
             // handle.destroy() - destroy dependent instance afterwards
             if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
-                invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class),
+                tryBlock.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class),
                         instanceHandle);
             }
         }
-        invoke.returnValue(null);
+
+        if (res == null) {
+            // If the return type is void then return a new completed stage
+            res = tryBlock.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(CompletableFuture.class, "completedStage", CompletionStage.class, Object.class),
+                    tryBlock.loadNull());
+        } else if (method.returnType().name().equals(SchedulerDotNames.UNI)) {
+            // Subscribe to the returned Uni
+            res = tryBlock.invokeInterfaceMethod(MethodDescriptor.ofMethod(SchedulerDotNames.UNI.toString(),
+                    "subscribeAsCompletionStage", CompletableFuture.class), res);
+        }
+
+        tryBlock.returnValue(res);
+
+        if (scheduledMethod.isNonBlocking()) {
+            MethodCreator isBlocking = invokerCreator.getMethodCreator("isBlocking", boolean.class);
+            isBlocking.returnValue(isBlocking.load(false));
+        }
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
@@ -490,7 +537,7 @@ public class SchedulerProcessor {
         AnnotationValue skipExecutionIfValue = schedule.value("skipExecutionIf");
         if (skipExecutionIfValue != null) {
             DotName skipPredicate = skipExecutionIfValue.asClass().name();
-            if (!SKIP_NEVER_NAME.equals(skipPredicate)
+            if (!SchedulerDotNames.SKIP_NEVER_NAME.equals(skipPredicate)
                     && validationContext.beans().withBeanType(skipPredicate).collect().size() != 1) {
                 String message = String.format("There must be exactly one bean that matches the skip predicate: \"%s\" on: %s",
                         skipPredicate, schedule);
@@ -503,7 +550,7 @@ public class SchedulerProcessor {
 
     @BuildStep
     UnremovableBeanBuildItem unremoveableSkipPredicates() {
-        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(SKIP_PREDICATE));
+        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(SchedulerDotNames.SKIP_PREDICATE));
     }
 
 }

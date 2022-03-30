@@ -1,12 +1,11 @@
 package io.quarkus.deployment.steps;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.NoSuchFileException;
 import java.util.AbstractMap;
 import java.util.Enumeration;
 import java.util.Map;
@@ -103,7 +102,7 @@ public class BannerProcessor {
         }
     }
 
-    private boolean isQuarkusCoreBanner(URL url) throws IOException {
+    protected boolean isQuarkusCoreBanner(URL url) throws IOException {
         if (!"jar".equals(url.getProtocol())) {
             return false;
         }
@@ -114,9 +113,9 @@ public class BannerProcessor {
         // We determine whether the banner is the default by checking to see if the jar that contains it also
         // contains this class. This way although somewhat complicated guarantees that any rename of artifacts
         // won't affect the check
-        try (JarFile jarFile = new JarFile(Paths.get(new URI(jarPath)).toFile())) {
+        try (JarFile jarFile = new JarFile(new File(jarPath))) {
             return jarFile.getJarEntry(thisClassName.replace('.', '/') + ".class") != null;
-        } catch (URISyntaxException e) {
+        } catch (NoSuchFileException e) {
             return false;
         }
     }

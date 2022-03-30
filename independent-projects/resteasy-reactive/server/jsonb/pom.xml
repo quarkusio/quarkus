@@ -95,4 +95,18 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>io.quarkus.jakarta-jaxb-switch</recipe>
+                    </activeRecipes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

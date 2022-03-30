@@ -5759,6 +5759,7 @@
                         <recipe>io.quarkus.jakarta-jaxrs-jaxb</recipe>
                         <recipe>io.quarkus.jakarta-security</recipe>
                         <recipe>io.quarkus.smallrye</recipe>
+                        <recipe>io.quarkus.bom.resteasy-microprofile</recipe>
                     </activeRecipes>
                 </configuration>
             </plugin>

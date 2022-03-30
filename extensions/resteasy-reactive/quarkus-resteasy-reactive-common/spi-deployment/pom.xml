@@ -23,5 +23,18 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>io.quarkus.jakarta-jaxrs-switch</recipe>
+                    </activeRecipes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.handlers;
 
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.Stork;
 import io.smallrye.stork.api.ServiceInstance;
@@ -408,7 +409,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             try {
                 serviceInstance = Stork.getInstance()
                         .getService(serviceName)
-                        .selectInstanceAndRecordStart(true);
+                        .selectInstanceAndRecordStart(shouldMeasureTime(state));
             } catch (Throwable e) {
                 log.error("Error selecting service instance for serviceName: " + serviceName, e);
                 return Uni.createFrom().failure(e);
@@ -416,7 +417,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             requestOptions = serviceInstance.onItem().transform(new Function<>() {
                 @Override
                 public RequestOptions apply(ServiceInstance serviceInstance) {
-                    if (serviceInstance.gatherStatistics()) {
+                    if (serviceInstance.gatherStatistics() && shouldMeasureTime(state)) {
                         state.setCallStatsCollector(serviceInstance);
                     }
                     return new RequestOptions()
@@ -455,6 +456,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         return AsyncResultUni.toUni(handler -> httpClient.request(options, handler));
                     }
                 });
+    }
+
+    private boolean shouldMeasureTime(RestClientRequestContext state) {
+        return !Multi.class.equals(state.getResponseType().getRawType());
     }
 
     private int getPort(boolean isHttps, int specifiedPort) {

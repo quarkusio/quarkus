@@ -20,6 +20,12 @@
     <profiles>
         <profile>
             <id>BansRuntimeDependency</id>
+            <!-- activation to work around https://issues.apache.org/jira/browse/MNG-7432 -->
+            <activation>
+                <property>
+                    <name>BansRuntimeDependency</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>

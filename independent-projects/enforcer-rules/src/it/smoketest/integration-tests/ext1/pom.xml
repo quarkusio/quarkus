@@ -36,6 +36,12 @@
     <profiles>
         <profile>
             <id>SuperfluousDeploymentDep</id>
+            <!-- activation to work around https://issues.apache.org/jira/browse/MNG-7432 -->
+            <activation>
+                <property>
+                    <name>SuperfluousDeploymentDep</name>
+                </property>
+            </activation>
             <properties>
                 <enforcer.requiresMinimalDeploymentDependency.nonSuperfluous>
                     quarkus-enforcer-rules-smoketest-ext3-deployment

@@ -53,6 +53,7 @@ Dev Services is supported for the following databases:
 * MariaDB (container)
 * Microsoft SQL Server (container) (requires license acceptance)
 * MySQL (container)
+* Oracle Express Edition (container)
 * Postgresql (container)
 
 If you want to use Dev Services then all you need to do is include the relevant extension for the type of database you want (either reactive or
@@ -115,7 +116,7 @@ we assume that this should be used in testing.
 === Reactive datasource
 
 Add the correct reactive extension for the database you are using:
-`reactive-db2-client`, `reactive-mssql-client`, `reactive-mysql-client`, or `reactive-pg-client`.
+`reactive-db2-client`, `reactive-mssql-client`, `reactive-mysql-client`, `reactive-oracle-client`, or `reactive-pg-client`.
 
 Then configure your reactive datasource:
 
@@ -354,7 +355,7 @@ Because of this, you can also use `javax.sql.DataSource` as the injected type.
 
 === Reactive datasource
 
-If you prefer using a reactive datasource, Quarkus offers DB2, MySQL/MariaDB, and PostgreSQL reactive clients.
+If you prefer using a reactive datasource, Quarkus offers DB2, MariaDB/MySQL, Microsoft SQL Server, Oracle and PostgreSQL reactive clients.
 
 ==== Install the Maven dependencies
 
@@ -362,6 +363,8 @@ Depending on which database you want to use, add the corresponding extension:
 
 * DB2: `quarkus-reactive-db2-client`
 * MariaDB/MySQL: `quarkus-reactive-mysql-client`
+* Microsoft SQL Server: `quarkus-reactive-mssql-client`
+* Oracle: `quarkus-reactive-oracle-client`
 * PostgreSQL: `quarkus-reactive-pg-client`
 
 The installed extension must be consistent with the `quarkus.datasource.db-kind` you define in your datasource configuration.

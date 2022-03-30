@@ -653,6 +653,14 @@ with GraalVM native-images.
 The lack of JMX support is a natural consequence of running in native and is unlikely to be resolved.
 The integration with OCI could be resolved, if you need it we suggest opening a support request with the MySQL Connector/J maintainers.
 
+=== Oracle
+
+`jdbc:oracle:driver_type:@database_specifier`
+
+Example:: `jdbc:oracle:thin:@localhost:1521/ORCL_SVC`
+
+More details can be found in the https://docs.oracle.com/en/database/oracle/oracle-database/21/jjdbc/data-sources-and-URLs.html#GUID-AEA8E228-1B21-4111-AF4C-B1F33744CA08[official documentation].
+
 === PostgreSQL
 
 PostgreSQL only runs as a server, as do the rest of the databases below.

@@ -1,4 +1,4 @@
-package io.quarkus.narayana.jta;
+package io.quarkus.transaction.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -10,8 +10,6 @@ import java.lang.annotation.Target;
 /**
  * If you annotate your exception with this annotation, the transactional interceptor will
  * use the exception's instructions to force a rollback or not.
- *
- * FIXME: move to SPI so it can be used by TransactionalReactive
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

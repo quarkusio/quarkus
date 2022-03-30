@@ -75,8 +75,10 @@ public class SimpleQuarkusRestResource {
     public String params(@PathParam("p") String p,
             @QueryParam("q") String q,
             @HeaderParam("h") int h,
+            @HeaderParam("h2") char h2,
+            @HeaderParam("h3") Character h3,
             @FormParam("f") String f) {
-        return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f;
+        return "params: p: " + p + ", q: " + q + ", h: " + h + ", h2: " + h2 + ", h3: " + h3 + ", f: " + f;
     }
 
     @POST

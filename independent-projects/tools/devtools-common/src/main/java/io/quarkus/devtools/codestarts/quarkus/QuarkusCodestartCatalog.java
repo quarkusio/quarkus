@@ -43,6 +43,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     public static final String INPUT_PROVIDED_CODE_KEY = "provided-code";
     private static final String IO_QUARKUS_GROUP_ID = "io.quarkus";
     private static final String IO_QUARKUS_PLATFORM_GROUP_ID = "io.quarkus.platform";
+    private static final String COM_REDHAT_QUARKUS_PLATFORM_GROUP_ID = "com.redhat.quarkus.platform";
     private static final String QUARKUS_BOM = "quarkus-bom";
     private static final String QUARKUS_UNIVERSE_BOM = "quarkus-universe-bom";
     private static final Set<String> LANGUAGE_EXTENSIONS = Set.of("quarkus-kotlin", "quarkus-scala");
@@ -211,7 +212,8 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     }
 
     private boolean isPlatformBom(ArtifactCoords artifactCoords) {
-        return IO_QUARKUS_PLATFORM_GROUP_ID.equals(artifactCoords.getGroupId())
+        return (IO_QUARKUS_PLATFORM_GROUP_ID.equals(artifactCoords.getGroupId()) ||
+                COM_REDHAT_QUARKUS_PLATFORM_GROUP_ID.equals(artifactCoords.getGroupId()))
                 && QUARKUS_BOM.equals(artifactCoords.getArtifactId());
     }
 

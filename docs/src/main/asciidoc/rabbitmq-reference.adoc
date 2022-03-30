@@ -37,7 +37,7 @@ Or just add the following dependency to your project:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+    <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
 </dependency>
 ----
 

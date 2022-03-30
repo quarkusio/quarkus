@@ -630,8 +630,6 @@ You can find more information about this feature and others detailed in the http
 
 === Microsoft SQL Server
 
-Microsoft SQL Server takes a connection URL in the following form:
-
 `jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]`
 
 Example:: `jdbc:sqlserver://localhost:1433;databaseName=AdventureWorks`

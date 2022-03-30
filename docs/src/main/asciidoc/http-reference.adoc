@@ -68,6 +68,17 @@ To use it, add the following to your project's dependencies:
 implementation("io.quarkus:quarkus-webjars-locator")
 ----
 
+=== HTTP Compression
+
+The response body of a static resource is not compressed by default.
+You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
+If compression support is enabled then the response body is compressed if the `Content-Type` header derived from the file name of a resource is a compressed media type as configured via `quarkus.http.compress-media-types`.
+
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+
+NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
+
 == Configuring the Context path
 
 By default Quarkus will serve content from under the root context. If you want to change this you can use the

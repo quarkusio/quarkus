@@ -84,7 +84,8 @@ public class QuarkusJBangCodestartProjectInputBuilder extends CodestartProjectIn
 
     public QuarkusJBangCodestartProjectInput build() {
         if (!this.containsData("java")) {
-            this.addData(NestedMaps.unflatten(Map.of("java.version", CreateProjectHelper.DEFAULT_JAVA_VERSION)));
+            this.addData(NestedMaps
+                    .unflatten(Map.of("java.version", String.valueOf(CreateProjectHelper.determineBestJavaLtsVersion()))));
         }
         return new QuarkusJBangCodestartProjectInput(this);
     }

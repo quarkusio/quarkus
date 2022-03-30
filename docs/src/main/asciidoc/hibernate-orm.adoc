@@ -28,7 +28,7 @@ When using Hibernate ORM in Quarkus, you don't need to have a `persistence.xml` 
 Using such a classic configuration file is an option, but unnecessary unless you have specific advanced needs;
 so we'll see first how Hibernate ORM can be configured without a `persistence.xml` resource.
 
-In Quarkus, you just need to:
+In Quarkus, you only need to:
 
 * add your configuration settings in `{config-file}`
 * annotate your entities with `@Entity` and any other mapping annotation as usual
@@ -750,7 +750,7 @@ All configuration is optional; for more details see xref:transaction.adoc[Using 
 
 Connection pool::
 Don't need to choose one either. Quarkus automatically includes the Agroal connection pool;
-just configure your datasource as in the above examples and it will setup Hibernate ORM to use Agroal.
+configure your datasource as in the above examples and it will setup Hibernate ORM to use Agroal.
 More details about this connection pool can be found in xref:datasource.adoc[Quarkus - Datasources].
 
 Second Level Cache::

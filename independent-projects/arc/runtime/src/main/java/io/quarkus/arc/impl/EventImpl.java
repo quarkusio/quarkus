@@ -207,9 +207,10 @@ class EventImpl<T> implements Event<T> {
                 exception = new CompletionException(handledExceptions.get(0));
             } else {
                 exception = new CompletionException(null);
-                for (Throwable handledException : handledExceptions) {
-                    exception.addSuppressed(handledException);
-                }
+            }
+            // always add exceptions into suppressed
+            for (Throwable handledException : handledExceptions) {
+                exception.addSuppressed(handledException);
             }
             throw exception;
         }

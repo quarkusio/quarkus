@@ -17,6 +17,7 @@ public class JsonWebKeySet {
 
     private Map<String, Key> keysWithKeyId = new HashMap<>();
     private Map<String, Key> keysWithThumbprints = new HashMap<>();
+    private Key keyWithoutKeyIdAndThumbprint;
 
     public JsonWebKeySet(String json) {
         initKeys(json);
@@ -26,9 +27,7 @@ public class JsonWebKeySet {
         try {
             org.jose4j.jwk.JsonWebKeySet jwkSet = new org.jose4j.jwk.JsonWebKeySet(json);
             for (JsonWebKey jwkKey : jwkSet.getJsonWebKeys()) {
-                if ((RSA_KEY_TYPE.equals(jwkKey.getKeyType()) || EC_KEY_TYPE.equals(jwkKey.getKeyType())
-                        || jwkKey.getKeyType() == null)
-                        && (SIGNATURE_USE.equals(jwkKey.getUse()) || jwkKey.getUse() == null)) {
+                if (isSupportedJwkKey(jwkKey)) {
                     if (jwkKey.getKeyId() != null) {
                         keysWithKeyId.put(jwkKey.getKeyId(), jwkKey.getKey());
                     }
@@ -40,9 +39,19 @@ public class JsonWebKeySet {
                     }
                 }
             }
+            if (keysWithKeyId.isEmpty() && keysWithThumbprints.isEmpty() && jwkSet.getJsonWebKeys().size() == 1
+                    && isSupportedJwkKey(jwkSet.getJsonWebKeys().get(0))) {
+                keyWithoutKeyIdAndThumbprint = jwkSet.getJsonWebKeys().get(0).getKey();
+            }
         } catch (JoseException ex) {
             throw new OIDCException(ex);
         }
+    }
+
+    private static boolean isSupportedJwkKey(JsonWebKey jwkKey) {
+        return (RSA_KEY_TYPE.equals(jwkKey.getKeyType()) || EC_KEY_TYPE.equals(jwkKey.getKeyType())
+                || jwkKey.getKeyType() == null)
+                && (SIGNATURE_USE.equals(jwkKey.getUse()) || jwkKey.getUse() == null);
     }
 
     public Key getKeyWithId(String kid) {
@@ -51,5 +60,9 @@ public class JsonWebKeySet {
 
     public Key getKeyWithThumbprint(String x5t) {
         return keysWithThumbprints.get(x5t);
+    }
+
+    public Key getKeyWithoutKeyIdAndThumbprint() {
+        return keyWithoutKeyIdAndThumbprint;
     }
 }

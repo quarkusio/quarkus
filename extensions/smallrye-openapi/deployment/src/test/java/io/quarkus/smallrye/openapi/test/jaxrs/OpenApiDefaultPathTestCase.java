@@ -34,7 +34,7 @@ public class OpenApiDefaultPathTestCase {
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("openapi", Matchers.startsWith("3.0"))
-                .body("info.title", Matchers.equalTo("Generated API"))
+                .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("tags.name[0]", Matchers.equalTo("test"))
                 .body("paths.'/resource'.get.servers[0]", Matchers.hasKey("url"))
                 .body("paths.'/resource'.get.security[0]", Matchers.hasKey("securityRequirement"))

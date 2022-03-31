@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -24,6 +25,7 @@ public class BasicTypeData {
     private TimeZone timeZone;
     private java.net.URL url;
     private Class clazz;
+    @Column(length = 16)
     private java.util.UUID uuid;
     private Duration duration;
 

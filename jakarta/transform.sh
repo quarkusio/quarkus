@@ -314,7 +314,7 @@ build_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-common/spi-
 
 build_module "extensions/hibernate-validator"
 
-exit 1
+exit 0
 
 # TODO for more RESTEasy
 build_module_only_no_tests "extensions/panache"
@@ -326,7 +326,7 @@ build_module "extensions/elytron-security-properties-file"
 build_module "extensions/reactive-routes"
 build_module "extensions/qute"
 
-exit 1
+exit 0
 
 # RESTEasy Reactive
 #tranform_kotlin_module "extensions/resteasy-reactive"

@@ -29,7 +29,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   git clone https://github.com/gsmet/rewrite-maven-plugin.git target/rewrite-maven-plugin
   pushd target/rewrite-maven-plugin
   git checkout jakarta
-  ./mvnw clean install -DskipTests -DskipITs
+  ./mvnw -B clean install -DskipTests -DskipITs
   popd
 
   # Build SmallRye Config (temporary)
@@ -45,7 +45,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   git clone https://github.com/quarkusio/quarkus-http.git target/quarkus-http
   pushd target/quarkus-http
   git checkout jakarta-rewrite
-  mvn clean install -DskipTests -DskipITs
+  mvn -B clean install -DskipTests -DskipITs
   popd
 
   # Build Kotlin Maven Plugin to allow skipping main compilation
@@ -53,7 +53,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   rm -rf target/kotlin
   git clone -b v1.6.10-jakarta --depth 1 https://github.com/gsmet/kotlin.git target/kotlin
   pushd target/kotlin/libraries/tools/kotlin-maven-plugin
-  mvn clean install -DskipTests -DskipITs
+  mvn -B clean install -DskipTests -DskipITs
   popd
 fi
 
@@ -144,13 +144,13 @@ build_module () {
 # Build module without testing it
 build_module_no_tests () {
   local pomPath="$1/pom.xml"
-  ./mvnw -B clean install -f "$pomPath" -DskipTests -DskipITs
+  ./mvnw -B clean install -f "$pomPath" -DskipTests -DskipITs -Dinvoker.skip
   echo "  - Installed newly built $pomPath"
 }
 
 build_module_only_no_tests () {
   local pomPath="$1/pom.xml"
-  ./mvnw -B clean install -f "$pomPath" -DskipTests -DskipITs -N
+  ./mvnw -B clean install -f "$pomPath" -DskipTests -DskipITs -Dinvoker.skip -N
   echo "  - Installed newly built $pomPath"
 }
 
@@ -177,7 +177,7 @@ clean_maven_repository
 clean_project
 
 ## let's build what's required to be able to run the rewrite
-./mvnw -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -am clean install -DskipTests -DskipITs
+./mvnw -B -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -am clean install -DskipTests -DskipITs -Dinvoker.skip
 
 ## we cannot rewrite some of the modules for various reasons but we rewrite most of them
 ./mvnw -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -Dno-test-modules -Drewrite.pomCacheEnabled=false

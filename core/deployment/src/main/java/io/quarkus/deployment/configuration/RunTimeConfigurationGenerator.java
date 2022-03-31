@@ -581,7 +581,7 @@ public final class RunTimeConfigurationGenerator {
             ResultHandle bootstrapBuilder = null;
             if (bootstrapConfigSetupNeeded()) {
                 bootstrapBuilder = readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED_AND_BOOTSRAP,
-                        readBootstrapConfig.load(false), readBootstrapConfig.load(true), readBootstrapConfig.load(false),
+                        readBootstrapConfig.load(true), readBootstrapConfig.load(true), readBootstrapConfig.load(false),
                         readBootstrapConfig.load(launchMode));
             }
 

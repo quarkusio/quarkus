@@ -115,6 +115,32 @@ public class SimpleQuarkusRestTestCase {
     }
 
     @Test
+    public void testArrayHeaders() {
+        RestAssured
+                .with()
+                .header("h2", "a")
+                .header("h2", "b")
+                .header("h3", "1")
+                .header("h4", "10")
+                .header("h4", "20")
+                .get("/simple/arrayHeaders")
+                .then().statusCode(200).body(Matchers.equalTo("h1: [], h2: [a, b], h3: [1], h4: [10, 20]"));
+    }
+
+    @Test
+    public void testArrayForms() {
+        RestAssured
+                .with()
+                .formParam("f2", "a")
+                .formParam("f2", "b")
+                .formParam("f3", "1")
+                .formParam("f4", "10")
+                .formParam("f4", "20")
+                .post("/simple/arrayForms")
+                .then().statusCode(200).body(Matchers.equalTo("f1: [], f2: [a, b], f3: [1], f4: [10, 20]"));
+    }
+
+    @Test
     public void testBlocking() {
         RestAssured.get("/simple/blocking")
                 .then().body(Matchers.equalTo("true"));

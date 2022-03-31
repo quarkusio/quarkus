@@ -146,6 +146,7 @@ import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.ResumeOn404BuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -696,7 +697,8 @@ public class ResteasyReactiveProcessor {
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             ContextResolversBuildItem contextResolversBuildItem,
             ResteasyReactiveServerConfig serverConfig,
-            LaunchModeBuildItem launchModeBuildItem)
+            LaunchModeBuildItem launchModeBuildItem,
+            List<ResumeOn404BuildItem> resumeOn404Items)
             throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -814,7 +816,7 @@ public class ResteasyReactiveProcessor {
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent);
+                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent || !resumeOn404Items.isEmpty());
 
         quarkusRestDeploymentBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));

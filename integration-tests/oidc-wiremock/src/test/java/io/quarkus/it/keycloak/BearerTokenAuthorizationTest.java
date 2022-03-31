@@ -58,6 +58,31 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testAccessAdminResourceWithoutKidAndThumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithoutKidAndThumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-no-introspection")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testTokenAndKeyWithoutKidAndThumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithoutKidAndThumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-key-without-kid-thumbprint")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testTokenWithKidAndKeyWithoutKidAndThumbprint() {
+        RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-key-without-kid-thumbprint")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void testSecureAccessSuccessPreferredUsernameWrongRolePath() {
         for (String username : Arrays.asList("alice", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username, Set.of("user", "admin")))
@@ -160,6 +185,14 @@ public class BearerTokenAuthorizationTest {
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
                 .jws().thumbprint(OidcWiremockTestResource.getCertificate())
+                .sign("privateKeyWithoutKid.jwk");
+    }
+
+    private String getAccessTokenWithoutKidAndThumbprint(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
                 .sign("privateKeyWithoutKid.jwk");
     }
 

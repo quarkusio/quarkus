@@ -21,10 +21,12 @@ import com.gargoylesoftware.htmlunit.util.Cookie;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
+import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
 @QuarkusTestResource(OidcWiremockTestResource.class)
@@ -82,6 +84,8 @@ public class CodeFlowAuthorizationTest {
         doTestCodeFlowUserInfo("code-flow-user-info-only");
         doTestCodeFlowUserInfo("code-flow-user-info-github");
         doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github");
+
+        doTestCodeFlowUserInfoCashedInIdToken();
     }
 
     private void doTestCodeFlowUserInfo(String tenantId) throws IOException {
@@ -97,7 +101,31 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice:alice, cache size: 1", page.getBody().asText());
 
-            assertNotNull(getSessionCookie(webClient, tenantId));
+            Cookie sessionCookie = getSessionCookie(webClient, tenantId);
+            assertNotNull(sessionCookie);
+            JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+            assertNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void doTestCodeFlowUserInfoCashedInIdToken() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            page = form.getInputByValue("login").click();
+
+            assertEquals("alice:alice, cache size: 0", page.getBody().asText());
+
+            Cookie sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
+            assertNotNull(sessionCookie);
+            JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+            assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
             webClient.getCookieManager().clearCookies();
         }
     }

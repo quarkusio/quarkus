@@ -522,6 +522,7 @@ Note this user session can not be extended forever - the returning user with the
 
 `io.quarkus.oidc.OidcSession` is a wrapper around the current `IdToken`. It can help to perform a <<local-logout, Local Logout>>, retrieve the current session's tenant identifier and check when the session will expire. More useful methods will be added to it over time.
 
+[[token-state-manager]]
 ==== TokenStateManager
 
 OIDC `CodeAuthenticationMechanism` is using the default `io.quarkus.oidc.TokenStateManager` interface implementation to keep the ID, access and refresh tokens returned in the authorization code or refresh grant responses in a session cookie. It makes Quarkus OIDC endpoints completely stateless.
@@ -697,6 +698,8 @@ Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quar
 
 Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see <<token-introspection-userinfo-cache,Token Introspection and UserInfo Cache> for more details.
 
+Alternatively, you may want to request that `UserInfo` is embedded into the internal generated `IdToken`with the `quarkus.oidc.cache-user-info-in-idtoken=true` property - the advantage of this approach is that by default no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie. You may also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data, please see <<token-state-manager,Encrypt Tokens With TokenStateManager>> for more information.
+
 Also, OAuth2 servers may not support a well-known configuration endpoint in which case the discovery has to be disabled and the authorization, token, and introspection and/or userinfo endpoint paths have to be configured manually.
 
 Here is how you can integrate `quarkus-oidc` with `GitHub` after you have link:https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app[created a GitHub OAuth application]. Configure your Quarkus endpoint like this:
@@ -713,6 +716,9 @@ quarkus.oidc.credentials.secret=github_app_clientsecret
 # Consider enabling UserInfo Cache 
 # quarkus.oidc.token-cache.max-size=1000
 # quarkus.oidc.token-cache.time-to-live=5M
+#
+# Or having UserInfo cached inside IdToken itself
+# quarkus.oidc.cache-user-info-in-idtoken=true
 ----
 
 This is all what is needed for an endpoint like this one to return the currently authenticated user's profile with `GET http://localhost:8080/github/userinfo` and access it as the individual `UserInfo` properties:

@@ -2,12 +2,9 @@ package io.quarkus.gradle.devmode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.Disabled;
-
 import com.google.common.collect.ImmutableMap;
 
 @org.junit.jupiter.api.Tag("failsOnJDK18")
-@Disabled("appears to be a flaky test")
 public class MultiSourceProjectDevModeTest extends QuarkusDevGradleTestBase {
 
     @Override

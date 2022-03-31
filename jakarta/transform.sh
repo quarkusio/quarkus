@@ -180,7 +180,7 @@ clean_project
 ./mvnw -B -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -am clean install -DskipTests -DskipITs -Dinvoker.skip
 
 ## we cannot rewrite some of the modules for various reasons but we rewrite most of them
-./mvnw -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -Dno-test-modules -Drewrite.pomCacheEnabled=false
+./mvnw -B -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -Dno-test-modules -Drewrite.pomCacheEnabled=false
 
 ## remove banned dependencies
 remove_banned_dependency "independent-projects/bootstrap" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'

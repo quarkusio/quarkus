@@ -70,6 +70,24 @@ public class SimpleQuarkusRestResource {
         return "GET:" + id;
     }
 
+    @GET
+    @Path("arrayHeaders")
+    public String arrayHeaders(@HeaderParam("h1") String[] h1, @HeaderParam("h2") String[] h2, @HeaderParam("h3") Integer[] h3,
+            @HeaderParam("h4") int[] h4) {
+        return "h1: " + Arrays.toString(h1) + ", h2: " + Arrays.toString(h2) + ", h3: " + Arrays.toString(h3) + ", h4: "
+                + Arrays.toString(
+                        h4);
+    }
+
+    @POST
+    @Path("arrayForms")
+    public String arrayForms(@FormParam("f1") String[] f1, @FormParam("f2") String[] f2, @FormParam("f3") Integer[] f3,
+            @FormParam("f4") int[] f4) {
+        return "f1: " + Arrays.toString(f1) + ", f2: " + Arrays.toString(f2) + ", f3: " + Arrays.toString(f3) + ", f4: "
+                + Arrays.toString(
+                        f4);
+    }
+
     @POST
     @Path("params/{p}")
     public String params(@PathParam("p") String p,

@@ -75,6 +75,7 @@ public class KeycloakDevServicesProcessor {
     private static final String CONFIG_PREFIX = "quarkus.oidc.";
     private static final String TENANT_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "tenant-enabled";
     private static final String AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
+    private static final String PROVIDER_CONFIG_KEY = CONFIG_PREFIX + "provider";
     // avoid the Quarkus prefix in order to prevent warnings when the application starts in container integration tests
     private static final String CLIENT_AUTH_SERVER_URL_CONFIG_KEY = "client." + CONFIG_PREFIX + "auth-server-url";
     private static final String APPLICATION_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
@@ -284,6 +285,10 @@ public class KeycloakDevServicesProcessor {
         }
         if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
+            return null;
+        }
+        if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
+            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.provider' has been provided");
             return null;
         }
 

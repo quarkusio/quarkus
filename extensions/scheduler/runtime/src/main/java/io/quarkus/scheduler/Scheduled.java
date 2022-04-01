@@ -33,8 +33,13 @@ import io.quarkus.scheduler.Scheduled.Schedules;
  * }
  * </pre>
  *
- * The annotated method must return {@code void} and either declare no parameters or one parameter of type
+ * The annotated method must return {@code void}, {@code java.util.concurrent.CompletionStage<Void>} or
+ * {@code io.smallrye.mutiny.Uni<Void>} and either declare no parameters or one parameter of type
  * {@link ScheduledExecution}.
+ * <p>
+ * By default, a scheduled method is executed on the main executor for blocking tasks. However, a scheduled method that returns
+ * {@code java.util.concurrent.CompletionStage<Void>} or {@code io.smallrye.mutiny.Uni<Void>}, or is annotated with
+ * {@link io.smallrye.common.annotation.NonBlocking} is executed on the event loop.
  *
  * @see ScheduledExecution
  */

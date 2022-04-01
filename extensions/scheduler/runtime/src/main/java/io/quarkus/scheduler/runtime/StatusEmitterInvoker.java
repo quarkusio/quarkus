@@ -1,56 +1,49 @@
 package io.quarkus.scheduler.runtime;
 
+import java.util.concurrent.CompletionStage;
+
 import javax.enterprise.event.Event;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.scheduler.FailedExecution;
-import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 
 /**
- * A scheduled invoker wrapper that skips concurrent executions.
+ * An invoker wrapper that fires CDI events when an execution of a scheduled method is finished.
  *
- * @see Scheduled#concurrentExecution()
- * @see Scheduled.ConcurrentExecution#SKIP
+ * @see SuccessfulExecution
+ * @see FailedExecution
  */
-public final class StatusEmitterInvoker implements ScheduledInvoker {
+public final class StatusEmitterInvoker extends DelegateInvoker {
 
-    private static final Logger LOGGER = Logger.getLogger(StatusEmitterInvoker.class);
+    private static final Logger LOG = Logger.getLogger(StatusEmitterInvoker.class);
 
-    private final ScheduledInvoker delegate;
-    private final Event<SuccessfulExecution> successfulExecutionEvent;
-    private final Event<FailedExecution> failedExecutionEvent;
+    private final Event<SuccessfulExecution> successfulEvent;
+    private final Event<FailedExecution> failedEvent;
 
-    public StatusEmitterInvoker(ScheduledInvoker delegate, Event<SuccessfulExecution> successfulExecutionEvent,
-            Event<FailedExecution> failedExecutionEvent) {
-        this.delegate = delegate;
-        this.successfulExecutionEvent = successfulExecutionEvent;
-        this.failedExecutionEvent = failedExecutionEvent;
+    public StatusEmitterInvoker(ScheduledInvoker delegate, Event<SuccessfulExecution> successfulEvent,
+            Event<FailedExecution> failedEvent) {
+        super(delegate);
+        this.successfulEvent = successfulEvent;
+        this.failedEvent = failedEvent;
     }
 
     @Override
-    public void invoke(ScheduledExecution execution) throws Exception {
-
-        try {
-            delegate.invoke(execution);
-            SuccessfulExecution successExecution = new SuccessfulExecution(execution);
-            successfulExecutionEvent.fireAsync(successExecution);
-            successfulExecutionEvent.fire(successExecution);
-        } catch (Throwable t) {
-            LOGGER.errorf(t, "Error occured while executing task for trigger %s", execution.getTrigger());
-            FailedExecution failedExecution = new FailedExecution(execution, t);
-            failedExecutionEvent.fireAsync(failedExecution);
-            failedExecutionEvent.fire(failedExecution);
-            // rethrow for quartz job listeners
-            throw t;
-        }
-    }
-
-    @Override
-    public void invokeBean(ScheduledExecution param) {
-        throw new UnsupportedOperationException();
+    public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
+        return delegate.invoke(execution).whenComplete((v, t) -> {
+            if (t != null) {
+                LOG.errorf(t, "Error occured while executing task for trigger %s", execution.getTrigger());
+                FailedExecution failed = new FailedExecution(execution, t);
+                failedEvent.fireAsync(failed);
+                failedEvent.fire(failed);
+            } else {
+                SuccessfulExecution success = new SuccessfulExecution(execution);
+                successfulEvent.fireAsync(success);
+                successfulEvent.fire(success);
+            }
+        });
     }
 
 }

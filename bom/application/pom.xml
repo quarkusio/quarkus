@@ -144,7 +144,7 @@
         <aws-lambda-java-events.version>3.11.0</aws-lambda-java-events.version>
         <aws-xray.version>2.11.0</aws-xray.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
-        <kotlin.version>1.6.10</kotlin.version>
+        <kotlin.version>1.6.20</kotlin.version>
         <kotlin.coroutine.version>1.6.0</kotlin.coroutine.version>
         <kotlin-serialization.version>1.3.2</kotlin-serialization.version>
         <dekorate.version>2.9.0</dekorate.version>

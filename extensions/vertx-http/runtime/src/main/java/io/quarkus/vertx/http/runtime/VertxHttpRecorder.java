@@ -501,8 +501,22 @@ public class VertxHttpRecorder {
         root = new Handler<HttpServerRequest>() {
             @Override
             public void handle(HttpServerRequest event) {
-                setCurrentContextSafe(true);
-                delegate.handle(new ResumingRequestWrapper(event));
+                if (!VertxContext.isOnDuplicatedContext()) {
+                    // Vert.x should call us on a duplicated context.
+                    // But in the case of pipelined requests, it does not.
+                    // See https://github.com/quarkusio/quarkus/issues/24626.
+                    Context context = VertxContext.createNewDuplicatedContext();
+                    context.runOnContext(new Handler<Void>() {
+                        @Override
+                        public void handle(Void x) {
+                            setCurrentContextSafe(true);
+                            delegate.handle(new ResumingRequestWrapper(event));
+                        }
+                    });
+                } else {
+                    setCurrentContextSafe(true);
+                    delegate.handle(new ResumingRequestWrapper(event));
+                }
             }
         };
         if (httpConfiguration.recordRequestStartTime) {

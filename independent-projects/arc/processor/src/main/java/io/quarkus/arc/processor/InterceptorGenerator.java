@@ -258,12 +258,12 @@ public class InterceptorGenerator extends BeanGenerator {
                     ResultHandle paramTypesArray = callbackIndexTrueBranch.newArray(Class.class,
                             callbackIndexTrueBranch.load(1));
                     callbackIndexTrueBranch.writeArrayValue(paramTypesArray, 0,
-                            callbackIndexTrueBranch.loadClassFromTCCL(invocationContextClass));
+                            callbackIndexTrueBranch.loadClass(invocationContextClass));
                     ResultHandle argsArray = callbackIndexTrueBranch.newArray(Object.class, callbackIndexTrueBranch.load(1));
                     callbackIndexTrueBranch.writeArrayValue(argsArray, 0, invocationContextRH);
                     reflectionRegistration.registerMethod(interceptorMethod);
                     ret = callbackIndexTrueBranch.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                            callbackIndexTrueBranch.loadClassFromTCCL(interceptorMethod.declaringClass()
+                            callbackIndexTrueBranch.loadClass(interceptorMethod.declaringClass()
                                     .name()
                                     .toString()),
                             callbackIndexTrueBranch.load(interceptorMethod.name()), paramTypesArray,

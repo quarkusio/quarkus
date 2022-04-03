@@ -423,14 +423,36 @@ public final class RunTimeConfigurationGenerator {
                     .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
             clinit.writeStaticField(C_RUN_TIME_DEFAULTS_CONFIG_SOURCE, clinit.newInstance(RTDVCS_NEW));
 
+            // create the map for run time specified values config source
+            final ResultHandle specifiedRunTimeValues = clinit.newInstance(HM_NEW);
+            if (!liveReloadPossible) {
+                //we don't need these in devmode
+                //including it would just cache the first values
+                //but these can already just be read directly, as we are in the same JVM
+                for (Map.Entry<String, String> entry : specifiedRunTimeDefaultValues.entrySet()) {
+                    clinit.invokeVirtualMethod(HM_PUT, specifiedRunTimeValues, clinit.load(entry.getKey()),
+                            clinit.load(entry.getValue()));
+                }
+            }
+
+            final ResultHandle specifiedRunTimeSource = clinit.newInstance(PCS_NEW, specifiedRunTimeValues,
+                    clinit.load("Specified default values"), clinit.load(Integer.MIN_VALUE + 100));
+
+            cc.getFieldCreator(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE)
+                    .setModifiers(Opcodes.ACC_STATIC | (liveReloadPossible ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
+            clinit.writeStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE, specifiedRunTimeSource);
+
             // the build time config, which is for user use only (not used by us other than for loading converters)
             final ResultHandle buildTimeBuilder = clinit.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED,
                     clinit.load(true), clinit.load(false), clinit.load(launchMode));
-            final ResultHandle array = clinit.newArray(ConfigSource[].class, 2);
-            // build time values
+            final ResultHandle array = clinit.newArray(ConfigSource[].class, 3);
+            // build time values (recorded visible for runtime)
             clinit.writeArrayValue(array, 0, buildTimeConfigSource);
-            // build time defaults
+            // build time runtime defaults for Config Roots
             clinit.writeArrayValue(array, 1, buildTimeRunTimeDefaultValuesConfigSource);
+            // runtime default values (recorded during build time)
+            clinit.writeArrayValue(array, 2, clinit.readStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE));
+
             clinit.invokeVirtualMethod(SRCB_WITH_SOURCES, buildTimeBuilder, array);
             // add safe static sources
             for (String runtimeConfigSource : staticConfigSources) {
@@ -594,24 +616,6 @@ public final class RunTimeConfigurationGenerator {
             // add in our run time only config source provider
             readConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, runTimeBuilder, readConfig.newInstance(
                     MethodDescriptor.ofConstructor("io.quarkus.runtime.generated.ConfigSourceProviderImpl")));
-
-            // create the map for run time specified values config source
-            final ResultHandle specifiedRunTimeValues = clinit.newInstance(HM_NEW);
-            if (!liveReloadPossible) {
-                //we don't need these in devmode
-                //including it would just cache the first values
-                //but these can already just be read directly, as we are in the same JVM
-                for (Map.Entry<String, String> entry : specifiedRunTimeDefaultValues.entrySet()) {
-                    clinit.invokeVirtualMethod(HM_PUT, specifiedRunTimeValues, clinit.load(entry.getKey()),
-                            clinit.load(entry.getValue()));
-                }
-            }
-            final ResultHandle specifiedRunTimeSource = clinit.newInstance(PCS_NEW, specifiedRunTimeValues,
-                    clinit.load("Specified default values"), clinit.load(Integer.MIN_VALUE + 100));
-
-            cc.getFieldCreator(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE)
-                    .setModifiers(Opcodes.ACC_STATIC | (liveReloadPossible ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
-            clinit.writeStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE, specifiedRunTimeSource);
 
             // add in the custom sources that bootstrap config needs
             ResultHandle bootstrapConfigSourcesArray = null;

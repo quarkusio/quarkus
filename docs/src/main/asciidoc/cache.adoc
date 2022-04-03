@@ -38,10 +38,10 @@ The solution is located in the `cache-quickstart` {quickstarts-tree-url}/cache-q
 First, we need to create a new Quarkus project with the following command:
 
 :create-app-artifact-id: cache-quickstart
-:create-app-extensions: resteasy,cache,resteasy-jackson
+:create-app-extensions: cache,resteasy-reactive-jackson
 include::includes/devtools/create-app.adoc[]
 
-This command generates the project and imports the `cache` and `resteasy-jackson` extensions.
+This command generates the project and imports the `cache` and `resteasy-reactive-jackson` extensions.
 
 If you already have your Quarkus project configured, you can add the `cache` extension
 to your project by running the following command in your project base directory:
@@ -155,7 +155,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.annotations.jaxrs.QueryParam;
+import org.jboss.resteasy.reactive.RestQuery;
 
 @Path("/weather")
 public class WeatherForecastResource {
@@ -164,13 +164,12 @@ public class WeatherForecastResource {
     WeatherForecastService service;
 
     @GET
-    public WeatherForecast getForecast(@QueryParam String city, @QueryParam long daysInFuture) { <1>
+    public WeatherForecast getForecast(@RestQuery String city, @RestQuery long daysInFuture) { <1>
         long executionStart = System.currentTimeMillis();
         List<String> dailyForecasts = Arrays.asList(
                 service.getDailyForecast(LocalDate.now().plusDays(daysInFuture), city),
                 service.getDailyForecast(LocalDate.now().plusDays(daysInFuture + 1L), city),
-                service.getDailyForecast(LocalDate.now().plusDays(daysInFuture + 2L), city)
-        );
+                service.getDailyForecast(LocalDate.now().plusDays(daysInFuture + 2L), city));
         long executionEnd = System.currentTimeMillis();
         return new WeatherForecast(dailyForecasts, executionEnd - executionStart);
     }

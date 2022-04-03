@@ -30,6 +30,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.SecurityEvent;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -39,6 +40,7 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
@@ -467,14 +469,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             return Uni.createFrom().failure(new AuthenticationCompletionException(tOuter));
                         }
 
-                        boolean internalIdToken = false;
+                        boolean internalIdToken = !configContext.oidcConfig.authentication.isIdTokenRequired().orElse(true);
                         if (tokens.getIdToken() == null) {
-                            if (configContext.oidcConfig.authentication.isIdTokenRequired().orElse(true)) {
+                            if (!internalIdToken) {
                                 return Uni.createFrom()
                                         .failure(new AuthenticationCompletionException("ID Token is not available"));
                             } else {
-                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig));
-                                internalIdToken = true;
+                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null));
                             }
                         }
 
@@ -487,6 +488,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         .call(new Function<SecurityIdentity, Uni<?>>() {
                                             @Override
                                             public Uni<Void> apply(SecurityIdentity identity) {
+                                                if (internalIdToken && configContext.oidcConfig.allowUserInfoCache
+                                                        && configContext.oidcConfig.cacheUserInfoInIdtoken) {
+                                                    tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig,
+                                                            identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE)));
+                                                }
                                                 return processSuccessfulAuthentication(context, configContext,
                                                         tokens, identity);
                                             }
@@ -561,8 +567,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return null;
     }
 
-    private String generateInternalIdToken(OidcTenantConfig oidcConfig) {
-        return Jwt.claims().jws().header(INTERNAL_IDTOKEN_HEADER, true)
+    private String generateInternalIdToken(OidcTenantConfig oidcConfig, UserInfo userInfo) {
+        JwtClaimsBuilder builder = Jwt.claims();
+        if (userInfo != null) {
+            builder.claim(OidcUtils.USER_INFO_ATTRIBUTE, userInfo.getJsonObject());
+        }
+        return builder.jws().header(INTERNAL_IDTOKEN_HEADER, true)
                 .sign(KeyUtils.createSecretKeyFromSecret(OidcCommonUtils.clientSecret(oidcConfig.credentials)));
     }
 

@@ -66,9 +66,9 @@ public class ConfigAdapter {
         final Map<String, String> properties = new HashMap<>();
 
         // Rename and store properties
-        for (String name : config.keySet()) {
-            String key = prefix + camelHumpify(name);
-            properties.put(key, config.get(name));
+        for (Map.Entry<String, String> entry : config.entrySet()) {
+            String key = prefix + camelHumpify(entry.getKey());
+            properties.put(key, entry.getValue());
         }
         return properties;
     }

@@ -454,7 +454,7 @@ public class BeanInfo implements InjectionTargetInfo {
             qualifiers = new HashSet<>();
             Collections.addAll(qualifiers, requiredQualifiers);
         }
-        return Beans.matches(this, requiredType, qualifiers);
+        return beanDeployment.getBeanResolver().matches(this, requiredType, qualifiers);
     }
 
     Consumer<MethodCreator> getCreatorConsumer() {
@@ -520,8 +520,12 @@ public class BeanInfo implements InjectionTargetInfo {
                 if (injectionPoint.isDelegate() && !isDecorator()) {
                     errors.add(new DeploymentException(String.format(
                             "Only decorators can declare a delegate injection point: %s", this)));
+                } else if (injectionPoint.getType().kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
+                    errors.add(new DefinitionException(String.format("Type variable is not a legal injection point type: %s",
+                            injectionPoint.getTargetInfo())));
+                } else {
+                    Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint, errors);
                 }
-                Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint, errors);
             }
         }
         if (disposer != null) {
@@ -590,7 +594,9 @@ public class BeanInfo implements InjectionTargetInfo {
         // A decorator is bound to a bean if the bean is assignable to the delegate injection point
         List<DecoratorInfo> bound = new ArrayList<>();
         for (DecoratorInfo decorator : decorators) {
-            if (Beans.matches(this, decorator.getDelegateInjectionPoint().getTypeAndQualifiers())) {
+            // make sure we use delegate injection point assignability rules in this case
+            if (beanDeployment.delegateInjectionPointResolver.matches(this,
+                    decorator.getDelegateInjectionPoint().getTypeAndQualifiers())) {
                 bound.add(decorator);
             }
         }

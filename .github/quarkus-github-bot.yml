@@ -1,6 +1,9 @@
 ---
 # The format of this file is documented here:
 # https://github.com/quarkusio/quarkus-bot#triage-issues
+features: [ALL]
+workflowRunAnalysis:
+  workflows: ["Quarkus CI"]
 triage:
   discussions:
     monitoredCategories: [33575230]
@@ -201,7 +204,7 @@ triage:
         - extensions/resteasy-qute/
     - labels: [area/reactive-messaging, area/smallrye]
       title: "reactive.messaging"
-      notify: [cescoffier, phillip-kruger, michalszynkiewicz, ozangunalp]
+      notify: [cescoffier, michalszynkiewicz, ozangunalp]
       directories:
         - extensions/smallrye-reactive-messaging
     - labels: [area/rest-client]
@@ -243,14 +246,14 @@ triage:
       titleBody: "jib"
       notify: [geoand]
     - labels: [area/kafka]
-      notify: [cescoffier, ozangunalp]
+      notify: [cescoffier, ozangunalp, alesj]
       title: "kafka"
       directories:
         - extensions/kafka-client/
         - integration-tests/kafka/
     - labels: [area/kafka-streams]
       title: "k(afka)?(\\s|-)?stream"
-      notify: [gunnarmorling, rquinio]
+      notify: [gunnarmorling, rquinio, alesj, ozangunalp]
       directories:
         - extensions/kafka-streams
         - integration-tests/kafka-streams/
@@ -545,5 +548,10 @@ triage:
       notify: [michalszynkiewicz]
       directories:
         - extensions/smallrye-stork/
+    - labels: [area/jakarta]
+      notify: [sanne,maxandersen,gsmet,manovotn,radcortez]
+      notifyInPullRequest: true
+      directories:
+        - jakarta/
   qe:
     notify: [rsvoboda, mjurc]

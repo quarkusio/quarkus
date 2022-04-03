@@ -49,8 +49,8 @@ For each service expected to be exposed as a Kubernetes Service, configure the l
 
 [source, properties]
 ----
-stork.my-service.service-discovery=kubernetes
-stork.my-service.service-discovery.k8s-namespace=my-namespace
+quarkus.stork.my-service.service-discovery.type=kubernetes
+quarkus.stork.my-service.service-discovery.k8s-namespace=my-namespace
 ----
 
 Stork looks for the Kubernetes Service with the given name (`my-service` in the previous example) in the specified namespace.
@@ -110,7 +110,7 @@ This type is used in the configuration to reference the provider:
 
 [source, properties]
 ----
-stork.my-service.service-discovery=acme
+quarkus.stork.my-service.service-discovery.type=acme
 ----
 
 The first step consists of implementing the `io.smallrye.stork.spi.ServiceDiscoveryProvider` interface:
@@ -148,7 +148,7 @@ public class AcmeServiceDiscoveryProvider // <3>
 This implementation is straightforward.
 
 <1> `@ServiceDiscoveryType` annotation defines the type of the service discovery provider. For each `ServiceDiscoveryProvider` annotated with this annotation, a configuration class will be generated. The name of the configuration class is constructed by appending `Configuration` to the name of the provider.
-<2> Use `@ServiceDiscoveryAttribute` to define configuration properties for services configured with this service discovery provider. Configuration properties are gathered from all properties of a form: `stork.my-service.service-discovery.attr=value`.
+<2> Use `@ServiceDiscoveryAttribute` to define configuration properties for services configured with this service discovery provider. Configuration properties are gathered from all properties of a form: `quarkus.stork.my-service.service-discovery.attr=value`.
 <3> The provider needs to implement `ServiceDiscoveryType` typed by the configuration class.
 <4> `createServiceDiscovery` method is the factory method. It receives the configuration and access to the name of the service and available infrastructure.
 
@@ -201,9 +201,9 @@ Then, in the configuration, just add:
 
 [source, properties]
 ----
-stork.my-service.service-discovery=acme
-stork.my-service.service-discovery.host=localhost
-stork.my-service.service-discovery.port=1234
+quarkus.stork.my-service.service-discovery.type=acme
+quarkus.stork.my-service.service-discovery.host=localhost
+quarkus.stork.my-service.service-discovery.port=1234
 ----
 
 Then, Stork will use your implementation to locate the `my-service` service.
@@ -256,7 +256,7 @@ This _type_ is used in the configuration to reference the provider:
 
 [source, properties]
 ----
-stork.my-service.load-balancer=acme
+quarkus.stork.my-service.load-balancer.type=acme
 ----
 
 Similarly to `ServiceDiscoveryProvider, a `LoadBalancerProvider` implementation needs to be annotated with `@LoadBalancerType` that defines the _type_.
@@ -336,8 +336,8 @@ Then, in the configuration, just add:
 
 [source, properties]
 ----
-stork.my-service.service-discovery=...
-stork.my-service.load-balancer=acme
+quarkus.stork.my-service.service-discovery.type=...
+quarkus.stork.my-service.load-balancer.type=acme
 ----
 
 Then, Stork will use your implementation to select the `my-service` service instance.

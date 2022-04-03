@@ -67,13 +67,13 @@ The solution is located in the `kogito-dmn-quickstart` {quickstarts-tree-url}/ko
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: kogito-dmn-quickstart
-:create-app-extensions: dmn,resteasy-jackson
+:create-app-extensions: dmn,resteasy-reactive-jackson
 include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the `kogito-quarkus-decisions` extension
 that comes with all needed dependencies and configuration to equip your application
 with business automation.
-It also imports the `resteasy-jackson` extension that is needed for Kogito to expose REST services.
+It also imports the `resteasy-reactive-jackson` extension that is needed for Kogito to expose REST services.
 
 The `kogito-quarkus-decisions` is a specialized extension of the Kogito project focusing only on DMN support; if you want to 
 make use of the full capabilities offered by the Kogito platform, you can reference the generic Kogito extension of Quarkus.

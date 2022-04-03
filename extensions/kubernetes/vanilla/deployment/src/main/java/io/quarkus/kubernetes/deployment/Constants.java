@@ -4,6 +4,7 @@ public final class Constants {
 
     public static final String KUBERNETES = "kubernetes";
     public static final String MINIKUBE = "minikube";
+    public static final String KIND = "kind";
     public static final String STATEFULSET = "StatefulSet";
     public static final String DEPLOYMENT = "Deployment";
     public static final String DEPLOYMENT_GROUP = "apps";

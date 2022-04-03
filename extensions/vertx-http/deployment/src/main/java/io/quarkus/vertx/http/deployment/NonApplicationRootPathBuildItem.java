@@ -180,6 +180,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     public static class Builder extends RouteBuildItem.Builder {
         private final NonApplicationRootPathBuildItem buildItem;
         private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
+        private RouteBuildItem.RouteType routerType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
         private String path;
 
         Builder(NonApplicationRootPathBuildItem buildItem) {
@@ -201,15 +202,15 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             if (isFrameworkRoute) {
                 // relative non-application root (leading slash for vert.x)
                 this.path = "/" + UriNormalizationUtil.relativize(buildItem.getNonApplicationRootPath(), route);
-                this.routeType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
+                this.routerType = RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
             } else if (route.startsWith(buildItem.httpRootPath.getPath())) {
                 // relative to http root (leading slash for vert.x route)
                 this.path = "/" + UriNormalizationUtil.relativize(buildItem.httpRootPath.getPath(), route);
-                this.routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
+                this.routerType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
             } else if (route.startsWith("/")) {
                 // absolute path
                 this.path = route;
-                this.routeType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
+                this.routerType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
             }
 
             super.routeFunction(this.path, routeFunction);
@@ -277,7 +278,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
         @Override
         public RouteBuildItem build() {
-            return new RouteBuildItem(this, routeType);
+            return new RouteBuildItem(this, routeType, routerType);
         }
 
         @Override

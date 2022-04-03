@@ -322,13 +322,13 @@ public class SubclassGenerator extends AbstractGenerator {
 
                 // 2. Method method = Reflections.findMethod(org.jboss.weld.arc.test.interceptors.SimpleBean.class,"foo",java.lang.String.class)
                 ResultHandle[] paramsHandles = new ResultHandle[3];
-                paramsHandles[0] = constructor.loadClassFromTCCL(providerTypeName);
+                paramsHandles[0] = constructor.loadClass(providerTypeName);
                 paramsHandles[1] = constructor.load(method.name());
                 if (!parameters.isEmpty()) {
                     ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(parameters.size()));
                     for (ListIterator<Type> iterator = parameters.listIterator(); iterator.hasNext();) {
                         constructor.writeArrayValue(paramsArray, iterator.nextIndex(),
-                                constructor.loadClassFromTCCL(iterator.next().name().toString()));
+                                constructor.loadClass(iterator.next().name().toString()));
                     }
                     paramsHandles[2] = paramsArray;
                 } else {

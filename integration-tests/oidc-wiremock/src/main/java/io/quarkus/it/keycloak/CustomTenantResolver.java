@@ -26,6 +26,9 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.endsWith("code-flow-user-info-github")) {
             return "code-flow-user-info-github";
         }
+        if (path.endsWith("code-flow-user-info-github-cached-in-idtoken")) {
+            return "code-flow-user-info-github-cached-in-idtoken";
+        }
         if (path.endsWith("bearer")) {
             return "bearer";
         }

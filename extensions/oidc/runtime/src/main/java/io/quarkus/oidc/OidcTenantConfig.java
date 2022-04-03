@@ -132,6 +132,15 @@ public class OidcTenantConfig extends OidcCommonConfig {
     @ConfigItem(defaultValue = "true")
     public boolean allowUserInfoCache = true;
 
+    /**
+     * Allow inlining UserInfo in IdToken instead of caching it in the token cache.
+     * This property is only checked when an internal IdToken is generated when Oauth2 providers do not return IdToken.
+     * Inlining UserInfo in the generated IdToken allows to store it in the session cookie and avoids introducing a cached
+     * state.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean cacheUserInfoInIdtoken = false;
+
     @ConfigGroup
     public static class Logout {
 
@@ -637,7 +646,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * Requires that ID token is available when the authorization code flow completes.
          * Disable this property only when you need to use the authorization code flow with OAuth2 providers which do not return
-         * ID token.
+         * ID token - an internal IdToken will be generated in such cases.
          */
         @ConfigItem(defaultValueDocumentation = "true")
         public Optional<Boolean> idTokenRequired = Optional.empty();
@@ -1089,5 +1098,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     public void setAllowUserInfoCache(boolean allowUserInfoCache) {
         this.allowUserInfoCache = allowUserInfoCache;
+    }
+
+    public boolean isCacheUserInfoInIdtoken() {
+        return cacheUserInfoInIdtoken;
+    }
+
+    public void setCacheUserInfoInIdtoken(boolean cacheUserInfoInIdtoken) {
+        this.cacheUserInfoInIdtoken = cacheUserInfoInIdtoken;
     }
 }

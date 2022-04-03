@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-resteasy-links</artifactId>
     <name>Quarkus - RESTEasy - Links - Runtime</name>
-    <description>Links support RESTEasy</description>
+    <description>Links support for RESTEasy Classic</description>
 
     <dependencies>
         <dependency>
@@ -22,6 +22,16 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-links</artifactId>
+            <exclusions>
+                <!--
+                jakarta.el:jakara.el-api is coming from CDI
+                we don't add it as a dependency to avoid having to define a version in the BOM
+                -->
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.el</groupId>
+                    <artifactId>jboss-el-api_3.0_spec</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

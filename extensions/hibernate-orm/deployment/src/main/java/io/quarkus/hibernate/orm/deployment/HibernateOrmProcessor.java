@@ -72,6 +72,7 @@ import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -742,7 +743,8 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     public PersistenceProviderSetUpBuildItem setupPersistenceProvider(HibernateOrmRecorder recorder,
             Capabilities capabilities, HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
-            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems) {
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
+            BuildProducer<RecorderBeanInitializedBuildItem> orderEnforcer) {
         if (capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
             recorder.setupPersistenceProvider(hibernateOrmRuntimeConfig,
                     HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));

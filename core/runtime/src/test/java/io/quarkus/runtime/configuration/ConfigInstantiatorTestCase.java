@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.logging.LogConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -24,19 +26,21 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  */
 public class ConfigInstantiatorTestCase {
 
-    private static final Map<String, String> TEST_CONFIG_MAP = Map.of(
-            "quarkus.log.category.\"foo.bar\".level", "DEBUG",
-            "quarkus.log.category.baz.level", "TRACE",
+    private static final Map<String, String> TEST_CONFIG_MAP = Map.ofEntries(
+            entry("quarkus.log.category.\"foo.bar\".level", "DEBUG"),
+            entry("quarkus.log.category.baz.level", "TRACE"),
 
-            "quarkus.map-of-maps.map-of-string-maps.outer1.inner1", "o1i1",
-            "quarkus.map-of-maps.map-of-string-maps.outer1.inner2", "o1i2",
-            "quarkus.map-of-maps.map-of-string-maps.\"outer2.key\".inner1", "o2i1",
-            "quarkus.map-of-maps.map-of-string-maps.\"outer2.key\".\"inner2.key\"", "o2i2",
+            entry("quarkus.map-of-maps.map-of-string-maps.outer1.inner1", "o1i1"),
+            entry("quarkus.map-of-maps.map-of-string-maps.outer1.inner2", "o1i2"),
+            entry("quarkus.map-of-maps.map-of-string-maps.\"outer2.key\".inner1", "o2i1"),
+            entry("quarkus.map-of-maps.map-of-string-maps.\"outer2.key\".\"inner2.key\"", "o2i2"),
 
-            "quarkus.map-of-maps.map-of-maps.outer1.inner1.value", "o1i1",
-            "quarkus.map-of-maps.map-of-maps.outer1.inner2.value", "o1i2",
-            "quarkus.map-of-maps.map-of-maps.\"outer2.key\".inner1.value", "o2i1",
-            "quarkus.map-of-maps.map-of-maps.\"outer2.key\".\"inner2.key\".value", "o2i2");
+            entry("quarkus.map-of-maps.map-of-maps.outer1.inner1.value", "o1i1"),
+            entry("quarkus.map-of-maps.map-of-maps.outer1.inner2.value", "o1i2"),
+            entry("quarkus.map-of-maps.map-of-maps.\"outer2.key\".inner1.value", "o2i1"),
+            entry("quarkus.map-of-maps.map-of-maps.\"outer2.key\".\"inner2.key\".value", "o2i2"),
+
+            entry("quarkus.named.value", "val"));
 
     private static Config testConfig;
     private static Config cfgToRestore;
@@ -103,6 +107,14 @@ public class ConfigInstantiatorTestCase {
                 .isEqualTo(Map.of("inner1", new MapValueConfig("o2i1"), "inner2.key", new MapValueConfig("o2i2")));
     }
 
+    @Test
+    public void handleWithNameConfig() {
+        WithNameConfig config = new WithNameConfig();
+        ConfigInstantiator.handleObject(config);
+
+        assertThat(config.value).isEqualTo("val");
+    }
+
     private static class MapOfMapsConfig {
 
         @ConfigItem
@@ -151,6 +163,13 @@ public class ConfigInstantiatorTestCase {
         public String toString() {
             return String.format("MapValueConfig[%s]", value);
         }
+    }
+
+    @ConfigRoot(name = "named")
+    private static class WithNameConfig {
+
+        @ConfigItem
+        public String value;
     }
 
     private static class TestConfigSource implements ConfigSource {

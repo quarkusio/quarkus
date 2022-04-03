@@ -17,6 +17,7 @@ public class GoogleCloudFunctionsCodestartTest {
 
     @Test
     void testContent() throws Throwable {
+        codestartTest.checkGeneratedSource("org.acme.googlecloudfunctions.HelloWorldCloudEventsFunction");
         codestartTest.checkGeneratedSource("org.acme.googlecloudfunctions.HelloWorldBackgroundFunction");
         codestartTest.checkGeneratedSource("org.acme.googlecloudfunctions.HelloWorldHttpFunction");
     }

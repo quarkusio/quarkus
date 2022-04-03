@@ -6,11 +6,10 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.db.DbSpanNameExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.db.SqlAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.db.DbClientSpanNameExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.db.SqlClientAttributesExtractor;
 import io.vertx.core.Context;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -21,14 +20,14 @@ public class SqlClientInstrumenterVertxTracer implements
     private final Instrumenter<QueryTrace, QueryTrace> sqlClientInstrumenter;
 
     public SqlClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry) {
-        SqlClientAttributesExtractor sqlClientAttributesExtractor = new SqlClientAttributesExtractor();
+        SqlClientAttributesGetter sqlClientAttributesGetter = new SqlClientAttributesGetter();
 
         InstrumenterBuilder<QueryTrace, QueryTrace> serverBuilder = Instrumenter.builder(
                 openTelemetry,
-                INSTRUMENTATION_NAME, DbSpanNameExtractor.create(sqlClientAttributesExtractor));
+                INSTRUMENTATION_NAME, DbClientSpanNameExtractor.create(sqlClientAttributesGetter));
 
         this.sqlClientInstrumenter = serverBuilder
-                .addAttributesExtractor(sqlClientAttributesExtractor)
+                .addAttributesExtractor(SqlClientAttributesExtractor.create(sqlClientAttributesGetter))
                 .newClientInstrumenter((queryTrace, key, value) -> {
                 });
     }
@@ -58,7 +57,6 @@ public class SqlClientInstrumenterVertxTracer implements
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <R> void receiveResponse(
             final Context context,
             final R response,
@@ -118,34 +116,31 @@ public class SqlClientInstrumenterVertxTracer implements
         }
     }
 
-    static class SqlClientAttributesExtractor extends SqlAttributesExtractor<QueryTrace, QueryTrace> {
-        @Override
-        protected AttributeKey<String> dbTableAttribute() {
-            return null;
-        }
+    static class SqlClientAttributesGetter implements
+            io.opentelemetry.instrumentation.api.instrumenter.db.SqlClientAttributesGetter<QueryTrace> {
 
         @Override
-        protected String rawStatement(final QueryTrace queryTrace) {
+        public String rawStatement(final QueryTrace queryTrace) {
             return queryTrace.rawStatement();
         }
 
         @Override
-        protected String system(final QueryTrace queryTrace) {
+        public String system(final QueryTrace queryTrace) {
             return queryTrace.system();
         }
 
         @Override
-        protected String user(final QueryTrace queryTrace) {
+        public String user(final QueryTrace queryTrace) {
             return queryTrace.user();
         }
 
         @Override
-        protected String name(final QueryTrace queryTrace) {
+        public String name(final QueryTrace queryTrace) {
             return null;
         }
 
         @Override
-        protected String connectionString(final QueryTrace queryTrace) {
+        public String connectionString(final QueryTrace queryTrace) {
             return queryTrace.connectionString();
         }
     }

@@ -72,7 +72,7 @@ The easiest way to create a new Quarkus project is to open a terminal and run th
 For Linux & MacOS users
 
 :create-app-artifact-id: getting-started
-:create-app-extensions: resteasy
+:create-app-extensions: resteasy-reactive
 :create-app-code:
 include::includes/devtools/create-app.adoc[]
 
@@ -141,14 +141,14 @@ If we focus on the dependencies section, you can see the extension allowing the 
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy</artifactId>
+    <artifactId>quarkus-resteasy-reactive</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy")
+implementation("io.quarkus:quarkus-resteasy-reactive")
 ----
 
 === The JAX-RS resources
@@ -170,12 +170,12 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "Hello RESTEasy";
+        return "Hello from RESTEasy Reactive";
     }
 }
 ----
 
-It's a very simple REST endpoint, returning "Hello RESTEasy" to requests on "/hello".
+It's a very simple REST endpoint, returning "Hello from RESTEasy Reactive" to requests on "/hello".
 
 [TIP]
 .Differences with vanilla JAX-RS
@@ -209,7 +209,7 @@ Listening for transport dt_socket at address: 5005
 2019-02-28 17:05:22,347 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
 2019-02-28 17:05:22,635 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 288ms
 2019-02-28 17:05:22,770 INFO  [io.quarkus] (main) Quarkus started in 0.668s. Listening on: http://localhost:8080
-2019-02-28 17:05:22,771 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+2019-02-28 17:05:22,771 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
 ----
 
 Once started, you can request the provided endpoint:
@@ -235,7 +235,7 @@ If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introductio
 
 Quarkus only implements a subset of the CDI features and comes with non-standard features and specific APIS, you can learn more about it in the xref:cdi-reference.adoc[Contexts and Dependency Injection guide].
 
-ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
+ArC comes as a dependency of `quarkus-resteasy-reactive` so you already have it handy.
 
 Let's modify the application and add a companion bean.
 Create the `src/main/java/org/acme/GreetingService.java` file with the following content:
@@ -268,8 +268,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-
 @Path("/hello")
 public class GreetingResource {
 
@@ -279,7 +277,7 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/greeting/{name}")
-    public String greeting(@PathParam String name) {
+    public String greeting(String name) {
         return service.greeting(name);
     }
 

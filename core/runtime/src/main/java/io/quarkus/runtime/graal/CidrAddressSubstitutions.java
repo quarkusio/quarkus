@@ -5,7 +5,6 @@ import java.net.InetAddress;
 import org.wildfly.common.net.CidrAddress;
 import org.wildfly.common.net.Inet;
 
-import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.InjectAccessors;
 import com.oracle.svm.core.annotate.TargetClass;
@@ -33,19 +32,18 @@ final class Target_org_wildfly_common_net_CidrAddress {
     public static CidrAddress INET6_ANY_CIDR;
 
     static class CidrAddressUtil {
-        static CidrAddress newInstance(InetAddress networkAddress, int netmaskBits) {
-            return SubstrateUtil.cast(new Target_org_wildfly_common_net_CidrAddress(networkAddress, netmaskBits),
-                    CidrAddress.class);
+        static Target_org_wildfly_common_net_CidrAddress newInstance(InetAddress networkAddress, int netmaskBits) {
+            return new Target_org_wildfly_common_net_CidrAddress(networkAddress, netmaskBits);
         }
     }
 }
 
 class Inet4AnyCidrAccessor {
 
-    private static volatile CidrAddress INET4_ANY_CIDR;
+    private static volatile Target_org_wildfly_common_net_CidrAddress INET4_ANY_CIDR;
 
-    static CidrAddress get() {
-        CidrAddress result = INET4_ANY_CIDR;
+    static Target_org_wildfly_common_net_CidrAddress get() {
+        Target_org_wildfly_common_net_CidrAddress result = INET4_ANY_CIDR;
         if (result == null) {
             // Lazy initialization on first access.
             result = initializeOnce();
@@ -53,8 +51,8 @@ class Inet4AnyCidrAccessor {
         return result;
     }
 
-    private static synchronized CidrAddress initializeOnce() {
-        CidrAddress result = INET4_ANY_CIDR;
+    private static synchronized Target_org_wildfly_common_net_CidrAddress initializeOnce() {
+        Target_org_wildfly_common_net_CidrAddress result = INET4_ANY_CIDR;
         if (result != null) {
             // Double-checked locking is OK because INSTANCE is volatile.
             return result;
@@ -67,10 +65,10 @@ class Inet4AnyCidrAccessor {
 
 class Inet6AnyCidrAccessor {
 
-    private static volatile CidrAddress INET6_ANY_CIDR;
+    private static volatile Target_org_wildfly_common_net_CidrAddress INET6_ANY_CIDR;
 
-    static CidrAddress get() {
-        CidrAddress result = INET6_ANY_CIDR;
+    static Target_org_wildfly_common_net_CidrAddress get() {
+        Target_org_wildfly_common_net_CidrAddress result = INET6_ANY_CIDR;
         if (result == null) {
             // Lazy initialization on first access.
             result = initializeOnce();
@@ -78,8 +76,8 @@ class Inet6AnyCidrAccessor {
         return result;
     }
 
-    private static synchronized CidrAddress initializeOnce() {
-        CidrAddress result = INET6_ANY_CIDR;
+    private static synchronized Target_org_wildfly_common_net_CidrAddress initializeOnce() {
+        Target_org_wildfly_common_net_CidrAddress result = INET6_ANY_CIDR;
         if (result != null) {
             // Double-checked locking is OK because INSTANCE is volatile.
             return result;

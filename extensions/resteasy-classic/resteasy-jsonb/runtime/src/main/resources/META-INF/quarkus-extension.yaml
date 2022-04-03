@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "RESTEasy JSON-B"
+name: "RESTEasy Classic JSON-B"
 metadata:
   keywords:
   - "resteasy-jsonb"
@@ -14,6 +14,13 @@ metadata:
   categories:
   - "web"
   - "serialization"
+  codestart:
+    name: "resteasy"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   status: "stable"
   config:
   - "quarkus.resteasy."

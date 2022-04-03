@@ -49,7 +49,7 @@ class ReactiveGreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    fun hello() = "Hello RESTEasy Reactive"
+    fun hello() = "Hello from RESTEasy Reactive"
 }
 ----
 
@@ -430,7 +430,6 @@ import javax.enterprise.context.ApplicationScoped
 
 import javax.ws.rs.GET
 import javax.ws.rs.Path
-import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
@@ -455,7 +454,7 @@ class ReactiveGreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/hello/{name}")
-    fun greeting(@PathParam("name") name: String): String {
+    fun greeting(name: String): String {
         return service.greeting(name)
     }
 
@@ -471,7 +470,6 @@ import javax.enterprise.context.ApplicationScoped
 
 import javax.ws.rs.GET
 import javax.ws.rs.Path
-import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
@@ -490,7 +488,7 @@ class ReactiveGreetingResource(
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/hello/{name}")
-    fun greeting(@PathParam("name") name: String): String {
+    fun greeting(name: String): String {
         return service.greeting(name)
     }
 

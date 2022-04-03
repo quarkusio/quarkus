@@ -70,6 +70,16 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
+    public Integer info(boolean perModule) {
+        throw new UnsupportedOperationException("Not there yet. ;)");
+    }
+
+    @Override
+    public Integer update(boolean rectify, boolean recommendedState, boolean perModule) {
+        throw new UnsupportedOperationException("Not there yet. ;)");
+    }
+
+    @Override
     public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
 

@@ -317,6 +317,10 @@ public class KubernetesCommonHelper {
             result.add(new DecoratorBuildItem(target, new ApplyRequestsMemoryDecorator(name, m)));
         });
 
+        if (config.getSecurityContext().isAnyPropertySet()) {
+            result.add(new DecoratorBuildItem(target, new ApplySecuritySettingsDecorator(name, config.getSecurityContext())));
+        }
+
         return result;
     }
 

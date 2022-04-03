@@ -78,6 +78,7 @@
         <module>redis-client</module>
 
         <!-- Data access and validation -->
+        <module>transaction-annotations</module>
         <module>narayana-jta</module>
         <module>narayana-stm</module>
         <module>narayana-lra</module>
@@ -115,6 +116,7 @@
         <!-- Security -->
         <module>security</module>
         <module>security-jpa</module>
+        <module>security-webauthn</module>
         <module>elytron-security-common</module>
         <module>elytron-security</module>
         <module>elytron-security-jdbc</module>
@@ -132,6 +134,7 @@
         <module>oidc-token-propagation-reactive</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
+        <module>keycloak-admin-client-reactive</module>
         <module>credentials</module>
 
         <!-- Infinispan -->

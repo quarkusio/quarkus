@@ -704,7 +704,7 @@ public class ArcContainerImpl implements ArcContainer {
         Set<Type> eventTypes = new HierarchyDiscovery(eventType).getTypeClosure();
         List<InjectableObserverMethod<? super T>> resolvedObservers = new ArrayList<>();
         for (InjectableObserverMethod<?> observer : observers) {
-            if (EventTypeAssignabilityRules.matches(observer.getObservedType(), eventTypes)) {
+            if (EventTypeAssignabilityRules.instance().matches(observer.getObservedType(), eventTypes)) {
                 if (observer.getObservedQualifiers().isEmpty()
                         || Qualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers, qualifierNonbindingMembers)) {
                     resolvedObservers.add((InjectableObserverMethod<? super T>) observer);
@@ -749,7 +749,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
         List<Decorator<?>> decorators = new ArrayList<>();
         for (InjectableDecorator<?> decorator : this.decorators) {
-            if (matches(types, Set.of(qualifiers), decorator.getDelegateType(),
+            if (decoratorMatches(types, Set.of(qualifiers), decorator.getDelegateType(),
                     decorator.getDelegateQualifiers().toArray(new Annotation[] {}))) {
                 decorators.add(decorator);
             }
@@ -787,10 +787,18 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     private boolean matches(Set<Type> beanTypes, Set<Annotation> beanQualifiers, Type requiredType, Annotation... qualifiers) {
-        if (!BeanTypeAssignabilityRules.matches(requiredType, beanTypes)) {
+        if (!BeanTypeAssignabilityRules.instance().matches(requiredType, beanTypes)) {
             return false;
         }
         return Qualifiers.hasQualifiers(beanQualifiers, qualifierNonbindingMembers, qualifiers);
+    }
+
+    private boolean decoratorMatches(Set<Type> beanTypes, Set<Annotation> beanQualifiers, Type delegateType,
+            Annotation... delegateQualifiers) {
+        if (!DelegateInjectionPointAssignabilityRules.instance().matches(delegateType, beanTypes)) {
+            return false;
+        }
+        return Qualifiers.hasQualifiers(beanQualifiers, qualifierNonbindingMembers, delegateQualifiers);
     }
 
     static ArcContainerImpl unwrap(ArcContainer container) {

@@ -44,7 +44,7 @@ The solution is located in the `security-openid-connect-multi-tenancy-quickstart
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-openid-connect-multi-tenancy-quickstart
-:create-app-extensions: oidc,resteasy-jackson
+:create-app-extensions: oidc,resteasy-reactive-jackson
 include::includes/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `oidc` extension
@@ -81,6 +81,7 @@ package org.acme.quickstart.oidc;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -103,6 +104,7 @@ public class HomeResource {
      * @return the landing page HTML
      */
     @GET
+    @Produces("text/html")
     public String getHome() {
         StringBuilder response = new StringBuilder().append("<html>").append("<body>");
         

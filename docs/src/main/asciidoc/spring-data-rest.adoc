@@ -32,7 +32,7 @@ The solution is located in the `spring-data-rest-quickstart` {quickstarts-tree-u
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-data-rest-quickstart
-:create-app-extensions: spring-data-rest,resteasy-jackson,quarkus-jdbc-postgresql
+:create-app-extensions: spring-data-rest,resteasy-reactive-jackson,quarkus-jdbc-postgresql
 include::includes/devtools/create-app.adoc[]
 
 This command generates a project with the `spring-data-rest` extension.

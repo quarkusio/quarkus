@@ -53,7 +53,7 @@ public class BaseFunction {
             try {
                 Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
                 String[] args = {};
-                Application app = (Application) appClass.newInstance();
+                Application app = (Application) appClass.getDeclaredConstructor().newInstance();
                 app.start(args);
                 errorWriter.println("Quarkus bootstrapped successfully.");
                 started = true;

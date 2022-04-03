@@ -55,15 +55,15 @@ include::includes/devtools/prerequisites.adoc[]
 Use https://code.quarkus.io/[code.quarkus.io] to generate an application
 with the following extensions, for Maven or Gradle:
 
-* RESTEasy JAX-RS (`quarkus-resteasy`)
-* RESTEasy Jackson (`quarkus-resteasy-jackson`)
+* RESTEasy Reactive (`quarkus-resteasy-reactive`)
+* RESTEasy Reactive Jackson (`quarkus-resteasy-reactive-jackson`)
 * OptaPlanner (`optaplanner-quarkus`)
 * OptaPlanner Jackson (`optaplanner-quarkus-jackson`)
 
 Alternatively, generate it from the command line:
 
 :create-app-artifact-id: optaplanner-quickstart
-:create-app-extensions: resteasy,resteasy-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson
+:create-app-extensions: resteasy-reactive,resteasy-reactive-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson
 include::includes/devtools/create-app.adoc[]
 
 This will include the following dependencies in your build file:
@@ -92,11 +92,11 @@ This will include the following dependencies in your build file:
 <dependencies>
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy</artifactId>
+        <artifactId>quarkus-resteasy-reactive</artifactId>
     </dependency>
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-jackson</artifactId>
+        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     </dependency>
     <dependency>
         <groupId>org.optaplanner</groupId>
@@ -121,8 +121,8 @@ This will include the following dependencies in your build file:
 dependencies {
     implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:{quarkus-version}")
     implementation enforcedPlatform("io.quarkus.platform:quarkus-optaplanner-bom:{quarkus-version}")
-    implementation 'io.quarkus:quarkus-resteasy'
-    implementation 'io.quarkus:quarkus-resteasy-jackson'
+    implementation 'io.quarkus:quarkus-resteasy-reactive'
+    implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
     implementation 'org.optaplanner:optaplanner-quarkus'
     implementation 'org.optaplanner:optaplanner-quarkus-jackson'
 
@@ -440,12 +440,12 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
         };
     }
 
-    private Constraint roomConflict(ConstraintFactory constraintFactory) {
+    Constraint roomConflict(ConstraintFactory constraintFactory) {
         // A room can accommodate at most one lesson at the same time.
 
         // Select a lesson ...
         return constraintFactory
-                .from(Lesson.class)
+                .forEach(Lesson.class)
                 // ... and pair it with another lesson ...
                 .join(Lesson.class,
                         // ... in the same timeslot ...
@@ -458,9 +458,9 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                 .penalize("Room conflict", HardSoftScore.ONE_HARD);
     }
 
-    private Constraint teacherConflict(ConstraintFactory constraintFactory) {
+    Constraint teacherConflict(ConstraintFactory constraintFactory) {
         // A teacher can teach at most one lesson at the same time.
-        return constraintFactory.from(Lesson.class)
+        return constraintFactory.forEach(Lesson.class)
                 .join(Lesson.class,
                         Joiners.equal(Lesson::getTimeslot),
                         Joiners.equal(Lesson::getTeacher),
@@ -468,9 +468,9 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                 .penalize("Teacher conflict", HardSoftScore.ONE_HARD);
     }
 
-    private Constraint studentGroupConflict(ConstraintFactory constraintFactory) {
+    Constraint studentGroupConflict(ConstraintFactory constraintFactory) {
         // A student can attend at most one lesson at the same time.
-        return constraintFactory.from(Lesson.class)
+        return constraintFactory.forEach(Lesson.class)
                 .join(Lesson.class,
                         Joiners.equal(Lesson::getTimeslot),
                         Joiners.equal(Lesson::getStudentGroup),

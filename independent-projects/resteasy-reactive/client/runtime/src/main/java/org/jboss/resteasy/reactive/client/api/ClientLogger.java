@@ -9,5 +9,5 @@ public interface ClientLogger {
 
     void logResponse(HttpClientResponse response, boolean redirect);
 
-    void logRequest(HttpClientRequest request, Buffer body, boolean multipart);
+    void logRequest(HttpClientRequest request, Buffer body, boolean omitBody);
 }

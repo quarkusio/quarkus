@@ -36,6 +36,7 @@ import io.quarkus.reactive.mssql.client.runtime.DataSourcesReactiveMSSQLConfig;
 import io.quarkus.reactive.mssql.client.runtime.MSSQLPoolRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.mssqlclient.MSSQLPool;
 import io.vertx.sqlclient.Pool;
@@ -49,6 +50,7 @@ class ReactiveMSSQLClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             MSSQLPoolRecorder recorder,
             VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
@@ -61,13 +63,13 @@ class ReactiveMSSQLClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_MSSQL_CLIENT));
 
-        createPoolIfDefined(recorder, vertx, shutdown, msSQLPool, vertxPool, syntheticBeans,
+        createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, msSQLPool, vertxPool, syntheticBeans,
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactiveMSSQLConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
-            createPoolIfDefined(recorder, vertx, shutdown, msSQLPool, vertxPool, syntheticBeans, dataSourceName,
+            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, msSQLPool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMSSQLConfig, defaultDataSourceDbKindBuildItems,
                     curateOutcomeBuildItem);
@@ -117,6 +119,7 @@ class ReactiveMSSQLClientProcessor {
 
     private void createPoolIfDefined(MSSQLPoolRecorder recorder,
             VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<MSSQLPoolBuildItem> msSQLPool,
             BuildProducer<VertxPoolBuildItem> vertxPool,
@@ -136,6 +139,7 @@ class ReactiveMSSQLClientProcessor {
         }
 
         RuntimeValue<MSSQLPool> pool = recorder.configureMSSQLPool(vertx.getVertx(),
+                eventLoopCount.getEventLoopCount(),
                 dataSourceName,
                 dataSourcesRuntimeConfig,
                 dataSourcesReactiveRuntimeConfig,

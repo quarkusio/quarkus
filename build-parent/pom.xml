@@ -23,7 +23,7 @@
         <kotlin.version>1.6.10</kotlin.version>
         <dokka.version>1.6.10</dokka.version>
         <scala.version>2.12.13</scala.version>
-        <scala-maven-plugin.version>4.5.6</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.6.1</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
@@ -44,7 +44,7 @@
 
         <asciidoctorj.version>2.5.3</asciidoctorj.version>
         <htmlunit.version>2.40.0</htmlunit.version>
-        <javaparser-core.version>3.24.0</javaparser-core.version>
+        <javaparser-core.version>3.24.2</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
 
@@ -83,32 +83,33 @@
         <opensearch.image>opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
 
-        <!-- Database images for JDBC/Reactive/Hibernate tests -->
-        <postgres.image>docker.io/postgres:14.1</postgres.image>
-        <mariadb.image>docker.io/mariadb:10.6</mariadb.image>
-        <db2.image>docker.io/ibmcom/db2:11.5.7.0</db2.image>
+        <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
+        <postgres.image>docker.io/postgres:14.2</postgres.image>
+        <mariadb.image>docker.io/mariadb:10.7</mariadb.image>
+        <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2019-CU15-ubuntu-20.04</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-xe:21-slim</oracle.image>
+        <mongo.image>docker.io/mongo:4.4.13</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>17.0.0</keycloak.version>
+        <keycloak.version>17.0.1</keycloak.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
         
-        <unboundid-ldap.version>6.0.3</unboundid-ldap.version>
+        <unboundid-ldap.version>6.0.4</unboundid-ldap.version>
 
         <assertj.version>3.22.0</assertj.version>
 
         <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
-        <wiremock-maven-plugin.version>7.0.0</wiremock-maven-plugin.version>
+        <wiremock-maven-plugin.version>7.1.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.20.0</artemis.version>
+        <artemis.version>2.21.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -126,7 +127,7 @@
 
         <!-- Webjars used by the Dev UI -->
         <webjar.bootstrap.version>4.6.1</webjar.bootstrap.version>
-        <webjar.font-awesome.version>6.0.0</webjar.font-awesome.version>
+        <webjar.font-awesome.version>6.1.0</webjar.font-awesome.version>
         <webjar.jquery.version>3.6.0</webjar.jquery.version>
         <webjar.codemirror.version>5.62.2</webjar.codemirror.version>
         <!-- we don't add mermaid as a dependency as it brings a ton of things we don't use -->
@@ -521,6 +522,7 @@
                                             <exclude>org.jboss.spec.javax.security.auth.message:jboss-jaspi-api_1.1_spec</exclude>
                                             <exclude>org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec</exclude>
                                             <exclude>org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.el:jboss-el-api_3.0_spec</exclude>
                                             <!-- except for these 2 for now as most of the RESTEasy optional artifacts depend on them
                                             <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>
                                             <exclude>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</exclude>
@@ -711,7 +713,7 @@
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
-                        <groups>java.,javax.,org.,com.</groups>
+                        <groups>java.,javax.,jakarta.,org.,com.</groups>
                         <staticGroups>*</staticGroups>
                         <skip>${format.skip}</skip>
                         <removeUnused>true</removeUnused>

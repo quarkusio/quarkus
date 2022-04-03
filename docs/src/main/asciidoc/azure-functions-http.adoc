@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Azure Functions (Serverless) with RESTEasy, Undertow, or Reactive Routes
+= Azure Functions (Serverless) with RESTEasy Reactive, Undertow, or Reactive Routes
 :extension-status: preview
 
 include::./attributes.adoc[]
 
-The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy (JAX-RS),
+The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy Reactive (JAX-RS),
 Undertow (servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] and make these microservices deployable to the Azure Functions runtime.
 
 One azure function deployment can represent any number of JAX-RS, servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
@@ -95,8 +95,8 @@ https://{appName}.azurewebsites.net/api/funqyHello
 
 == Extension maven dependencies
 
-The sample project includes the RESTEasy, Undertow, Reactive Routes, xref:funqy-http.adoc[Funqy HTTP] extensions.  If you are only using one of those
-APIs (i.e. jax-rs only), respectively remove the maven dependency `quarkus-resteasy`, `quarkus-undertow`, `quarkus-funqy-http`, and/or
+The sample project includes the RESTEasy Reactive, Undertow, Reactive Routes, xref:funqy-http.adoc[Funqy HTTP] extensions.  If you are only using one of those
+APIs (i.e. jax-rs only), respectively remove the maven dependency `quarkus-resteasy-reactive`, `quarkus-undertow`, `quarkus-funqy-http`, and/or
 `quarkus-reactive-routes`.
 
 You must include the `quarkus-azure-functions-http` extension as this is a generic bridge between the Azure Functions

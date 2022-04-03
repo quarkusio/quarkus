@@ -115,7 +115,8 @@ public class BeanManagerImpl implements BeanManager {
         throw new UnsupportedOperationException();
     }
 
-    @Override
+    // Deprecated method which can be safely removed once we use CDI 4.0+
+    @Deprecated
     public void fireEvent(Object event, Annotation... qualifiers) {
         Set<Annotation> eventQualifiers = new HashSet<>();
         Collections.addAll(eventQualifiers, qualifiers);
@@ -235,7 +236,8 @@ public class BeanManagerImpl implements BeanManager {
         throw new UnsupportedOperationException();
     }
 
-    @Override
+    // Deprecated method which can be safely removed once we use CDI 4.0+
+    @Deprecated
     public <T> InjectionTarget<T> createInjectionTarget(AnnotatedType<T> type) {
         throw new UnsupportedOperationException();
     }

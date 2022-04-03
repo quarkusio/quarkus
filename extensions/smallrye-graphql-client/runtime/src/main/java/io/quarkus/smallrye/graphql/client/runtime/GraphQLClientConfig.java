@@ -3,6 +3,7 @@ package io.quarkus.smallrye.graphql.client.runtime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -32,6 +33,20 @@ public class GraphQLClientConfig {
      */
     @ConfigItem(defaultValue = "graphql-transport-ws")
     public Optional<List<String>> subprotocols;
+
+    /**
+     * If true, then queries and mutations will run over the websocket transport rather than pure HTTP.
+     * Off by default, because it has higher overhead.
+     */
+    @ConfigItem
+    public Optional<Boolean> executeSingleResultOperationsOverWebsocket;
+
+    /**
+     * Maximum time in milliseconds that will be allowed to wait for the server to acknowledge a websocket connection
+     * (send a subprotocol-specific ACK message).
+     */
+    @ConfigItem
+    public OptionalInt websocketInitializationTimeout;
 
     /**
      * The trust store location. Can point to either a classpath resource or a file.
@@ -79,7 +94,7 @@ public class GraphQLClientConfig {
      * Port number of the proxy to use.
      */
     @ConfigItem
-    public Optional<Integer> proxyPort;
+    public OptionalInt proxyPort;
 
     /**
      * Username for the proxy to use.
@@ -97,6 +112,6 @@ public class GraphQLClientConfig {
      * Maximum number of redirects to follow.
      */
     @ConfigItem
-    public Optional<Integer> maxRedirects;
+    public OptionalInt maxRedirects;
 
 }

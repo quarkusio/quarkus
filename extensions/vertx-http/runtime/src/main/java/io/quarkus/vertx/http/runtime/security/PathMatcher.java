@@ -53,8 +53,7 @@ public class PathMatcher<T> {
 
         int length = path.length();
         final int[] lengths = this.lengths;
-        for (int i = 0; i < lengths.length; ++i) {
-            int pathLength = lengths[i];
+        for (int pathLength : lengths) {
             if (pathLength == length) {
                 SubstringMap.SubstringMatch<T> next = paths.get(path, length);
                 if (next != null) {

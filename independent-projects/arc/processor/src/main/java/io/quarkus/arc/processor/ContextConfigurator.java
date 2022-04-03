@@ -118,7 +118,7 @@ public final class ContextConfigurator {
                     valHandle = mc.newInstance(MethodDescriptor.ofConstructor(Double.class, double.class),
                             mc.load(((Double) entry.getValue()).doubleValue()));
                 } else if (entry.getValue() instanceof Class) {
-                    valHandle = mc.loadClassFromTCCL((Class<?>) entry.getValue());
+                    valHandle = mc.loadClass((Class<?>) entry.getValue());
                 } else if (entry.getValue() instanceof Boolean) {
                     valHandle = mc.load((Boolean) entry.getValue());
                 }

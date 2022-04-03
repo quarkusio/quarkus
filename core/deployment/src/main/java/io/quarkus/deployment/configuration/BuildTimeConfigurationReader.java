@@ -474,6 +474,10 @@ public final class BuildTimeConfigurationReader {
                 }
             }
 
+            // Remove properties coming from the Build System, because most likely they are used in build scripts
+            config.getConfigSource("PropertiesConfigSource[source=Build system]").ifPresent(
+                    configSource -> unknownBuildProperties.removeAll(configSource.getPropertyNames()));
+
             // ConfigMappings
             for (ConfigClassWithPrefix mapping : buildTimeVisibleMappings) {
                 objectsByClass.put(mapping.getKlass(), config.getConfigMapping(mapping.getKlass(), mapping.getPrefix()));

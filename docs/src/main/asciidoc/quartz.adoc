@@ -38,7 +38,7 @@ The solution is located in the `quartz-quickstart` {quickstarts-tree-url}/quartz
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: quartz-quickstart
-:create-app-extensions: resteasy,quartz,hibernate-orm-panache,flyway,resteasy-jackson,jdbc-postgresql
+:create-app-extensions: resteasy-reactive-jackson,quartz,hibernate-orm-panache,flyway,jdbc-postgresql
 include::includes/devtools/create-app.adoc[]
 
 It generates:
@@ -201,6 +201,7 @@ Edit the `application.properties` file and add the below configuration:
 # Quartz configuration
 quarkus.quartz.clustered=true <1>
 quarkus.quartz.store-type=jdbc-cmt <2>
+quarkus.quartz.misfire-policy.task-job=ignore-misfire-policy <3>
 
 # Datasource configuration.
 quarkus.datasource.db-kind=postgresql
@@ -223,6 +224,10 @@ quarkus.flyway.baseline-description=Quartz
 ----
 <1> Indicate that the scheduler will be run in clustered mode
 <2> Use the database store to persist job related information so that they can be shared between nodes
+<3> The misfire policy can be configured for each job. `task-job` is the identity of the job.
+
+Valid misfire policy for cron jobs are: `smart-policy`, `ignore-misfire-policy`, `fire-now` and `cron-trigger-do-nothing`.
+Valid misfire policy for interval jobs are: `smart-policy`, `ignore-misfire-policy`, `fire-now`, `simple-trigger-reschedule-now-with-existing-repeat-count`, `simple-trigger-reschedule-now-with-remaining-repeat-count`, `simple-trigger-reschedule-next-with-existing-count` and `simple-trigger-reschedule-next-with-remaining-count`.
 
 == Creating a REST resource and a test
 

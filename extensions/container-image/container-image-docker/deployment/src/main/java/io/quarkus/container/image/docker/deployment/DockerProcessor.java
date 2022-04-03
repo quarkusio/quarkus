@@ -1,6 +1,8 @@
 
 package io.quarkus.container.image.docker.deployment;
 
+import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
+import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 
 import java.io.BufferedReader;
@@ -25,6 +27,7 @@ import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.IsDockerWorking;
@@ -69,16 +72,14 @@ public class DockerProcessor {
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             @SuppressWarnings("unused") Optional<AppCDSResultBuildItem> appCDSResult, // ensure docker build will be performed after AppCDS creation
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
             @SuppressWarnings("unused") // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
-            return;
-        }
-
-        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
-                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        boolean buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
+        boolean pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -104,12 +105,13 @@ public class DockerProcessor {
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out, reader,
                 false,
-                pushRequest.isPresent(), packageConfig);
+                pushContainerImage, packageConfig);
 
         // a pull is not required when using this image locally because the docker strategy always builds the container image
         // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
                 Map.of("container-image", builtContainerImage, "pull-required", "false")));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(DOCKER));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
@@ -121,16 +123,14 @@ public class DockerProcessor {
             OutputTargetBuildItem out,
             Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
-            return;
-        }
-
-        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
-                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        boolean buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
+        boolean pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -147,12 +147,14 @@ public class DockerProcessor {
 
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
-                pushRequest.isPresent(), packageConfig);
+                pushContainerImage, packageConfig);
 
         // a pull is not required when using this image locally because the docker strategy always builds the container image
         // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
                 Map.of("container-image", builtContainerImage, "pull-required", "false")));
+
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(DOCKER));
     }
 
     private String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,

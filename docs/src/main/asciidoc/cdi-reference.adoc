@@ -958,6 +958,8 @@ public class Processor {
 }
 ----
 
+NOTE: Neither a type variable nor a wildcard is a legal type parameter for an `@All List<>` injection point, i.e. `@Inject @All List<?> all` is not supported and results in a deployment error.
+
 === Ignoring Class-Level Interceptor Bindings for Methods and Constructors
 
 If a managed bean declares interceptor binding annotations on the class level, the corresponding `@AroundInvoke` interceptors will apply to all business methods.

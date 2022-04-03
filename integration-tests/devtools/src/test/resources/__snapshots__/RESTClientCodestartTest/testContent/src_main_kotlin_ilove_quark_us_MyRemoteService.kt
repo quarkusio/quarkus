@@ -5,6 +5,19 @@ import javax.ws.rs.GET
 import javax.ws.rs.Path
 import javax.ws.rs.QueryParam
 
+/**
+ * To use it via injection.
+ *
+ * {@code
+ *     @Inject
+ *     @RestClient
+ *     lateinit var myRemoteService: MyRemoteService
+ *
+ *     fun doSomething() {
+ *         val restClientExtensions = myRemoteService.getExtensionsById("io.quarkus:quarkus-rest-client")
+ *     }
+ * }
+ */
 @RegisterRestClient(baseUri = "https://stage.code.quarkus.io/api")
 interface MyRemoteService {
 

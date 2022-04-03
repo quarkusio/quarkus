@@ -8,6 +8,7 @@ import javax.ws.rs.core.MediaType;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.test.multipart.other.OtherPackageFormDataBase;
@@ -45,6 +46,23 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
     }
 
     @Test
+    public void testRestResponse() {
+        String response = RestAssured.get("/multipart/output/rest-response")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200)
+                .header("foo", "bar")
+                .extract().asString();
+
+        assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
+        assertContainsValue(response, "custom-surname", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_SURNAME);
+        assertContainsValue(response, "custom-status", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_STATUS);
+        assertContainsValue(response, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE);
+        assertContainsValue(response, "values", MediaType.TEXT_PLAIN, "[one, two]");
+        assertContainsValue(response, "num", MediaType.TEXT_PLAIN, "0");
+    }
+
+    @Test
     public void testString() {
         RestAssured.get("/multipart/output/string")
                 .then()
@@ -65,6 +83,16 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
 
         assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
         assertContainsFile(response, "file", MediaType.APPLICATION_OCTET_STREAM, "lorem.txt");
+    }
+
+    @EnabledIfSystemProperty(named = "test-resteasy-reactive-large-files", matches = "true")
+    @Test
+    public void testWithLargeFiles() {
+        RestAssured.given()
+                .get("/multipart/output/with-large-file")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200);
     }
 
     @Test

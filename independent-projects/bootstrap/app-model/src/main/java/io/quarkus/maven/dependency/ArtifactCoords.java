@@ -18,6 +18,10 @@ public interface ArtifactCoords {
 
     ArtifactKey getKey();
 
+    default boolean isJar() {
+        return TYPE_JAR.equals(getType());
+    }
+
     default String toGACTVString() {
         return getGroupId() + ":" + getArtifactId() + ":" + getClassifier() + ":" + getType() + ":" + getVersion();
     }
@@ -28,7 +32,7 @@ public interface ArtifactCoords {
         if (!getClassifier().isEmpty()) {
             b.append(getClassifier()).append(':');
         }
-        if (!TYPE_JAR.equals(getType())) {
+        if (!isJar()) {
             b.append(getType()).append(':');
         }
         b.append(getVersion());

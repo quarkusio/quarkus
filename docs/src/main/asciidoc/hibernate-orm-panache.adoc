@@ -423,7 +423,7 @@ The repository pattern examples have been omitted for brevity.
 
 == Writing a JAX-RS resource
 
-First, include one of the RESTEasy extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-jackson` dependency for JAX-RS and JSON support.
+First, include one of the RESTEasy Reactive extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for JAX-RS and JSON support.
 
 Then, you can create the following resource to create/read/update/delete your Person entity:
 
@@ -441,7 +441,7 @@ public class PersonResource {
 
     @GET
     @Path("/{id}")
-    public Person get(@PathParam("id") Long id) {
+    public Person get(Long id) {
         return Person.findById(id);
     }
 
@@ -455,7 +455,7 @@ public class PersonResource {
     @PUT
     @Path("/{id}")
     @Transactional
-    public Person update(@PathParam("id") Long id, Person person) {
+    public Person update(Long id, Person person) {
         Person entity = Person.findById(id);
         if(entity == null) {
             throw new NotFoundException();
@@ -470,7 +470,7 @@ public class PersonResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public void delete(@PathParam("id") Long id) {
+    public void delete(Long id) {
         Person entity = Person.findById(id);
         if(entity == null) {
             throw new NotFoundException();
@@ -480,7 +480,7 @@ public class PersonResource {
 
     @GET
     @Path("/search/{name}")
-    public Person search(@PathParam("name") String name) {
+    public Person search(String name) {
         return Person.findByName(name);
     }
 

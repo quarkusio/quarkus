@@ -57,8 +57,8 @@ public class StorkDevModeTest {
         // @formatter:on
 
         TEST.modifyResourceFile("application.properties",
-                v -> v.replaceAll("stork.hello-service.service-discovery.address-list=.*",
-                        "stork.hello-service.service-discovery.address-list=localhost:8766"));
+                v -> v.replaceAll("quarkus.stork.hello-service.service-discovery.address-list=.*",
+                        "quarkus.stork.hello-service.service-discovery.address-list=localhost:8766"));
         // @formatter:off
         when()
                 .get("/helper")

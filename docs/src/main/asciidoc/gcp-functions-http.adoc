@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Google Cloud Functions (Serverless) with RESTEasy, Undertow, or Reactive Routes
+= Google Cloud Functions (Serverless) with RESTEasy Reactive, Undertow, or Reactive Routes
 :extension-status: preview
 
 include::./attributes.adoc[]
 
-The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy (JAX-RS),
+The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy Reactive (JAX-RS),
 Undertow (Servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.
 
 One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
@@ -40,7 +40,7 @@ Create an application with the `quarkus-google-cloud-functions-http` extension.
 You can use the following Maven command to create it:
 
 :create-app-artifact-id: google-cloud-functions-http
-:create-app-extensions: resteasy,google-cloud-functions-http,resteasy-jackson,undertow,reactive-routes,funqy-http
+:create-app-extensions: google-cloud-functions-http,resteasy-reactive-jackson,undertow,reactive-routes,funqy-http
 include::includes/devtools/create-app.adoc[]
 
 == Login to Google Cloud
@@ -82,7 +82,7 @@ public class GreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello";
+        return "Hello from RESTEasy Reactive";
     }
 }
 ----

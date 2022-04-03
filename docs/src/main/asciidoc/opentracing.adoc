@@ -33,7 +33,7 @@ The solution is located in the `opentracing-quickstart` {quickstarts-tree-url}/o
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: opentracing-quickstart
-:create-app-extensions: resteasy,quarkus-smallrye-opentracing
+:create-app-extensions: resteasy-reactive,quarkus-smallrye-opentracing
 include::includes/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `smallrye-opentracing` extension, which

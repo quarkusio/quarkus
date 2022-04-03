@@ -185,7 +185,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.annotations.SseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @Path("/prices")
 public class PriceResource {
@@ -197,7 +197,7 @@ public class PriceResource {
     @GET
     @Path("/prices")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType("text/plain")
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Multi<Double> stream() {
         return prices;
     }
@@ -211,7 +211,7 @@ in this example exposing it as a Server-Sent Events endpoint.
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above, RESTEasy endpoint handles that for you.
+In the example above, the RESTEasy Reactive endpoint handles that for you.
 ====
 
 Following types can be injected as channels:
@@ -1310,9 +1310,7 @@ import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 
 public class ListOfFruitDeserializer extends ObjectMapperDeserializer<List<Fruit>> {
     public ListOfFruitDeserializer() {
-        TypeReference<List<Fruit>> listType = new TypeReference<>() {
-        };
-        super(listType);
+        super(new TypeReference<List<Fruit>>() {});
     }
 }
 ----
@@ -1389,8 +1387,7 @@ import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 
 public class ListOfFruitDeserializer extends JsonbDeserializer<List<Fruit>> {
     public ListOfFruitDeserializer() {
-        Type listType = new ArrayList<MyEntity>() {}.getClass().getGenericSuperclass();
-        super(listType);
+        super(new ArrayList<MyEntity>() {}.getClass().getGenericSuperclass());
     }
 }
 ----
@@ -1459,6 +1456,7 @@ The full set of types supported by the serializer/deserializer autodetection is:
 * `io.vertx.core.json.JsonObject`
 * `io.vertx.core.json.JsonArray`
 * classes generated from Avro schemas, as well as Avro `GenericRecord`, if Confluent or Apicurio Registry _serde_ is present
+** in case multiple Avro serdes are present, serializer/deserializer must be configured manually for Avro-generated classes, because autodetection is impossible
 ** see xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio Registry libraries
 * classes for which a subclass of `ObjectMapperSerializer` / `ObjectMapperDeserializer` is present, as described in <<jackson-serialization>>
 ** it is technically not needed to subclass `ObjectMapperSerializer`, but in such case, autodetection isn't possible

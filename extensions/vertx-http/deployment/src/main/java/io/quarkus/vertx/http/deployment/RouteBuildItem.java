@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.deployment;
 
+import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.APPLICATION_ROUTE;
+
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -23,16 +25,18 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final Handler<RoutingContext> handler;
     private final HandlerType type;
     private final RouteType routeType;
+    private final RouteType routerType;
     private final NotFoundPageDisplayableEndpointBuildItem notFoundPageDisplayableEndpoint;
-    private final ConfiguredPathInfo devConsoleResolvedPathBuildItem;
+    private final ConfiguredPathInfo configuredPathInfo;
 
-    RouteBuildItem(Builder builder, RouteType routeType) {
+    RouteBuildItem(Builder builder, RouteType routeType, RouteType routerType) {
         this.routeFunction = builder.routeFunction;
         this.handler = builder.handler;
         this.type = builder.type;
         this.routeType = routeType;
+        this.routerType = routerType;
         this.notFoundPageDisplayableEndpoint = builder.getNotFoundEndpoint();
-        this.devConsoleResolvedPathBuildItem = builder.getRouteConfigInfo();
+        this.configuredPathInfo = builder.getRouteConfigInfo();
     }
 
     public Handler<RoutingContext> getHandler() {
@@ -47,24 +51,32 @@ public final class RouteBuildItem extends MultiBuildItem {
         return routeFunction;
     }
 
-    public boolean isFrameworkRoute() {
-        return routeType.equals(RouteType.FRAMEWORK_ROUTE);
+    public RouteType getRouteType() {
+        return routeType;
     }
 
-    public boolean isApplicationRoute() {
-        return routeType.equals(RouteType.APPLICATION_ROUTE);
+    public RouteType getRouterType() {
+        return routerType;
     }
 
-    public boolean isAbsoluteRoute() {
-        return routeType.equals(RouteType.ABSOLUTE_ROUTE);
+    public boolean isRouterFramework() {
+        return routerType.equals(RouteType.FRAMEWORK_ROUTE);
+    }
+
+    public boolean isRouterApplication() {
+        return routerType.equals(APPLICATION_ROUTE);
+    }
+
+    public boolean isRouterAbsolute() {
+        return routerType.equals(RouteType.ABSOLUTE_ROUTE);
     }
 
     public NotFoundPageDisplayableEndpointBuildItem getNotFoundPageDisplayableEndpoint() {
         return notFoundPageDisplayableEndpoint;
     }
 
-    public ConfiguredPathInfo getDevConsoleResolvedPath() {
-        return devConsoleResolvedPathBuildItem;
+    public ConfiguredPathInfo getConfiguredPathInfo() {
+        return configuredPathInfo;
     }
 
     public enum RouteType {
@@ -175,7 +187,7 @@ public final class RouteBuildItem extends MultiBuildItem {
                 throw new IllegalStateException(
                         "'RouteBuildItem$Builder.routeFunction' was not set. Ensure that one of the builder methods that result in it being set is called");
             }
-            return new RouteBuildItem(this, RouteType.APPLICATION_ROUTE);
+            return new RouteBuildItem(this, APPLICATION_ROUTE, APPLICATION_ROUTE);
         }
 
         protected ConfiguredPathInfo getRouteConfigInfo() {

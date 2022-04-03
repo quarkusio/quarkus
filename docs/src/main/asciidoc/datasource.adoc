@@ -44,17 +44,17 @@ If you want a better understanding of how all this works, this guide has a lot m
 === Zero Config Setup (Dev Services)
 
 When testing or running in dev mode Quarkus can even provide you with a zero config database out of the box, a feature
-we refer to as Dev Services. Depending on your database type you may need docker installed in order to use this feature. Dev Services
-is supported for the following open source databases:
+we refer to as Dev Services. Depending on your database type you may need Docker installed in order to use this feature.
+Dev Services is supported for the following databases:
 
-* Postgresql (container)
-* MySQL (container)
-* MariaDB (container)
-* H2 (in-process)
-* Apache Derby (in-process)
 * DB2 (container) (requires license acceptance)
-* MSSQL (container) (requires license acceptance)
-
+* Derby (in-process)
+* H2 (in-process)
+* MariaDB (container)
+* Microsoft SQL Server (container) (requires license acceptance)
+* MySQL (container)
+* Oracle Express Edition (container)
+* PostgreSQL (container)
 
 If you want to use Dev Services then all you need to do is include the relevant extension for the type of database you want (either reactive or
 JDBC, or both), and don't configure a database URL, username and password, Quarkus will provide the database and you can just start
@@ -115,7 +115,8 @@ we assume that this should be used in testing.
 
 === Reactive datasource
 
-Add the correct reactive extension for the database you are using: `reactive-pg-client`, `reactive-mssql-client`, `reactive-mysql-client`, or `reactive-db2-client`.
+Add the correct reactive extension for the database you are using:
+`reactive-db2-client`, `reactive-mssql-client`, `reactive-mysql-client`, `reactive-oracle-client`, or `reactive-pg-client`.
 
 Then configure your reactive datasource:
 
@@ -354,14 +355,16 @@ Because of this, you can also use `javax.sql.DataSource` as the injected type.
 
 === Reactive datasource
 
-If you prefer using a reactive datasource, Quarkus offers DB2, MySQL/MariaDB, and PostgreSQL reactive clients.
+If you prefer using a reactive datasource, Quarkus offers DB2, MariaDB/MySQL, Microsoft SQL Server, Oracle and PostgreSQL reactive clients.
 
 ==== Install the Maven dependencies
 
 Depending on which database you want to use, add the corresponding extension:
 
 * DB2: `quarkus-reactive-db2-client`
-* MySQL/MariaDB: `quarkus-reactive-mysql-client`
+* MariaDB/MySQL: `quarkus-reactive-mysql-client`
+* Microsoft SQL Server: `quarkus-reactive-mssql-client`
+* Oracle: `quarkus-reactive-oracle-client`
 * PostgreSQL: `quarkus-reactive-pg-client`
 
 The installed extension must be consistent with the `quarkus.datasource.db-kind` you define in your datasource configuration.
@@ -586,6 +589,25 @@ Each of the supported databases contains different JDBC URL configuration option
 Going into each of those options is beyond the scope of this document,
 but the following section gives an overview of each database URL and a link to the official documentation.
 
+=== DB2
+
+`jdbc:db2://<serverName>[:<portNumber>]/<databaseName>[:<key1>=<value>;[<key2>=<value2>;]]`
+
+Example:: `jdbc:db2://localhost:50000/MYDB:user=dbadm;password=dbadm;`
+
+See the https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_r0052342.html[official documentation] for more detail on URL syntax and additional supported options.
+
+=== Derby
+
+`jdbc:derby:[//serverName[:portNumber]/][memory:]databaseName[;property=value[;property=value]]`
+
+Example:: `jdbc:derby://localhost:1527/myDB`, `jdbc:derby:memory:myDB;create=true`
+
+Derby is an embedded database.
+It can run as a server, based on a file, or live completely in memory.
+All of these options are available as listed above.
+You can find more information at the https://db.apache.org/derby/docs/10.8/devguide/cdevdvlp17453.html#cdevdvlp17453[official documentation].
+
 === H2
 
 `jdbc:h2:{ {.|mem:}[name] | [file:]fileName | {tcp|ssl}:[//]server[:port][,server2[:port]]/name }[;key=value...]`
@@ -596,6 +618,48 @@ H2 is an embedded database.
 It can run as a server, based on a file, or live completely in memory.
 All of these options are available as listed above.
 You can find more information at the https://h2database.com/html/features.html?highlight=url&search=url#database_url[official documentation].
+
+=== MariaDB
+
+`jdbc:mariadb:[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
+hostDescription:: `<host>[:<portnumber>]  or address=(host=<host>)[(port=<portnumber>)][(type=(master|slave))]`
+
+Example:: `jdbc:mariadb://localhost:3306/test`
+
+You can find more information about this feature and others detailed in the https://mariadb.com/kb/en/library/about-mariadb-connector-j/[official documentation].
+
+=== Microsoft SQL Server
+
+`jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]`
+
+Example:: `jdbc:sqlserver://localhost:1433;databaseName=AdventureWorks`
+
+The Microsoft SQL Server JDBC driver works essentially the same as the others.
+More details can be found in the https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-to-sql-server-with-the-jdbc-driver?view=sql-server-2017[official documentation].
+
+=== MySQL
+
+`jdbc:mysql:[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
+hostDescription:: `<host>[:<portnumber>]  or address=(host=<host>)[(port=<portnumber>)][(type=(master|slave))]`
+
+Example:: `jdbc:mysql://localhost:3306/test`
+
+You can find more information about this feature and others detailed in the https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference.html[official documentation].
+
+==== MySQL Limitations
+
+When compiling a Quarkus application to native-image, the MySQL support for JMX and Oracle Cloud Infrastructure (OCI) integrations are disabled as they are not compatible
+with GraalVM native-images.
+The lack of JMX support is a natural consequence of running in native and is unlikely to be resolved.
+The integration with OCI could be resolved, if you need it we suggest opening a support request with the MySQL Connector/J maintainers.
+
+=== Oracle
+
+`jdbc:oracle:driver_type:@database_specifier`
+
+Example:: `jdbc:oracle:thin:@localhost:1521/ORCL_SVC`
+
+More details can be found in the https://docs.oracle.com/en/database/oracle/oracle-database/21/jjdbc/data-sources-and-URLs.html#GUID-AEA8E228-1B21-4111-AF4C-B1F33744CA08[official documentation].
 
 === PostgreSQL
 
@@ -613,61 +677,6 @@ Defaults for the different parts are as follows:
 `database`:: same name as the username
 
 The https://jdbc.postgresql.org/documentation/head/connect.html[official documentation] go into more detail and list optional parameters as well.
-
-=== DB2
-
-`jdbc:db2://<serverName>[:<portNumber>]/<databaseName>[:<key1>=<value>;[<key2>=<value2>;]]`
-
-Example:: `jdbc:db2://localhost:50000/MYDB:user=dbadm;password=dbadm;`
-
-See the https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_r0052342.html[official documentation] for more detail on URL syntax and additional supported options.
-
-=== MariaDB
-
-`jdbc:mariadb:[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
- hostDescription:: `<host>[:<portnumber>]  or address=(host=<host>)[(port=<portnumber>)][(type=(master|slave))]`
-
-Example:: `jdbc:mariadb://localhost:3306/test`
-
-You can find more information about this feature and others detailed in the https://mariadb.com/kb/en/library/about-mariadb-connector-j/[official documentation].
-
-=== MySQL
-
-`jdbc:mysql:[replication:|failover:|sequential:|aurora:]//<hostDescription>[,<hostDescription>...]/[database][?<key1>=<value1>[&<key2>=<value2>]]`
- hostDescription:: `<host>[:<portnumber>]  or address=(host=<host>)[(port=<portnumber>)][(type=(master|slave))]`
-
-Example:: `jdbc:mysql://localhost:3306/test`
-
-You can find more information about this feature and others detailed in the https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference.html[official documentation].
-
-==== MySQL Limitations
-
-When compiling a Quarkus application to native-image, the MySQL support for JMX and Oracle Cloud Infrastructure (OCI) integrations are disabled as they are not compatible
-with GraalVM native-images.
-The lack of JMX support is a natural consequence of running in native and is unlikely to be resolved.
-The integration with OCI could be resolved, if you need it we suggest opening a support request with the MySQL Connector/J maintainers.
-
-=== Microsoft SQL Server
-
-Microsoft SQL Server takes a connection URL in the following form:
-
-`jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]`
-
-Example:: `jdbc:sqlserver://localhost:1433;databaseName=AdventureWorks`
-
-The Microsoft SQL Server JDBC driver works essentially the same as the others.
-More details can be found in the https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-to-sql-server-with-the-jdbc-driver?view=sql-server-2017[official documentation].
-
-=== Derby
-
-`jdbc:derby:[//serverName[:portNumber]/][memory:]databaseName[;property=value[;property=value]]`
-
-Example:: `jdbc:derby://localhost:1527/myDB`, `jdbc:derby:memory:myDB;create=true`
-
-Derby is an embedded database.
-It can run as a server, based on a file, or live completely in memory.
-All of these options are available as listed above.
-You can find more information at the https://db.apache.org/derby/docs/10.8/devguide/cdevdvlp17453.html#cdevdvlp17453[official documentation].
 
 :no-duration-note: true
 

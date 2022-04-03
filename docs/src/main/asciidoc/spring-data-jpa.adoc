@@ -28,10 +28,10 @@ The solution is located in the `spring-data-jpa-quickstart` {quickstarts-tree-ur
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-data-jpa-quickstart
-:create-app-extensions: resteasy,spring-data-jpa,resteasy-jackson,quarkus-jdbc-postgresql
+:create-app-extensions: resteasy-reactive-jackson,spring-data-jpa,quarkus-jdbc-postgresql
 include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project with a REST endpoint and imports the `spring-data-jpa` extension.
+This command generates a Maven project and imports the `spring-data-jpa` extension.
 
 If you already have your Quarkus project configured, you can add the `spring-data-jpa` extension
 to your project by running the following command in your project base directory:
@@ -197,8 +197,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -219,19 +217,19 @@ public class FruitResource {
 
     @DELETE
     @Path("{id}")
-    public void delete(@PathParam long id) {
+    public void delete(long id) {
         fruitRepository.deleteById(id);
     }
 
     @POST
     @Path("/name/{name}/color/{color}")
-    public Fruit create(@PathParam String name, @PathParam String color) {
+    public Fruit create(String name, String color) {
         return fruitRepository.save(new Fruit(name, color));
     }
 
     @PUT
     @Path("/id/{id}/color/{color}")
-    public Fruit changeColor(@PathParam Long id, @PathParam String color) {
+    public Fruit changeColor(Long id, String color) {
         Optional<Fruit> optional = fruitRepository.findById(id);
         if (optional.isPresent()) {
             Fruit fruit = optional.get();
@@ -244,7 +242,7 @@ public class FruitResource {
 
     @GET
     @Path("/color/{color}")
-    public List<Fruit> findByColor(@PathParam String color) {
+    public List<Fruit> findByColor(String color) {
         return fruitRepository.findByColor(color);
     }
 }

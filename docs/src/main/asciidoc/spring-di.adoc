@@ -29,7 +29,7 @@ The solution is located in the `spring-di-quickstart` {quickstarts-tree-url}/spr
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-di-quickstart
-:create-app-extensions: resteasy,spring-di
+:create-app-extensions: resteasy-reactive,spring-di
 include::includes/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-di` extension.

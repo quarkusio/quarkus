@@ -7,6 +7,15 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
+[WARNING]
+====
+This guide is about the REST Client compatible with https://resteasy.dev[RESTEasy Classic] which used to be the default JAX-RS implementation until Quarkus 2.8.
+
+It is now recommended to use RESTEasy Reactive, which supports equally well traditional blocking workloads and reactive workloads.
+For more information about RESTEasy Reactive,
+please see the xref:rest-client-reactive.adoc[REST Client Reactive guide] and, for the server side, the xref:rest-json.adoc[introductory REST JSON guide] or the more detailed xref:resteasy-reactive.adoc[RESTEasy Reactive guide].
+====
+
 This guide explains how to use the RESTEasy REST Client in order to interact with REST APIs
 with very little effort.
 

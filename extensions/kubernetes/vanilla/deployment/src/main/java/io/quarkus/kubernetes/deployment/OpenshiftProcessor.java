@@ -129,10 +129,15 @@ public class OpenshiftProcessor {
 
         List<ConfiguratorBuildItem> result = new ArrayList<>();
 
-        KubernetesCommonHelper.combinePorts(ports, config).entrySet().forEach(e -> {
-            result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(e.getValue())));
+        KubernetesCommonHelper.combinePorts(ports, config).values().forEach(value -> {
+            result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(value)));
         });
         result.add(new ConfiguratorBuildItem(new ApplyExpositionConfigurator(config.route)));
+
+        // Handle remote debug configuration for container ports
+        if (config.remoteDebug.enabled) {
+            result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(config.remoteDebug.buildDebugPort())));
+        }
 
         if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
                 && !capabilities.isPresent("io.quarkus.openshift")
@@ -279,6 +284,13 @@ public class OpenshiftProcessor {
                         new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry)));
             });
         }
+
+        // Handle remote debug configuration
+        if (config.remoteDebug.enabled) {
+            result.add(new DecoratorBuildItem(OPENSHIFT, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+                    config.remoteDebug.buildJavaToolOptionsEnv())));
+        }
+
         return result;
     }
 }

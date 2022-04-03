@@ -22,6 +22,7 @@ import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
@@ -67,7 +68,8 @@ public class BuildpackProcessor {
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
             Optional<AppCDSResultBuildItem> appCDSResult,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
         if (containerImageConfig.isBuildExplicitlyDisabled()) {
             return;
@@ -84,6 +86,7 @@ public class BuildpackProcessor {
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
                 Collections.singletonMap("container-image", targetImageName)));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(BUILDPACK));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, BuildpackBuild.class, NativeBuild.class })
@@ -94,7 +97,8 @@ public class BuildpackProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
         if (containerImageConfig.isBuildExplicitlyDisabled()) {
             return;
@@ -116,6 +120,7 @@ public class BuildpackProcessor {
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
                 Collections.singletonMap("container-image", targetImageName)));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(BUILDPACK));
     }
 
     private Map<ProjectDirs, Path> getPaths(OutputTargetBuildItem outputTarget) {

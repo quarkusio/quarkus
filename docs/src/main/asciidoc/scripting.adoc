@@ -28,7 +28,7 @@ Normally we would link to a Git repository to clone but in this case there is no
 [source,java,subs=attributes+]
 ----
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus:quarkus-resteasy:{quarkus-version}
+//DEPS io.quarkus:quarkus-resteasy-reactive:{quarkus-version}
 //JAVAC_OPTIONS -parameters
 //JAVA_OPTIONS -Djava.util.logging.manager=org.jboss.logmanager.LogManager
 
@@ -39,7 +39,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.jboss.logging.Logger;
 
 @Path("/hello")
@@ -61,7 +60,7 @@ public class quarkusapp {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/greeting/{name}")
-    public String greeting(@PathParam String name) {
+    public String greeting(String name) {
         return service.greeting(name);
     }
 
@@ -115,11 +114,11 @@ The next line
 
 Is illustrating how you add dependencies to this script. This is a feature of JBang.
 
-Go ahead and update this line to include the `quarkus-resteasy` dependency like so:
+Go ahead and update this line to include the `quarkus-resteasy-reactive` dependency like so:
 
 [source,java,subs=attributes+]
 ----
-//DEPS io.quarkus:quarkus-resteasy:{quarkus-version}
+//DEPS io.quarkus:quarkus-resteasy-reactive:{quarkus-version}
 ----
 
 Now, run `jbang quarkusapp.java` and you will see JBang resolving this dependency and building the jar with help from Quarkus' JBang integration.
@@ -211,7 +210,7 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2020-08-30 05:49:03,255 INFO  [io.quarkus] (main) Quarkus {quarkus-version} on JVM started in 0.638s. Listening on: http://0.0.0.0:8080
 2020-08-30 05:49:03,272 INFO  [io.quarkus] (main) Profile prod activated.
-2020-08-30 05:49:03,272 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+2020-08-30 05:49:03,272 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
 ----
 
 Once started, you can request the provided endpoint:
@@ -231,9 +230,9 @@ We are using `curl -w "\n"` in this example to avoid your terminal printing a '%
 ====
 
 [TIP]
-.Why is `quarkus-resteasy` not resolved?
+.Why is `quarkus-resteasy-reactive` not resolved?
 ====
-In this second run you should not see a line saying it is resolving `quarkus-resteasy` as JBang caches the dependency resolution between runs.
+In this second run you should not see a line saying it is resolving `quarkus-resteasy-reactive` as JBang caches the dependency resolution between runs.
 If you want to clear the caches to force resolution use `jbang cache clear`.
 ====
 
@@ -242,7 +241,7 @@ If you want to clear the caches to force resolution use `jbang cache clear`.
 Dependency injection in Quarkus is based on ArC which is a CDI-based dependency injection solution tailored for Quarkus' architecture.
 You can learn more about it in the xref:cdi-reference.adoc[Contexts and Dependency Injection guide].
 
-ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
+ArC comes as a dependency of `quarkus-resteasy-reactive` so you already have it handy.
 
 Let's modify the application and add a companion bean.
 
@@ -278,7 +277,7 @@ Edit the `quarksapp` class to inject the `GreetingService` and create a new endp
 [source,java,subs=attributes+]
 ----
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus:quarkus-resteasy:{quarkus-version}
+//DEPS io.quarkus:quarkus-resteasy-reactive:{quarkus-version}
 
 import io.quarkus.runtime.Quarkus;
 import javax.enterprise.context.ApplicationScoped;
@@ -287,7 +286,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 @Path("/hello")
 @ApplicationScoped
@@ -308,7 +306,7 @@ public class quarkusapp {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/greeting/{name}")
-    public String greeting(@PathParam String name) {
+    public String greeting(String name) {
         return service.greeting(name);
     }
 
@@ -332,7 +330,7 @@ hello null
 
 Now that is unexpected, why is it returning `hello null` and not `hello quarkus`?
 
-The reason is that JAX-RS `@PathParam` relies on the `-parameters` compiler flag to be set to be able to map `{name}` to the `name` parameter.
+The reason is that RESTEasy Reactive relies on the `-parameters` compiler flag to be set to be able to map `{name}` to the `name` parameter.
 
 We fix that by adding the following comment instruction to the file:
 
@@ -418,7 +416,7 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2020-08-30 06:22:32,012 INFO  [io.quarkus] (main) Quarkus {quarkus-version} native started in 0.017s. Listening on: http://0.0.0.0:8080
 2020-08-30 06:22:32,013 INFO  [io.quarkus] (main) Profile prod activated.
-2020-08-30 06:22:32,013 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+2020-08-30 06:22:32,013 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
 ----
 
 This native build will take some time on first run but any subsequent runs (without changing `quarkusapp.java`) will be close to instant thanks to JBang cache:
@@ -432,7 +430,7 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2020-08-30 06:23:36,846 INFO  [io.quarkus] (main) Quarkus {quarkus-version} native started in 0.015s. Listening on: http://0.0.0.0:8080
 2020-08-30 06:23:36,846 INFO  [io.quarkus] (main) Profile prod activated.
-2020-08-30 06:23:36,846 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+2020-08-30 06:23:36,846 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
 ----
 
 === Conclusion

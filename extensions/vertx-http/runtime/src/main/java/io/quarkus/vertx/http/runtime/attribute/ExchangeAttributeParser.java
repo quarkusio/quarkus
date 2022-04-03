@@ -34,7 +34,7 @@ public class ExchangeAttributeParser {
             builders.add(instance);
         }
         //sort with highest priority first
-        Collections.sort(builders, new Comparator<ExchangeAttributeBuilder>() {
+        builders.sort(new Comparator<ExchangeAttributeBuilder>() {
             @Override
             public int compare(ExchangeAttributeBuilder o1, ExchangeAttributeBuilder o2) {
                 return Integer.compare(o2.priority(), o1.priority());

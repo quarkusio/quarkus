@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - 'dependabot/**'
+      - 'jakarta-rewrite'
     # paths-ignore in ci-fork-mvn-cache.yml should match
     paths-ignore:
       - '.gitignore'
@@ -12,6 +13,7 @@ on:
       - '*.adoc'
       - '*.txt'
       - 'adr/**'
+      - 'jakarta/**'
       - 'docs/src/main/asciidoc/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
@@ -26,6 +28,7 @@ on:
       - '*.adoc'
       - '*.txt'
       - 'adr/**'
+      - 'jakarta/**'
       - 'docs/src/main/asciidoc/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
@@ -393,6 +396,14 @@ jobs:
           name: test-reports-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 5
+      # see https://github.com/actions/toolkit/blob/master/packages/artifact/docs/additional-information.md#non-supported-characters
+      - name: Rename invalid path
+        if: ${{ failure() || cancelled() }}
+        run: |
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' 'integration-tests/maven/target/test-classes/projects/qit--fast--jar'; fi
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' 'integration-tests/maven/target/test-classes/projects/qit--legacy--jar'; fi
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
+        shell: bash
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}

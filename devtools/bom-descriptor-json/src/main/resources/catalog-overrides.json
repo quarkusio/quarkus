@@ -6,9 +6,27 @@
       "description": "Everything you need for REST endpoints, HTTP and web formats like JSON",
       "metadata": {
         "pinned": [
+          "io.quarkus:quarkus-resteasy-reactive",
+          "io.quarkus:quarkus-resteasy-reactive-jackson",
+          "io.quarkus:quarkus-resteasy-reactive-jsonb",
+          "io.quarkus:quarkus-resteasy-reactive-jaxb",
+          "io.quarkus:quarkus-resteasy-reactive-kotlin-serialization",
+          "io.quarkus:quarkus-resteasy-reactive-qute",
+          "io.quarkus:quarkus-rest-client-reactive",
+          "io.quarkus:quarkus-rest-client-reactive-jackson",
+          "io.quarkus:quarkus-rest-client-reactive-jsonb",
+          "io.quarkus:quarkus-rest-client-reactive-jaxb",
+          "io.quarkus:quarkus-rest-client-reactive-kotlin-serialization",
           "io.quarkus:quarkus-resteasy",
           "io.quarkus:quarkus-resteasy-jackson",
-          "io.quarkus:quarkus-resteasy-jsonb"
+          "io.quarkus:quarkus-resteasy-jsonb",
+          "io.quarkus:quarkus-resteasy-jaxb",
+          "io.quarkus:quarkus-resteasy-multipart",
+          "io.quarkus:quarkus-resteasy-mutiny",
+          "io.quarkus:quarkus-resteasy-qute",
+          "io.quarkus:quarkus-rest-client-jackson",
+          "io.quarkus:quarkus-rest-client-jsonb",
+          "io.quarkus:quarkus-rest-client-jaxb"
         ]
       }
     },

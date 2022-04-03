@@ -54,6 +54,9 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ArrayConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.CharParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.CharacterParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
@@ -369,6 +372,13 @@ public class ServerEndpointIndexer
         builder.setConverter(new ListConverter.ListSupplier(converter));
     }
 
+    protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            ServerIndexedParameter builder, String elementType) {
+        ParameterConverterSupplier converter = extractConverter(elementType, index,
+                existingConverters, errorLocation, hasRuntimeConverters);
+        builder.setConverter(new ArrayConverter.ArraySupplier(converter, elementType));
+    }
+
     protected void handlePathSegmentParam(ServerIndexedParameter builder) {
         builder.setConverter(new PathSegmentParamConverter.Supplier());
     }
@@ -472,6 +482,10 @@ public class ServerEndpointIndexer
             return delegate;
         } else if (elementType.equals(PathSegment.class.getName())) {
             return new PathSegmentParamConverter.Supplier();
+        } else if (elementType.equals("char")) {
+            return new CharParamConverter.Supplier();
+        } else if (elementType.equals(Character.class.getName())) {
+            return new CharacterParamConverter.Supplier();
         }
         return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters, errorLocation,
                 hasRuntimeConverters);

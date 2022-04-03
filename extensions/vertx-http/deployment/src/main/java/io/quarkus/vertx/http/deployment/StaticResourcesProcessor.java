@@ -30,7 +30,7 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
-import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
 /**
@@ -124,9 +124,8 @@ public class StaticResourcesProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     public void runtimeInit(Optional<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem> staticResources,
-            StaticResourcesRecorder recorder,
-            CoreVertxBuildItem vertx, BeanContainerBuildItem beanContainer,
-            BuildProducer<DefaultRouteBuildItem> defaultRoutes) {
+            StaticResourcesRecorder recorder, CoreVertxBuildItem vertx, BeanContainerBuildItem beanContainer,
+            BuildProducer<DefaultRouteBuildItem> defaultRoutes, HttpConfiguration config) {
         if (staticResources.isPresent()) {
             defaultRoutes.produce(new DefaultRouteBuildItem(recorder.start(staticResources.get().getPaths())));
         }

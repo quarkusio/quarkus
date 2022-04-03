@@ -94,7 +94,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
         builder = new TemplateHtmlBuilder("Error restarting Quarkus", problemsFound, problemsFound);
 
         // Attempt to sort problems by line
-        Collections.sort(problems, new Comparator<Throwable>() {
+        problems.sort(new Comparator<Throwable>() {
             @Override
             public int compare(Throwable t1, Throwable t2) {
                 Object o1 = getOrigin(t1);

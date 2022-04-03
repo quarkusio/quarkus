@@ -54,7 +54,6 @@
         </dependency>
 
 
-
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -73,13 +72,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.strimzi</groupId>
-            <artifactId>strimzi-test-container</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-kafka-companion</artifactId>
             <scope>test</scope>
         </dependency>
 

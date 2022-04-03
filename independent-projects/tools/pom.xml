@@ -49,10 +49,8 @@
 
         <!-- Versions -->
         <assertj.version>3.22.0</assertj.version>
-        <jackson.version>2.13.1</jackson.version>
+        <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
-        <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
-        <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
         <junit.version>5.8.2</junit.version>
         <commons-compress.version>1.21</commons-compress.version>
         <jboss-logging.version>3.4.3.Final</jboss-logging.version>
@@ -63,7 +61,7 @@
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>20</maven-model-helper.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <smallrye-common.version>1.10.0</smallrye-common.version>
+        <smallrye-common.version>1.11.0</smallrye-common.version>
         <jandex-maven-plugin.version>1.2.2</jandex-maven-plugin.version>
     </properties>
     <modules>
@@ -78,6 +76,21 @@
     </modules>
     <dependencyManagement>
         <dependencies>
+            <!-- Jackson dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson-bom.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${smallrye-common.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-artifact-api</artifactId>
@@ -150,16 +163,6 @@
                 <version>${maven-model-helper.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.maven</groupId>
                 <artifactId>maven-plugin-api</artifactId>
                 <version>${maven-core.version}</version>
@@ -203,24 +206,14 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>
-                <type>test-jar</type>
-                <scope>test</scope>
                 <version>${quarkus.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-bom</artifactId>
-                <version>${smallrye-common.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-            <!-- Jackson dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>${jackson.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-core</artifactId>
+                <type>test-jar</type>
+                <scope>test</scope>
+                <version>${quarkus.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -237,6 +230,21 @@
     </distributionManagement>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.openrewrite.maven</groupId>
+                    <artifactId>rewrite-maven-plugin</artifactId>
+                    <version>4.21.0-SNAPSHOT</version>
+                    <configuration>
+                        <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                        <activeStyles>
+                            <style>io.quarkus.style.maven</style>
+                        </activeStyles>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -363,6 +371,18 @@
                     <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
                     <removeUnused>true</removeUnused>
                     <skip>${format.skip}</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <inherited>false</inherited>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>io.quarkus.maven.javax.managed</recipe>
+                        <recipe>io.quarkus.maven.javax.versions</recipe>
+                        <recipe>io.quarkus.jakarta-versions</recipe>
+                    </activeRecipes>
                 </configuration>
             </plugin>
         </plugins>

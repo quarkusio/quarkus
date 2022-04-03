@@ -31,17 +31,17 @@ The elements are stored in Elasticsearch.
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: elasticsearch-quickstart
-:create-app-extensions: resteasy,resteasy-jackson,elasticsearch-rest-client
+:create-app-extensions: resteasy-reactive-jackson,elasticsearch-rest-client
 include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson, and the Elasticsearch low level client extensions.
+This command generates a Maven structure importing the RESTEasy Reactive/JAX-RS, Jackson, and the Elasticsearch low level client extensions.
 After this, the `quarkus-elasticsearch-rest-client` extension has been added to your build file.
 
 If you want to use the high level client instead, replace the `elasticsearch-rest-client` extension by the `elasticsearch-rest-high-level-client` extension.
 
 [NOTE]
 ====
-We use the `resteasy-jackson` extension here and not the JSON-B variant because we will use the Vert.x `JsonObject` helper
+We use the `resteasy-reactive-jackson` extension here and not the JSON-B variant because we will use the Vert.x `JsonObject` helper
 to serialize/deserialize our objects to/from Elasticsearch and it uses Jackson under the hood.
 ====
 
@@ -196,12 +196,12 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+
+import org.jboss.resteasy.reactive.RestQuery;
 
 @Path("/fruits")
 public class FruitResource {
@@ -220,13 +220,13 @@ public class FruitResource {
 
     @GET
     @Path("/{id}")
-    public Fruit get(@PathParam("id") String id) throws IOException {
+    public Fruit get(String id) throws IOException {
         return fruitService.get(id);
     }
 
     @GET
     @Path("/search")
-    public List<Fruit> search(@QueryParam("name") String name, @QueryParam("color") String color) throws IOException {
+    public List<Fruit> search(@RestQuery String name, @RestQuery String color) throws IOException {
         if (name != null) {
             return fruitService.searchByName(name);
         } else if (color != null) {

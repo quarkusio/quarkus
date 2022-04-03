@@ -184,8 +184,11 @@ public class DevServicesRedisProcessor {
         };
 
         return redisContainerLocator.locateContainer(devServicesConfig.serviceName, devServicesConfig.shared, launchMode)
-                .map(containerAddress -> new RunningDevService(Feature.REDIS_CLIENT.getName(), containerAddress.getId(),
-                        null, configPrefix + RedisConfig.HOSTS_CONFIG_NAME, containerAddress.getUrl()))
+                .map(containerAddress -> {
+                    String redisUrl = REDIS_SCHEME + containerAddress.getUrl();
+                    return new RunningDevService(Feature.REDIS_CLIENT.getName(), containerAddress.getId(),
+                            null, configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisUrl);
+                })
                 .orElseGet(defaultRedisServerSupplier);
     }
 

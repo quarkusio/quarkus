@@ -29,7 +29,7 @@ The following examples will all be based on the same example application that yo
 Create an application with the `quarkus-logging-gelf` extension. You can use the following command to create it:
 
 :create-app-artifact-id: gelf-logging
-:create-app-extensions: resteasy,logging-gelf
+:create-app-extensions: resteasy-reactive,logging-gelf
 include::includes/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `logging-gelf` extension

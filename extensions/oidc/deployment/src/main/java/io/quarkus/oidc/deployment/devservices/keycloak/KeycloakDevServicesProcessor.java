@@ -3,6 +3,7 @@ package io.quarkus.oidc.deployment.devservices.keycloak;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -37,9 +39,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
@@ -58,6 +60,7 @@ import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -72,14 +75,15 @@ public class KeycloakDevServicesProcessor {
     private static final String CONFIG_PREFIX = "quarkus.oidc.";
     private static final String TENANT_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "tenant-enabled";
     private static final String AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
+    private static final String PROVIDER_CONFIG_KEY = CONFIG_PREFIX + "provider";
     // avoid the Quarkus prefix in order to prevent warnings when the application starts in container integration tests
     private static final String CLIENT_AUTH_SERVER_URL_CONFIG_KEY = "client." + CONFIG_PREFIX + "auth-server-url";
     private static final String APPLICATION_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
     private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
     private static final String KEYCLOAK_URL_KEY = "keycloak.url";
-    private static final String KEYCLOAK_REALM_KEY = "keycloak.realm";
 
+    private static final String KEYCLOAK_CONTAINER_NAME = "keycloak";
     private static final int KEYCLOAK_PORT = 8080;
 
     private static final String KEYCLOAK_LEGACY_IMAGE_VERSION_PART = "-legacy";
@@ -121,6 +125,7 @@ public class KeycloakDevServicesProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
     public DevServicesResultBuildItem startKeycloakContainer(
+            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<OidcDevServicesBuildItem> oidcProviderBuildItem,
             KeycloakBuildTimeConfig config,
@@ -168,7 +173,8 @@ public class KeycloakDevServicesProcessor {
             vertxInstance = Vertx.vertx();
         }
         try {
-            RunningDevService newDevService = startContainer(!devServicesSharedNetworkBuildItem.isEmpty(),
+            RunningDevService newDevService = startContainer(keycloakBuildItemBuildProducer,
+                    !devServicesSharedNetworkBuildItem.isEmpty(),
                     devServicesConfig.timeout);
             if (newDevService == null) {
                 compressor.close();
@@ -221,7 +227,9 @@ public class KeycloakDevServicesProcessor {
         return "http://" + host + ":" + port + (isKeyCloakX ? "" : "/auth");
     }
 
-    private Map<String, String> prepareConfiguration(String internalURL, String hostURL, RealmRepresentation realmRep,
+    private Map<String, String> prepareConfiguration(
+            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer, String internalURL,
+            String hostURL, RealmRepresentation realmRep,
             boolean keycloakX) {
         final String realmName = realmRep != null ? realmRep.getRealm() : getDefaultRealmName();
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
@@ -249,6 +257,10 @@ public class KeycloakDevServicesProcessor {
         configProperties.put(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType);
         configProperties.put(CLIENT_ID_CONFIG_KEY, oidcClientId);
         configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
+
+        keycloakBuildItemBuildProducer
+                .produce(new KeycloakDevServicesConfigBuildItem(configProperties, Map.of(OIDC_USERS, users)));
+
         return configProperties;
     }
 
@@ -260,7 +272,8 @@ public class KeycloakDevServicesProcessor {
         return capturedDevServicesConfiguration.realmName.orElse("quarkus");
     }
 
-    private RunningDevService startContainer(boolean useSharedNetwork, Optional<Duration> timeout) {
+    private RunningDevService startContainer(BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
+            boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
@@ -272,6 +285,10 @@ public class KeycloakDevServicesProcessor {
         }
         if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
+            return null;
+        }
+        if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
+            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.provider' has been provided");
             return null;
         }
 
@@ -305,19 +322,21 @@ public class KeycloakDevServicesProcessor {
             String hostUrl = oidcContainer.useSharedNetwork
                     ? startURL("localhost", oidcContainer.fixedExposedPort.getAsInt(), oidcContainer.keycloakX)
                     : null;
-            Map<String, String> configs = prepareConfiguration(internalUrl, hostUrl, oidcContainer.realmRep,
+
+            Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, internalUrl, hostUrl,
+                    oidcContainer.realmRep,
                     oidcContainer.keycloakX);
-            return new RunningDevService(Feature.KEYCLOAK_AUTHORIZATION.getName(), oidcContainer.getContainerId(),
+            return new RunningDevService(KEYCLOAK_CONTAINER_NAME, oidcContainer.getContainerId(),
                     oidcContainer::close, configs);
         };
 
         return maybeContainerAddress
                 .map(containerAddress -> {
                     // TODO: this probably needs to be addressed
-                    Map<String, String> configs = prepareConfiguration(getSharedContainerUrl(containerAddress),
+                    Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer,
+                            getSharedContainerUrl(containerAddress),
                             getSharedContainerUrl(containerAddress), null, false);
-                    return new RunningDevService(Feature.KEYCLOAK_AUTHORIZATION.getName(),
-                            containerAddress.getId(), null, configs);
+                    return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
                 })
                 .orElseGet(defaultKeycloakContainerSupplier);
     }
@@ -396,7 +415,8 @@ public class KeycloakDevServicesProcessor {
             if (keycloakX) {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
-                withCommand(KEYCLOAK_QUARKUS_START_CMD);
+                withCommand(KEYCLOAK_QUARKUS_START_CMD
+                        + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_WILDFLY_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
@@ -510,21 +530,55 @@ public class KeycloakDevServicesProcessor {
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", null, capturedDevServicesConfiguration.webClienTimeout);
 
-            HttpResponse<Buffer> response = client.postAbs(keycloakUrl + "/admin/realms")
+            HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
                     .sendBuffer(Buffer.buffer().appendString(JsonSerialization.writeValueAsString(realm)))
                     .await().atMost(capturedDevServicesConfiguration.webClienTimeout);
 
-            if (response.statusCode() > 299) {
-                LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), response.statusCode(),
-                        response.statusMessage());
+            if (createRealmResponse.statusCode() > 299) {
+                LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), createRealmResponse.statusCode(),
+                        createRealmResponse.statusMessage());
             }
+
+            Uni<Integer> realmStatusCodeUni = client.getAbs(keycloakUrl + "/realms/" + realm.getRealm())
+                    .send().onItem()
+                    .transform(resp -> {
+                        LOG.debugf("Realm status: %d", resp.statusCode());
+                        if (resp.statusCode() == 200) {
+                            return 200;
+                        } else {
+                            throw new RealmEndpointAccessException(resp.statusCode());
+                        }
+                    }).onFailure(realmEndpointNotAvailable())
+                    .retry()
+                    .withBackOff(Duration.ofSeconds(2), Duration.ofSeconds(2))
+                    .expireIn(10 * 1000)
+                    .onFailure().transform(t -> t.getCause());
+            realmStatusCodeUni.await().atMost(Duration.ofSeconds(10));
         } catch (Throwable t) {
             LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
         } finally {
             client.close();
         }
+    }
+
+    @SuppressWarnings("serial")
+    static class RealmEndpointAccessException extends RuntimeException {
+        private final int errorStatus;
+
+        public RealmEndpointAccessException(int errorStatus) {
+            this.errorStatus = errorStatus;
+        }
+
+        public int getErrorStatus() {
+            return errorStatus;
+        }
+    }
+
+    public static Predicate<? super Throwable> realmEndpointNotAvailable() {
+        return t -> (t instanceof ConnectException
+                || (t instanceof RealmEndpointAccessException && ((RealmEndpointAccessException) t).getErrorStatus() == 404));
     }
 
     private Map<String, String> getUsers(Map<String, String> configuredUsers, boolean createRealm) {

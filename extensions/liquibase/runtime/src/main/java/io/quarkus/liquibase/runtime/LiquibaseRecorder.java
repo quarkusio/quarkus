@@ -49,18 +49,18 @@ public class LiquibaseRecorder {
             for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
                 try {
                     LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
-                    if (liquibaseFactory.getConfiguration().cleanAtStart) {
-                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                    var config = liquibaseFactory.getConfiguration();
+                    if (!config.cleanAtStart && !config.migrateAtStart) {
+                        continue;
+                    }
+                    try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                        if (config.cleanAtStart) {
                             liquibase.dropAll();
                         }
-                    }
-                    if (liquibaseFactory.getConfiguration().migrateAtStart) {
-                        if (liquibaseFactory.getConfiguration().validateOnMigrate) {
-                            try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                        if (config.migrateAtStart) {
+                            if (config.validateOnMigrate) {
                                 liquibase.validate();
                             }
-                        }
-                        try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
                             liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
                         }
                     }

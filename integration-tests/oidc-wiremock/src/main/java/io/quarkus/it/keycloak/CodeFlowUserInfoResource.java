@@ -38,6 +38,12 @@ public class CodeFlowUserInfoResource {
     }
 
     @GET
+    @Path("/code-flow-user-info-github-cached-in-idtoken")
+    public String accessGitHubCachedInIdToken() {
+        return access();
+    }
+
+    @GET
     @Path("/code-flow-user-info-dynamic-github")
     public String accessDynamicGitHub() {
         return access();

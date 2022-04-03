@@ -56,7 +56,7 @@ For this example, we'll use the Prometheus registry.
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: micrometer-quickstart
-:create-app-extensions: resteasy,micrometer-registry-prometheus
+:create-app-extensions: resteasy-reactive,micrometer-registry-prometheus
 include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
@@ -103,7 +103,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 
 @Path("/example")
@@ -140,7 +139,7 @@ observes the size of a list:
 
     @GET
     @Path("gauge/{number}")
-    public Long checkListSize(@PathParam("number") long number) {
+    public Long checkListSize(long number) {
         if (number == 2 || number % 2 == 0) {
             // add even numbers to the list
             list.add(number);
@@ -197,7 +196,7 @@ test a number to see if it is prime:
 ----
     @GET
     @Path("prime/{number}")
-    public String checkIfPrime(@PathParam("number") long number) {
+    public String checkIfPrime(long number) {
         if (number < 1) {
             return "Only natural numbers can be prime numbers.";
         }
@@ -244,7 +243,7 @@ the counter to add some tags to convey additional information.
 ----
     @GET
     @Path("prime/{number}")
-    public String checkIfPrime(@PathParam("number") long number) {
+    public String checkIfPrime(long number) {
         if (number < 1) {
             registry.counter("example.prime.number", "type", "not-natural").increment();
             return "Only natural numbers can be prime numbers.";

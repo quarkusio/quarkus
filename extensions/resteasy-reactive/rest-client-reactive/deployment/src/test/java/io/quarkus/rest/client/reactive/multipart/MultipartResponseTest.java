@@ -8,8 +8,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -24,14 +30,18 @@ import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.smallrye.mutiny.Uni;
 
 public class MultipartResponseTest {
 
     public static final String WOO_HOO_WOO_HOO_HOO = "Woo hoo, woo hoo hoo";
+    private static final long ONE_GIGA = 1024l * 1024l * 1024l * 1l;
+
     @TestHTTPResource
     URI baseUri;
 
@@ -53,6 +63,34 @@ public class MultipartResponseTest {
     }
 
     @Test
+    void shouldParseUniMultipartResponse() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        MultipartData data = client.uniGetFile().await().atMost(Duration.ofSeconds(10));
+        assertThat(data.file).exists();
+        verifyWooHooFile(data.file, 10000);
+        assertThat(data.name).isEqualTo("foo");
+        assertThat(data.panda.weight).isEqualTo("huge");
+        assertThat(data.panda.height).isEqualTo("medium");
+        assertThat(data.panda.mood).isEqualTo("happy");
+        assertThat(data.number).isEqualTo(1984);
+        assertThat(data.numberz).containsSequence(2008, 2011, 2014);
+    }
+
+    @Test
+    void shouldParseCompletionStageMultipartResponse() throws ExecutionException, InterruptedException, TimeoutException {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        MultipartData data = client.csGetFile().toCompletableFuture().get(10, TimeUnit.SECONDS);
+        assertThat(data.file).exists();
+        verifyWooHooFile(data.file, 10000);
+        assertThat(data.name).isEqualTo("foo");
+        assertThat(data.panda.weight).isEqualTo("huge");
+        assertThat(data.panda.height).isEqualTo("medium");
+        assertThat(data.panda.mood).isEqualTo("happy");
+        assertThat(data.number).isEqualTo(1984);
+        assertThat(data.numberz).containsSequence(2008, 2011, 2014);
+    }
+
+    @Test
     void shouldParseMultipartResponseWithSmallFile() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         MultipartData data = client.getSmallFile();
@@ -62,6 +100,15 @@ public class MultipartResponseTest {
         assertThat(data.panda).isNull();
         assertThat(data.number).isEqualTo(1984);
         assertThat(data.numberz).isNull();
+    }
+
+    @EnabledIfSystemProperty(named = "test-resteasy-reactive-large-files", matches = "true")
+    @Test
+    void shouldParseMultipartResponseWithLargeFile() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        MultipartData data = client.getLargeFile();
+        assertThat(data.file).exists();
+        assertThat(data.file.length()).isEqualTo(ONE_GIGA);
     }
 
     @Test
@@ -132,6 +179,11 @@ public class MultipartResponseTest {
 
         @GET
         @Produces(MediaType.MULTIPART_FORM_DATA)
+        @Path("/large")
+        MultipartData getLargeFile();
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
         @Path("/empty")
         MultipartData getFileEmpty();
 
@@ -143,6 +195,14 @@ public class MultipartResponseTest {
         @Produces(MediaType.MULTIPART_FORM_DATA)
         @Path("/error")
         MultipartData error();
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
+        Uni<MultipartData> uniGetFile();
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
+        CompletionStage<MultipartData> csGetFile();
     }
 
     @Path("/give-me-file")
@@ -151,8 +211,7 @@ public class MultipartResponseTest {
         @GET
         @Produces(MediaType.MULTIPART_FORM_DATA)
         public MultipartData getFile() throws IOException {
-            File file = File.createTempFile("toDownload", ".txt");
-            file.deleteOnExit();
+            File file = createTempFileToDownload();
             // let's write Woo hoo, woo hoo hoo 10k times
             try (FileOutputStream out = new FileOutputStream(file)) {
                 for (int i = 0; i < 10000; i++) {
@@ -167,12 +226,21 @@ public class MultipartResponseTest {
         @Produces(MediaType.MULTIPART_FORM_DATA)
         @Path("/small")
         public MultipartData getSmallFile() throws IOException {
-            File file = File.createTempFile("toDownload", ".txt");
-            file.deleteOnExit();
+            File file = createTempFileToDownload();
             // let's write Woo hoo, woo hoo hoo 1 time
             try (FileOutputStream out = new FileOutputStream(file)) {
                 out.write(WOO_HOO_WOO_HOO_HOO.getBytes(StandardCharsets.UTF_8));
             }
+            return new MultipartData("foo", file, null, 1984, null);
+        }
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
+        @Path("/large")
+        public MultipartData getLargeFile() throws IOException {
+            File file = createTempFileToDownload();
+            RandomAccessFile f = new RandomAccessFile(file, "rw");
+            f.setLength(ONE_GIGA);
             return new MultipartData("foo", file, null, 1984, null);
         }
 
@@ -188,6 +256,12 @@ public class MultipartResponseTest {
         @Path("/error")
         public MultipartData throwError() {
             throw new RuntimeException("forced error");
+        }
+
+        private static File createTempFileToDownload() throws IOException {
+            File file = File.createTempFile("toDownload", ".txt");
+            file.deleteOnExit();
+            return file;
         }
     }
 

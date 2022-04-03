@@ -2,8 +2,6 @@ package io.quarkus.rest.data.panache;
 
 import java.util.List;
 
-import javax.ws.rs.core.Response;
-
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;

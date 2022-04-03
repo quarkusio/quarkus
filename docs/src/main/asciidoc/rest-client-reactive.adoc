@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
-REST Client Reactive is a non-blocking counterpart of the RESTEasy REST Client.
+REST Client Reactive is the REST Client implementation compatible with RESTEasy Reactive.
 
 If your application uses a client and exposes REST endpoints, please use xref:resteasy-reactive.adoc[RESTEasy Reactive]
 for the server part.
@@ -703,6 +703,7 @@ public interface ExtensionsService {
 
 Naturally this handling is per REST Client. `@ClientExceptionMapper` uses the default priority if the `priority` attribute is not set and the normal rules of invoking all handlers in turn apply.
 
+[[multipart]]
 == Multipart Form support
 
 REST Client Reactive support multipart messages.

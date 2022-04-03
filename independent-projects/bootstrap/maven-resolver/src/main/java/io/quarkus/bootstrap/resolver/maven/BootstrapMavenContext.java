@@ -29,6 +29,7 @@ import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.path.DefaultPathTranslator;
+import org.apache.maven.model.path.PathTranslator;
 import org.apache.maven.model.profile.DefaultProfileActivationContext;
 import org.apache.maven.model.profile.DefaultProfileSelector;
 import org.apache.maven.model.profile.activation.FileProfileActivator;
@@ -616,7 +617,7 @@ public class BootstrapMavenContext {
                 .addProfileActivator(new PropertyProfileActivator())
                 .addProfileActivator(new JdkVersionProfileActivator())
                 .addProfileActivator(new OperatingSystemProfileActivator())
-                .addProfileActivator(new FileProfileActivator().setPathTranslator(new DefaultPathTranslator()));
+                .addProfileActivator(createFileProfileActivator());
         modelProfiles = profileSelector.getActiveProfiles(modelProfiles, context, new ModelProblemCollector() {
             public void add(ModelProblemCollectorRequest req) {
                 log.error("Failed to activate a Maven profile: " + req.getMessage());
@@ -960,5 +961,28 @@ public class BootstrapMavenContext {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private static FileProfileActivator createFileProfileActivator() throws BootstrapMavenException {
+        var activator = new FileProfileActivator();
+        var translator = new DefaultPathTranslator();
+        try {
+            activator.setPathTranslator(translator);
+        } catch (LinkageError e) {
+            // setPathTranslator() not found; Maven >= 3.8.5 (https://github.com/apache/maven/pull/649)
+            try {
+                var interpolatorClass = Thread.currentThread().getContextClassLoader()
+                        .loadClass("org.apache.maven.model.path.ProfileActivationFilePathInterpolator");
+                var interpolator = interpolatorClass.getDeclaredConstructor().newInstance();
+                interpolatorClass.getMethod("setPathTranslator", PathTranslator.class)
+                        .invoke(interpolator, translator);
+                activator.getClass().getMethod("setProfileActivationFilePathInterpolator", interpolatorClass)
+                        .invoke(activator, interpolator);
+            } catch (ReflectiveOperationException reflectionExc) {
+                throw new BootstrapMavenException("Failed to set up Maven 3.8.5+ ProfileActivationFilePathInterpolator",
+                        reflectionExc);
+            }
+        }
+        return activator;
     }
 }

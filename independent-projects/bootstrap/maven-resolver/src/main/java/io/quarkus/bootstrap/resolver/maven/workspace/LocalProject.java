@@ -344,21 +344,28 @@ public class LocalProject {
                 if (!plugin.getArtifactId().equals("maven-jar-plugin")) {
                     continue;
                 }
-                for (PluginExecution e : plugin.getExecutions()) {
-                    DefaultArtifactSources src = null;
-                    if (e.getGoals().contains(ArtifactCoords.TYPE_JAR)) {
-                        src = processJarPluginExecutionConfig(e, false);
-                    } else if (e.getGoals().contains("test-jar")) {
-                        src = processJarPluginExecutionConfig(e, true);
-                    }
+                if (plugin.getExecutions().isEmpty()) {
+                    final DefaultArtifactSources src = processJarPluginExecutionConfig(plugin.getConfiguration(), false);
                     if (src != null) {
                         moduleBuilder.addArtifactSources(src);
+                    }
+                } else {
+                    for (PluginExecution e : plugin.getExecutions()) {
+                        DefaultArtifactSources src = null;
+                        if (e.getGoals().contains(ArtifactCoords.TYPE_JAR)) {
+                            src = processJarPluginExecutionConfig(e.getConfiguration(), false);
+                        } else if (e.getGoals().contains("test-jar")) {
+                            src = processJarPluginExecutionConfig(e.getConfiguration(), true);
+                        }
+                        if (src != null) {
+                            moduleBuilder.addArtifactSources(src);
+                        }
                     }
                 }
             }
         }
 
-        if (!moduleBuilder.hasMainSources()) {
+        if (!moduleBuilder.hasNonTestSources()) {
             moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.MAIN,
                     Collections.singletonList(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir())),
                     collectMainResources(null)));
@@ -401,18 +408,14 @@ public class LocalProject {
         return rawModel.getProperties().getProperty(elementValue.substring(2, elementValue.length() - 1), elementValue);
     }
 
-    private DefaultArtifactSources processJarPluginExecutionConfig(PluginExecution e, boolean test) {
-        final Object config = e.getConfiguration();
+    private DefaultArtifactSources processJarPluginExecutionConfig(Object config, boolean test) {
         if (config == null || !(config instanceof Xpp3Dom)) {
             return null;
         }
         Xpp3Dom dom = (Xpp3Dom) config;
         final List<String> includes = collectChildValues(dom.getChild("includes"));
         final List<String> excludes = collectChildValues(dom.getChild("excludes"));
-        if (includes == null && excludes == null) {
-            return null;
-        }
-        final PathFilter filter = new PathFilter(includes, excludes);
+        final PathFilter filter = includes == null && excludes == null ? null : new PathFilter(includes, excludes);
         final String classifier = getClassifier(dom, test);
         final Collection<SourceDir> sources = Collections.singletonList(
                 new DefaultSourceDir(new DirectoryPathTree(test ? getTestSourcesSourcesDir() : getSourcesSourcesDir()),

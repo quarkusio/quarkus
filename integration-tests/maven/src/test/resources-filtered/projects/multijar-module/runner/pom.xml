@@ -10,17 +10,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.acme</groupId>
-            <artifactId>acme-beans</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.acme</groupId>
-            <artifactId>acme-beans</artifactId>
-            <classifier>other</classifier>
+            <artifactId>acme-hello</artifactId>
+            <classifier>hello</classifier>
         </dependency>
         <dependency>
             <groupId>org.acme</groupId>

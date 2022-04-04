@@ -81,14 +81,14 @@ import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
-import io.quarkus.scheduler.runtime.DefaultInvoker;
-import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
+import io.quarkus.scheduler.common.runtime.DefaultInvoker;
+import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
+import io.quarkus.scheduler.common.runtime.SchedulerContext;
+import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
-import io.quarkus.scheduler.runtime.SchedulerContext;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
 import io.quarkus.scheduler.runtime.devconsole.SchedulerDevConsoleRecorder;
-import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 
 public class SchedulerProcessor {
 
@@ -138,7 +138,7 @@ public class SchedulerProcessor {
                 continue;
             }
             MethodInfo method = annotationInstance.target().asMethod();
-            if (Modifier.isStatic(method.flags())) {
+            if (Modifier.isStatic(method.flags()) && !KotlinUtil.isSuspendMethod(method)) {
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules,
                         transformedAnnotations.getAnnotation(method, SchedulerDotNames.NON_BLOCKING) != null));
                 LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
@@ -204,19 +204,30 @@ public class SchedulerProcessor {
                         + method.declaringClass().name() + "#" + method.name() + "()"));
                 continue;
             }
+
+            boolean isSuspendMethod = KotlinUtil.isSuspendMethod(method);
+
             // Validate method params and return type
             List<Type> params = method.parameters();
-            if (params.size() > 1
-                    || (params.size() == 1 && !params.get(0).equals(SCHEDULED_EXECUTION_TYPE))) {
+            int maxParamSize = isSuspendMethod ? 2 : 1;
+            if (params.size() > maxParamSize
+                    || (params.size() == maxParamSize && !params.get(0).equals(SCHEDULED_EXECUTION_TYPE))) {
                 errors.add(new IllegalStateException(String.format(
                         "Invalid scheduled business method parameters %s [method: %s, bean: %s]", params,
                         method, scheduledMethod.getBean())));
             }
-            if (!isValidReturnType(method.returnType())) {
-                errors.add(new IllegalStateException(
-                        String.format(
-                                "Scheduled business method must return void, CompletionStage<Void> or Uni<Void> [method: %s, bean: %s]",
-                                method, scheduledMethod.getBean())));
+            if (!isValidReturnType(method)) {
+                if (isSuspendMethod) {
+                    errors.add(new IllegalStateException(
+                            String.format(
+                                    "Suspending scheduled business method must return Unit [method: %s, bean: %s]",
+                                    method, scheduledMethod.getBean())));
+                } else {
+                    errors.add(new IllegalStateException(
+                            String.format(
+                                    "Scheduled business method must return void, CompletionStage<Void> or Uni<Void> [method: %s, bean: %s]",
+                                    method, scheduledMethod.getBean())));
+                }
             }
             // Validate cron() and every() expressions
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
@@ -233,7 +244,8 @@ public class SchedulerProcessor {
         }
     }
 
-    private boolean isValidReturnType(Type returnType) {
+    private boolean isValidReturnType(MethodInfo method) {
+        Type returnType = method.returnType();
         if (returnType.kind() == Kind.VOID) {
             return true;
         }
@@ -243,6 +255,10 @@ public class SchedulerProcessor {
         }
         if (SchedulerDotNames.UNI.equals(returnType.name())
                 && returnType.asParameterizedType().arguments().get(0).name().equals(SchedulerDotNames.VOID)) {
+            return true;
+        }
+        if (KotlinUtil.isSuspendMethod(method)
+                && SchedulerDotNames.VOID.equals(KotlinUtil.determineReturnTypeOfSuspendMethod(method).name())) {
             return true;
         }
         return false;
@@ -378,19 +394,34 @@ public class SchedulerProcessor {
                 + INVOKER_SUFFIX + "_" + method.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
 
-        ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .superClass(DefaultInvoker.class).build();
+        boolean isSuspendMethod = KotlinUtil.isSuspendMethod(method);
 
-        // The descriptor is: CompletionStage invoke(ScheduledExecution execution)
-        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", CompletionStage.class, ScheduledExecution.class)
-                .addException(Exception.class);
+        ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                .superClass(isSuspendMethod ? SchedulerDotNames.ABSTRACT_COROUTINE_INVOKER.toString()
+                        : DefaultInvoker.class.getName())
+                .build();
+
+        MethodCreator invoke;
+        if (isSuspendMethod) {
+            invoke = invokerCreator
+                    .getMethodCreator("invokeBean", Object.class.getName(),
+                            ScheduledExecution.class.getName(), SchedulerDotNames.CONTINUATION.toString());
+        } else {
+            // The descriptor is: CompletionStage invoke(ScheduledExecution execution)
+            invoke = invokerCreator.getMethodCreator("invokeBean", CompletionStage.class, ScheduledExecution.class)
+                    .addException(Exception.class);
+        }
 
         // Use a try-catch block and return failed future if an exception is thrown
         TryBlock tryBlock = invoke.tryBlock();
         CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-        catchBlock.returnValue(catchBlock.invokeStaticMethod(
-                MethodDescriptor.ofMethod(CompletableFuture.class, "failedStage", CompletionStage.class, Throwable.class),
-                catchBlock.getCaughtException()));
+        if (isSuspendMethod) {
+            catchBlock.throwException(catchBlock.getCaughtException());
+        } else {
+            catchBlock.returnValue(catchBlock.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(CompletableFuture.class, "failedStage", CompletionStage.class, Throwable.class),
+                    catchBlock.getCaughtException()));
+        }
 
         String returnTypeStr = DescriptorUtils.typeToString(method.returnType());
         ResultHandle res;
@@ -419,15 +450,30 @@ public class SchedulerProcessor {
             ResultHandle beanInstanceHandle = tryBlock
                     .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                             instanceHandle);
-            if (method.parameters().isEmpty()) {
-                res = tryBlock.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr),
-                        beanInstanceHandle);
+
+            if (isSuspendMethod) {
+                if (method.parameters().size() == 1) {
+                    res = tryBlock.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), Object.class.getName(),
+                                    SchedulerDotNames.CONTINUATION.toString()),
+                            beanInstanceHandle, tryBlock.getMethodParam(1));
+                } else {
+                    res = tryBlock.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), Object.class.getName(),
+                                    ScheduledExecution.class.getName(), SchedulerDotNames.CONTINUATION.toString()),
+                            beanInstanceHandle, tryBlock.getMethodParam(0), tryBlock.getMethodParam(1));
+                }
             } else {
-                res = tryBlock.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
-                                ScheduledExecution.class),
-                        beanInstanceHandle, tryBlock.getMethodParam(0));
+                if (method.parameters().isEmpty()) {
+                    res = tryBlock.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr),
+                            beanInstanceHandle);
+                } else {
+                    res = tryBlock.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
+                                    ScheduledExecution.class),
+                            beanInstanceHandle, tryBlock.getMethodParam(0));
+                }
             }
             // handle.destroy() - destroy dependent instance afterwards
             if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
@@ -551,6 +597,19 @@ public class SchedulerProcessor {
     @BuildStep
     UnremovableBeanBuildItem unremoveableSkipPredicates() {
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(SchedulerDotNames.SKIP_PREDICATE));
+    }
+
+    @BuildStep
+    void produceCoroutineScope(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer) {
+        try {
+            Thread.currentThread().getContextClassLoader().loadClass("kotlinx.coroutines.CoroutineScope");
+            buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClass("io.quarkus.scheduler.kotlin.runtime.ApplicationCoroutineScope")
+                    .setUnremovable().build());
+        } catch (ClassNotFoundException e) {
+            // ignore
+        }
+
     }
 
 }

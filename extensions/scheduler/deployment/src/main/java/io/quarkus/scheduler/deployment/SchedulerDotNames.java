@@ -18,4 +18,9 @@ class SchedulerDotNames {
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     static final DotName VOID = DotName.createSimple(Void.class.getName());
 
+    static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
+    static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");
+    static final DotName ABSTRACT_COROUTINE_INVOKER = DotName
+            .createSimple("io.quarkus.scheduler.kotlin.runtime.AbstractCoroutineInvoker");
+
 }

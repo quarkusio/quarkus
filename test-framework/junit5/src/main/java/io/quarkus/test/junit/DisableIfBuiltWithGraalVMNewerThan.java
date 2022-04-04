@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-@ExtendWith(DisableIfBuiltWithGraalVMOlderThanCondition.class)
-public @interface DisableIfBuiltWithGraalVMOlderThan {
+@ExtendWith(DisableIfBuiltWithGraalVMNewerThanCondition.class)
+public @interface DisableIfBuiltWithGraalVMNewerThan {
     GraalVMVersion value();
 }

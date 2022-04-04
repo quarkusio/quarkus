@@ -15,10 +15,6 @@ allOpen {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    {#if java.version == "11"}
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
-    {#else}
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8.toString()
-    {/if}
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_{java.version}.toString()
     kotlinOptions.javaParameters = true
 }

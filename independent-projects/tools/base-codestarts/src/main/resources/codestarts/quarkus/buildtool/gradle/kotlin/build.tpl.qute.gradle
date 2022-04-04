@@ -15,10 +15,10 @@ allOpen {
 }
 
 compileKotlin {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_{java.version}
     kotlinOptions.javaParameters = true
 }
 
 compileTestKotlin {
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_{java.version}
 }

@@ -25,6 +25,7 @@ public class CreateProjectHelper {
     // ordering is important here, so let's keep them ordered
     public static final SortedSet<Integer> JAVA_VERSIONS_LTS = new TreeSet<>(List.of(11, 17));
     private static final int DEFAULT_JAVA_VERSION = 11;
+    private static final int MAX_LTS_SUPPORTED_BY_KOTLIN = 17;
     public static final String DETECT_JAVA_RUNTIME_VERSION = "<<detect java runtime version>>";
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(\\d+)(?:\\..*)?");
 
@@ -98,7 +99,14 @@ public class CreateProjectHelper {
             javaFeatureVersionTarget = Runtime.version().feature();
         }
 
-        values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(determineBestJavaLtsVersion(javaFeatureVersionTarget)));
+        int bestJavaLtsVersion = determineBestJavaLtsVersion(javaFeatureVersionTarget);
+
+        if (SourceType.KOTLIN.equals(values.get(ProjectGenerator.SOURCE_TYPE))
+                && bestJavaLtsVersion > MAX_LTS_SUPPORTED_BY_KOTLIN) {
+            bestJavaLtsVersion = MAX_LTS_SUPPORTED_BY_KOTLIN;
+        }
+
+        values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(bestJavaLtsVersion));
     }
 
     public static int determineBestJavaLtsVersion() {

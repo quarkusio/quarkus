@@ -11,7 +11,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
-import org.jboss.resteasy.reactive.common.providers.serialisers.FormUrlEncodedProvider;
+import org.jboss.resteasy.reactive.common.providers.serialisers.MapAsFormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
@@ -27,7 +27,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 @Produces("application/x-www-form-urlencoded")
 @Consumes("application/x-www-form-urlencoded")
 @ConstrainedTo(RuntimeType.CLIENT)
-public class ServerFormUrlEncodedProvider extends FormUrlEncodedProvider
+public class ServerFormUrlEncodedProvider extends MapAsFormUrlEncodedProvider
         implements ServerMessageBodyReader<MultivaluedMap>, ServerMessageBodyWriter<MultivaluedMap> {
 
     @Override

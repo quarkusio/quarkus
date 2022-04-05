@@ -151,6 +151,17 @@ public interface ArcContainer {
     <T> InjectableBean<T> bean(String beanIdentifier);
 
     /**
+     * Note that ambiguous names are detected at build time. Therefore, unlike
+     * {@link javax.enterprise.inject.spi.BeanManager.getBeans(String)} this method either returns a resolved bean or
+     * {@code null} if no bean matches.
+     *
+     * @param name
+     * @return an injectable bean with the given name or null
+     * @see InjectableBean#getName()
+     */
+    InjectableBean<?> namedBean(String name);
+
+    /**
      * This method never throws {@link ContextNotActiveException}.
      *
      * @return the built-in context for {@link javax.enterprise.context.RequestScoped}

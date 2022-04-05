@@ -128,6 +128,15 @@ public interface Template {
     String getGeneratedId();
 
     /**
+     * An identifier used to obtain the template from the engine.
+     *
+     * @return the identifier
+     * @see Engine#getTemplate(String)
+     * @see Engine#parse(String, Variant, String)
+     */
+    String getId();
+
+    /**
      *
      * @return the template variant
      */

@@ -337,17 +337,22 @@ public class BeanInfo implements InjectionTargetInfo {
                 || lifecycleInterceptors.containsKey(InterceptionType.PRE_DESTROY);
     }
 
-    boolean hasDefaultDestroy() {
-        if (isInterceptor()) {
+    /**
+     *
+     * @return {@code true} if the bean requires some customized destroy logic
+     */
+    public boolean hasDestroyLogic() {
+        if (isInterceptor() || isDecorator()) {
+            return false;
+        }
+        if (disposer != null || destroyerConsumer != null) {
+            // producer with disposer or custom bean with destruction logic
             return true;
         }
-        if (isClassBean()) {
-            return getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                    && Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getBeanArchiveIndex())
-                            .isEmpty();
-        } else {
-            return disposer == null && destroyerConsumer == null;
-        }
+        // test class bean with @PreDestroy interceptor or callback
+        return isClassBean() && (!getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
+                || !Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getBeanArchiveIndex())
+                        .isEmpty());
     }
 
     public boolean isForceApplicationClass() {

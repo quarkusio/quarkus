@@ -1279,6 +1279,8 @@ A CDI bean annotated with `@Named` can be referenced in any template through `cd
 <1> First, a bean with name `personService` is found and then used as the base object.
 <2> First, a bean with name `foo` is found and then used as the base object.
 
+NOTE: `@Named @Dependent` beans are shared across all expressions in a template for a single rendering operation, and destroyed after the rendering finished.
+
 All expressions with `cdi` and `inject` namespaces are validated during build.
 For the expression `cdi:personService.findPerson(10).name` the implementation class of the injected bean must either declare the `findPerson` method or a matching <<template_extension_methods,template extension method>> must exist.
 For the expression `inject:foo.price` the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist.

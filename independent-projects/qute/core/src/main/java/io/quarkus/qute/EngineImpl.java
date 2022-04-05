@@ -122,6 +122,11 @@ class EngineImpl implements Engine {
     }
 
     @Override
+    public boolean isTemplateLoaded(String id) {
+        return templates.containsKey(id);
+    }
+
+    @Override
     public void clearTemplates() {
         templates.clear();
     }

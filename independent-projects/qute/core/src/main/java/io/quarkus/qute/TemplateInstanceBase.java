@@ -1,7 +1,9 @@
 package io.quarkus.qute;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.jboss.logging.Logger;
 
@@ -15,9 +17,11 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
     protected Object data;
     protected Map<String, Object> dataMap;
     protected final Map<String, Object> attributes;
+    protected final List<Runnable> renderedActions;
 
     public TemplateInstanceBase() {
         this.attributes = new HashMap<>();
+        this.renderedActions = new ArrayList<>();
     }
 
     @Override
@@ -49,17 +53,11 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
         return attributes.get(key);
     }
 
-    protected Object data() {
-        if (data != null) {
-            return data;
-        }
-        if (dataMap != null) {
-            return Mapper.wrap(dataMap);
-        }
-        return EMPTY_DATA_MAP;
+    @Override
+    public TemplateInstance onRendered(Runnable action) {
+        renderedActions.add(action);
+        return this;
     }
-
-    protected abstract Engine engine();
 
     @Override
     public long getTimeout() {
@@ -77,5 +75,17 @@ public abstract class TemplateInstanceBase implements TemplateInstance {
         }
         return engine().getTimeout();
     }
+
+    protected Object data() {
+        if (data != null) {
+            return data;
+        }
+        if (dataMap != null) {
+            return Mapper.wrap(dataMap);
+        }
+        return EMPTY_DATA_MAP;
+    }
+
+    protected abstract Engine engine();
 
 }

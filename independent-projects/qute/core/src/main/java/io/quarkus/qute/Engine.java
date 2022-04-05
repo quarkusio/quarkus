@@ -93,6 +93,14 @@ public interface Engine {
     public Template getTemplate(String id);
 
     /**
+     * Note that template locators are not used in this method.
+     *
+     * @param id
+     * @return {@code true} if a template with the given identifier is loaded, {@code false} otherwise
+     */
+    public boolean isTemplateLoaded(String id);
+
+    /**
      * Removes all templates from the cache.
      */
     public void clearTemplates();

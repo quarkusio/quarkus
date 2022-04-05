@@ -145,7 +145,7 @@
         <aws-xray.version>2.11.0</aws-xray.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
         <kotlin.version>1.6.10</kotlin.version>
-        <kotlin.coroutine.version>1.6.0</kotlin.coroutine.version>
+        <kotlin.coroutine.version>1.6.1</kotlin.coroutine.version>
         <kotlin-serialization.version>1.3.2</kotlin-serialization.version>
         <dekorate.version>2.9.0</dekorate.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>

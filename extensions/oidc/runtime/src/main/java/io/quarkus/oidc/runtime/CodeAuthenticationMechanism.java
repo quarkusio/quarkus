@@ -386,6 +386,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         String authorizationURL = configContext.provider.getMetadata().getAuthorizationUri() + "?"
                                 + codeFlowParams.toString();
 
+                        LOG.debugf("Code flow redirect to: %s", authorizationURL);
+
                         return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
                                 authorizationURL));
                     }

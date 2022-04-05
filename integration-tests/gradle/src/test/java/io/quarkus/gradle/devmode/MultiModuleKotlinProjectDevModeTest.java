@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Disabled;
 import com.google.common.collect.ImmutableMap;
 
 @Disabled
-@org.junit.jupiter.api.Tag("failsOnJDK18")
+@org.junit.jupiter.api.Tag("failsOnJDK19")
 public class MultiModuleKotlinProjectDevModeTest extends QuarkusDevGradleTestBase {
 
     @Override

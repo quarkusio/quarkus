@@ -348,9 +348,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 ? configContext.oidcConfig.getAuthentication().scopes.get()
                                 : Collections.emptyList();
                         List<String> scopes = new ArrayList<>(oidcConfigScopes.size() + 1);
-                        scopes.add("openid");
+                        if (configContext.oidcConfig.getAuthentication().addOpenidScope.orElse(true)) {
+                            scopes.add("openid");
+                        }
                         scopes.addAll(oidcConfigScopes);
-                        configContext.oidcConfig.getAuthentication().scopes.ifPresent(scopes::addAll);
                         codeFlowParams.append(AMP).append(OidcConstants.TOKEN_SCOPE).append(EQ)
                                 .append(OidcCommonUtils.urlEncode(String.join(" ", scopes)));
 

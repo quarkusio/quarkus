@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * Configuration class allowing to globally set TLS properties.
  */
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class TlsConfig {
 
     /**

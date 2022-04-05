@@ -1,5 +1,6 @@
 package io.quarkus.jaxrs.client.reactive.deployment;
 
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static org.jboss.jandex.Type.Kind.ARRAY;
 import static org.jboss.jandex.Type.Kind.CLASS;
 import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
@@ -18,12 +19,14 @@ import java.io.Closeable;
 import java.io.File;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -831,12 +834,13 @@ public class JaxrsClientReactiveProcessor {
                             //TODO: converters
 
                             // query params have to be set on a method-level web target (they vary between invocations)
-                            methodCreator.assign(methodTarget, addQueryParam(methodCreator, methodTarget, param.name,
-                                    methodCreator.getMethodParam(paramIdx),
-                                    jandexMethod.parameters().get(paramIdx), index, methodCreator.getThis(),
-                                    methodCreator.readStaticField(methodGenericParametersField.get()),
-                                    methodCreator.readStaticField(methodParamAnnotationsField.get()),
-                                    paramIdx));
+                            methodCreator.assign(methodTarget,
+                                    addQueryParam(jandexMethod, methodCreator, methodTarget, param.name,
+                                            methodCreator.getMethodParam(paramIdx),
+                                            jandexMethod.parameters().get(paramIdx), index, methodCreator.getThis(),
+                                            methodCreator.readStaticField(methodGenericParametersField.get()),
+                                            methodCreator.readStaticField(methodParamAnnotationsField.get()),
+                                            paramIdx));
                         } else if (param.parameterType == ParameterType.BEAN) {
                             // bean params require both, web-target and Invocation.Builder, modifications
                             // The web target changes have to be done on the method level.
@@ -854,7 +858,7 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                            formParams = addBeanParamData(methodCreator, handleBeanParamMethod,
+                            formParams = addBeanParamData(jandexMethod, methodCreator, handleBeanParamMethod,
                                     invocationBuilderRef, beanParam.getItems(),
                                     methodCreator.getMethodParam(paramIdx), methodTarget, index,
                                     restClientInterface.getClassName(),
@@ -1142,7 +1146,7 @@ public class JaxrsClientReactiveProcessor {
 
                         // query params have to be set on a method-level web target (they vary between invocations)
                         subMethodCreator.assign(methodTarget,
-                                addQueryParam(subMethodCreator, methodTarget, param.name,
+                                addQueryParam(jandexMethod, subMethodCreator, methodTarget, param.name,
                                         paramValue, jandexMethod.parameters().get(paramIdx), index,
                                         subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
                                         subMethodCreator.readStaticField(methodGenericParametersField.get()),
@@ -1165,7 +1169,7 @@ public class JaxrsClientReactiveProcessor {
                         AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                 .createVariable(Invocation.Builder.class);
                         handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                        formParams = addBeanParamData(subMethodCreator, handleBeanParamMethod,
+                        formParams = addBeanParamData(jandexMethod, subMethodCreator, handleBeanParamMethod,
                                 invocationBuilderRef, beanParam.getItems(),
                                 paramValue, methodTarget, index,
                                 interfaceClass.name().toString(),
@@ -1246,7 +1250,7 @@ public class JaxrsClientReactiveProcessor {
 
                         // query params have to be set on a method-level web target (they vary between invocations)
                         subMethodCreator.assign(methodTarget,
-                                addQueryParam(subMethodCreator, methodTarget, param.name,
+                                addQueryParam(jandexMethod, subMethodCreator, methodTarget, param.name,
                                         subMethodCreator.getMethodParam(paramIdx),
                                         jandexSubMethod.parameters().get(paramIdx), index,
                                         subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
@@ -1270,7 +1274,7 @@ public class JaxrsClientReactiveProcessor {
                         AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                 .createVariable(Invocation.Builder.class);
                         handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                        formParams = addBeanParamData(subMethodCreator, handleBeanParamMethod,
+                        formParams = addBeanParamData(jandexMethod, subMethodCreator, handleBeanParamMethod,
                                 invocationBuilderRef, beanParam.getItems(),
                                 subMethodCreator.getMethodParam(paramIdx), methodTarget, index,
                                 interfaceClass.name().toString(),
@@ -2155,7 +2159,8 @@ public class JaxrsClientReactiveProcessor {
         return maybeMethod;
     }
 
-    private AssignableResultHandle addBeanParamData(BytecodeCreator methodCreator,
+    private AssignableResultHandle addBeanParamData(MethodInfo jandexMethod,
+            BytecodeCreator methodCreator,
             // Invocation.Builder executePut$$enrichInvocationBuilder${noOfBeanParam}(Invocation.Builder)
             BytecodeCreator invocationBuilderEnricher,
             AssignableResultHandle invocationBuilder,
@@ -2177,14 +2182,15 @@ public class JaxrsClientReactiveProcessor {
             formParams = createIfAbsent(methodCreator, formParams);
         }
 
-        addSubBeanParamData(methodCreator, invocationBuilderEnricher, invocationBuilder, beanParamItems, param, target,
+        addSubBeanParamData(jandexMethod, methodCreator, invocationBuilderEnricher, invocationBuilder, beanParamItems, param,
+                target,
                 index, restClientInterfaceClassName, client, invocationEnricherClient, formParams,
                 methodGenericTypeField, methodParamAnnotationsField, paramIdx);
 
         return formParams;
     }
 
-    private void addSubBeanParamData(BytecodeCreator methodCreator,
+    private void addSubBeanParamData(MethodInfo jandexMethod, BytecodeCreator methodCreator,
             // Invocation.Builder executePut$$enrichInvocationBuilder${noOfBeanParam}(Invocation.Builder)
             BytecodeCreator invocationBuilderEnricher,
             AssignableResultHandle invocationBuilder,
@@ -2210,7 +2216,7 @@ public class JaxrsClientReactiveProcessor {
                 case BEAN_PARAM:
                     BeanParamItem beanParamItem = (BeanParamItem) item;
                     ResultHandle beanParamElementHandle = beanParamItem.extract(creator, param);
-                    addSubBeanParamData(creator, invoEnricher, invocationBuilder, beanParamItem.items(),
+                    addSubBeanParamData(jandexMethod, creator, invoEnricher, invocationBuilder, beanParamItem.items(),
                             beanParamElementHandle, target, index, restClientInterfaceClassName, client,
                             invocationEnricherClient, formParams,
                             methodGenericTypeField, methodParamAnnotationsField, paramIdx);
@@ -2218,7 +2224,7 @@ public class JaxrsClientReactiveProcessor {
                 case QUERY_PARAM:
                     QueryParamItem queryParam = (QueryParamItem) item;
                     creator.assign(target,
-                            addQueryParam(creator, target, queryParam.name(),
+                            addQueryParam(jandexMethod, creator, target, queryParam.name(),
                                     queryParam.extract(creator, param),
                                     queryParam.getValueType(),
                                     index, client,
@@ -2282,8 +2288,8 @@ public class JaxrsClientReactiveProcessor {
     }
 
     // takes a result handle to target as one of the parameters, returns a result handle to a modified target
-    private ResultHandle addQueryParam(BytecodeCreator methodCreator,
-            ResultHandle target,
+    private ResultHandle addQueryParam(MethodInfo jandexMethod, BytecodeCreator methodCreator,
+            ResultHandle webTarget,
             String paramName,
             ResultHandle queryParamHandle,
             Type type,
@@ -2292,50 +2298,135 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle client,
             ResultHandle genericType,
             ResultHandle paramAnnotations, int paramIndex) {
-        ResultHandle paramArray;
-        String componentType = null;
 
         AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
-        BranchResult isValueNull = methodCreator.ifNull(target);
+        BranchResult isValueNull = methodCreator.ifNull(webTarget);
         BytecodeCreator notNullValue = isValueNull.falseBranch();
-        if (type.kind() == Type.Kind.ARRAY) {
-            componentType = type.asArrayType().component().name().toString();
-            paramArray = notNullValue.checkCast(queryParamHandle, Object[].class);
-        } else if (isCollection(type, index)) {
-            if (type.kind() == PARAMETERIZED_TYPE) {
-                Type paramType = type.asParameterizedType().arguments().get(0);
-                if (paramType.kind() == CLASS) {
-                    componentType = paramType.name().toString();
+        if (isMap(type, index)) {
+            var resolvesTypes = resolveMapTypes(type, index, jandexMethod);
+            var keyType = resolvesTypes.getKey();
+            if (!ResteasyReactiveDotNames.STRING.equals(keyType.name())) {
+                throw new IllegalArgumentException(
+                        "Map parameter types must have String keys. Offending method is: " + jandexMethod);
+            }
+            notNullValue.assign(result, webTarget);
+            // Loop through the keys
+            ResultHandle keySet = notNullValue.invokeInterfaceMethod(ofMethod(Map.class, "keySet", Set.class),
+                    queryParamHandle);
+            ResultHandle keysIterator = notNullValue.invokeInterfaceMethod(
+                    ofMethod(Set.class, "iterator", Iterator.class), keySet);
+            BytecodeCreator loopCreator = notNullValue.whileLoop(c -> iteratorHasNext(c, keysIterator)).block();
+            ResultHandle key = loopCreator.invokeInterfaceMethod(
+                    ofMethod(Iterator.class, "next", Object.class), keysIterator);
+            // get the value and convert
+            ResultHandle value = loopCreator.invokeInterfaceMethod(ofMethod(Map.class, "get", Object.class, Object.class),
+                    queryParamHandle, key);
+            var valueType = resolvesTypes.getValue();
+            String componentType = valueType.name().toString();
+            ResultHandle paramArray;
+            if (isCollection(valueType, index)) {
+                if (valueType.kind() == PARAMETERIZED_TYPE) {
+                    Type paramType = valueType.asParameterizedType().arguments().get(0);
+                    if (paramType.kind() == CLASS) {
+                        componentType = paramType.name().toString();
+                    }
                 }
+                if (componentType == null) {
+                    componentType = DotNames.OBJECT.toString();
+                }
+                paramArray = loopCreator.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
+                        value);
+            } else {
+                paramArray = loopCreator
+                        .invokeStaticMethod(ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
+                                value);
             }
-            if (componentType == null) {
-                componentType = DotNames.OBJECT.toString();
-            }
-            paramArray = notNullValue.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
-                    queryParamHandle);
+            // get the new WebTarget
+            addQueryParamToWebTarget(loopCreator, key, result, client, genericType, paramAnnotations,
+                    paramIndex,
+                    paramArray, componentType, result);
         } else {
-            componentType = type.name().toString();
-            paramArray = notNullValue.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
-                    queryParamHandle);
+            ResultHandle paramArray;
+            String componentType = null;
+            if (type.kind() == Type.Kind.ARRAY) {
+                componentType = type.asArrayType().component().name().toString();
+                paramArray = notNullValue.checkCast(queryParamHandle, Object[].class);
+            } else if (isCollection(type, index)) {
+                if (type.kind() == PARAMETERIZED_TYPE) {
+                    Type paramType = type.asParameterizedType().arguments().get(0);
+                    if (paramType.kind() == CLASS) {
+                        componentType = paramType.name().toString();
+                    }
+                }
+                if (componentType == null) {
+                    componentType = DotNames.OBJECT.toString();
+                }
+                paramArray = notNullValue.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
+                        queryParamHandle);
+            } else {
+                componentType = type.name().toString();
+                paramArray = notNullValue.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
+                        queryParamHandle);
+            }
+
+            addQueryParamToWebTarget(notNullValue, notNullValue.load(paramName), webTarget, client, genericType,
+                    paramAnnotations, paramIndex,
+                    paramArray, componentType, result);
         }
-
-        paramArray = notNullValue.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
-                        Class.class, Supplier.class, Supplier.class, int.class),
-                client, paramArray, notNullValue.loadClassFromTCCL(componentType), genericType, paramAnnotations,
-                methodCreator.load(paramIndex));
-
-        notNullValue.assign(result, notNullValue.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
-                        String.class, Object[].class),
-                target, notNullValue.load(paramName), paramArray));
 
         BytecodeCreator nullValue = isValueNull.trueBranch();
         nullValue.assign(result, nullValue.loadNull());
 
         return result;
+    }
+
+    private Map.Entry<Type, Type> resolveMapTypes(Type type, IndexView index, MethodInfo jandexMethod) {
+        if (type.name().equals(ResteasyReactiveDotNames.MAP)) {
+            if (type.kind() != PARAMETERIZED_TYPE) {
+                throw new IllegalArgumentException(
+                        "Raw Map parameter types are not supported. Offending method is: " + jandexMethod);
+            }
+            var parameterizedType = type.asParameterizedType();
+            var arguments = parameterizedType.arguments();
+            return new AbstractMap.SimpleEntry<>(arguments.get(0), arguments.get(1));
+        } else if (type.name().equals(ResteasyReactiveDotNames.MULTI_VALUED_MAP)) {
+            if (type.kind() != PARAMETERIZED_TYPE) {
+                throw new IllegalArgumentException(
+                        "Raw MultivaluedMap parameter types are not supported. Offending method is: " + jandexMethod);
+            }
+            var parameterizedType = type.asParameterizedType();
+            var arguments = parameterizedType.arguments();
+            return new AbstractMap.SimpleEntry<>(arguments.get(0), ParameterizedType.create(ResteasyReactiveDotNames.LIST,
+                    new Type[] { arguments.get(1) }, null));
+        }
+        // TODO: we could support this if necessary by looking up the resolved types via JandexUtil.resolveTypeParameters
+        throw new IllegalArgumentException("Unsupported Map type '" + type.name() + "'. Offending method is: " + jandexMethod);
+    }
+
+    private BranchResult iteratorHasNext(BytecodeCreator creator, ResultHandle iterator) {
+        return creator.ifTrue(
+                creator.invokeInterfaceMethod(ofMethod(Iterator.class, "hasNext", boolean.class), iterator));
+    }
+
+    private void addQueryParamToWebTarget(BytecodeCreator creator, ResultHandle paramName,
+            ResultHandle webTarget,
+            ResultHandle client, ResultHandle genericType,
+            ResultHandle paramAnnotations, int paramIndex, ResultHandle paramArray,
+            String componentType,
+            AssignableResultHandle resultVariable) {
+        ResultHandle convertedParamArray = creator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
+                        Class.class, Supplier.class, Supplier.class, int.class),
+                client, paramArray, creator.loadClassFromTCCL(componentType), genericType, paramAnnotations,
+                creator.load(paramIndex));
+
+        creator.assign(resultVariable, creator.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
+                        String.class, Object[].class),
+                webTarget, paramName, convertedParamArray));
     }
 
     private boolean isCollection(Type type, IndexView index) {
@@ -2347,6 +2438,20 @@ public class JaxrsClientReactiveProcessor {
             return false;
         }
         return classInfo.interfaceNames().stream().anyMatch(DotName.createSimple(Collection.class.getName())::equals);
+    }
+
+    private boolean isMap(Type type, IndexView index) {
+        if (type.kind() == Type.Kind.PRIMITIVE) {
+            return false;
+        }
+        ClassInfo classInfo = index.getClassByName(type.name());
+        if (classInfo == null) {
+            return false;
+        }
+        if (ResteasyReactiveDotNames.MAP.equals(classInfo.name())) {
+            return true;
+        }
+        return classInfo.interfaceNames().stream().anyMatch(DotName.createSimple(Map.class.getName())::equals);
     }
 
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

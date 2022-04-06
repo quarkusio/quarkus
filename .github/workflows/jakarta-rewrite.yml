@@ -9,6 +9,7 @@ jobs:
   rewrite:
     runs-on: ubuntu-latest
     name: Rewrite to Jakarta
+    if: github.repository == 'quarkusio/quarkus'
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11

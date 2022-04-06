@@ -441,9 +441,22 @@ public class ArcProcessor {
             // Note that at this point we can be sure that the required type is List<>
             Type typeParam = injectionPoint.getType().asParameterizedType().arguments().get(0);
             if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
-                validationErrors.produce(new ValidationErrorBuildItem(
-                        new DefinitionException(
-                                "Wildcard is not a legal type argument for " + injectionPoint.getTargetInfo())));
+                ClassInfo declaringClass;
+                if (injectionPoint.isField()) {
+                    declaringClass = injectionPoint.getTarget().asField().declaringClass();
+                } else {
+                    declaringClass = injectionPoint.getTarget().asMethod().declaringClass();
+                }
+                if (declaringClass.classAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null) {
+                    validationErrors.produce(new ValidationErrorBuildItem(
+                            new DefinitionException(
+                                    "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "
+                                            + injectionPoint.getTargetInfo())));
+                } else {
+                    validationErrors.produce(new ValidationErrorBuildItem(
+                            new DefinitionException(
+                                    "Wildcard is not a legal type argument for " + injectionPoint.getTargetInfo())));
+                }
             } else if (typeParam.kind() == Type.Kind.TYPE_VARIABLE) {
                 validationErrors.produce(new ValidationErrorBuildItem(new DefinitionException(
                         "Type variable is not a legal type argument for " + injectionPoint.getTargetInfo())));

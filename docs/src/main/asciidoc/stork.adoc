@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :extension-status: preview
 
 // Temporary until stork in in the BOM
-:stork-version: 1.0.0.Beta1
+:stork-version: 1.1.0
 include::./attributes.adoc[]
 
 The essence of distributed systems resides in the interaction between services.

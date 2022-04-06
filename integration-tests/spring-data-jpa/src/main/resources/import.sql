@@ -87,7 +87,7 @@ INSERT INTO MotorCar(id, brand, model) VALUES (1, 'Monteverdi', 'Hai 450');
 INSERT INTO MotorCar(id, brand, model) VALUES (2, 'Rinspeed', 'iChange');
 INSERT INTO MotorCar(id, brand, model) VALUES (3, 'Rinspeed', 'Oasis');
 
-INSERT INTO CatalogValue(id, key, displayName, type) VALUES (1, 'DE-BY', 'Bavaria', 'federalState');
-INSERT INTO CatalogValue(id, key, displayName, type) VALUES (2, 'DE-SN', 'Saxony', 'federalState');
-INSERT INTO CatalogValue(id, key, displayName, type) VALUES (3, 'DE', 'Germany', 'country');
-INSERT INTO CatalogValue(id, key, displayName, type) VALUES (4, 'FR', 'France', 'country');
+INSERT INTO CatalogValue(id, key_, displayName, type) VALUES (1, 'DE-BY', 'Bavaria', 'federalState');
+INSERT INTO CatalogValue(id, key_, displayName, type) VALUES (2, 'DE-SN', 'Saxony', 'federalState');
+INSERT INTO CatalogValue(id, key_, displayName, type) VALUES (3, 'DE', 'Germany', 'country');
+INSERT INTO CatalogValue(id, key_, displayName, type) VALUES (4, 'FR', 'France', 'country');

@@ -11,18 +11,13 @@ import com.oracle.svm.core.annotate.TargetClass;
 public final class Engine {
 
     @Substitute
-    public static Engine getInstance() {
-        return new Engine();
-    }
-
-    @Substitute
-    public Session createSession(ConnectionInfo ci) {
+    public static Session createSession(ConnectionInfo ci) {
         throw new UnsupportedOperationException(
                 "H2 database compiled into a native-image is only functional as a client: can't create an Embedded Database Session");
     }
 
     @Substitute
-    void close(String name) {
+    static void close(String name) {
         //no-op
     }
 

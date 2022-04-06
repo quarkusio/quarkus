@@ -16,7 +16,7 @@ import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.flywaydb.core.api.migration.JavaMigration;
-import org.h2.jdbc.JdbcSQLException;
+import org.h2.jdbc.JdbcSQLSyntaxErrorException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,7 +45,7 @@ public class FlywayExtensionFilesystemResourceTest {
         try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
             try (ResultSet executeQuery = stat.executeQuery("select * from fake_existing_tbl")) {
                 fail("fake_existing_tbl should not exist. Clean was run at start");
-            } catch (JdbcSQLException e) {
+            } catch (JdbcSQLSyntaxErrorException e) {
                 // expected fake_existing_tbl does not exist
             }
             try (ResultSet countQuery = stat.executeQuery("select count(1) from quarked_flyway")) {

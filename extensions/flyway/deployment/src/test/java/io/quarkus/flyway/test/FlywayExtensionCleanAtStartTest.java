@@ -12,7 +12,7 @@ import javax.inject.Inject;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
-import org.h2.jdbc.JdbcSQLException;
+import org.h2.jdbc.JdbcSQLSyntaxErrorException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,7 +41,7 @@ public class FlywayExtensionCleanAtStartTest {
         try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
             try (ResultSet executeQuery = stat.executeQuery("select * from fake_existing_tbl")) {
                 fail("fake_existing_tbl should not exist");
-            } catch (JdbcSQLException e) {
+            } catch (JdbcSQLSyntaxErrorException e) {
                 // expected fake_existing_tbl does not exist
             }
         }

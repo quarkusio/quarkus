@@ -65,7 +65,6 @@ public class SubclassGenerator extends AbstractGenerator {
     private static final DotName JAVA_LANG_THROWABLE = DotNames.create(Throwable.class.getName());
     private static final DotName JAVA_LANG_EXCEPTION = DotNames.create(Exception.class.getName());
     private static final DotName JAVA_LANG_RUNTIME_EXCEPTION = DotNames.create(RuntimeException.class.getName());
-    private static final DotName KOTLIN_METADATA_ANNOTATION = DotNames.create("kotlin.Metadata");
 
     static final String SUBCLASS_SUFFIX = "_Subclass";
     static final String DESTROY_METHOD_NAME = "arc$destroy";
@@ -750,7 +749,7 @@ public class SubclassGenerator extends AbstractGenerator {
         // catch exceptions declared on the original method
         boolean addCatchRuntimeException = true;
         boolean addCatchException = true;
-        boolean isKotlin = method.declaringClass().classAnnotation(KOTLIN_METADATA_ANNOTATION) != null;
+        boolean isKotlin = method.declaringClass().classAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null;
         Set<DotName> declaredExceptions = new LinkedHashSet<>(method.exceptions().size());
         for (Type declaredException : method.exceptions()) {
             declaredExceptions.add(declaredException.name());

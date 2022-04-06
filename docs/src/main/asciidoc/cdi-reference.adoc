@@ -1015,7 +1015,7 @@ A bean that implements this interface should be `@javax.inject.Singleton` or `@j
 [source, java]
 ----
 @Singleton
-public class NoopAsyncObserverExceptionHandler {
+public class NoopAsyncObserverExceptionHandler implements AsyncObserverExceptionHandler {
 
   void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext) {
     // do nothing

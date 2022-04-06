@@ -295,7 +295,7 @@ public class LoggingSetupRecorder {
             T categoryConfig = categories.get(categoryName);
             if (categoryConfig != null) {
                 final InheritableLevel inheritableLevel = levelExtractor.apply(categoryConfig);
-                if (!inheritableLevel.isInherited()) {
+                if (inheritableLevel != null && !inheritableLevel.isInherited()) {
                     return inheritableLevel.getLevel();
                 }
             }

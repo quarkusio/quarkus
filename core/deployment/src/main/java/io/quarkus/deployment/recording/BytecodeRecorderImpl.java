@@ -12,6 +12,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -130,6 +131,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final Function<java.lang.reflect.Type, Object> configCreatorFunction;
 
     private final List<ObjectLoader> loaders = new ArrayList<>();
+    private final Map<Class<?>, ConstantHolder<?>> constants = new HashMap<>();
     private final Set<Class> classesToUseRecorableConstructor = new HashSet<>();
     private final boolean useIdentityComparison;
 
@@ -237,6 +239,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
     public void registerObjectLoader(ObjectLoader loader) {
         Assert.checkNotNullParam("loader", loader);
         loaders.add(loader);
+    }
+
+    public <T> void registerConstant(Class<T> type, T value) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("value", value);
+        constants.put(type, new ConstantHolder<>(type, value));
     }
 
     @Override
@@ -512,7 +520,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         }
         for (var e : existingRecorderValues.entrySet()) {
-            e.getValue().preWrite();
+            e.getValue().preWrite(parameterMap);
         }
 
         //when this is true it is no longer possible to allocate items in the array. this is a guard against programmer error
@@ -1555,6 +1563,19 @@ public class BytecodeRecorderImpl implements RecorderContext {
         return null;
     }
 
+    private ConstantHolder<?> findConstantForParam(final java.lang.reflect.Type paramType) {
+        ConstantHolder<?> holder = null;
+        if (paramType instanceof Class) {
+            holder = constants.get(paramType);
+        } else if (paramType instanceof ParameterizedType) {
+            ParameterizedType p = (ParameterizedType) paramType;
+            if (p.getRawType() == RuntimeValue.class) {
+                holder = constants.get(p.getActualTypeArguments()[0]);
+            }
+        }
+        return holder;
+    }
+
     interface BytecodeInstruction {
 
     }
@@ -1623,11 +1644,25 @@ public class BytecodeRecorderImpl implements RecorderContext {
             this.injectCtor = injectCtor;
         }
 
-        void preWrite() {
+        void preWrite(Map<Object, DeferredParameter> parameterMap) {
             if (injectCtor != null) {
                 try {
-                    for (java.lang.reflect.Type param : injectCtor.getGenericParameterTypes()) {
+                    java.lang.reflect.Type[] parameterTypes = injectCtor.getGenericParameterTypes();
+                    Annotation[][] parameterAnnotations = injectCtor.getParameterAnnotations();
+                    for (int i = 0; i < parameterTypes.length; i++) {
+                        java.lang.reflect.Type param = parameterTypes[i];
+                        var constantHolder = findConstantForParam(param);
+                        if (constantHolder != null) {
+                            deferredParameters.add(loadObjectInstance(constantHolder.value, parameterMap,
+                                    constantHolder.type, Arrays.stream(parameterAnnotations[i])
+                                            .anyMatch(s -> s.annotationType() == RelaxedValidation.class)));
+                            continue;
+                        }
                         var obj = configCreatorFunction.apply(param);
+                        if (obj == null) {
+                            // No matching constant nor config.
+                            throw new RuntimeException("Cannot inject type " + param);
+                        }
                         if (obj instanceof RuntimeValue) {
                             if (!staticInit) {
                                 var result = findLoaded(((RuntimeValue<?>) obj).getValue());
@@ -1717,6 +1752,16 @@ public class BytecodeRecorderImpl implements RecorderContext {
         NonDefaultConstructorHolder(Constructor<?> constructor, Function<Object, List<Object>> paramGenerator) {
             this.constructor = constructor;
             this.paramGenerator = paramGenerator;
+        }
+    }
+
+    static final class ConstantHolder<T> {
+        final Class<T> type;
+        final T value;
+
+        ConstantHolder(Class<T> type, T value) {
+            this.type = type;
+            this.value = value;
         }
     }
 

@@ -9,3 +9,5 @@ metadata:
   categories:
     - "web"
   status: "preview"
+  config:
+    - "quarkus.stork."

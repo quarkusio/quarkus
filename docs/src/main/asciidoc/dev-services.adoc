@@ -46,7 +46,7 @@ The database Dev Services will be enabled when a reactive or JDBC datasource ext
 and the database URL has not been configured. More information can be found at the
 xref:datasource.adoc#dev-services[Datasource Guide].
 
-Quarkus provides Dev Services for all databases it supports except Oracle. Most of these are run in a container, with the
+Quarkus provides Dev Services for all databases it supports. Most of these are run in a container, with the
 exception of H2 and Derby which are run in process. Dev Services are supported for both JDBC and reactive drivers.
 
 include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]

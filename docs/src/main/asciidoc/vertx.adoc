@@ -312,7 +312,7 @@ public class GreetingService {
 }
 ----
 <1> Declaring a CDI Bean in the Application scope. Quarkus will create a single instance of this class.
-<2> Use the `@ConsumeEvent` annotation to declare a consumer. It is possible to use the Vert.x API directly too. TODO LINK REF
+<2> Use the `@ConsumeEvent` annotation to declare a consumer. It is possible to use the Vert.x API https://vertx.io/docs/vertx-core/java/#_acknowledging_messages_sending_replies[directly] too.
 <3> Receive the message payload as a method parameter. The returned object will be the reply.
 <4> Return the response. This response is sent back to the `VertxResource` class
 

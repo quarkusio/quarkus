@@ -353,8 +353,14 @@ public final class OidcUtils {
         if (tenant.authentication.userInfoRequired.isEmpty()) {
             tenant.authentication.userInfoRequired = provider.authentication.userInfoRequired;
         }
+        if (tenant.authentication.pkceRequired.isEmpty()) {
+            tenant.authentication.pkceRequired = provider.authentication.pkceRequired;
+        }
         if (tenant.authentication.scopes.isEmpty()) {
             tenant.authentication.scopes = provider.authentication.scopes;
+        }
+        if (tenant.authentication.addOpenidScope.isEmpty()) {
+            tenant.authentication.addOpenidScope = provider.authentication.addOpenidScope;
         }
         if (tenant.authentication.forceRedirectHttpsScheme.isEmpty()) {
             tenant.authentication.forceRedirectHttpsScheme = provider.authentication.forceRedirectHttpsScheme;

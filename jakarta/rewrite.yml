@@ -194,6 +194,21 @@ recipeList:
       propertyName: jakarta.security.auth.message-api.version
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-security-switch
+displayName: Switch Javax security dependencies
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: jakarta.security.jacc
+      oldArtifactId: jakarta.security.jacc-api
+      newGroupId: jakarta.authorization
+      newArtifactId: jakarta.authorization-api
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: jakarta.security.auth.message
+      oldArtifactId: jakarta.security.auth.message-api
+      newGroupId: jakarta.authentication
+      newArtifactId: jakarta.authentication-api
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.smallrye
 displayName: Adjust SmallRye dependencies
 recipeList:
@@ -213,30 +228,35 @@ recipeList:
       key: smallrye-config.version
       newValue: 3.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-fault-tolerance.version
+      newValue: 6.0.0-RC2
+  - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
-      newValue: 4.0.0-RC1
+      newValue: 4.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-api.version
       newValue: 4.0.1
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-metrics.version
       newValue: 4.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-open-api.version
+      newValue: 3.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-rest-client.version
+      newValue: 3.0
 # In progress, these ones need a change:
 #        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
 #        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
-#        <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
 #        <microprofile-jwt.version>1.2</microprofile-jwt.version>
 #        <microprofile-lra.version>1.0</microprofile-lra.version>
-#        <smallrye-open-api.version>2.1.22</smallrye-open-api.version>
 #        <smallrye-graphql.version>1.4.3</smallrye-graphql.version>
 #        <smallrye-opentracing.version>2.1.0</smallrye-opentracing.version>
-#        <smallrye-fault-tolerance.version>5.3.1</smallrye-fault-tolerance.version>
 #        <smallrye-jwt.version>3.3.3</smallrye-jwt.version>
 #        <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
 #        <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
 #        <smallrye-mutiny-vertx-binding.version>2.19.0</smallrye-mutiny-vertx-binding.version>
 #        <smallrye-reactive-messaging.version>3.15.0</smallrye-reactive-messaging.version>
-#        <smallrye-stork.version>1.1.0</smallrye-stork.version>
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.maven.javax.managed
@@ -323,7 +343,7 @@ recipeList:
       groupId: org.jboss.resteasy.microprofile
       artifactId: microprofile-config
       version: "${resteasy-microprofile.version}"
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.jboss.resteasy
       oldArtifactId: resteasy-client-microprofile
       newGroupId: org.jboss.resteasy.microprofile

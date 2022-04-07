@@ -95,6 +95,10 @@ tranform_kotlin_module () {
   done
 }
 
+update_scope_in_test_properties () {
+  sed -i "s@javax.enterprise@jakarta.enterprise@g" $1
+}
+
 convert_service_file () {
   local newName=${1/javax/jakarta}
   mv $1 $newName
@@ -190,12 +194,18 @@ remove_banned_dependency "independent-projects/tools" 'javax.annotation:javax.an
 remove_banned_dependency "build-parent" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "build-parent" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "build-parent" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
-update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
+# TODO: due to an issue in the MicroProfile REST Client, we cannot exclude jakarta.ws.rs:jakarta.ws.rs-api yet
+#update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
+update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<!-- exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude -->\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
 
 ## some additional wild changes to clean up at some point
 sed -i 's@FilterConfigSourceImpl@FilterConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
 sed -i 's@ServletConfigSourceImpl@ServletConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
 sed -i 's@ServletContextConfigSourceImpl@ServletContextConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
+# Unfortunately, this file has been copied from RESTEasy with some adjustments and it is not compatible with the new RESTEasy MicroProfile
+# I started some discussions with James Perkins about how to contribute back our changes
+# For now, this will have to do
+cp "jakarta/overrides/rest-client/QuarkusRestClientBuilder.java" "extensions/resteasy-classic/rest-client/runtime/src/main/java/io/quarkus/restclient/runtime/"
 
 ## cleanup phase - needs to be done once everything has been rewritten
 rewrite_module_cleanup "bom/application"
@@ -296,40 +306,65 @@ build_module "extensions/jaxp"
 build_module "extensions/jaxb"
 build_module "extensions/apache-httpclient"
 
-# this will be simplified once we can get all RESTEasy Classic to compile fine
-build_module_only_no_tests "extensions/resteasy-classic"
-build_module "extensions/resteasy-classic/resteasy-common"
-build_module "extensions/resteasy-classic/resteasy-server-common"
-build_module "extensions/resteasy-classic/resteasy"
-build_module "extensions/resteasy-classic/resteasy-jsonb"
-build_module "extensions/resteasy-classic/resteasy-jackson"
-build_module "extensions/resteasy-classic/resteasy-jaxb"
-build_module "extensions/resteasy-classic/resteasy-links"
-build_module "extensions/resteasy-classic/resteasy-mutiny-common"
-build_module "extensions/resteasy-classic/resteasy-mutiny"
-
+# Some RESTEasy Reactive bits required for Hibernate Validator
+# We will build RESTEasy Reactive properly later
 build_module_only_no_tests "extensions/resteasy-reactive"
 build_module_only_no_tests "extensions/resteasy-reactive/quarkus-resteasy-reactive-common"
 build_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-common/spi-deployment"
 
+# Everything that is needed for RESTEasy Classic
+build_module "extensions/elytron-security-common"
+build_module "extensions/elytron-security"
+# we need part of RESTEasy for elytron-security-properties-file, we will rebuild them properly later
+build_module_only_no_tests "extensions/resteasy-classic"
+build_module_no_tests "extensions/resteasy-classic/resteasy-common"
+build_module_no_tests "extensions/resteasy-classic/resteasy-server-common"
+build_module_no_tests "extensions/resteasy-classic/resteasy"
+build_module_no_tests "extensions/resteasy-classic/resteasy-jsonb"
+build_module "extensions/elytron-security-properties-file"
 build_module "extensions/hibernate-validator"
-
-exit 0
-
-# TODO for more RESTEasy
+build_module "extensions/reactive-routes"
 build_module_only_no_tests "extensions/panache"
 build_module "extensions/panache/panache-common"
-build_module_only_no_tests "extensions/hibernate-validator"
-build_module "extensions/hibernate-validator/spi"
-# WIP here
-build_module "extensions/elytron-security-properties-file"
-build_module "extensions/reactive-routes"
 build_module "extensions/qute"
-
-exit 0
+build_module "extensions/smallrye-fault-tolerance"
+convert_service_file "extensions/resteasy-classic/resteasy-multipart/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.Providers"
+build_module "extensions/resteasy-classic"
 
 # RESTEasy Reactive
-#tranform_kotlin_module "extensions/resteasy-reactive"
+build_module "extensions/smallrye-stork"
+build_module "extensions/kotlin"
+tranform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin"
+tranform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization"
+tranform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization-common"
+tranform_kotlin_module "extensions/resteasy-reactive/rest-client-reactive-kotlin-serialization"
+update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-configkey-scope-test-application.properties"
+update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-classname-scope-test-application.properties"
+update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-global-scope-test-application.properties"
+build_module "extensions/resteasy-reactive"
+
+# Lambda
+build_module "extensions/amazon-lambda"
+build_module "extensions/amazon-lambda-http"
+build_module "extensions/amazon-lambda-rest"
+build_module "extensions/amazon-lambda-xray"
+
+# More SmallRye
+build_module "extensions/smallrye-openapi-common"
+build_module "extensions/swagger-ui"
+build_module "extensions/smallrye-openapi"
+build_module "extensions/smallrye-health"
+
+# Persistence
+build_module "extensions/credentials"
+build_module "extensions/kubernetes-service-binding"
+build_module_only_no_tests "extensions/datasource"
+build_module_no_tests "extensions/datasource/common"
+build_module_no_tests "extensions/datasource/deployment-spi/"
+build_module "extensions/devservices"
+build_module "extensions/datasource"
+
+exit 0
 
 # These ones require ArC and Mutiny extensions
 #build_module "test-framework/junit5-mockito-config"

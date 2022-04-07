@@ -128,6 +128,11 @@ public class TemplateProducer {
         }
 
         @Override
+        public String getId() {
+            throw new UnsupportedOperationException("Injected templates do not support getId()");
+        }
+
+        @Override
         public String toString() {
             return "Injectable template [path=" + path + "]";
         }
@@ -170,6 +175,11 @@ public class TemplateProducer {
                 return engine;
             }
 
+            @Override
+            public Template getTemplate() {
+                return template();
+            }
+
             private TemplateInstance templateInstance() {
                 TemplateInstance instance = template().instance();
                 if (dataMap != null) {
@@ -179,6 +189,9 @@ public class TemplateProducer {
                 }
                 if (!attributes.isEmpty()) {
                     attributes.forEach(instance::setAttribute);
+                }
+                if (!renderedActions.isEmpty()) {
+                    renderedActions.forEach(instance::onRendered);
                 }
                 return instance;
             }

@@ -11,8 +11,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import org.jboss.logging.Logger;
 
 class TemplateImpl implements Template {
+
+    private static final Logger LOG = Logger.getLogger(TemplateImpl.class);
 
     private final String templateId;
     private final String generatedId;
@@ -47,6 +50,11 @@ class TemplateImpl implements Template {
     @Override
     public String getGeneratedId() {
         return generatedId;
+    }
+
+    @Override
+    public String getId() {
+        return templateId;
     }
 
     @Override
@@ -159,10 +167,26 @@ class TemplateImpl implements Template {
                         result.complete(null);
                     } catch (Throwable e) {
                         result.completeExceptionally(e);
+                    } finally {
+                        if (!renderedActions.isEmpty()) {
+                            for (Runnable action : renderedActions) {
+                                try {
+                                    action.run();
+                                } catch (Throwable e) {
+                                    LOG.error("Unable to perform an action when rendering finished", e);
+                                }
+                            }
+                        }
+
                     }
                 }
             });
             return result;
+        }
+
+        @Override
+        public Template getTemplate() {
+            return TemplateImpl.this;
         }
 
         @Override

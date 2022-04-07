@@ -2,6 +2,7 @@ package io.quarkus.qute.deployment.inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
 import javax.annotation.PreDestroy;
@@ -34,24 +35,30 @@ public class InjectNamespaceResolverTest {
 
     @Test
     public void testInjection() {
-        assertEquals("pong != simple and pong != simple", foo.render());
-        assertEquals(2, SimpleBean.DESTROYS.longValue());
+        assertEquals("pong != simple1 and pong != simple1", foo.render());
+        assertEquals(1, SimpleBean.DESTROYS.longValue());
 
         // Test the convenient Qute class
         // By default, the content type is plain text
-        assertEquals("pong::<br>", Qute.fmt("{cdi:hello.ping}::{}", "<br>"));
+        assertEquals("pong::simple2::simple2::<br>",
+                Qute.fmt("{cdi:hello.ping}::{cdi:simple.ping}::{inject:simple.ping}::{}", "<br>"));
         assertEquals("pong::&lt;br&gt;",
                 Qute.fmt("{cdi:hello.ping}::{newLine}").contentType("text/html").data("newLine", "<br>").render());
+        assertEquals(2, SimpleBean.DESTROYS.longValue());
     }
 
     @Named("simple")
     @Dependent
     public static class SimpleBean {
 
+        static final AtomicInteger COUNTER = new AtomicInteger();
+
         static final LongAdder DESTROYS = new LongAdder();
 
+        private final int id = COUNTER.incrementAndGet();
+
         public String ping() {
-            return "simple";
+            return "simple" + id;
         }
 
         @PreDestroy

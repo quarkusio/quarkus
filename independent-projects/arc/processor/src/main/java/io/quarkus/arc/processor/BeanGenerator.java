@@ -219,7 +219,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
-        if (!bean.hasDefaultDestroy()) {
+        if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, Collections.emptyMap(), isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
@@ -308,7 +308,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
-        if (!bean.hasDefaultDestroy()) {
+        if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, injectionPointToProviderSupplierField, isApplicationClass,
                     baseName);
         }
@@ -412,7 +412,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
-        if (!bean.hasDefaultDestroy()) {
+        if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, injectionPointToProviderField, isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
@@ -501,7 +501,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
-        if (!bean.hasDefaultDestroy()) {
+        if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, null, isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,

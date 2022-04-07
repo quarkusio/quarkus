@@ -114,6 +114,20 @@ public interface TemplateInstance {
     long getTimeout();
 
     /**
+     *
+     * @return the original template
+     */
+    Template getTemplate();
+
+    /**
+     * Register an action that is performed after the rendering is finished.
+     *
+     * @param action
+     * @return self
+     */
+    TemplateInstance onRendered(Runnable action);
+
+    /**
      * This component can be used to initialize a template instance, i.e. the data and attributes.
      *
      * @see TemplateInstance#data(String, Object)

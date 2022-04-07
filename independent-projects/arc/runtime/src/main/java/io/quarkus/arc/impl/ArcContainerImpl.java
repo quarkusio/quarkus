@@ -305,6 +305,13 @@ public class ArcContainerImpl implements ArcContainer {
         return (InjectableBean<T>) beansById.getValue(beanIdentifier);
     }
 
+    @Override
+    public InjectableBean<?> namedBean(String name) {
+        Objects.requireNonNull(name);
+        Set<InjectableBean<?>> found = beansByName.getValue(name);
+        return found.size() == 1 ? found.iterator().next() : null;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> InstanceHandle<T> instance(String name) {

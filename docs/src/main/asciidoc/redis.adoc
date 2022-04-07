@@ -620,6 +620,53 @@ ReactiveRedisClient defaultReactiveRedisClient = ReactiveRedisClient.createClien
 ReactiveRedisClient namedReactiveRedisClient = ReactiveRedisClient.createClient("second");
 ----
 
+== Working with Binary Data
+
+While `RedisClient` and `ReactiveRedisClient` expose convenient
+`String`-based methods that mirror the commands available in Redis,
+they do not handle binary data.  In order to store binary data in
+Redis, you can inject an instance of the lower-level `MutinyRedis`
+class:
+
+[source,java,indent=0]
+----
+import io.quarkus.redis.client.runtime.MutinyRedis;
+import io.vertx.mutiny.redis.client.Command;
+import io.vertx.mutiny.redis.client.Request;
+import io.vertx.mutiny.redis.client.Response;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+@ApplicationScoped
+class BinaryCacheService {
+
+    @Inject
+    MutinyRedis mutinyRedis; // <1>
+
+    Uni<Void> set(String key, byte[] data) {
+        return mutinyRedis
+            .send( // <2>
+                Request.cmd(Command.SET)
+                    .arg(key)
+                    .arg(data)) // <3>
+            .replaceWithVoid();
+    }
+
+    Uni<byte[]> get(String key) {
+        return mutinyRedis
+            .send(
+                Request.cmd(Command.GET)
+                    .arg(key))
+            .ifNotNull()
+            .transform(Response::toBytes); // <4>
+    }
+}
+----
+<1> Inject the `MutinyRedis` instance
+<2> Use the https://smallrye.io/smallrye-mutiny-vertx-bindings/2.20.0/apidocs/io/vertx/mutiny/redis/client/Redis.html#send(io.vertx.mutiny.redis.client.Request)[`send`] method to send a command
+<3> `Request#arg` has overloads to support various types including `byte[]`
+<4> Convert a bulk response into a byte array
+
 Please see also <<redis-reference.adoc#custom_redis_commands,How to use custom Redis Commands>>.
 
 [[config-reference]]

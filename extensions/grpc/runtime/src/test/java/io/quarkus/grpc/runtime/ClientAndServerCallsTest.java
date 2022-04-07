@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import io.grpc.Status;
 import io.grpc.StatusException;
+import io.quarkus.grpc.stubs.ClientCalls;
+import io.quarkus.grpc.stubs.ServerCalls;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 

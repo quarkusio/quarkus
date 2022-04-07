@@ -3,7 +3,6 @@ package io.quarkus.grpc;
 import io.grpc.Metadata;
 import io.grpc.stub.AbstractStub;
 import io.grpc.stub.MetadataUtils;
-import io.quarkus.grpc.runtime.MutinyClient;
 
 /**
  * gRPC client utilities

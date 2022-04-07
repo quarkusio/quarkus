@@ -1,4 +1,4 @@
-package io.quarkus.grpc.runtime;
+package io.quarkus.grpc;
 
 /**
  * Used to mark a convenient Mutiny bean generated for a gRPC service.

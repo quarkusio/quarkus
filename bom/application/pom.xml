@@ -1742,7 +1742,12 @@
                 </exclusions>
             </dependency>
             <dependency>
-            <groupId>io.quarkus</groupId>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-grpc-common</artifactId>
                 <version>${project.version}</version>
             </dependency>

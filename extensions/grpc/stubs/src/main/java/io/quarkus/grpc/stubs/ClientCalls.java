@@ -1,4 +1,4 @@
-package io.quarkus.grpc.runtime;
+package io.quarkus.grpc.stubs;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;

@@ -1,4 +1,4 @@
-package io.quarkus.grpc.runtime;
+package io.quarkus.grpc;
 
 import io.grpc.stub.AbstractStub;
 

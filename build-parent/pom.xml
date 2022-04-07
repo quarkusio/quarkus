@@ -105,7 +105,7 @@
 
         <assertj.version>3.22.0</assertj.version>
 
-        <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
+        <wiremock-jre8.version>2.32.0</wiremock-jre8.version>
         <wiremock-maven-plugin.version>7.1.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
@@ -230,34 +230,8 @@
             </dependency>
             <dependency>
                 <groupId>com.github.tomakehurst</groupId>
-                <artifactId>wiremock-jre8</artifactId>
+                <artifactId>wiremock-jre8-standalone</artifactId>
                 <version>${wiremock-jre8.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>javax.servlet-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.xml.bind</groupId>
-                        <artifactId>jaxb-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.checkerframework</groupId>
-                        <artifactId>checker-qual</artifactId>
-                    </exclusion>
-                    <exclusion> <!-- fix dependencyConvergence clash with junit-jupiter -->
-                        <groupId>org.opentest4j</groupId>
-                        <artifactId>opentest4j</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.code.findbugs</groupId>
-                        <artifactId>jsr305</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -743,11 +717,9 @@
                     <artifactId>wiremock-maven-plugin</artifactId>
                     <version>${wiremock-maven-plugin.version}</version>
                     <dependencies>
-                        <!-- plugin defines "wiremock" artifactId (in provided scope), not the preferred "wiremock-jre8"
-                             which cannot be forced here, see https://issues.apache.org/jira/browse/MNG-6222 -->
                         <dependency>
                             <groupId>com.github.tomakehurst</groupId>
-                            <artifactId>wiremock</artifactId>
+                            <artifactId>wiremock-jre8-standalone</artifactId>
                             <version>${wiremock-jre8.version}</version>
                         </dependency>
                     </dependencies>

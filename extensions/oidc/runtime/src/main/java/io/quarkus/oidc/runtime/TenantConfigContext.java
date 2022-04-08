@@ -47,6 +47,9 @@ public class TenantConfigContext {
         if (config.authentication.pkceRequired.orElse(false)) {
             String pkceSecret = config.authentication.pkceSecret
                     .orElse(OidcCommonUtils.clientSecret(config.credentials));
+            if (pkceSecret == null) {
+                throw new RuntimeException("Secret key for encrypting PKCE code verifier is missing");
+            }
             if (pkceSecret.length() < 32) {
                 throw new RuntimeException("Secret key for encrypting PKCE code verifier must be at least 32 characters long");
             }

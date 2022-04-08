@@ -687,6 +687,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             try {
                 return OidcUtils.encryptJson(json, configContext.getPkceSecretKey());
             } catch (Exception ex) {
+                LOG.debugf(ex, "Failed to encrypt JSON with PKCE secret key");
                 throw new AuthenticationFailedException(ex);
             }
         } else {

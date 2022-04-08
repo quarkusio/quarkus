@@ -49,6 +49,9 @@ public class TenantConfigContext {
                     .orElse(OidcCommonUtils.clientSecret(config.credentials));
             if (pkceSecret.length() < 32) {
                 throw new RuntimeException("Secret key for encrypting PKCE code verifier must be at least 32 characters long");
+            } else if (pkceSecret.length() > 32) {
+                // truncate it down nicely, especially if it comes from the client secret, because anything over 32 throws
+                pkceSecret = pkceSecret.substring(0, 32);
             }
             return KeyUtils.createSecretKeyFromSecret(pkceSecret);
         }
@@ -61,6 +64,9 @@ public class TenantConfigContext {
                     .orElse(OidcCommonUtils.clientSecret(config.credentials));
             if (encSecret.length() < 32) {
                 throw new RuntimeException("Secret key for encrypting tokens must be at least 32 characters long");
+            } else if (encSecret.length() > 32) {
+                // truncate it down nicely, especially if it comes from the client secret, because anything over 32 throws
+                encSecret = encSecret.substring(0, 32);
             }
             return KeyUtils.createSecretKeyFromSecret(encSecret);
         }

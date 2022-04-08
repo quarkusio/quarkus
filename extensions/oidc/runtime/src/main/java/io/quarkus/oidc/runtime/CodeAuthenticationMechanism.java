@@ -336,7 +336,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         // response_mode
                         if (ResponseMode.FORM_POST == configContext.oidcConfig.authentication.responseMode
                                 .orElse(ResponseMode.QUERY)) {
-                            codeFlowParams.append(OidcConstants.CODE_FLOW_RESPONSE_MODE).append(EQ)
+                            codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_RESPONSE_MODE).append(EQ)
                                     .append(configContext.oidcConfig.authentication.responseMode.get().toString()
                                             .toLowerCase());
                         }

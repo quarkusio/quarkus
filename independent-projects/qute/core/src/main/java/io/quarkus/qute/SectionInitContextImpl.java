@@ -6,16 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- *
- */
 final class SectionInitContextImpl implements SectionInitContext {
 
     private final EngineImpl engine;
     private final List<SectionBlock> blocks;
-    private final Function<String, TemplateException> errorFun;
+    private final Function<String, TemplateException.Builder> errorFun;
 
-    public SectionInitContextImpl(EngineImpl engine, List<SectionBlock> blocks, Function<String, TemplateException> errorFun) {
+    public SectionInitContextImpl(EngineImpl engine, List<SectionBlock> blocks,
+            Function<String, TemplateException.Builder> errorFun) {
         this.engine = engine;
         this.blocks = blocks;
         this.errorFun = errorFun;
@@ -57,7 +55,7 @@ final class SectionInitContextImpl implements SectionInitContext {
     }
 
     @Override
-    public TemplateException createParserError(String message) {
+    public TemplateException.Builder error(String message) {
         return errorFun.apply(message);
     }
 

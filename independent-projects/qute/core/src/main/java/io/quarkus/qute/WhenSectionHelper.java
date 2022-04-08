@@ -160,7 +160,9 @@ public class WhenSectionHelper implements SectionHelper {
                     }
                 }
             } else {
-                throw block.createParserError("Invalid case block used in a {#when} section: " + block.getLabel());
+                // this should never happen
+                throw block.error("Invalid case block used in a \\{#when\\} section: {label}")
+                        .argument("label", block.getLabel()).origin(block.getOrigin()).build();
             }
             return previousScope;
         }

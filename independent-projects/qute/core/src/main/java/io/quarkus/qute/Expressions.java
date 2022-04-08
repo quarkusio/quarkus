@@ -37,14 +37,17 @@ public final class Expressions {
             String params = value.substring(start + 1, value.length() - 1);
             return splitParts(params, PARAMS_SPLIT_CONFIG);
         }
-        throw Parser.parserError("invalid virtual method in {" + exprValue + "}", origin);
+        throw Parser.error(ParserError.INVALID_VIRTUAL_METHOD, "invalid virtual method in \\{{exprValue}}", origin)
+                .argument("exprValue", exprValue).build();
     }
 
     public static String parseBracketContent(String value, Origin origin, String exprValue) {
         if (value.endsWith(SQUARE_RIGHT_BRACKET)) {
             return value.substring(1, value.length() - 1);
         }
-        throw Parser.parserError("invalid bracket notation expression in {" + exprValue + "}", origin);
+        throw Parser.error(ParserError.INVALID_BRACKET_EXPRESSION,
+                "invalid bracket notation expression in \\{{exprValue}}", origin)
+                .argument("exprValue", exprValue).build();
     }
 
     public static String buildVirtualMethodSignature(String name, List<String> params) {

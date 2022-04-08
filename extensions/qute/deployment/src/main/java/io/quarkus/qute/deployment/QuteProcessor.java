@@ -90,6 +90,7 @@ import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
 import io.quarkus.qute.LoopSectionHelper;
@@ -171,23 +172,33 @@ public class QuteProcessor {
 
         for (IncorrectExpressionBuildItem incorrectExpression : incorrectExpressions) {
             if (incorrectExpression.reason != null) {
-                errors.add(new TemplateException(incorrectExpression.origin, String.format(
-                        "Incorrect expression found: {%s}\n\t- %s\n\t- at %s:%s",
-                        incorrectExpression.expression, incorrectExpression.reason,
-                        findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
-                        incorrectExpression.origin.getLine())));
+                errors.add(TemplateException.builder()
+                        .code(Code.INCORRECT_EXPRESSION)
+                        .origin(incorrectExpression.origin)
+                        .message("Incorrect expression found: \\{{}\\}\n\t- {}\n\t- at {}:{}")
+                        .arguments(incorrectExpression.expression, incorrectExpression.reason,
+                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
+                                incorrectExpression.origin.getLine())
+                        .build());
             } else if (incorrectExpression.clazz != null) {
-                errors.add(new TemplateException(incorrectExpression.origin, String.format(
-                        "Incorrect expression found: {%s}\n\t- property/method [%s] not found on class [%s] nor handled by an extension method\n\t- at %s:%s",
-                        incorrectExpression.expression, incorrectExpression.property, incorrectExpression.clazz,
-                        findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
-                        incorrectExpression.origin.getLine())));
+                errors.add(TemplateException.builder()
+                        .code(Code.INCORRECT_EXPRESSION)
+                        .origin(incorrectExpression.origin)
+                        .message(
+                                "Incorrect expression found: \\{{}}\n\t- property/method [{}] not found on class [{}] nor handled by an extension method\n\t- at {}:{}")
+                        .arguments(incorrectExpression.expression, incorrectExpression.property, incorrectExpression.clazz,
+                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
+                                incorrectExpression.origin.getLine())
+                        .build());
             } else {
-                errors.add(new TemplateException(incorrectExpression.origin, String.format(
-                        "Incorrect expression found: {%s}\n\t- @Named bean not found for [%s]\n\t- at %s:%s",
-                        incorrectExpression.expression, incorrectExpression.property,
-                        findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
-                        incorrectExpression.origin.getLine())));
+                errors.add(TemplateException.builder()
+                        .code(Code.INCORRECT_EXPRESSION)
+                        .origin(incorrectExpression.origin)
+                        .message("Incorrect expression found: \\{{}}\n\t- @Named bean not found for [{}]\n\t- at {}:{}")
+                        .arguments(incorrectExpression.expression, incorrectExpression.property,
+                                findTemplatePath(analysis, incorrectExpression.origin.getTemplateGeneratedId()),
+                                incorrectExpression.origin.getLine())
+                        .build());
             }
         }
 
@@ -2448,6 +2459,18 @@ public class QuteProcessor {
         public void nextPart() {
             filter = null;
             declaredMembersOnly = null;
+        }
+
+    }
+
+    enum Code implements ErrorCode {
+
+        INCORRECT_EXPRESSION,
+        ;
+
+        @Override
+        public String getName() {
+            return "BUILD_" + name();
         }
 
     }

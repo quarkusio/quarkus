@@ -22,8 +22,10 @@ class EvaluatorImpl implements Evaluator {
     private final List<ValueResolver> resolvers;
     private final Map<String, List<NamespaceResolver>> namespaceResolvers;
     private final boolean strictRendering;
+    private final ErrorInitializer initializer;
 
-    EvaluatorImpl(List<ValueResolver> valueResolvers, List<NamespaceResolver> namespaceResolvers, boolean strictRendering) {
+    EvaluatorImpl(List<ValueResolver> valueResolvers, List<NamespaceResolver> namespaceResolvers, boolean strictRendering,
+            ErrorInitializer errorInitializer) {
         this.resolvers = valueResolvers;
         Map<String, List<NamespaceResolver>> namespaceResolversMap = new HashMap<>();
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
@@ -46,6 +48,7 @@ class EvaluatorImpl implements Evaluator {
         }
         this.namespaceResolvers = namespaceResolversMap;
         this.strictRendering = strictRendering;
+        this.initializer = errorInitializer;
     }
 
     @Override
@@ -55,10 +58,13 @@ class EvaluatorImpl implements Evaluator {
             parts = expression.getParts().iterator();
             List<NamespaceResolver> matching = namespaceResolvers.get(expression.getNamespace());
             if (matching == null) {
-                return CompletedStage.failure(new TemplateException(expression.getOrigin(),
-                        String.format("No namespace resolver found for [%s] in expression {%s} in template %s on line %s",
-                                expression.getNamespace(), expression.toOriginalString(),
-                                expression.getOrigin().getTemplateId(), expression.getOrigin().getLine())));
+                return CompletedStage.failure(
+                        initializer.error("No namespace resolver found for [{namespace}] in expression \\{{expression}\\}")
+                                .code(Code.NAMESPACE_RESOLVER_NOT_FOUND)
+                                .argument("namespace", expression.getNamespace())
+                                .argument("expression", expression.toOriginalString())
+                                .origin(expression.getOrigin())
+                                .build());
             }
             EvalContext context = new EvalContextImpl(false, null, resolutionContext, parts.next());
             if (matching.size() == 1) {
@@ -222,16 +228,33 @@ class EvaluatorImpl implements Evaluator {
         return CompletedStage.of(result);
     }
 
-    private static TemplateException propertyNotFound(Object result, Expression expression) {
+    private TemplateException propertyNotFound(Object result, Expression expression) {
         String propertyMessage;
         if (result instanceof NotFound) {
             propertyMessage = ((NotFound) result).asMessage();
         } else {
             propertyMessage = "Property not found";
         }
-        return new TemplateException(expression.getOrigin(),
-                String.format("%s in expression {%s} in template %s on line %s", propertyMessage, expression.toOriginalString(),
-                        expression.getOrigin().getTemplateId(), expression.getOrigin().getLine()));
+        return initializer.error("{prop} in expression \\{{expression}\\}")
+                .code(Code.PROPERTY_NOT_FOUND)
+                .origin(expression.getOrigin())
+                .arguments(Map.of("prop", propertyMessage, "expression", expression.toOriginalString()))
+                .build();
+    }
+
+    enum Code implements ErrorCode {
+
+        PROPERTY_NOT_FOUND,
+
+        NAMESPACE_RESOLVER_NOT_FOUND,
+
+        ;
+
+        @Override
+        public String getName() {
+            return "EVALUATOR_" + name();
+        }
+
     }
 
     static class EvalContextImpl implements EvalContext {

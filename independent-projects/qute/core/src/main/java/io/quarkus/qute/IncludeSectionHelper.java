@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Futures.evaluateParams;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -99,11 +98,11 @@ public class IncludeSectionHelper implements SectionHelper {
             for (SectionBlock block : context.getBlocks()) {
                 String name = block.id.equals(MAIN_BLOCK_NAME) ? DEFAULT_NAME : block.label;
                 if (extendingBlocks.put(name, block) != null) {
-                    Origin origin = context.getOrigin();
-                    StringBuilder msg = new StringBuilder(
-                            "Multiple blocks define the content for the {#insert} section of name [" + name + "]");
-                    origin.appendTo(msg);
-                    throw new TemplateException(origin, msg.toString());
+                    throw block.error("multiple blocks define the content for the \\{#insert\\} section of name [{name}]")
+                            .code(Code.MULTIPLE_INSERTS_OF_NAME)
+                            .origin(context.getOrigin())
+                            .argument("name", name)
+                            .build();
                 }
             }
 
@@ -131,15 +130,30 @@ public class IncludeSectionHelper implements SectionHelper {
                 public Template get() {
                     Template template = engine.getTemplate(templateId);
                     if (template == null) {
-                        Origin origin = context.getOrigin();
-                        StringBuilder msg = new StringBuilder(
-                                "Included template [" + templateId + "] not found");
-                        origin.appendTo(msg);
-                        throw new TemplateException(origin, msg.toString());
+                        throw engine.error("included template [{templateId}] not found")
+                                .code(Code.TEMPLATE_NOT_FOUND)
+                                .argument("templateId", templateId)
+                                .origin(context.getOrigin())
+                                .build();
                     }
                     return template;
                 }
             }, extendingBlocks, params);
+        }
+
+    }
+
+    enum Code implements ErrorCode {
+
+        MULTIPLE_INSERTS_OF_NAME,
+
+        TEMPLATE_NOT_FOUND,
+
+        ;
+
+        @Override
+        public String getName() {
+            return "INCLUDE_" + name();
         }
 
     }

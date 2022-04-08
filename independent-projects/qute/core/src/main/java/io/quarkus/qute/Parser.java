@@ -4,6 +4,7 @@ import static java.util.function.Predicate.not;
 
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
+import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.io.Reader;
@@ -32,7 +33,7 @@ import org.jboss.logging.Logger;
 /**
  * Simple non-reusable parser.
  */
-class Parser implements Function<String, Expression>, ParserHelper {
+class Parser implements Function<String, Expression>, ParserHelper, ParserDelegate, WithOrigin {
 
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
     static final String ROOT_HELPER_NAME = "$root";
@@ -115,7 +116,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     Template parse() {
 
-        sectionStack.addFirst(SectionNode.builder(ROOT_HELPER_NAME, origin(0), this, this::parserError)
+        sectionStack.addFirst(SectionNode.builder(ROOT_HELPER_NAME, origin(0), this, this::error)
                 .setEngine(engine)
                 .setHelperFactory(ROOT_SECTION_HELPER_FACTORY));
 
@@ -143,25 +144,33 @@ class Parser implements Function<String, Expression>, ParserHelper {
                     flushText();
                 } else {
                     String reason;
+                    ErrorCode code;
                     if (state == State.TAG_INSIDE_STRING_LITERAL) {
                         reason = "unterminated string literal";
+                        code = ParserError.UNTERMINATED_STRING_LITERAL;
                     } else if (state == State.TAG_INSIDE) {
-                        reason = "unterminated tag";
+                        reason = "unterminated section";
+                        code = ParserError.UNTERMINATED_SECTION;
                     } else {
                         reason = "unexpected state [" + state + "]";
+                        code = ParserError.GENERAL_ERROR;
                     }
-                    throw parserError(
-                            "unexpected non-text buffer at the end of the template - " + reason + ": "
-                                    + buffer);
+                    throw error(code,
+                            "unexpected non-text buffer at the end of the template - {reason}: {buffer}")
+                                    .argument("reason", reason)
+                                    .argument("buffer", buffer)
+                                    .build();
                 }
             }
 
             SectionNode.Builder root = sectionStack.peek();
             if (root == null) {
-                throw parserError("no root section found");
+                throw error(ParserError.GENERAL_ERROR, "no root section found").build();
             }
             if (!root.helperName.equals(ROOT_HELPER_NAME)) {
-                throw parserError("unterminated section [" + root.helperName + "] detected");
+                throw error(ParserError.UNTERMINATED_SECTION, "unterminated section [{tag}] detected")
+                        .argument("tag", root.helperName)
+                        .build();
             }
             TemplateImpl template = new TemplateImpl(engine, root.build(), templateId, generatedId, variant);
 
@@ -220,7 +229,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 lineSeparator(character);
                 break;
             default:
-                throw parserError("unknown parsing state: " + state);
+                throw error(ParserError.GENERAL_ERROR, "unknown parsing state: {state}").argument("state", state).build();
         }
     }
 
@@ -394,12 +403,16 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 isEmptySection = true;
             }
 
-            Iterator<String> iter = splitSectionParams(content, this::parserError);
+            Iterator<String> iter = splitSectionParams(content, this);
             if (!iter.hasNext()) {
-                throw parserError("no helper name declared");
+                throw error(ParserError.NO_SECTION_NAME, "no section name declared for {tag}").argument("tag", tag).build();
             }
             String sectionName = iter.next();
             sectionName = sectionName.substring(1, sectionName.length());
+
+            if (sectionName.isBlank()) {
+                throw error(ParserError.NO_SECTION_NAME, "no section name declared for {tag}").argument("tag", tag).build();
+            }
 
             SectionNode.Builder lastSection = sectionStack.peek();
             // Add a section block if the section name matches a section block label
@@ -409,7 +422,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                             && !engine.getSectionHelperFactories().containsKey(sectionName))) {
 
                 // => New section block
-                SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this::parserError)
+                SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this::error)
                         .setOrigin(origin(0)).setLabel(sectionName);
                 lastSection.addBlock(block);
 
@@ -424,10 +437,12 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 // => New section
                 SectionHelperFactory<?> factory = engine.getSectionHelperFactory(sectionName);
                 if (factory == null) {
-                    throw parserError("no section helper found for " + tag);
+                    throw error(ParserError.NO_SECTION_HELPER_FOUND, "no section helper found for {tag}")
+                            .argument("tag", tag)
+                            .build();
                 }
                 SectionNode.Builder sectionNode = SectionNode
-                        .builder(sectionName, origin(0), this, this::parserError)
+                        .builder(sectionName, origin(0), this, this::error)
                         .setEngine(engine)
                         .setHelperFactory(factory);
 
@@ -457,18 +472,25 @@ class Parser implements Function<String, Expression>, ParserHelper {
                     && !section.helperName.equals(name)) {
                 // Non-main block end, e.g. {/else}
                 if (!name.isEmpty() && !block.getLabel().equals(name)) {
-                    throw parserError(
-                            "section block end tag [" + name + "] does not match the start tag [" + block.getLabel() + "]");
+                    throw error(ParserError.SECTION_BLOCK_END_DOES_NOT_MATCH_START,
+                            "section block end tag [{name}] does not match the start tag [{tagName}]")
+                                    .argument("name", name)
+                                    .argument("tagName", block.getLabel()).build();
                 }
                 section.endBlock();
             } else {
                 // Section end, e.g. {/if}
                 if (section.helperName.equals(ROOT_HELPER_NAME)) {
-                    throw parserError("no section start tag found for " + tag);
+                    throw error(ParserError.SECTION_START_NOT_FOUND, "section start tag found for {tag}")
+                            .argument("tag", tag)
+                            .build();
                 }
                 if (!name.isEmpty() && !section.helperName.equals(name)) {
-                    throw parserError(
-                            "section end tag [" + name + "] does not match the start tag [" + section.helperName + "]");
+                    throw error(ParserError.SECTION_END_DOES_NOT_MATCH_START,
+                            "section end tag [{name}] does not match the start tag [{tag}]")
+                                    .argument("name", name)
+                                    .argument("tag", section.helperName)
+                                    .build();
                 }
                 // Pop the section and its main block
                 section = sectionStack.pop();
@@ -486,7 +508,10 @@ class Parser implements Function<String, Expression>, ParserHelper {
             List<String> parts = Expressions.splitParts(content.substring(1).trim(),
                     Expressions.PARAM_DECLARATION_SPLIT_CONFIG);
             if (parts.size() != 2) {
-                throw parserError("invalid parameter declaration " + START_DELIMITER + buffer.toString() + END_DELIMITER);
+                throw error(ParserError.INVALID_PARAM_DECLARATION, "invalid parameter declaration {param}")
+                        .argument("param", START_DELIMITER + buffer.toString() + END_DELIMITER)
+                        .origin(origin(0))
+                        .build();
             }
             String value = parts.get(0);
             String key = parts.get(1);
@@ -500,17 +525,24 @@ class Parser implements Function<String, Expression>, ParserHelper {
         this.buffer = new StringBuilder();
     }
 
-    private TemplateException parserError(String message) {
-        return parserError(message, origin(0));
+    public TemplateException.Builder error(String message) {
+        return error(ParserError.GENERAL_ERROR, message, null);
     }
 
-    static TemplateException parserError(String message, Origin origin) {
-        StringBuilder builder = new StringBuilder("Parser error");
-        origin.appendTo(builder);
-        builder.append(": ")
-                .append(message);
-        return new TemplateException(origin,
-                builder.toString());
+    private TemplateException.Builder error(ErrorCode code, String message) {
+        return error(code, message, origin(0));
+    }
+
+    static TemplateException.Builder error(ErrorCode code, String message, Origin origin) {
+        return TemplateException.builder()
+                .code(code)
+                .origin(origin)
+                .message("Parser error{#if origin.hasNonGeneratedTemplateId??} in{origin}{/if}: " + message);
+    }
+
+    @Override
+    public Origin getOrigin() {
+        return origin(0);
     }
 
     private void processParams(String tag, String label, Iterator<String> iter, SectionBlock.Builder block) {
@@ -587,7 +619,11 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 .filter(not(params::containsKey))
                 .collect(Collectors.toList());
         if (!undeclaredParams.isEmpty()) {
-            throw parserError("mandatory section parameters not declared for " + tag + ": " + undeclaredParams);
+            throw error(ParserError.MANDATORY_SECTION_PARAMS_MISSING,
+                    "mandatory section parameters not declared for {tag}: {undeclaredParams}")
+                            .argument("tag", tag)
+                            .argument("undeclaredParams", undeclaredParams)
+                            .build();
         }
 
         params.forEach(block::addParameter);
@@ -638,7 +674,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
         return -1;
     }
 
-    static Iterator<String> splitSectionParams(String content, Function<String, RuntimeException> errorFun) {
+    static <B extends ErrorInitializer & WithOrigin> Iterator<String> splitSectionParams(String content, B block) {
 
         boolean stringLiteral = false;
         short composite = 0;
@@ -686,7 +722,11 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
         if (buffer.length() > 0) {
             if (stringLiteral || composite > 0) {
-                throw errorFun.apply("unterminated string literal or composite parameter detected for [" + content + "]");
+                throw block.error("unterminated string literal or composite parameter detected for [{content}]")
+                        .argument("content", content)
+                        .code(ParserError.UNTERMINATED_STRING_LITERAL_OR_COMPOSITE_PARAMETER)
+                        .origin(block.getOrigin())
+                        .build();
             }
             parts.add(buffer.toString());
         }
@@ -767,7 +807,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
         }
 
         if (strParts.isEmpty()) {
-            throw parserError("empty expression found {" + value + "}", origin);
+            throw error(ParserError.EMPTY_EXPRESSION, "empty expression found \\{{value}\\}", origin)
+                    .argument("value", value)
+                    .build();
         }
 
         // Safe expressions
@@ -785,7 +827,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
         while (strPartsIterator.hasNext()) {
             Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin, value);
             if (!isValidIdentifier(part.getName())) {
-                throw parserError("invalid identifier found {" + value + "}", origin);
+                throw error(ParserError.INVALID_IDENTIFIER, "invalid identifier found [{value}]", origin)
+                        .argument("value", value)
+                        .build();
             }
             if (first == null) {
                 first = part;
@@ -817,10 +861,11 @@ class Parser implements Function<String, Expression>, ParserHelper {
             if (literal != null && !Results.isNotFound(literal)) {
                 value = literal.toString();
             } else {
-                StringBuilder builder = new StringBuilder(literal == null ? "Null" : "Non-literal");
-                builder.append(" value used in bracket notation [").append(value).append("]");
-                origin.appendTo(builder);
-                throw new TemplateException(origin, builder.toString());
+                throw TemplateException.builder()
+                        .message((literal == null ? "Null" : "Non-literal")
+                                + " value used in bracket notation [{value}] {origin}")
+                        .argument("value", value)
+                        .build();
             }
         }
 
@@ -1040,7 +1085,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Template ").append(templateId).append(" at line ").append(line);
+            appendTo(builder);
             return builder.toString();
         }
 

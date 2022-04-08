@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Booleans.isFalsy;
 
-import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -27,9 +26,9 @@ public class IfSectionHelper implements SectionHelper {
 
     IfSectionHelper(SectionInitContext context) {
         List<ConditionBlock> conditionBlocks = new ArrayList<>();
-        for (SectionBlock part : context.getBlocks()) {
-            if (SectionHelperFactory.MAIN_BLOCK_NAME.equals(part.label) || ELSE.equals(part.label)) {
-                conditionBlocks.add(new ConditionBlock(part, context));
+        for (SectionBlock block : context.getBlocks()) {
+            if (SectionHelperFactory.MAIN_BLOCK_NAME.equals(block.label) || ELSE.equals(block.label)) {
+                conditionBlocks.add(new ConditionBlock(block, context));
             }
         }
         if (conditionBlocks.size() == 1) {
@@ -204,7 +203,7 @@ public class IfSectionHelper implements SectionHelper {
 
         public ConditionBlock(SectionBlock block, SectionInitContext context) {
             this.section = block;
-            List<Object> params = parseParams(new ArrayList<>(block.parameters.values()), context);
+            List<Object> params = parseParams(new ArrayList<>(block.parameters.values()), block);
             if (!params.isEmpty() && !SectionHelperFactory.MAIN_BLOCK_NAME.equals(block.label)) {
                 params = params.subList(1, params.size());
             }
@@ -501,9 +500,9 @@ public class IfSectionHelper implements SectionHelper {
 
     }
 
-    static List<Object> parseParams(List<Object> params, ParserDelegate parserDelegate) {
+    static <B extends ErrorInitializer & WithOrigin> List<Object> parseParams(List<Object> params, B block) {
 
-        replaceOperatorsAndCompositeParams(params, parserDelegate);
+        replaceOperatorsAndCompositeParams(params, block);
         int highestPrecedence = getHighestPrecedence(params);
 
         if (!isGroupingNeeded(params)) {
@@ -558,7 +557,7 @@ public class IfSectionHelper implements SectionHelper {
                 ret.addAll(params.subList(lastGroupdIdx + 1, params.size()));
             }
         }
-        return parseParams(ret, parserDelegate);
+        return parseParams(ret, block);
     }
 
     private static boolean isGroupingNeeded(List<Object> params) {
@@ -567,7 +566,8 @@ public class IfSectionHelper implements SectionHelper {
                 .count() > 1;
     }
 
-    private static void replaceOperatorsAndCompositeParams(List<Object> params, ParserDelegate parserDelegate) {
+    private static <B extends ErrorInitializer & WithOrigin> void replaceOperatorsAndCompositeParams(List<Object> params,
+            B block) {
         for (ListIterator<Object> iterator = params.listIterator(); iterator.hasNext();) {
             Object param = iterator.next();
             if (param instanceof String) {
@@ -575,8 +575,12 @@ public class IfSectionHelper implements SectionHelper {
                 Operator operator = Operator.from(stringParam);
                 if (operator != null) {
                     if (operator.isBinary() && !iterator.hasNext()) {
-                        throw parserDelegate.createParserError(
-                                "binary operator [" + operator + "] set but the second operand not present for {#if} section");
+                        throw block.error(
+                                "binary operator [{operator}] set but the second operand not present for \\{#if\\} section")
+                                .argument("operator", operator)
+                                .code(Code.BINARY_OPERATOR_MISSING_SECOND_OPERAND)
+                                .origin(block.getOrigin())
+                                .build();
                     }
                     iterator.set(operator);
                 } else {
@@ -585,13 +589,13 @@ public class IfSectionHelper implements SectionHelper {
                         iterator.set(Operator.NOT);
                         stringParam = stringParam.substring(1);
                         if (stringParam.charAt(0) == Parser.START_COMPOSITE_PARAM) {
-                            iterator.add(processCompositeParam(stringParam, parserDelegate));
+                            iterator.add(processCompositeParam(stringParam, block));
                         } else {
                             iterator.add(stringParam);
                         }
                     } else {
                         if (stringParam.charAt(0) == Parser.START_COMPOSITE_PARAM) {
-                            iterator.set(processCompositeParam(stringParam, parserDelegate));
+                            iterator.set(processCompositeParam(stringParam, block));
                         }
                     }
                 }
@@ -612,15 +616,16 @@ public class IfSectionHelper implements SectionHelper {
         return highestPrecedence;
     }
 
-    static List<Object> processCompositeParam(String stringParam, ParserDelegate parserDelegate) {
+    static <B extends ErrorInitializer & WithOrigin> List<Object> processCompositeParam(String stringParam, B block) {
         // Composite params
         if (!stringParam.endsWith("" + Parser.END_COMPOSITE_PARAM)) {
             throw new TemplateException("Invalid composite parameter found: " + stringParam);
         }
         List<Object> split = new ArrayList<>();
-        Parser.splitSectionParams(stringParam.substring(1, stringParam.length() - 1), TemplateException::new)
+        Parser.splitSectionParams(stringParam.substring(1, stringParam.length() - 1),
+                block)
                 .forEachRemaining(split::add);
-        return parseParams(split, parserDelegate);
+        return parseParams(split, block);
     }
 
     @SuppressWarnings("unchecked")
@@ -666,6 +671,22 @@ public class IfSectionHelper implements SectionHelper {
             throw new TemplateException("Unsupported param type: " + param);
         }
         return condition;
+    }
+
+    enum Code implements ErrorCode {
+
+        /**
+         * <code>{#if foo >}{/}</code>
+         */
+        BINARY_OPERATOR_MISSING_SECOND_OPERAND,
+
+        ;
+
+        @Override
+        public String getName() {
+            return "IF_" + name();
+        }
+
     }
 
 }

@@ -1,7 +1,6 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.qute.IfSectionHelper.Operator;
@@ -118,8 +117,8 @@ public class IfSectionTest {
     @Test
     public void testParserErrors() {
         // Missing operand
-        assertParserError("{#if foo >}{/}",
-                "Parser error on line 1: binary operator [GT] set but the second operand not present for {#if} section",
+        ParserTest.assertParserError("{#if foo >}{/}", IfSectionHelper.Code.BINARY_OPERATOR_MISSING_SECOND_OPERAND,
+                "Parser error: binary operator [GT] set but the second operand not present for {#if} section",
                 1);
     }
 
@@ -220,7 +219,7 @@ public class IfSectionTest {
             engine.parse("{#if val.is.not.there}NOK{#else}OK{/if}").render();
             fail();
         } catch (TemplateException expected) {
-            assertEquals("Entry \"val\" not found in the data map in expression {val.is.not.there} in template 1 on line 1",
+            assertEquals("Rendering error: Entry \"val\" not found in the data map in expression {val.is.not.there}",
                     expected.getMessage());
         }
         assertEquals("OK", engine.parse("{#if val.is.not.there??}NOK{#else}OK{/if}").render());
@@ -258,19 +257,6 @@ public class IfSectionTest {
     public enum ContentStatus {
         NEW,
         ACCEPTED
-    }
-
-    private void assertParserError(String template, String message, int line) {
-        Engine engine = Engine.builder().addDefaultSectionHelpers().build();
-        try {
-            engine.parse(template);
-            fail("No parser error found");
-        } catch (TemplateException expected) {
-            assertNotNull(expected.getOrigin());
-            assertEquals(line, expected.getOrigin().getLine(), "Wrong line");
-            assertEquals(message,
-                    expected.getMessage());
-        }
     }
 
 }

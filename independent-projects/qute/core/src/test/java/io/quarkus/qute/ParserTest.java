@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import io.quarkus.qute.TemplateException.Builder;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.Reader;
@@ -24,28 +25,46 @@ public class ParserTest {
 
     @Test
     public void testSectionEndValidation() {
-        assertParserError("{#if test}Hello {name}!{/for}",
-                "Parser error on line 1: section end tag [for] does not match the start tag [if]", 1);
+        assertParserError("{#if test}Hello {name}!{/for}", ParserError.SECTION_END_DOES_NOT_MATCH_START,
+                "Parser error: section end tag [for] does not match the start tag [if]", 1);
+        assertParserError("{#for i in items}{#if test}Hello {name}!{/for}", ParserError.SECTION_END_DOES_NOT_MATCH_START,
+                "Parser error: section end tag [for] does not match the start tag [if]", 1);
+    }
+
+    @Test
+    public void testSectionBlockEndValidation() {
+        assertParserError("{#if test}Hello{#else}Hi{/elsa}{/if}", ParserError.SECTION_BLOCK_END_DOES_NOT_MATCH_START,
+                "Parser error: section block end tag [elsa] does not match the start tag [else]", 1);
     }
 
     @Test
     public void testUnterminatedTag() {
-        assertParserError("{#if test}Hello {name}",
-                "Parser error on line 1: unterminated section [if] detected", 1);
+        assertParserError("{#if test}Hello {name}", ParserError.UNTERMINATED_SECTION,
+                "Parser error: unterminated section [if] detected", 1);
+        assertParserError("{#if test}Hello {#for i in items}", ParserError.UNTERMINATED_SECTION,
+                "Parser error: unterminated section [for] detected", 1);
     }
 
     @Test
     public void testSectionEndWithoutStart() {
-        assertParserError("Hello {/}",
-                "Parser error on line 1: no section start tag found for {/}", 1);
-        assertParserError("{#if true}Bye...{/if} Hello {/if}",
-                "Parser error on line 1: no section start tag found for {/if}", 1);
+        assertParserError("Hello {/}", ParserError.SECTION_START_NOT_FOUND,
+                "Parser error: section start tag found for {/}", 1);
+        assertParserError("{#if true}Bye...{/if} Hello {/if}", ParserError.SECTION_START_NOT_FOUND,
+                "Parser error: section start tag found for {/if}", 1);
     }
 
     @Test
     public void testNonexistentHelper() {
-        assertParserError("Hello!\n {#foo test/}",
-                "Parser error on line 2: no section helper found for {#foo test/}", 2);
+        assertParserError("Hello!\n {#foo test/}", ParserError.NO_SECTION_HELPER_FOUND,
+                "Parser error: no section helper found for {#foo test/}", 2);
+    }
+
+    @Test
+    public void testNoSectionName() {
+        assertParserError("Hello! {# foo=1 /}", ParserError.NO_SECTION_NAME,
+                "Parser error: no section name declared for {# foo=1 /}", 1);
+        assertParserError("Hello! {# for i in items}{/for}", ParserError.NO_SECTION_NAME,
+                "Parser error: no section name declared for {# for i in items}", 1);
     }
 
     @Test
@@ -173,7 +192,7 @@ public class ParserTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.getTemplate("foo.html"))
                 .withMessage(
-                        "Parser error in template [foo.html] on line 1: mandatory section parameters not declared for {#if}: [condition]")
+                        "Parser error in template [foo.html] line 1: mandatory section parameters not declared for {#if}: [condition]")
                 .hasFieldOrProperty("origin");
     }
 
@@ -184,11 +203,11 @@ public class ParserTest {
         assertParams("(item.active && (item.sold || false)) || user.loggedIn", "(item.active && (item.sold || false))", "||",
                 "user.loggedIn");
         assertParams("this.get('name') is null", "this.get('name')", "is", "null");
-        assertParserError("{#if 'foo is null}{/}",
-                "Parser error on line 1: unexpected non-text buffer at the end of the template - unterminated string literal: #if 'foo is null}{/}",
+        assertParserError("{#if 'foo is null}{/}", ParserError.UNTERMINATED_STRING_LITERAL,
+                "Parser error: unexpected non-text buffer at the end of the template - unterminated string literal: #if 'foo is null}{/}",
                 1);
-        assertParserError("{#if (foo || bar}{/}",
-                "Parser error on line 1: unterminated string literal or composite parameter detected for [#if (foo || bar]", 1);
+        assertParserError("{#if (foo || bar}{/}", ParserError.UNTERMINATED_STRING_LITERAL_OR_COMPOSITE_PARAMETER,
+                "Parser error: unterminated string literal or composite parameter detected for [#if (foo || bar]", 1);
         assertParams("item.name == 'foo' and item.name is false", "item.name", "==", "'foo'", "and", "item.name", "is",
                 "false");
         assertParams("(item.name == 'foo') and (item.name is false)", "(item.name == 'foo')", "and", "(item.name is false)");
@@ -251,7 +270,7 @@ public class ParserTest {
         Engine engine = Engine.builder().addDefaults().build();
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{foo\nfoo}"))
-                .withMessage("Parser error on line 1: invalid identifier found {foo\nfoo}");
+                .withMessage("Parser error: invalid identifier found [foo\nfoo]");
     }
 
     @Test
@@ -299,8 +318,8 @@ public class ParserTest {
         template = engine.parse("{#for line in map.get(foo).lines}{line}{/for}");
         assertEquals("/foo/bar", template.data("map", map, "foo", "path").render());
 
-        assertParserError("{#if map.get(\"{foo})}Bye...{/if}",
-                "Parser error on line 1: unexpected non-text buffer at the end of the template - unterminated string literal: #if map.get(\"{foo})}Bye...{/if}",
+        assertParserError("{#if map.get(\"{foo})}Bye...{/if}", ParserError.UNTERMINATED_STRING_LITERAL,
+                "Parser error: unexpected non-text buffer at the end of the template - unterminated string literal: #if map.get(\"{foo})}Bye...{/if}",
                 1);
     }
 
@@ -349,36 +368,36 @@ public class ParserTest {
 
     @Test
     public void testInvalidNamespaceExpression() {
-        assertParserError("{data: }",
-                "Parser error on line 1: empty expression found {data:}", 1);
+        assertParserError("{data: }", ParserError.EMPTY_EXPRESSION,
+                "Parser error: empty expression found {data:}", 1);
     }
 
     @Test
     public void testInvalidVirtualMethod() {
-        assertParserError("{foo.baz()(}",
-                "Parser error on line 1: invalid virtual method in {foo.baz()(}", 1);
+        assertParserError("{foo.baz()(}", ParserError.INVALID_VIRTUAL_METHOD,
+                "Parser error: invalid virtual method in {foo.baz()(}", 1);
     }
 
     @Test
     public void testInvalidBracket() {
-        assertParserError("{foo.baz[}",
-                "Parser error on line 1: invalid bracket notation expression in {foo.baz[}", 1);
+        assertParserError("{foo.baz[}", ParserError.INVALID_BRACKET_EXPRESSION,
+                "Parser error: invalid bracket notation expression in {foo.baz[}", 1);
     }
 
     @Test
     public void testInvalidParamDeclaration() {
-        assertParserError("{@com.foo }",
-                "Parser error on line 1: invalid parameter declaration {@com.foo }", 1);
-        assertParserError("{@ com.foo }",
-                "Parser error on line 1: invalid parameter declaration {@ com.foo }", 1);
-        assertParserError("{@com.foo.Bar bar baz}",
-                "Parser error on line 1: invalid parameter declaration {@com.foo.Bar bar baz}", 1);
-        assertParserError("{@}",
-                "Parser error on line 1: invalid parameter declaration {@}", 1);
-        assertParserError("{@\n}",
-                "Parser error on line 1: invalid parameter declaration {@\n}", 1);
-        assertParserError("{@com.foo.Bar<String baz}",
-                "Parser error on line 1: invalid parameter declaration {@com.foo.Bar<String baz}", 1);
+        assertParserError("{@com.foo }", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@com.foo }", 1);
+        assertParserError("{@ com.foo }", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@ com.foo }", 1);
+        assertParserError("{@com.foo.Bar bar baz}", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@com.foo.Bar bar baz}", 1);
+        assertParserError("{@}", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@}", 1);
+        assertParserError("{@\n}", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@\n}", 1);
+        assertParserError("{@com.foo.Bar<String baz}", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@com.foo.Bar<String baz}", 1);
 
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         Template template = engine.parse("{@com.foo.Bar<? extends org.acme.Baz, String> bar} {bar.name}");
@@ -393,6 +412,18 @@ public class ParserTest {
         engine.putTemplate("form-template", engine.parse("{it}"));
         Template foo = engine.parse("{#form foo.codePointCount(0, foo.length) /}");
         assertEquals("3", foo.data("foo", "foo").render());
+    }
+
+    @Test
+    public void testInvalidIdentifier() {
+        assertParserError("{fo\to}", ParserError.INVALID_IDENTIFIER,
+                "Parser error: invalid identifier found [fo\to]", 1);
+    }
+
+    @Test
+    public void testMandatorySectionParas() {
+        assertParserError("{#include /}", ParserError.MANDATORY_SECTION_PARAMS_MISSING,
+                "Parser error: mandatory section parameters not declared for {#include /}: [template]", 1);
     }
 
     public static class Foo {
@@ -411,12 +442,13 @@ public class ParserTest {
 
     }
 
-    private void assertParserError(String template, String message, int line) {
+    static void assertParserError(String template, ErrorCode code, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {
             engine.parse(template);
             fail("No parser error found");
         } catch (TemplateException expected) {
+            assertEquals(code, expected.getCode());
             assertNotNull(expected.getOrigin());
             assertEquals(line, expected.getOrigin().getLine(), "Wrong line");
             assertEquals(message, expected.getMessage());
@@ -435,7 +467,18 @@ public class ParserTest {
     }
 
     private void assertParams(String content, String... expectedParams) {
-        Iterator<String> iter = Parser.splitSectionParams(content, s -> new RuntimeException(s));
+        class Dummy implements ErrorInitializer, WithOrigin {
+            @Override
+            public Origin getOrigin() {
+                return null;
+            }
+
+            @Override
+            public Builder error(String message) {
+                return TemplateException.builder().message(message);
+            }
+        }
+        Iterator<String> iter = Parser.splitSectionParams(content, new Dummy());
         List<String> params = new ArrayList<>();
         while (iter.hasNext()) {
             params.add(iter.next());

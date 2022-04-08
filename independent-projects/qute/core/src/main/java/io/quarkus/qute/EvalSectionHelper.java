@@ -37,14 +37,16 @@ public class EvalSectionHelper implements SectionHelper {
                         template = (TemplateImpl) engine.parse(templateStr);
                     } catch (TemplateException e) {
                         Origin origin = parameters.get(TEMPLATE).getOrigin();
-                        StringBuilder builder = new StringBuilder("Parser error in the evaluated template");
-                        if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-                            builder.append(" in template [").append(origin.getTemplateId()).append("]");
-                        }
-                        builder.append(" on line ").append(origin.getLine()).append(":\n\t")
-                                .append(e.getMessage());
-                        throw new TemplateException(parameters.get(TEMPLATE).getOrigin(),
-                                builder.toString());
+                        throw TemplateException.builder()
+                                .message(
+                                        "Parser error in the evaluated template: {templateId} line {line}:\\n\\t{originalMessage}")
+                                .code(Code.ERROR_IN_EVALUATED_TEMPLATE)
+                                .argument("templateId",
+                                        origin.hasNonGeneratedTemplateId() ? " template [" + origin.getTemplateId() + "]"
+                                                : "")
+                                .argument("line", origin.getLine())
+                                .argument("originalMessage", e.getMessage())
+                                .build();
                     }
                     template.root
                             .resolve(context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null))
@@ -92,6 +94,19 @@ public class EvalSectionHelper implements SectionHelper {
                 }
             }
             return outerScope;
+        }
+
+    }
+
+    enum Code implements ErrorCode {
+
+        ERROR_IN_EVALUATED_TEMPLATE,
+
+        ;
+
+        @Override
+        public String getName() {
+            return "EVAL_" + name();
         }
 
     }

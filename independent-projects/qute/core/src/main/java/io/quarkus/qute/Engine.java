@@ -11,7 +11,7 @@ import java.util.function.Predicate;
  *
  * @see EngineBuilder
  */
-public interface Engine {
+public interface Engine extends ErrorInitializer {
 
     /**
      *

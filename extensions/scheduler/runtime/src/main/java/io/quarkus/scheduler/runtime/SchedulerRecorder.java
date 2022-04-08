@@ -7,6 +7,8 @@ import java.util.function.Supplier;
 import com.cronutils.model.CronType;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
+import io.quarkus.scheduler.common.runtime.SchedulerContext;
 
 @Recorder
 public class SchedulerRecorder {

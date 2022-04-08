@@ -25,7 +25,7 @@ public final class ScheduledBusinessMethodItem extends MultiBuildItem {
         this.method = method;
         this.schedules = schedules;
         this.nonBlocking = hasNonBlockingAnnotation || SchedulerDotNames.COMPLETION_STAGE.equals(method.returnType().name())
-                || SchedulerDotNames.UNI.equals(method.returnType().name());
+                || SchedulerDotNames.UNI.equals(method.returnType().name()) || KotlinUtil.isSuspendMethod(method);
     }
 
     /**

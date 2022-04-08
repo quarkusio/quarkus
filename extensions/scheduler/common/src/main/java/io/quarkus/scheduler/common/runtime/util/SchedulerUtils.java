@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.runtime.util;
+package io.quarkus.scheduler.common.runtime.util;
 
 import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;

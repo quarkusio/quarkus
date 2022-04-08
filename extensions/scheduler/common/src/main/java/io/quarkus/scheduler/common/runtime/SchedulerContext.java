@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.runtime;
+package io.quarkus.scheduler.common.runtime;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;

@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.runtime.util;
+package io.quarkus.scheduler.common.runtime.util;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.runtime;
+package io.quarkus.scheduler.common.runtime;
 
 abstract class DelegateInvoker implements ScheduledInvoker {
 

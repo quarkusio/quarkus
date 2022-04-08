@@ -104,7 +104,6 @@ public class AbstractJvmQuarkusTestExtension {
         }
 
         final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
-        final Path outputDir = PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation);
 
         rootBuilder.add(appClassLocation);
         final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
@@ -152,7 +151,7 @@ public class AbstractJvmQuarkusTestExtension {
             final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);
-            runnerBuilder.setTargetDirectory(outputDir);
+            runnerBuilder.setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation));
             runnerBuilder.setProjectRoot(projectRoot);
             runnerBuilder.setApplicationRoot(rootBuilder.build());
 

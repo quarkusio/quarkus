@@ -1767,6 +1767,7 @@ public class Statuses {
 {/if}
 ----
 
+[[convenient-annotation-for-enums]]
 ==== Convenient Annotation For Enums
 
 There's also a convenient annotation to access enum constants: `@io.quarkus.qute.TemplateEnum`.
@@ -2188,17 +2189,27 @@ Templates::
 * By default, no <<template-locator,template locators>> are registered, i.e. `Engine.getTemplate(String)` will not work. 
 * You can register a custom template locator or parse a template manually and put the reulst in the cache via `Engine.putTemplate(String, Template)`.
 
+Sections::
+* No section helpers are registered by default.
+* The default set of value resolvers can be registered via the convenient `EngineBuilder.addDefaultSectionHelpers()` method and the `EngineBuilder.addDefaults()` method respectively.
+
 Value resolvers:: 
 * No <<value-resolvers,``ValueResolver``s>> are generated automatically.
 ** <<template_extension_methods,`@TemplateExtension` methods>> will not work. 
-** <<template_data,`@TemplateData`>> annotations are ignored.
+** <<template_data,`@TemplateData`>> and <<convenient-annotation-for-enums,`@TemplateEnum`>> annotations are ignored.
+* The default set of value resolvers can be registered via the convenient `EngineBuilder.addDefaultValueResolvers()` method and the `EngineBuilder.addDefaults()` method respectively.
++
+NOTE: Not all functionality provided by the built-in extension methods is covered by the default value resolvers. However, a custom value resolver can be easily built via the `ValueResolver.builder()`.
 * It's recommended to register a `ReflectionValueResolver` instance via `Engine.addValueResolver(new ReflectionValueResolver())` so that Qute can access object properties and call public methods. 
 +
-NOTE: Keep in mind that reflection may not work correctly in some restricted environments or may require additional configuration, e.g. registration in case of a GraalVM native image. 
-* A custom value resolver can be easily built via `ValueResolver.builder()`
+NOTE: Keep in mind that reflection may not work correctly in some restricted environments or may require additional configuration, e.g. registration in case of a GraalVM native image.
+
+User-defined Tags::
+* No user-defined tags are registered automatically.
+* A tag can be registered manually via `Engine.builder().addSectionHelper(new UserTagSectionHelper.Factory("tagName","tagTemplate.html")).build()`
 
 Type-safety::
 * <<typesafe_expressions>> are not validated.
 * <<type-safe-message-bundles,Type-safe message bundles>> are not supported.
 
-Injection:: It is not possible to inject a `Template` instance and vice versa - a template cannot inject a `@Named` CDI bean via the `inject:` namespace.
+Injection:: It is not possible to inject a `Template` instance and vice versa - a template cannot inject a `@Named` CDI bean via the `inject:` and `cdi:` namespace.

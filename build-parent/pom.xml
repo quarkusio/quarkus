@@ -134,11 +134,11 @@
         <webjar.mermaid.version>8.9.1</webjar.mermaid.version>
 
         <!-- revapi API check -->
-        <revapi-maven-plugin.version>0.12.1</revapi-maven-plugin.version>
-        <revapi-java-plugin.version>0.22.0</revapi-java-plugin.version>
+        <revapi-maven-plugin.version>0.14.6</revapi-maven-plugin.version>
+        <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
         <build-helper-plugin.version>1.9.1</build-helper-plugin.version>
-        <revapi-reporter-text.version>0.12.1</revapi-reporter-text.version>
-        <revapi-reporter-json.version>0.2.1</revapi-reporter-json.version>
+        <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
+        <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
          <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
         <revapi.oldVersion>1.6.0.Final</revapi.oldVersion>
         <revapi.newVersion>${project.version}</revapi.newVersion>

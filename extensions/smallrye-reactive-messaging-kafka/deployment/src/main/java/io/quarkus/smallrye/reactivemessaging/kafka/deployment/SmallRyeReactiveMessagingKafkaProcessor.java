@@ -669,6 +669,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         }
         DotName typeName = type.name();
 
+        // Serializer/deserializer implementations
+        ClassInfo implementation = discovery.getImplementorOfWithTypeArgument(
+                serializer ? DotNames.KAFKA_SERIALIZER : DotNames.KAFKA_DESERIALIZER, typeName);
+        if (implementation != null) {
+            return Result.of(implementation.name().toString());
+        }
+
         // statically known serializer/deserializer
         Map<DotName, String> map = serializer ? KNOWN_SERIALIZERS : KNOWN_DESERIALIZERS;
         if (map.containsKey(typeName)) {

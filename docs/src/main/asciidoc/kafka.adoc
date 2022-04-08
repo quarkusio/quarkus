@@ -1455,6 +1455,8 @@ The full set of types supported by the serializer/deserializer autodetection is:
 * `io.vertx.core.buffer.Buffer`
 * `io.vertx.core.json.JsonObject`
 * `io.vertx.core.json.JsonArray`
+* classes for which a direct implementation of `org.apache.kafka.common.serialization.Serializer<T>` / `org.apache.kafka.common.serialization.Deserializer<T>` is present.
+** the implementation needs to specify the type argument `T` as the (de-)serialized type.
 * classes generated from Avro schemas, as well as Avro `GenericRecord`, if Confluent or Apicurio Registry _serde_ is present
 ** in case multiple Avro serdes are present, serializer/deserializer must be configured manually for Avro-generated classes, because autodetection is impossible
 ** see xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio Registry libraries

@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
@@ -29,6 +30,15 @@ class BuildIT extends MojoTestBase {
 
     private RunningInvoker running;
     private File testDir;
+
+    @Test
+    void testCustomTestSourceSets()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/test-source-sets");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(List.of("clean", "verify"), Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+    }
 
     @Test
     void testConditionalDependencies()

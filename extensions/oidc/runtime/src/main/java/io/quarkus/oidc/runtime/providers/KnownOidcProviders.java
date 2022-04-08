@@ -20,6 +20,8 @@ public class KnownOidcProviders {
             return microsoft();
         } else if (OidcTenantConfig.Provider.FACEBOOK == provider) {
             return facebook();
+        } else if (OidcTenantConfig.Provider.SPOTIFY == provider) {
+            return spotify();
         } else if (OidcTenantConfig.Provider.TWITTER == provider) {
             return twitter();
         }
@@ -96,6 +98,26 @@ public class KnownOidcProviders {
         ret.getCredentials().getClientSecret().setMethod(Method.POST_JWT);
         ret.getCredentials().getJwt().setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
         ret.getCredentials().getJwt().setAudience("https://appleid.apple.com/");
+        return ret;
+    }
+
+    private static OidcTenantConfig spotify() {
+        // See https://developer.spotify.com/documentation/general/guides/authorization/code-flow/
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setDiscoveryEnabled(false);
+        ret.setAuthServerUrl("https://accounts.spotify.com");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.setAuthorizationPath("authorize");
+        ret.setTokenPath("api/token");
+        ret.setUserInfoPath("https://api.spotify.com/v1/me");
+
+        OidcTenantConfig.Authentication authentication = ret.getAuthentication();
+        authentication.setAddOpenidScope(false);
+        authentication.setScopes(List.of("user-read-email"));
+        authentication.setUserInfoRequired(true);
+        authentication.setIdTokenRequired(false);
+        authentication.setPkceRequired(true);
+
         return ret;
     }
 }

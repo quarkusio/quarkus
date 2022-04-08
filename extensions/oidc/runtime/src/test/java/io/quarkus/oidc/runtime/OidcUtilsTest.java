@@ -292,6 +292,39 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testAcceptSpotifyProperties() {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SPOTIFY));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals("https://accounts.spotify.com", config.getAuthServerUrl().get());
+        assertEquals(List.of("user-read-email"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testOverrideSpotifyProperties() {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.getToken().setIssuer("http://localhost/wiremock");
+        tenant.authentication.setScopes(List.of("write"));
+        tenant.authentication.setForceRedirectHttpsScheme(false);
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SPOTIFY));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals(List.of("write"), config.authentication.scopes.get());
+        assertEquals("http://localhost/wiremock", config.getToken().getIssuer().get());
+        assertFalse(config.authentication.forceRedirectHttpsScheme.get());
+    }
+
+    @Test
     public void testCorrectTokenType() throws Exception {
         OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
         tokenClaims.setTokenType("access_token");

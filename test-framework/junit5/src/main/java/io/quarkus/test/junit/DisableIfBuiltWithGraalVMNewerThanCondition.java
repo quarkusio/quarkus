@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class DisableIfBuiltWithGraalVMOlderThanCondition implements ExecutionCondition {
+public class DisableIfBuiltWithGraalVMNewerThanCondition implements ExecutionCondition {
 
     private static final String QUARKUS_INTEGRATION_TEST_NAME = QuarkusIntegrationTest.class.getName();
     private static final String NATIVE_IMAGE_TEST_NAME = NativeImageTest.class.getName();
@@ -23,13 +23,13 @@ public class DisableIfBuiltWithGraalVMOlderThanCondition implements ExecutionCon
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
         Optional<AnnotatedElement> element = context.getElement();
-        Optional<DisableIfBuiltWithGraalVMOlderThan> optional = findAnnotation(element,
-                DisableIfBuiltWithGraalVMOlderThan.class);
+        Optional<DisableIfBuiltWithGraalVMNewerThan> optional = findAnnotation(element,
+                DisableIfBuiltWithGraalVMNewerThan.class);
         if (!optional.isPresent()) {
-            return ConditionEvaluationResult.enabled("@DisableIfBuiltWithGraalVMOlderThan was not found");
+            return ConditionEvaluationResult.enabled("@DisableIfBuiltWithGraalVMNewerThan was not found");
         }
         if (!isIntegrationTest(context.getRequiredTestClass())) {
-            return ConditionEvaluationResult.enabled("@DisableIfBuiltWithGraalVMOlderThan was added to an unsupported test");
+            return ConditionEvaluationResult.enabled("@DisableIfBuiltWithGraalVMNewerThan was added to an unsupported test");
         }
 
         GraalVMVersion annotationValue = optional.get().value();
@@ -38,9 +38,9 @@ public class DisableIfBuiltWithGraalVMOlderThanCondition implements ExecutionCon
             org.graalvm.home.Version version = org.graalvm.home.Version
                     .parse(quarkusArtifactProperties.getProperty("metadata.graalvm.version.version"));
             int comparison = annotationValue.compareTo(version);
-            if (comparison > 0) {
+            if (comparison < 0) {
                 return ConditionEvaluationResult.disabled("Native binary was built with GraalVM{version=" + version.toString()
-                        + "} but the test is disabled for GraalVM versions older than " + annotationValue);
+                        + "} but the test is disabled for GraalVM versions newer than " + annotationValue);
             }
             return ConditionEvaluationResult
                     .enabled("Native binary was built with a GraalVM version compatible with the required version by the test");

@@ -62,6 +62,9 @@ public class TenantConfigContext {
         if (config.tokenStateManager.encryptionRequired.orElse(false)) {
             String encSecret = config.tokenStateManager.encryptionSecret
                     .orElse(OidcCommonUtils.clientSecret(config.credentials));
+            if (encSecret == null) {
+                throw new RuntimeException("Secret key for encrypting tokens is missing");
+            }
             if (encSecret.length() < 32) {
                 throw new RuntimeException("Secret key for encrypting tokens must be at least 32 characters long");
             }

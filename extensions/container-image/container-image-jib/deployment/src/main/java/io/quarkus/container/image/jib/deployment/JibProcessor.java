@@ -705,7 +705,7 @@ public class JibProcessor {
 
     private Map<String, String> allLabels(JibConfig jibConfig, ContainerImageConfig containerImageConfig,
             List<ContainerImageLabelBuildItem> containerImageLabels) {
-        if (jibConfig.labels.isEmpty() && containerImageLabels.isEmpty()) {
+        if (jibConfig.labels.isEmpty() && containerImageLabels.isEmpty() && containerImageConfig.labels.isEmpty()) {
             return Collections.emptyMap();
         }
 

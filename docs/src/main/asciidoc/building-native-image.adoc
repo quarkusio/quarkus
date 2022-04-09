@@ -567,7 +567,7 @@ Sample Dockerfile for building with Gradle:
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
 COPY --chown=quarkus:quarkus gradlew /code/gradlew
-COPY --chown=quarkus:quarkus /code/gradle
+COPY --chown=quarkus:quarkus gradle /code/gradle
 COPY --chown=quarkus:quarkus build.gradle /code/
 COPY --chown=quarkus:quarkus settings.gradle /code/
 COPY --chown=quarkus:quarkus gradle.properties /code/

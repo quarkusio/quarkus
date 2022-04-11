@@ -37,7 +37,7 @@ public class ShutdownTimeoutTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setAllowTestClassOutsideDeployment(true)
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

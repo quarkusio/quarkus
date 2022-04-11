@@ -33,7 +33,7 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
             .setUploadPath(uploadDir)
             .setDeleteUploadedFilesOnEnd(false)
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

@@ -60,7 +60,7 @@ public class FormAuthCookiesTestCase {
             "quarkus.http.auth.session.encryption-key=CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT\n";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)

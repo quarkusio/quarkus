@@ -30,7 +30,7 @@ public class LargerThanDefaultFormAttributeMultipartFormInputTest {
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
             .setMaxFormAttributeSize(120000)
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

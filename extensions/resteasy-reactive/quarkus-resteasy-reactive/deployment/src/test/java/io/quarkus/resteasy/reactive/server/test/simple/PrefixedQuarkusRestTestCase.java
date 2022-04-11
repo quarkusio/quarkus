@@ -21,7 +21,7 @@ public class PrefixedQuarkusRestTestCase {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.http.root-path", "/prefix")
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

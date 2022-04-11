@@ -73,7 +73,7 @@ public class MediaTypeFromMessageBodyWriterTestMultiple {
     }
     @RegisterExtension
     static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);

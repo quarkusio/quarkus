@@ -28,7 +28,7 @@ public class MultipartInputTest extends AbstractMultipartTest {
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
             .setDeleteUploadedFilesOnEnd(false)
             .setUploadPath(uploadDir)
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

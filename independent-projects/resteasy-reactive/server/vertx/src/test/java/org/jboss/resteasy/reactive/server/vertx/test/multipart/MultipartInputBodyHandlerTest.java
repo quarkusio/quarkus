@@ -30,7 +30,7 @@ public class MultipartInputBodyHandlerTest extends AbstractMultipartTest {
             .setUploadPath(uploadDir)
             .setDeleteUploadedFilesOnEnd(false)
             .addRouteCustomizer((r) -> r.handler(BodyHandler.create()))
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

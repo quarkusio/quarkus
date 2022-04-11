@@ -43,7 +43,7 @@ public class UriInfoTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest quarkusUnitTest = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);

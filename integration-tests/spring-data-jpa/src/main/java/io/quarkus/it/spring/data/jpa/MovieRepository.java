@@ -13,6 +13,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import io.quarkus.it.spring.data.jpa.test.MovieRating;
+
 /**
  * Demonstrated the use @Query
  */
@@ -75,12 +77,6 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
         String getRating();
 
         Long getCount();
-    }
-
-    interface MovieRating {
-        String getTitle();
-
-        String getRating();
     }
 
     interface MovieProjection {

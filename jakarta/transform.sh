@@ -40,6 +40,14 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   #mvn clean install -DskipTests -DskipITs
   #popd
 
+  # Build Agroal (temporary)
+  rm -rf target/agroal
+  git clone https://github.com/gsmet/agroal.git target/agroal
+  pushd target/agroal
+  git checkout jakarta
+  mvn clean install -DskipTests -DskipITs
+  popd
+
   # Build Quarkus HTTP (temporary)
   rm -rf target/quarkus-http
   git clone https://github.com/quarkusio/quarkus-http.git target/quarkus-http
@@ -354,6 +362,8 @@ build_module "extensions/smallrye-openapi-common"
 build_module "extensions/swagger-ui"
 build_module "extensions/smallrye-openapi"
 build_module "extensions/smallrye-health"
+# TODO: tests are not passing for now, I pinged Jan
+build_module "extensions/smallrye-metrics"
 
 # Persistence
 build_module "extensions/credentials"
@@ -363,6 +373,27 @@ build_module_no_tests "extensions/datasource/common"
 build_module_no_tests "extensions/datasource/deployment-spi/"
 build_module "extensions/devservices"
 build_module "extensions/datasource"
+build_module "extensions/transaction-annotations"
+build_module "extensions/narayana-jta"
+build_module "test-framework/h2"
+# we only build H2 as the others need Agroal for testing
+build_module_only_no_tests "extensions/agroal"
+build_module_only_no_tests "extensions/agroal/spi"
+# this one needs particular care but we will rebuild it properly after
+./mvnw clean install -f "extensions/agroal/runtime" -DskipExtensionValidation
+build_module_only_no_tests "extensions/jdbc"
+build_module "extensions/jdbc/jdbc-h2"
+build_module "extensions/agroal"
+build_module "extensions/jdbc"
+build_module "extensions/caffeine"
+build_module "extensions/panache/panache-hibernate-common"
+build_module "extensions/hibernate-orm"
+build_module "extensions/elasticsearch-rest-client-common"
+build_module "extensions/elasticsearch-rest-client"
+build_module "extensions/elasticsearch-rest-high-level-client"
+build_module "extensions/hibernate-search-orm-elasticsearch"
+build_module "extensions/avro"
+build_module "extensions/hibernate-search-orm-coordination-outbox-polling"
 
 exit 0
 

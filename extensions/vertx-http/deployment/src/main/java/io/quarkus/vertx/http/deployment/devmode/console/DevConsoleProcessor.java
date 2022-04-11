@@ -508,22 +508,30 @@ public class DevConsoleProcessor {
 
         Runtime rt = Runtime.getRuntime();
         OS os = OS.determineOS();
+        String[] command = null;
         try {
             switch (os) {
                 case MAC:
-                    rt.exec(new String[] { "open", url });
+                    command = new String[] { "open", url };
                     break;
                 case LINUX:
-                    rt.exec(new String[] { "xdg-open", url });
+                    command = new String[] { "xdg-open", url };
                     break;
                 case WINDOWS:
-                    rt.exec(new String[] { "rundll32", "url.dll,FileProtocolHandler", url });
+                    command = new String[] { "rundll32", "url.dll,FileProtocolHandler", url };
                     break;
                 case OTHER:
                     log.error("Cannot launch browser on this operating system");
             }
+            if (command != null) {
+                rt.exec(command);
+            }
         } catch (Exception e) {
-            log.error("Failed to launch browser", e);
+            log.debug("Failed to launch browser", e);
+            if (command != null) {
+                log.warn("Unable to open browser using command: '" + String.join(" ", command) + "'. Failure is: '"
+                        + e.getMessage() + "'");
+            }
         }
 
     }

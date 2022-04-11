@@ -152,6 +152,9 @@ public class KnativeProcessor {
             result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage())));
         });
 
+        config.getContainerName().ifPresent(containerName -> result
+                .add(new DecoratorBuildItem(KNATIVE, new ChangeContainerNameDecorator(containerName))));
+
         Stream.concat(config.convertToBuildItems().stream(),
                 envs.stream().filter(e -> e.getTarget() == null || KNATIVE.equals(e.getTarget()))).forEach(e -> {
                     result.add(new DecoratorBuildItem(KNATIVE,

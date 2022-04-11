@@ -151,6 +151,7 @@ public class OpenshiftProcessor {
             image.map(ContainerImageInfoBuildItem::getGroup).ifPresent(g -> {
                 result.add(new ConfiguratorBuildItem(new ApplyImageGroupConfigurator(g)));
             });
+
         }
         return result;
     }
@@ -226,6 +227,17 @@ public class OpenshiftProcessor {
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, i.getImage())));
         });
+        if ((!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I) && !capabilities.isPresent(Capability.OPENSHIFT))
+                || (capabilities.isPresent(Capability.OPENSHIFT) && !(capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
+                        || capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)))) {
+            result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator()));
+        }
+
+        config.getContainerName().ifPresent(containerName -> {
+            result.add(new DecoratorBuildItem(OPENSHIFT, new ChangeContainerNameDecorator(containerName)));
+            result.add(new DecoratorBuildItem(OPENSHIFT, new ChangeContainerNameInDeploymentTriggerDecorator(containerName)));
+        });
+
         result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyImagePullPolicyDecorator(name, config.getImagePullPolicy())));
         result.add(new DecoratorBuildItem(OPENSHIFT, new AddLabelDecorator(name, OPENSHIFT_APP_RUNTIME, QUARKUS)));
 

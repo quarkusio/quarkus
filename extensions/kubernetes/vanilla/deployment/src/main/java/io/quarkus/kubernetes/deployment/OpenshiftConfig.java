@@ -284,6 +284,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     ResourcesConfig resources;
 
     /**
+     * If set, it will change the name of the container according to the configuration
+     */
+    @ConfigItem
+    Optional<String> containerName;
+
+    /**
      * If true, an Openshift Route will be created
      *
      * @deprecated Use the {@code quarkus.openshift.route.exposition} instead
@@ -349,6 +355,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Optional<String> getHost() {
         return host;
+    }
+
+    @Override
+    public Optional<String> getContainerName() {
+        return containerName;
     }
 
     public Integer getReplicas() {

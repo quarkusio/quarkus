@@ -299,6 +299,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     SecurityContextConfig securityContext;
 
     /**
+     * If set, it will change the name of the container according to the configuration
+     */
+    @ConfigItem
+    Optional<String> containerName;
+
+    /**
      * Debug configuration to be set in pods.
      */
     DebugConfig remoteDebug;
@@ -393,6 +399,11 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getHost() {
         return host;
+    }
+
+    @Override
+    public Optional<String> getContainerName() {
+        return containerName;
     }
 
     public Map<String, PortConfig> getPorts() {

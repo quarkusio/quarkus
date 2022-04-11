@@ -165,6 +165,9 @@ public class VanillaKubernetesProcessor {
             result.add(new DecoratorBuildItem(KUBERNETES, new RemoveFromMatchingLabelsDecorator(name, Labels.VERSION)));
         }
 
+        config.getContainerName().ifPresent(containerName -> result
+                .add(new DecoratorBuildItem(KUBERNETES, new ChangeContainerNameDecorator(containerName))));
+
         // Service handling
         result.add(new DecoratorBuildItem(KUBERNETES, new ApplyServiceTypeDecorator(name, config.getServiceType().name())));
         if ((config.getServiceType() == ServiceType.NodePort)) {

@@ -43,21 +43,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.narayana.jta</groupId>
-            <artifactId>narayana-jta</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.narayana.jts</groupId>
-            <artifactId>narayana-jts-integration</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>jakarta.transaction</groupId>
-            <artifactId>jakarta.transaction-api</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>io.agroal</groupId>
             <artifactId>agroal-api</artifactId>
         </dependency>

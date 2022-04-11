@@ -900,7 +900,8 @@ public class UriBuilderImpl extends UriBuilder {
                     break;
                 case ARRAY_PAIRS:
                     prefix = "&";
-                    sb.append(Encode.encodeQueryParamAsIs(name)).append("[]=")
+                    String queryParamConnector = arrayPairsConnector(values);
+                    sb.append(Encode.encodeQueryParamAsIs(name)).append(queryParamConnector)
                             .append(Encode.encodeQueryParamAsIs(value.toString()));
                     break;
             }
@@ -943,13 +944,19 @@ public class UriBuilderImpl extends UriBuilder {
                     break;
                 case ARRAY_PAIRS:
                     prefix = "&";
-                    sb.append(Encode.encodeQueryParam(name)).append("[]=").append(Encode.encodeQueryParam(value.toString()));
+                    String queryParamConnector = arrayPairsConnector(values);
+                    sb.append(Encode.encodeQueryParam(name)).append(queryParamConnector)
+                            .append(Encode.encodeQueryParam(value.toString()));
                     break;
             }
         }
 
         query = sb.toString();
         return this;
+    }
+
+    private String arrayPairsConnector(Object[] values) {
+        return values.length == 1 ? "=" : "[]=";
     }
 
     public UriBuilder replaceQueryParam(String name, Object... values) throws IllegalArgumentException {

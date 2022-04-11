@@ -574,7 +574,7 @@ COPY --chown=quarkus:quarkus gradle.properties /code/
 USER quarkus
 WORKDIR /code
 COPY src /code/src
-RUN gradle -b /code/build.gradle buildNative
+RUN chmod +x gradlew && ./gradlew -b /code/build.gradle buildNative
 
 ## Stage 2 : create the docker final image
 FROM quay.io/quarkus/quarkus-micro-image:1.0

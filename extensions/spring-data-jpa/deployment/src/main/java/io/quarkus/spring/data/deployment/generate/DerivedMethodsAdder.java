@@ -326,7 +326,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             for (String queryMethod : queryMethods) {
                 try (MethodCreator convert = implClassCreator.getMethodCreator("convert_" + queryMethod,
                         implName.toString(), entityClassInfo.name().toString())) {
-                    convert.setModifiers(Modifier.STATIC);
+                    convert.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
 
                     ResultHandle newObject = convert.newInstance(MethodDescriptor.ofConstructor(implName.toString()));
 

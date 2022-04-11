@@ -86,18 +86,14 @@ public class PathsCollection implements PathCollection, Serializable {
     public PathsCollection add(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
         list.addAll(this.paths);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         return new PathsCollection(list);
     }
 
     @Override
     public PathsCollection addFirst(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         list.addAll(this.paths);
         return new PathsCollection(list);
     }

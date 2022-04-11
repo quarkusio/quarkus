@@ -235,7 +235,7 @@ public final class Qute {
         }
 
         public Fmt dataMap(Map<String, Object> data) {
-            data.forEach(dataMap::put);
+            dataMap.putAll(data);
             return this;
         }
 

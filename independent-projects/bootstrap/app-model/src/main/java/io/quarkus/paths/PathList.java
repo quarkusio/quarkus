@@ -95,17 +95,13 @@ public class PathList implements PathCollection, Serializable {
     public PathList add(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
         list.addAll(this.paths);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         return new PathList(list);
     }
 
     public PathList addFirst(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         list.addAll(this.paths);
         return new PathList(list);
     }

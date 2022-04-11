@@ -293,7 +293,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         for (AnnotationInstance annotation : getParameterAnnotations(beanDeployment, observerMethod,
                 eventParameter.position())) {
-            beanDeployment.extractQualifiers(annotation).forEach(qualifiers::add);
+            qualifiers.addAll(beanDeployment.extractQualifiers(annotation));
         }
         return qualifiers;
     }

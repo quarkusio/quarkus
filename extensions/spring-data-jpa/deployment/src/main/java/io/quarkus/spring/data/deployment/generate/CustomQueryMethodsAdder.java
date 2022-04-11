@@ -497,7 +497,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             for (Map.Entry<String, List<String>> queryMethod : queryMethods.entrySet()) {
                 try (MethodCreator convert = implClassCreator.getMethodCreator("convert_" + queryMethod.getKey(),
                         implName.toString(), Object[].class.getName())) {
-                    convert.setModifiers(Modifier.STATIC);
+                    convert.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
 
                     ResultHandle newObject = convert.newInstance(MethodDescriptor.ofConstructor(implName.toString()));
 

@@ -37,7 +37,7 @@ public class GrpcServerProcessorTest {
                 arguments(NoClassAnnotationsReverseMeaning.class, NoClassAnnotationsReverseMeaning.EXPECTED),
                 arguments(NoClassAnnotationsEmpty.class, NoClassAnnotationsEmpty.EXPECTED),
                 arguments(ClassAnnotationsBlocking.class, ClassAnnotationsBlocking.EXPECTED),
-                arguments(ClassAnnotationsNonBlocking.class, ImmutableSet.of()),
+                arguments(ClassAnnotationsNonBlocking.class, ClassAnnotationsNonBlocking.EXPECTED),
                 arguments(TransactionalEmpty.class, TransactionalEmpty.EXPECTED),
                 arguments(TransactionalOverriding.class, TransactionalOverriding.EXPECTED),
                 arguments(OverridingTransactionalRoot.class, OverridingTransactionalRoot.EXPECTED),
@@ -225,22 +225,31 @@ public class GrpcServerProcessorTest {
 
     @Transactional
     static class OverridingTransactionalRoot {
-        static final Set<String> EXPECTED = ImmutableSet.of("method");
+        static final Set<String> EXPECTED = ImmutableSet.of("method", "transactional", "another");
 
         void method() {
+        }
+
+        void transactional() {
+        }
+
+        void another() {
         }
     }
 
     static class NonBlockingOverridingTransactional extends OverridingTransactionalRoot {
-        static final Set<String> EXPECTED = ImmutableSet.of();
+        static final Set<String> EXPECTED = ImmutableSet.of("transactional", "another");
 
         @NonBlocking
         void method() {
         }
+
+        void another() {
+        }
     }
 
     static class BlockingOverridingTransactional extends OverridingTransactionalRoot {
-        static final Set<String> EXPECTED = ImmutableSet.of("method");
+        static final Set<String> EXPECTED = ImmutableSet.of("method", "transactional", "another");
 
         @Blocking
         void method() {

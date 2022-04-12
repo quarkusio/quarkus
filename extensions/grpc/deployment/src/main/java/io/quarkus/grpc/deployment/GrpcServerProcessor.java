@@ -1,9 +1,7 @@
 package io.quarkus.grpc.deployment;
 
 import static io.quarkus.deployment.Feature.GRPC_SERVER;
-import static io.quarkus.grpc.deployment.GrpcDotNames.BLOCKING;
-import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
-import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
+import static io.quarkus.grpc.deployment.GrpcDotNames.*;
 import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 import static java.util.Arrays.asList;
 
@@ -308,7 +306,8 @@ public class GrpcServerProcessor {
     private static boolean methodIsBlocking(List<ClassInfo> classes, String methodName, Type[] methodArgs) {
         BlockingMode classModeInherited = BlockingMode.UNDEFINED;
         BlockingMode methodMode = BlockingMode.UNDEFINED;
-        for (ClassInfo ci : classes) {
+        for (int i = 0; i < classes.size(); i++) {
+            ClassInfo ci = classes.get(i);
             Predicate<DotName> annotationOnClass = annotationName -> ci.classAnnotation(annotationName) != null;
             MethodInfo method = ci.method(methodName, methodArgs);
 
@@ -326,6 +325,16 @@ public class GrpcServerProcessor {
                     methodMode = nonInheritedBlockingMode(annotationOnClass,
                             () -> "Class '" + ci.name() + "' contains both @Blocking and @NonBlocking annotations.");
                 }
+
+                // Handles the case when a method's overridden without an explicit annotation and @Transactional is defined on a superclass
+                if (methodMode == BlockingMode.UNDEFINED) {
+                    for (i++; i < classes.size(); i++) {
+                        ClassInfo ci2 = classes.get(i);
+                        annotationOnClass = annotationName -> ci2.classAnnotation(annotationName) != null;
+                        classModeInherited = inheritedBlockingMode(annotationOnClass, classModeInherited);
+                    }
+                }
+
                 break;
             }
         }

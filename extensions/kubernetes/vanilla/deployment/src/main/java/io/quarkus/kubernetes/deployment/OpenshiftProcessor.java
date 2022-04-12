@@ -25,7 +25,7 @@ import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
 import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
-import io.dekorate.openshift.decorator.ApplyReplicasDecorator;
+import io.dekorate.openshift.decorator.ApplyReplicasToDeploymentConfigDecorator;
 import io.dekorate.project.Project;
 import io.dekorate.s2i.config.S2iBuildConfig;
 import io.dekorate.s2i.config.S2iBuildConfigBuilder;
@@ -215,10 +215,11 @@ public class OpenshiftProcessor {
 
         if (config.getReplicas() != 1) {
             // This only affects DeploymentConfig
-            result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyReplicasDecorator(name, config.getReplicas())));
+            result.add(new DecoratorBuildItem(OPENSHIFT,
+                    new ApplyReplicasToDeploymentConfigDecorator(name, config.getReplicas())));
             // This only affects Deployment
             result.add(new DecoratorBuildItem(OPENSHIFT,
-                    new io.dekorate.kubernetes.decorator.ApplyReplicasDecorator(name, config.getReplicas())));
+                    new io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator(name, config.getReplicas())));
             // This only affects StatefulSet
             result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyReplicasToStatefulSetDecorator(name, config.getReplicas())));
         }

@@ -100,6 +100,7 @@ import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
 import io.quarkus.vertx.http.runtime.logstream.WebSocketLogHandler;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -107,6 +108,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.Http1xServerConnection;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxBuilder;
 import io.vertx.core.impl.VertxInternal;
@@ -175,27 +177,15 @@ public class DevConsoleProcessor {
                         // Vert.x 4 Migration: Verify this behavior
                         EventLoopContext context = vertx.createEventLoopContext();
 
-                        //                                ContextInternal context = (ContextInternal) vertx
-                        //                                        .createEventLoopContext(null, null, new JsonObject(),
-                        //                                                Thread.currentThread().getContextClassLoader());
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
                             Http1xServerConnection connection = new Http1xServerConnection(
-                                    () -> context,
+                                    () -> (ContextInternal) VertxContext.getOrCreateDuplicatedContext(context),
                                     null,
                                     new HttpServerOptions(),
                                     chctx,
                                     context,
                                     "localhost",
                                     null);
-
-                            //                                    Http1xServerConnection conn = new Http1xServerConnection(
-                            //                                            context.owner(),
-                            //                                            null,
-                            //                                            new HttpServerOptions(),
-                            //                                            chctx,
-                            //                                            context,
-                            //                                            "localhost",
-                            //                                            null);
                             connection.handler(new Handler<HttpServerRequest>() {
                                 @Override
                                 public void handle(HttpServerRequest event) {
@@ -269,6 +259,7 @@ public class DevConsoleProcessor {
         };
         router = Router.router(devConsoleVertx);
         router.errorHandler(500, errorHandler);
+
         router.route()
                 .order(Integer.MIN_VALUE)
                 .handler(new FlashScopeHandler());

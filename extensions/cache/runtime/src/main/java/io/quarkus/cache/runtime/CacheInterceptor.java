@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import javax.inject.Inject;
@@ -16,6 +17,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheException;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CompositeCacheKey;
@@ -27,6 +29,7 @@ public abstract class CacheInterceptor {
 
     private static final Logger LOGGER = Logger.getLogger(CacheInterceptor.class);
     private static final String PERFORMANCE_WARN_MSG = "Cache key resolution based on reflection calls. Please create a GitHub issue in the Quarkus repository, the maintainers might be able to improve your application performance.";
+    protected static final String UNHANDLED_ASYNC_RETURN_TYPE_MSG = "Unhandled async return type";
 
     @Inject
     CacheManager cacheManager;
@@ -135,7 +138,44 @@ public abstract class CacheInterceptor {
         }
     }
 
-    protected static boolean isUniReturnType(InvocationContext invocationContext) {
-        return Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType());
+    protected static ReturnType determineReturnType(Class<?> returnType) {
+        if (Uni.class.isAssignableFrom(returnType)) {
+            return ReturnType.Uni;
+        }
+        if (CompletionStage.class.isAssignableFrom(returnType)) {
+            return ReturnType.CompletionStage;
+        }
+        return ReturnType.NonAsync;
+    }
+
+    protected Uni<?> asyncInvocationResultToUni(Object invocationResult, ReturnType returnType) {
+        if (returnType == ReturnType.Uni) {
+            return (Uni<?>) invocationResult;
+        } else if (returnType == ReturnType.CompletionStage) {
+            return Uni.createFrom().completionStage(new Supplier<>() {
+                @Override
+                public CompletionStage<?> get() {
+                    return (CompletionStage<?>) invocationResult;
+                }
+            });
+        } else {
+            throw new CacheException(new IllegalStateException(UNHANDLED_ASYNC_RETURN_TYPE_MSG));
+        }
+    }
+
+    protected Object createAsyncResult(Uni<Object> cacheValue, ReturnType returnType) {
+        if (returnType == ReturnType.Uni) {
+            return cacheValue;
+        }
+        if (returnType == ReturnType.CompletionStage) {
+            return cacheValue.subscribeAsCompletionStage();
+        }
+        throw new CacheException(new IllegalStateException(UNHANDLED_ASYNC_RETURN_TYPE_MSG));
+    }
+
+    protected enum ReturnType {
+        NonAsync,
+        Uni,
+        CompletionStage
     }
 }

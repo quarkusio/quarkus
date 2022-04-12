@@ -6,6 +6,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableDecorator;
@@ -46,6 +47,7 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.NormalScope;
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Any;
@@ -95,7 +97,9 @@ public class ArcContainerImpl implements ArcContainer {
 
     private volatile ExecutorService executorService;
 
-    public ArcContainerImpl() {
+    private final CurrentContextFactory currentContextFactory;
+
+    public ArcContainerImpl(CurrentContextFactory currentContextFactory) {
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
         List<InjectableBean<?>> beans = new ArrayList<>();
@@ -105,10 +109,12 @@ public class ArcContainerImpl implements ArcContainer {
         List<InjectableObserverMethod<?>> observers = new ArrayList<>();
         Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
         Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
+        this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
+                : currentContextFactory;
 
         applicationContext = new ApplicationContext();
         singletonContext = new SingletonContext();
-        requestContext = new RequestContext();
+        requestContext = new RequestContext(this.currentContextFactory.create(RequestScoped.class));
         contexts = new HashMap<>();
         putContext(requestContext);
         putContext(applicationContext);
@@ -340,6 +346,11 @@ public class ArcContainerImpl implements ArcContainer {
 
     public void setExecutor(ExecutorService executor) {
         this.executorService = executor;
+    }
+
+    @Override
+    public CurrentContextFactory getCurrentContextFactory() {
+        return currentContextFactory;
     }
 
     @Override

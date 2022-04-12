@@ -6,6 +6,9 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.core.CodestartSpec;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.Constants;
@@ -38,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.StringJoiner;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
@@ -49,6 +53,8 @@ public class TestRegistryClientBuilder {
     private Path baseDir;
     private final RegistriesConfig.Mutable config = RegistriesConfig.builder();
     private final Map<String, TestRegistryBuilder> registries = new LinkedHashMap<>();
+    private List<Extension> externalExtensions = List.of();
+    private List<TestCodestartBuilder> externalCodestartBuilders = List.of();
     private MavenArtifactResolver resolver;
 
     public static TestRegistryClientBuilder newInstance() {
@@ -70,6 +76,124 @@ public class TestRegistryClientBuilder {
 
     public TestRegistryBuilder newRegistry(String id) {
         return registries.computeIfAbsent(id, i -> new TestRegistryBuilder(this, id));
+    }
+
+    public TestRegistryClientBuilder addExternalExtension(String groupId, String artifactId, String version) {
+        addExternalExtensionInternal(groupId, artifactId, version);
+        return this;
+    }
+
+    private Extension.Mutable addExternalExtensionInternal(String groupId, String artifactId, String version) {
+        final ArtifactCoords coords = new ArtifactCoords(groupId, artifactId, null, "jar", version);
+        final Extension.Mutable e = Extension.builder()
+                .setArtifact(coords)
+                .setName(artifactId);
+        if (externalExtensions.isEmpty()) {
+            externalExtensions = new ArrayList<>();
+        }
+        externalExtensions.add(e);
+        return e;
+    }
+
+    public TestCodestartBuilder addExternalExtensionWithCodestart(String groupId, String artifactId, String version) {
+        var e = addExternalExtensionInternal(groupId, artifactId, version);
+        var codestartBuilder = new TestCodestartBuilder(e, this);
+        if (externalCodestartBuilders.isEmpty()) {
+            externalCodestartBuilders = new ArrayList<>();
+        }
+        externalCodestartBuilders.add(codestartBuilder);
+        return codestartBuilder;
+    }
+
+    private void installExtensionArtifacts(Collection<Extension> extensions) {
+        for (Extension e : extensions) {
+            Path jarPath = getTmpPath(e.getArtifact());
+            final Properties props = new Properties();
+            props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, e.getArtifact().getGroupId() + ":"
+                    + e.getArtifact().getArtifactId() + "-deployment" + ":" + e.getArtifact().getVersion());
+            try (FileSystem zip = ZipUtils.newZip(jarPath)) {
+                final Path descr = zip.getPath(BootstrapConstants.DESCRIPTOR_PATH);
+                Files.createDirectories(descr.getParent());
+                try (BufferedWriter writer = Files.newBufferedWriter(descr)) {
+                    props.store(writer, "qs cli test");
+                }
+                // the origins should be empty here
+                final Extension.Mutable mutable = e.mutable();
+                mutable.setOrigins(List.of());
+                mutable.build().persist(zip.getPath(BootstrapConstants.EXTENSION_METADATA_PATH));
+            } catch (IOException e1) {
+                throw new UncheckedIOException(e1);
+            }
+            install(e.getArtifact(), jarPath);
+
+            final ArtifactCoords runtimePomCoords = new ArtifactCoords(e.getArtifact().getGroupId(),
+                    e.getArtifact().getArtifactId(), null, ArtifactCoords.TYPE_POM, e.getArtifact().getVersion());
+            jarPath = getTmpPath(runtimePomCoords);
+            Model model = initModel(runtimePomCoords);
+            try {
+                ModelUtils.persistModel(jarPath, model);
+            } catch (IOException e1) {
+                throw new IllegalStateException("Failed to persist BOM at " + jarPath, e1);
+            }
+            install(runtimePomCoords, jarPath);
+
+            final ArtifactCoords deploymentJarCoords = new ArtifactCoords(e.getArtifact().getGroupId(),
+                    e.getArtifact().getArtifactId() + "-deployment", e.getArtifact().getClassifier(),
+                    e.getArtifact().getType(), e.getArtifact().getVersion());
+            jarPath = getTmpPath(deploymentJarCoords);
+            try (FileSystem zip = ZipUtils.newZip(jarPath)) {
+            } catch (IOException e1) {
+                throw new UncheckedIOException(e1);
+            }
+            install(deploymentJarCoords, jarPath);
+
+            final ArtifactCoords deploymentPomCoords = new ArtifactCoords(deploymentJarCoords.getGroupId(),
+                    deploymentJarCoords.getArtifactId(), null, ArtifactCoords.TYPE_POM, deploymentJarCoords.getVersion());
+            jarPath = getTmpPath(deploymentPomCoords);
+            model = initModel(deploymentPomCoords);
+            Dependency dep = new Dependency();
+            dep.setGroupId(e.getArtifact().getGroupId());
+            dep.setArtifactId(e.getArtifact().getArtifactId());
+            dep.setVersion(e.getArtifact().getVersion());
+            model.addDependency(dep);
+            try {
+                ModelUtils.persistModel(jarPath, model);
+            } catch (IOException e1) {
+                throw new IllegalStateException("Failed to persist BOM at " + jarPath, e1);
+            }
+            install(deploymentPomCoords, jarPath);
+        }
+    }
+
+    private void install(ArtifactCoords coords, Path path) {
+        try {
+            getResolver().install(new DefaultArtifact(
+                    coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
+                    coords.getVersion(),
+                    Collections.emptyMap(), path.toFile()));
+        } catch (BootstrapMavenException e) {
+            throw new IllegalStateException("Failed to install " + path + " as " + coords, e);
+        }
+    }
+
+    private Path getTmpPath(ArtifactCoords coords) {
+        Path p = baseDir.resolve("tmp");
+        for (String s : coords.getGroupId().split("\\.")) {
+            p = p.resolve(s);
+        }
+        p = p.resolve(coords.getArtifactId()).resolve(coords.getVersion());
+        try {
+            Files.createDirectories(p);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to create directory " + p, e);
+        }
+        final StringBuilder b = new StringBuilder();
+        b.append(coords.getArtifactId()).append('-');
+        if (!coords.getClassifier().isEmpty()) {
+            b.append(coords.getClassifier()).append('-');
+        }
+        b.append(coords.getVersion()).append('.').append(coords.getType());
+        return p.resolve(b.toString());
     }
 
     public void build() {
@@ -96,6 +220,9 @@ public class TestRegistryClientBuilder {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to serialize registry client configuration " + configYaml, e);
         }
+
+        externalCodestartBuilders.forEach(b -> b.persist());
+        installExtensionArtifacts(externalExtensions);
     }
 
     private void configureRegistry(TestRegistryBuilder registry) {
@@ -356,87 +483,6 @@ public class TestRegistryClientBuilder {
         private ArtifactCoords getRegistryNonPlatformCatalogArtifact() {
             return new ArtifactCoords(registryGroupId, Constants.DEFAULT_REGISTRY_NON_PLATFORM_EXTENSIONS_CATALOG_ARTIFACT_ID,
                     null, "json", Constants.DEFAULT_REGISTRY_ARTIFACT_VERSION);
-        }
-
-        private void installExtensionArtifacts(Collection<Extension> extensions) {
-            for (Extension e : extensions) {
-                Path jarPath = getTmpPath(e.getArtifact());
-                final Properties props = new Properties();
-                props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, e.getArtifact().getGroupId() + ":"
-                        + e.getArtifact().getArtifactId() + "-deployment" + ":" + e.getArtifact().getVersion());
-                try (FileSystem zip = ZipUtils.newZip(jarPath)) {
-                    final Path descr = zip.getPath(BootstrapConstants.DESCRIPTOR_PATH);
-                    Files.createDirectories(descr.getParent());
-                    try (BufferedWriter writer = Files.newBufferedWriter(descr)) {
-                        props.store(writer, "qs cli test");
-                    }
-                } catch (IOException e1) {
-                    throw new UncheckedIOException(e1);
-                }
-                install(e.getArtifact(), jarPath);
-
-                final ArtifactCoords runtimePomCoords = new ArtifactCoords(e.getArtifact().getGroupId(),
-                        e.getArtifact().getArtifactId(), null, ArtifactCoords.TYPE_POM, e.getArtifact().getVersion());
-                jarPath = getTmpPath(runtimePomCoords);
-                Model model = initModel(runtimePomCoords);
-                try {
-                    ModelUtils.persistModel(jarPath, model);
-                } catch (IOException e1) {
-                    throw new IllegalStateException("Failed to persist BOM at " + jarPath, e1);
-                }
-                install(runtimePomCoords, jarPath);
-
-                final ArtifactCoords deploymentJarCoords = new ArtifactCoords(e.getArtifact().getGroupId(),
-                        e.getArtifact().getArtifactId() + "-deployment", e.getArtifact().getClassifier(),
-                        e.getArtifact().getType(), e.getArtifact().getVersion());
-                jarPath = getTmpPath(deploymentJarCoords);
-                try (FileSystem zip = ZipUtils.newZip(jarPath)) {
-                } catch (IOException e1) {
-                    throw new UncheckedIOException(e1);
-                }
-                install(deploymentJarCoords, jarPath);
-
-                final ArtifactCoords deploymentPomCoords = new ArtifactCoords(deploymentJarCoords.getGroupId(),
-                        deploymentJarCoords.getArtifactId(), null, ArtifactCoords.TYPE_POM, deploymentJarCoords.getVersion());
-                jarPath = getTmpPath(deploymentPomCoords);
-                model = initModel(deploymentPomCoords);
-                Dependency dep = new Dependency();
-                dep.setGroupId(e.getArtifact().getGroupId());
-                dep.setArtifactId(e.getArtifact().getArtifactId());
-                dep.setVersion(e.getArtifact().getVersion());
-                model.addDependency(dep);
-                try {
-                    ModelUtils.persistModel(jarPath, model);
-                } catch (IOException e1) {
-                    throw new IllegalStateException("Failed to persist BOM at " + jarPath, e1);
-                }
-                install(deploymentPomCoords, jarPath);
-            }
-        }
-
-        private void install(ArtifactCoords coords, Path path) {
-            try {
-                clientBuilder().getResolver().install(new DefaultArtifact(
-                        coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
-                        coords.getVersion(),
-                        Collections.emptyMap(), path.toFile()));
-            } catch (BootstrapMavenException e) {
-                throw new IllegalStateException("Failed to install " + path + " as " + coords, e);
-            }
-        }
-
-        private Path getTmpPath(ArtifactCoords coords) {
-            Path p = parent.baseDir.resolve("tmp");
-            for (String s : coords.getGroupId().split("\\.")) {
-                p = p.resolve(s);
-            }
-            p = p.resolve(coords.getArtifactId()).resolve(coords.getVersion());
-            try {
-                Files.createDirectories(p);
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to create directory " + p, e);
-            }
-            return p.resolve(coords.getArtifactId() + "-" + coords.getVersion() + "." + coords.getType());
         }
     }
 
@@ -716,7 +762,7 @@ public class TestRegistryClientBuilder {
                 throw new IllegalStateException("Failed to persist extension catalog " + json, e);
             }
 
-            Path artifactPath = release.stream.platform.registry.getTmpPath(bom);
+            Path artifactPath = registry().clientBuilder().getTmpPath(bom);
             try {
                 ModelUtils.persistModel(artifactPath, pom);
             } catch (IOException e) {
@@ -724,7 +770,7 @@ public class TestRegistryClientBuilder {
             }
             install(bom, artifactPath);
 
-            registry().installExtensionArtifacts(extensions.getExtensions());
+            registry().clientBuilder().installExtensionArtifacts(extensions.getExtensions());
         }
     }
 
@@ -732,6 +778,7 @@ public class TestRegistryClientBuilder {
 
         private final TestRegistryBuilder registry;
         private final ExtensionCatalog.Mutable extensions = ExtensionCatalog.builder();
+        private List<TestCodestartBuilder> codestarts = List.of();
 
         private TestNonPlatformCatalogBuilder(TestRegistryBuilder registry, String quarkusVersion) {
             this.registry = registry;
@@ -744,12 +791,27 @@ public class TestRegistryClientBuilder {
         }
 
         public TestNonPlatformCatalogBuilder addExtension(String groupId, String artifactId, String version) {
-            Extension e = Extension.builder()
+            addExtensionToCatalog(groupId, artifactId, version);
+            return this;
+        }
+
+        private Extension.Mutable addExtensionToCatalog(String groupId, String artifactId, String version) {
+            Extension.Mutable e = Extension.builder()
                     .setArtifact(new ArtifactCoords(groupId, artifactId, null, "jar", version))
                     .setName(artifactId)
                     .setOrigins(Collections.singletonList(extensions));
             extensions.addExtension(e);
-            return this;
+            return e;
+        }
+
+        public TestNonPlatformCodestartBuilder addExtensionWithCodestart(String groupId, String artifactId, String version) {
+            var codestartBuilder = new TestNonPlatformCodestartBuilder(addExtensionToCatalog(groupId, artifactId, version),
+                    this);
+            if (codestarts.isEmpty()) {
+                codestarts = new ArrayList<>();
+            }
+            codestarts.add(codestartBuilder);
+            return codestartBuilder;
         }
 
         public TestRegistryBuilder registry() {
@@ -757,13 +819,100 @@ public class TestRegistryClientBuilder {
         }
 
         private void persist(Path nonPlatformDir) {
+            codestarts.forEach(c -> c.persist());
             final Path json = getNonPlatformCatalogPath(nonPlatformDir, extensions.getQuarkusCoreVersion());
             try {
                 extensions.persist(json);
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to persist extension catalog " + json, e);
             }
-            registry().installExtensionArtifacts(extensions.getExtensions());
+            registry().clientBuilder().installExtensionArtifacts(extensions.getExtensions());
+        }
+    }
+
+    public static class TestCodestartBuilder {
+        final Extension.Mutable ext;
+        final TestRegistryClientBuilder clientBuilder;
+
+        private TestCodestartBuilder(Extension.Mutable ext, TestRegistryClientBuilder clientBuilder) {
+            this.ext = ext;
+            this.clientBuilder = clientBuilder;
+        }
+
+        public TestRegistryClientBuilder clientBuilder() {
+            return clientBuilder;
+        }
+
+        protected void persist() {
+            final Map<String, Object> metadata = (Map<String, Object>) ext.getMetadata().computeIfAbsent("codestart",
+                    k -> new HashMap<>());
+            if (!metadata.containsKey("name")) {
+                metadata.put("name", ext.getArtifact().getArtifactId() + "-codestart");
+            }
+            if (!metadata.containsKey("languages")) {
+                metadata.put("languages", List.of("java"));
+            }
+            final ArtifactCoords extCoords = ext.getArtifact();
+            final ArtifactCoords codestartCoords = new ArtifactCoords(extCoords.getGroupId(), extCoords.getArtifactId(),
+                    "codestart", ArtifactCoords.TYPE_JAR, extCoords.getVersion());
+            if (!metadata.containsKey("artifact")) {
+                metadata.put("artifact", codestartCoords.toString());
+            }
+
+            Path jarPath = clientBuilder.getTmpPath(codestartCoords);
+            try (FileSystem zip = ZipUtils.newZip(jarPath)) {
+                final Path baseDir = zip.getPath("codestarts/quarkus/" + codestartCoords.getArtifactId() + "-codestart");
+                final CodestartSpec spec = new CodestartSpec(codestartCoords.getArtifactId() + "-codestart",
+                        codestartCoords.getArtifactId() + "-ref", CodestartType.CODE, false, false,
+                        Set.of("extension-codestart"),
+                        Map.of("title", codestartCoords.getArtifactId() + " code", "description",
+                                codestartCoords.getArtifactId() + " example"),
+                        Map.of(), Map.of());
+                CodestartCatalogLoader.persist(spec, baseDir.resolve("codestart.yml"));
+
+                final StringBuilder sb = new StringBuilder(codestartCoords.getArtifactId().length());
+                boolean nextUpperCase = true;
+                for (int i = 0; i < codestartCoords.getArtifactId().length(); ++i) {
+                    var c = codestartCoords.getArtifactId().charAt(i);
+                    if (c == '-') {
+                        nextUpperCase = true;
+                        continue;
+                    }
+                    if (nextUpperCase) {
+                        c = Character.toUpperCase(c);
+                        nextUpperCase = false;
+                    }
+                    sb.append(c);
+                }
+                var className = sb.toString();
+                var javaClassPath = baseDir.resolve("java/src/main/java/org/acme").resolve(sb.append(".java").toString());
+                Files.createDirectories(javaClassPath.getParent());
+                try (BufferedWriter writer = Files.newBufferedWriter(javaClassPath)) {
+                    writer.write("package org.acme;");
+                    writer.newLine();
+                    writer.write("public class ");
+                    writer.write(className);
+                    writer.write(" {}");
+                }
+            } catch (IOException e1) {
+                throw new UncheckedIOException(e1);
+            }
+            clientBuilder().install(codestartCoords, jarPath);
+
+        }
+    }
+
+    public static class TestNonPlatformCodestartBuilder extends TestCodestartBuilder {
+
+        private final TestNonPlatformCatalogBuilder catalogBuilder;
+
+        private TestNonPlatformCodestartBuilder(Extension.Mutable ext, TestNonPlatformCatalogBuilder catalogBuilder) {
+            super(ext, catalogBuilder.registry.clientBuilder());
+            this.catalogBuilder = catalogBuilder;
+        }
+
+        public TestNonPlatformCatalogBuilder catalog() {
+            return catalogBuilder;
         }
     }
 

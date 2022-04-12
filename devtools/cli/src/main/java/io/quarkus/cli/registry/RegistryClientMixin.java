@@ -1,7 +1,8 @@
 package io.quarkus.cli.registry;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
 
 import io.quarkus.cli.Version;
 import io.quarkus.cli.common.OutputOptionMixin;
@@ -9,6 +10,7 @@ import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -44,16 +46,22 @@ public class RegistryClientMixin {
     public RegistriesConfig resolveConfig() throws RegistryResolutionException {
         return config == null
                 ? RegistriesConfig.resolveConfig()
-                : RegistriesConfig.resolveFromFile(Paths.get(config));
+                : RegistriesConfig.resolveFromFile(Path.of(config));
     }
 
     public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusVersionGroup targetVersion, BuildTool buildTool,
             OutputOptionMixin log) throws RegistryResolutionException {
+        return createQuarkusProject(projectRoot, targetVersion, buildTool, log, List.of());
+    }
+
+    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusVersionGroup targetVersion, BuildTool buildTool,
+            OutputOptionMixin log, Collection<String> extensions) throws RegistryResolutionException {
         ExtensionCatalog catalog = getExtensionCatalog(targetVersion, log);
         if (VALIDATE && catalog.getQuarkusCoreVersion().startsWith("1.")) {
             throw new UnsupportedOperationException("The version 2 CLI can not be used with Quarkus 1.x projects.\n"
                     + "Use the maven/gradle plugins when working with Quarkus 1.x projects.");
         }
+        catalog = CreateProjectHelper.completeCatalog(catalog, extensions, QuarkusProjectHelper.artifactResolver());
         return QuarkusProjectHelper.getProject(projectRoot, catalog, buildTool, log);
     }
 

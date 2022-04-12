@@ -29,7 +29,6 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 
 public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase {
 
@@ -75,10 +74,10 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
     protected ApplicationModel resolveApplicationModel() throws MojoExecutionException {
         try {
             return new BootstrapAppModelResolver(artifactResolver())
-                    .resolveModel(GACTV.pom(project.getGroupId(), project.getArtifactId(), project.getVersion()));
+                    .resolveModel(ArtifactCoords.pom(project.getGroupId(), project.getArtifactId(), project.getVersion()));
         } catch (AppModelResolverException e) {
             throw new MojoExecutionException("Failed to resolve the Quarkus application model for project "
-                    + GACTV.pom(project.getGroupId(), project.getArtifactId(), project.getVersion()), e);
+                    + ArtifactCoords.pom(project.getGroupId(), project.getArtifactId(), project.getVersion()), e);
         }
     }
 

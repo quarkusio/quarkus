@@ -66,7 +66,7 @@ public class CreateCli extends BaseCreateCommand {
             setCodegenOptions(codeGeneration);
 
             QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
-                    propertiesOptions.properties);
+                    propertiesOptions.properties, extensions);
 
             boolean success = true;
             if (runMode.isDryRun()) {

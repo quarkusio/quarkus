@@ -204,15 +204,17 @@ public class BootstrapMavenContext {
     }
 
     public File getUserSettings() {
-        return userSettings == null
-                ? userSettings = resolveSettingsFile(
-                        getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
-                        () -> {
-                            final String quarkusMavenSettings = getProperty(MAVEN_SETTINGS);
-                            return quarkusMavenSettings == null ? new File(getUserMavenConfigurationHome(), SETTINGS_XML)
-                                    : new File(quarkusMavenSettings);
-                        })
-                : userSettings;
+        if (userSettings == null) {
+            final String quarkusMavenSettings = getProperty(MAVEN_SETTINGS);
+            if (quarkusMavenSettings != null) {
+                var f = new File(quarkusMavenSettings);
+                return userSettings = f.exists() ? f : null;
+            }
+            return userSettings = resolveSettingsFile(
+                    getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
+                    () -> new File(getUserMavenConfigurationHome(), SETTINGS_XML));
+        }
+        return userSettings;
     }
 
     private static File getUserMavenConfigurationHome() {
@@ -506,7 +508,6 @@ public class BootstrapMavenContext {
     }
 
     private List<RemoteRepository> resolveRemoteRepos() throws BootstrapMavenException {
-
         final List<RemoteRepository> rawRepos = new ArrayList<>();
         readMavenReposFromEnv(rawRepos, System.getenv());
 

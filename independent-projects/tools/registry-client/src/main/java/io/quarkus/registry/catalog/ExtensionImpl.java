@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.quarkus.maven.ArtifactCoords;
 import io.quarkus.registry.json.JsonBuilder;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -202,6 +203,12 @@ public class ExtensionImpl implements Extension {
         public Builder removeMetadata(String key) {
             getMetadata().remove(key);
             return this;
+        }
+
+        @Override
+        public void persist(Path p) throws IOException {
+            // the immutable version is properly bound
+            build().persist(p);
         }
 
         @Override

@@ -9,8 +9,8 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class QuarkusPlatformAwareMojoTestBase extends MojoTestBase {
 
-    private ExtensionCatalog catalog;
-    private Properties quarkusProps;
+    private volatile ExtensionCatalog catalog;
+    private volatile Properties quarkusProps;
 
     private ExtensionCatalog getPlatformDescriptor() {
         if (catalog == null) {

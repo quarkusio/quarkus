@@ -9,8 +9,6 @@ dependencies {
     implementation("org.acme:simple-dependency:1.0-SNAPSHOT")
 
     implementation("io.quarkus:quarkus-hibernate-reactive-panache-deployment")
-    implementation("io.quarkus:quarkus-agroal-deployment")
-    implementation("io.quarkus:quarkus-narayana-jta-deployment")
 
     implementation project(':ext-a:runtime')
 }

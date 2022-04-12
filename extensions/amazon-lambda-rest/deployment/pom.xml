@@ -41,6 +41,15 @@
         </dependency>
     </dependencies>
     <build>
+      <resources>
+          <resource>
+              <directory>src/main/resources</directory>
+          </resource>
+          <resource>
+              <directory>src/main/resources/http</directory>
+              <filtering>false</filtering>
+          </resource>
+      </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

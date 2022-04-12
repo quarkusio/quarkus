@@ -20,6 +20,8 @@ public class KnownOidcProviders {
             return microsoft();
         } else if (OidcTenantConfig.Provider.FACEBOOK == provider) {
             return facebook();
+        } else if (OidcTenantConfig.Provider.TWITTER == provider) {
+            return twitter();
         }
         return null;
     }
@@ -35,6 +37,22 @@ public class KnownOidcProviders {
         ret.getAuthentication().setScopes(List.of("user:email"));
         ret.getAuthentication().setUserInfoRequired(true);
         ret.getAuthentication().setIdTokenRequired(false);
+        return ret;
+    }
+
+    private static OidcTenantConfig twitter() {
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setAuthServerUrl("https://api.twitter.com/2/oauth2");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.setDiscoveryEnabled(false);
+        ret.setAuthorizationPath("https://twitter.com/i/oauth2/authorize");
+        ret.setTokenPath("token");
+        ret.setUserInfoPath("https://api.twitter.com/2/users/me");
+        ret.getAuthentication().setAddOpenidScope(false);
+        ret.getAuthentication().setScopes(List.of("offline.access", "tweet.read", "users.read"));
+        ret.getAuthentication().setUserInfoRequired(true);
+        ret.getAuthentication().setIdTokenRequired(false);
+        ret.getAuthentication().setPkceRequired(true);
         return ret;
     }
 

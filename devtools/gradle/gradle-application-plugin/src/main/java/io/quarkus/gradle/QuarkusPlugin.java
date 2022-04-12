@@ -20,7 +20,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.plugins.BasePlugin;
-import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
@@ -263,7 +262,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.register(INTEGRATION_TEST_TASK_NAME, Test.class, intTestTask -> {
                         intTestTask.setGroup("verification");
                         intTestTask.setDescription("Runs Quarkus integration tests");
-                        intTestTask.dependsOn(quarkusBuild, tasks.named(JavaBasePlugin.CHECK_TASK_NAME));
+                        intTestTask.dependsOn(quarkusBuild, tasks.named(JavaPlugin.TEST_TASK_NAME));
                         intTestTask.setClasspath(intTestSourceSet.getRuntimeClasspath());
                         intTestTask.setTestClassesDirs(intTestSourceSet.getOutput().getClassesDirs());
                     });
@@ -283,7 +282,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.register(TEST_NATIVE_TASK_NAME, Test.class, testNative -> {
                         testNative.setDescription("Runs native image tests");
                         testNative.setGroup("verification");
-                        testNative.dependsOn(quarkusBuild, tasks.named(JavaBasePlugin.CHECK_TASK_NAME));
+                        testNative.dependsOn(quarkusBuild, tasks.named(JavaPlugin.TEST_TASK_NAME));
 
                         testNative.setTestClassesDirs(project.files(nativeTestSourceSet.getOutput().getClassesDirs(),
                                 intTestSourceSet.getOutput().getClassesDirs()));

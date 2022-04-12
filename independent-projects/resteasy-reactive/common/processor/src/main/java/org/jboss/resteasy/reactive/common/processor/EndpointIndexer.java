@@ -98,6 +98,7 @@ import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -1195,6 +1196,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             if (convertible) {
                 handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
+        } else if (paramType.kind() == Kind.ARRAY) {
+            ArrayType at = paramType.asArrayType();
+            typeHandled = true;
+            builder.setSingle(false);
+            elementType = toClassName(at.component(), currentClassInfo, actualEndpointInfo, index);
+            if (convertible) {
+                handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
         }
 
         if (!typeHandled) {
@@ -1265,6 +1274,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType) {
+    }
+
+    protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             PARAM builder, String elementType) {
     }
 

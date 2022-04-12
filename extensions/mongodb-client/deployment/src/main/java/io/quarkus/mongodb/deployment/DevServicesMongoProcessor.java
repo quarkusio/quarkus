@@ -213,7 +213,8 @@ public class DevServicesMongoProcessor {
         DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices;
         boolean devServicesEnabled = devServicesConfig.enabled.orElse(true);
         return new CapturedProperties(databaseName, connectionString, devServicesEnabled,
-                devServicesConfig.imageName.orElse(null), devServicesConfig.port.orElse(null), devServicesConfig.properties);
+                devServicesConfig.imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mongo")),
+                devServicesConfig.port.orElse(null), devServicesConfig.properties);
     }
 
     private static final class CapturedProperties {

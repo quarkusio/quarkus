@@ -1,8 +1,8 @@
 package io.quarkus.cli.create;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.devtools.project.BuildTool;
@@ -17,13 +17,13 @@ public class TargetLanguageGroup {
 
     static class VersionCandidates extends ArrayList<String> {
         VersionCandidates() {
-            super(List.copyOf(CreateProjectHelper.JAVA_VERSIONS_LTS));
+            super(CreateProjectHelper.JAVA_VERSIONS_LTS.stream().map(String::valueOf).collect(Collectors.toList()));
         }
     }
 
     @CommandLine.Option(names = {
-            "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}", completionCandidates = VersionCandidates.class, defaultValue = CreateProjectHelper.DEFAULT_JAVA_VERSION)
-    String javaVersion = CreateProjectHelper.DEFAULT_JAVA_VERSION;
+            "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}", completionCandidates = VersionCandidates.class, defaultValue = CreateProjectHelper.DETECT_JAVA_RUNTIME_VERSION)
+    String javaVersion = CreateProjectHelper.DETECT_JAVA_RUNTIME_VERSION;
 
     @CommandLine.Option(names = { "--kotlin" }, description = "Use Kotlin")
     boolean kotlin = false;

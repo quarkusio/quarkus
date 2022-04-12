@@ -73,9 +73,9 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
-            LaunchMode launchMode, boolean servletPresent) {
+            LaunchMode launchMode, boolean resumeOn404) {
 
-        if (servletPresent) {
+        if (resumeOn404) {
             info.setResumeOn404(true);
         }
 

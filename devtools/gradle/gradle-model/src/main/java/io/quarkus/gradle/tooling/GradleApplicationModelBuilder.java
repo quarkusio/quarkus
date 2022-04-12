@@ -156,11 +156,12 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     private static void collectDestinationDirs(Collection<SourceDir> sources, final PathList.Builder paths) {
         for (SourceDir src : sources) {
             if (!Files.exists(src.getOutputDir())) {
-                return;
+                continue;
             }
+
             final Path path = src.getOutputDir();
             if (paths.contains(path)) {
-                return;
+                continue;
             }
             paths.add(path);
         }
@@ -581,7 +582,9 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         PathList.Builder resolvedPathBuilder = PathList.builder();
 
         for (File classesDir : s.getOutput().getClassesDirs()) {
-            resolvedPathBuilder.add(classesDir.toPath());
+            if (classesDir.exists()) {
+                resolvedPathBuilder.add(classesDir.toPath());
+            }
         }
         File resourceDir = s.getOutput().getResourcesDir();
         if (resourceDir != null && resourceDir.exists()) {

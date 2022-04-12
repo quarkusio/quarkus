@@ -38,10 +38,17 @@ public class ResteasyReactiveJsonbCommonProcessor {
                 .addBeanClass(JsonbMessageBodyWriter.class.getName())
                 .setUnremovable().build());
 
-        additionalReaders.produce(new MessageBodyReaderBuildItem(JsonbMessageBodyReader.class.getName(), Object.class.getName(),
-                Collections.singletonList(MediaType.APPLICATION_JSON)));
-        additionalWriters.produce(new MessageBodyWriterBuildItem(JsonbMessageBodyWriter.class.getName(), Object.class.getName(),
-                List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON, RestMediaType.APPLICATION_STREAM_JSON)));
+        additionalReaders.produce(
+                new MessageBodyReaderBuildItem.Builder(JsonbMessageBodyReader.class.getName(), Object.class.getName())
+                        .setMediaTypeStrings(Collections.singletonList(MediaType.APPLICATION_JSON))
+                        .setBuiltin(true)
+                        .build());
+        additionalWriters.produce(
+                new MessageBodyWriterBuildItem.Builder(JsonbMessageBodyWriter.class.getName(), Object.class.getName())
+                        .setMediaTypeStrings(List.of(MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_NDJSON,
+                                RestMediaType.APPLICATION_STREAM_JSON))
+                        .setBuiltin(true)
+                        .build());
     }
 
     @BuildStep

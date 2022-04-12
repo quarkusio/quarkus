@@ -146,7 +146,7 @@ public class CodeFlowTest {
             endpointErrorLocation = "http" + endpointErrorLocation.substring(5);
 
             HtmlPage page = webClient.getPage(URI.create(endpointErrorLocation).toURL());
-            assertEquals("error: invalid_scope, error_description: Invalid scopes: unknown profile email phone",
+            assertEquals("error: invalid_scope, error_description: Invalid scopes: unknown",
                     page.getBody().asText());
             webClient.getCookieManager().clearCookies();
         }

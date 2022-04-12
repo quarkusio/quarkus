@@ -363,6 +363,12 @@ jobs:
             os-name: "ubuntu-latest"
           }
           - {
+            name: "11 mvn 3.8.5",
+            java-version: 11,
+            os-name: "ubuntu-latest",
+            mvn-version: 3.8.5
+          }
+          - {
             name: "11 Windows",
             java-version: 11,
             os-name: "windows-latest"
@@ -382,6 +388,11 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+      - name: Switch Maven version
+        if: "matrix.java.mvn-version != ''"
+        run: |
+          echo 'distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${{matrix.java.mvn-version}}/apache-maven-${{matrix.java.mvn-version}}-bin.zip' >> .mvn/wrapper/maven-wrapper.properties
+          ./mvnw -version
       - name: Build
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl 'integration-tests/maven'

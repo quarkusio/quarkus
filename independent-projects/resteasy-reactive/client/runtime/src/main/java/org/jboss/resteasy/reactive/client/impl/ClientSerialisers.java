@@ -16,6 +16,7 @@ import javax.json.JsonValue;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -36,6 +37,7 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.CharacterMessage
 import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.InputStreamMessageBodyHandler;
+import org.jboss.resteasy.reactive.common.providers.serialisers.MapAsFormUrlEncodedProvider;
 import org.jboss.resteasy.reactive.common.providers.serialisers.NumberMessageBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.ReaderBodyHandler;
 import org.jboss.resteasy.reactive.common.providers.serialisers.StringMessageBodyHandler;
@@ -61,7 +63,9 @@ public class ClientSerialisers extends Serialisers {
             new BuiltinReader(File.class, FileBodyHandler.class, MediaType.WILDCARD),
 
             new BuiltinReader(byte[].class, ByteArrayMessageBodyHandler.class, MediaType.WILDCARD),
-            new BuiltinReader(MultivaluedMap.class, FormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED,
+            new BuiltinReader(MultivaluedMap.class, MapAsFormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED,
+                    RuntimeType.CLIENT),
+            new BuiltinReader(Form.class, FormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED,
                     RuntimeType.CLIENT),
             new BuiltinReader(Object.class, ClientDefaultTextPlainBodyHandler.class, MediaType.TEXT_PLAIN, RuntimeType.CLIENT),
             new BuiltinReader(JsonArray.class, JsonArrayHandler.class, MediaType.APPLICATION_JSON, RuntimeType.CLIENT),
@@ -85,7 +89,9 @@ public class ClientSerialisers extends Serialisers {
                     MediaType.WILDCARD),
             //            new BuiltinWriter(Buffer.class, VertxBufferMessageBodyWriter.class,
             //                    MediaType.WILDCARD),
-            new BuiltinWriter(MultivaluedMap.class, FormUrlEncodedProvider.class,
+            new BuiltinWriter(MultivaluedMap.class, MapAsFormUrlEncodedProvider.class,
+                    MediaType.APPLICATION_FORM_URLENCODED),
+            new BuiltinWriter(Form.class, FormUrlEncodedProvider.class,
                     MediaType.APPLICATION_FORM_URLENCODED),
             new BuiltinWriter(InputStream.class, InputStreamMessageBodyHandler.class,
                     MediaType.WILDCARD),

@@ -1036,9 +1036,9 @@ quarkus.oidc.credentials.jwt.issuer=${apple.issuer}
 
 ==== Mutual TLS
 
-Some OpenID Connect Providers may require that a client is authenticated as part of the `Mutual TLS` (`MTLS`) authentication process.
+Some OpenID Connect Providers may require that a client is authenticated as part of the `Mutual TLS` (`mTLS`) authentication process.
 
-`quarkus-oidc` can be configured as follows to support `MTLS`:
+`quarkus-oidc` can be configured as follows to support `mTLS`:
 
 [source,properties]
 ----

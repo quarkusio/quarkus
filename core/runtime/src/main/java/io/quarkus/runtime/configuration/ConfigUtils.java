@@ -106,10 +106,12 @@ public final class ConfigUtils {
         if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
             builder.withSources(new RuntimeOverrideConfigSource(classLoader));
         }
-        if (runTime) {
+        if (runTime || bootstrap) {
             builder.addDefaultSources();
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
             builder.withSources(new DotEnvConfigSourceProvider());
+            builder.withSources(
+                    new PropertiesConfigSource(loadRuntimeDefaultValues(), "Runtime Defaults", Integer.MIN_VALUE + 50));
         } else {
             List<ConfigSource> sources = new ArrayList<>();
             sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
@@ -120,10 +122,6 @@ public final class ConfigUtils {
         }
         if (addDiscovered) {
             builder.addDiscoveredSources();
-        }
-        if (runTime || bootstrap) {
-            Map<String, String> runtimeDefaults = loadRuntimeDefaultValues();
-            builder.withSources(new PropertiesConfigSource(runtimeDefaults, "Runtime Defaults", Integer.MIN_VALUE + 50));
         }
         return builder;
     }

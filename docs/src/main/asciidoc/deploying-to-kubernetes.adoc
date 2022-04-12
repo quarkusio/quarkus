@@ -177,7 +177,7 @@ The image that will be used in the generated manifests will be `quarkus/demo-app
 
 === Namespace
 
-By default Quarkus omits the namespace in the generated manifests, rather than enforce the `default` namespace. That means that you can apply the manifest to your chosen namespace when using `kubctl`, which in the example below is `test`:
+By default Quarkus omits the namespace in the generated manifests, rather than enforce the `default` namespace. That means that you can apply the manifest to your chosen namespace when using `kubectl`, which in the example below is `test`:
 
 [source,bash]
 ----

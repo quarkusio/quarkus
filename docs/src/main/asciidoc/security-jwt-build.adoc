@@ -25,7 +25,7 @@ SmallRye JWT Build provides an API for securing JWT claims using all of these op
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId></artifactId>
+    <artifactId>quarkus-smallrye-jwt-build</artifactId>
 </dependency>
 ----
 

@@ -250,6 +250,10 @@ public class OidcProvider implements Closeable {
                 }
             }
 
+            if (key == null && kid == null && thumbprint == null) {
+                key = jwks.getKeyWithoutKeyIdAndThumbprint();
+            }
+
             if (key == null) {
                 throw new UnresolvableKeyException(
                         String.format("JWK is not available, neither 'kid' nor 'x5t' token headers are set", kid));

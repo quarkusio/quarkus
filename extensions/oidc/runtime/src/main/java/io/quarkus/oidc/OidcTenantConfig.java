@@ -562,6 +562,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<List<String>> scopes = Optional.empty();
 
         /**
+         * Add the 'openid' scope automatically to the list of scopes. This is required for OpenId Connect providers
+         * but will not work for OAuth2 providers such as Twitter OAuth2 which does not accept that scope and throws an error.
+         */
+        @ConfigItem(defaultValueDocumentation = "true")
+        public Optional<Boolean> addOpenidScope = Optional.empty();
+
+        /**
          * Additional properties which will be added as the query parameters to the authentication redirect URI.
          */
         @ConfigItem
@@ -710,6 +717,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setExtraParams(Map<String, String> extraParams) {
             this.extraParams = extraParams;
+        }
+
+        public void setAddOpenidScope(boolean addOpenidScope) {
+            this.addOpenidScope = Optional.of(addOpenidScope);
+        }
+
+        public Optional<Boolean> isAddOpenidScope() {
+            return addOpenidScope;
         }
 
         public Optional<Boolean> isForceRedirectHttpsScheme() {
@@ -1056,7 +1071,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
         FACEBOOK,
         GITHUB,
         GOOGLE,
-        MICROSOFT
+        MICROSOFT,
+        TWITTER
     }
 
     public Optional<Provider> getProvider() {

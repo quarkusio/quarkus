@@ -411,6 +411,11 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         }
 
         @Override
+        protected int groupLimit() {
+            return 5;
+        }
+
+        @Override
         MethodCreator newAddMethod() {
             // Clear the shared maps for each addRemovedBeansX() method
             sharedQualifers.clear();
@@ -687,7 +692,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         void addComponent(T component) {
 
-            if (addMethod == null || componentsAdded >= GROUP_LIMIT) {
+            if (addMethod == null || componentsAdded >= groupLimit()) {
                 if (addMethod != null) {
                     addMethod.returnValue(null);
                 }
@@ -708,6 +713,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         abstract void invokeAddMethod();
 
         abstract void addComponentInternal(T component);
+
+        protected int groupLimit() {
+            return GROUP_LIMIT;
+        }
 
     }
 

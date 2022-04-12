@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye GraphQL Client
 
-:extension-status: preview
 include::./attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can use the GraphQL client library.
@@ -13,9 +12,6 @@ The client is implemented by the https://github.com/smallrye/smallrye-graphql/[S
 This guide is specifically geared towards the client side, so if you need an introduction to GraphQL in
 general, first refer to the xref:smallrye-graphql.adoc[SmallRye GraphQL guide], which provides an introduction
 to the GraphQL query language, general concepts and server-side development.
-
-
-include::./status-include.adoc[]
 
 The guide will walk you through developing and running a simple application that uses both supported
 types of GraphQL clients to retrieve data from a remote resource, that being a database related to Star Wars.

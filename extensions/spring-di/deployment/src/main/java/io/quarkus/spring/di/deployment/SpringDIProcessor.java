@@ -24,6 +24,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalStereotypeBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -76,6 +78,7 @@ public class SpringDIProcessor {
     private static final DotName CDI_NAMED_ANNOTATION = DotNames.NAMED;
     private static final DotName CDI_INJECT_ANNOTATION = DotNames.INJECT;
     private static final DotName CDI_PRODUCES_ANNOTATION = DotNames.PRODUCES;
+    private static final DotName QUARKUS_ALL_ANNOTATION = DotNames.ALL;
     private static final DotName MP_CONFIG_PROPERTY_ANNOTATION = DotName.createSimple(ConfigProperty.class.getName());
 
     @BuildStep
@@ -384,6 +387,14 @@ public class SpringDIProcessor {
                                 Collections.singletonList((AnnotationValue.createStringValue("value", value)))));
                     }
                 }
+
+                // in Spring List<SomeBean> means that all instances of SomeBean should be injected
+                if (fieldInfo.type().name().equals(DotNames.LIST)) {
+                    annotationsToAdd.add(create(
+                            QUARKUS_ALL_ANNOTATION,
+                            target,
+                            Collections.emptyList()));
+                }
             } else if (fieldInfo.hasAnnotation(SPRING_VALUE_ANNOTATION)) {
                 final AnnotationInstance annotation = fieldInfo.annotation(SPRING_VALUE_ANNOTATION);
                 addSpringValueAnnotations(target, annotation, true, annotationsToAdd);
@@ -418,6 +429,18 @@ public class SpringDIProcessor {
                         CDI_INJECT_ANNOTATION,
                         target,
                         Collections.emptyList()));
+                // in Spring List<SomeBean> means that all instances of SomeBean should be injected
+                List<Type> parameters = methodInfo.parameters();
+                for (int i = 0; i < parameters.size(); i++) {
+                    Type parameter = parameters.get(i);
+                    if (parameter.name().equals(DotNames.LIST)) {
+                        annotationsToAdd.add(create(
+                                QUARKUS_ALL_ANNOTATION,
+                                MethodParameterInfo.create(methodInfo, (short) i),
+                                Collections.emptyList()));
+                    }
+                }
+
             }
 
             // add method parameter conversion annotations

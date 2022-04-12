@@ -64,6 +64,9 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.persistence-api.version
       newValue: 3.0.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: hibernate-reactive.version
+      newValue: 1.1.5.Beta1
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.hibernate
       oldArtifactId: hibernate-core
@@ -88,6 +91,11 @@ recipeList:
       oldArtifactId: hibernate-search-mapper-orm
       newGroupId: org.hibernate.search
       newArtifactId: hibernate-search-mapper-orm-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate.reactive
+      oldArtifactId: hibernate-reactive-core
+      newGroupId: org.hibernate.reactive
+      newArtifactId: hibernate-reactive-core-jakarta
   # Security - See below
   # Servlet
   - org.openrewrite.maven.ChangePropertyValue:
@@ -304,6 +312,11 @@ recipeList:
       oldArtifactId: agroal-narayana
       newGroupId: io.agroal
       newArtifactId: agroal-narayana-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate.reactive
+      oldArtifactId: hibernate-reactive-core
+      newGroupId: org.hibernate.reactive
+      newArtifactId: hibernate-reactive-core-jakarta
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.hibernate-search-switch

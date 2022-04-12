@@ -1,0 +1,15 @@
+syntax = "proto3";
+package inheritance.test;
+
+option java_package = "io.quarkus.grpc.test.blocking.inheritance";
+
+service BlockingTestService {
+  rpc overriden1(Msg) returns(Msg);
+  rpc overriden2(Msg) returns(Msg);
+  rpc notOverriden1(Msg) returns(Msg);
+  rpc notOverriden2(Msg) returns(Msg);
+}
+
+message Msg {
+  string text = 1;
+}

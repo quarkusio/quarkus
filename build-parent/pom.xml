@@ -1226,5 +1226,31 @@
             </properties>
         </profile>
 
+        <profile>
+            <id>jakarta-rewrite</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <version>4.21.0-SNAPSHOT</version>
+                        <configuration>
+                            <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                            <activeStyles>
+                                <style>io.quarkus.style.maven</style>
+                            </activeStyles>
+                            <activeRecipes>
+                                <recipe>io.quarkus.build-parent</recipe>
+                            </activeRecipes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

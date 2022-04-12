@@ -34,6 +34,7 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
         for (Map.Entry<String, String> entry : event.request().headers()) {
             headers.put(entry.getKey(), event.request().headers().getAll(entry.getKey()));
         }
+        event.request().resume();
         if (event.getBody() != null) {
             DevConsoleRequest request = new DevConsoleRequest(event.request().method().name(), event.request().uri(), headers,
                     event.getBody().getBytes());

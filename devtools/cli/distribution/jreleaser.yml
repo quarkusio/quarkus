@@ -41,7 +41,6 @@ distributions:
     executable:
       name: quarkus
       windowsExtension: bat
-    executableExtension: bat
     tags:
       - quarkus
       - cli

@@ -394,6 +394,10 @@ build_module "extensions/elasticsearch-rest-high-level-client"
 build_module "extensions/hibernate-search-orm-elasticsearch"
 build_module "extensions/avro"
 build_module "extensions/hibernate-search-orm-coordination-outbox-polling"
+build_module "extensions/reactive-datasource"
+build_module "extensions/reactive-pg-client"
+build_module "test-framework/vertx"
+build_module "extensions/hibernate-reactive"
 
 exit 0
 

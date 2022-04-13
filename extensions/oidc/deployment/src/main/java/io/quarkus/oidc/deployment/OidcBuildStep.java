@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfoCache;
+import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
@@ -89,7 +90,8 @@ public class OidcBuildStep {
                 .addBeanClass(OidcIdentityProvider.class)
                 .addBeanClass(DefaultTenantConfigResolver.class)
                 .addBeanClass(DefaultTokenStateManager.class)
-                .addBeanClass(OidcSessionImpl.class);
+                .addBeanClass(OidcSessionImpl.class)
+                .addBeanClass(BackChannelLogoutHandler.class);
         additionalBeans.produce(builder.build());
     }
 

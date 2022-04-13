@@ -97,7 +97,15 @@ recipeList:
       oldArtifactId: hibernate-reactive-core
       newGroupId: org.hibernate.reactive
       newArtifactId: hibernate-reactive-core-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: quarkus-local-cache
+      newGroupId: org.hibernate
+      newArtifactId: quarkus-local-cache-jakarta
   # Security - See below
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: quarkus-security.version
+      newValue: 2.0.0-SNAPSHOT
   # Servlet
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
@@ -326,6 +334,11 @@ recipeList:
       oldArtifactId: hibernate-reactive-core
       newGroupId: org.hibernate.reactive
       newArtifactId: hibernate-reactive-core-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: quarkus-local-cache
+      newGroupId: org.hibernate
+      newArtifactId: quarkus-local-cache-jakarta
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.hibernate-search-switch
@@ -513,6 +526,31 @@ recipeList:
   - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
       groupId: org.jboss.resteasy.microprofile
       artifactId: microprofile-config
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.bom.resteasy-spring-web
+displayName: Add RESTEasy Spring Web to BOM
+recipeList:
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.resteasy
+      oldArtifactId: resteasy-spring-web
+      newGroupId: org.jboss.resteasy.spring
+      newArtifactId: resteasy-spring-web
+      newVersion: "${resteasy-spring-web.version}"
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: resteasy-spring-web.version
+      newValue: 3.0.0.Alpha2
+      addIfMissing: true
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.resteasy-spring-web
+displayName: Adjust RESTEasy Spring Web
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.resteasy
+      oldArtifactId: resteasy-spring-web
+      newGroupId: org.jboss.resteasy.spring
+      newArtifactId: resteasy-spring-web
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.rest-client

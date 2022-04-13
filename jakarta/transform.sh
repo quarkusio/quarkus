@@ -19,16 +19,14 @@ fi
 if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   # Prepare OpenRewrite - we temporarily build a local version as we need a patch
   rm -rf target/rewrite
-  git clone https://github.com/gsmet/rewrite.git target/rewrite
+  git clone -b jakarta --depth 1 https://github.com/gsmet/rewrite.git target/rewrite
   pushd target/rewrite
-  git checkout jakarta
   ./gradlew -x test -x javadoc publishToMavenLocal
   popd
 
   rm -rf target/rewrite-maven-plugin
-  git clone https://github.com/gsmet/rewrite-maven-plugin.git target/rewrite-maven-plugin
+  git clone -b jakarta --depth 1 https://github.com/gsmet/rewrite-maven-plugin.git target/rewrite-maven-plugin
   pushd target/rewrite-maven-plugin
-  git checkout jakarta
   ./mvnw -B clean install -DskipTests -DskipITs
   popd
 
@@ -42,17 +40,22 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
 
   # Build Agroal (temporary)
   rm -rf target/agroal
-  git clone https://github.com/gsmet/agroal.git target/agroal
+  git clone -b jakarta --depth 1 https://github.com/gsmet/agroal.git target/agroal
   pushd target/agroal
-  git checkout jakarta
   mvn clean install -DskipTests -DskipITs
   popd
 
   # Build Quarkus HTTP (temporary)
   rm -rf target/quarkus-http
-  git clone https://github.com/quarkusio/quarkus-http.git target/quarkus-http
+  git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-http.git target/quarkus-http
   pushd target/quarkus-http
-  git checkout jakarta-rewrite
+  mvn -B clean install -DskipTests -DskipITs
+  popd
+
+  # Build Quarkus Security (temporary)
+  rm -rf target/quarkus-security
+  git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-security.git target/quarkus-security
+  pushd target/quarkus-security
   mvn -B clean install -DskipTests -DskipITs
   popd
 
@@ -95,11 +98,11 @@ transform_module () {
   echo "    > Transformation done"
 }
 
-tranform_kotlin_module () {
+transform_kotlin_module () {
   # this is very ad hoc but hopefully it will be good enough
-  for package in javax.inject javax.enterprise javax.ws.rs javax.annotation; do
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.transaction.Transactional; do
     local newPackage=${package/javax/jakarta}
-    find $1 -name '*.kt' | xargs sed -i "s@import ${package}\.@import ${newPackage}.@g"
+    find $1 -name '*.kt' | xargs sed -i "s@import ${package}@import ${newPackage}@g"
   done
 }
 
@@ -344,10 +347,10 @@ build_module "extensions/resteasy-classic"
 # RESTEasy Reactive
 build_module "extensions/smallrye-stork"
 build_module "extensions/kotlin"
-tranform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin"
-tranform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization"
-tranform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization-common"
-tranform_kotlin_module "extensions/resteasy-reactive/rest-client-reactive-kotlin-serialization"
+transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin"
+transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization"
+transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization-common"
+transform_kotlin_module "extensions/resteasy-reactive/rest-client-reactive-kotlin-serialization"
 update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-configkey-scope-test-application.properties"
 update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-classname-scope-test-application.properties"
 update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-global-scope-test-application.properties"
@@ -442,12 +445,66 @@ build_module "extensions/smallrye-opentracing"
 build_module "extensions/mongodb-client"
 build_module "extensions/liquibase-mongodb"
 build_module "extensions/logging-gelf"
-build_module "extensions/logging-json"
+# we need a Jakarta version of jboss-logmanager-embedded
+#build_module "extensions/logging-json"
 build_module "extensions/mailer"
 build_module "extensions/micrometer"
 build_module "extensions/micrometer-registry-prometheus"
 # TODO we need a narayana-lra Jakarta extension (dependency of MP spec and CDI spec)
 #build_module "extensions/narayana-lra"
+build_module "extensions/narayana-stm"
+build_module "extensions/oidc-client"
+build_module "extensions/oidc-client-filter"
+build_module "extensions/oidc-client-reactive-filter"
+build_module "extensions/oidc-token-propagation"
+build_module "extensions/oidc-token-propagation-reactive"
+build_module "extensions/openshift-client"
+build_module "extensions/opentelemetry"
+build_module "extensions/reactive-datasource"
+transform_kotlin_module "extensions/panache/hibernate-orm-panache-kotlin"
+transform_kotlin_module "extensions/panache/mongodb-panache-kotlin"
+sed -i "s@javax/xml/bind/annotation/@jakarta/xml/bind/annotation/@g" ./extensions/panache/panache-common/deployment/src/main/java/io/quarkus/panache/common/deployment/PanacheConstants.java
+build_module "extensions/panache"
+build_module "extensions/picocli"
+transform_kotlin_module "extensions/scheduler/kotlin"
+build_module "extensions/scheduler"
+build_module "extensions/quartz"
+build_module "extensions/reactive-db2-client"
+build_module "extensions/reactive-mssql-client"
+build_module "extensions/reactive-mysql-client"
+build_module "extensions/reactive-oracle-client"
+build_module "extensions/reactive-pg-client"
+build_module "extensions/redis-client"
+build_module "extensions/scala"
+build_module "extensions/security-jpa"
+build_module_only_no_tests "extensions/security-webauthn"
+./mvnw clean install -f "extensions/security-webauthn/runtime" -DskipExtensionValidation
+build_module "test-framework/security-webauthn"
+build_module "extensions/security-webauthn"
+# TODO we need a Jakarta version of SmallRye GraphQL
+#build_module "extensions/smallrye-graphql"
+#build_module "extensions/smallrye-graphql-client"
+build_module "extensions/smallrye-jwt"
+transform_kotlin_module "extensions/smallrye-reactive-messaging/kotlin"
+# TODO we need a Jakarta version for SmallRye Reactive Messaging
+#build_module "extensions/smallrye-reactive-messaging"
+#build_module "extensions/smallrye-reactive-messaging-amqp"
+#build_module "extensions/smallrye-reactive-messaging-kafka"
+#build_module "extensions/smallrye-reactive-messaging-mqtt"
+#build_module "extensions/smallrye-reactive-messaging-rabbitmq"
+build_module "extensions/spring-boot-properties"
+build_module "extensions/spring-cache"
+build_module "extensions/spring-cloud-config-client"
+build_module "extensions/spring-di"
+build_module "extensions/spring-data-jpa"
+build_module "extensions/spring-data-rest"
+build_module "extensions/spring-scheduled"
+# TODO new version of RESTEasy Spring Web has been released with JDK 17
+build_module "extensions/spring-web"
+build_module "extensions/spring-security"
+build_module "extensions/vertx-graphql"
+build_module "extensions/webjars-locator"
+build_module "extensions/websockets"
 
 exit 0
 

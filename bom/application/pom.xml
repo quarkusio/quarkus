@@ -5779,6 +5779,7 @@
                                 <recipe>io.quarkus.jakarta-security</recipe>
                                 <recipe>io.quarkus.smallrye</recipe>
                                 <recipe>io.quarkus.bom.resteasy-microprofile</recipe>
+                                <recipe>io.quarkus.bom.resteasy-spring-web</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

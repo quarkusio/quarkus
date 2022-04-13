@@ -875,6 +875,8 @@ public class VertxHttpRecorder {
         HttpServerOptions options = new HttpServerOptions();
 
         applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+        // Override the host (0.0.0.0 by default) with the configured domain socket.
+        options.setHost(httpConfiguration.domainSocket);
 
         return options;
     }
@@ -883,14 +885,6 @@ public class VertxHttpRecorder {
         int idleTimeout = (int) httpConfiguration.idleTimeout.toMillis();
         options.setIdleTimeout(idleTimeout);
         options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
-    }
-
-    public void warnIfPortChanged(HttpConfiguration config, int port) {
-        if (config.port != port) {
-            LOGGER.errorf(
-                    "quarkus.http.port was specified at build time as %s however run time value is %s, Kubernetes metadata will be incorrect.",
-                    port, config.port);
-        }
     }
 
     public void addRoute(RuntimeValue<Router> router, Function<Router, Route> route, Handler<RoutingContext> handler,

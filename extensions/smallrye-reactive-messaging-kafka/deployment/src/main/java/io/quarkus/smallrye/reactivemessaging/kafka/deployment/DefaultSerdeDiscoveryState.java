@@ -191,6 +191,18 @@ class DefaultSerdeDiscoveryState {
                 .orElse(null);
     }
 
+    ClassInfo getImplementorOfWithTypeArgument(DotName implementedInterface, DotName expectedTypeArgument) {
+        return index.getKnownDirectImplementors(implementedInterface)
+                .stream()
+                .filter(ci -> ci.interfaceTypes().stream()
+                        .anyMatch(it -> it.name().equals(implementedInterface)
+                                && it.kind() == Type.Kind.PARAMETERIZED_TYPE
+                                && it.asParameterizedType().arguments().size() == 1
+                                && it.asParameterizedType().arguments().get(0).name().equals(expectedTypeArgument)))
+                .findAny()
+                .orElse(null);
+    }
+
     List<AnnotationInstance> findAnnotationsOnMethods(DotName annotation) {
         return index.getAnnotations(annotation)
                 .stream()

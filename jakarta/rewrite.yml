@@ -76,6 +76,7 @@ recipeList:
       oldGroupId: org.hibernate
       oldArtifactId: hibernate-envers
       newGroupId: org.hibernate
+      newArtifactId: hibernate-envers-jakarta
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.hibernate
       oldArtifactId: hibernate-jpamodelgen
@@ -206,6 +207,14 @@ recipeList:
   - org.openrewrite.maven.RemoveExclusion:
       groupId: jakarta.xml.bind
       artifactId: jakarta.xml.bind-api
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.build-parent
+displayName: Adjust build-parent
+recipeList:
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: subethasmtp.version
+      newValue: 6.0.1
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-security
@@ -369,6 +378,12 @@ recipeList:
       key: smallrye-health.version
       newValue: 4.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-jwt.version
+      newValue: 2.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-jwt.version
+      newValue: 4.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-api.version
       newValue: 4.0.1
   - org.openrewrite.maven.ChangePropertyValue:
@@ -378,16 +393,18 @@ recipeList:
       key: smallrye-open-api.version
       newValue: 3.0.0-RC1
   - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-opentracing-api.version
+      newValue: 3.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-opentracing.version
+      newValue: 3.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: 3.0
 # In progress, these ones need a change:
-#        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
 #        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
-#        <microprofile-jwt.version>1.2</microprofile-jwt.version>
 #        <microprofile-lra.version>1.0</microprofile-lra.version>
 #        <smallrye-graphql.version>1.4.3</smallrye-graphql.version>
-#        <smallrye-opentracing.version>2.1.0</smallrye-opentracing.version>
-#        <smallrye-jwt.version>3.3.3</smallrye-jwt.version>
 #        <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
 #        <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
 #        <smallrye-mutiny-vertx-binding.version>2.19.0</smallrye-mutiny-vertx-binding.version>

@@ -46,7 +46,7 @@
         <htmlunit.version>2.40.0</htmlunit.version>
         <javaparser-core.version>3.24.2</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
-        <subethasmtp.version>3.1.7</subethasmtp.version>
+        <subethasmtp.version>5.2.8</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.31</freemarker.version>
@@ -312,7 +312,7 @@
             </dependency>
 
             <dependency>
-                <groupId>org.subethamail</groupId>
+                <groupId>com.github.davidmoten</groupId>
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
                 <scope>test</scope>
@@ -1226,5 +1226,31 @@
             </properties>
         </profile>
 
+        <profile>
+            <id>jakarta-rewrite</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <version>4.21.0-SNAPSHOT</version>
+                        <configuration>
+                            <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                            <activeStyles>
+                                <style>io.quarkus.style.maven</style>
+                            </activeStyles>
+                            <activeRecipes>
+                                <recipe>io.quarkus.build-parent</recipe>
+                            </activeRecipes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

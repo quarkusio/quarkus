@@ -192,7 +192,7 @@ clean_project
 ./mvnw -B -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -am clean install -DskipTests -DskipITs -Dinvoker.skip
 
 ## we cannot rewrite some of the modules for various reasons but we rewrite most of them
-./mvnw -B -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -Dinvoker.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -Dno-test-modules -Drewrite.pomCacheEnabled=false -Djakarta-rewrite
+./mvnw -B -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -Dinvoker.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -pl '!:quarkus-integration-tests-parent' -Dno-test-modules -Drewrite.pomCacheEnabled=false -Djakarta-rewrite
 
 ## remove banned dependencies
 remove_banned_dependency "independent-projects/bootstrap" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
@@ -362,7 +362,6 @@ build_module "extensions/smallrye-openapi-common"
 build_module "extensions/swagger-ui"
 build_module "extensions/smallrye-openapi"
 build_module "extensions/smallrye-health"
-# TODO: tests are not passing for now, I pinged Jan
 build_module "extensions/smallrye-metrics"
 
 # Persistence
@@ -399,11 +398,61 @@ build_module "extensions/reactive-pg-client"
 build_module "test-framework/vertx"
 build_module "extensions/hibernate-reactive"
 
+# And now in alphabetical order (dependency aside)...
+# TODO apicurio-registry-avro depends on old JAX-RS spec
+build_module "extensions/awt"
+build_module "extensions/azure-functions-http"
+build_module "extensions/cache"
+build_module "extensions/config-yaml"
+build_module "extensions/kubernetes-client"
+build_module "extensions/container-image"
+build_module "extensions/elytron-security-jdbc"
+build_module "test-framework/ldap"
+build_module "extensions/elytron-security-ldap"
+build_module "extensions/elytron-security-oauth2"
+build_module "extensions/flyway"
+build_module "extensions/funqy"
+build_module "extensions/google-cloud-functions"
+build_module "extensions/google-cloud-functions-http"
+build_module "extensions/grpc-common"
+build_module "extensions/grpc"
+build_module "extensions/hibernate-envers"
+build_module "extensions/infinispan-client"
+build_module "extensions/jaeger"
+build_module "extensions/kafka-client"
+build_module "test-framework/junit5-mockito-config"
+build_module "test-framework/junit5-mockito"
+build_module "extensions/kafka-streams"
+build_module "test-framework/keycloak-server"
+# TODO we need a keycloak-admin-client-jakarta
+#build_module "extensions/keycloak-admin-client"
+#build_module "extensions/keycloak-admin-client-reactive"
+build_module "extensions/smallrye-jwt-build"
+build_module "extensions/oidc-common"
+build_module "extensions/oidc"
+# TODO we need the quarkus-keycloak-admin-client extension
+#build_module "extensions/keycloak-authorization"
+build_module "extensions/kubernetes"
+build_module "extensions/kubernetes-config"
+build_module "extensions/liquibase"
+build_module "extensions/reactive-streams-operators"
+build_module "extensions/smallrye-opentracing"
+build_module "extensions/mongodb-client"
+build_module "extensions/liquibase-mongodb"
+build_module "extensions/logging-gelf"
+build_module "extensions/logging-json"
+build_module "extensions/mailer"
+build_module "extensions/micrometer"
+build_module "extensions/micrometer-registry-prometheus"
+# TODO we need a narayana-lra Jakarta extension (dependency of MP spec and CDI spec)
+#build_module "extensions/narayana-lra"
+
 exit 0
 
 # These ones require ArC and Mutiny extensions
 #build_module "test-framework/junit5-mockito-config"
 #build_module "test-framework/junit5-mockito"
+
 
 # Dev Tools - needs to be done after all the extensions have been built and before we run the ITs
 #transform_module "devtools"

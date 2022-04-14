@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -24,6 +25,7 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -155,7 +157,14 @@ public class KeycloakDevServicesProcessor {
                 }
             }
             if (!restartRequired) {
-                return devService.toBuildItem();
+                DevServicesResultBuildItem result = devService.toBuildItem();
+                String usersString = result.getConfig().get(OIDC_USERS);
+                Map<String, String> users = (usersString == null || usersString.isBlank()) ? Map.of()
+                        : Arrays.stream(usersString.split(","))
+                                .map(s -> s.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
+                keycloakBuildItemBuildProducer
+                        .produce(new KeycloakDevServicesConfigBuildItem(result.getConfig(), Map.of(OIDC_USERS, users)));
+                return result;
             }
             try {
                 devService.close();
@@ -257,6 +266,8 @@ public class KeycloakDevServicesProcessor {
         configProperties.put(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType);
         configProperties.put(CLIENT_ID_CONFIG_KEY, oidcClientId);
         configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
+        configProperties.put(OIDC_USERS, users.entrySet().stream()
+                .map(e -> e.toString()).collect(Collectors.joining(",")));
 
         keycloakBuildItemBuildProducer
                 .produce(new KeycloakDevServicesConfigBuildItem(configProperties, Map.of(OIDC_USERS, users)));

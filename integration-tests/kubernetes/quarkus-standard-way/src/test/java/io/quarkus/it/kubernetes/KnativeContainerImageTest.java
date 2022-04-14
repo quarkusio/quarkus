@@ -31,6 +31,7 @@ public class KnativeContainerImageTest {
     @Test
     public void assertGeneratedResources() throws IOException {
         Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
+
         assertThat(kubernetesDir)
                 .isDirectoryContaining(p -> p.getFileName().endsWith("knative.json"))
                 .isDirectoryContaining(p -> p.getFileName().endsWith("knative.yml"));

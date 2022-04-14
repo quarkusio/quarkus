@@ -20,7 +20,8 @@ import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
-import io.dekorate.kubernetes.decorator.ApplyReplicasDecorator;
+import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
+import io.dekorate.kubernetes.decorator.ApplyReplicasToStatefulSetDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
 import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
@@ -142,7 +143,7 @@ public class VanillaKubernetesProcessor {
 
         if (config.getReplicas() != 1) {
             // This only affects Deployment
-            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasDecorator(name, config.getReplicas())));
+            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToDeploymentDecorator(name, config.getReplicas())));
             // This only affects StatefulSet
             result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToStatefulSetDecorator(name, config.getReplicas())));
         }

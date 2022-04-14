@@ -145,7 +145,9 @@ update_banned_dependency_advanced () {
 # Build, test and install a particular maven module (chosen by relative path)
 build_module () {
   local pomPath="$1/pom.xml"
-  if [ "${REWRITE_NO_TESTS-false}" != "true" ]; then
+  if [ "${REWRITE_TESTS_CONTAINERS-false}" == "true" ]; then
+    ./mvnw -B clean install -f "$pomPath" -Dstart-containers -Dtest-containers
+  elif [ "${REWRITE_NO_TESTS-false}" != "true" ]; then
     ./mvnw -B clean install -f "$pomPath"
   else
     ./mvnw -B clean install -f "$pomPath" -DskipTests -DskipITs

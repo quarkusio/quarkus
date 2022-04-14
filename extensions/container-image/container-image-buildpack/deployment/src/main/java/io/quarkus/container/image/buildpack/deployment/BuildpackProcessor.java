@@ -176,9 +176,9 @@ public class BuildpackProcessor {
                 .accept(BuildpackBuilder.class, b -> {
 
                     if (isNativeBuild) {
-                        buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuildImage(i));
+                        buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(i));
                     } else {
-                        buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuildImage(i));
+                        buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuilderImage(i));
                     }
 
                     if (buildpackConfig.runImage.isPresent()) {

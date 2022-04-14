@@ -176,9 +176,15 @@ public class OpenshiftProcessor {
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings,
-            Optional<CustomProjectRootBuildItem> customProjectRoot) {
+            Optional<CustomProjectRootBuildItem> customProjectRoot,
+            List<KubernetesDeploymentTargetBuildItem> targets) {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
+        if (!targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
+                .anyMatch(t -> OPENSHIFT.equals(t.getName()))) {
+            return result;
+        }
+
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,

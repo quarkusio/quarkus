@@ -136,17 +136,20 @@ public class KnativeProcessor {
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings,
-            Optional<CustomProjectRootBuildItem> customProjectRoot) {
+            Optional<CustomProjectRootBuildItem> customProjectRoot,
+            List<KubernetesDeploymentTargetBuildItem> targets) {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
-        String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        if (!targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
+                .anyMatch(t -> KNATIVE.equals(t.getName()))) {
+            return result;
+        }
 
+        String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config,
-                metricsConfiguration, annotations,
-                labels, command,
-                ports, livenessPath, readinessPath, roles, roleBindings));
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config, metricsConfiguration, annotations,
+                labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
 
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage())));

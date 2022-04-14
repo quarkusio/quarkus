@@ -120,15 +120,19 @@ public class VanillaKubernetesProcessor {
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
             List<KubernetesPortBuildItem> ports, Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath, List<KubernetesRoleBuildItem> roles,
-            List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot) {
+            List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot,
+            List<KubernetesDeploymentTargetBuildItem> targets) {
 
         final List<DecoratorBuildItem> result = new ArrayList<>();
+        if (!targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
+                .anyMatch(t -> KUBERNETES.equals(t.getName()))) {
+            return result;
+        }
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config,
-                metricsConfiguration,
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration,
                 annotations, labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
 
         if (config.deploymentKind == KubernetesConfig.DeploymentResourceKind.StatefulSet) {

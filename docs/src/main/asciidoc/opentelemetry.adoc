@@ -135,8 +135,7 @@ receivers:
 exporters:
   jaeger:
     endpoint: jaeger-all-in-one:14250
-    tls:
-      insecure: true
+    insecure: true
 
 processors:
   batch:

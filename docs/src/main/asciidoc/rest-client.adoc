@@ -685,7 +685,7 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
         wireMockServer = new WireMockServer();
         wireMockServer.start(); // <3>
 
-        stubFor(get(urlEqualTo("/extensions?id=io.quarkus:quarkus-rest-client"))   // <4>
+        wireMockServer.stubFor(get(urlEqualTo("/extensions?id=io.quarkus:quarkus-rest-client"))   // <4>
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(
@@ -695,7 +695,7 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
                             "}]"
                         )));
 
-        stubFor(get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://stage.code.quarkus.io/api")));   // <5>
+        wireMockServer.stubFor(get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://stage.code.quarkus.io/api")));   // <5>
 
         return Collections.singletonMap("quarkus.rest-client.\"org.acme.rest.client.ExtensionsService\".url", wireMockServer.baseUrl()); // <6>
     }

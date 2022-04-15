@@ -849,7 +849,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
      -DprojectGroupId=org.acme \
      -DprojectArtifactId=greeting-app \
      -Dextensions="org.acme:greeting-extension:1.0.0-SNAPSHOT" \
-     -DnoExamples
+     -DnoCode
 ----
 
 `cd` into `greeting-app`.

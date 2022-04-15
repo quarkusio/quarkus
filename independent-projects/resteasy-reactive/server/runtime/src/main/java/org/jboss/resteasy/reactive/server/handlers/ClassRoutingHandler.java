@@ -109,7 +109,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
         // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
 
         if (!target.value.getConsumes().isEmpty()) {
-            String contentType = serverRequest.getRequestHeader(HttpHeaders.CONTENT_TYPE);
+            String contentType = (String) requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
             if (contentType != null) {
                 try {
                     if (MediaTypeHelper.getFirstMatch(
@@ -126,7 +126,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
         if (target.value.getProduces() != null) {
             // there could potentially be multiple Accept headers and we need to response with 406
             // if none match the method's @Produces
-            List<String> accepts = serverRequest.getAllRequestHeaders(HttpHeaders.ACCEPT);
+            List<String> accepts = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false);
             if (!accepts.isEmpty()) {
                 boolean hasAtLeastOneMatch = false;
                 for (int i = 0; i < accepts.size(); i++) {

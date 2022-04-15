@@ -62,4 +62,13 @@ class CreateProjectHelperTest {
         assertEquals(17, CreateProjectHelper.determineBestJavaLtsVersion(17));
         assertEquals(17, CreateProjectHelper.determineBestJavaLtsVersion(18));
     }
+
+    @Test
+    public void givenKotlinProjectWithVersion18ShouldReturn17() {
+        Map<String, Object> values = new HashMap<>();
+        values.put(ProjectGenerator.SOURCE_TYPE, SourceType.KOTLIN);
+
+        CreateProjectHelper.setJavaVersion(values, "18");
+        assertEquals("17", values.get("java_target"));
+    }
 }

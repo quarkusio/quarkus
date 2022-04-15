@@ -184,12 +184,17 @@ public class AbstractJvmQuarkusTestExtension {
     }
 
     protected Class<? extends QuarkusTestProfile> getQuarkusTestProfile(ExtensionContext extensionContext) {
-        TestProfile annotation = extensionContext.getRequiredTestClass().getAnnotation(TestProfile.class);
-        Class<? extends QuarkusTestProfile> selectedProfile = null;
-        if (annotation != null) {
-            selectedProfile = annotation.value();
+        Class<?> testClass = extensionContext.getRequiredTestClass();
+        while (testClass != null) {
+            TestProfile annotation = testClass.getAnnotation(TestProfile.class);
+            if (annotation != null) {
+                return annotation.value();
+            }
+
+            testClass = testClass.getEnclosingClass();
         }
-        return selectedProfile;
+
+        return null;
     }
 
     protected static boolean hasPerTestResources(ExtensionContext extensionContext) {

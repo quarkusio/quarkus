@@ -44,7 +44,7 @@ abstract class AbstractExceptionMapperGenerator {
         try (ClassCreator cc = ClassCreator.builder()
                 .classOutput(classOutput).className(generatedClassName)
                 .interfaces(ExceptionMapper.class)
-                .signature(String.format("Ljava/lang/Object;Ljavax/ws/rs/ext/ExceptionMapper<L%s;>;",
+                .signature(String.format("Ljava/lang/Object;L" + ExceptionMapper.class.getName().replace(".", "/") + "<L%s;>;",
                         exceptionClassName.replace('.', '/')))
                 .build()) {
 

@@ -176,9 +176,9 @@ public class BuildpackProcessor {
                 .accept(BuildpackBuilder.class, b -> {
 
                     if (isNativeBuild) {
-                        buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuildImage(i));
+                        buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(i));
                     } else {
-                        buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuildImage(i));
+                        buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuilderImage(i));
                     }
 
                     if (buildpackConfig.runImage.isPresent()) {
@@ -191,6 +191,11 @@ public class BuildpackProcessor {
                     }
 
                 }).build();
+
+        if (buildpack.getExitCode() != 0) {
+            throw new IllegalStateException("Buildpack build failed");
+        }
+
         log.info("Buildpack build complete");
         if (containerImageConfig.isPushExplicitlyEnabled() || pushRequest.isPresent()) {
             if (!containerImageConfig.registry.isPresent()) {
@@ -203,12 +208,11 @@ public class BuildpackProcessor {
 
             log.info("Pushing image to " + authConfig.getRegistryAddress());
             Stream.concat(Stream.of(containerImage.getImage()), containerImage.getAdditionalImageTags().stream()).forEach(i -> {
-                ResultCallback.Adapter<PushResponseItem> adapter = new ResultCallback.Adapter<>();
-                buildpack.getDockerClient().pushImageCmd(i).exec(adapter);
+                ResultCallback.Adapter<PushResponseItem> callback = buildpack.getDockerClient().pushImageCmd(i).start();
                 try {
-                    adapter.awaitCompletion();
+                    callback.awaitCompletion();
                     log.info("Push complete");
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     throw new IllegalStateException(e);
                 }
             });

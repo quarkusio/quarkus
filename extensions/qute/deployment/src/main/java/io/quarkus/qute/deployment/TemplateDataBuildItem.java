@@ -100,8 +100,8 @@ final class TemplateDataBuildItem extends MultiBuildItem {
             name = field.name();
         }
         if (ignorePatterns != null) {
-            for (int i = 0; i < ignorePatterns.length; i++) {
-                if (ignorePatterns[i].matcher(name).matches()) {
+            for (Pattern ignorePattern : ignorePatterns) {
+                if (ignorePattern.matcher(name).matches()) {
                     return false;
                 }
             }

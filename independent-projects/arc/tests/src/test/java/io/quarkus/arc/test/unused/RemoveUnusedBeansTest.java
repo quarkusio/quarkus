@@ -29,7 +29,7 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(HasObserver.class, Foo.class, FooAlternative.class, HasName.class, UnusedProducers.class,
-                    InjectedViaInstance.class, InjectedViaInstanceWithWildcard.class, InjectedViaInstanceWithWildcard2.class,
+                    InjectedViaInstance.class, InjectedViaInstanceWithWildcard.class,
                     InjectedViaProvider.class, Excluded.class,
                     UsedProducers.class,
                     UnusedProducerButInjected.class, UsedViaInstanceWithUnusedProducer.class, UsesBeanViaInstance.class)
@@ -43,7 +43,6 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
         assertPresent(HasName.class);
         assertPresent(InjectedViaInstance.class);
         assertPresent(InjectedViaInstanceWithWildcard.class);
-        assertPresent(InjectedViaInstanceWithWildcard2.class);
         assertPresent(InjectedViaProvider.class);
         assertPresent(String.class);
         assertPresent(UsedProducers.class);
@@ -105,9 +104,6 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
         Instance<InjectedViaInstance> instance;
 
         @Inject
-        Instance<? extends InjectedViaInstanceWithWildcard> instanceWildcard;
-
-        @Inject
         Instance<Comparable<? extends Foo>> instanceWildcard2;
 
         @Inject
@@ -121,12 +117,7 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
     }
 
     @Singleton
-    static class InjectedViaInstanceWithWildcard {
-
-    }
-
-    @Singleton
-    static class InjectedViaInstanceWithWildcard2 implements Comparable<FooAlternative> {
+    static class InjectedViaInstanceWithWildcard implements Comparable<FooAlternative> {
 
         @Override
         public int compareTo(FooAlternative o) {

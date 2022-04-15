@@ -8,13 +8,13 @@ import java.util.function.Function;
  * Namespace resolvers are used to find the current context object for an expression that starts with a namespace declaration.
  * <p>
  * For example the expression {@code data:colors} declares a namespace {@code data}.
- * 
+ *
  * @see EngineBuilder#addNamespaceResolver(NamespaceResolver)
  */
 public interface NamespaceResolver extends Resolver, WithPriority {
 
     /**
-     * 
+     *
      * @param namespace
      * @return a new builder instance
      */
@@ -24,7 +24,7 @@ public interface NamespaceResolver extends Resolver, WithPriority {
 
     /**
      * A valid namespace consists of alphanumeric characters and underscores.
-     * 
+     *
      * @return the namespace
      * @see Expression#getNamespace()
      */

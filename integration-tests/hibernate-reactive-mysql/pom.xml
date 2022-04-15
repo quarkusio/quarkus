@@ -15,7 +15,6 @@
 
     <properties>
         <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
-        <mariadb.image>mariadb:10.4</mariadb.image>
     </properties>
 
     <dependencies>
@@ -208,7 +207,7 @@
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all mariadb:10.4 images currently running, not just those we just started.
+                            <!--Stops all mariadb images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>

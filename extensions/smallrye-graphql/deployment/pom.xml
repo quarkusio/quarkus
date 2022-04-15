@@ -94,6 +94,11 @@
             <artifactId>opentracing-mock</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
         
     </dependencies>
 

@@ -10,7 +10,7 @@ import javax.enterprise.inject.spi.CDIProvider;
 import javax.enterprise.util.TypeLiteral;
 
 /**
- * 
+ *
  * @author Martin Kouba
  */
 public class ArcCDIProvider implements CDIProvider {

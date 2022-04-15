@@ -62,6 +62,10 @@
                     <groupId>org.eclipse.sisu</groupId>
                     <artifactId>org.eclipse.sisu.inject</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>listenablefuture</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -131,12 +135,29 @@
         <plugins>
             <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
-
                 <executions>
                     <execution>
                         <id>enforce-test-deps-junit-scope</id>
                         <configuration>
                             <skip>true</skip>
+                        </configuration>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>enforce-quarkus-core-deployment</id>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <!-- findbugs is not required at runtime -->
+                                        <exclude>com.google.code.findbugs:jsr305</exclude>
+                                        <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
+                                        <exclude>com.google.guava:listenablefuture</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
                         </configuration>
                         <goals>
                             <goal>enforce</goal>

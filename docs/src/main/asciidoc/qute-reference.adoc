@@ -391,7 +391,7 @@ NOTE: The current context can be accessed via the implicit binding `this`.
 
 |orEmpty
 |Outputs an empty list if the previous part cannot be resolved or resolves to `null`.
-|`{#for pet in pets.orEmpty}{pet.name}{/for}`
+|`{pets.orEmpty.size}` outputs `0` if `pets` is not resolvable or `null`
 
 |Ternary Operator
 |Shorthand for if-then-else statement. Unlike in <<if_section>> nested operators are not supported.
@@ -519,6 +519,35 @@ If a part of an expression resolves to a `CompletionStage`, the resolution conti
 For example, if there is an expression `{foo.size}` and `foo` resolves to `CompletionStage<List<String>>` then `size` is resolved against the completed result, i.e. `List<String>`.
 If a part of an expression resolves to a `Uni`, a `CompletionStage` is first created from `Uni` using `Uni#subscribeAsCompletionStage()` and then evaluated as described above.
 
+It can happen that a `CompletionStage` never completes or a `Uni` emits no item/failure. 
+In this case, the rendering methods (such as `TemplateInstance#render()` and `TemplateInstance#createUni()`) fail after a specific timeout.
+The timeout can be specified as a template instance `timeout` attribute.
+If no `timeout` attribute is set the global rendering timeout is used.
+
+TIP: In Quarkus, the default timeout can be set via the `io.quarkus.qute.timeout` configuration property. If using Qute standalone then the `EngineBuilder#timeout()` method can be used.
+
+NOTE: In previous versions, only the `TemplateInstance#render()` method honored the timeout attribute. You can use the `io.quarkus.qute.useAsyncTimeout=false` config property to preserve the old behavior and take care of the timeout yourself, for example `templateInstance.createUtni().ifNoItem().after(Duration.ofMillis(500)).fail()`.
+
+===== How to Identify a Problematic Part of the Template
+
+It's not easy to find the problematic part of a template when a timeout occurs.
+You can set the `TRACE` level for the logger `io.quarkus.qute.nodeResolve` and try analyze the log output afterwards.
+
+.`application.properties` Example
+[source,properties]
+----
+quarkus.log.category."io.quarkus.qute.nodeResolve".min-level=TRACE
+quarkus.log.category."io.quarkus.qute.nodeResolve".level=TRACE
+----
+
+You should see the following pair of log messages for every expression and section used in a template:
+----
+TRACE [io.qua.qut.nodeResolve] Resolve {name} started: Template hello.html at line 8
+TRACE [io.qua.qut.nodeResolve] Resolve {name} completed: Template hello.html at line 8
+----
+
+If a `completed` log message is missing then you have a good candidate to explore.
+
 ==== Missing Properties
 
 It can happen that an expression may not be evaluated at runtime.
@@ -567,9 +596,11 @@ A section helper that defines the logic of a section can "execute" any of the bl
 [[loop_section]]
 ==== Loop Section
 
-The loop section makes it possible to iterate over an instance of `Iterable`, `Iterator`, array, `Map` 's entry set, `Stream` and an `Integer`.
-It has two flavors.
-The first one is using the `each` name and `it` is an implicit alias for the iteration element.
+The loop section makes it possible to iterate over an instance of `Iterable`, `Iterator`, array, `Map` (element is a `Map.Entry`), `Stream`, `Integer` and `int` (primitive value).
+A `null` parameter value results in a no-op.
+
+This section has two flavors.
+The first one is using the name `each` and `it` is an implicit alias for the iteration element.
 
 [source]
 ----
@@ -579,7 +610,7 @@ The first one is using the `each` name and `it` is an implicit alias for the ite
 ----
 <1> `name` is resolved against the current iteration element.
 
-The other form is using the `for` name and can specify the alias used to reference the iteration element:
+The other form is using the name `for` and specifies the alias used to reference the iteration element:
 
 [source]
 ----
@@ -1248,6 +1279,8 @@ A CDI bean annotated with `@Named` can be referenced in any template through `cd
 <1> First, a bean with name `personService` is found and then used as the base object.
 <2> First, a bean with name `foo` is found and then used as the base object.
 
+NOTE: `@Named @Dependent` beans are shared across all expressions in a template for a single rendering operation, and destroyed after the rendering finished.
+
 All expressions with `cdi` and `inject` namespaces are validated during build.
 For the expression `cdi:personService.findPerson(10).name` the implementation class of the injected bean must either declare the `findPerson` method or a matching <<template_extension_methods,template extension method>> must exist.
 For the expression `inject:foo.price` the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist.
@@ -1267,6 +1300,11 @@ For example, if there is an expression `item.name` where `item` maps to `org.acm
 
 An optional _parameter declaration_ is used to bind a Java type to expressions whose first part matches the parameter name.
 Parameter declarations are specified directly in a template.
+
+A Java type should be always identified with a _fully qualified name_ unless it's a JDK type from the `java.lang` package - in this case, the package name is optional.
+Parameterized types are supported, however wildcards are always ignored - only the upper/lower bound is taken into account.
+For example, the parameter declaration `{@java.util.List<? extends org.acme.Foo> list}` is recognized as `{@java.util.List<org.acme.Foo> list}`.
+Type variables are not handled in a special way and should never be used.
 
 .Parameter Declaration Example
 [source,html]
@@ -1314,6 +1352,19 @@ Note that sections can override names that would otherwise match a parameter dec
 ----
 <1> Validated against `org.acme.Foo`.
 <2> Not validated - `foo` is overridden in the loop section.
+
+.More Parameter Declarations Examples 
+[source]
+----
+{@int pages} <1>
+{@java.util.List<String> strings} <2>
+{@java.util.Map<String,? extends Number> numbers} <3>
+{@java.util.Optional<?> param} <4>
+----
+<1> A primitive type.
+<2> `String` is replaced with `java.lang.String`: `{@java.util.List<java.lang.String> strings}`
+<3> The wildcard is ignored and the upper bound is used instead: `{@java.util.Map<String,Number>}`
+<4> The wildcard is ignored and the `java.lang.Object` is used instead: `{@java.util.Optional<java.lang.Object>}`
  
 [[typesafe_templates]]
 === Type-safe Templates
@@ -1335,7 +1386,6 @@ package org.acme.quarkus.sample;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -1354,7 +1404,7 @@ public class ItemResource {
     @GET
     @Path("{id}")
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance get(@PathParam("id") Integer id) {
+    public TemplateInstance get(Integer id) {
         return Templates.item(service.findItem(id)); <3>
     }
 }
@@ -1551,7 +1601,7 @@ Quarkus provides a set of built-in extension methods.
 
 TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket notation for keys that are not legal identifiers: `{map['my key']}`.
 
-===== Collections
+==== Lists
 
 * `get(index)`: Returns the element at the specified position in a list
 ** `{list.get(0)}`
@@ -1565,14 +1615,20 @@ TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket n
 * `takeLast`: Returns the last `n` elements from the given list; throws an `IndexOutOfBoundsException` if `n` is out of range
 ** `{#for r in recordsList.takeLast(3)}`
 
-TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
+* `first`: Returns the first element of the given list; throws an `NoSuchElementException` if the list is empty
+** `{recordsList.first}`
+
+* `last`: Returns the last element of the given list; throws an `NoSuchElementException` if the list is empty
+** `{recordsList.last}`
+
+TIP: A list element can be accessed directly via an index: `{list.10}` or even `{list[10]}`.
 
 ===== Numbers
 
 * `mod`: Modulo operation
 ** `{#if counter.mod(5) == 0}`
 
-==== Strings
+===== Strings
 
 * `fmt` or `format`: format the string instance via `java.lang.String.format()`
 ** `{myStr.fmt("arg1","arg2")}`
@@ -1616,7 +1672,7 @@ TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 ** `{time:format(myDate,'d MMM uuuu', myLocale)}`
 
 * `time:format(dateTime,pattern,locale,timeZone)`: Formats temporal objects from the `java.time` package, `java.util.Date`, `java.util.Calendar` and `java.lang.Number`
-** `{time:format(myDate,'d MMM uuuu',myTimeZoneId)}`
+** `{time:format(myDate,'d MMM uuuu',myLocale,myTimeZoneId)}`
 
 [[template_data]]
 === @TemplateData
@@ -1711,6 +1767,7 @@ public class Statuses {
 {/if}
 ----
 
+[[convenient-annotation-for-enums]]
 ==== Convenient Annotation For Enums
 
 There's also a convenient annotation to access enum constants: `@io.quarkus.qute.TemplateEnum`.
@@ -2018,9 +2075,9 @@ However, the `io.quarkus.qute.i18n.MessageBundle#locale()` can be used to specif
 Additionally, there are two ways to define a localized bundle:
 
 1. Create an interface that extends the default interface that is annotated with `@Localized`
-2. Create an UTF-8 encoded file located in `src/main/resources/messages`; e.g. `msg_de.properties`.
+2. Create an UTF-8 encoded file located in the `src/main/resources/messages` directory of an application archive; e.g. `msg_de.properties`.
 
-TIP: A localized interface is the preferred solution mainly due to the possibility of easy refactoring.
+TIP: While a localized interface enables easy refactoring an external file might be more convenient in many situations.
 
 .Localized Interface Example
 [source,java]
@@ -2039,7 +2096,7 @@ public interface GermanAppMessages extends AppMessages {
 <1> The value is the locale tag string (IETF).
 <2> The value is the localized template.
 
-Message bundle files must be encoded in UTF-8.
+Message bundle files must be encoded in _UTF-8_.
 The file name consists of the relevant bundle name (e.g. `msg`) and underscore followed by the locate tag (IETF).
 The file format is very simple: each line represents either a key/value pair with the equals sign used as a separator or a comment (line starts with `#`).
 Blank lines are ignored.
@@ -2132,17 +2189,27 @@ Templates::
 * By default, no <<template-locator,template locators>> are registered, i.e. `Engine.getTemplate(String)` will not work. 
 * You can register a custom template locator or parse a template manually and put the reulst in the cache via `Engine.putTemplate(String, Template)`.
 
+Sections::
+* No section helpers are registered by default.
+* The default set of value resolvers can be registered via the convenient `EngineBuilder.addDefaultSectionHelpers()` method and the `EngineBuilder.addDefaults()` method respectively.
+
 Value resolvers:: 
 * No <<value-resolvers,``ValueResolver``s>> are generated automatically.
 ** <<template_extension_methods,`@TemplateExtension` methods>> will not work. 
-** <<template_data,`@TemplateData`>> annotations are ignored.
+** <<template_data,`@TemplateData`>> and <<convenient-annotation-for-enums,`@TemplateEnum`>> annotations are ignored.
+* The default set of value resolvers can be registered via the convenient `EngineBuilder.addDefaultValueResolvers()` method and the `EngineBuilder.addDefaults()` method respectively.
++
+NOTE: Not all functionality provided by the built-in extension methods is covered by the default value resolvers. However, a custom value resolver can be easily built via the `ValueResolver.builder()`.
 * It's recommended to register a `ReflectionValueResolver` instance via `Engine.addValueResolver(new ReflectionValueResolver())` so that Qute can access object properties and call public methods. 
 +
-NOTE: Keep in mind that reflection may not work correctly in some restricted environments or may require additional configuration, e.g. registration in case of a GraalVM native image. 
-* A custom value resolver can be easily built via `ValueResolver.builder()`
+NOTE: Keep in mind that reflection may not work correctly in some restricted environments or may require additional configuration, e.g. registration in case of a GraalVM native image.
+
+User-defined Tags::
+* No user-defined tags are registered automatically.
+* A tag can be registered manually via `Engine.builder().addSectionHelper(new UserTagSectionHelper.Factory("tagName","tagTemplate.html")).build()`
 
 Type-safety::
 * <<typesafe_expressions>> are not validated.
 * <<type-safe-message-bundles,Type-safe message bundles>> are not supported.
 
-Injection:: It is not possible to inject a `Template` instance and vice versa - a template cannot inject a `@Named` CDI bean via the `inject:` namespace.
+Injection:: It is not possible to inject a `Template` instance and vice versa - a template cannot inject a `@Named` CDI bean via the `inject:` and `cdi:` namespace.

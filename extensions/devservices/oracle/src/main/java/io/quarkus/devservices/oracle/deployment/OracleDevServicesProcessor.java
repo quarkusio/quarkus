@@ -25,7 +25,6 @@ public class OracleDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(OracleDevServicesProcessor.class);
 
     public static final String IMAGE = "gvenzl/oracle-xe";
-    public static final String TAG = "21.3.0-slim";
     public static final String DEFAULT_DATABASE_USER = "quarkus";
     public static final String DEFAULT_DATABASE_PASSWORD = "quarkus";
     public static final String DEFAULT_DATABASE_NAME = "quarkusdb";
@@ -51,7 +50,9 @@ public class OracleDevServicesProcessor {
 
                 LOG.info("Dev Services for Oracle started.");
 
-                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getContainerId(),
+                        container.getEffectiveJdbcUrl(),
+                        container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
@@ -74,8 +75,7 @@ public class OracleDevServicesProcessor {
         public QuarkusOracleServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName
-                            .orElse("docker.io/" + OracleDevServicesProcessor.IMAGE + ":" + OracleDevServicesProcessor.TAG))
+                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")))
                     .asCompatibleSubstituteFor(OracleDevServicesProcessor.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -104,7 +104,7 @@ public class OracleDevServicesProcessor {
                 // in this case we expose the URL using the network alias we created in 'configure'
                 // and the container port since the application communicating with this container
                 // won't be doing port mapping
-                return "jdbc:oracle:thin//" + hostName + ":" + PORT + ":" + getDatabaseName();
+                return "jdbc:oracle:thin:" + "@" + hostName + ":" + PORT + "/" + getDatabaseName();
             } else {
                 return super.getJdbcUrl();
             }

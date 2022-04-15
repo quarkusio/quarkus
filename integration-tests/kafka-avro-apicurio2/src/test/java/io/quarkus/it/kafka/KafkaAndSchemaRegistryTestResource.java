@@ -6,11 +6,11 @@ import java.util.Map;
 import org.testcontainers.containers.GenericContainer;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import io.strimzi.StrimziKafkaContainer;
+import io.strimzi.test.container.StrimziKafkaContainer;
 
 public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private static final StrimziKafkaContainer kafka = new StrimziKafkaContainer();
+    private static final StrimziKafkaContainer kafka = new StrimziKafkaContainer().withBrokerId(1);
 
     private static GenericContainer<?> registry;
 

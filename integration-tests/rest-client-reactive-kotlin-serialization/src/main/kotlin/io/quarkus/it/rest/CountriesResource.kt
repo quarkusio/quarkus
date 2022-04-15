@@ -10,14 +10,11 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder
 import java.net.URI
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.Observes
-import javax.inject.Inject
 import javax.ws.rs.Path
 
 @Path("/")
 @ApplicationScoped
-class CountriesResource {
-    @Inject
-    lateinit var json: Json
+class CountriesResource(private val json: Json) {
 
     fun init(@Observes router: Router) {
         router.post().handler(BodyHandler.create())
@@ -50,7 +47,6 @@ class CountriesResource {
             val client = RestClientBuilder.newBuilder()
                 .baseUri(URI.create(rc.body.toString()))
                 .build(CountriesClient::class.java)
-            val result = client.countries()
             rc.response()
                 .setStatusCode(200)
                 .end("OK")
@@ -66,7 +62,7 @@ class CountriesResource {
 
             rc.response()
                 .putHeader("content-type", "application/json")
-                .end(json.encodeToString(body))
+                .end(json.encodeToString("[$body[0]]"))
         }
     }
 }

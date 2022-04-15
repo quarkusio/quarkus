@@ -1,5 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jboss</groupId>
@@ -14,7 +15,17 @@
     <description>Contains the configuration of the Revapi API checker and the list of the API changes 
         in the Quarkus APIs.
     </description>
+    <url>https://github.com/quarkusio/quarkus</url>
     <packaging>jar</packaging>
+
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
+        <url>https://github.com/quarkusio/quarkus</url>
+        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <maven.compiler.target>11</maven.compiler.target>
@@ -70,6 +81,31 @@
                 <enforcer.skip>true</enforcer.skip>
                 <format.skip>true</format.skip>
             </properties>
+        </profile>
+        <profile>
+            <id>jakarta-rewrite</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite</name>
+                </property>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.openrewrite.maven</groupId>
+                            <artifactId>rewrite-maven-plugin</artifactId>
+                            <version>4.21.0-SNAPSHOT</version>
+                            <configuration>
+                                <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                                <activeStyles>
+                                    <style>io.quarkus.style.maven</style>
+                                </activeStyles>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
         </profile>
     </profiles>
 </project>

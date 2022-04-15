@@ -18,7 +18,7 @@ public class RedPandaBuildTimeConfig {
      *
      * Find more info about Red Panda transaction support on
      * <a href="https://vectorized.io/blog/fast-transactions/">https://vectorized.io/blog/fast-transactions/</a>.
-     * 
+     *
      * Notice that
      * <a href=
      * "https://cwiki.apache.org/confluence/display/KAFKA/KIP-447%3A+Producer+scalability+for+exactly+once+semantics">KIP-447

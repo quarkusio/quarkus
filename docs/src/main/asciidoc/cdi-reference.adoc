@@ -214,6 +214,7 @@ public class CounterBean {
 * Passivation and passivating scopes are not supported
 * Interceptor methods on superclasses are not implemented yet
 * `@Interceptors` is not supported
+* Decoration of built-in beans, such as `Event`, is not supported
 
 [[nonstandard_features]]
 == Non-standard Features
@@ -315,8 +316,8 @@ public class EagerAppBean {
    }
 }
 ----
-1. For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
-2. The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
+<1> For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
+<2> The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
 
 NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the xref:lifecycle.adoc[Application Initialization and Termination] guide.
 
@@ -957,6 +958,8 @@ public class Processor {
 }
 ----
 
+NOTE: Neither a type variable nor a wildcard is a legal type parameter for an `@All List<>` injection point, i.e. `@Inject @All List<?> all` is not supported and results in a deployment error.
+
 === Ignoring Class-Level Interceptor Bindings for Methods and Constructors
 
 If a managed bean declares interceptor binding annotations on the class level, the corresponding `@AroundInvoke` interceptors will apply to all business methods.
@@ -999,6 +1002,27 @@ The `@NoClassInterceptors` annotation may be put on methods and constructors and
 In other words, if a method/constructor is annotated `@NoClassInterceptors`, then the only interceptors that will apply to this method/constructor are interceptors declared directly on the method/constructor.
 
 This annotation affects only business method interceptors (`@AroundInvoke`) and constructor lifecycle callback interceptors (`@AroundConstruct`).
+
+=== Exceptions Thrown By An Asynchronous Observer Method
+
+If an exception is thrown by an asynchronous observer then the `CompletionStage` returned by the `fireAsync()` method completes exceptionally so that the event producer may react appropriately.
+However, if the event producer does not care then the exception is ignored silently.
+Therefore, Quarkus logs an error message by default.
+It is also possible to implement a custom `AsyncObserverExceptionHandler`.
+A bean that implements this interface should be `@javax.inject.Singleton` or `@javax.enterprise.context.ApplicationScoped`.
+
+.`NoopAsyncObserverExceptionHandler`
+[source, java]
+----
+@Singleton
+public class NoopAsyncObserverExceptionHandler implements AsyncObserverExceptionHandler {
+
+  void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext) {
+    // do nothing
+  }
+
+}
+----
 
 [[build_time_apis]]
 == Build Time Extensions

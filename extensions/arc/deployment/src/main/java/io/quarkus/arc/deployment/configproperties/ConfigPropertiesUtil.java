@@ -60,13 +60,13 @@ final class ConfigPropertiesUtil {
                             Class.class, IntFunction.class),
                     smallryeConfig,
                     bytecodeCreator.load(propertyName),
-                    bytecodeCreator.loadClass(determineSingleGenericType(resultType, declaringClass).name().toString()),
+                    bytecodeCreator.loadClassFromTCCL(determineSingleGenericType(resultType, declaringClass).name().toString()),
                     collectionFactory);
         } else {
             return bytecodeCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(Config.class, "getValue", Object.class, String.class, Class.class),
                     config, bytecodeCreator.load(propertyName),
-                    bytecodeCreator.loadClass(resultType.name().toString()));
+                    bytecodeCreator.loadClassFromTCCL(resultType.name().toString()));
         }
     }
 
@@ -101,14 +101,14 @@ final class ConfigPropertiesUtil {
                             Class.class, IntFunction.class),
                     smallryeConfig,
                     bytecodeCreator.load(propertyName),
-                    bytecodeCreator.loadClass(determineSingleGenericType(resultType, declaringClass).name().toString()),
+                    bytecodeCreator.loadClassFromTCCL(determineSingleGenericType(resultType, declaringClass).name().toString()),
                     collectionFactory);
         } else {
             optionalValue = bytecodeCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
                             Class.class),
                     config, bytecodeCreator.load(propertyName),
-                    bytecodeCreator.loadClass(resultType.name().toString()));
+                    bytecodeCreator.loadClassFromTCCL(resultType.name().toString()));
         }
 
         ResultHandle isPresent = bytecodeCreator

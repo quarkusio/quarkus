@@ -24,7 +24,7 @@ public interface TestRunListener {
 
     }
 
-    default void noTests(TestRunResults results) {
+    default void dynamicTestRegistered(TestIdentifier testIdentifier) {
 
     }
 }

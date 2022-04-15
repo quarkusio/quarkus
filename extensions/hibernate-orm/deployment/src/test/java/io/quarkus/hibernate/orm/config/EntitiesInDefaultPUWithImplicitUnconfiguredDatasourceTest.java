@@ -21,7 +21,7 @@ public class EntitiesInDefaultPUWithImplicitUnconfiguredDatasourceTest {
             })
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class))
-            .overrideConfigKey("quarkus.datasource.devservices", "false");
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Test
     public void testInvalidConfiguration() {

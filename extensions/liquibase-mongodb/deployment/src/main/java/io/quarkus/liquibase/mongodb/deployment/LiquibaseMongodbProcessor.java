@@ -173,12 +173,28 @@ class LiquibaseMongodbProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.10.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.2.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.9.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.10.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.0.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.2.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.3.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.4.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.5.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.6.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.7.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.8.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.9.xsd",
                 "liquibase.build.properties"));
 
         // liquibase resource bundles
@@ -236,19 +252,29 @@ class LiquibaseMongodbProcessor {
      */
     private List<String> getChangeLogs(LiquibaseMongodbBuildTimeConfig liquibaseBuildConfig) {
         ChangeLogParameters changeLogParameters = new ChangeLogParameters();
-        ClassLoaderResourceAccessor classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
-                Thread.currentThread().getContextClassLoader());
 
         ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
 
         Set<String> resources = new LinkedHashSet<>();
 
-        resources.addAll(findAllChangeLogFiles(liquibaseBuildConfig.changeLog, changeLogParserFactory,
-                classLoaderResourceAccessor, changeLogParameters));
+        ClassLoaderResourceAccessor classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
+                Thread.currentThread().getContextClassLoader());
 
-        LOGGER.debugf("Liquibase changeLogs: %s", resources);
+        try {
+            resources.addAll(findAllChangeLogFiles(liquibaseBuildConfig.changeLog, changeLogParserFactory,
+                    classLoaderResourceAccessor, changeLogParameters));
 
-        return new ArrayList<>(resources);
+            LOGGER.debugf("Liquibase changeLogs: %s", resources);
+
+            return new ArrayList<>(resources);
+
+        } finally {
+            try {
+                classLoaderResourceAccessor.close();
+            } catch (Exception ignored) {
+                // close() really shouldn't declare that exception, see also https://github.com/liquibase/liquibase/pull/2576
+            }
+        }
     }
 
     /**

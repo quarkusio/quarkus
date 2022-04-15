@@ -8,11 +8,11 @@ import java.util.List;
  * Utility class to build and represent SQL sorting specifications. A {@link Sort} instance represents
  * a list of columns to sort on, each with a direction to use for sorting.
  * </p>
- * 
+ *
  * <p>
  * Usage:
  * </p>
- * 
+ *
  * <code><pre>
  * Sort sort = Sort.by("name").and("age", Direction.Descending);
  * Sort sort2 = Sort.ascending("name", "age");
@@ -77,7 +77,7 @@ public class Sort {
 
     /**
      * Sort by the given column, in ascending order.
-     * 
+     *
      * @param column the column to sort on, in ascending order.
      * @return a new Sort instance which sorts on the given column in ascending order.
      * @see #by(String, Direction)
@@ -89,7 +89,7 @@ public class Sort {
 
     /**
      * Sort by the given column, in the given order.
-     * 
+     *
      * @param column the column to sort on, in the given order.
      * @param direction the direction to sort on
      * @return a new Sort instance which sorts on the given column in the given order.
@@ -102,7 +102,7 @@ public class Sort {
 
     /**
      * Sort by the given columns, in ascending order. Equivalent to {@link #ascending(String...)}.
-     * 
+     *
      * @param columns the columns to sort on, in ascending order.
      * @return a new Sort instance which sorts on the given columns in ascending order.
      * @see #by(String, Direction)
@@ -120,7 +120,7 @@ public class Sort {
 
     /**
      * Sort by the given columns, in ascending order. Equivalent to {@link #by(String...)}.
-     * 
+     *
      * @param columns the columns to sort on, in ascending order.
      * @return a new Sort instance which sorts on the given columns in ascending order.
      * @see #by(String, Direction)
@@ -134,7 +134,7 @@ public class Sort {
 
     /**
      * Sort by the given columns, in descending order.
-     * 
+     *
      * @param columns the columns to sort on, in descending order.
      * @return a new Sort instance which sorts on the given columns in descending order.
      * @see #by(String, Direction)
@@ -151,7 +151,7 @@ public class Sort {
 
     /**
      * Sets the order to descending for all current sort columns.
-     * 
+     *
      * @return this instance, modified.
      * @see #ascending()
      * @see #direction(Direction)
@@ -162,7 +162,7 @@ public class Sort {
 
     /**
      * Sets the order to ascending for all current sort columns.
-     * 
+     *
      * @return this instance, modified.
      * @see #descending()
      * @see #direction(Direction)
@@ -173,7 +173,7 @@ public class Sort {
 
     /**
      * Sets the order to all current sort columns.
-     * 
+     *
      * @param direction the direction to use for all current sort columns.
      * @return this instance, modified.
      * @see #descending()
@@ -188,7 +188,7 @@ public class Sort {
 
     /**
      * Adds a sort column, in ascending order.
-     * 
+     *
      * @param name the new column to sort on, in ascending order.
      * @return this instance, modified.
      * @see #and(String, Direction)
@@ -200,7 +200,7 @@ public class Sort {
 
     /**
      * Adds a sort column, in the given order.
-     * 
+     *
      * @param name the new column to sort on, in the given order.
      * @return this instance, modified.
      * @see #and(String)

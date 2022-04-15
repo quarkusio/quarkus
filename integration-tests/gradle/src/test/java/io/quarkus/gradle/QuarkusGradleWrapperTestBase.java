@@ -33,6 +33,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         command.add(getGradleWrapperCommand());
         command.addAll(getSytemProperties());
         command.add("--stacktrace");
+        command.add("--info");
         command.addAll(Arrays.asList(args));
 
         File logOutput = new File(projectDir, "command-output.log");

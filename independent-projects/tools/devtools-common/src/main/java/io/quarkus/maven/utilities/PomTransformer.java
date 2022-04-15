@@ -75,7 +75,7 @@ public class PomTransformer {
     public void transform(Collection<Transformation> transformations) {
         transform(transformations, path, () -> {
             try {
-                return new String(Files.readAllBytes(path), charset);
+                return Files.readString(path, charset);
             } catch (IOException e) {
                 throw new RuntimeException(String.format("Could not read DOM from [%s]", path), e);
             }

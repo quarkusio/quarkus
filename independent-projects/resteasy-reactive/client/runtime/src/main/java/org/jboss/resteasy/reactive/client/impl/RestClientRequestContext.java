@@ -1,13 +1,14 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
-import io.smallrye.stork.ServiceInstance;
+import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -15,6 +16,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +36,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
@@ -50,6 +53,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 public class RestClientRequestContext extends AbstractResteasyReactiveContext<RestClientRequestContext, ClientRestHandler> {
 
     private static final String MP_INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
+    private static final String TMP_FILE_PATH_KEY = "tmp_file_path";
 
     private final HttpClient httpClient;
     // Changeable by the request filter
@@ -139,9 +143,9 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         // each invocation gets a new set of properties based on the JAX-RS invoker
         this.properties = new HashMap<>(properties);
 
-        // this isn't a real configuration option because it's only really used to pass the TCKs
         disableContextualErrorMessages = Boolean
-                .parseBoolean(System.getProperty("quarkus.rest-client.disable-contextual-error-messages", "false"));
+                .parseBoolean(System.getProperty("quarkus.rest-client.disable-contextual-error-messages", "false"))
+                || getBooleanProperty(QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES, false);
     }
 
     public void abort() {
@@ -449,8 +453,32 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return this;
     }
 
+    public boolean isFileUpload() {
+        return entity != null && ((entity.getEntity() instanceof File) || (entity.getEntity() instanceof Path));
+    }
+
     public boolean isMultipart() {
         return entity != null && entity.getEntity() instanceof QuarkusMultipartForm;
+    }
+
+    public boolean isFileDownload() {
+        if (responseType == null) {
+            return false;
+        }
+        Class<?> rawType = responseType.getRawType();
+        return File.class.equals(rawType) || Path.class.equals(rawType);
+    }
+
+    public String getTmpFilePath() {
+        return (String) getProperties().get(TMP_FILE_PATH_KEY);
+    }
+
+    public void setTmpFilePath(String tmpFilePath) {
+        getProperties().put(TMP_FILE_PATH_KEY, tmpFilePath);
+    }
+
+    public void clearTmpFilePath() {
+        getProperties().remove(TMP_FILE_PATH_KEY);
     }
 
     public Map<String, Object> getClientFilterProperties() {
@@ -475,5 +503,20 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public void setMultipartResponsesData(Map<Class<?>, MultipartResponseData> multipartResponsesData) {
         this.multipartResponsesData = multipartResponsesData;
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private Boolean getBooleanProperty(String name, Boolean defaultValue) {
+        Object value = configuration.getProperty(name);
+        if (value != null) {
+            if (value instanceof Boolean) {
+                return (Boolean) value;
+            } else if (value instanceof String) {
+                return Boolean.parseBoolean((String) value);
+            } else {
+                log.warnf("Property '%s' is expected to be of type Boolean. Got '%s'.", name, value.getClass().getSimpleName());
+            }
+        }
+        return defaultValue;
     }
 }

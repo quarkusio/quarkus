@@ -30,7 +30,7 @@ public class QuarkusPlatformReferencingArchivedUpstreamVersionTest extends Multi
                 .quarkusVersion("2.2.2-downstream")
                 .upstreamQuarkusVersion("2.2.2")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 // foo platform member
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "2.0.4-downstream").release().stream().platform()
                 .newStream("1.0")
@@ -39,7 +39,7 @@ public class QuarkusPlatformReferencingArchivedUpstreamVersionTest extends Multi
                 .quarkusVersion("1.1.1-downstream")
                 .upstreamQuarkusVersion("1.1.1")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 // foo platform member
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "1.0.4-downstream").release()
                 .newMember("acme-e-bom").addExtension("io.acme", "ext-e", "1.0.4-downstream").release()
@@ -55,7 +55,7 @@ public class QuarkusPlatformReferencingArchivedUpstreamVersionTest extends Multi
                 .newRelease("2.0.5")
                 .quarkusVersion("2.2.5")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "2.0.5").release()
                 .newMember("acme-e-bom").addExtension("io.acme", "ext-e", "2.0.5").release()
                 .newMember("acme-bar-bom").addExtension("io.acme", "ext-b", "2.0.5").release().stream()
@@ -63,7 +63,7 @@ public class QuarkusPlatformReferencingArchivedUpstreamVersionTest extends Multi
                 .newArchivedRelease("2.0.4")
                 .quarkusVersion("2.2.2")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "2.0.4").release()
                 .newMember("acme-e-bom").addExtension("io.acme", "ext-e", "2.0.4").release()
                 .newMember("acme-bar-bom").addExtension("io.acme", "ext-b", "2.0.4").release().stream().platform()
@@ -72,7 +72,7 @@ public class QuarkusPlatformReferencingArchivedUpstreamVersionTest extends Multi
                 .newRelease("1.0.5")
                 .quarkusVersion("1.1.5")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "1.0.5").addExtension("io.acme", "ext-e", "1.0.5")
                 .release()
                 .newMember("acme-bar-bom").addExtension("io.acme", "ext-b", "1.0.5").release()
@@ -80,7 +80,7 @@ public class QuarkusPlatformReferencingArchivedUpstreamVersionTest extends Multi
                 .newArchivedRelease("1.0.4")
                 .quarkusVersion("1.1.1")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "1.0.4").addExtension("io.acme", "ext-e", "1.0.4")
                 .release()
                 .newMember("acme-bar-bom").addExtension("io.acme", "ext-b", "1.0.4").release()

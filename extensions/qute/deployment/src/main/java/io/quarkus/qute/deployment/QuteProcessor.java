@@ -361,14 +361,14 @@ public class QuteProcessor {
                 String tagPath = path.getPath();
                 String tagName = tagPath.substring(TemplatePathBuildItem.TAGS.length(), tagPath.length());
                 if (tagName.contains(".")) {
-                    tagName = tagName.substring(0, tagName.lastIndexOf('.'));
+                    tagName = tagName.substring(0, tagName.indexOf('.'));
                 }
                 builder.addSectionHelper(new UserTagSectionHelper.Factory(tagName, tagPath));
             }
         }
 
         builder.computeSectionHelper(name -> {
-            // Create a dummy section helper factory for an uknown section that could be potentially registered at runtime 
+            // Create a dummy section helper factory for an uknown section that could be potentially registered at runtime
             return new SectionHelperFactory<SectionHelper>() {
                 @Override
                 public SectionHelper initialize(SectionInitContext context) {
@@ -427,7 +427,7 @@ public class QuteProcessor {
                     String path = templateId;
                     for (String suffix : config.suffixes) {
                         if (path.endsWith(suffix)) {
-                            // Remove the suffix 
+                            // Remove the suffix
                             path = path.substring(0, path.length() - (suffix.length() + 1));
                             break;
                         }
@@ -453,8 +453,8 @@ public class QuteProcessor {
                     MethodInfo method = messageBundleMethod.getMethod();
                     for (ListIterator<Type> it = method.parameters().listIterator(); it.hasNext();) {
                         Type paramType = it.next();
-                        parserHelper.addParameter(method.parameterName(it.previousIndex()),
-                                JandexUtil.getBoxedTypeName(paramType));
+                        String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
+                        parserHelper.addParameter(name, JandexUtil.getBoxedTypeName(paramType));
                     }
                 }
             }
@@ -505,8 +505,8 @@ public class QuteProcessor {
             }
         };
 
-        // IMPLEMENTATION NOTE: 
-        // We do not support injection of synthetic beans with names 
+        // IMPLEMENTATION NOTE:
+        // We do not support injection of synthetic beans with names
         // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
         Map<String, BeanInfo> namedBeans = beanDiscovery.beanStream().withName()
                 .collect(toMap(BeanInfo::getName, Function.identity()));
@@ -552,6 +552,10 @@ public class QuteProcessor {
 
         // Register an implicit value resolver for the classes collected during validation
         for (Entry<DotName, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
+            if (entry.getValue().isEmpty()) {
+                // No members
+                continue;
+            }
             ClassInfo clazz = index.getClassByName(entry.getKey());
             if (clazz != null) {
                 implicitClasses.produce(new ImplicitValueResolverBuildItem(clazz,
@@ -588,16 +592,20 @@ public class QuteProcessor {
 
     static String buildIgnorePattern(Iterable<String> names) {
         // ^(?!\\Qbar\\P|\\Qfoo\\P).*$
-        StringBuilder ignorePattern = new StringBuilder("^(?!");
-        for (Iterator<String> iterator = names.iterator(); iterator.hasNext();) {
-            String memberName = iterator.next();
-            ignorePattern.append(Pattern.quote(memberName));
-            if (iterator.hasNext()) {
-                ignorePattern.append("|");
+        StringBuilder pattern = new StringBuilder("^(?!");
+        Iterator<String> it = names.iterator();
+        if (!it.hasNext()) {
+            throw new IllegalArgumentException();
+        }
+        while (it.hasNext()) {
+            String name = (String) it.next();
+            pattern.append(Pattern.quote(name));
+            if (it.hasNext()) {
+                pattern.append("|");
             }
         }
-        ignorePattern.append(").*$");
-        return ignorePattern.toString();
+        pattern.append(").*$");
+        return pattern.toString();
     }
 
     static Match validateNestedExpressions(QuteConfig config, TemplateAnalysis templateAnalysis, ClassInfo rootClazz,
@@ -610,6 +618,8 @@ public class QuteProcessor {
             Map<String, TemplateDataBuildItem> namespaceTemplateData,
             List<TemplateExtensionMethodBuildItem> regularExtensionMethods,
             Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods) {
+
+        LOGGER.debugf("Validate %s from %s", expression, expression.getOrigin());
 
         // Validate the parameters of nested virtual methods
         for (Expression.Part part : expression.getParts()) {
@@ -759,13 +769,13 @@ public class QuteProcessor {
                         iterator = parts.iterator();
                     }
                 } else {
-                    // No type info available 
+                    // No type info available
                     return putResult(match, results, expression);
                 }
             }
         } else {
-            if (INJECT_NAMESPACE.equals(namespace)) {
-                // Skip the first part - the name of the bean, e.g. for {inject:foo.name} we start validation with "name" 
+            if (INJECT_NAMESPACE.equals(namespace) || CDI_NAMESPACE.equals(namespace)) {
+                // Skip the first part - the name of the bean, e.g. for {inject:foo.name} we start validation with "name"
                 match.setValues(rootClazz, Type.create(rootClazz.name(), org.jboss.jandex.Type.Kind.CLASS));
             } else if (templateData != null) {
                 // Set the root type and reset the iterator
@@ -781,7 +791,7 @@ public class QuteProcessor {
             Info info = iterator.next();
             if (!match.isEmpty()) {
                 // Arrays are handled specifically
-                // We use the built-in resolver at runtime because the extension methods cannot be used to cover all combinations of dimensions and component types 
+                // We use the built-in resolver at runtime because the extension methods cannot be used to cover all combinations of dimensions and component types
                 if (match.isArray()) {
                     if (info.isProperty()) {
                         String name = info.asProperty().name;
@@ -973,7 +983,7 @@ public class QuteProcessor {
 
     private void produceExtensionMethod(IndexView index, BuildProducer<TemplateExtensionMethodBuildItem> extensionMethods,
             MethodInfo method, AnnotationInstance extensionAnnotation) {
-        // Analyze matchName and priority so that it could be used during validation 
+        // Analyze matchName and priority so that it could be used during validation
         String matchName = null;
         AnnotationValue matchNameValue = extensionAnnotation.value(ExtensionMethodGenerator.MATCH_NAME);
         if (matchNameValue != null) {
@@ -1264,12 +1274,14 @@ public class QuteProcessor {
             for (Path path : artifact.getResolvedPaths()) {
                 if (Files.isDirectory(path)) {
                     // Try to find the templates in the root dir
-                    Path basePath = Files.list(path).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
-                    if (basePath != null) {
-                        LOGGER.debugf("Found extension templates dir: %s", path);
-                        scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                config);
-                        break;
+                    try (Stream<Path> paths = Files.list(path)) {
+                        Path basePath = paths.filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                        if (basePath != null) {
+                            LOGGER.debugf("Found extension templates dir: %s", path);
+                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
+                                    config);
+                            break;
+                        }
                     }
                 } else {
                     try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
@@ -1288,10 +1300,10 @@ public class QuteProcessor {
         for (ApplicationArchive archive : allApplicationArchives) {
             archive.accept(tree -> {
                 for (Path rootDir : tree.getRoots()) {
-                    // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect 
+                    // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect
                     // a wrong directory name on case-insensitive file systems
-                    try {
-                        Path basePath = Files.list(rootDir).filter(QuteProcessor::isBasePath).findFirst().orElse(null);
+                    try (Stream<Path> rootDirPaths = Files.list(rootDir)) {
+                        Path basePath = rootDirPaths.filter(QuteProcessor::isBasePath).findFirst().orElse(null);
                         if (basePath != null) {
                             LOGGER.debugf("Found templates dir: %s", basePath);
                             basePaths.add(basePath);
@@ -1405,7 +1417,7 @@ public class QuteProcessor {
 
         if (config.typeCheckExcludes.isPresent()) {
             for (String exclude : config.typeCheckExcludes.get()) {
-                //  
+                //
                 String[] parts = exclude.split("\\.");
                 if (parts.length < 2) {
                     // An exclude rule must have at least two parts separated by dot
@@ -1582,7 +1594,7 @@ public class QuteProcessor {
                 setMatchValues(match, findExpression(helperHint, LoopSectionHelper.Factory.HINT_PREFIX, templateAnalysis),
                         generatedIdsToMatches, index);
             } else if (helperHint.startsWith(WhenSectionHelper.Factory.HINT_PREFIX)) {
-                // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant  
+                // If a value expression resolves to an enum we attempt to use the enum type to validate the enum constant
                 // This basically transforms the type info "ON<when:12345>" into something like "|org.acme.Status|.ON"
                 Expression valueExpr = findExpression(helperHint, WhenSectionHelper.Factory.HINT_PREFIX, templateAnalysis);
                 if (valueExpr != null) {
@@ -1639,7 +1651,9 @@ public class QuteProcessor {
 
     static void processLoopElementHint(Match match, IndexView index, Expression expression,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
-        if (match.isEmpty() || match.type().name().equals(DotNames.INTEGER)) {
+        if (match.isEmpty()
+                || match.type().name().equals(DotNames.INTEGER)
+                || match.type().equals(PrimitiveType.INT)) {
             return;
         }
         Type matchType = null;
@@ -1739,7 +1753,7 @@ public class QuteProcessor {
         }
 
         boolean isEmpty() {
-            // For arrays the class is null 
+            // For arrays the class is null
             return type == null;
         }
 
@@ -1768,7 +1782,7 @@ public class QuteProcessor {
         String name = info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name;
         for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
             if (matchType != null && !Types.isAssignableFrom(extensionMethod.getMatchType(), matchType, index)) {
-                // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"   
+                // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"
                 continue;
             }
             if (!extensionMethod.matchesName(name)) {
@@ -2266,7 +2280,7 @@ public class QuteProcessor {
         String fullPath = basePath + filePath;
         LOGGER.debugf("Produce template build items [filePath: %s, fullPath: %s, originalPath: %s", filePath, fullPath,
                 originalPath);
-        // NOTE: we cannot just drop the template because a template param can be added 
+        // NOTE: we cannot just drop the template because a template param can be added
         watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, true));
         nativeImageResources.produce(new NativeImageResourceBuildItem(fullPath));
         templatePaths.produce(
@@ -2357,7 +2371,7 @@ public class QuteProcessor {
 
     /**
      * Java members lookup config.
-     * 
+     *
      * @see QuteProcessor#findProperty(String, ClassInfo, LookupConfig)
      * @see QuteProcessor#findMethod(VirtualMethodPart, ClassInfo, Expression, IndexView, Function, Map, LookupConfig)
      */

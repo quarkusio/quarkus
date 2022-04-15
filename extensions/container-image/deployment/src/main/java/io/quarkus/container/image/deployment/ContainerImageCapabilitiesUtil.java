@@ -17,6 +17,7 @@ public final class ContainerImageCapabilitiesUtil {
         CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_DOCKER, "quarkus-container-image-docker");
         CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_S2I, "quarkus-container-image-s2i");
         CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_OPENSHIFT, "quarkus-container-image-openshift");
+        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_BUILDPACK, "quarkus-container-image-buildpack");
     }
 
     private ContainerImageCapabilitiesUtil() {

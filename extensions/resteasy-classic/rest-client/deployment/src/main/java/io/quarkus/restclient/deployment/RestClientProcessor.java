@@ -249,14 +249,14 @@ class RestClientProcessor {
             configurator.scope(scope);
             configurator.creator(m -> {
                 // return new RestClientBase(proxyType, baseUri).create();
-                ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
+                ResultHandle interfaceHandle = m.loadClassFromTCCL(restClientName.toString());
                 ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
                 ResultHandle configKeyHandle = configKey.isPresent() ? m.load(configKey.get()) : m.loadNull();
                 ResultHandle annotationProvidersHandle;
                 if (!annotationProviders.isEmpty()) {
                     annotationProvidersHandle = m.newArray(Class.class, annotationProviders.size());
                     for (int i = 0; i < annotationProviders.size(); i++) {
-                        m.writeArrayValue(annotationProvidersHandle, i, m.loadClass(annotationProviders.get(i)));
+                        m.writeArrayValue(annotationProvidersHandle, i, m.loadClassFromTCCL(annotationProviders.get(i)));
                     }
                 } else {
                     annotationProvidersHandle = m.loadNull();

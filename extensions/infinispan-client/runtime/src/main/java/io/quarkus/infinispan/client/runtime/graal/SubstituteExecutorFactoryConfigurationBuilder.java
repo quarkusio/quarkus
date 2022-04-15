@@ -14,7 +14,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * Avoids using reflection for DefaultAsyncExecutorFactory class
- * 
+ *
  * @author William Burns
  */
 @TargetClass(ExecutorFactoryConfigurationBuilder.class)

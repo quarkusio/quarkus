@@ -31,6 +31,12 @@ public class CookieTest {
     }
 
     @Test
+    void testNullCookie() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        assertThat(client.sendCookie(null)).isNull();
+    }
+
+    @Test
     void testCookiesWithSubresource() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.cookieSub("bar", "bar2").send("bar3", "bar4")).isEqualTo("bar:bar2:bar3:bar4");

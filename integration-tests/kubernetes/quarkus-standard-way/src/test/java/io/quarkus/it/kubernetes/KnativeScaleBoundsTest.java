@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.entry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,10 +41,10 @@ public class KnativeScaleBoundsTest {
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
         assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
-            assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
-                assertThat(s.getMetadata().getAnnotations()).contains(entry("autoscaling.knative.dev/minScale", "3"));
-                assertThat(s.getMetadata().getAnnotations()).contains(entry("autoscaling.knative.dev/maxScale", "5"));
-            });
+            Service service = (Service) i;
+            Map<String, String> annotations = service.getSpec().getTemplate().getMetadata().getAnnotations();
+            assertThat(annotations).contains(entry("autoscaling.knative.dev/minScale", "3"));
+            assertThat(annotations).contains(entry("autoscaling.knative.dev/maxScale", "5"));
         });
     }
 }

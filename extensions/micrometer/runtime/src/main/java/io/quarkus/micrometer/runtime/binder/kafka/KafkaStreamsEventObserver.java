@@ -13,7 +13,7 @@ import io.quarkus.runtime.ShutdownEvent;
 
 /**
  * Observer to create and register KafkaStreamsMetrics.
- * 
+ *
  * Must be separated from KafkaEventObserver, because they use different dependencies and if only "kafka-client" is used, the
  * classes from "kafka-streams" aren't loaded.
  */

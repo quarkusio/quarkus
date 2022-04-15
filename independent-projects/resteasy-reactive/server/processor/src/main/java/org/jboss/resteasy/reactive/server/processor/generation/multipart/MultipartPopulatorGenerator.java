@@ -15,6 +15,8 @@ import io.quarkus.gizmo.ResultHandle;
 import java.io.File;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import javax.ws.rs.core.MediaType;
 import org.jboss.jandex.AnnotationInstance;
@@ -124,14 +126,14 @@ public final class MultipartPopulatorGenerator {
      *     private static MediaType status_mediaType;
      *
      *     static {
-     *         map_type = DeploymentUtils.loadClass("java.util.Map");
+     *         map_type = DeploymentUtils.loadClassFromTCCL("java.util.Map");
      *         map_genericType = TypeSignatureParser.parse("Ljava/util/Map<Ljava/lang/String;Ljava/lang/String;>;");
      *         map_mediaType = MediaType.valueOf("application/json");
-     *         Class var0 = DeploymentUtils.loadClass("org.acme.getting.started.Person");
+     *         Class var0 = DeploymentUtils.loadClassFromTCCL("org.acme.getting.started.Person");
      *         person_type = var0;
      *         person_genericType = var0;
      *         person_mediaType = MediaType.valueOf("application/json");
-     *         Class var1 = DeploymentUtils.loadClass("org.acme.getting.started.Status");
+     *         Class var1 = DeploymentUtils.loadClassFromTCCL("org.acme.getting.started.Status");
      *         status_type = var1;
      *         status_genericType = var1;
      *         status_mediaType = MediaType.valueOf("text/plain");
@@ -350,6 +352,65 @@ public final class MultipartPopulatorGenerator {
                                             "getFormParameter", Object.class, String.class, boolean.class, boolean.class),
                                             rrCtxHandle,
                                             formAttrNameHandle, populate.load(true), populate.load(false)));
+                        } else if (fieldType.kind() == Type.Kind.ARRAY) {
+                            // Media Type static field
+                            FieldDescriptor mediaTypeField = cc.getFieldCreator(field.name() + "_mediaType", MediaType.class)
+                                    .setModifiers(Modifier.PRIVATE | Modifier.STATIC).getFieldDescriptor();
+                            clinit.writeStaticField(mediaTypeField, clinit.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(MediaType.class, "valueOf", MediaType.class, String.class),
+                                    clinit.load(partType)));
+
+                            // Component Type static field
+                            Type componentType = fieldType.asArrayType().component();
+                            ClassInfo componentClassInfo = index.getClassByName(componentType.name());
+                            FieldDescriptor genericComponentTypeField = cc
+                                    .getFieldCreator(field.name() + "_genericComponentType", java.lang.reflect.Type.class)
+                                    .setModifiers(Modifier.PRIVATE | Modifier.STATIC).getFieldDescriptor();
+                            TypeArgMapper componentTypeArgMapper = new TypeArgMapper(componentClassInfo, index);
+                            ResultHandle genericComponentTypeHandle = clinit.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(TypeSignatureParser.class, "parse",
+                                            java.lang.reflect.Type.class, String.class),
+                                    clinit.load(AsmUtil.getSignature(componentType, componentTypeArgMapper)));
+                            clinit.writeStaticField(genericComponentTypeField, genericComponentTypeHandle);
+
+                            ResultHandle formCollectionValueHandle = populate.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(ResteasyReactiveRequestContext.class,
+                                            "getFormParameter", Object.class, String.class, boolean.class, boolean.class),
+                                    rrCtxHandle,
+                                    formAttrNameHandle, populate.load(false), populate.load(false));
+
+                            ResultHandle arrayResultHandle = populate.newArray(componentType.toString(),
+                                    populate.invokeInterfaceMethod(MethodDescriptor.ofMethod(
+                                            Collection.class, "size", int.class), formCollectionValueHandle));
+
+                            ResultHandle formValueIterator = populate.invokeInterfaceMethod(
+                                    MethodDescriptor.ofMethod(Collection.class, "iterator", Iterator.class),
+                                    populate.checkCast(formCollectionValueHandle, Collection.class));
+                            AssignableResultHandle indexArray = populate.createVariable(int.class);
+                            populate.assign(indexArray, populate.load(0));
+
+                            BytecodeCreator loopIterator = populate.whileLoop(c -> c.ifTrue(
+                                    c.invokeInterfaceMethod(
+                                            MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class),
+                                            formValueIterator)))
+                                    .block();
+                            ResultHandle formValueAsString = loopIterator.invokeInterfaceMethod(
+                                    MethodDescriptor.ofMethod(Iterator.class, "next", Object.class), formValueIterator);
+                            loopIterator.writeArrayValue(arrayResultHandle, indexArray, loopIterator.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(MultipartSupport.class, "convertFormAttribute", Object.class,
+                                            String.class,
+                                            Class.class,
+                                            java.lang.reflect.Type.class, MediaType.class,
+                                            ResteasyReactiveRequestContext.class, String.class),
+                                    loopIterator.checkCast(formValueAsString, String.class),
+                                    loopIterator.loadClass(componentType.toString()),
+                                    loopIterator.readStaticField(genericComponentTypeField),
+                                    loopIterator.readStaticField(mediaTypeField),
+                                    rrCtxHandle, formAttrNameHandle));
+
+                            loopIterator.assign(indexArray, loopIterator.increment(indexArray));
+
+                            populate.assign(resultHandle, arrayResultHandle);
                         } else {
                             // we need to use the field type and the media type to locate a MessageBodyReader
 

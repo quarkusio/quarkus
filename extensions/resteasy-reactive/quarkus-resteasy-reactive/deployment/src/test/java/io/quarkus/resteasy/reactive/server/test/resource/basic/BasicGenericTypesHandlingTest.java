@@ -35,7 +35,7 @@ public class BasicGenericTypesHandlingTest {
 
     @RegisterExtension
     static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive archive = ShrinkWrap.create(JavaArchive.class);

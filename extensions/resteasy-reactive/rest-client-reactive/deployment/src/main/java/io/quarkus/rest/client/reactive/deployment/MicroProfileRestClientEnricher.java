@@ -8,7 +8,6 @@ import static org.jboss.resteasy.reactive.common.processor.HashUtil.sha1;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -104,7 +103,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 ResultHandle instanceHandle = constructor.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                                 Annotation[].class),
-                        containerHandle, constructor.loadClass(headersFactoryClass),
+                        containerHandle, constructor.loadClassFromTCCL(headersFactoryClass),
                         constructor.newArray(Annotation.class, 0));
                 clientHeadersFactory = constructor
                         .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
@@ -132,9 +131,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             ClassInfo subInterfaceClass, MethodInfo subMethod, MethodInfo rootMethod,
             AssignableResultHandle invocationBuilder, // sub-level
             IndexView index, BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            int methodIndex, int subMethodIndex) {
-        addJavaMethodToContext(subClassCreator, subClinit, subMethodCreator, subInterfaceClass, subMethod,
-                invocationBuilder, subMethodIndex);
+            int methodIndex, int subMethodIndex, FieldDescriptor javaMethodField) {
+
+        addJavaMethodToContext(javaMethodField, subMethodCreator, invocationBuilder);
 
         Map<String, HeaderData> headerFillersByName = new HashMap<>();
         collectHeaderFillers(rootInterfaceClass, rootMethod, headerFillersByName);
@@ -149,10 +148,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     public void forMethod(ClassCreator classCreator, MethodCreator constructor,
             MethodCreator clinit, MethodCreator methodCreator, ClassInfo interfaceClass,
             MethodInfo method, AssignableResultHandle invocationBuilder, IndexView index,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex) {
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex, FieldDescriptor javaMethodField) {
 
-        addJavaMethodToContext(classCreator, clinit, methodCreator, interfaceClass, method, invocationBuilder,
-                methodIndex);
+        addJavaMethodToContext(javaMethodField, methodCreator, invocationBuilder);
 
         // header filler
 
@@ -244,42 +242,18 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
      * create a field in the stub class to contain (interface) java.lang.reflect.Method corresponding to this method
      * MP Rest Client spec says it has to be in the request context, keeping it in a field we don't have to
      * initialize it on each call
-     * 
-     * @param classCreator client (or sub-resource client) class creator
+     *
+     * @param javaMethodField method reference in a static class field
      * @param methodCreator method for which we put the java.lang.reflect.Method to context (aka this method)
-     * @param interfaceClass class of the interface for this client
-     * @param method jandex counterpart of this method
      * @param invocationBuilder Invocation.Builder in this method
-     * @param methodIndex index of this method
      */
-    private void addJavaMethodToContext(ClassCreator classCreator, MethodCreator clinit, MethodCreator methodCreator,
-            ClassInfo interfaceClass, MethodInfo method, AssignableResultHandle invocationBuilder, int methodIndex) {
-        FieldDescriptor javaMethodField = createJavaMethodField(classCreator, clinit, interfaceClass, method, methodIndex);
+    private void addJavaMethodToContext(FieldDescriptor javaMethodField, MethodCreator methodCreator,
+            AssignableResultHandle invocationBuilder) {
         ResultHandle javaMethod = methodCreator.readStaticField(javaMethodField);
         ResultHandle javaMethodAsObject = methodCreator.checkCast(javaMethod, Object.class);
         methodCreator.assign(invocationBuilder,
                 methodCreator.invokeInterfaceMethod(INVOCATION_BUILDER_PROPERTY_METHOD, invocationBuilder,
                         methodCreator.load(INVOKED_METHOD), javaMethodAsObject));
-    }
-
-    private FieldDescriptor createJavaMethodField(ClassCreator classCreator, MethodCreator clinit,
-            ClassInfo interfaceClass, MethodInfo method, int methodIndex) {
-        ResultHandle interfaceClassHandle = clinit.loadClass(interfaceClass.toString());
-
-        ResultHandle parameterArray = clinit.newArray(Class.class, method.parameters().size());
-        for (int i = 0; i < method.parameters().size(); i++) {
-            String parameterClass = method.parameters().get(i).name().toString();
-            clinit.writeArrayValue(parameterArray, i, clinit.loadClass(parameterClass));
-        }
-
-        ResultHandle javaMethodHandle = clinit.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Class.class, "getMethod", Method.class, String.class, Class[].class),
-                interfaceClassHandle, clinit.load(method.name()), parameterArray);
-        FieldDescriptor javaMethodField = FieldDescriptor.of(classCreator.getClassName(), "javaMethod" + methodIndex,
-                Method.class);
-        classCreator.getFieldCreator(javaMethodField).setModifiers(Modifier.PRIVATE | Modifier.FINAL | Modifier.STATIC);
-        clinit.writeStaticField(javaMethodField, javaMethodHandle);
-        return javaMethodField;
     }
 
     private void putAllHeaderAnnotations(Map<String, HeaderData> headerMap, ClassInfo interfaceClass,

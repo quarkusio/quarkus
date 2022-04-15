@@ -32,7 +32,7 @@ public interface InjectableObserverMethod<T> extends ObserverMethod<T> {
     }
 
     /**
-     * 
+     *
      * @return the identifier or null for synthetic observers
      * @see InjectableBean#getIdentifier()
      */

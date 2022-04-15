@@ -57,7 +57,7 @@ public class CheckedTemplateRequireTypeSafeTest {
         fail();
     }
 
-    @CheckedTemplate // requireTypeSafeExpressions=true by default 
+    @CheckedTemplate // requireTypeSafeExpressions=true by default
     static class Templates {
 
         static native TemplateInstance hola(String name);

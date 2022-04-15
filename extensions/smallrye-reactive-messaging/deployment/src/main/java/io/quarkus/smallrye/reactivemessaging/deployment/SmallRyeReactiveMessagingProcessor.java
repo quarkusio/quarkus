@@ -62,6 +62,8 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
+import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactory;
+import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactoryInterceptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
@@ -486,6 +488,40 @@ public class SmallRyeReactiveMessagingProcessor {
         public boolean isEnabled() {
             return isEnabled;
         }
+    }
+
+    @BuildStep
+    void duplicatedContextSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+        beans.produce(new AdditionalBeanBuildItem(DuplicatedContextConnectorFactory.class,
+                DuplicatedContextConnectorFactoryInterceptor.class));
+
+        transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                ClassInfo clazz = ctx.getTarget().asClass();
+                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())) {
+                    ctx.transform().add(DuplicatedContextConnectorFactory.class).done();
+                }
+            }
+
+            private boolean doesImplement(ClassInfo clazz, DotName iface, IndexView index) {
+                while (clazz != null && !clazz.name().equals(ReactiveMessagingDotNames.OBJECT)) {
+                    if (clazz.interfaceNames().contains(iface)) {
+                        return true;
+                    }
+
+                    clazz = index.getClassByName(clazz.superName());
+                }
+
+                return false;
+            }
+        }));
     }
 
 }

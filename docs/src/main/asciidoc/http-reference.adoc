@@ -31,8 +31,10 @@ location to function correctly.
 
 === WebJar Locator Support
 
-If you are using webjars, like the following JQuery one
-[source, xml]
+If you are using webjars, like the following JQuery one:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.webjars</groupId>
@@ -40,17 +42,42 @@ If you are using webjars, like the following JQuery one
     <version>3.1.1</version>
 </dependency>
 ----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.webjars:jquery:3.1.1")
+----
+
 and rather write `/webjars/jquery/jquery.min.js` instead of `/webjars/jquery/3.1.1/jquery.min.js`
 in your HTML files, you can add the `quarkus-webjars-locator` extension to your project.
 To use it, add the following to your project's dependencies:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-webjars-locator</artifactId>
 </dependency>
 ----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-webjars-locator")
+----
+
+=== HTTP Compression
+
+The response body of a static resource is not compressed by default.
+You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
+If compression support is enabled then the response body is compressed if the `Content-Type` header derived from the file name of a resource is a compressed media type as configured via `quarkus.http.compress-media-types`.
+
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+
+NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
 
 == Configuring the Context path
 
@@ -332,12 +359,19 @@ Given this configuration, the `jwt` cookie will have a `SameSite=Lax` attribute 
 
 To use Servlet you need to explicitly include `quarkus-undertow`:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-undertow</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-undertow</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-undertow")
 ----
 
 === undertow-handlers.conf

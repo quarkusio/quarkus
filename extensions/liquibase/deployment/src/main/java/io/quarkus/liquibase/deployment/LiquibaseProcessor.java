@@ -215,12 +215,28 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.10.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.2.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.7.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.8.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.9.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.10.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.0.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.2.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.3.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.4.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.5.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.6.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.7.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.8.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.9.xsd",
                 "liquibase.build.properties"));
 
         // liquibase resource bundles
@@ -311,35 +327,45 @@ class LiquibaseProcessor {
         }
 
         ChangeLogParameters changeLogParameters = new ChangeLogParameters();
-        ClassLoaderResourceAccessor classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
-                Thread.currentThread().getContextClassLoader());
 
         ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
 
         Set<String> resources = new LinkedHashSet<>();
 
-        // default datasource
-        if (DataSourceUtil.hasDefault(dataSourceNames)) {
-            resources.addAll(findAllChangeLogFiles(liquibaseBuildConfig.defaultDataSource.changeLog, changeLogParserFactory,
-                    classLoaderResourceAccessor, changeLogParameters));
+        ClassLoaderResourceAccessor classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
+                Thread.currentThread().getContextClassLoader());
+
+        try {
+            // default datasource
+            if (DataSourceUtil.hasDefault(dataSourceNames)) {
+                resources.addAll(findAllChangeLogFiles(liquibaseBuildConfig.defaultDataSource.changeLog, changeLogParserFactory,
+                        classLoaderResourceAccessor, changeLogParameters));
+            }
+
+            // named datasources
+            Collection<String> namedDataSourceChangeLogs = dataSourceNames.stream()
+                    .filter(n -> !DataSourceUtil.isDefault(n))
+                    .map(liquibaseBuildConfig::getConfigForDataSourceName)
+                    .map(c -> c.changeLog)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+
+            for (String namedDataSourceChangeLog : namedDataSourceChangeLogs) {
+                resources.addAll(
+                        findAllChangeLogFiles(namedDataSourceChangeLog, changeLogParserFactory, classLoaderResourceAccessor,
+                                changeLogParameters));
+            }
+
+            LOGGER.debugf("Liquibase changeLogs: %s", resources);
+
+            return new ArrayList<>(resources);
+
+        } finally {
+            try {
+                classLoaderResourceAccessor.close();
+            } catch (Exception ignored) {
+                // close() really shouldn't declare that exception, see also https://github.com/liquibase/liquibase/pull/2576
+            }
         }
-
-        // named datasources
-        Collection<String> namedDataSourceChangeLogs = dataSourceNames.stream()
-                .filter(n -> !DataSourceUtil.isDefault(n))
-                .map(liquibaseBuildConfig::getConfigForDataSourceName)
-                .map(c -> c.changeLog)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        for (String namedDataSourceChangeLog : namedDataSourceChangeLogs) {
-            resources.addAll(
-                    findAllChangeLogFiles(namedDataSourceChangeLog, changeLogParserFactory, classLoaderResourceAccessor,
-                            changeLogParameters));
-        }
-
-        LOGGER.debugf("Liquibase changeLogs: %s", resources);
-
-        return new ArrayList<>(resources);
     }
 
     /**

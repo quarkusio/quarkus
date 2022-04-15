@@ -1,9 +1,13 @@
 package io.quarkus.vertx.http.runtime;
 
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -37,6 +41,7 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -50,6 +55,7 @@ import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
+import io.quarkus.runtime.QuarkusBindException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -57,6 +63,7 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
@@ -70,6 +77,7 @@ import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
 import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
 import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -89,6 +97,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.Http1xServerConnection;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.JdkSSLEngineOptions;
@@ -255,7 +264,16 @@ public class VertxHttpRecorder {
 
         if (startVirtual) {
             initializeVirtual(vertx.get());
-            shutdown.addShutdownTask(() -> virtualBootstrap = null);
+            shutdown.addShutdownTask(() -> {
+                try {
+                    virtualBootstrapChannel.channel().close().sync();
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Unable to close virtualBootstrapChannel");
+                } finally {
+                    virtualBootstrapChannel = null;
+                    virtualBootstrap = null;
+                }
+            });
         }
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled)) {
@@ -317,6 +335,18 @@ public class VertxHttpRecorder {
 
         if (defaultRouteHandler != null) {
             defaultRouteHandler.accept(httpRouteRouter.route().order(DEFAULT_ROUTE_ORDER));
+        }
+
+        if (httpConfiguration.enableCompression) {
+            httpRouteRouter.route().order(0).handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext ctx) {
+                    // Add "Content-Encoding: identity" header that disables the compression
+                    // This header can be removed to enable the compression
+                    ctx.response().putHeader(HttpHeaders.CONTENT_ENCODING, HttpHeaders.IDENTITY);
+                    ctx.next();
+                }
+            });
         }
 
         httpRouteRouter.route().last().failureHandler(
@@ -483,7 +513,22 @@ public class VertxHttpRecorder {
         root = new Handler<HttpServerRequest>() {
             @Override
             public void handle(HttpServerRequest event) {
-                delegate.handle(new ResumingRequestWrapper(event));
+                if (!VertxContext.isOnDuplicatedContext()) {
+                    // Vert.x should call us on a duplicated context.
+                    // But in the case of pipelined requests, it does not.
+                    // See https://github.com/quarkusio/quarkus/issues/24626.
+                    Context context = VertxContext.createNewDuplicatedContext();
+                    context.runOnContext(new Handler<Void>() {
+                        @Override
+                        public void handle(Void x) {
+                            setCurrentContextSafe(true);
+                            delegate.handle(new ResumingRequestWrapper(event));
+                        }
+                    });
+                } else {
+                    setCurrentContextSafe(true);
+                    delegate.handle(new ResumingRequestWrapper(event));
+                }
             }
         };
         if (httpConfiguration.recordRequestStartTime) {
@@ -522,16 +567,19 @@ public class VertxHttpRecorder {
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
-        HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode);
+        HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
+                websocketSubProtocols);
 
         if (httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED && sslConfig == null) {
             throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");
         }
 
         int eventLoopCount = eventLoops.get();
-        int ioThreads;
+        final int ioThreads;
         if (httpConfiguration.ioThreads.isPresent()) {
             ioThreads = Math.min(httpConfiguration.ioThreads.getAsInt(), eventLoopCount);
+        } else if (launchMode.isDevOrTest()) {
+            ioThreads = Math.min(2, eventLoopCount); //Don't start ~100 threads to run a couple unit tests
         } else {
             ioThreads = eventLoopCount;
         }
@@ -547,7 +595,19 @@ public class VertxHttpRecorder {
             @Override
             public void handle(AsyncResult<String> event) {
                 if (event.failed()) {
-                    futureResult.completeExceptionally(event.cause());
+                    Throwable effectiveCause = event.cause();
+                    if (effectiveCause instanceof BindException) {
+                        if ((sslConfig == null) && (httpServerOptions != null)) {
+                            effectiveCause = new QuarkusBindException(httpServerOptions.getPort());
+                        } else if ((httpConfiguration.insecureRequests == InsecureRequests.DISABLED) && (sslConfig != null)) {
+                            effectiveCause = new QuarkusBindException(sslConfig.getPort());
+                        } else if ((sslConfig != null) && (httpConfiguration.insecureRequests == InsecureRequests.ENABLED)
+                                && (httpServerOptions != null)) {
+                            effectiveCause = new QuarkusBindException(
+                                    List.of(httpServerOptions.getPort(), sslConfig.getPort()));
+                        }
+                    }
+                    futureResult.completeExceptionally(effectiveCause);
                 } else {
                     futureResult.complete(event.result());
                 }
@@ -629,7 +689,7 @@ public class VertxHttpRecorder {
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
      */
     private static HttpServerOptions createSslOptions(HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
-            LaunchMode launchMode)
+            LaunchMode launchMode, List<String> websocketSubProtocols)
             throws IOException {
         if (!httpConfiguration.hostEnabled) {
             return null;
@@ -667,9 +727,6 @@ public class VertxHttpRecorder {
                 serverOptions.setAlpnVersions(Arrays.asList(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
             }
         }
-        serverOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
-        serverOptions.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
-        serverOptions.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
         setIdleTimeout(httpConfiguration, serverOptions);
 
         if (!certificates.isEmpty() && !keys.isEmpty()) {
@@ -712,18 +769,35 @@ public class VertxHttpRecorder {
         }
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
-        serverOptions.setHost(httpConfiguration.host);
         int sslPort = httpConfiguration.determineSslPort(launchMode);
         // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
         serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
-        serverOptions.setReusePort(httpConfiguration.soReusePort);
-        serverOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
-        serverOptions.setTcpCork(httpConfiguration.tcpCork);
-        serverOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
-        serverOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
+
+        applyCommonOptions(serverOptions, httpConfiguration, websocketSubProtocols);
 
         return serverOptions;
+    }
+
+    private static void applyCommonOptions(HttpServerOptions httpServerOptions, HttpConfiguration httpConfiguration,
+            List<String> websocketSubProtocols) {
+        httpServerOptions.setHost(httpConfiguration.host);
+        setIdleTimeout(httpConfiguration, httpServerOptions);
+        httpServerOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
+        httpServerOptions.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
+        httpServerOptions.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
+        httpServerOptions.setWebSocketSubProtocols(websocketSubProtocols);
+        httpServerOptions.setReusePort(httpConfiguration.soReusePort);
+        httpServerOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
+        httpServerOptions.setTcpCork(httpConfiguration.tcpCork);
+        httpServerOptions.setAcceptBacklog(httpConfiguration.acceptBacklog);
+        httpServerOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
+        httpServerOptions.setCompressionSupported(httpConfiguration.enableCompression);
+        if (httpConfiguration.compressionLevel.isPresent()) {
+            httpServerOptions.setCompressionLevel(httpConfiguration.compressionLevel.getAsInt());
+        }
+        httpServerOptions.setDecompressionSupported(httpConfiguration.enableDecompression);
+        httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
     }
 
     private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,
@@ -748,7 +822,8 @@ public class VertxHttpRecorder {
 
     private static byte[] getFileContent(Path path) throws IOException {
         byte[] data;
-        final InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+        final InputStream resource = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(ClassPathUtils.toResourceName(path));
         if (resource != null) {
             try (InputStream is = resource) {
                 data = doRead(is);
@@ -815,21 +890,11 @@ public class VertxHttpRecorder {
         }
         // TODO other config properties
         HttpServerOptions options = new HttpServerOptions();
-        options.setHost(httpConfiguration.host);
         int port = httpConfiguration.determinePort(launchMode);
         options.setPort(port == 0 ? -1 : port);
-        setIdleTimeout(httpConfiguration, options);
-        options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
-        options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
-        options.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
-        options.setWebSocketSubProtocols(websocketSubProtocols);
-        options.setReusePort(httpConfiguration.soReusePort);
-        options.setTcpQuickAck(httpConfiguration.tcpQuickAck);
-        options.setTcpCork(httpConfiguration.tcpCork);
-        options.setTcpFastOpen(httpConfiguration.tcpFastOpen);
-        options.setCompressionSupported(httpConfiguration.enableCompression);
-        options.setDecompressionSupported(httpConfiguration.enableDecompression);
-        options.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
+
+        applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+
         return options;
     }
 
@@ -839,12 +904,11 @@ public class VertxHttpRecorder {
             return null;
         }
         HttpServerOptions options = new HttpServerOptions();
+
+        applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+        // Override the host (0.0.0.0 by default) with the configured domain socket.
         options.setHost(httpConfiguration.domainSocket);
-        setIdleTimeout(httpConfiguration, options);
-        options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
-        options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
-        options.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
-        options.setWebSocketSubProtocols(websocketSubProtocols);
+
         return options;
     }
 
@@ -852,14 +916,6 @@ public class VertxHttpRecorder {
         int idleTimeout = (int) httpConfiguration.idleTimeout.toMillis();
         options.setIdleTimeout(idleTimeout);
         options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
-    }
-
-    public void warnIfPortChanged(HttpConfiguration config, int port) {
-        if (config.port != port) {
-            LOGGER.errorf(
-                    "quarkus.http.port was specified at build time as %s however run time value is %s, Kubernetes metadata will be incorrect.",
-                    port, config.port);
-        }
     }
 
     public void addRoute(RuntimeValue<Router> router, Function<Router, Route> route, Handler<RoutingContext> handler,
@@ -1164,6 +1220,7 @@ public class VertxHttpRecorder {
     }
 
     protected static ServerBootstrap virtualBootstrap;
+    protected static ChannelFuture virtualBootstrapChannel;
     public static VirtualAddress VIRTUAL_HTTP = new VirtualAddress("netty-virtual-http");
 
     private static void initializeVirtual(Vertx vertxRuntime) {
@@ -1188,7 +1245,12 @@ public class VertxHttpRecorder {
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
 
                             Http1xServerConnection conn = new Http1xServerConnection(
-                                    () -> context,
+                                    () -> {
+                                        ContextInternal internal = (ContextInternal) VertxContext
+                                                .getOrCreateDuplicatedContext(context);
+                                        setContextSafe(internal, true);
+                                        return internal;
+                                    },
                                     null,
                                     new HttpServerOptions(),
                                     chctx,
@@ -1205,7 +1267,7 @@ public class VertxHttpRecorder {
 
         // Start the server.
         try {
-            virtualBootstrap.bind(VIRTUAL_HTTP).sync();
+            virtualBootstrapChannel = virtualBootstrap.bind(VIRTUAL_HTTP).sync();
         } catch (InterruptedException e) {
             throw new RuntimeException("failed to bind virtual http");
         }

@@ -96,6 +96,8 @@ public class TestTracingProcessor {
                 config.excludeTags.orElse(Collections.emptyList()));
         testSupport.setPatterns(config.includePattern.orElse(null),
                 config.excludePattern.orElse(null));
+        testSupport.setEngines(config.includeEngines.orElse(Collections.emptyList()),
+                config.excludeEngines.orElse(Collections.emptyList()));
         testSupport.setConfiguredDisplayTestOutput(config.displayTestOutput);
         testSupport.setTestType(config.type);
         if (!liveReloadBuildItem.isLiveReload()) {

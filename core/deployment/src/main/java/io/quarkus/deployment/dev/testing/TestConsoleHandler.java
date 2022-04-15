@@ -220,9 +220,11 @@ public class TestConsoleHandler implements TestListener {
                     log.error(statusHeader("TEST REPORT #" + results.getId()));
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
-                            log.error(
-                                    RED + "Test " + test.getDisplayName() + " failed \n" + RESET,
-                                    test.getTestExecutionResult().getThrowable().get());
+                            if (test.isReportable()) {
+                                log.error(
+                                        RED + "Test " + test.getDisplayName() + " failed \n" + RESET,
+                                        test.getTestExecutionResult().getThrowable().get());
+                            }
                         }
                     }
                     log.error(
@@ -245,11 +247,6 @@ public class TestConsoleHandler implements TestListener {
             }
 
             @Override
-            public void noTests(TestRunResults results) {
-                runComplete(results);
-            }
-
-            @Override
             public void runAborted() {
                 firstRun = false;
             }
@@ -267,6 +264,11 @@ public class TestConsoleHandler implements TestListener {
                     log.info(status);
                 }
                 testsStatusOutput.setMessage(status);
+            }
+
+            @Override
+            public void dynamicTestRegistered(TestIdentifier testIdentifier) {
+                totalNoTests.incrementAndGet();
             }
         });
 

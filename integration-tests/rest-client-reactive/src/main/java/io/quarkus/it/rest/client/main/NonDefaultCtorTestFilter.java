@@ -17,6 +17,5 @@ public class NonDefaultCtorTestFilter implements ClientRequestFilter {
     @Override
     public void filter(ClientRequestContext requestContext) {
         mapper.getFactory();
-        System.out.println(requestContext.getUri());
     }
 }

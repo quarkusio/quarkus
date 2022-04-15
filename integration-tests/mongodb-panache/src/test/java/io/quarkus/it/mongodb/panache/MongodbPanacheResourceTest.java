@@ -393,4 +393,10 @@ class MongodbPanacheResourceTest {
     public void testBug13301() {
         get("/bugs/13301").then().statusCode(200);
     }
+
+    @Test
+    public void testBug23813() {
+        get("/bugs/23813").then().statusCode(200);
+    }
+
 }

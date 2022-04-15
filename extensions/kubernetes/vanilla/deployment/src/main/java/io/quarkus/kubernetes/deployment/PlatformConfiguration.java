@@ -34,6 +34,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Optional<String> getHost();
 
+    Optional<String> getContainerName();
+
     Map<String, PortConfig> getPorts();
 
     ServiceType getServiceType();
@@ -84,8 +86,10 @@ public interface PlatformConfiguration extends EnvVarHolder {
         return getClass().getSimpleName().replaceAll("Config$", "").toLowerCase();
     }
 
-    public Optional<String> getAppSecret();
+    Optional<String> getAppSecret();
 
-    public Optional<String> getAppConfigMap();
+    Optional<String> getAppConfigMap();
+
+    SecurityContextConfig getSecurityContext();
 
 }

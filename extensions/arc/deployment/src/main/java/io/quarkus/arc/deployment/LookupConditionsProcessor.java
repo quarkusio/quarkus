@@ -121,9 +121,7 @@ public class LookupConditionsProcessor {
             ret.add(annotation);
         }
         if (container != null) {
-            for (AnnotationInstance nested : container.value().asNestedArray()) {
-                ret.add(nested);
-            }
+            Collections.addAll(ret, container.value().asNestedArray());
         }
         return ret;
     }

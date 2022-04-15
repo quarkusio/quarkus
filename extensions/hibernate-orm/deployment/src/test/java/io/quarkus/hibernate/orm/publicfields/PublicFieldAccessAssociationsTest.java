@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.GeneratedValue;
@@ -157,6 +158,7 @@ public class PublicFieldAccessAssociationsTest {
         @GeneratedValue
         public long id;
 
+        @Column(name = "value_")
         public String value;
 
         @OneToOne

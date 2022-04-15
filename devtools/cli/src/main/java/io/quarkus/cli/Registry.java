@@ -8,10 +8,10 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 
-@CommandLine.Command(name = "registry", sortOptions = false, mixinStandardHelpOptions = false, header = "Configure Quarkus registry client", subcommands = {
+@CommandLine.Command(name = "registry", header = "Configure Quarkus registry client", subcommands = {
         RegistryListCommand.class,
         RegistryAddCommand.class,
-        RegistryRemoveCommand.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+        RegistryRemoveCommand.class })
 public class Registry implements Callable<Integer> {
 
     @CommandLine.Mixin(name = "output")

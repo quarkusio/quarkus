@@ -44,6 +44,7 @@ import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
@@ -53,6 +54,7 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -84,6 +86,7 @@ public class S2iProcessor {
             OutputTargetBuildItem out,
             PackageConfig packageConfig,
             JarBuildItem jarBuildItem,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             BuildProducer<KubernetesEnvBuildItem> envProducer,
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
@@ -100,9 +103,10 @@ public class S2iProcessor {
         String jarFileName = s2iConfig.jarFileName.orElse(outputJarFileName);
         String jarDirectory = s2iConfig.jarDirectory;
         String pathToJar = concatUnixPaths(jarDirectory, jarFileName);
+        String baseJvmImage = s2iConfig.baseJvmImage.orElse(S2iConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
 
-        builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseJvmImage));
-        Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(s2iConfig.baseJvmImage);
+        builderImageProducer.produce(new BaseImageInfoBuildItem(baseJvmImage));
+        Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(baseJvmImage);
 
         baseImage.ifPresent(b -> {
             envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, OPENSHIFT));
@@ -110,13 +114,13 @@ public class S2iProcessor {
                     concatUnixPaths(jarDirectory, "lib"), OPENSHIFT));
             envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getClasspathEnvVar(), classpath, OPENSHIFT));
             envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
-                    String.join(" ", s2iConfig.jvmArguments), OPENSHIFT));
+                    String.join(" ", s2iConfig.getEffectiveJvmArguments()), OPENSHIFT));
         });
 
         if (!baseImage.isPresent()) {
             List<String> cmd = new ArrayList<>();
             cmd.add("java");
-            cmd.addAll(s2iConfig.jvmArguments);
+            cmd.addAll(s2iConfig.getEffectiveJvmArguments());
             cmd.addAll(Arrays.asList("-jar", pathToJar, "-cp", classpath));
             commandProducer.produce(KubernetesCommandBuildItem.command(cmd));
         }
@@ -173,6 +177,7 @@ public class S2iProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
@@ -203,6 +208,7 @@ public class S2iProcessor {
         createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(), jar.getPath(),
                 out.getOutputDirectory().resolve("lib"));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(S2I));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
@@ -214,6 +220,7 @@ public class S2iProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             NativeImageBuildItem nativeImage) {
 
         if (containerImageConfig.isBuildExplicitlyDisabled()) {
@@ -243,6 +250,7 @@ public class S2iProcessor {
         createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(),
                 nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(S2I));
     }
 
     public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,

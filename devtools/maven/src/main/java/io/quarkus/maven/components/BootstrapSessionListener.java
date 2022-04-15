@@ -16,6 +16,8 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
     @Requirement(optional = false)
     protected QuarkusBootstrapProvider bootstrapProvider;
 
+    private boolean enabled;
+
     @Override
     public void afterSessionEnd(MavenSession session) throws MavenExecutionException {
         try {
@@ -23,5 +25,16 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void afterProjectsRead(MavenSession session)
+            throws MavenExecutionException {
+        // if this method is called then Maven plugin extensions are enabled
+        enabled = true;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 }

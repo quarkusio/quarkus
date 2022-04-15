@@ -38,7 +38,7 @@ import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
 
 public class SmallRyeReactiveMessagingKafkaProcessor {
 
-    private static final Logger LOGGER = Logger.getLogger(SmallRyeReactiveMessagingKafkaProcessor.class);
+    private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye-reactive-messaging-kafka.deployment.processor");
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -240,6 +240,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private void produceRuntimeConfigurationDefaultBuildItem(DefaultSerdeDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config, String key, String value) {
         if (value == null) {
+            return;
+        }
+
+        if (discovery.shouldNotConfigure(key)) {
             return;
         }
 
@@ -611,6 +615,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflection,
             Map<String, String> alreadyGeneratedSerializers) {
         Result result = serializerDeserializerFor(discovery, type, false);
+        if (result != null && !result.exists) {
+            // avoid returning Result.nonexistent() to callers, they expect a non-null Result to always be known
+            return null;
+        }
         // if result is null, generate a jackson serializer, generatedClass is null if the generation is disabled.
         // also, only generate the serializer/deserializer for classes and only generate once
         if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
@@ -633,6 +641,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflection,
             Map<String, String> alreadyGeneratedSerializers) {
         Result result = serializerDeserializerFor(discovery, type, true);
+        if (result != null && !result.exists) {
+            // avoid returning Result.nonexistent() to callers, they expect a non-null Result to always be known
+            return null;
+        }
         // if result is null, generate a jackson deserializer, generatedClass is null if the generation is disabled.
         // also, only generate the serializer/deserializer for classes and only generate once
         if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
@@ -657,6 +669,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         }
         DotName typeName = type.name();
 
+        // Serializer/deserializer implementations
+        ClassInfo implementation = discovery.getImplementorOfWithTypeArgument(
+                serializer ? DotNames.KAFKA_SERIALIZER : DotNames.KAFKA_DESERIALIZER, typeName);
+        if (implementation != null) {
+            return Result.of(implementation.name().toString());
+        }
+
         // statically known serializer/deserializer
         Map<DotName, String> map = serializer ? KNOWN_SERIALIZERS : KNOWN_DESERIALIZERS;
         if (map.containsKey(typeName)) {
@@ -666,6 +685,16 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // Avro generated class or GenericRecord (serializer/deserializer provided by Confluent or Apicurio)
         boolean isAvroGenerated = discovery.isAvroGenerated(typeName);
         if (isAvroGenerated || DotNames.AVRO_GENERIC_RECORD.equals(typeName)) {
+            int avroLibraries = 0;
+            avroLibraries += discovery.hasConfluent() ? 1 : 0;
+            avroLibraries += discovery.hasApicurio1() ? 1 : 0;
+            avroLibraries += discovery.hasApicurio2() ? 1 : 0;
+            if (avroLibraries > 1) {
+                LOGGER.debugf("Skipping Avro serde autodetection for %s, because multiple Avro serde libraries are present",
+                        typeName);
+                return Result.nonexistent();
+            }
+
             if (discovery.hasConfluent()) {
                 return serializer
                         ? Result.of("io.confluent.kafka.serializers.KafkaAvroSerializer")
@@ -681,6 +710,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         ? Result.of("io.apicurio.registry.serde.avro.AvroKafkaSerializer")
                         : Result.of("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
                                 .with(isAvroGenerated, "apicurio.registry.use-specific-avro-reader", "true");
+            } else {
+                // we know it is an Avro type, no point in serializing it as JSON
+                return Result.nonexistent();
             }
         }
 

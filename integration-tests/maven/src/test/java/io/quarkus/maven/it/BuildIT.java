@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
@@ -131,6 +132,32 @@ class BuildIT extends MojoTestBase {
         launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-1"), "bar-1-", "Hello bar 1");
         launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-2"), "foo-2-", "Hello foo 2");
         launch(TestContext.FAST_NO_PREFIX, new File(testDir, "module-2"), "bar-2-", "Hello bar 2");
+    }
+
+    @Test
+    void testCustomManifestAttributes() throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/custom-manifest-attributes");
+        build();
+
+        File targetDir = new File(testDir, "target");
+        File jar = new File(targetDir, "acme-1.0-SNAPSHOT-runner.jar");
+
+        try (InputStream fileInputStream = new FileInputStream(jar)) {
+            try (JarInputStream stream = new JarInputStream(fileInputStream)) {
+                Manifest manifest = stream.getManifest();
+                assertThat(manifest).isNotNull();
+                assertThat(manifest.getMainAttributes().getValue("Built-By")).isEqualTo("quarkus-maven-plugin");
+
+                Attributes section = manifest.getAttributes("org.acme");
+                assertThat(section).isNotNull();
+                assertThat(section.getValue("visibility")).isEqualTo("public");
+
+                section = manifest.getAttributes("org.acme.internal");
+                assertThat(section).isNotNull();
+                assertThat(section.getValue("visibility")).isEqualTo("private");
+            }
+        }
+
     }
 
     private void launch() throws IOException {

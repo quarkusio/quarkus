@@ -12,11 +12,17 @@ include::./attributes.adoc[]
 :mutinyapi: https://smallrye.io/smallrye-mutiny/apidocs
 :httpspec: https://tools.ietf.org/html/rfc7231
 :jsonpapi: https://javadoc.io/doc/javax.json/javax.json-api/1.1.4
-:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/4.1.0
-:resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/2.0.0.Final
-:resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/2.0.0.Final
+:vertxapi: https://javadoc.io/doc/io.vertx/vertx-core/latest/index.html
+:resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
+:resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
 
 This guide explains how to write REST Services with RESTEasy Reactive in Quarkus.
+
+[TIP]
+====
+This is the reference guide for RESTEasy Reactive.
+For a more lightweight introduction, please refer to the xref:rest-json.adoc[Writing JSON REST services guides].
+====
 
 == What is RESTEasy Reactive?
 
@@ -33,14 +39,21 @@ of what JAX-RS provides.
 
 === Getting started
 
-Add the following import to your `pom.xml` file:
+Add the following import to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-reactive</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy-reactive")
 ----
 
 You can now write your first endpoint in the `org.acme.rest.Endpoint` class:
@@ -170,14 +183,14 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 
 @Retention(RetentionPolicy.RUNTIME)
-@HttpMethod("FROMAGE")
-@interface FROMAGE {
+@HttpMethod("CHEESE")
+@interface CHEESE {
 }
 
 @Path("")
 public class Endpoint {
 
-    @FROMAGE
+    @CHEESE
     public String hello() {
         return "Hello, Cheese World!";
     }
@@ -395,6 +408,7 @@ link:{jsonpapi}/javax/json/JsonArray.html[`JsonStructure`], link:{jsonpapi}/java
 
 NOTE: You can add support for more <<readers-writers,body parameter types>>.
 
+[[multipart]]
 === Handling Multipart Form data
 
 To handle HTTP requests that have `multipart/form-data` as their content type, RESTEasy Reactive introduces the 
@@ -582,11 +596,11 @@ public class Endpoint {
         // HTTP OK status with text/plain content type
         return ResponseBuilder.ok("Hello, World!", MediaType.TEXT_PLAIN_TYPE)
          // set a response header
-         .header("X-FroMage", "Camembert")
+         .header("X-Cheese", "Camembert")
          // set the Expires response header to two days from now
          .expires(Date.from(Instant.now().plus(Duration.ofDays(2))))
          // send a new cookie
-         .cookie(new NewCookie("Flavour", "praliné"))
+         .cookie(new NewCookie("Flavour", "chocolate"))
          // end of builder API
          .build();
     }
@@ -616,7 +630,7 @@ import javax.ws.rs.Path;
 public class Endpoint {
 
     @ResponseStatus(201)
-    @ResponseHeader(name = "X-FroMage", value = "Camembert")
+    @ResponseHeader(name = "X-Cheese", value = "Camembert")
     @GET
     public String hello() {
         return "Hello, World!";
@@ -708,7 +722,7 @@ https://html.spec.whatwg.org/multipage/server-sent-events.html[Server-Sent Event
 by just annotating your endpoint method with 
 link:{jaxrsapi}/javax/ws/rs/Produces.html[`@Produces(MediaType.SERVER_SENT_EVENTS)`]
 and specifying that each element should be <<json,serialised to JSON>> with 
-`@RestSseElementType(MediaType.APPLICATION_JSON)`.
+`@RestStreamElementType(MediaType.APPLICATION_JSON)`.
 
 [source,java]
 ----
@@ -720,7 +734,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.jboss.resteasy.reactive.RestSseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -739,7 +753,7 @@ public class Endpoint {
     // Send the stream over SSE
     @Produces(MediaType.SERVER_SENT_EVENTS)
     // Each element will be sent as JSON
-    @RestSseElementType(MediaType.APPLICATION_JSON)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Book> stream() {
         return books;
     }
@@ -913,7 +927,7 @@ Instead of importing `io.quarkus:quarkus-resteasy-reactive`, you can import eith
 |https://github.com/FasterXML/jackson[Jackson support]
 
 |`io.quarkus:quarkus-resteasy-reactive-jsonb`
-|https://eclipse-ee4j.github.io/jsonb-api/[JSONB support]
+|https://eclipse-ee4j.github.io/jsonb-api/[JSON-B support]
 
 |===
 
@@ -1124,6 +1138,16 @@ Importing this module will allow HTTP message bodies to be read from XML
 and serialised to XML, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
+== CORS filter
+
+link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that
+allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
+was served.
+
+Quarkus comes with a CORS filter at the HTTP layer level.
+Read the xref:http-reference.adoc#cors-filter[HTTP Reference Documentation] to learn
+how to use it.
+
 == More advanced usage
 
 Here are some more advanced topics that you may not need to know about initially, but
@@ -1227,6 +1251,7 @@ with `@Blocking` or `@NonBlocking`, and this will set the default for every meth
 Behaviour can still be overridden on a class or method level by annotating them directly, however all endpoints without
 an annotation will now follow the default, no matter their method signature.
 
+[[exception-mapping]]
 === Exception mapping
 
 If your application needs to return non-nominal HTTP codes in error cases, the best is
@@ -1242,17 +1267,17 @@ import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 
-@Path("fromages/{fromage}")
+@Path("cheeses/{cheese}")
 public class Endpoint {
 
     @GET
-    public String findFromage(String fromage) {
-        if(fromage == null)
+    public String findCheese(String cheese) {
+        if(cheese == null)
             // send a 400
             throw new BadRequestException();
-        if(!fromage.equals("camembert"))
+        if(!cheese.equals("camembert"))
             // send a 404
-            throw new NotFoundException("Unknown cheese: " + fromage);
+            throw new NotFoundException("Unknown cheese: " + cheese);
         return "Camembert is a very nice cheese";
     }
 }
@@ -1304,7 +1329,7 @@ class CheeseService {
     }
 }
 
-@Path("fromages/{fromage}")
+@Path("cheeses/{cheese}")
 public class Endpoint {
 
     @Inject
@@ -1316,11 +1341,11 @@ public class Endpoint {
     }
     
     @GET
-    public String findFromage(String fromage) {
-        if(fromage == null)
+    public String findCheese(String cheese) {
+        if(cheese == null)
             // send a 400
             throw new BadRequestException();
-        return cheeses.findCheese(fromage);
+        return cheeses.findCheese(cheese);
     }
 } 
 ----
@@ -1378,6 +1403,8 @@ It may declare any of the following return types:
 |===
 
 === Request or response filters
+
+==== Via annotations
 
 You can declare functions which are invoked in the following phases of the request processing:
 
@@ -1449,8 +1476,6 @@ class Filters {
 }
 ----
 
-You can also link:{jaxrsspec}#filters[declare request and response filters in the JAX-RS way].
-
 Your filters may declare any of the following parameter types:
 
 .Table Filter parameters
@@ -1490,6 +1515,64 @@ It may declare any of the following return types:
 
 NOTE: You can restrict the Resource methods for which a filter runs, by using link:{jaxrsapi}/javax/ws/rs/NameBinding.html[`@NameBinding`] meta-annotations.
 
+==== The JAX-RS way
+
+You can also link:{jaxrsspec}#filters[declare request and response filters in the JAX-RS way].
+
+Both HTTP request and response can be intercepted by providing `ContainerRequestFilter` or `ContainerResponseFilter`
+implementations respectively. These filters are suitable for processing the metadata associated with a message: HTTP
+headers, query parameters, media type, and other metadata. They also have the capability to abort the request
+processing, for instance when the user does not have the permissions to access the endpoint.
+
+Let's use `ContainerRequestFilter` to add logging capability to our service. We can do that by implementing
+`ContainerRequestFilter` and annotating it with the `@Provider` annotation:
+
+[source,java]
+----
+package org.acme.rest.json;
+
+import io.vertx.core.http.HttpServerRequest;
+import org.jboss.logging.Logger;
+
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.Provider;
+
+@Provider
+public class LoggingFilter implements ContainerRequestFilter {
+
+    private static final Logger LOG = Logger.getLogger(LoggingFilter.class);
+
+    @Context
+    UriInfo info;
+
+    @Context
+    HttpServerRequest request;
+
+    @Override
+    public void filter(ContainerRequestContext context) {
+
+        final String method = context.getMethod();
+        final String path = info.getPath();
+        final String address = request.remoteAddress().toString();
+
+        LOG.infof("Request %s %s from IP %s", method, path, address);
+    }
+}
+----
+
+Now, whenever a REST method is invoked, the request will be logged into the console:
+
+[source,text]
+----
+2019-06-05 12:44:26,526 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /legumes from IP 127.0.0.1
+2019-06-05 12:49:19,623 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /fruits from IP 0:0:0:0:0:0:0:1
+2019-06-05 12:50:44,019 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request POST /fruits from IP 0:0:0:0:0:0:0:1
+2019-06-05 12:51:04,485 INFO  [org.acm.res.jso.LoggingFilter] (executor-thread-1) Request GET /fruits from IP 127.0.0.1
+----
+
 === Readers and Writers: mapping entities and HTTP bodies
 
 [[readers-writers]]
@@ -1507,7 +1590,7 @@ and link:{jaxrsapi}/javax/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`] 
 which are responsible for defining which Java type they map from/to, for which media types,
 and how they turn HTTP bodies to/from Java instances of that type.
 
-For example, if we have our own `FroMage` type on our endpoint:
+For example, if we have our own `Cheese` type on our endpoint:
 
 [source,java]
 ----
@@ -1517,10 +1600,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 
-class FroMage {
+class Cheese {
     public String name;
     
-    public FroMage(String name) {
+    public Cheese(String name) {
         this.name = name;
     }
 }
@@ -1529,13 +1612,13 @@ class FroMage {
 public class Endpoint {
 
     @GET
-    public FroMage sayCheese() {
-        return new FroMage("Cheeeeeese");
+    public Cheese sayCheese() {
+        return new Cheese("Cheeeeeese");
     }
 
     @PUT
-    public void addCheese(FroMage fromage) {
-        System.err.println("Received a new cheese: " + fromage.name);
+    public void addCheese(Cheese cheese) {
+        System.err.println("Received a new cheese: " + cheese.name);
     }
 }
 ----
@@ -1562,41 +1645,41 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class FroMageBodyHandler implements MessageBodyReader<FroMage>, 
-                                           MessageBodyWriter<FroMage> {
+public class CheeseBodyHandler implements MessageBodyReader<Cheese>, 
+                                           MessageBodyWriter<Cheese> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, 
                                Annotation[] annotations, MediaType mediaType) {
-        return type == FroMage.class;
+        return type == Cheese.class;
     }
 
     @Override
-    public void writeTo(FroMage t, Class<?> type, Type genericType, 
+    public void writeTo(Cheese t, Class<?> type, Type genericType, 
                         Annotation[] annotations, MediaType mediaType,
                         MultivaluedMap<String, Object> httpHeaders, 
                         OutputStream entityStream)
             throws IOException, WebApplicationException {
-        entityStream.write(("[FroMageV1]" + t.name)
+        entityStream.write(("[CheeseV1]" + t.name)
                            .getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, 
                               Annotation[] annotations, MediaType mediaType) {
-        return type == FroMage.class;
+        return type == Cheese.class;
     }
 
     @Override
-    public FroMage readFrom(Class<FroMage> type, Type genericType, 
+    public Cheese readFrom(Class<Cheese> type, Type genericType, 
                             Annotation[] annotations, MediaType mediaType,
                             MultivaluedMap<String, String> httpHeaders,
                             InputStream entityStream)
             throws IOException, WebApplicationException {
         String body = new String(entityStream.readAllBytes(), StandardCharsets.UTF_8);
-        if(body.startsWith("[FroMageV1]"))
-            return new FroMage(body.substring(11));
-        throw new IOException("Invalid fromage: " + body);
+        if(body.startsWith("[CheeseV1]"))
+            return new Cheese(body.substring(11));
+        throw new IOException("Invalid cheese: " + body);
     }
 
 }
@@ -1629,21 +1712,21 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 @Provider
-public class FroMageBodyHandler implements MessageBodyReader<FroMage>, 
-                                           ServerMessageBodyWriter<FroMage> {
+public class CheeseBodyHandler implements MessageBodyReader<Cheese>, 
+                                           ServerMessageBodyWriter<Cheese> {
 
     // …
 
     @Override
     public boolean isWriteable(Class<?> type, ResteasyReactiveResourceInfo target, 
                                MediaType mediaType) {
-        return type == FroMage.class;
+        return type == Cheese.class;
     }
 
     @Override
-    public void writeResponse(FroMage t, ServerRequestContext context) 
+    public void writeResponse(Cheese t, ServerRequestContext context) 
       throws WebApplicationException, IOException {
-        context.serverResponse().end("[FroMageV1]" + t.name);
+        context.serverResponse().end("[CheeseV1]" + t.name);
     }
 }
 ----
@@ -1678,8 +1761,8 @@ public class Endpoint {
     }
 
     @PUT
-    public void addCheese(String fromage) {
-        System.err.println("Received a new cheese: " + fromage);
+    public void addCheese(String cheese) {
+        System.err.println("Received a new cheese: " + cheese);
     }
 }
 ----
@@ -1700,7 +1783,7 @@ import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
 @Provider
-public class FroMageIOInterceptor implements ReaderInterceptor, WriterInterceptor {
+public class CheeseIOInterceptor implements ReaderInterceptor, WriterInterceptor {
 
     @Override
     public void aroundWriteTo(WriterInterceptorContext context)
@@ -1720,6 +1803,19 @@ public class FroMageIOInterceptor implements ReaderInterceptor, WriterIntercepto
     }
 }
 ----
+
+==== RESTEasy Reactive and REST Client Reactive interactions
+
+In Quarkus, the RESTEasy Reactive extension and xref:rest-client-reactive.adoc[the REST Client Reactive extension] share the same infrastructure.
+One important consequence of this consideration is that they share the same list of providers (in the JAX-RS meaning of the word).
+
+For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
+which might not be the desired behavior.
+
+However, you can change this default behavior and constrain a provider to:
+
+* only consider *server* calls by adding the `@ConstrainedTo(RuntimeType.SERVER)` annotation to your provider;
+* only consider *client* calls by adding the `@ConstrainedTo(RuntimeType.CLIENT)` annotation to your provider.
 
 === Parameter mapping
 
@@ -1979,10 +2075,10 @@ import javax.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-class FroMage {
+class Cheese {
     public String name;
     @JsonCreator
-    public FroMage(String name) {
+    public Cheese(String name) {
         this.name = name;
     }
     @Override
@@ -1996,20 +2092,20 @@ public class Endpoint {
 
     @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
     @GET
-    public FroMage get() {
-        return new FroMage("Morbier");
+    public Cheese get() {
+        return new Cheese("Morbier");
     }
 
     @Consumes(MediaType.TEXT_PLAIN)
     @PUT
-    public FroMage putString(String cheese) {
-        return new FroMage(cheese);
+    public Cheese putString(String cheese) {
+        return new Cheese(cheese);
     }
 
     @Consumes(MediaType.APPLICATION_JSON)
     @PUT
-    public FroMage putJson(FroMage fromage) {
-        return fromage;
+    public Cheese putJson(Cheese cheese) {
+        return cheese;
     }
 }
 ----
@@ -2081,6 +2177,26 @@ Or plain text:
 < {"name":"roquefort"} 
 ----
 
+=== HTTP Compression
+
+The body of an HTTP response is not compressed by default.
+You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
+
+If compression support is enabled then the response body is compressed if:
+
+- the resource method is annotated with `@io.quarkus.vertx.http.Compressed`, or
+- the `Content-Type` header is set and the value is a compressed media type as configured via `quarkus.http.compress-media-types`.
+
+The response body is never compressed if:
+
+- the resource method is annotated with `@io.quarkus.vertx.http.Uncompressed`, or
+- the `Content-Type` header is not set.
+
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+
+NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
+
 == Include/Exclude JAX-RS classes with build time conditions
 
 Quarkus enables the inclusion or exclusion of JAX-RS Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
@@ -2105,8 +2221,9 @@ Please note that if a JAX-RS Application has been detected and the method `getCl
 
 
 == RESTEasy Reactive client
-In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile Rest Client implementation that is non-blocking at its core.
 
-Please note that the `quarkus-rest-client` extension may not work properly with RESTEasy Reactive.
+In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile REST Client implementation that is non-blocking at its core.
 
-See xref:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive client.
+Please note that the `quarkus-rest-client` extension may not be used with RESTEasy Reactive, use `quarkus-rest-client-reactive` instead.
+
+See the xref:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive REST client.

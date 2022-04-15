@@ -26,19 +26,29 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-vertx-context</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
             <scope>provided</scope>
         </dependency>
 
+        <!-- Optional Dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
+            <optional>true</optional>
+        </dependency>
 
+        <!-- OpenTelemetry Dependencies -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk</artifactId>
@@ -82,6 +92,7 @@
             <artifactId>opentelemetry-semconv</artifactId>
         </dependency>
 
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
@@ -102,7 +113,7 @@
                 <configuration>
                     <capabilities>
                         <providesIf>
-                            <positive>io.quarkus.opentelemetry.deployment.tracing.TracerProcessor$TracerEnabled</positive>
+                            <positive>io.quarkus.opentelemetry.deployment.tracing.TracerEnabled</positive>
                             <name>io.quarkus.opentelemetry.tracer</name>
                         </providesIf>
                     </capabilities>

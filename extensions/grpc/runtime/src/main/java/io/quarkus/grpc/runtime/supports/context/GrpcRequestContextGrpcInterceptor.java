@@ -33,7 +33,7 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
             Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
 
-        // This interceptor is called first, so, we should be on the event loop.
+        // This interceptor is called just after the duplicated context interceptor, so, we should be on the event loop.
         Context capturedVertxContext = Vertx.currentContext();
         if (capturedVertxContext != null) {
             InjectableContext.ContextState state;
@@ -141,6 +141,6 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
 
     @Override
     public int getPriority() {
-        return Integer.MAX_VALUE;
+        return Integer.MAX_VALUE - 50;
     }
 }

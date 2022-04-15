@@ -20,7 +20,6 @@ public class RESTClientCodestartTest {
     @Test
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource("org.acme.MyRemoteService");
-        codestartTest.checkGeneratedTestSource("org.acme.MyRemoteServiceTest");
     }
 
     @Test

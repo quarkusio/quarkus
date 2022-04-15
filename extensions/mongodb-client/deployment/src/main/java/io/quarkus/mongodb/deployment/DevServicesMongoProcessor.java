@@ -21,12 +21,13 @@ import org.testcontainers.utility.DockerImageName;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.message.BasicNameValuePair;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
-import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -41,17 +42,16 @@ public class DevServicesMongoProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesMongoProcessor.class);
 
-    static volatile List<Closeable> closeables;
+    static volatile List<RunningDevService> devServices;
     static volatile Map<String, CapturedProperties> capturedProperties;
     static volatile boolean first = true;
 
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
-    public void startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
+    public List<DevServicesResultBuildItem> startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<DevServicesConfigResultBuildItem> devServices,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LaunchModeBuildItem launchMode,
@@ -65,10 +65,10 @@ public class DevServicesMongoProcessor {
 
         // TODO: handle named connections as well
         if (connectionNames.size() != 1) {
-            return;
+            return null;
         }
         if (!isDefault(connectionNames.get(0))) {
-            return;
+            return null;
         }
 
         Map<String, CapturedProperties> currentCapturedProperties = captureProperties(connectionNames,
@@ -76,44 +76,40 @@ public class DevServicesMongoProcessor {
 
         //figure out if we need to shut down and restart existing databases
         //if not and the DB's have already started we just return
-        if (closeables != null) {
+        if (devServices != null) {
             boolean restartRequired = !currentCapturedProperties.equals(capturedProperties);
             if (!restartRequired) {
-                return;
+                return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
             }
-            for (Closeable i : closeables) {
+            for (Closeable i : devServices) {
                 try {
                     i.close();
                 } catch (Throwable e) {
                     log.error("Failed to stop database", e);
                 }
             }
-            closeables = null;
+            devServices = null;
             capturedProperties = null;
         }
 
-        List<Closeable> currentCloseables = new ArrayList<>(mongoConnections.size());
+        List<RunningDevService> newDevServices = new ArrayList<>(mongoConnections.size());
 
         // TODO: we need to go through each connection
         String connectionName = connectionNames.get(0);
-        StartResult startResult;
+        RunningDevService devService;
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "Mongo Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            startResult = startMongo(connectionName, currentCapturedProperties.get(connectionName),
+            devService = startMongo(connectionName, currentCapturedProperties.get(connectionName),
                     !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout);
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);
         }
-        if (startResult != null) {
-            currentCloseables.add(startResult.getCloseable());
-            String connectionStringPropertyName = getConfigPrefix(connectionName) + "connection-string";
-            String connectionStringPropertyValue = startResult.getUrl();
-            devServices.produce(
-                    new DevServicesConfigResultBuildItem(connectionStringPropertyName, connectionStringPropertyValue));
+        if (devService != null) {
+            newDevServices.add(devService);
         }
 
         if (first) {
@@ -121,8 +117,8 @@ public class DevServicesMongoProcessor {
             Runnable closeTask = new Runnable() {
                 @Override
                 public void run() {
-                    if (closeables != null) {
-                        for (Closeable i : closeables) {
+                    if (devServices != null) {
+                        for (Closeable i : devServices) {
                             try {
                                 i.close();
                             } catch (Throwable t) {
@@ -131,18 +127,18 @@ public class DevServicesMongoProcessor {
                         }
                     }
                     first = true;
-                    closeables = null;
+                    devServices = null;
                     capturedProperties = null;
                 }
             };
             closeBuildItem.addCloseTask(closeTask, true);
         }
-        closeables = currentCloseables;
+        devServices = newDevServices;
         capturedProperties = currentCapturedProperties;
-
+        return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
     }
 
-    private StartResult startMongo(String connectionName, CapturedProperties capturedProperties, boolean useSharedNetwork,
+    private RunningDevService startMongo(String connectionName, CapturedProperties capturedProperties, boolean useSharedNetwork,
             Optional<Duration> timeout) {
         if (!capturedProperties.devServicesEnabled) {
             // explicitly disabled
@@ -187,14 +183,8 @@ public class DevServicesMongoProcessor {
                                     .map(e -> new BasicNameValuePair(e.getKey(), e.getValue())).collect(Collectors.toList()),
                             StandardCharsets.UTF_8);
         }
-        return new StartResult(
-                effectiveURL,
-                new Closeable() {
-                    @Override
-                    public void close() {
-                        mongoDBContainer.close();
-                    }
-                });
+        return new RunningDevService(Feature.MONGODB_CLIENT.getName(), mongoDBContainer.getContainerId(),
+                mongoDBContainer::close, getConfigPrefix(connectionName) + "connection-string", effectiveURL);
     }
 
     private String getConfigPrefix(String connectionName) {
@@ -223,25 +213,8 @@ public class DevServicesMongoProcessor {
         DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices;
         boolean devServicesEnabled = devServicesConfig.enabled.orElse(true);
         return new CapturedProperties(databaseName, connectionString, devServicesEnabled,
-                devServicesConfig.imageName.orElse(null), devServicesConfig.port.orElse(null), devServicesConfig.properties);
-    }
-
-    private static class StartResult {
-        private final String url;
-        private final Closeable closeable;
-
-        public StartResult(String url, Closeable closeable) {
-            this.url = url;
-            this.closeable = closeable;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public Closeable getCloseable() {
-            return closeable;
-        }
+                devServicesConfig.imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mongo")),
+                devServicesConfig.port.orElse(null), devServicesConfig.properties);
     }
 
     private static final class CapturedProperties {

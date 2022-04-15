@@ -17,7 +17,7 @@ import org.jboss.jandex.Type.Kind;
  * Configures a synthetic observer.
  * <p>
  * This construct is not thread-safe.
- * 
+ *
  * @see ObserverRegistrar
  */
 public final class ObserverConfigurator implements Consumer<AnnotationInstance> {
@@ -43,7 +43,7 @@ public final class ObserverConfigurator implements Consumer<AnnotationInstance> 
     /**
      * A unique identifier should be used for multiple synthetic observer methods with the same
      * attributes (including the bean class).
-     * 
+     *
      * @param id
      * @return self
      */

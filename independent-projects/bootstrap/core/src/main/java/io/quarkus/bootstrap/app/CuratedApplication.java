@@ -8,9 +8,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.util.BootstrapUtils;
-import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
@@ -18,7 +16,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +37,8 @@ import java.util.stream.Collectors;
  *
  */
 public class CuratedApplication implements Serializable, AutoCloseable {
+
+    private static final long serialVersionUID = 7816596453653911149L;
 
     private static final String AUGMENTOR = "io.quarkus.runner.bootstrap.AugmentActionImpl";
 
@@ -94,14 +93,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         return quarkusBootstrap;
     }
 
-    public boolean hasUpdatedDeps() {
-        return curationResult.hasUpdatedDeps();
-    }
-
-    public Collection<Dependency> getUpdatedDeps() {
-        return curationResult.getUpdatedDependencies();
-    }
-
     public Object runInAugmentClassLoader(String consumerName, Map<String, Object> params) {
         return runInCl(consumerName, params, getAugmentClassLoader());
     }
@@ -129,7 +120,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     public AugmentAction createAugmentor(String functionName, Map<String, Object> props) {
         try {
             Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
-            Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader().loadClass(functionName)
+            Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader()
+                    .loadClass(functionName)
                     .getDeclaredConstructor()
                     .newInstance();
             List<?> res = function.apply(props);
@@ -157,7 +149,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     }
 
     private synchronized void processCpElement(ResolvedDependency artifact, Consumer<ClassPathElement> consumer) {
-        if (!artifact.getType().equals(ArtifactCoords.TYPE_JAR)) {
+        if (!artifact.isJar()) {
             //avoid the need for this sort of check in multiple places
             consumer.accept(ClassPathElement.EMPTY);
             return;
@@ -293,16 +285,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             builder.addBannedElement(new MemoryClassPathElement(banned, true));
 
             for (ResolvedDependency dependency : appModel.getDependencies()) {
-                if (!dependency.isRuntimeCp() ||
-                        isHotReloadable(dependency, hotReloadPaths) ||
-                        configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())) {
-                    continue;
-                }
-                if (!flatTestClassPath && dependency.isReloadable()
-                        && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
-                    if (dependency.getType().equals(ArtifactCoords.TYPE_JAR)) {
-                        builder.addBannedElement(new ClassFilteredBannedElement(ClassPathElement.fromDependency(dependency)));
-                    }
+                if (!dependency.isRuntimeCp()
+                        || isHotReloadable(dependency, hotReloadPaths)
+                        || configuredClassLoading.reloadableArtifacts.contains(dependency.getKey())
+                        || !flatTestClassPath && dependency.isReloadable()
+                                && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey())) {
                     continue;
                 }
 
@@ -349,8 +336,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
         }
         for (ResolvedDependency dependency : appModel.getDependencies()) {
-            if (dependency.isRuntimeCp() &&
-                    dependency.getType().equals(ArtifactCoords.TYPE_JAR) &&
+            if (dependency.isRuntimeCp() && dependency.isJar() &&
                     (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
                             configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
@@ -387,8 +373,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
         }
         for (ResolvedDependency dependency : appModel.getDependencies()) {
-            if (dependency.isRuntimeCp() &&
-                    dependency.getType().equals(ArtifactCoords.TYPE_JAR) &&
+            if (dependency.isRuntimeCp() && dependency.isJar() &&
                     (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
                             configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));

@@ -2,7 +2,11 @@ package io.quarkus.extension.gradle;
 
 import java.util.List;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+
+import io.quarkus.extension.gradle.dsl.Capabilities;
+import io.quarkus.extension.gradle.dsl.Capability;
 
 public class QuarkusExtensionConfiguration {
 
@@ -15,6 +19,7 @@ public class QuarkusExtensionConfiguration {
     private List<String> lesserPriorityArtifacts;
     private List<String> conditionalDependencies;
     private List<String> dependencyCondition;
+    private Capabilities capabilities = new Capabilities();
 
     private Project project;
 
@@ -92,6 +97,18 @@ public class QuarkusExtensionConfiguration {
 
     public void setDependencyConditions(List<String> dependencyCondition) {
         this.dependencyCondition = dependencyCondition;
+    }
+
+    public List<Capability> getProvidedCapabilities() {
+        return capabilities.getProvidedCapabilities();
+    }
+
+    public List<Capability> getRequiredCapabilities() {
+        return capabilities.getRequiredCapabilities();
+    }
+
+    public void capabilities(Action<Capabilities> capabilitiesAction) {
+        capabilitiesAction.execute(this.capabilities);
     }
 
     public String getDefaultDeployementArtifactName() {

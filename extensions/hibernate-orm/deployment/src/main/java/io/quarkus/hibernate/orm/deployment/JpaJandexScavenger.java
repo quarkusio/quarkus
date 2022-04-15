@@ -494,7 +494,8 @@ public final class JpaJandexScavenger {
         String className = classDotName.toString();
         if (className.startsWith("java.util.") || className.startsWith("java.lang.")
                 || className.startsWith("org.hibernate.engine.spi.")
-                || className.startsWith("javax.persistence.")) {
+                || className.startsWith("javax.persistence.")
+                || className.startsWith("jakarta.persistence.")) {
             return true;
         }
         return false;

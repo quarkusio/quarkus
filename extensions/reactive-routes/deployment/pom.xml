@@ -36,6 +36,11 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-deployment</artifactId>
             <scope>test</scope>
         </dependency>

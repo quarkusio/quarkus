@@ -11,7 +11,7 @@ import io.quarkus.qute.TemplateGlobal;
 
 /**
  * Represents a global variable field/method.
- * 
+ *
  * @see TemplateGlobal
  */
 public final class TemplateGlobalBuildItem extends MultiBuildItem {

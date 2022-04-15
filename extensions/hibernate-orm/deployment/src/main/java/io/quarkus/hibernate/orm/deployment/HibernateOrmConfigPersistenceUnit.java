@@ -43,8 +43,12 @@ public class HibernateOrmConfigPersistenceUnit {
 
     // @formatter:off
     /**
-     * Name of the file containing the SQL statements to execute when Hibernate ORM starts.
-     * Its default value differs depending on the Quarkus launch mode:
+     * Path to a file containing the SQL statements to execute when Hibernate ORM starts.
+     *
+     * The file is retrieved from the classpath resources,
+     * so it must be located in the resources directory (e.g. `src/main/resources`).
+     *
+     * The default value for this setting differs depending on the Quarkus launch mode:
      *
      * * In dev and test modes, it defaults to `import.sql`.
      *   Simply add an `import.sql` file in the root of your resources directory

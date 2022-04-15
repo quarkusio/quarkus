@@ -8,5 +8,3 @@ metadata:
 language:
   base:
     dependencies:
-    test-dependencies:
-      - io.smallrye.reactive:smallrye-reactive-messaging-in-memory

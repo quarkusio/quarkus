@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import org.gradle.api.GradleException;
-import org.gradle.api.file.FileCollection;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.InputFiles;
@@ -42,6 +42,7 @@ public class QuarkusGenerateCode extends QuarkusTask {
 
     public static final String INIT_AND_RUN = "initAndRun";
     private Set<Path> sourcesDirectories;
+    private Configuration compileClasspath;
     private Consumer<Path> sourceRegistrar = (p) -> {
     };
     private boolean test = false;
@@ -57,8 +58,12 @@ public class QuarkusGenerateCode extends QuarkusTask {
      * @return resolved compile classpath
      */
     @CompileClasspath
-    public FileCollection getClasspath() {
-        return QuarkusGradleUtils.getSourceSet(getProject(), SourceSet.MAIN_SOURCE_SET_NAME).getCompileClasspath();
+    public Configuration getClasspath() {
+        return compileClasspath;
+    }
+
+    public void setCompileClasspath(Configuration compileClasspath) {
+        this.compileClasspath = compileClasspath;
     }
 
     @InputFiles
@@ -137,7 +142,8 @@ public class QuarkusGenerateCode extends QuarkusTask {
                         sourceRegistrar,
                         appCreationContext.getApplicationModel(),
                         realProperties,
-                        launchMode.name());
+                        launchMode.name(),
+                        test);
 
             }
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {

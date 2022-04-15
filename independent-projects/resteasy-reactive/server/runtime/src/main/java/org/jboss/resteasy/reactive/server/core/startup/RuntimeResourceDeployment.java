@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -134,9 +135,9 @@ public class RuntimeResourceDeployment {
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
-        MediaType sseElementType = null;
-        if (method.getSseElementType() != null) {
-            sseElementType = MediaType.valueOf(method.getSseElementType());
+        MediaType streamElementType = null;
+        if (method.getStreamElementType() != null) {
+            streamElementType = MediaType.valueOf(method.getStreamElementType());
         }
         List<MediaType> consumesMediaTypes;
         if (method.getConsumes() == null) {
@@ -358,8 +359,8 @@ public class RuntimeResourceDeployment {
         }
 
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
-        Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
-        Class<?> rawNonAsyncReturnType = getRawType(nonAsyncReturnType);
+        Type effectiveReturnType = getEffectiveReturnType(returnType);
+        Class<?> rawEffectiveReturnType = getRawType(effectiveReturnType);
 
         ServerMediaType serverMediaType = null;
         if (method.getProduces() != null && method.getProduces().length > 0) {
@@ -371,7 +372,7 @@ public class RuntimeResourceDeployment {
         if (method.getHttpMethod() == null) {
             //this is a resource locator method
             handlers.add(resourceLocatorHandler);
-        } else if (!Response.class.isAssignableFrom(rawNonAsyncReturnType)) {
+        } else if (!Response.class.isAssignableFrom(rawEffectiveReturnType)) {
             //try and statically determine the media type and response writer
             //we can't do this for all cases, but we can do it for the most common ones
             //in practice this should work for the majority of endpoints
@@ -383,9 +384,9 @@ public class RuntimeResourceDeployment {
                     if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                         score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
-                    } else if (rawNonAsyncReturnType != Void.class
-                            && rawNonAsyncReturnType != void.class) {
-                        List<MessageBodyWriter<?>> buildTimeWriters = serialisers.findBuildTimeWriters(rawNonAsyncReturnType,
+                    } else if (rawEffectiveReturnType != Void.class
+                            && rawEffectiveReturnType != void.class) {
+                        List<MessageBodyWriter<?>> buildTimeWriters = serialisers.findBuildTimeWriters(rawEffectiveReturnType,
                                 RuntimeType.SERVER, Collections.singletonList(
                                         MediaTypeHelper.withSuffixAsSubtype(MediaType.valueOf(method.getProduces()[0]))));
                         if (buildTimeWriters == null) {
@@ -465,9 +466,10 @@ public class RuntimeResourceDeployment {
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
-                nonAsyncReturnType, method.isBlocking(), resourceClass,
+                effectiveReturnType, method.isBlocking(), resourceClass,
                 lazyMethod,
-                pathParameterIndexes, info.isDevelopmentMode() ? score : null, sseElementType, clazz.resourceExceptionMapper());
+                pathParameterIndexes, info.isDevelopmentMode() ? score : null, streamElementType,
+                clazz.resourceExceptionMapper());
     }
 
     private void addResponseHandler(ServerResourceMethod method, List<ServerRestHandler> handlers) {
@@ -625,25 +627,31 @@ public class RuntimeResourceDeployment {
         throw new UnsupportedOperationException("Endpoint return type not supported yet: " + type);
     }
 
-    private Type getNonAsyncReturnType(Type returnType) {
+    private Type getEffectiveReturnType(Type returnType) {
         if (returnType instanceof Class)
             return returnType;
         if (returnType instanceof ParameterizedType) {
-            // NOTE: same code in EndpointIndexer.getNonAsyncReturnType
             ParameterizedType type = (ParameterizedType) returnType;
+            Type firstTypeArgument = type.getActualTypeArguments()[0];
             if (type.getRawType() == CompletionStage.class) {
-                return type.getActualTypeArguments()[0];
+                return getEffectiveReturnType(firstTypeArgument);
             }
             if (type.getRawType() == Uni.class) {
-                return type.getActualTypeArguments()[0];
+                return getEffectiveReturnType(firstTypeArgument);
             }
             if (type.getRawType() == Multi.class) {
-                return type.getActualTypeArguments()[0];
+                return getEffectiveReturnType(firstTypeArgument);
             }
             if (type.getRawType() == RestResponse.class) {
-                return type.getActualTypeArguments()[0];
+                return getEffectiveReturnType(firstTypeArgument);
             }
             return returnType;
+        }
+        if (returnType instanceof WildcardType) {
+            Type[] bounds = ((WildcardType) returnType).getLowerBounds();
+            if (bounds.length > 0)
+                return getRawType(bounds[0]);
+            return getRawType(((WildcardType) returnType).getUpperBounds()[0]);
         }
         throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }

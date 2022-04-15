@@ -47,7 +47,7 @@ abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * 
+     *
      * @return a convenient {@link Stream} wrapper that can be used to filter a set of beans
      */
     public BeanStream beanStream() {
@@ -56,7 +56,7 @@ abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
 
     /**
      * The bean resolver can be used to apply the type-safe resolution rules.
-     * 
+     *
      * @return the bean resolver
      */
     public BeanResolver getBeanResolver() {

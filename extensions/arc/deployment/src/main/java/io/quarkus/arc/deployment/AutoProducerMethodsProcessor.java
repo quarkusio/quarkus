@@ -69,7 +69,7 @@ public class AutoProducerMethodsProcessor {
                 Set<AnnotationInstance> methodAnnotations = Annotations.getAnnotations(Kind.METHOD, ctx.getAnnotations());
                 if (methodAnnotations.isEmpty() || contains(methodAnnotations, DotNames.PRODUCES)
                         || contains(methodAnnotations, DotNames.INJECT)) {
-                    // Skip methods with no annotations, initializers and methods already annotated with @Produces 
+                    // Skip methods with no annotations, initializers and methods already annotated with @Produces
                     return;
                 }
                 Set<AnnotationInstance> parameterAnnotations = Annotations.getAnnotations(Kind.METHOD_PARAMETER,

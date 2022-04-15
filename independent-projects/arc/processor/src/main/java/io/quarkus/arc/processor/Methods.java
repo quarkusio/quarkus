@@ -64,7 +64,7 @@ final class Methods {
     }
 
     static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<MethodKey, MethodInfo> methods,
-            Set<NameAndDescriptor> methodsFromWhichToRemoveFinal, boolean transformUnproxyableClasses) {
+            Map<String, Set<NameAndDescriptor>> methodsFromWhichToRemoveFinal, boolean transformUnproxyableClasses) {
         if (classInfo != null) {
             // First methods declared on the class
             for (MethodInfo method : classInfo.methods()) {
@@ -105,7 +105,7 @@ final class Methods {
     }
 
     private static boolean skipForClientProxy(MethodInfo method, boolean transformUnproxyableClasses,
-            Set<NameAndDescriptor> methodsFromWhichToRemoveFinal) {
+            Map<String, Set<NameAndDescriptor>> methodsFromWhichToRemoveFinal) {
         if (Modifier.isStatic(method.flags()) || Modifier.isPrivate(method.flags())) {
             return true;
         }
@@ -120,7 +120,8 @@ final class Methods {
             String className = method.declaringClass().name().toString();
             if (!className.startsWith("java.")) {
                 if (transformUnproxyableClasses && (methodsFromWhichToRemoveFinal != null)) {
-                    methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
+                    methodsFromWhichToRemoveFinal.computeIfAbsent(className, (k) -> new HashSet<>())
+                            .add(NameAndDescriptor.fromMethodInfo(method));
                     return false;
                 }
 

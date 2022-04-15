@@ -41,7 +41,10 @@ public final class OidcConstants {
 
     public static final String AUTHORIZATION_CODE = "authorization_code";
     public static final String CODE_FLOW_RESPONSE_TYPE = "response_type";
+    public static final String CODE_FLOW_RESPONSE_MODE = "response_mode";
     public static final String CODE_FLOW_CODE = "code";
+    public static final String CODE_FLOW_ERROR = "error";
+    public static final String CODE_FLOW_ERROR_DESCRIPTION = "error_description";
     public static final String CODE_FLOW_STATE = "state";
     public static final String CODE_FLOW_REDIRECT_URI = "redirect_uri";
 
@@ -49,4 +52,15 @@ public final class OidcConstants {
 
     public static final String EXPIRES_IN = "expires_in";
     public static final String REFRESH_EXPIRES_IN = "refresh_expires_in";
+
+    public static final String PKCE_CODE_VERIFIER = "code_verifier";
+    public static final String PKCE_CODE_CHALLENGE = "code_challenge";
+
+    public static final String PKCE_CODE_CHALLENGE_METHOD = "code_challenge_method";
+    public static final String PKCE_CODE_CHALLENGE_S256 = "S256";
+
+    public static final String BACK_CHANNEL_LOGOUT_TOKEN = "logout_token";
+    public static final String BACK_CHANNEL_EVENTS_CLAIM = "events";
+    public static final String BACK_CHANNEL_EVENT_NAME = "http://schemas.openid.net/event/backchannel-logout";
+    public static final String BACK_CHANNEL_LOGOUT_SID_CLAIM = "sid";
 }

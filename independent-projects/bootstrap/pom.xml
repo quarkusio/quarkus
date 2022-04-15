@@ -1,6 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jboss</groupId>
@@ -10,6 +11,7 @@
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-bootstrap-parent</artifactId>
     <name>Quarkus - Bootstrap - Parent</name>
+    <url>https://github.com/quarkusio/quarkus</url>
     <packaging>pom</packaging>
     <version>999-SNAPSHOT</version>
     <licenses>
@@ -19,6 +21,14 @@
             <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
         </license>
     </licenses>
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
+        <url>https://github.com/quarkusio/quarkus</url>
+        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.target>11</maven.compiler.target>
@@ -37,25 +47,26 @@
         <sisu.version>0.3.5</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
         <maven-resolver.version>1.6.3</maven-resolver.version>
-        <maven-shared-utils.version>3.3.4</maven-shared-utils.version> <!-- changed from the original version due to https://snyk.io/vuln/maven:org.apache.maven.shared:maven-shared-utils@3.2.1 -->
+        <maven-shared-utils.version>3.3.4</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
         <maven-wagon.version>3.4.3</maven-wagon.version>
         <httpcore.version>4.4.15</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.4.3 brings in 4.4.13 and 4.4.14) -->
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson.version>2.13.1</jackson.version>
+        <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
         <commons-lang.version>3.12.0</commons-lang.version>
-        <guava.version>30.1.1-jre</guava.version>
+        <guava.version>31.1-jre</guava.version>
+        <guava.failureaccess.version>1.0.1</guava.failureaccess.version><!-- keep in sync with guava.version -->
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
         <jboss-logmanager-embedded.version>1.0.9</jboss-logmanager-embedded.version>
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
-        <slf4j-api.version>1.7.33</slf4j-api.version>
-        <graal-sdk.version>21.3.0</graal-sdk.version>
+        <slf4j-api.version>1.7.36</slf4j-api.version>
+        <graal-sdk.version>22.0.0.2</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
-        <smallrye-common.version>1.8.0</smallrye-common.version>
-        <gradle-tooling.version>7.3.3</gradle-tooling.version>
-        <quarkus-fs-util.version>0.0.8</quarkus-fs-util.version>
+        <smallrye-common.version>1.11.0</smallrye-common.version>
+        <gradle-tooling.version>7.4.2</gradle-tooling.version>
+        <quarkus-fs-util.version>0.0.9</quarkus-fs-util.version>
     </properties>
     <modules>
         <module>bom</module>
@@ -154,6 +165,10 @@
                                             <exclude>org.slf4j:slf4j-jdk14</exclude>
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
+                                            <!-- findbugs is not required at runtime -->
+                                            <exclude>com.google.code.findbugs:jsr305</exclude>
+                                            <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
+                                            <exclude>com.google.guava:listenablefuture</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>
@@ -178,7 +193,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.17.1</version>
+                    <version>2.18.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -188,7 +203,7 @@
                     </dependencies>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache</cachedir>
+                        <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
                         <configFile>eclipse-format.xml</configFile>
                         <lineEnding>LF</lineEnding>
                         <skip>${format.skip}</skip>
@@ -200,7 +215,7 @@
                     <version>1.6.2</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache</cachedir>
+                        <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
                         <removeUnused>true</removeUnused>
                         <skip>${format.skip}</skip>
                     </configuration>
@@ -395,6 +410,44 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>jakarta-rewrite</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite</name>
+                </property>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.openrewrite.maven</groupId>
+                            <artifactId>rewrite-maven-plugin</artifactId>
+                            <version>4.21.0-SNAPSHOT</version>
+                            <configuration>
+                                <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                                <activeStyles>
+                                    <style>io.quarkus.style.maven</style>
+                                </activeStyles>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+                <plugins>
+                    <plugin>
+                        <inherited>false</inherited>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <configuration>
+                            <activeRecipes>
+                                <recipe>io.quarkus.jakarta-versions</recipe>
+                                <recipe>io.quarkus.maven.javax.versions</recipe>
+                            </activeRecipes>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

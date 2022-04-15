@@ -34,6 +34,8 @@ class EngineImpl implements Engine {
     private final List<ParserHook> parserHooks;
     final List<TemplateInstance.Initializer> initializers;
     final boolean removeStandaloneLines;
+    private final long timeout;
+    private final boolean useAsyncTimeout;
 
     EngineImpl(EngineBuilder builder) {
         this.sectionHelperFactories = Map.copyOf(builder.sectionHelperFactories);
@@ -48,6 +50,8 @@ class EngineImpl implements Engine {
         this.parserHooks = ImmutableList.copyOf(builder.parserHooks);
         this.removeStandaloneLines = builder.removeStandaloneLines;
         this.initializers = ImmutableList.copyOf(builder.initializers);
+        this.timeout = builder.timeout;
+        this.useAsyncTimeout = builder.useAsyncTimeout;
     }
 
     @Override
@@ -118,6 +122,11 @@ class EngineImpl implements Engine {
     }
 
     @Override
+    public boolean isTemplateLoaded(String id) {
+        return templates.containsKey(id);
+    }
+
+    @Override
     public void clearTemplates() {
         templates.clear();
     }
@@ -130,6 +139,16 @@ class EngineImpl implements Engine {
     @Override
     public List<Initializer> getTemplateInstanceInitializers() {
         return initializers;
+    }
+
+    @Override
+    public long getTimeout() {
+        return timeout;
+    }
+
+    @Override
+    public boolean useAsyncTimeout() {
+        return useAsyncTimeout;
     }
 
     String generateId() {

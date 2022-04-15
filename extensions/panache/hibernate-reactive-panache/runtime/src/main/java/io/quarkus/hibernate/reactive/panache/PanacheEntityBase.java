@@ -45,7 +45,7 @@ public abstract class PanacheEntityBase {
 
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
-     * 
+     *
      * @return
      *
      * @see #isPersistent()
@@ -61,7 +61,7 @@ public abstract class PanacheEntityBase {
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
      * Then flushes all pending changes to the database.
-     * 
+     *
      * @return
      *
      * @see #isPersistent()
@@ -78,7 +78,7 @@ public abstract class PanacheEntityBase {
 
     /**
      * Delete this entity from the database, if it is already persisted.
-     * 
+     *
      * @return
      *
      * @see #isPersistent()
@@ -108,7 +108,7 @@ public abstract class PanacheEntityBase {
 
     /**
      * Flushes all pending changes to the database.
-     * 
+     *
      * @return
      */
     @CheckReturnValue
@@ -653,7 +653,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -682,7 +682,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
      * @param params optional sequence of indexed parameters
      * @return the number of entities deleted.
@@ -701,7 +701,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
      * @param params {@link Map} of named parameters
      * @return the number of entities deleted.
@@ -720,7 +720,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.reactive.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities deleted.
@@ -802,7 +802,7 @@ public abstract class PanacheEntityBase {
      * @return the number of entities updated.
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
-     * 
+     *
      */
     @CheckReturnValue
     @GenerateBridge

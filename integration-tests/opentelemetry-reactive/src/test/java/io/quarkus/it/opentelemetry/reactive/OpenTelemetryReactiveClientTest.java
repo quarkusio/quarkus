@@ -64,14 +64,15 @@ public class OpenTelemetryReactiveClientTest {
 
         assertEquals(SpanKind.SERVER.toString(), server.get("kind"));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
-        assertEquals("reactive", server.get("name"));
+        assertEquals("/reactive", server.get("name"));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.getKey()));
         assertEquals("/reactive?name=Naruto", ((Map<?, ?>) server.get("attributes")).get(HTTP_TARGET.getKey()));
         assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) server.get("attributes")).get(HTTP_METHOD.getKey()));
 
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertEquals("reactive", client.get("name"));
+        assertEquals("/reactive", client.get("name"));
+
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
     }
@@ -97,14 +98,15 @@ public class OpenTelemetryReactiveClientTest {
 
         assertEquals(SpanKind.SERVER.toString(), server.get("kind"));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
-        assertEquals("reactive", server.get("name"));
+        assertEquals("/reactive", server.get("name"));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.getKey()));
         assertEquals("/reactive", ((Map<?, ?>) server.get("attributes")).get(HTTP_TARGET.getKey()));
         assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) server.get("attributes")).get(HTTP_METHOD.getKey()));
 
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertEquals("reactive", client.get("name"));
+        assertEquals("/reactive", client.get("name"));
+
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
     }

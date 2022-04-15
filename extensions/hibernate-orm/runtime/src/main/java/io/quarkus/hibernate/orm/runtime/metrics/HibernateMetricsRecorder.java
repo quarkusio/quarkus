@@ -39,7 +39,7 @@ public class HibernateMetricsRecorder {
 
     /**
      * Register MP Metrics
-     * 
+     *
      * @param metricsFactory Quarkus MetricsFactory for generic metrics registration
      * @param puName Name of persistence unit
      * @param statistics Statistics MXBean for persistence unit

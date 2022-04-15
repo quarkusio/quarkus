@@ -48,25 +48,24 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
+import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
-import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
-import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
@@ -93,13 +92,15 @@ import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
-import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
 import io.quarkus.vertx.http.runtime.logstream.WebSocketLogHandler;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -107,6 +108,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.Http1xServerConnection;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxBuilder;
 import io.vertx.core.impl.VertxInternal;
@@ -123,7 +125,9 @@ public class DevConsoleProcessor {
 
     private static final Logger log = Logger.getLogger(DevConsoleProcessor.class);
 
-    private static final String STATIC_RESOURCES_PATH = "dev-static/";
+    private static final GACT DEVCONSOLE_WEBJAR_ARTIFACT_KEY = new GACT("io.quarkus", "quarkus-vertx-http-deployment", null,
+            "jar");
+    private static final String DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH = "dev-static/";
     private static final Object EMPTY = new Object();
 
     // FIXME: config, take from Qute?
@@ -173,27 +177,15 @@ public class DevConsoleProcessor {
                         // Vert.x 4 Migration: Verify this behavior
                         EventLoopContext context = vertx.createEventLoopContext();
 
-                        //                                ContextInternal context = (ContextInternal) vertx
-                        //                                        .createEventLoopContext(null, null, new JsonObject(),
-                        //                                                Thread.currentThread().getContextClassLoader());
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
                             Http1xServerConnection connection = new Http1xServerConnection(
-                                    () -> context,
+                                    () -> (ContextInternal) VertxContext.getOrCreateDuplicatedContext(context),
                                     null,
                                     new HttpServerOptions(),
                                     chctx,
                                     context,
                                     "localhost",
                                     null);
-
-                            //                                    Http1xServerConnection conn = new Http1xServerConnection(
-                            //                                            context.owner(),
-                            //                                            null,
-                            //                                            new HttpServerOptions(),
-                            //                                            chctx,
-                            //                                            context,
-                            //                                            "localhost",
-                            //                                            null);
                             connection.handler(new Handler<HttpServerRequest>() {
                                 @Override
                                 public void handle(HttpServerRequest event) {
@@ -267,6 +259,7 @@ public class DevConsoleProcessor {
         };
         router = Router.router(devConsoleVertx);
         router.errorHandler(500, errorHandler);
+
         router.route()
                 .order(Integer.MIN_VALUE)
                 .handler(new FlashScopeHandler());
@@ -383,6 +376,22 @@ public class DevConsoleProcessor {
         return null;
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public WebJarBuildItem setupWebJar(
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return null;
+        }
+        return WebJarBuildItem.builder().artifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY) //
+                .root(DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH) //
+                .build();
+    }
+
+    @BuildStep(onlyIf = { IsDevelopment.class })
+    public DevConsoleTemplateInfoBuildItem config(List<DevServiceDescriptionBuildItem> serviceDescriptions) {
+        return new DevConsoleTemplateInfoBuildItem("devServices", serviceDescriptions);
+    }
+
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(LoggingSetupBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -390,38 +399,23 @@ public class DevConsoleProcessor {
             DevConsoleRecorder recorder,
             LogStreamRecorder logStreamRecorder,
             List<DevConsoleRouteBuildItem> routes,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
             HistoryHandlerBuildItem historyHandlerBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
             ShutdownContextBuildItem shutdownContext,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
-            LiveReloadBuildItem liveReloadBuildItem) throws IOException {
-        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            WebJarResultsBuildItem webJarResultsBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+
+        WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY);
+
+        if (result == null) {
             return;
         }
 
-        // Add the static resources
-        ResolvedDependency devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
-                "quarkus-vertx-http-deployment");
-
-        Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem,
-                curateOutcomeBuildItem,
-                launchModeBuildItem,
-                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH, true, true);
-
-        List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations = new ArrayList<>();
-        webRootConfigurations.add(
-                new FileSystemStaticHandler.StaticWebRootConfiguration(devConsoleStaticResourcesDeploymentPath.toString(), ""));
-        for (Path resolvedPath : devConsoleResourcesArtifact.getResolvedPaths()) {
-            webRootConfigurations
-                    .add(new FileSystemStaticHandler.StaticWebRootConfiguration(resolvedPath.toString(),
-                            STATIC_RESOURCES_PATH));
-        }
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route("dev/resources/*")
                 .handler(recorder.fileSystemStaticHandler(
-                        webRootConfigurations, devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
+                        result.getWebRootConfigurations(), shutdownContext))
                 .build());
 
         // Add the log stream
@@ -505,22 +499,30 @@ public class DevConsoleProcessor {
 
         Runtime rt = Runtime.getRuntime();
         OS os = OS.determineOS();
+        String[] command = null;
         try {
             switch (os) {
                 case MAC:
-                    rt.exec(new String[] { "open", url });
+                    command = new String[] { "open", url };
                     break;
                 case LINUX:
-                    rt.exec(new String[] { "xdg-open", url });
+                    command = new String[] { "xdg-open", url };
                     break;
                 case WINDOWS:
-                    rt.exec(new String[] { "rundll32", "url.dll,FileProtocolHandler", url });
+                    command = new String[] { "rundll32", "url.dll,FileProtocolHandler", url };
                     break;
                 case OTHER:
                     log.error("Cannot launch browser on this operating system");
             }
+            if (command != null) {
+                rt.exec(command);
+            }
         } catch (Exception e) {
-            log.error("Failed to launch browser", e);
+            log.debug("Failed to launch browser", e);
+            if (command != null) {
+                log.warn("Unable to open browser using command: '" + String.join(" ", command) + "'. Failure is: '"
+                        + e.getMessage() + "'");
+            }
         }
 
     }
@@ -562,7 +564,7 @@ public class DevConsoleProcessor {
         // Create map of resolved paths
         Map<String, String> resolvedPaths = new HashMap<>();
         for (RouteBuildItem item : allRoutes) {
-            ConfiguredPathInfo resolvedPathBuildItem = item.getDevConsoleResolvedPath();
+            ConfiguredPathInfo resolvedPathBuildItem = item.getConfiguredPathInfo();
             if (resolvedPathBuildItem != null) {
                 resolvedPaths.put(resolvedPathBuildItem.getName(),
                         resolvedPathBuildItem.getEndpointPath(nonApplicationRootPathBuildItem));
@@ -759,7 +761,7 @@ public class DevConsoleProcessor {
                 final Path rootDir = classesDir.getParent();
                 final Path mavenArchiver = rootDir == null ? null : rootDir.resolve("maven-archiver");
                 if (mavenArchiver == null || !mavenArchiver.toFile().canRead()) {
-                    // it's a module output dir and the Maven metadata hasn't been generated 
+                    // it's a module output dir and the Maven metadata hasn't been generated
                     return null;
                 }
                 entry = ArtifactInfoUtil.groupIdAndArtifactId(mavenArchiver);
@@ -967,7 +969,7 @@ public class DevConsoleProcessor {
                 }
             }
             if (rootPackages.isEmpty()) {
-                return Collections.emptyList();
+                return List.of("");
             }
             List<String> result = new ArrayList<>(rootPackages.size());
             for (Path rootPackage : rootPackages) {

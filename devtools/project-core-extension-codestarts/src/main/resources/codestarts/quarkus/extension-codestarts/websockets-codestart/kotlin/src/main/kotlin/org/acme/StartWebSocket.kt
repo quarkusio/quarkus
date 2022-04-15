@@ -1,4 +1,4 @@
-package ilove.quark.us
+package org.acme
 
 import java.io.IOException
 import javax.enterprise.context.ApplicationScoped

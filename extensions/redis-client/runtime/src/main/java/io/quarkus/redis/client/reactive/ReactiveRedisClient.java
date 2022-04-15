@@ -19,7 +19,7 @@ import io.vertx.mutiny.redis.client.Response;
 public interface ReactiveRedisClient {
     /**
      * Creates the {@link RedisClient} using the default redis client configuration
-     * 
+     *
      * @return {@link ReactiveRedisClient} - the default reactive redis client
      */
     static ReactiveRedisClient createClient() {
@@ -28,7 +28,7 @@ public interface ReactiveRedisClient {
 
     /**
      * Creates the {@link RedisClient} using the named redis client configuration
-     * 
+     *
      * @return {@link ReactiveRedisClient} - the named reactive redis client
      */
     static ReactiveRedisClient createClient(String name) {

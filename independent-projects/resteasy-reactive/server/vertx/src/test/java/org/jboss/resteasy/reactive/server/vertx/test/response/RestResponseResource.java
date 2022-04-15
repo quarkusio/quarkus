@@ -27,6 +27,12 @@ public class RestResponseResource {
     }
 
     @GET
+    @Path("rest-response-wildcard")
+    public RestResponse<?> wildcard() {
+        return RestResponse.ResponseBuilder.ok("Hello").header("content-type", "text/plain").build();
+    }
+
+    @GET
     @Path("rest-response-full")
     public RestResponse<String> getResponse() throws URISyntaxException {
         CacheControl cc = new CacheControl();

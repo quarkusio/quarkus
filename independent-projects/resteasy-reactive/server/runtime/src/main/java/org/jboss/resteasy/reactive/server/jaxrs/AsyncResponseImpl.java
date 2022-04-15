@@ -195,7 +195,7 @@ public class AsyncResponseImpl implements AsyncResponse, Runnable {
         if (timeoutHandler != null) {
             timeoutHandler.handleTimeout(this);
             // Spec says:
-            // In case the time-out handler does not take any of the actions mentioned above [resume/new timeout], 
+            // In case the time-out handler does not take any of the actions mentioned above [resume/new timeout],
             // a default time-out strategy is executed by the runtime.
             // Stef picked to do this if the handler did not resume or set a new timeout:
             if (suspended && timerCancelTask == null)

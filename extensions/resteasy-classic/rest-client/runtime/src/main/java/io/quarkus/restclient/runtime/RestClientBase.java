@@ -269,16 +269,16 @@ public class RestClientBase {
     }
 
     void configureTimeouts(RestClientBuilder builder) {
-        Optional<Long> connectTimeout = oneOf(clientConfigByClassName().connectTimeout,
-                clientConfigByConfigKey().connectTimeout);
-        if (connectTimeout.isPresent()) {
-            builder.connectTimeout(connectTimeout.get(), TimeUnit.MILLISECONDS);
+        Long connectTimeout = oneOf(clientConfigByClassName().connectTimeout,
+                clientConfigByConfigKey().connectTimeout).orElse(this.configRoot.connectTimeout);
+        if (connectTimeout != null) {
+            builder.connectTimeout(connectTimeout, TimeUnit.MILLISECONDS);
         }
 
-        Optional<Long> readTimeout = oneOf(clientConfigByClassName().readTimeout,
-                clientConfigByConfigKey().readTimeout);
-        if (readTimeout.isPresent()) {
-            builder.readTimeout(readTimeout.get(), TimeUnit.MILLISECONDS);
+        Long readTimeout = oneOf(clientConfigByClassName().readTimeout,
+                clientConfigByConfigKey().readTimeout).orElse(this.configRoot.readTimeout);
+        if (readTimeout != null) {
+            builder.readTimeout(readTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -322,10 +322,13 @@ public class RestClientBase {
         return this.configRoot.getClientConfig(this.proxyType);
     }
 
-    private static <T> Optional<T> oneOf(Optional<T> o1, Optional<T> o2) {
-        if (o1.isPresent()) {
-            return o1;
+    @SafeVarargs
+    private static <T> Optional<T> oneOf(Optional<T>... optionals) {
+        for (Optional<T> o : optionals) {
+            if (o.isPresent()) {
+                return o;
+            }
         }
-        return o2;
+        return Optional.empty();
     }
 }

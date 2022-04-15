@@ -7,6 +7,8 @@ import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_GROUP
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
+import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
+import static io.quarkus.kubernetes.deployment.Constants.S2I;
 import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
 
 import java.util.List;
@@ -16,6 +18,9 @@ import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
+import io.quarkus.container.image.deployment.ContainerImageConfig;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -32,9 +37,9 @@ public class OpenshiftConfig implements PlatformConfiguration {
         DeploymentConfig(DEPLOYMENT_CONFIG, DEPLOYMENT_CONFIG_GROUP, DEPLOYMENT_CONFIG_VERSION),
         StatefulSet(STATEFULSET, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION);
 
-        final String kind;
-        final String apiGroup;
-        final String apiVersion;
+        public final String kind;
+        public final String apiGroup;
+        public final String apiVersion;
 
         DeploymentResourceKind(String kind, String apiGroup, String apiVersion) {
             this.kind = kind;
@@ -45,7 +50,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The OpenShift flavor / version to use.
-     * Older versions of OpenShift have minor differrences in the labels and fields they support.
+     * Older versions of OpenShift have minor differences in the labels and fields they support.
      * This option allows users to have their manifests automatically aligned to the OpenShift 'flavor' they use.
      */
     @ConfigItem(defaultValue = "v4")
@@ -55,8 +60,8 @@ public class OpenshiftConfig implements PlatformConfiguration {
      * The kind of the deployment resource to use.
      * Supported values are 'Deployment' and 'DeploymentConfig' defaulting to the later.
      */
-    @ConfigItem(defaultValue = "DeploymentConfig")
-    DeploymentResourceKind deploymentKind;
+    @ConfigItem
+    Optional<DeploymentResourceKind> deploymentKind;
 
     /**
      * The name of the group this component belongs too
@@ -102,7 +107,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Map<String, String> annotations;
 
     /**
-     * Whether or not to add the build timestamp to the Kubernetes annotations
+     * Add the build timestamp to the Kubernetes annotations
      * This is a very useful way to have manifests of successive builds of the same
      * application differ - thus ensuring that Kubernetes will apply the updated resources
      */
@@ -137,7 +142,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The host under which the application is going to be exposed
-     * 
+     *
      * @deprecated Use the {@code quarkus.openshift.route.host} instead
      */
     @ConfigItem
@@ -279,8 +284,14 @@ public class OpenshiftConfig implements PlatformConfiguration {
     ResourcesConfig resources;
 
     /**
+     * If set, it will change the name of the container according to the configuration
+     */
+    @ConfigItem
+    Optional<String> containerName;
+
+    /**
      * If true, an Openshift Route will be created
-     * 
+     *
      * @deprecated Use the {@code quarkus.openshift.route.exposition} instead
      */
     @ConfigItem
@@ -344,6 +355,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Optional<String> getHost() {
         return host;
+    }
+
+    @Override
+    public Optional<String> getContainerName() {
+        return containerName;
     }
 
     public Integer getReplicas() {
@@ -492,6 +508,17 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @ConfigItem
     Optional<String> appConfigMap;
 
+    /**
+     * If set, it will copy the security context configuration provided into the generated pod settings.
+     */
+    @ConfigItem
+    SecurityContextConfig securityContext;
+
+    /**
+     * Debug configuration to be set in pods.
+     */
+    DebugConfig remoteDebug;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }
@@ -505,15 +532,18 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return Optional.of(route);
     }
 
-    public String getDepoymentResourceGroup() {
-        return deploymentKind.apiGroup;
+    @Override
+    public SecurityContextConfig getSecurityContext() {
+        return securityContext;
     }
 
-    public String getDepoymentResourceVersion() {
-        return deploymentKind.apiVersion;
+    public static boolean isOpenshiftBuildEnabled(ContainerImageConfig containerImageConfig, Capabilities capabilities) {
+        boolean implicitlyEnabled = ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities)
+                .filter(c -> c.contains(OPENSHIFT) || c.contains(S2I)).isPresent();
+        return containerImageConfig.builder.map(b -> b.equals(OPENSHIFT) || b.equals(S2I)).orElse(implicitlyEnabled);
     }
 
-    public String getDepoymentResourceKind() {
-        return deploymentKind.kind;
+    public DeploymentResourceKind getDeploymentResourceKind() {
+        return deploymentKind.orElse(DeploymentResourceKind.DeploymentConfig);
     }
 }

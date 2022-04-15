@@ -251,7 +251,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             try {
                 registerMpSpecificProvider(componentClass.getDeclaredConstructor().newInstance());
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                throw new IllegalArgumentException("Failed to instantiate exception mapper " + componentClass
+                throw new IllegalArgumentException("Failed to instantiate provider " + componentClass
                         + ". Does it have a public no-arg constructor?", e);
             }
         }

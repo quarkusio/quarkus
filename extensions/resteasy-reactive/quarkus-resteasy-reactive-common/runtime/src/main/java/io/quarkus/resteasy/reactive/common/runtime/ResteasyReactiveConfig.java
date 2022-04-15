@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.reactive.common.runtime;
 
-import java.util.Optional;
-
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -52,15 +50,6 @@ public class ResteasyReactiveConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean buildTimeConditionAware;
-
-    /**
-     * If set to true, access to all JAX-RS resources will be denied by default
-     *
-     * Use quarkus.security.jaxrs.deny-unannotated-endpoints instead
-     */
-    @Deprecated(forRemoval = true)
-    @ConfigItem(name = "deny-unannotated-endpoints")
-    public Optional<Boolean> denyJaxRs;
 
     /**
      * Whether or not duplicate endpoints should trigger error at startup

@@ -15,25 +15,55 @@ include::./status-include.adoc[]
 
 == Installing the CLI
 
-The Quarkus CLI is currently available as a jar installable using https://jbang.dev[jbang]. 
+The Quarkus CLI is available in several developer-oriented package managers such as:
 
-On Linux, macOS, and Windows (using WSL or bash compatible shell like cygwin or mingw)
+* https://sdkman.io[SDKMAN!]
+* https://brew.sh[Homebrew]
+* https://community.chocolatey.org/packages/quarkus[Chocolatey]
+
+If you already use (or want to use) one of these tools, it is the simplest way to install the Quarkus CLI and keep it updated.
+
+In addition to these package managers, the Quarkus CLI is also installable via https://www.jbang.dev[JBang].
+Choose the alternative that is the most practical for you:
+
+* JBang - for Linux, macOS and Windows
+* SDKMAN! - for Linux and macOS
+* Homebrew - for Linux and macOS
+* Chocolatey - for Windows
+
+[role="primary asciidoc-tabs-sync-jbang"]
+.JBang
+****
+The Quarkus CLI is available as a jar installable using https://jbang.dev[JBang]. 
+
+JBang will use your existing Java or install one for you if needed.
+
+On Linux, macOS, and Windows (using WSL or bash compatible shell like Cygwin or MinGW)
 [source,bash]
 ----
+curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/
 curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio
 ----
 
 On Windows using Powershell:
 [source,powershell]
 ----
+iex "& { $(iwr https://ps.jbang.dev) } trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/"
 iex "& { $(iwr https://ps.jbang.dev) } app install --fresh --force quarkus@quarkusio"
 ----
 
-If `jbang` has already been installed, you can directly use it:
+If JBang has already been installed, you can directly use it:
 [source,bash]
 ----
 # This can also be used to update to the latest version
 jbang app install --fresh --force quarkus@quarkusio
+----
+
+If you want to use a specific version, you can directly target a version:
+[source,bash]
+----
+# Create an alias in order to use a specific version
+jbang app install --name qs2.2.5 io.quarkus:quarkus-cli:2.2.5.Final:runner
 ----
 
 If you have built Quarkus locally, you can use that version:
@@ -43,24 +73,151 @@ If you have built Quarkus locally, you can use that version:
 jbang app install --force --name qss ~/.m2/repository/io/quarkus/quarkus-cli/999-SNAPSHOT/quarkus-cli-999-SNAPSHOT-runner.jar
 ----
 
-Once installed `quarkus` will be in your PATH and if you run `quarkus --version` it will print the installed version:
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
 
-[source,shell]
+[source,shell,subs=attributes+]
 ----
 quarkus --version
-Client Version {quarkus-version}
+{quarkus-version}
 ----
 
 [CAUTION]
 .Use a recent JBang version
 ====
 If you get an error about `app` not being readable then you probably
-have a `jbang` version older than v0.56.0 installed. Please remove or upgrade it to a recent version.
+have a JBang version older than v0.56.0 installed. Please remove or upgrade it to a recent version.
 
-If you are installing `jbang` for the first time, start a new session to update your `PATH`.
+If you are installing JBang for the first time, start a new session to update your `PATH`.
+====
+****
+
+[role="secondary asciidoc-tabs-sync-sdkman"]
+.SDKMAN!
+****
+https://sdkman.io/[SDKMAN!] can be used to manage development environments.
+It can manage parallel versions of multiple Software Development Kits on most Unix based systems,
+making it a very good alternative to keep multiple JDK versions handy.
+
+With SDKMAN!, you can also install popular Java tools, including the Quarkus CLI.
+
+[NOTE]
+====
+Make sure you have https://sdkman.io/jdks[a JDK installed] before installing the Quarkus CLI.
+
+To list the available versions of Java, use `sdk list java`.
+You can then install the version of OpenJDK you want with `sdk install java x.y.z-open`
+(or the JDK of another vendor if it is your preference).
 ====
 
-=== Using the CLI
+To install the Quarkus CLI using SDKMAN!, run the following command:
+
+[source,shell]
+----
+sdk install quarkus
+----
+
+It will install the latest version of the Quarkus CLI.
+
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
+
+[source,shell,subs=attributes+]
+----
+quarkus --version
+{quarkus-version}
+----
+
+SDKMAN! will let you know when new versions are available so updates will be straightforward:
+
+[source,shell]
+----
+sdk upgrade quarkus
+----
+****
+
+[role="secondary asciidoc-tabs-sync-homebrew"]
+.Homebrew
+****
+https://brew.sh[Homebrew] is a package manager for macOS (and Linux).
+
+You can use Homebrew to install (and update) the Quarkus CLI.
+
+[NOTE]
+====
+Make sure you have a JDK installed before installing the Quarkus CLI.
+We haven't added an explicit dependency as we wanted to make sure you could use your preferred JDK version.
+
+You can install a JDK with `brew install openjdk` for Java 17 or `brew install openjdk@11` for Java 11.
+====
+
+To install the Quarkus CLI using Homebrew, run the following command:
+
+[source,shell]
+----
+brew install quarkusio/tap/quarkus
+----
+
+It will install the latest version of the Quarkus CLI.
+This command can also be used to update the Quarkus CLI.
+
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
+
+[source,shell,subs=attributes+]
+----
+quarkus --version
+{quarkus-version}
+----
+
+You can upgrade the Quarkus CLI with:
+
+[source,shell]
+----
+brew update <1>
+brew upgrade quarkus <2>
+----
+<1> Update all package definitions and Homebrew itself
+<2> Upgrade Quarkus CLI to the latest version
+****
+
+[role="secondary asciidoc-tabs-sync-chocolatey"]
+.Chocolatey
+****
+https://chocolatey.org[Chocolatey] is a package manager for Windows.
+
+You can use Chocolatey to install (and update) the Quarkus CLI.
+
+[NOTE]
+====
+Make sure you have a JDK installed before installing the Quarkus CLI.
+
+You can install a JDK with `choco install ojdkbuild17` for Java 17 or `choco install ojdkbuild11` for Java 11.
+====
+
+To install the Quarkus CLI using Chocolatey, run the following command:
+
+[source,shell]
+----
+choco install quarkus
+----
+
+It will install the latest version of the Quarkus CLI.
+
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
+
+[source,shell,subs=attributes+]
+----
+quarkus --version
+{quarkus-version}
+----
+
+You can upgrade the Quarkus CLI with:
+
+[source,shell]
+----
+choco upgrade quarkus
+----
+****
+
+== Using the CLI
 
 Use `--help` to display help information with all the available commands:
 
@@ -103,7 +260,7 @@ If you don't see the output you expect, use `--help` to verify that you are invo
 ====
 
 [[project-creation]]
-== Creating a new project
+=== Creating a new project
 
 To create a new project we use the `create` command
 (the `app` subcommand is implied when not specified):
@@ -181,7 +338,7 @@ Previous versions of the CLI used options `--group-id` (`-g`),`--artifact-id` (`
 ====
 
 [[specifying-quarkus-version]]
-== Specifying the Quarkus version
+=== Specifying the Quarkus version
 
 Both `quarkus create` and `quarkus extension list` allow you to explicitly specify a version of Quarkus in one of two ways:
 
@@ -198,22 +355,18 @@ Note: default values are subject to change. Using the `--dry-run` option will sh
 
 2. Specify a Platform Stream
 +
-Platform streams are new in Quarkus 2.0. 
-+
 A platform stream operates against a remote registry. Each registry defines one or more platform streams, and each stream defines one or more platform release BOM files that define how projects using that stream should be configured.
 +
 Streams are identified using `platformKey:streamId` syntax. A specific stream can be specified using `-S platformKey:streamId`. When specifying a stream, empty segments will be replaced with _discovered_ defaults, based on stream resource resolution rules.
-+
-For `2.0.0.Final`, you must enable the registry client (`--registry-client`) explicitly to specify a stream. This is not required for `2.1.0.Final` or later releases.
 
-== Working with extensions
+=== Working with extensions
 
 [source,shell]
 ----
 quarkus ext --help
 ----
 
-=== Listing extensions
+==== Listing extensions
 
 The Quarkus CLI can be used to list Quarkus extensions.
 
@@ -231,7 +384,7 @@ The format of the result can be controlled with one of four options:
 
 The behavior of `quarkus ext ls` will vary depending on context.
 
-==== Listing Extensions for a Quarkus release
+===== Listing Extensions for a Quarkus release
 
 If you invoke the Quarkus CLI from outside of a project, Quarkus will list all of the extensions available for the Quarkus release used by the CLI itself.
 
@@ -239,7 +392,7 @@ You can also list extensions for a specific release of Quarkus using `-P` or `-S
 
 This mode uses the `--origins` format by default.
 
-==== Listing Extensions for a Quarkus project
+===== Listing Extensions for a Quarkus project
 
 When working with a Quarkus project, the CLI will list the extensions the current project has installed, using the `--name` format by default.
 
@@ -263,7 +416,7 @@ Agroal - Database connection pool                  quarkus-agroal
 ----
 
 
-=== Adding extension(s)
+==== Adding extension(s)
 
 The Quarkus CLI can add Quarkus one or more extensions to your project with the 'add'
 command:
@@ -275,7 +428,7 @@ quarkus ext add kubernetes health
 [SUCCESS] ✅ Extension io.quarkus:quarkus-smallrye-health has been installed
 ----
 
-=== Removing extension(s)
+==== Removing extension(s)
 
 The Quarkus CLI can remove one or more extensions from your project with the 'remove'
 command:
@@ -286,7 +439,7 @@ quarkus ext rm kubernetes
 [SUCCESS] ✅ Extension io.quarkus:quarkus-kubernetes has been uninstalled
 ----
 
-== Build your project
+=== Build your project
 
 To build your project using the Quarkus CLI (using the default configuration in this example):
 
@@ -308,9 +461,9 @@ quarkus build
 [INFO] ------------------------------------------------------------------------
 ----
 
-Note: Output will vary depending on the build tool your project is using (`maven`, `gradle`, or `jbang`).
+NOTE: Output will vary depending on the build tool your project is using (Maven, Gradle, or JBang).
 
-== Development mode
+=== Development mode
 
 [source,shell]
 ----
@@ -321,7 +474,7 @@ To start dev mode from the Quarkus CLI do:
 
 [source,shell]
 ----
-quarkus dev                                                                 ??return_code?
+quarkus dev
 [INFO] Scanning for projects...
 [INFO]
 [INFO] ---------------------< org.acme:code-with-quarkus >---------------------
@@ -336,20 +489,20 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2021-05-27 10:15:56,032 INFO  [io.quarkus] (Quarkus Main Thread) code-with-quarkus 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 1.387s. Listening on: http://localhost:8080
 2021-05-27 10:15:56,035 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
-2021-05-27 10:15:56,035 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, resteasy, smallrye-context-propagation]
+2021-05-27 10:15:56,035 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation]
 
 --
 Tests paused, press [r] to resume
 ----
 
-Note: Output will vary depending on the build tool your project is using (`maven`, `gradle`, or `jbang`).
+NOTE: Output will vary depending on the build tool your project is using (Maven, Gradle, or JBang).
 
 
 [[quarkus-version-compatibility]]
 [WARNING]
 .Compatibility with Quarkus 1.x
 ====
-The version 2 Quarkus CLI can not be used with 1.x Quarkus projects or releases. Use the maven/gradle plugins when working with Quarkus 1.x projects.
+The version 2 Quarkus CLI can not be used with 1.x Quarkus projects or releases. Use the Maven/Gradle plugins when working with Quarkus 1.x projects.
 ====
 
 == Shell autocomplete and aliases

@@ -87,8 +87,8 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         run(true);
 
         final CapabilityErrors error = new CapabilityErrors();
-        error.addConflict("sunshine", "org.acme:alt-quarkus-ext::jar:1.0-SNAPSHOT");
-        error.addConflict("sunshine", "org.acme:acme-quarkus-ext::jar:1.0-SNAPSHOT");
+        error.addConflict("sunshine", "org.acme:alt-quarkus-ext:1.0-SNAPSHOT");
+        error.addConflict("sunshine", "org.acme:acme-quarkus-ext:1.0-SNAPSHOT");
         String response = DevModeTestUtils.getHttpResponse("/hello", true);
         assertThat(response).contains(error.report());
 
@@ -120,6 +120,36 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         }
         final String altDep = buf.toString();
         filter(runnerPom, Collections.singletonMap(acmeDep, altDep));
+        assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
+    }
+
+    @Test
+    public void testCapabilitiesMissing() throws MavenInvocationException, IOException {
+        testDir = getTargetDir("projects/capabilities-missing");
+        final File runnerPom = new File(testDir, "runner/pom.xml");
+        if (!runnerPom.exists()) {
+            fail("Failed to locate runner/pom.xml in " + testDir);
+        }
+        run(true);
+
+        final CapabilityErrors error = new CapabilityErrors();
+        error.addMissing("sunshine", "org.acme:acme-quarkus-ext:1.0-SNAPSHOT");
+        String response = DevModeTestUtils.getHttpResponse("/hello", true);
+        assertThat(response).contains(error.report());
+
+        final StringWriter buf = new StringWriter();
+        try (BufferedWriter writer = new BufferedWriter(buf)) {
+            writer.write("        <dependency>");
+            writer.newLine();
+            writer.write("            <groupId>org.acme</groupId>");
+            writer.newLine();
+            writer.write("            <artifactId>alt-quarkus-ext</artifactId>");
+            writer.newLine();
+            writer.write("        </dependency>");
+            writer.newLine();
+        }
+        final String acmeDep = buf.toString();
+        filter(runnerPom, Collections.singletonMap("<!-- missing -->", acmeDep));
         assertThat(DevModeTestUtils.getHttpResponse("/hello", false)).isEqualTo("hello");
     }
 
@@ -1162,6 +1192,39 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     public void testThatDependencyInParentIsEvaluated() throws IOException, MavenInvocationException {
         testDir = initProject("projects/multimodule-parent-dep");
         runAndCheck();
+    }
+
+    @Test
+    public void testModuleCompileOrder() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/multimodule-parent-dep", "projects/multimodule-compile-order");
+        runAndCheck("-Dquarkus.bootstrap.effective-model-builder");
+
+        assertThat(DevModeTestUtils.getHttpResponse("/app/hello/")).isEqualTo("hello");
+
+        // modify classes in all the modules and make sure they are compiled in a correct order
+        File resource = new File(testDir, "level0/src/main/java/org/acme/level0/Level0Service.java");
+        filter(resource, Collections.singletonMap("getGreeting()", "getGreeting(String name)"));
+        filter(resource, Collections.singletonMap("return greeting;", "return greeting + \" \" + name;"));
+
+        resource = new File(testDir, "level1/src/main/java/org/acme/level1/Level1Service.java");
+        filter(resource, Collections.singletonMap("getGreetingFromLevel0()", "getGreetingFromLevel0(String name)"));
+        filter(resource, Collections.singletonMap("level0Service.getGreeting()", "level0Service.getGreeting(name)"));
+
+        resource = new File(testDir, "level2/submodule/src/main/java/org/acme/level2/submodule/Level2Service.java");
+        filter(resource, Collections.singletonMap("getGreetingFromLevel1()", "getGreetingFromLevel1(String name)"));
+        filter(resource,
+                Collections.singletonMap("level1Service.getGreetingFromLevel0()", "level1Service.getGreetingFromLevel0(name)"));
+
+        resource = new File(testDir, "runner/src/main/java/org/acme/rest/HelloResource.java");
+        filter(resource, Collections.singletonMap("level0Service.getGreeting()",
+                "level0Service.getGreeting(\"world\")"));
+        filter(resource, Collections.singletonMap("level2Service.getGreetingFromLevel1()",
+                "level2Service.getGreetingFromLevel1(\"world\")"));
+
+        await()
+                .pollDelay(300, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello world"));
     }
 
     @Test

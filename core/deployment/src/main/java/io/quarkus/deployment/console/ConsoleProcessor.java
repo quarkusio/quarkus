@@ -156,6 +156,7 @@ public class ConsoleProcessor {
                     List<String> command = new ArrayList<>();
                     command.add(effectiveCommand);
                     command.addAll(args);
+                    log.debugf("Opening IDE with %s", command);
                     new ProcessBuilder(command).redirectOutput(ProcessBuilder.Redirect.DISCARD)
                             .redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(10,
                                     TimeUnit.SECONDS);
@@ -184,6 +185,26 @@ public class ConsoleProcessor {
         @Override
         public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
             QuarkusConsole.INSTANCE.exitCliMode();
+            return CommandResult.SUCCESS;
+        }
+    }
+
+    @BuildStep
+    ConsoleCommandBuildItem helpCommand() {
+        return new ConsoleCommandBuildItem(new HelpCommand());
+    }
+
+    @CommandDefinition(name = "help", description = "Displays the command list", aliases = { "h" })
+    public static class HelpCommand implements Command {
+
+        @Override
+        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+            commandInvocation.getShell().writeln("The following commands are available, run them with -h for more info:\n");
+            for (var c : ConsoleCliManager.commands) {
+                commandInvocation.getShell().writeln(
+                        c.getParser().getProcessedCommand().name() + "\t" + c.getParser().getProcessedCommand().description());
+            }
+
             return CommandResult.SUCCESS;
         }
     }

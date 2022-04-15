@@ -12,7 +12,7 @@ import io.vertx.core.logging.LoggerFactory;
 
 /**
  * Command Listener for Mongo client delegated to {@link TracingCommandListener}.
- * 
+ *
  */
 public class MongoTracingCommandListener implements CommandListener {
 

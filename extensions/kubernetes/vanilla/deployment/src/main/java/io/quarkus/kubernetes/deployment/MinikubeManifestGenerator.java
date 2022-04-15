@@ -21,7 +21,7 @@ import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplyHeadlessDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImageDecorator;
-import io.dekorate.kubernetes.decorator.ApplyReplicasDecorator;
+import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
 import io.dekorate.project.ApplyProjectInfo;
 import io.dekorate.project.Project;
 import io.dekorate.utils.Images;
@@ -48,11 +48,8 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
     private static final String METADATA_NAMESPACE = "metadata.namespace";
     private static final String MINIKUBE = "minikube";
 
-    private final ConfigurationRegistry configurationRegistry;
-
     public MinikubeManifestGenerator(ResourceRegistry resourceRegistry, ConfigurationRegistry configurationRegistry) {
-        super(resourceRegistry);
-        this.configurationRegistry = configurationRegistry;
+        super(resourceRegistry, configurationRegistry);
     }
 
     @Override
@@ -86,7 +83,9 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
         }
 
         if (config.getReplicas() != 1) {
-            resourceRegistry.decorate(MINIKUBE, new ApplyReplicasDecorator(config.getName(), config.getReplicas()));
+            resourceRegistry.decorate(MINIKUBE, new ApplyReplicasToDeploymentDecorator(config.getName(), config.getReplicas()));
+            resourceRegistry.decorate(MINIKUBE,
+                    new ApplyReplicasToStatefulSetDecorator(config.getName(), config.getReplicas()));
         }
 
         String image = Strings.isNotNullOrEmpty(imageConfig.getImage())
@@ -121,7 +120,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
     /**
      * Creates a {@link Deployment} for the {@link KubernetesConfig}.
-     * 
+     *
      * @param appConfig The session.
      * @return The deployment.
      */
@@ -141,7 +140,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
     /**
      * Creates a {@link LabelSelector} that matches the labels for the {@link KubernetesConfig}.
-     * 
+     *
      * @return A labels selector.
      */
     public LabelSelector createSelector(KubernetesConfig config) {
@@ -152,7 +151,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
     /**
      * Creates a {@link PodTemplateSpec} for the {@link KubernetesConfig}.
-     * 
+     *
      * @param appConfig The sesssion.
      * @return The pod template specification.
      */
@@ -167,7 +166,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
 
     /**
      * Creates a {@link PodSpec} for the {@link KubernetesConfig}.
-     * 
+     *
      * @param imageConfig The sesssion.
      * @return The pod specification.
      */

@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 import javax.enterprise.context.spi.CreationalContext;
 
 /**
- * 
+ *
  * @param <T>
  */
 class LazyInstanceHandle<T> extends AbstractInstanceHandle<T> {

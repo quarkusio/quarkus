@@ -2,6 +2,8 @@ package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 
 import java.io.Closeable;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -14,12 +16,13 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
-import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -55,17 +58,16 @@ public class AmqpDevServicesProcessor {
     private static final String DEFAULT_USER = "admin";
     private static final String DEFAULT_PASSWORD = "admin";
 
-    static volatile Closeable closeable;
+    static volatile RunningDevService devService;
     static volatile AmqpDevServiceCfg cfg;
     static volatile boolean first = true;
 
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
-    public DevServicesAmqpBrokerBuildItem startAmqpDevService(
+    public DevServicesResultBuildItem startAmqpDevService(
             LaunchModeBuildItem launchMode,
             AmqpBuildTimeConfig amqpClientBuildTimeConfig,
-            BuildProducer<DevServicesConfigResultBuildItem> devServicePropertiesProducer,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
@@ -73,38 +75,30 @@ public class AmqpDevServicesProcessor {
 
         AmqpDevServiceCfg configuration = getConfiguration(amqpClientBuildTimeConfig);
 
-        if (closeable != null) {
+        if (devService != null) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
             if (!shouldShutdownTheBroker) {
-                return null;
+                return devService.toBuildItem();
             }
             shutdownBroker();
             cfg = null;
         }
 
-        AmqpBroker broker;
-        DevServicesAmqpBrokerBuildItem artemis = null;
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "AMQP Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            broker = startAmqpBroker(configuration, launchMode, devServicesConfig.timeout);
-            if (broker != null) {
-                closeable = broker.getCloseable();
-                devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_HOST_PROP, broker.host));
-                devServicePropertiesProducer
-                        .produce(new DevServicesConfigResultBuildItem(AMQP_PORT_PROP, Integer.toString(broker.port)));
-                devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_USER_PROP, broker.user));
-                devServicePropertiesProducer.produce(new DevServicesConfigResultBuildItem(AMQP_PASSWORD_PROP, broker.password));
-
-                artemis = new DevServicesAmqpBrokerBuildItem(broker.host, broker.port, broker.user, broker.password);
-
-                if (broker.isOwner()) {
+            RunningDevService newDevService = startAmqpBroker(configuration, launchMode, devServicesConfig.timeout);
+            if (newDevService != null) {
+                devService = newDevService;
+                Map<String, String> config = devService.getConfig();
+                if (newDevService.isOwner()) {
                     log.info("Dev Services for AMQP started.");
                     log.infof("Other Quarkus applications in dev mode will find the "
                             + "broker automatically. For Quarkus applications in production mode, you can connect to"
-                            + " this by starting your application with -Damqp.host=%s -Damqp.port=%d -Damqp.user=%s -Damqp.password=%s",
-                            broker.host, broker.port, broker.user, broker.password);
+                            + " this by starting your application with -Damqp.host=%s -Damqp.port=%s -Damqp.user=%s -Damqp.password=%s",
+                            config.get(AMQP_HOST_PROP), config.get(AMQP_PORT_PROP), config.get(AMQP_USER_PROP),
+                            config.get(AMQP_PASSWORD_PROP));
                 }
             }
             compressor.close();
@@ -113,38 +107,43 @@ public class AmqpDevServicesProcessor {
             throw new RuntimeException(t);
         }
 
+        if (devService == null) {
+            return null;
+        }
+
         // Configure the watch dog
         if (first) {
             first = false;
             Runnable closeTask = () -> {
-                if (closeable != null) {
+                if (devService != null) {
                     shutdownBroker();
 
                     log.info("Dev Services for AMQP shut down.");
                 }
                 first = true;
-                closeable = null;
+                devService = null;
                 cfg = null;
             };
             closeBuildItem.addCloseTask(closeTask, true);
         }
         cfg = configuration;
-        return artemis;
+        return devService.toBuildItem();
     }
 
     private void shutdownBroker() {
-        if (closeable != null) {
+        if (devService != null) {
             try {
-                closeable.close();
+                devService.close();
             } catch (Throwable e) {
                 log.error("Failed to stop the AMQP broker", e);
             } finally {
-                closeable = null;
+                devService = null;
             }
         }
     }
 
-    private AmqpBroker startAmqpBroker(AmqpDevServiceCfg config, LaunchModeBuildItem launchMode, Optional<Duration> timeout) {
+    private RunningDevService startAmqpBroker(AmqpDevServiceCfg config, LaunchModeBuildItem launchMode,
+            Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for AMQP, as it has been disabled in the config.");
@@ -168,7 +167,7 @@ public class AmqpDevServicesProcessor {
             return null;
         }
 
-        final Supplier<AmqpBroker> defaultAmqpBrokerSupplier = () -> {
+        final Supplier<RunningDevService> defaultAmqpBrokerSupplier = () -> {
             // Starting the broker
             ArtemisContainer container = new ArtemisContainer(
                     DockerImageName.parse(config.imageName),
@@ -179,18 +178,22 @@ public class AmqpDevServicesProcessor {
             timeout.ifPresent(container::withStartupTimeout);
             container.start();
 
-            return new AmqpBroker(
-                    container.getHost(),
-                    container.getPort(),
-                    DEFAULT_USER,
-                    DEFAULT_PASSWORD,
-                    container::close);
+            return getRunningService(container.getContainerId(), container::close, container.getHost(), container.getPort());
         };
 
         return amqpContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
-                .map(containerAddress -> new AmqpBroker(containerAddress.getHost(), containerAddress.getPort(), "admin",
-                        "admin", null))
+                .map(containerAddress -> getRunningService(containerAddress.getId(), null, containerAddress.getHost(),
+                        containerAddress.getPort()))
                 .orElseGet(defaultAmqpBrokerSupplier);
+    }
+
+    private RunningDevService getRunningService(String containerId, Closeable closeable, String host, int port) {
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put(AMQP_HOST_PROP, host);
+        configMap.put(AMQP_PORT_PROP, String.valueOf(port));
+        configMap.put(AMQP_USER_PROP, DEFAULT_USER);
+        configMap.put(AMQP_PASSWORD_PROP, DEFAULT_PASSWORD);
+        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_AMQP.getName(), containerId, closeable, configMap);
     }
 
     private boolean hasAmqpChannelWithoutHostAndPort() {
@@ -218,30 +221,6 @@ public class AmqpDevServicesProcessor {
     private AmqpDevServiceCfg getConfiguration(AmqpBuildTimeConfig cfg) {
         AmqpDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
         return new AmqpDevServiceCfg(devServicesConfig);
-    }
-
-    private static class AmqpBroker {
-        private final Closeable closeable;
-        private final String host;
-        private final int port;
-        private final String user;
-        private final String password;
-
-        public AmqpBroker(String host, int port, String user, String password, Closeable closeable) {
-            this.host = host;
-            this.port = port;
-            this.user = user;
-            this.password = password;
-            this.closeable = closeable;
-        }
-
-        public boolean isOwner() {
-            return closeable != null;
-        }
-
-        public Closeable getCloseable() {
-            return closeable;
-        }
     }
 
     private static final class AmqpDevServiceCfg {

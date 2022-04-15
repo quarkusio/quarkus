@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.core.multipart;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -81,7 +80,7 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
                 writeLine(outputStream, charset);
 
                 // write content
-                write(outputStream, serialiseEntity(part.getValue(), part.getType(), requestContext));
+                writeEntity(outputStream, part.getValue(), part.getType(), requestContext);
                 // extra line
                 writeLine(outputStream, charset);
             }
@@ -116,7 +115,7 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         os.write(LINE_SEPARATOR.getBytes(defaultCharset));
     }
 
-    private byte[] serialiseEntity(Object entity, MediaType mediaType, ResteasyReactiveRequestContext context)
+    private void writeEntity(OutputStream os, Object entity, MediaType mediaType, ResteasyReactiveRequestContext context)
             throws IOException {
         ServerSerialisers serializers = context.getDeployment().getSerialisers();
         Class<?> entityClass = entity.getClass();
@@ -125,13 +124,12 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serializers
                 .findWriters(null, entityClass, mediaType, RuntimeType.SERVER)
                 .toArray(ServerSerialisers.NO_WRITER);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
                 // FIXME: spec doesn't really say what headers we should use here
                 writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
-                        Serialisers.EMPTY_MULTI_MAP, baos);
+                        Serialisers.EMPTY_MULTI_MAP, os);
                 wrote = true;
                 break;
             }
@@ -140,7 +138,6 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         if (!wrote) {
             throw new IllegalStateException("Could not find MessageBodyWriter for " + entityClass + " as " + mediaType);
         }
-        return baos.toByteArray();
     }
 
     private String generateBoundary() {

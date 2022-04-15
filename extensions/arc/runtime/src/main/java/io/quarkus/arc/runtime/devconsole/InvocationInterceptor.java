@@ -40,7 +40,7 @@ public class InvocationInterceptor {
     public Object monitor(InvocationContext context) throws Exception {
         ArcContainer container = Arc.container();
         if (container == null) {
-            // If the container is not available then just proceed 
+            // If the container is not available then just proceed
             return context.proceed();
         }
         ManagedContext requestContext = container.requestContext();

@@ -62,7 +62,7 @@ public class KubernetesWithServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-with-service-binding");
+                    assertThat(m.getName()).isEqualTo("kubernetes-with-service-binding-my-db");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {

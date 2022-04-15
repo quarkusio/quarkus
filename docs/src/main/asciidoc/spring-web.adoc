@@ -15,11 +15,7 @@ This guide explains how a Quarkus application can leverage the well known Spring
 
 To complete this guide, you need:
 
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-
+include::includes/devtools/prerequisites.adoc[]
 
 == Solution
 
@@ -34,30 +30,22 @@ The solution is located in the `spring-web-quickstart` {quickstarts-tree-url}/sp
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=spring-web-quickstart \
-    -DclassName="org.acme.spring.web.GreetingController" \
-    -Dpath="/greeting" \
-    -Dextensions="spring-web,resteasy-jackson"
-cd spring-web-quickstart
-----
+:create-app-artifact-id: spring-web-quickstart
+:create-app-extensions: spring-web,resteasy-reactive-jackson
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project with a REST endpoint and imports the `spring-web` extension.
+This command generates a project which imports the `spring-web` extension.
 
 If you already have your Quarkus project configured, you can add the `spring-web` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="spring-web,resteasy-jackson"
-----
+:add-extension-extensions: spring-web,resteasy-reactive-jackson
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -65,19 +53,25 @@ This will add the following to your `pom.xml`:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-web")
+implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 
 [IMPORTANT]
 ====
-`quarkus-spring-web` needs to be complemented with either `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` in order to work.
+`quarkus-spring-web` needs to be complemented with either `quarkus-resteasy-reactive-jackson` or `quarkus-resteasy-jackson` in order to work.
 ====
 
 == GreetingController
 
-The Quarkus maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the JAX-RS ones used by default)
-The `src/main/java/org/acme/spring/web/GreetingController.java` file looks as follows:
+Create the `src/main/java/org/acme/spring/web/GreetingController.java` file, a controller with the Spring Web annotations to define our REST endpoint, as follows:
 
 [source,java]
 ----
@@ -129,14 +123,19 @@ public class GreetingControllerTest {
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/greeting.
 
 The result should be: `{"message": "hello"}`.
 
 == Run the application as a native executable
 
-You can of course create a native image using the instructions of the xref:building-native-image.adoc[Building a native executable guide].
+You can generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
 
 == Going further with an endpoint returning JSON
 

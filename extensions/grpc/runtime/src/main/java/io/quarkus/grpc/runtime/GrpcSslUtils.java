@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslServerConfig;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
@@ -27,7 +28,7 @@ public class GrpcSslUtils {
 
     /**
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled.
-     * 
+     *
      * @return whether plain text is used.
      */
     static boolean applySslOptions(GrpcServerConfiguration config, HttpServerOptions options)
@@ -126,7 +127,7 @@ public class GrpcSslUtils {
     private static byte[] getFileContent(Path path) throws IOException {
         byte[] data;
         final InputStream resource = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(path.toString());
+                .getResourceAsStream(ClassPathUtils.toResourceName(path));
         if (resource != null) {
             try (InputStream is = resource) {
                 data = doRead(is);

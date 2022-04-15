@@ -55,7 +55,7 @@ public interface AnnotationsTransformer {
     void transform(TransformationContext transformationContext);
 
     /**
-     * 
+     *
      * @return a new builder instance
      */
     static Builder builder() {
@@ -72,14 +72,14 @@ public interface AnnotationsTransformer {
         /**
          * The initial set of annotations instances corresponds to {@link org.jboss.jandex.ClassInfo#classAnnotations()},
          * {@link org.jboss.jandex.FieldInfo#annotations()} and {@link org.jboss.jandex.MethodInfo#annotations()} respectively.
-         * 
+         *
          * @return the annotation instances
          */
         Collection<AnnotationInstance> getAnnotations();
 
         /**
          * The transformation is not applied until the {@link Transformation#done()} method is invoked.
-         * 
+         *
          * @return a new transformation
          */
         Transformation transform();
@@ -112,7 +112,7 @@ public interface AnnotationsTransformer {
         }
 
         /**
-         * 
+         *
          * @param appliesToKind
          * @return self
          * @see AnnotationsTransformer#appliesTo(Kind)
@@ -122,7 +122,7 @@ public interface AnnotationsTransformer {
         }
 
         /**
-         * 
+         *
          * @param appliesTo
          * @return self
          * @see AnnotationsTransformer#appliesTo(Kind)
@@ -133,7 +133,7 @@ public interface AnnotationsTransformer {
         }
 
         /**
-         * 
+         *
          * @param priority
          * @return self
          */
@@ -144,7 +144,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -161,7 +161,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -171,7 +171,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -183,7 +183,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -193,7 +193,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -203,7 +203,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -215,7 +215,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -225,7 +225,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -235,7 +235,7 @@ public interface AnnotationsTransformer {
 
         /**
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -248,7 +248,7 @@ public interface AnnotationsTransformer {
         /**
          * The transformation logic is only performed if the given predicate is evaluated to true. Multiple predicates are
          * logically-ANDed.
-         * 
+         *
          * @param when
          * @return self
          */
@@ -263,7 +263,7 @@ public interface AnnotationsTransformer {
 
         /**
          * The given transformation logic is only performed if all conditions added via {@link #when(Predicate)} are met.
-         * 
+         *
          * @param consumer
          * @return a new annotation transformer
          */

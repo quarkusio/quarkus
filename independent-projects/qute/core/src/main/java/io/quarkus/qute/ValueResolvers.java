@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -40,6 +41,12 @@ public final class ValueResolvers {
 
     public static ValueResolver listResolver() {
         return new ValueResolver() {
+
+            @Override
+            public int getPriority() {
+                // Use this resolver before collectionResolver()
+                return WithPriority.DEFAULT_PRIORITY + 1;
+            }
 
             public boolean appliesTo(EvalContext context) {
                 return ValueResolver.matchClass(context, List.class);
@@ -83,7 +90,7 @@ public final class ValueResolvers {
     /**
      * Returns the default value if the base object is {@code null}, empty {@link Optional} or not found and the base object
      * otherwise.
-     * 
+     *
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
     public static ValueResolver orResolver() {
@@ -134,7 +141,7 @@ public final class ValueResolvers {
      * Returns {@link Results#NotFound} if the base object is falsy and the base object otherwise.
      * <p>
      * Can be used together with {@link #orResolver()} to form a ternary operator.
-     * 
+     *
      * {@code person.isElvis ? 'elvis' : notElvis}
      */
     public static ValueResolver trueResolver() {
@@ -216,7 +223,7 @@ public final class ValueResolvers {
     /**
      * Performs conditional AND on the base object and the first parameter.
      * It's a short-circuiting operation - the parameter is only evaluated if needed.
-     * 
+     *
      * @see Booleans#isFalsy(Object)
      */
     public static ValueResolver logicalAndResolver() {
@@ -245,7 +252,7 @@ public final class ValueResolvers {
     /**
      * Performs conditional OR on the base object and the first parameter.
      * It's a short-circuiting operation - the parameter is only evaluated if needed.
-     * 
+     *
      * @see Booleans#isFalsy(Object)
      */
     public static ValueResolver logicalOrResolver() {
@@ -397,18 +404,15 @@ public final class ValueResolvers {
 
     private static CompletionStage<Object> listResolveAsync(EvalContext context) {
         List<?> list = (List<?>) context.getBase();
-        switch (context.getName()) {
+        String name = context.getName();
+        switch (name) {
             case "get":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0))
                             .thenApply(r -> {
                                 try {
-                                    int idx = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
-                                    if (idx >= list.size()) {
-                                        // Be consistent with property resolvers
-                                        return Results.NotFound.from(context);
-                                    }
-                                    return list.get(idx);
+                                    int n = r instanceof Integer ? (Integer) r : Integer.parseInt(r.toString());
+                                    return list.get(n);
                                 } catch (NumberFormatException e) {
                                     return Results.NotFound.from(context);
                                 }
@@ -444,8 +448,25 @@ public final class ValueResolvers {
                                 }
                             });
                 }
+            case "first":
+                if (list.isEmpty()) {
+                    throw new NoSuchElementException();
+                }
+                return CompletedStage.of(list.get(0));
+            case "last":
+                if (list.isEmpty()) {
+                    throw new NoSuchElementException();
+                }
+                return CompletedStage.of(list.get(list.size() - 1));
             default:
-                return Results.notFound(context);
+                // Try to use the name as an index
+                int index;
+                try {
+                    index = Integer.parseInt(name);
+                } catch (NumberFormatException e) {
+                    return Results.notFound(context);
+                }
+                return CompletedStage.of(list.get(index));
         }
     }
 

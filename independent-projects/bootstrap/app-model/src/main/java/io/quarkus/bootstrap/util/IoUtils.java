@@ -93,7 +93,7 @@ public class IoUtils {
 
     /**
      * Creates a new empty directory or empties an existing one.
-     * 
+     *
      * @param dir directory
      * @throws IOException in case of a failure
      */

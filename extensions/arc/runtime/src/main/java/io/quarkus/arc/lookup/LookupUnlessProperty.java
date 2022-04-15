@@ -13,36 +13,36 @@ import javax.enterprise.inject.Instance;
  * <p>
  * This annotation is repeatable. A bean will be included if all of the conditions defined by the {@link LookupUnlessProperty}
  * and {@link LookupIfProperty} annotations are satisifed.
- * 
+ *
  * <pre>
  * <code>
  *  interface Service {
  *     String name();
  *  }
- *  
+ *
  *  {@literal @LookupUnlessProperty(name = "service.foo.disabled", stringValue = "true")}
  *  {@literal @ApplicationScoped}
  *  class ServiceFoo implements Service {
- *  
+ *
  *     public String name() {
  *        return "foo";
  *     }
  *  }
- *  
+ *
  *  {@literal @ApplicationScoped}
  *  class ServiceBar {
- *  
+ *
  *     public String name() {
  *        return "bar";
  *     }
  *  }
- *  
+ *
  *  {@literal @ApplicationScoped}
  *  class Client {
- *  
+ *
  *     {@literal @Inject}
  *     Instance&lt;Service&gt; service;
- *     
+ *
  *     void printServiceName() {
  *        // This would print "bar" if the property of name "service.foo.disabled" is set to true
  *        // Note that service.get() would normally result in AmbiguousResolutionException
@@ -51,7 +51,7 @@ import javax.enterprise.inject.Instance;
  *  }
  *  </code>
  * </pre>
- * 
+ *
  * @see Instance
  */
 @Repeatable(LookupUnlessProperty.List.class)

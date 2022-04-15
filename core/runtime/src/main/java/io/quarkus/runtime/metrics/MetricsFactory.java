@@ -66,7 +66,7 @@ public interface MetricsFactory {
 
         /**
          * Specify the metric unit (optional)
-         * 
+         *
          * @param unit Base unit of the eventual metric
          * @return The builder with added base unit.
          */
@@ -74,7 +74,7 @@ public interface MetricsFactory {
 
         /**
          * Register a counter that retrieves its value from a supplier function
-         * 
+         *
          * @param countFunction Function supplying a monotonically increasing number value
          */
         void buildCounter(Supplier<Number> countFunction);
@@ -82,7 +82,7 @@ public interface MetricsFactory {
         /**
          * Register a counter that retrieves its value by the applying a function
          * to an object
-         * 
+         *
          * @param obj Object instance to observe
          * @param countFunction Function returning a monotonically increasing value
          */
@@ -90,7 +90,7 @@ public interface MetricsFactory {
 
         /**
          * Register a gauge that retrieves its value from a supplier function
-         * 
+         *
          * @param gaugeFunction Function supplying number value
          */
         void buildGauge(Supplier<Number> gaugeFunction);
@@ -98,7 +98,7 @@ public interface MetricsFactory {
         /**
          * Register a gauge that retrieves its value by applying a function
          * to an object
-         * 
+         *
          * @param obj Object instance to observe
          * @param gaugeFunction Function returning a number value
          */

@@ -73,11 +73,6 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-cookie-path-header";
         }
 
-        if (path.contains("callback-before-wrong-redirect")) {
-            return context.getCookie("q_auth_tenant-before-wrong-redirect") == null ? "tenant-before-wrong-redirect"
-                    : "tenant-1";
-        }
-
         if (path.contains("callback-after-redirect") || path.contains("callback-before-redirect")) {
             return "tenant-1";
         }

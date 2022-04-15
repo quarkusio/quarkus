@@ -109,7 +109,7 @@ public class TemplateProducer {
 
         @Override
         public TemplateInstance instance() {
-            return new InjectableTemplateInstanceImpl(path, variants, engine);
+            return new InjectableTemplateInstanceImpl();
         }
 
         @Override
@@ -127,76 +127,91 @@ public class TemplateProducer {
             throw new UnsupportedOperationException("Injected templates do not support getVariant()");
         }
 
-    }
-
-    static class InjectableTemplateInstanceImpl extends TemplateInstanceBase {
-
-        private final String path;
-        private final TemplateVariants variants;
-        private final Engine engine;
-
-        public InjectableTemplateInstanceImpl(String path, TemplateVariants variants, Engine engine) {
-            this.path = path;
-            this.variants = variants;
-            this.engine = engine;
-            if (variants != null) {
-                setAttribute(TemplateInstance.VARIANTS, List.copyOf(variants.variantToTemplate.keySet()));
-            }
+        @Override
+        public String getId() {
+            throw new UnsupportedOperationException("Injected templates do not support getId()");
         }
 
         @Override
-        public String render() {
-            return templateInstance().render();
+        public String toString() {
+            return "Injectable template [path=" + path + "]";
         }
 
-        @Override
-        public CompletionStage<String> renderAsync() {
-            return templateInstance().renderAsync();
-        }
+        class InjectableTemplateInstanceImpl extends TemplateInstanceBase {
 
-        @Override
-        public Multi<String> createMulti() {
-            return templateInstance().createMulti();
-        }
-
-        @Override
-        public Uni<String> createUni() {
-            return templateInstance().createUni();
-        }
-
-        @Override
-        public CompletionStage<Void> consume(Consumer<String> consumer) {
-            return templateInstance().consume(consumer);
-        }
-
-        private TemplateInstance templateInstance() {
-            TemplateInstance instance = template().instance();
-            if (dataMap != null) {
-                dataMap.forEach(instance::data);
-            } else if (data != null) {
-                instance.data(data);
-            }
-            if (!attributes.isEmpty()) {
-                attributes.forEach(instance::setAttribute);
-            }
-            return instance;
-        }
-
-        private Template template() {
-            Variant selected = (Variant) getAttribute(TemplateInstance.SELECTED_VARIANT);
-            String id;
-            if (selected != null) {
-                // Currently, we only use the content type to match the template
-                id = variants.getId(selected.getContentType());
-                if (id == null) {
-                    id = variants.defaultTemplate;
+            InjectableTemplateInstanceImpl() {
+                if (variants != null) {
+                    setAttribute(TemplateInstance.VARIANTS, List.copyOf(variants.variantToTemplate.keySet()));
                 }
-            } else {
-                id = path;
             }
-            return engine.getTemplate(id);
-        }
 
+            @Override
+            public String render() {
+                return templateInstance().render();
+            }
+
+            @Override
+            public CompletionStage<String> renderAsync() {
+                return templateInstance().renderAsync();
+            }
+
+            @Override
+            public Multi<String> createMulti() {
+                return templateInstance().createMulti();
+            }
+
+            @Override
+            public Uni<String> createUni() {
+                return templateInstance().createUni();
+            }
+
+            @Override
+            public CompletionStage<Void> consume(Consumer<String> consumer) {
+                return templateInstance().consume(consumer);
+            }
+
+            @Override
+            protected Engine engine() {
+                return engine;
+            }
+
+            @Override
+            public Template getTemplate() {
+                return template();
+            }
+
+            private TemplateInstance templateInstance() {
+                TemplateInstance instance = template().instance();
+                if (dataMap != null) {
+                    dataMap.forEach(instance::data);
+                } else if (data != null) {
+                    instance.data(data);
+                }
+                if (!attributes.isEmpty()) {
+                    attributes.forEach(instance::setAttribute);
+                }
+                if (!renderedActions.isEmpty()) {
+                    renderedActions.forEach(instance::onRendered);
+                }
+                return instance;
+            }
+
+            private Template template() {
+                Variant selected = (Variant) getAttribute(TemplateInstance.SELECTED_VARIANT);
+                String id;
+                if (selected != null) {
+                    // Currently, we only use the content type to match the template
+                    id = variants.getId(selected.getContentType());
+                    if (id == null) {
+                        id = variants.defaultTemplate;
+                    }
+                } else {
+                    id = path;
+                }
+                return engine.getTemplate(id);
+            }
+
+        }
     }
 
     static class TemplateVariants {
@@ -220,7 +235,7 @@ public class TemplateProducer {
 
         @Override
         public String toString() {
-            return "TemplateVariants{default=" + defaultTemplate + ", variants=" + variantToTemplate + "}";
+            return "TemplateVariants [default=" + defaultTemplate + ", variants=" + variantToTemplate + "]";
         }
     }
 

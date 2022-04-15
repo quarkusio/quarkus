@@ -23,7 +23,7 @@ public final class Dialects {
             return "io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect";
         }
         if (DatabaseKind.isMariaDB(resolvedDbKind)) {
-            return "org.hibernate.dialect.MariaDB103Dialect";
+            return "org.hibernate.dialect.MariaDB106Dialect";
         }
         if (DatabaseKind.isMySQL(resolvedDbKind)) {
             return "org.hibernate.dialect.MySQL8Dialect";

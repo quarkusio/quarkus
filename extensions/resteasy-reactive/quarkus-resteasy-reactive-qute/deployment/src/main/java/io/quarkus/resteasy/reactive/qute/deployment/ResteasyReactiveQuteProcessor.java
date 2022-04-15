@@ -8,6 +8,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseFilter;
+import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
 
 public class ResteasyReactiveQuteProcessor {
@@ -26,6 +27,11 @@ public class ResteasyReactiveQuteProcessor {
     ReflectiveHierarchyIgnoreWarningBuildItem ignoreReflectiveWarning() {
         return new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
                 DotName.createSimple(TemplateInstance.class.getName())));
+    }
+
+    @BuildStep
+    NonBlockingReturnTypeBuildItem nonBlockingTemplateInstance() {
+        return new NonBlockingReturnTypeBuildItem(DotName.createSimple(TemplateInstance.class.getName()));
     }
 
 }

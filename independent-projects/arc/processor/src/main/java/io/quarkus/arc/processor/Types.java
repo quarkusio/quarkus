@@ -6,7 +6,10 @@ import io.quarkus.arc.impl.GenericArrayTypeImpl;
 import io.quarkus.arc.impl.ParameterizedTypeImpl;
 import io.quarkus.arc.impl.TypeVariableImpl;
 import io.quarkus.arc.impl.WildcardTypeImpl;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import java.util.ArrayList;
@@ -76,24 +79,26 @@ public final class Types {
     }
 
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
-        return getTypeHandle(creator, type, tccl, null);
+        AssignableResultHandle result = creator.createVariable(Object.class);
+        getTypeHandle(result, creator, type, tccl, null);
+        return result;
     }
 
-    static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl,
-            Map<Type, ResultHandle> sharedTypes) {
-        if (sharedTypes != null) {
-            ResultHandle sharedType = sharedTypes.get(type);
-            if (sharedType != null) {
-                return sharedType;
-            }
+    static void getTypeHandle(AssignableResultHandle variable, BytecodeCreator creator, Type type, ResultHandle tccl,
+            TypeCache cache) {
+        if (cache != null) {
+            ResultHandle cachedType = cache.get(type, creator);
+            BranchResult cachedNull = creator.ifNull(cachedType);
+            cachedNull.falseBranch().assign(variable, cachedType);
+            creator = cachedNull.trueBranch();
         }
         if (Kind.CLASS.equals(type.kind())) {
             String className = type.asClassType().name().toString();
             ResultHandle classHandle = doLoadClass(creator, className, tccl);
-            if (sharedTypes != null) {
-                sharedTypes.put(type, classHandle);
+            if (cache != null) {
+                cache.put(type, classHandle, creator);
             }
-            return classHandle;
+            creator.assign(variable, classHandle);
         } else if (Kind.TYPE_VARIABLE.equals(type.kind())) {
             // E.g. T -> new TypeVariableImpl("T")
             TypeVariable typeVariable = type.asTypeVariable();
@@ -104,69 +109,85 @@ public final class Types {
             } else {
                 boundsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(bounds.size()));
                 for (int i = 0; i < bounds.size(); i++) {
-                    creator.writeArrayValue(boundsHandle, i, getTypeHandle(creator, bounds.get(i), tccl, sharedTypes));
+                    AssignableResultHandle boundHandle = creator.createVariable(Object.class);
+                    getTypeHandle(boundHandle, creator, bounds.get(i), tccl, cache);
+                    creator.writeArrayValue(boundsHandle, i, boundHandle);
                 }
             }
             ResultHandle typeVariableHandle = creator.newInstance(
                     MethodDescriptor.ofConstructor(TypeVariableImpl.class, String.class, java.lang.reflect.Type[].class),
                     creator.load(typeVariable.identifier()), boundsHandle);
-            if (sharedTypes != null) {
-                sharedTypes.put(typeVariable, typeVariableHandle);
+            if (cache != null) {
+                cache.put(typeVariable, typeVariableHandle, creator);
             }
-            return typeVariableHandle;
+            creator.assign(variable, typeVariableHandle);
 
         } else if (Kind.PARAMETERIZED_TYPE.equals(type.kind())) {
             // E.g. List<String> -> new ParameterizedTypeImpl(List.class, String.class)
-            return getParameterizedType(creator, tccl, type.asParameterizedType(), sharedTypes);
+            getParameterizedType(variable, creator, tccl, type.asParameterizedType(), cache);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
             Type componentType = type.asArrayType().component();
             // E.g. String[] -> new GenericArrayTypeImpl(String.class)
+            AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
+            getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache);
             ResultHandle arrayHandle = creator.newInstance(
                     MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
-                    getTypeHandle(creator, componentType, tccl, sharedTypes));
-            if (sharedTypes != null) {
-                sharedTypes.put(type, arrayHandle);
+                    componentTypeHandle);
+            if (cache != null) {
+                cache.put(type, arrayHandle, creator);
             }
-            return arrayHandle;
+            creator.assign(variable, arrayHandle);
 
         } else if (Kind.WILDCARD_TYPE.equals(type.kind())) {
             // E.g. ? extends Number -> WildcardTypeImpl.withUpperBound(Number.class)
             WildcardType wildcardType = type.asWildcardType();
             ResultHandle wildcardHandle;
             if (wildcardType.superBound() == null) {
+                AssignableResultHandle extendsBoundHandle = creator.createVariable(Object.class);
+                getTypeHandle(extendsBoundHandle, creator, wildcardType.extendsBound(), tccl, cache);
                 wildcardHandle = creator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withUpperBound",
                                 java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
-                        getTypeHandle(creator, wildcardType.extendsBound(), tccl, sharedTypes));
+                        extendsBoundHandle);
             } else {
+                AssignableResultHandle superBoundHandle = creator.createVariable(Object.class);
+                getTypeHandle(superBoundHandle, creator, wildcardType.superBound(), tccl, cache);
                 wildcardHandle = creator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withLowerBound",
                                 java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
-                        getTypeHandle(creator, wildcardType.superBound(), tccl, sharedTypes));
+                        superBoundHandle);
             }
-            if (sharedTypes != null) {
-                sharedTypes.put(wildcardType, wildcardHandle);
+            if (cache != null) {
+                cache.put(wildcardType, wildcardHandle, creator);
             }
-            return wildcardHandle;
+            creator.assign(variable, wildcardHandle);
         } else if (Kind.PRIMITIVE.equals(type.kind())) {
             switch (type.asPrimitiveType().primitive()) {
                 case INT:
-                    return creator.loadClass(int.class);
+                    creator.assign(variable, creator.loadClass(int.class));
+                    break;
                 case LONG:
-                    return creator.loadClass(long.class);
+                    creator.assign(variable, creator.loadClass(long.class));
+                    break;
                 case BOOLEAN:
-                    return creator.loadClass(boolean.class);
+                    creator.assign(variable, creator.loadClass(boolean.class));
+                    break;
                 case BYTE:
-                    return creator.loadClass(byte.class);
+                    creator.assign(variable, creator.loadClass(byte.class));
+                    break;
                 case CHAR:
-                    return creator.loadClass(char.class);
+                    creator.assign(variable, creator.loadClass(char.class));
+                    break;
                 case DOUBLE:
-                    return creator.loadClass(double.class);
+                    creator.assign(variable, creator.loadClass(double.class));
+                    break;
                 case FLOAT:
-                    return creator.loadClass(float.class);
+                    creator.assign(variable, creator.loadClass(float.class));
+                    break;
                 case SHORT:
-                    return creator.loadClass(short.class);
+                    creator.assign(variable, creator.loadClass(short.class));
+                    break;
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + type);
             }
@@ -175,37 +196,46 @@ public final class Types {
         }
     }
 
-    static ResultHandle getParameterizedType(BytecodeCreator creator, ResultHandle tccl,
-            ParameterizedType parameterizedType, Map<Type, ResultHandle> sharedTypes) {
+    static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
+            ParameterizedType parameterizedType, TypeCache cache) {
         List<Type> arguments = parameterizedType.arguments();
         ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
         for (int i = 0; i < arguments.size(); i++) {
-            creator.writeArrayValue(typeArgsHandle, i, getTypeHandle(creator, arguments.get(i), tccl, sharedTypes));
+            AssignableResultHandle argumentHandle = creator.createVariable(Object.class);
+            getTypeHandle(argumentHandle, creator, arguments.get(i), tccl, cache);
+            creator.writeArrayValue(typeArgsHandle, i, argumentHandle);
         }
         Type rawType = Type.create(parameterizedType.name(), Kind.CLASS);
         ResultHandle rawTypeHandle = null;
-        if (sharedTypes != null) {
-            rawTypeHandle = sharedTypes.get(rawType);
+        if (cache != null) {
+            rawTypeHandle = cache.get(rawType, creator);
         }
         if (rawTypeHandle == null) {
             rawTypeHandle = doLoadClass(creator, parameterizedType.name().toString(), tccl);
-            if (sharedTypes != null) {
-                sharedTypes.put(rawType, rawTypeHandle);
+            if (cache != null) {
+                cache.put(rawType, rawTypeHandle, creator);
             }
         }
         ResultHandle parameterizedTypeHandle = creator.newInstance(
                 MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
                         java.lang.reflect.Type[].class),
                 rawTypeHandle, typeArgsHandle);
-        if (sharedTypes != null) {
-            sharedTypes.put(parameterizedType, parameterizedTypeHandle);
+        if (cache != null) {
+            cache.put(parameterizedType, parameterizedTypeHandle, creator);
         }
-        return parameterizedTypeHandle;
+        creator.assign(variable, parameterizedTypeHandle);
+    }
+
+    public static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
+            ParameterizedType parameterizedType) {
+        getParameterizedType(variable, creator, tccl, parameterizedType, null);
     }
 
     public static ResultHandle getParameterizedType(BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
-        return getParameterizedType(creator, tccl, parameterizedType, null);
+        AssignableResultHandle result = creator.createVariable(Object.class);
+        getParameterizedType(result, creator, tccl, parameterizedType, null);
+        return result;
     }
 
     private static ResultHandle doLoadClass(BytecodeCreator creator, String className, ResultHandle tccl) {
@@ -544,6 +574,28 @@ public final class Types {
             }
         }
         return false;
+    }
+
+    interface TypeCache {
+
+        void initialize(MethodCreator method);
+
+        /**
+         *
+         * @param type
+         * @param bytecode
+         * @return the cached value or {@code null}
+         */
+        ResultHandle get(Type type, BytecodeCreator bytecode);
+
+        /**
+         *
+         * @param type
+         * @param value
+         * @param bytecode
+         */
+        void put(Type type, ResultHandle value, BytecodeCreator bytecode);
+
     }
 
 }

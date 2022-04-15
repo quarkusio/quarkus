@@ -14,6 +14,8 @@ import java.nio.file.Path;
  */
 public class AppArtifact extends AppArtifactCoords implements ResolvedDependency, Serializable {
 
+    private static final long serialVersionUID = -6226544163467103712L;
+
     protected PathsCollection paths;
     private final WorkspaceModule module;
     private final String scope;

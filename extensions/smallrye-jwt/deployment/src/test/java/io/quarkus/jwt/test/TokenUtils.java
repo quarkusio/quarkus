@@ -163,7 +163,7 @@ public class TokenUtils {
 
     /**
      * Read a classpath resource into a string and return it.
-     * 
+     *
      * @param resName - classpath resource name
      * @return the resource content as a string
      * @throws IOException - on failure
@@ -184,7 +184,7 @@ public class TokenUtils {
 
     /**
      * Read a PEM encoded private key from the classpath
-     * 
+     *
      * @param pemResName - key file resource name
      * @return PrivateKey
      * @throws Exception on decode failure
@@ -198,7 +198,7 @@ public class TokenUtils {
 
     /**
      * Read a PEM encoded public key from the classpath
-     * 
+     *
      * @param pemResName - key file resource name
      * @return PublicKey
      * @throws Exception on decode failure
@@ -212,7 +212,7 @@ public class TokenUtils {
 
     /**
      * Generate a new RSA keypair.
-     * 
+     *
      * @param keySize - the size of the key
      * @return KeyPair
      * @throws NoSuchAlgorithmException on failure to load RSA key generator
@@ -225,7 +225,7 @@ public class TokenUtils {
 
     /**
      * Decode a PEM encoded private key string to an RSA PrivateKey
-     * 
+     *
      * @param pemEncoded - PEM string for private key
      * @return PrivateKey
      * @throws Exception on decode failure
@@ -240,7 +240,7 @@ public class TokenUtils {
 
     /**
      * Decode a PEM encoded public key string to an RSA PublicKey
-     * 
+     *
      * @param pemEncoded - PEM string for private key
      * @return PublicKey
      * @throws Exception on decode failure

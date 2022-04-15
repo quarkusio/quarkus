@@ -11,12 +11,13 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
-import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -50,56 +51,51 @@ public class DevServicesApicurioRegistryProcessor {
     private static final ContainerLocator apicurioRegistryContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
             APICURIO_REGISTRY_PORT);
 
-    static volatile AutoCloseable closeable;
+    static volatile RunningDevService devService;
     static volatile ApicurioRegistryDevServiceCfg cfg;
     static volatile boolean first = true;
 
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
-    public void startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
+    public DevServicesResultBuildItem startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
             ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<DevServicesConfigResultBuildItem> devServicesConfiguration,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
 
         ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryDevServices);
 
-        if (closeable != null) {
+        if (devService != null) {
             boolean restartRequired = !configuration.equals(cfg);
             if (!restartRequired) {
-                return;
+                return devService.toBuildItem();
             }
             shutdownApicurioRegistry();
             cfg = null;
         }
-        ApicurioRegistry apicurioRegistry;
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "Apicurio Registry Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-            apicurioRegistry = startApicurioRegistry(configuration, launchMode,
+            devService = startApicurioRegistry(configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
-            if (apicurioRegistry == null) {
-                compressor.close();
-                return;
-            }
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);
         }
 
+        if (devService == null) {
+            return null;
+        }
+
         cfg = configuration;
-        closeable = apicurioRegistry.getCloseable();
 
-        devServicesConfiguration.produce(new DevServicesConfigResultBuildItem(
-                REGISTRY_URL_CONFIG, apicurioRegistry.getUrl() + "/apis/registry/v2"));
-
-        if (apicurioRegistry.isOwner()) {
-            log.infof("Dev Services for Apicurio Registry started. The registry is available at %s", apicurioRegistry.getUrl());
+        if (devService.isOwner()) {
+            log.infof("Dev Services for Apicurio Registry started. The registry is available at %s",
+                    devService.getConfig().get(REGISTRY_URL_CONFIG));
         }
 
         // Configure the watch dog
@@ -108,31 +104,36 @@ public class DevServicesApicurioRegistryProcessor {
             Runnable closeTask = new Runnable() {
                 @Override
                 public void run() {
-                    if (closeable != null) {
+                    if (devService != null) {
                         shutdownApicurioRegistry();
                     }
                     first = true;
-                    closeable = null;
+                    devService = null;
                     cfg = null;
                 }
             };
             closeBuildItem.addCloseTask(closeTask, true);
         }
+        return devService.toBuildItem();
+    }
+
+    private String getRegistryUrlConfig(String baseUrl) {
+        return baseUrl + "/apis/registry/v2";
     }
 
     private void shutdownApicurioRegistry() {
-        if (closeable != null) {
+        if (devService != null) {
             try {
-                closeable.close();
+                devService.close();
             } catch (Throwable e) {
                 log.error("Failed to stop Apicurio Registry", e);
             } finally {
-                closeable = null;
+                devService = null;
             }
         }
     }
 
-    private ApicurioRegistry startApicurioRegistry(ApicurioRegistryDevServiceCfg config, LaunchModeBuildItem launchMode,
+    private RunningDevService startApicurioRegistry(ApicurioRegistryDevServiceCfg config, LaunchModeBuildItem launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
@@ -157,7 +158,10 @@ public class DevServicesApicurioRegistryProcessor {
 
         // Starting the broker
         return apicurioRegistryContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
-                .map(containerAddress -> new ApicurioRegistry(containerAddress.getUrl(), null))
+                .map(address -> new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(),
+                        address.getId(), null, REGISTRY_URL_CONFIG,
+                        // address does not have the URL Scheme - just the host:port, so prepend http://
+                        getRegistryUrlConfig("http://" + address.getUrl())))
                 .orElseGet(() -> {
                     ApicurioRegistryContainer container = new ApicurioRegistryContainer(
                             DockerImageName.parse(config.imageName), config.fixedExposedPort,
@@ -166,7 +170,8 @@ public class DevServicesApicurioRegistryProcessor {
                     timeout.ifPresent(container::withStartupTimeout);
                     container.start();
 
-                    return new ApicurioRegistry(container.getUrl(), container);
+                    return new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(), container.getContainerId(),
+                            container::close, REGISTRY_URL_CONFIG, getRegistryUrlConfig(container.getUrl()));
                 });
     }
 
@@ -191,28 +196,6 @@ public class DevServicesApicurioRegistryProcessor {
 
     private ApicurioRegistryDevServiceCfg getConfiguration(ApicurioRegistryDevServicesBuildTimeConfig cfg) {
         return new ApicurioRegistryDevServiceCfg(cfg);
-    }
-
-    private static class ApicurioRegistry {
-        private final String url;
-        private final AutoCloseable closeable;
-
-        public ApicurioRegistry(String url, AutoCloseable closeable) {
-            this.url = url;
-            this.closeable = closeable;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public AutoCloseable getCloseable() {
-            return closeable;
-        }
-
-        public boolean isOwner() {
-            return closeable != null;
-        }
     }
 
     private static final class ApicurioRegistryDevServiceCfg {

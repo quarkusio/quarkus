@@ -1,5 +1,6 @@
 package io.quarkus.grpc.server.services;
 
+import static io.quarkus.grpc.server.services.AssertHelper.assertRunOnDuplicatedContext;
 import static io.quarkus.grpc.server.services.AssertHelper.assertRunOnEventLoop;
 import static io.quarkus.grpc.server.services.AssertHelper.assertRunOnWorker;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,6 +17,8 @@ import io.grpc.testing.integration.Messages;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.blocking.BlockingTestServiceGrpc;
 import io.smallrye.common.annotation.Blocking;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 
 @GrpcService
 public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestServiceImplBase {
@@ -24,6 +27,7 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
     public void emptyCall(EmptyProtos.Empty request, StreamObserver<EmptyProtos.Empty> responseObserver) {
         assertThat(request).isNotNull();
         assertRunOnEventLoop();
+        assertRunOnDuplicatedContext();
         responseObserver.onNext(EmptyProtos.Empty.newBuilder().build());
         responseObserver.onCompleted();
     }
@@ -33,6 +37,7 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
     public void emptyCallBlocking(EmptyProtos.Empty request, StreamObserver<EmptyProtos.Empty> responseObserver) {
         assertThat(request).isNotNull();
         assertRunOnWorker();
+        assertRunOnDuplicatedContext();
         responseObserver.onNext(EmptyProtos.Empty.newBuilder().build());
         responseObserver.onCompleted();
     }
@@ -42,6 +47,7 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             StreamObserver<Messages.SimpleResponse> responseObserver) {
         assertThat(request).isNotNull();
         assertRunOnEventLoop();
+        assertRunOnDuplicatedContext();
         responseObserver.onNext(Messages.SimpleResponse.newBuilder().build());
         responseObserver.onCompleted();
     }
@@ -52,6 +58,7 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             StreamObserver<Messages.SimpleResponse> responseObserver) {
         assertThat(request).isNotNull();
         assertRunOnWorker();
+        assertRunOnDuplicatedContext();
         responseObserver.onNext(Messages.SimpleResponse.newBuilder().build());
         responseObserver.onCompleted();
     }
@@ -61,6 +68,7 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             StreamObserver<Messages.StreamingOutputCallResponse> responseObserver) {
         assertThat(request).isNotNull();
         assertRunOnEventLoop();
+        assertRunOnDuplicatedContext();
         for (int i = 0; i < 10; i++) {
             ByteString value = ByteString.copyFromUtf8(i + "-" + Thread.currentThread().getName());
             Messages.Payload payload = Messages.Payload.newBuilder().setBody(value).build();
@@ -75,6 +83,7 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             StreamObserver<Messages.StreamingOutputCallResponse> responseObserver) {
         assertThat(request).isNotNull();
         assertRunOnWorker();
+        assertRunOnDuplicatedContext();
         for (int i = 0; i < 10; i++) {
             ByteString value = ByteString.copyFromUtf8(i + "-" + Thread.currentThread().getName());
             Messages.Payload payload = Messages.Payload.newBuilder().setBody(value).build();
@@ -88,10 +97,13 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             StreamObserver<Messages.StreamingInputCallResponse> responseObserver) {
         List<String> list = new CopyOnWriteArrayList<>();
         assertRunOnEventLoop();
-        return new StreamObserver<Messages.StreamingInputCallRequest>() {
+        Context ctxt = assertRunOnDuplicatedContext();
+        return new StreamObserver<>() {
             @Override
             public void onNext(Messages.StreamingInputCallRequest streamingInputCallRequest) {
                 assertRunOnEventLoop();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 list.add(streamingInputCallRequest.getPayload().getBody().toStringUtf8());
             }
 
@@ -104,6 +116,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             public void onCompleted() {
                 assertThat(list).containsExactly("a", "b", "c", "d");
                 assertRunOnEventLoop();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 responseObserver.onNext(Messages.StreamingInputCallResponse.newBuilder().build());
                 responseObserver.onCompleted();
             }
@@ -116,10 +130,13 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             StreamObserver<Messages.StreamingInputCallResponse> responseObserver) {
         List<String> list = new CopyOnWriteArrayList<>();
         assertRunOnWorker();
+        Context ctxt = assertRunOnDuplicatedContext();
         return new StreamObserver<Messages.StreamingInputCallRequest>() {
             @Override
             public void onNext(Messages.StreamingInputCallRequest streamingInputCallRequest) {
                 assertRunOnWorker();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 list.add(streamingInputCallRequest.getPayload().getBody().toStringUtf8());
             }
 
@@ -132,6 +149,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             public void onCompleted() {
                 assertThat(list).containsExactly("a", "b", "c", "d");
                 assertRunOnWorker();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 responseObserver.onNext(Messages.StreamingInputCallResponse.newBuilder().build());
                 responseObserver.onCompleted();
             }
@@ -143,10 +162,13 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             StreamObserver<Messages.StreamingOutputCallResponse> responseObserver) {
         AtomicInteger counter = new AtomicInteger();
         assertRunOnEventLoop();
-        return new StreamObserver<Messages.StreamingOutputCallRequest>() {
+        Context ctxt = assertRunOnDuplicatedContext();
+        return new StreamObserver<>() {
             @Override
             public void onNext(Messages.StreamingOutputCallRequest streamingOutputCallRequest) {
                 assertRunOnEventLoop();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 Messages.Payload payload = streamingOutputCallRequest.getPayload();
                 ByteString value = ByteString
                         .copyFromUtf8(payload.getBody().toStringUtf8() + counter.incrementAndGet() + "-"
@@ -165,6 +187,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             @Override
             public void onCompleted() {
                 assertRunOnEventLoop();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 responseObserver.onCompleted();
             }
         };
@@ -176,10 +200,13 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             StreamObserver<Messages.StreamingOutputCallResponse> responseObserver) {
         AtomicInteger counter = new AtomicInteger();
         assertRunOnWorker();
+        Context ctxt = assertRunOnDuplicatedContext();
         return new StreamObserver<Messages.StreamingOutputCallRequest>() {
             @Override
             public void onNext(Messages.StreamingOutputCallRequest streamingOutputCallRequest) {
                 assertRunOnWorker();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 Messages.Payload payload = streamingOutputCallRequest.getPayload();
                 ByteString value = ByteString
                         .copyFromUtf8(payload.getBody().toStringUtf8() + counter.incrementAndGet() + "-"
@@ -198,6 +225,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             @Override
             public void onCompleted() {
                 assertRunOnWorker();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 responseObserver.onCompleted();
             }
         };
@@ -207,11 +236,14 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
     public StreamObserver<Messages.StreamingOutputCallRequest> halfDuplexCall(
             StreamObserver<Messages.StreamingOutputCallResponse> responseObserver) {
         assertRunOnEventLoop();
+        Context ctxt = assertRunOnDuplicatedContext();
         List<Messages.StreamingOutputCallResponse> list = new CopyOnWriteArrayList<>();
-        return new StreamObserver<Messages.StreamingOutputCallRequest>() {
+        return new StreamObserver<>() {
             @Override
             public void onNext(Messages.StreamingOutputCallRequest streamingOutputCallRequest) {
                 assertRunOnEventLoop();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 String payload = streamingOutputCallRequest.getPayload().getBody().toStringUtf8();
                 ByteString value = ByteString.copyFromUtf8(payload.toUpperCase() + "-" + Thread.currentThread().getName());
                 Messages.Payload response = Messages.Payload.newBuilder().setBody(value).build();
@@ -228,6 +260,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             @Override
             public void onCompleted() {
                 assertRunOnEventLoop();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 list.forEach(responseObserver::onNext);
                 responseObserver.onCompleted();
             }
@@ -239,11 +273,14 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
     public StreamObserver<Messages.StreamingOutputCallRequest> halfDuplexCallBlocking(
             StreamObserver<Messages.StreamingOutputCallResponse> responseObserver) {
         assertRunOnWorker();
+        Context ctxt = assertRunOnDuplicatedContext();
         List<Messages.StreamingOutputCallResponse> list = new CopyOnWriteArrayList<>();
-        return new StreamObserver<Messages.StreamingOutputCallRequest>() {
+        return new StreamObserver<>() {
             @Override
             public void onNext(Messages.StreamingOutputCallRequest streamingOutputCallRequest) {
                 assertRunOnWorker();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 String payload = streamingOutputCallRequest.getPayload().getBody().toStringUtf8();
                 ByteString value = ByteString.copyFromUtf8(payload.toUpperCase() + "-" + Thread.currentThread().getName());
                 Messages.Payload response = Messages.Payload.newBuilder().setBody(value).build();
@@ -260,6 +297,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
             @Override
             public void onCompleted() {
                 assertRunOnWorker();
+                assertRunOnDuplicatedContext();
+                assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 list.forEach(responseObserver::onNext);
                 responseObserver.onCompleted();
             }

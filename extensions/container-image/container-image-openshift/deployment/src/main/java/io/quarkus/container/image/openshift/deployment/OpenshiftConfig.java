@@ -1,9 +1,11 @@
 package io.quarkus.container.image.openshift.deployment;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -11,7 +13,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class OpenshiftConfig {
 
-    public static final String DEFAULT_BASE_JVM_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11";
+    public static final String DEFAULT_BASE_JVM_JDK11_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11:1.11";
+    public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.11";
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
@@ -21,6 +24,15 @@ public class OpenshiftConfig {
     public static final String FALLBACK_JAR_DIRECTORY = "/deployments/";
     public static final String FALLBAC_NATIVE_BINARY_DIRECTORY = "/home/quarkus/";
 
+    public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
+        switch (version.isJava17OrHigher()) {
+            case TRUE:
+                return DEFAULT_BASE_JVM_JDK17_IMAGE;
+            default:
+                return DEFAULT_BASE_JVM_JDK11_IMAGE;
+        }
+    }
+
     /**
      * The build config strategy to use.
      */
@@ -28,10 +40,14 @@ public class OpenshiftConfig {
     public BuildStrategy buildStrategy;
 
     /**
-     * The base image to be used when a container image is being produced for the jar build
+     * The base image to be used when a container image is being produced for the jar build.
+     *
+     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17:1.11}
+     * is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11:1.11} is used as the default.
      */
-    @ConfigItem(defaultValue = DEFAULT_BASE_JVM_IMAGE)
-    public String baseJvmImage;
+    @ConfigItem
+    public Optional<String> baseJvmImage;
 
     /**
      * The base image to be used when a container image is being produced for the native binary build
@@ -52,10 +68,16 @@ public class OpenshiftConfig {
     public String nativeDockerfile;
 
     /**
-     * Additional JVM arguments to pass to the JVM when starting the application
+     * The JVM arguments to pass to the JVM when starting the application
      */
     @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
+
+    /**
+     * Additional JVM arguments to pass to the JVM when starting the application
+     */
+    @ConfigItem
+    public Optional<List<String>> jvmAdditionalArguments;
 
     /**
      * Additional arguments to pass when starting the native application
@@ -103,7 +125,7 @@ public class OpenshiftConfig {
      * @returns true if baseJvmImage is the default
      */
     public boolean hasDefaultBaseJvmImage() {
-        return baseJvmImage.equals(DEFAULT_BASE_JVM_IMAGE);
+        return baseJvmImage.isPresent();
     }
 
     /**
@@ -129,8 +151,17 @@ public class OpenshiftConfig {
      *
      * @returns true if nativeDockerfile is the default
      */
-    public boolean hasDefaultativeDockerfile() {
+    public boolean hasDefaultNativeDockerfile() {
         return nativeDockerfile.equals(DEFAULT_NATIVE_DOCKERFILE);
+    }
+
+    /**
+     * @return the effective JVM arguments to use by getting the jvmArguments and the jvmAdditionalArguments properties.
+     */
+    public List<String> getEffectiveJvmArguments() {
+        List<String> effectiveJvmArguments = new ArrayList<>(jvmArguments);
+        jvmAdditionalArguments.ifPresent(effectiveJvmArguments::addAll);
+        return effectiveJvmArguments;
     }
 
 }

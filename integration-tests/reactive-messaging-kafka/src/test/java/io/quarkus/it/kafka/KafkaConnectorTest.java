@@ -10,10 +10,11 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaTestResource.class)
+@QuarkusTestResource(KafkaCompanionResource.class)
 public class KafkaConnectorTest {
 
     protected static final TypeRef<List<Person>> TYPE_REF = new TypeRef<List<Person>>() {

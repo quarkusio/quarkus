@@ -38,6 +38,10 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
         this.exception = exception;
     }
 
+    public boolean isFailure() {
+        return exception != null;
+    }
+
     public T get() {
         if (exception != null) {
             // Throw an exception if completed exceptionally

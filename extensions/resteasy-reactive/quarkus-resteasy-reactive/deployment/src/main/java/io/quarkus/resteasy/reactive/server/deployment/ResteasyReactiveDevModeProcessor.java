@@ -101,6 +101,9 @@ public class ResteasyReactiveDevModeProcessor {
                 cp = "/" + cp;
             }
             for (ResourceMethod method : clazz.getMethods()) {
+                if (method.getHttpMethod() == null) {
+                    continue;
+                }
                 if (!method.getHttpMethod().equals("GET")) {
                     continue;
                 }

@@ -45,7 +45,7 @@ public class MultipartInputBodyHandlerTest extends AbstractMultipartTest {
                     }).build();
                 }
             })
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

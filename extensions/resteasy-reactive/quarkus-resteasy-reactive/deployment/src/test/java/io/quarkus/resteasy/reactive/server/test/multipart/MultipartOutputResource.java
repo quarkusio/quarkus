@@ -1,12 +1,16 @@
 package io.quarkus.resteasy.reactive.server.test.multipart;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.reactive.RestResponse;
 
 @Path("/multipart/output")
 public class MultipartOutputResource {
@@ -17,6 +21,7 @@ public class MultipartOutputResource {
     public static final List<String> RESPONSE_VALUES = List.of("one", "two");
     public static final boolean RESPONSE_ACTIVE = true;
 
+    private static final long ONE_GIGA = 1024l * 1024l * 1024l * 1l;
     private final File TXT_FILE = new File("./src/test/resources/lorem.txt");
 
     @GET
@@ -33,6 +38,19 @@ public class MultipartOutputResource {
     }
 
     @GET
+    @Path("/rest-response")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public RestResponse<MultipartOutputResponse> restResponse() {
+        MultipartOutputResponse response = new MultipartOutputResponse();
+        response.setName(RESPONSE_NAME);
+        response.setSurname(RESPONSE_SURNAME);
+        response.setStatus(RESPONSE_STATUS);
+        response.setValues(RESPONSE_VALUES);
+        response.active = RESPONSE_ACTIVE;
+        return RestResponse.ResponseBuilder.ok(response).header("foo", "bar").build();
+    }
+
+    @GET
     @Path("/string")
     @Produces(MediaType.MULTIPART_FORM_DATA)
     public String usingString() {
@@ -42,10 +60,25 @@ public class MultipartOutputResource {
     @GET
     @Path("/with-file")
     @Produces(MediaType.MULTIPART_FORM_DATA)
-    public MultipartOutputFileResponse complex() {
+    public MultipartOutputFileResponse file() {
         MultipartOutputFileResponse response = new MultipartOutputFileResponse();
         response.name = RESPONSE_NAME;
         response.file = TXT_FILE;
+        return response;
+    }
+
+    @GET
+    @Path("/with-large-file")
+    @Produces(MediaType.MULTIPART_FORM_DATA)
+    public MultipartOutputFileResponse largeFile() throws IOException {
+        File largeFile = File.createTempFile("rr-large-file", ".tmp");
+        largeFile.deleteOnExit();
+        RandomAccessFile f = new RandomAccessFile(largeFile, "rw");
+        f.setLength(ONE_GIGA);
+
+        MultipartOutputFileResponse response = new MultipartOutputFileResponse();
+        response.name = RESPONSE_NAME;
+        response.file = largeFile;
         return response;
     }
 

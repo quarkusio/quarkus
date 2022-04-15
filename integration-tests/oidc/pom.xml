@@ -28,14 +28,22 @@
         </dependency>
         <!-- test dependencies -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-keycloak-server</artifactId>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-adapter-core</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-security-oidc</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -146,7 +154,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                                <keycloak.version>${keycloak.version}</keycloak.version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -155,7 +163,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                                <keycloak.version>${keycloak.version}</keycloak.version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

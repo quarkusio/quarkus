@@ -68,11 +68,6 @@ public class ContinuousTestingSharedStateListener implements TestListener {
             }
 
             @Override
-            public void noTests(TestRunResults results) {
-                runComplete(results);
-            }
-
-            @Override
             public void runAborted() {
                 ContinuousTestingSharedStateManager.setInProgress(false);
             }

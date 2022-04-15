@@ -24,9 +24,14 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
+/**
+ * A client filter for the JAX-RS Client and MicroProfile REST Client that records OpenTelemetry data.
+ */
 @Unremovable
 @Provider
 public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientResponseFilter {
@@ -34,7 +39,15 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     public static final String REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT = "otel.span.client.parentContext";
     public static final String REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE = "otel.span.client.scope";
 
-    private Instrumenter<ClientRequestContext, ClientResponseContext> instrumenter;
+    /**
+     * Property stored in the Client Request context to retrieve the captured Vert.x context.
+     * This context is captured and stored by the Reactive REST Client.
+     *
+     * We use this property to avoid having to depend on the Reactive REST Client explicitly.
+     */
+    private static final String VERTX_CONTEXT_PROPERTY = "__context";
+
+    private final Instrumenter<ClientRequestContext, ClientResponseContext> instrumenter;
 
     // RESTEasy requires no-arg constructor for CDI injection: https://issues.redhat.com/browse/RESTEASY-1538
     // In Reactive Rest Client this is the constructor called. In the classic is the next one with injection.
@@ -53,7 +66,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
         this.instrumenter = builder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(clientAttributesExtractor))
-                .addAttributesExtractor(clientAttributesExtractor)
+                .addAttributesExtractor(HttpClientAttributesExtractor.create(clientAttributesExtractor))
                 .newClientInstrumenter(new ClientRequestContextTextMapSetter());
     }
 
@@ -62,10 +75,19 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         Context parentContext = Context.current();
         if (instrumenter.shouldStart(parentContext, request)) {
             Context spanContext = instrumenter.start(parentContext, request);
-            Scope scope = spanContext.makeCurrent();
+            Scope scope = QuarkusContextStorage.INSTANCE.attach(getVertxContext(request), spanContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT, spanContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT, parentContext);
             request.setProperty(REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE, scope);
+        }
+    }
+
+    private static io.vertx.core.Context getVertxContext(final ClientRequestContext request) {
+        io.vertx.core.Context vertxContext = (io.vertx.core.Context) request.getProperty(VERTX_CONTEXT_PROPERTY);
+        if (vertxContext == null) {
+            return QuarkusContextStorage.getVertxContext();
+        } else {
+            return vertxContext;
         }
     }
 
@@ -88,6 +110,10 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         }
     }
 
+    static boolean isReactiveClient(final ClientRequestContext request) {
+        return request.getProperty(VERTX_CONTEXT_PROPERTY) != null;
+    }
+
     private static class ClientRequestContextTextMapSetter implements TextMapSetter<ClientRequestContext> {
         @Override
         public void set(final ClientRequestContext carrier, final String key, final String value) {
@@ -102,12 +128,12 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         public String extract(final ClientRequestContext request) {
             String pathTemplate = (String) request.getProperty("UrlPathTemplate");
             if (pathTemplate != null && pathTemplate.length() > 1) {
-                return pathTemplate.substring(1);
+                return pathTemplate;
             }
 
             String uriPath = request.getUri().getPath();
-            if (uriPath.length() > 1) {
-                return uriPath.substring(1);
+            if (uriPath != null && uriPath.length() > 1) {
+                return uriPath;
             }
 
             return "HTTP " + request.getMethod();
@@ -115,10 +141,10 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     }
 
     private static class ClientAttributesExtractor
-            extends HttpClientAttributesExtractor<ClientRequestContext, ClientResponseContext> {
+            implements HttpClientAttributesGetter<ClientRequestContext, ClientResponseContext> {
 
         @Override
-        protected String url(final ClientRequestContext request) {
+        public String url(final ClientRequestContext request) {
             URI uri = request.getUri();
             if (uri.getUserInfo() != null) {
                 return UriBuilder.fromUri(uri).userInfo(null).build().toString();
@@ -127,49 +153,49 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         }
 
         @Override
-        protected String flavor(final ClientRequestContext request, final ClientResponseContext response) {
+        public String flavor(final ClientRequestContext request, final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected String method(final ClientRequestContext request) {
+        public String method(final ClientRequestContext request) {
             return request.getMethod();
         }
 
         @Override
-        protected List<String> requestHeader(final ClientRequestContext request, final String name) {
+        public List<String> requestHeader(final ClientRequestContext request, final String name) {
             return request.getStringHeaders().getOrDefault(name, emptyList());
         }
 
         @Override
-        protected Long requestContentLength(final ClientRequestContext request, final ClientResponseContext response) {
+        public Long requestContentLength(final ClientRequestContext request, final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected Long requestContentLengthUncompressed(final ClientRequestContext request,
+        public Long requestContentLengthUncompressed(final ClientRequestContext request,
                 final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected Integer statusCode(final ClientRequestContext request, final ClientResponseContext response) {
+        public Integer statusCode(final ClientRequestContext request, final ClientResponseContext response) {
             return response.getStatus();
         }
 
         @Override
-        protected Long responseContentLength(final ClientRequestContext request, final ClientResponseContext response) {
+        public Long responseContentLength(final ClientRequestContext request, final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected Long responseContentLengthUncompressed(final ClientRequestContext request,
+        public Long responseContentLengthUncompressed(final ClientRequestContext request,
                 final ClientResponseContext response) {
             return null;
         }
 
         @Override
-        protected List<String> responseHeader(final ClientRequestContext request, final ClientResponseContext response,
+        public List<String> responseHeader(final ClientRequestContext request, final ClientResponseContext response,
                 final String name) {
             return response.getHeaders().getOrDefault(name, emptyList());
         }

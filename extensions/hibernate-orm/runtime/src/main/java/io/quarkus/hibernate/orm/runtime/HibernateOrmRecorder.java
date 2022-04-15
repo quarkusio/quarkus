@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import javax.inject.Inject;
+
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.Session;
@@ -33,7 +35,13 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class HibernateOrmRecorder {
 
-    private List<String> entities = new ArrayList<>();
+    private final PreGeneratedProxies proxyDefinitions;
+    private final List<String> entities = new ArrayList<>();
+
+    @Inject
+    public HibernateOrmRecorder(PreGeneratedProxies proxyDefinitions) {
+        this.proxyDefinitions = proxyDefinitions;
+    }
 
     public void enlistPersistenceUnit(Set<String> entityClassNames) {
         entities.addAll(entityClassNames);
@@ -55,8 +63,7 @@ public class HibernateOrmRecorder {
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
-            Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
-            PreGeneratedProxies proxyDefinitions) {
+            Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators) {
         SchemaManagementIntegrator.clearDsMap();
         for (QuarkusPersistenceUnitDefinition i : parsedPersistenceXmlDescriptors) {
             if (i.getDataSource().isPresent()) {

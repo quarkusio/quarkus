@@ -7,6 +7,6 @@ public class DefaultCtorTestFilter implements ClientRequestFilter {
 
     @Override
     public void filter(ClientRequestContext requestContext) {
-        System.out.println(requestContext.getMethod());
+        // Do nothing on purpose.
     }
 }

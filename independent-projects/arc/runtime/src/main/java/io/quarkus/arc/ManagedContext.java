@@ -17,7 +17,9 @@ public interface ManagedContext extends InjectableContext {
 
     /**
      * Activate the context.
-     * 
+     * If invoked with {@code null} parameter, a fresh {@link io.quarkus.arc.InjectableContext.ContextState} is
+     * automatically created.
+     *
      * @param initialState The initial state, may be {@code null}
      */
     void activate(ContextState initialState);

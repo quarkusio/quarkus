@@ -258,4 +258,24 @@ public final class PathTestHelper {
     private static Path toPath(URL resource) {
         return ClassPathUtils.toLocalPath(resource);
     }
+
+    /**
+     * Returns the build directory of the project given its base dir and the test classes dir.
+     *
+     * @param projectRoot project dir
+     * @param testClassLocation test dir
+     *
+     * @return project build dir
+     */
+    public static Path getProjectBuildDir(Path projectRoot, Path testClassLocation) {
+        Path outputDir;
+        try {
+            // this should work for both maven and gradle
+            outputDir = projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
+        } catch (Exception e) {
+            // this shouldn't happen since testClassLocation is usually found under the project dir
+            outputDir = projectRoot;
+        }
+        return outputDir;
+    }
 }

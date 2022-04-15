@@ -67,33 +67,34 @@ public class EagerSecurityHandler implements ServerRestHandler {
             return;
         }
         requestContext.requireCDIRequestScope();
-        requestContext.suspend();
         SecurityCheck theCheck = check;
-        getCurrentIdentityAssociation().get().getDeferredIdentity().map(new Function<SecurityIdentity, Object>() {
-            @Override
-            public Object apply(SecurityIdentity securityIdentity) {
-                theCheck.apply(securityIdentity, methodDescription,
-                        requestContext.getParameters());
-                return null;
-            }
-        })
-                .subscribe().withSubscriber(new UniSubscriber<Object>() {
-                    @Override
-                    public void onSubscribe(UniSubscription subscription) {
+        if (!theCheck.isPermitAll()) {
+            requestContext.suspend();
+            getCurrentIdentityAssociation().get().getDeferredIdentity().map(new Function<SecurityIdentity, Object>() {
+                @Override
+                public Object apply(SecurityIdentity securityIdentity) {
+                    theCheck.apply(securityIdentity, methodDescription,
+                            requestContext.getParameters());
+                    return null;
+                }
+            })
+                    .subscribe().withSubscriber(new UniSubscriber<Object>() {
+                        @Override
+                        public void onSubscribe(UniSubscription subscription) {
 
-                    }
+                        }
 
-                    @Override
-                    public void onItem(Object item) {
-                        requestContext.resume();
-                    }
+                        @Override
+                        public void onItem(Object item) {
+                            requestContext.resume();
+                        }
 
-                    @Override
-                    public void onFailure(Throwable failure) {
-                        requestContext.resume(failure);
-                    }
-                });
-
+                        @Override
+                        public void onFailure(Throwable failure) {
+                            requestContext.resume(failure);
+                        }
+                    });
+        }
     }
 
     private InjectableInstance<CurrentIdentityAssociation> getCurrentIdentityAssociation() {

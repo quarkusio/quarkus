@@ -8,15 +8,18 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CHARACTER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETABLE_FUTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONFIGURATION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DEFAULT_VALUE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DOUBLE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DUMMY_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FLOAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INTEGER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
@@ -27,6 +30,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
@@ -40,7 +44,12 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_INTEGER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRODUCES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PROVIDERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
@@ -49,12 +58,18 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_SSE_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_STREAM_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SECURITY_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE_EVENT_SINK;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRANSACTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.lang.reflect.Modifier;
@@ -83,6 +98,7 @@ import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -113,19 +129,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     // NOTE: sync with ContextProducer and ContextParamExtractor
     private static final Set<DotName> DEFAULT_CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             // spec
-            ResteasyReactiveDotNames.URI_INFO,
-            ResteasyReactiveDotNames.HTTP_HEADERS,
-            ResteasyReactiveDotNames.REQUEST,
-            ResteasyReactiveDotNames.SECURITY_CONTEXT,
-            ResteasyReactiveDotNames.PROVIDERS,
-            ResteasyReactiveDotNames.RESOURCE_CONTEXT,
-            ResteasyReactiveDotNames.CONFIGURATION,
-            ResteasyReactiveDotNames.SSE,
-            ResteasyReactiveDotNames.SSE_EVENT_SINK,
+            URI_INFO,
+            HTTP_HEADERS,
+            REQUEST,
+            SECURITY_CONTEXT,
+            PROVIDERS,
+            RESOURCE_CONTEXT,
+            CONFIGURATION,
+            SSE,
+            SSE_EVENT_SINK,
             // extras
-            ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT,
+            SERVER_REQUEST_CONTEXT,
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
-            ResteasyReactiveDotNames.RESOURCE_INFO)));
+            RESOURCE_INFO)));
 
     private static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME, OFFSET_TIME,
             OFFSET_DATE_TIME, ZONED_DATE_TIME);
@@ -178,6 +194,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected final IndexView index;
+    protected final IndexView applicationIndex;
     protected final Map<String, String> existingConverters;
     protected final Map<String, InjectableBean> injectableBeans;
     protected final boolean hasRuntimeConverters;
@@ -199,6 +216,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
+        this.applicationIndex = builder.applicationIndex;
         this.existingConverters = builder.existingConverters;
         this.scannedResourcePaths = builder.scannedResourcePaths;
         this.config = builder.config;
@@ -329,15 +347,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         String[] classProduces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, CONSUMES));
 
-        String classSseElementType = null;
-        AnnotationInstance classSseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentClassInfo,
-                REST_SSE_ELEMENT_TYPE);
-        if (classSseElementTypeAnnotation != null) {
-            classSseElementType = classSseElementTypeAnnotation.value().asString();
-        }
+        String classStreamElementType = getStreamAnnotationValue(currentClassInfo);
 
         BasicResourceClassInfo basicResourceClassInfo = new BasicResourceClassInfo(resourceClassPath, classProduces,
-                classConsumes, pathParameters, classSseElementType);
+                classConsumes, pathParameters, classStreamElementType);
 
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
 
@@ -399,7 +412,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
 
         DotName superClassName = currentClassInfo.superName();
-        if (superClassName != null && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)) {
+        if (superClassName != null && !superClassName.equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
@@ -487,7 +500,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
-                boolean encoded = anns.containsKey(ResteasyReactiveDotNames.ENCODED);
+                boolean encoded = anns.containsKey(ENCODED);
                 Type paramType = currentMethodInfo.parameters().get(i);
                 String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
@@ -553,31 +566,41 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
             }
 
-            Type nonAsyncReturnType = getNonAsyncReturnType(methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
+            Type methodContextReturnTypeOrReturnType = methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
                     ? (Type) methodContext.get(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
-                    : currentMethodInfo.returnType());
+                    : currentMethodInfo.returnType();
+            Type nonAsyncReturnType = getNonAsyncReturnType(methodContextReturnTypeOrReturnType);
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
             String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
                     basicResourceClassInfo.getProduces());
-            produces = applyDefaultProduces(produces, nonAsyncReturnType);
+            produces = applyDefaultProduces(produces, nonAsyncReturnType, httpMethod);
             produces = addDefaultCharsets(produces);
 
-            String sseElementType = basicResourceClassInfo.getSseElementType();
-            AnnotationInstance sseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentMethodInfo,
-                    REST_SSE_ELEMENT_TYPE);
-            if (sseElementTypeAnnotation != null) {
-                sseElementType = sseElementTypeAnnotation.value().asString();
+            String streamElementType = basicResourceClassInfo.getStreamElementType();
+            String streamElementTypeInMethod = getStreamAnnotationValue(currentMethodInfo);
+            if (streamElementTypeInMethod != null) {
+                streamElementType = streamElementTypeInMethod;
             }
+
             boolean returnsMultipart = false;
             if (produces != null && produces.length == 1) {
-                if (sseElementType == null && MediaType.SERVER_SENT_EVENTS.equals(produces[0])) {
+                if (streamElementType == null && MediaType.SERVER_SENT_EVENTS.equals(produces[0])) {
                     // Handle server sent events responses
                     String[] defaultProducesForType = applyAdditionalDefaults(nonAsyncReturnType);
                     if (defaultProducesForType.length == 1) {
-                        sseElementType = defaultProducesForType[0];
+                        streamElementType = defaultProducesForType[0];
                     }
                 } else if (MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
+                    if (RESPONSE.equals(nonAsyncReturnType.name())) {
+                        throw new DeploymentException(
+                                String.format(
+                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s'",
+                                        RESPONSE,
+                                        REST_RESPONSE,
+                                        currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo));
+                    }
+
                     // Handle multipart form data responses
                     ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());
                     returnsMultipart = multipartReturnTypeIndexerExtension.handleMultipartForReturnType(additionalWriters,
@@ -614,7 +637,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setBlocking(blocking)
                     .setSuspended(suspended)
                     .setSse(sse)
-                    .setSseElementType(sseElementType)
+                    .setStreamElementType(streamElementType)
                     .setFormParamRequired(formParamRequired)
                     .setMultipart(multipart)
                     .setParameters(methodParameters)
@@ -622,7 +645,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             toClassName(currentMethodInfo.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?
                     .setReturnType(
-                            determineReturnType(currentMethodInfo, typeArgMapper, currentClassInfo, actualEndpointInfo, index));
+                            determineReturnType(methodContextReturnTypeOrReturnType, typeArgMapper, currentClassInfo,
+                                    actualEndpointInfo, index));
 
             if (httpMethod == null) {
                 handleClientSubResource(method, currentMethodInfo, index);
@@ -642,6 +666,25 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected void handleClientSubResource(ResourceMethod resourceMethod, MethodInfo method, IndexView index) {
 
+    }
+
+    private String getStreamAnnotationValue(AnnotationTarget target) {
+        String value = getAnnotationValueAsString(target, REST_STREAM_ELEMENT_TYPE);
+        if (value == null) {
+            value = getAnnotationValueAsString(target, REST_SSE_ELEMENT_TYPE);
+        }
+
+        return value;
+    }
+
+    private String getAnnotationValueAsString(AnnotationTarget target, DotName annotationType) {
+        String value = null;
+        AnnotationInstance annotation = getAnnotationStore().getAnnotation(target, annotationType);
+        if (annotation != null) {
+            value = annotation.value().asString();
+        }
+
+        return value;
     }
 
     private boolean isBlocking(MethodInfo info, BlockingDefault defaultValue) {
@@ -686,13 +729,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return true;
     }
 
-    private String determineReturnType(MethodInfo info, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
+    private String determineReturnType(Type returnType, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, IndexView index) {
-        Type type = info.returnType();
-        if (type.kind() == Type.Kind.TYPE_VARIABLE) {
-            type = resolveTypeVariable(type.asTypeVariable(), currentClassInfo, actualEndpointInfo, index);
+        if (returnType.kind() == Type.Kind.TYPE_VARIABLE) {
+            returnType = resolveTypeVariable(returnType.asTypeVariable(), currentClassInfo, actualEndpointInfo, index);
         }
-        return AsmUtil.getSignature(type, typeArgMapper);
+        return AsmUtil.getSignature(returnType, typeArgMapper);
     }
 
     protected abstract boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters,
@@ -714,7 +756,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean encoded, Type paramType, PARAM parameterResult, String name, String defaultValue,
             ParameterType type, String elementType, boolean single, String signature);
 
-    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
+    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType,
+            DotName httpMethod) {
+        setupApplyDefaults(nonAsyncReturnType, httpMethod);
         if (produces != null && produces.length != 0)
             return produces;
         return applyAdditionalDefaults(nonAsyncReturnType);
@@ -734,6 +778,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         return result.toArray(EMPTY_STRING_ARRAY);
+    }
+
+    protected void setupApplyDefaults(Type nonAsyncReturnType, DotName httpMethod) {
+
     }
 
     protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
@@ -865,7 +913,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             case WILDCARD_TYPE:
                 WildcardType wildcardType = indexType.asWildcardType();
                 Type extendsBound = wildcardType.extendsBound();
-                if (extendsBound.name().equals(ResteasyReactiveDotNames.OBJECT)) {
+                if (extendsBound.name().equals(OBJECT)) {
                     // this is a super bound type that we don't support
                     throw new RuntimeException("Cannot handle wildcard type " + indexType);
                 }
@@ -1112,11 +1160,20 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 typeHandled = true;
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                 if (convertible) {
-                    handleOptionalParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                    String genericElementType = null;
+                    if (pt.arguments().get(0).kind() == Kind.PARAMETERIZED_TYPE) {
+                        genericElementType = toClassName(pt.arguments().get(0).asParameterizedType().arguments().get(0),
+                                currentClassInfo, actualEndpointInfo, index);
+                    }
+
+                    handleOptionalParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType,
+                            genericElementType);
                 }
                 builder.setOptional(true);
             } else if (convertible) {
-                throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
+                typeHandled = true;
+                elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
+                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             } else {
                 // the "element" type is not of importance as in this case the signature is used at runtime to determine the proper types
                 elementType = DUMMY_ELEMENT_TYPE.toString();
@@ -1138,6 +1195,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             builder.setSingle(false);
             if (convertible) {
                 handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
+        } else if (paramType.kind() == Kind.ARRAY) {
+            ArrayType at = paramType.asArrayType();
+            typeHandled = true;
+            builder.setSingle(false);
+            elementType = toClassName(at.component(), currentClassInfo, actualEndpointInfo, index);
+            if (convertible) {
+                handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
         }
 
@@ -1201,7 +1266,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, PARAM builder, String elementType) {
+            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType) {
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
@@ -1209,6 +1274,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType) {
+    }
+
+    protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             PARAM builder, String elementType) {
     }
 
@@ -1240,6 +1309,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private Function<String, BeanFactory<Object>> factoryCreator;
         private BlockingDefault defaultBlocking = BlockingDefault.AUTOMATIC;
         private IndexView index;
+        private IndexView applicationIndex;
         private Map<String, String> existingConverters = new HashMap<>();
         private Map<DotName, String> scannedResourcePaths;
         private ResteasyReactiveConfig config;
@@ -1288,6 +1358,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setIndex(IndexView index) {
             this.index = index;
+            return (B) this;
+        }
+
+        public B setApplicationIndex(IndexView index) {
+            this.applicationIndex = index;
             return (B) this;
         }
 
@@ -1369,15 +1444,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private final String[] produces;
         private final String[] consumes;
         private final Set<String> pathParameters;
-        private final String sseElementType;
+        private final String streamElementType;
 
         public BasicResourceClassInfo(String path, String[] produces, String[] consumes, Set<String> pathParameters,
-                String sseElementType) {
+                String streamElementType) {
             this.path = path;
             this.produces = produces;
             this.consumes = consumes;
             this.pathParameters = pathParameters;
-            this.sseElementType = sseElementType;
+            this.streamElementType = streamElementType;
         }
 
         public String getPath() {
@@ -1396,8 +1471,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return pathParameters;
         }
 
-        public String getSseElementType() {
-            return sseElementType;
+        public String getStreamElementType() {
+            return streamElementType;
         }
     }
 

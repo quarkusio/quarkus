@@ -5,8 +5,8 @@ import io.quarkus.arc.InjectableBean;
 import javax.enterprise.context.spi.CreationalContext;
 
 /**
- * 
- * 
+ *
+ *
  * @param <T>
  */
 public class ContextInstanceHandleImpl<T> extends EagerInstanceHandle<T> implements ContextInstanceHandle<T> {

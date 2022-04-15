@@ -24,11 +24,6 @@ public class MSSQLDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(MSSQLDevServicesProcessor.class);
 
-    /**
-     * If you update this remember to update the container-license-acceptance.txt in the tests
-     */
-    public static final String TAG = "2019-CU10-ubuntu-20.04";
-
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
@@ -47,7 +42,9 @@ public class MSSQLDevServicesProcessor {
 
                 LOG.info("Dev Services for Microsoft SQL Server started.");
 
-                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getContainerId(),
+                        container.getEffectiveJdbcUrl(),
+                        container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
@@ -69,7 +66,7 @@ public class MSSQLDevServicesProcessor {
 
         public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName.orElse(MSSQLServerContainer.IMAGE + ":" + MSSQLDevServicesProcessor.TAG))
+                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")))
                     .asCompatibleSubstituteFor(MSSQLServerContainer.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

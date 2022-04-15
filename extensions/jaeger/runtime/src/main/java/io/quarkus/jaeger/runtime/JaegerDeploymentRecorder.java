@@ -16,7 +16,7 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class JaegerDeploymentRecorder {
     private static final Logger log = Logger.getLogger(JaegerDeploymentRecorder.class);
-    private static final Optional UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
+    private static final Optional<String> UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
     private static final QuarkusJaegerTracer quarkusTracer = new QuarkusJaegerTracer();
 
     public static String jaegerVersion;
@@ -81,7 +81,8 @@ public class JaegerDeploymentRecorder {
                 duration -> String.valueOf(duration.toMillis()));
         initTracerProperty("JAEGER_SAMPLER_TYPE", jaeger.samplerType, type -> type);
         initTracerProperty("JAEGER_SAMPLER_PARAM", jaeger.samplerParam, param -> NumberFormat.getInstance().format(param));
-        initTracerProperty("JAEGER_SAMPLER_MANAGER_HOST_PORT", jaeger.samplerManagerHostPort, hostPort -> hostPort.toString());
+        initTracerProperty("JAEGER_SAMPLER_MANAGER_HOST_PORT", jaeger.samplerManagerHostPort,
+                hostPort -> String.format("%s:%d", hostPort.getHostString(), hostPort.getPort()));
         initTracerProperty("JAEGER_SERVICE_NAME", jaeger.serviceName, name -> name);
         initTracerProperty("JAEGER_TAGS", jaeger.tags, tags -> tags.toString());
         initTracerProperty("JAEGER_PROPAGATION", jaeger.propagation, format -> format.toString());

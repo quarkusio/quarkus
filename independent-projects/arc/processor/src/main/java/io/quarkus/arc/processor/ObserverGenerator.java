@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.event.Reception;
@@ -120,6 +121,7 @@ public class ObserverGenerator extends AbstractGenerator {
             for (org.jboss.jandex.Type paramType : observer.getObserverMethod().parameters()) {
                 sigBuilder.append(paramType.name().toString());
             }
+            sigBuilder.append(observer.getDeclaringBean().getIdentifier());
         }
 
         StringBuilder baseName = new StringBuilder();
@@ -217,6 +219,8 @@ public class ObserverGenerator extends AbstractGenerator {
             implementMockMethods(observerCreator);
         }
 
+        implementToString(observerCreator, observer);
+
         observerCreator.close();
         return classOutput.getResources();
     }
@@ -275,6 +279,31 @@ public class ObserverGenerator extends AbstractGenerator {
         getDeclaringBeanIdentifier
                 .returnValue(declaringBean != null ? getDeclaringBeanIdentifier.load(declaringBean.getIdentifier())
                         : getDeclaringBeanIdentifier.loadNull());
+    }
+
+    protected void implementToString(ClassCreator observerCreator, ObserverInfo observer) {
+        MethodCreator toString = observerCreator.getMethodCreator("toString", String.class).setModifiers(ACC_PUBLIC);
+        StringBuilder val = new StringBuilder();
+        if (observer.isSynthetic()) {
+            val.append("Synthetic observer [");
+            if (observer.getId() != null) {
+                val.append("id=").append(observer.getId());
+            } else {
+                val.append("beanClass=").append(observer.getBeanClass());
+            }
+            val.append("]");
+        } else {
+            val.append("Observer [method=")
+                    .append(observer.getObserverMethod().declaringClass().name())
+                    .append("#")
+                    .append(observer.getObserverMethod().name())
+                    .append("(")
+                    .append(observer.getObserverMethod().parameters().stream().map(Object::toString)
+                            .collect(Collectors.joining(",")))
+                    .append(")]");
+
+        }
+        toString.returnValue(toString.load(val.toString()));
     }
 
     protected void implementNotify(ObserverInfo observer, ClassCreator observerCreator,

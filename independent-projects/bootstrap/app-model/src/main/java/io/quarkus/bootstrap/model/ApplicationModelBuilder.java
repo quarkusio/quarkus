@@ -1,6 +1,6 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
@@ -39,7 +39,7 @@ public class ApplicationModelBuilder {
     final Set<ArtifactKey> reloadableWorkspaceModules = new HashSet<>();
     final List<ExtensionCapabilities> extensionCapabilities = new ArrayList<>();
     PlatformImports platformImports;
-    final Map<WorkspaceModuleId, DefaultWorkspaceModule> projectModules = new HashMap<>();
+    final Map<WorkspaceModuleId, WorkspaceModule.Mutable> projectModules = new HashMap<>();
 
     private Predicate<ResolvedDependency> depPredicate;
 
@@ -122,8 +122,10 @@ public class ApplicationModelBuilder {
         return this;
     }
 
-    public DefaultWorkspaceModule getOrCreateProjectModule(WorkspaceModuleId id, File moduleDir, File buildDir) {
-        return projectModules.computeIfAbsent(id, k -> new DefaultWorkspaceModule(id, moduleDir, buildDir));
+    public WorkspaceModule.Mutable getOrCreateProjectModule(WorkspaceModuleId id, File moduleDir, File buildDir) {
+        return projectModules.computeIfAbsent(id,
+                k -> WorkspaceModule.builder().setModuleId(id).setModuleDir(moduleDir.toPath())
+                        .setBuildDir(buildDir.toPath()));
     }
 
     /**

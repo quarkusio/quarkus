@@ -2,11 +2,13 @@ package io.quarkus.spring.data.deployment.generate;
 
 import static io.quarkus.gizmo.FieldDescriptor.of;
 import static io.quarkus.spring.data.deployment.generate.GenerationUtil.getNamedQueryForMethod;
+import static java.util.function.Predicate.not;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -72,6 +75,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
         // Remember custom return types: {resultType:{methodName:[fieldNames]}}
         Map<DotName, Map<String, List<String>>> customResultTypes = new HashMap<>(3);
         Map<DotName, DotName> customResultTypeNames = new HashMap<>(3);
+        Set<DotName> entityFieldTypeNames = new HashSet<>();
 
         for (MethodInfo method : repositoryClassInfo.methods()) {
 
@@ -297,7 +301,8 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
                     if (customResultTypeName.equals(entityClassInfo.name())
                             || customResultTypeName.toString().equals(idTypeStr)
-                            || isHibernateSupportedReturnType(customResultTypeName)) {
+                            || isHibernateSupportedReturnType(customResultTypeName)
+                            || getFieldTypeNames(entityClassInfo, entityFieldTypeNames).contains(customResultTypeName)) {
                         // no special handling needed
                         customResultTypeName = null;
                     } else {
@@ -492,7 +497,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             for (Map.Entry<String, List<String>> queryMethod : queryMethods.entrySet()) {
                 try (MethodCreator convert = implClassCreator.getMethodCreator("convert_" + queryMethod.getKey(),
                         implName.toString(), Object[].class.getName())) {
-                    convert.setModifiers(Modifier.STATIC);
+                    convert.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
 
                     ResultHandle newObject = convert.newInstance(MethodDescriptor.ofConstructor(implName.toString()));
 
@@ -532,5 +537,23 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                 break;
         }
         return resultHandle;
+    }
+
+    private Set<DotName> getFieldTypeNames(ClassInfo entityClassInfo, Set<DotName> entityFieldTypeNames) {
+        if (entityFieldTypeNames.isEmpty()) {
+            entityClassInfo.fields().stream()
+                    .filter(not(fieldInfo -> Modifier.isStatic(fieldInfo.flags())))
+                    .filter(not(FieldInfo::isSynthetic))
+                    .filter(not(fieldInfo -> fieldInfo.hasAnnotation(DotNames.JPA_TRANSIENT)))
+                    .map(fieldInfo -> fieldInfo.type().name())
+                    .forEach(entityFieldTypeNames::add);
+            // recurse until we reached Object
+            Type superClassType = entityClassInfo.superClassType();
+            if (superClassType != null && !superClassType.name().equals(DotNames.OBJECT)) {
+                var superEntityClassInfo = index.getClassByName(superClassType.name());
+                entityFieldTypeNames.addAll(getFieldTypeNames(superEntityClassInfo, new HashSet<>()));
+            }
+        }
+        return entityFieldTypeNames;
     }
 }

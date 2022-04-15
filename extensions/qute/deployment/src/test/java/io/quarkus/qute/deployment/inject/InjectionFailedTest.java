@@ -37,7 +37,7 @@ public class InjectionFailedTest {
                     assertTrue(s.getMessage().contains(
                             "No template found for path [foo] defined at io.quarkus.qute.deployment.inject.InjectionFailedTest#foo")
                             || s.getMessage().contains(
-                                    "No template found for path [alpha] defined at io.quarkus.qute.deployment.inject.InjectionFailedTest$Client().alpha"),
+                                    "No template found for path [alpha] defined at io.quarkus.qute.deployment.inject.InjectionFailedTest$Client()"),
                             s.getMessage());
                 }
             });

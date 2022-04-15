@@ -6,6 +6,8 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 public class JaegerExporterConfig {
     @ConfigRoot(name = "opentelemetry.tracer.exporter.jaeger", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -25,6 +27,7 @@ public class JaegerExporterConfig {
          * The Jaeger endpoint to connect to. The endpoint must start with either http:// or https://.
          */
         @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> endpoint;
 
         /**

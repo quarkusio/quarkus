@@ -155,6 +155,8 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
                         UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(userName,
                                 new PasswordCredential(password));
                         HttpSecurityUtils.setRoutingContextAttribute(credential, context);
+                        context.put(HttpAuthenticationMechanism.class.getName(), this);
+
                         return identityProviderManager.authenticate(credential);
                     }
 
@@ -192,8 +194,8 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BASIC);
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BASIC));
     }
 
     @Override

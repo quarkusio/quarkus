@@ -4,10 +4,10 @@ import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 
-public class BasicExecutableOutputOutcomeTest extends ExecutableOutputOutcomeTestBase {
+public class BasicExecutableOutputOutcomeTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
         final TsQuarkusExt coreExt = new TsQuarkusExt("core-ext");
         addToExpectedLib(coreExt.getRuntime());
 

@@ -4,63 +4,23 @@
 mp:
   messaging:
     outgoing:
-      source-out:
-        connector: smallrye-kafka
-        topic: word
-      uppercase-out:
-        connector: smallrye-kafka
-        topic: uppercase-word
+      words-out:
+        topic: words
     incoming:
-      source-in:
-        connector: smallrye-kafka
-        topic: word
-      uppercase-in:
-        connector: smallrye-kafka
-        topic: uppercase-word
-
-{#case 'io.quarkus:quarkus-smallrye-reactive-messaging-mqtt'}
-mp:
-  messaging:
-    outgoing:
-      source-out:
-        connector: smallrye-mqtt
-        host: localhost
-        port: '1883'
-        topic: word
-      uppercase-out:
-        connector: smallrye-mqtt
-        host: localhost
-        port: '1883'
-        topic: uppercase-word
-    incoming:
-      source-in:
-        connector: smallrye-mqtt
-        host: localhost
-        port: '1883'
-        topic: word
-      uppercase-in:
-        connector: smallrye-mqtt
-        host: localhost
-        port: '1883'
-        topic: uppercase-word
+      words-in:
+        topic: words
+        auto:
+          offset:
+            reset: earliest
 
 {#case 'io.quarkus:quarkus-smallrye-reactive-messaging-amqp'}
 mp:
   messaging:
     outgoing:
-      source-out:
-        address: word
-        connector: smallrye-amqp
-      uppercase-out:
-        connector: smallrye-amqp
-        address: uppercase-word
+      words-out:
+        address: words
     incoming:
-      source-in:
-        connector: smallrye-amqp
-        address: word
-      uppercase-in:
-        address: uppercase-word
-        connector: smallrye-amqp
-
+      words-in:
+        address: words
 {/switch}
 {/each}

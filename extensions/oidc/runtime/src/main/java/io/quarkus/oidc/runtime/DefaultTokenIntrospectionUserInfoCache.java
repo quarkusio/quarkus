@@ -109,6 +109,7 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
 
     public void clearCache() {
         cacheMap.clear();
+        size.set(0);
     }
 
     private void removeInvalidEntries() {

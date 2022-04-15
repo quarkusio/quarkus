@@ -7,13 +7,19 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
@@ -23,17 +29,22 @@ import javax.interceptor.Interceptor;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.EvalContext;
+import io.quarkus.qute.Expression;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.Qute;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
+import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.TemplateInstance.Initializer;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
@@ -51,6 +62,7 @@ public class EngineProducer {
 
     public static final String INJECT_NAMESPACE = "inject";
     public static final String CDI_NAMESPACE = "cdi";
+    public static final String DEPENDENT_INSTANCES = "q_dep_inst";
 
     private static final String TAGS = "tags/";
 
@@ -65,6 +77,7 @@ public class EngineProducer {
     private final Pattern templatePathExclude;
     private final Locale defaultLocale;
     private final Charset defaultCharset;
+    private final ArcContainer container;
 
     public EngineProducer(QuteContext context, QuteConfig config, QuteRuntimeConfig runtimeConfig,
             Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes, LaunchMode launchMode,
@@ -77,6 +90,7 @@ public class EngineProducer {
         this.templatePathExclude = config.templatePathExclude;
         this.defaultLocale = locales.defaultLocale;
         this.defaultCharset = config.defaultCharset;
+        this.container = Arc.container();
 
         LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(), tags,
                 context.getResolverClasses());
@@ -84,7 +98,6 @@ public class EngineProducer {
         EngineBuilder builder = Engine.builder();
 
         // We don't register the map resolver because of param declaration validation
-        // See DefaultTemplateExtensions
         builder.addValueResolver(ValueResolvers.thisResolver());
         builder.addValueResolver(ValueResolvers.orResolver());
         builder.addValueResolver(ValueResolvers.trueResolver());
@@ -104,7 +117,7 @@ public class EngineProducer {
             builder.strictRendering(true);
         } else {
             builder.strictRendering(false);
-            // If needed use a specific result mapper for the selected strategy  
+            // If needed use a specific result mapper for the selected strategy
             if (runtimeConfig.propertyNotFoundStrategy.isPresent()) {
                 switch (runtimeConfig.propertyNotFoundStrategy.get()) {
                     case THROW_EXCEPTION:
@@ -147,17 +160,8 @@ public class EngineProducer {
         builderReady.fire(builder);
 
         // Resolve @Named beans
-        Function<EvalContext, Object> cdiFun = new Function<EvalContext, Object>() {
-
-            @Override
-            public Object apply(EvalContext ctx) {
-                try (InstanceHandle<Object> bean = Arc.container().instance(ctx.getName())) {
-                    return bean.isAvailable() ? bean.get() : Results.NotFound.from(ctx);
-                }
-            }
-        };
-        builder.addNamespaceResolver(NamespaceResolver.builder(INJECT_NAMESPACE).resolve(cdiFun).build());
-        builder.addNamespaceResolver(NamespaceResolver.builder(CDI_NAMESPACE).resolve(cdiFun).build());
+        builder.addNamespaceResolver(NamespaceResolver.builder(INJECT_NAMESPACE).resolve(this::resolveInject).build());
+        builder.addNamespaceResolver(NamespaceResolver.builder(CDI_NAMESPACE).resolve(this::resolveInject).build());
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {
@@ -172,7 +176,7 @@ public class EngineProducer {
         // Add tags
         for (String tag : tags) {
             // Strip suffix, item.html -> item
-            String tagName = tag.contains(".") ? tag.substring(0, tag.lastIndexOf('.')) : tag;
+            String tagName = tag.contains(".") ? tag.substring(0, tag.indexOf('.')) : tag;
             String tagTemplateId = TAGS + tagName;
             LOGGER.debugf("Registered UserTagSectionHelper for %s [%s]", tagName, tagTemplateId);
             builder.addSectionHelper(new UserTagSectionHelper.Factory(tagName, tagTemplateId));
@@ -188,12 +192,70 @@ public class EngineProducer {
             builder.addTemplateInstanceInitializer(createInitializer(initializerClass));
         }
 
+        // Add a special initializer for templates that contain a inject/cdi namespace expressions
+        Map<String, Boolean> discoveredInjectTemplates = new HashMap<>();
+        builder.addTemplateInstanceInitializer(new Initializer() {
+
+            @Override
+            public void accept(TemplateInstance instance) {
+                Boolean hasInject = discoveredInjectTemplates.get(instance.getTemplate().getGeneratedId());
+                if (hasInject == null) {
+                    hasInject = hasInjectExpression(instance.getTemplate());
+                }
+                if (hasInject) {
+                    // Add dependent beans map if the template contains a cdi namespace expression
+                    instance.setAttribute(DEPENDENT_INSTANCES, new ConcurrentHashMap<>());
+                    // Add a close action to destroy all dependent beans
+                    instance.onRendered(new Runnable() {
+                        @Override
+                        public void run() {
+                            Object dependentInstances = instance.getAttribute(EngineProducer.DEPENDENT_INSTANCES);
+                            if (dependentInstances != null) {
+                                @SuppressWarnings("unchecked")
+                                ConcurrentMap<String, InstanceHandle<?>> existing = (ConcurrentMap<String, InstanceHandle<?>>) dependentInstances;
+                                if (!existing.isEmpty()) {
+                                    for (InstanceHandle<?> handle : existing.values()) {
+                                        handle.close();
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        builder.timeout(runtimeConfig.timeout);
+        builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout);
+
         engine = builder.build();
 
-        // Load discovered templates
+        // Load discovered template files
+        Map<String, List<Template>> discovered = new HashMap<>();
         for (String path : context.getTemplatePaths()) {
-            engine.getTemplate(path);
+            Template template = engine.getTemplate(path);
+            if (template != null) {
+                for (String suffix : config.suffixes) {
+                    if (path.endsWith(suffix)) {
+                        String pathNoSuffix = path.substring(0, path.length() - (suffix.length() + 1));
+                        List<Template> templates = discovered.get(pathNoSuffix);
+                        if (templates == null) {
+                            templates = new ArrayList<>();
+                            discovered.put(pathNoSuffix, templates);
+                        }
+                        templates.add(template);
+                        break;
+                    }
+                }
+                discoveredInjectTemplates.put(template.getGeneratedId(), hasInjectExpression(template));
+            }
         }
+        // If it's a default suffix then register a path without suffix as well
+        // hello.html -> hello, hello.html
+        for (Entry<String, List<Template>> e : discovered.entrySet()) {
+            processDefaultTemplate(e.getKey(), e.getValue(), config, engine);
+        }
+
         engineReady.fire(engine);
 
         // Set the engine instance
@@ -287,6 +349,66 @@ public class EngineProducer {
         // Guess the content type from the path
         String contentType = contentTypes.getContentType(path);
         return new Variant(defaultLocale, defaultCharset, contentType);
+    }
+
+    private Object resolveInject(EvalContext ctx) {
+        InjectableBean<?> bean = container.namedBean(ctx.getName());
+        if (bean != null) {
+            if (bean.getScope().equals(Dependent.class)) {
+                // Dependent beans are shared across all expressions in a template for a single rendering operation
+                Object dependentInstances = ctx.getAttribute(EngineProducer.DEPENDENT_INSTANCES);
+                if (dependentInstances != null) {
+                    @SuppressWarnings("unchecked")
+                    ConcurrentMap<String, InstanceHandle<?>> existing = (ConcurrentMap<String, InstanceHandle<?>>) dependentInstances;
+                    return existing.computeIfAbsent(ctx.getName(), name -> container.instance(bean)).get();
+                }
+            }
+            return container.instance(bean).get();
+        }
+        return Results.NotFound.from(ctx);
+    }
+
+    private boolean hasInjectExpression(Template template) {
+        for (Expression expression : template.getExpressions()) {
+            if (isInjectExpression(expression)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isInjectExpression(Expression expression) {
+        String namespace = expression.getNamespace();
+        if (namespace != null && (CDI_NAMESPACE.equals(namespace) || INJECT_NAMESPACE.equals(namespace))) {
+            return true;
+        }
+        for (Expression.Part part : expression.getParts()) {
+            if (part.isVirtualMethod()) {
+                for (Expression param : part.asVirtualMethod().getParameters()) {
+                    if (param.isLiteral()) {
+                        continue;
+                    }
+                    if (isInjectExpression(param)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private void processDefaultTemplate(String path, List<Template> templates, QuteConfig config, Engine engine) {
+        if (engine.isTemplateLoaded(path)) {
+            return;
+        }
+        for (String suffix : config.suffixes) {
+            for (Template template : templates) {
+                if (template.getId().endsWith(suffix)) {
+                    engine.putTemplate(path, template);
+                    return;
+                }
+            }
+        }
     }
 
     static class ResourceTemplateLocation implements TemplateLocation {

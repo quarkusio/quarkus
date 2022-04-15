@@ -29,7 +29,7 @@ class PathMatcher<T> implements Dumpable {
 
     /**
      * Matches a path against the registered handlers.
-     * 
+     *
      * @param path The relative path to match
      * @return The match match. This will never be null, however if none matched its value field will be
      */

@@ -13,7 +13,7 @@ public final class ImageUtil {
 
     /**
      * Create an image from the individual parts.
-     * 
+     *
      * @param registry The registry.
      * @param repository The repository.
      * @param name The name.
@@ -37,7 +37,7 @@ public final class ImageUtil {
 
     /**
      * Return the docker image repository.
-     * 
+     *
      * @param image The docker image.
      * @return The image repository.
      */
@@ -58,7 +58,7 @@ public final class ImageUtil {
 
     /**
      * Return the docker image name.
-     * 
+     *
      * @param image The docker image.
      * @return The image name.
      */
@@ -79,7 +79,7 @@ public final class ImageUtil {
 
     /**
      * Return the tag of the image.
-     * 
+     *
      * @param image The docker image.
      * @return The tag if present or null otherwise.
      */

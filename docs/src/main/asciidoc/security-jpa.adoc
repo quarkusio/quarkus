@@ -13,12 +13,7 @@ xref:hibernate-orm.adoc[Hibernate ORM] or xref:hibernate-orm-panache.adoc[Hibern
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -45,15 +40,9 @@ The solution is located in the `security-jpa-quickstart` {quickstarts-tree-url}/
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-jpa-quickstart \
-    -Dextensions="security-jpa,jdbc-postgresql,resteasy,hibernate-orm-panache" \
-    -DnoExamples
-cd security-jpa-quickstart
-----
+:create-app-artifact-id: security-jpa-quickstart
+:create-app-extensions: security-jpa,jdbc-postgresql,resteasy-reactive,hibernate-orm-panache
+include::includes/devtools/create-app.adoc[]
 
 [NOTE]
 ====
@@ -66,19 +55,24 @@ which allows you to map your security source to JPA entities.
 If you already have your Quarkus project configured, you can add the `security-jpa` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="security-jpa"
-----
+:add-extension-extensions: security-jpa
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-security-jpa</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-security-jpa")
 ----
 
 == Writing the application
@@ -170,7 +164,7 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import io.quarkus.security.common.BcryptUtil;
+import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.security.jpa.Password;
 import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
@@ -259,6 +253,10 @@ As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
 ====
 
 == Testing the Application
+
+You can start the application in dev mode as follows:
+
+include::includes/devtools/dev.adoc[]
 
 [NOTE]
 ====

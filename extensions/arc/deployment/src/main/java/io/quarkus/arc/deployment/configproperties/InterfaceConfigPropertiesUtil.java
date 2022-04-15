@@ -76,7 +76,7 @@ final class InterfaceConfigPropertiesUtil {
 
     /**
      * Add a method like this:
-     * 
+     *
      * <pre>
      *  &#64;Produces
      *  public SomeConfig produceSomeClass(Config config) {
@@ -188,7 +188,7 @@ final class InterfaceConfigPropertiesUtil {
                                 ResultHandle configInstanceHandle = methodCreator.invokeInterfaceMethod(
                                         ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                                                 Annotation[].class),
-                                        arcContainer, methodCreator.loadClass(Config.class),
+                                        arcContainer, methodCreator.loadClassFromTCCL(Config.class),
                                         methodCreator.newArray(Annotation.class, 0));
                                 ResultHandle config = methodCreator.invokeInterfaceMethod(
                                         ofMethod(InstanceHandle.class, "get", Object.class), configInstanceHandle);
@@ -227,7 +227,7 @@ final class InterfaceConfigPropertiesUtil {
                                                 String.class,
                                                 Class.class),
                                         config, methodCreator.load(fullConfigName),
-                                        methodCreator.loadClass(genericType.name().toString()));
+                                        methodCreator.loadClassFromTCCL(genericType.name().toString()));
                                 methodCreator.returnValue(result);
                             } else {
                                 // convert the String value and populate an Optional with it

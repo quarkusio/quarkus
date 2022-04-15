@@ -5,6 +5,8 @@ import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.get
 import io.restassured.RestAssured.given
 import io.restassured.common.mapper.TypeRef
+import io.restassured.module.kotlin.extensions.Then
+import io.restassured.module.kotlin.extensions.When
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -20,10 +22,11 @@ class ReactiveMessagingTest {
     fun test() {
         assertCountries(6)
 
-        given()
-                .`when`().post("/country/kafka/dummy")
-                .then()
-                .statusCode(200)
+        When {
+            post("/country/kafka/dummy")
+        } Then {
+            statusCode(200)
+        }
 
         assertCountries(8)
     }

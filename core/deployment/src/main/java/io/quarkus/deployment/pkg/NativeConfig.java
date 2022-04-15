@@ -11,9 +11,13 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
+
+    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-native-image:22.0-java11";
+    public static final String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel:22.0-java11";
 
     /**
      * Comma-separated, additional arguments to pass to the build process.
@@ -65,20 +69,28 @@ public class NativeConfig {
 
     /**
      * Defines the user language used for building the native executable.
+     * It also serves as the default Locale language for the native executable application runtime.
+     * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
-     * Defaults to the system one.
+     *
+     * @deprecated Use the global quarkus.default-locale.
      */
-    @ConfigItem(defaultValue = "${user.language:}")
+    @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
+    @Deprecated
     public Optional<String> userLanguage;
 
     /**
      * Defines the user country used for building the native executable.
+     * It also serves as the default Locale country for the native executable application runtime.
+     * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
-     * Defaults to the system one.
+     *
+     * @deprecated Use the global quarkus.default-locale.
      */
-    @ConfigItem(defaultValue = "${user.country:}")
+    @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
+    @Deprecated
     public Optional<String> userCountry;
 
     /**
@@ -195,17 +207,29 @@ public class NativeConfig {
     }
 
     /**
-     * The docker image to use to do the image build
+     * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
+     * {@code quay.io/quarkus/ubi-quarkus-mandrel:21.3-java17}.
      */
     @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
     public String builderImage;
+
+    public String getEffectiveBuilderImage() {
+        final String builderImageName = this.builderImage.toUpperCase();
+        if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
+            return DEFAULT_GRAALVM_BUILDER_IMAGE;
+        } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
+            return DEFAULT_MANDREL_BUILDER_IMAGE;
+        } else {
+            return this.builderImage;
+        }
+    }
 
     /**
      * The container runtime (e.g. docker) that is used to do an image based build. If this is set then
      * a container build is always done.
      */
     @ConfigItem
-    public Optional<ContainerRuntime> containerRuntime;
+    public Optional<ContainerRuntimeUtil.ContainerRuntime> containerRuntime;
 
     /**
      * Options to pass to the container runtime
@@ -419,14 +443,10 @@ public class NativeConfig {
     }
 
     /**
-     * Supported Container runtimes
+     * Supported Builder Image providers/distributions
      */
-    public static enum ContainerRuntime {
-        DOCKER,
-        PODMAN;
-
-        public String getExecutableName() {
-            return this.name().toLowerCase();
-        }
+    public static enum BuilderImageProvider {
+        GRAALVM,
+        MANDREL;
     }
 }

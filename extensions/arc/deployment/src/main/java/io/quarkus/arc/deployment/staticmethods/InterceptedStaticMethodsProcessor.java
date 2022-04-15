@@ -90,7 +90,7 @@ public class InterceptedStaticMethodsProcessor {
             InterceptorResolverBuildItem interceptorResolver, TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
-        // In this step we collect all intercepted static methods, ie. static methods annotated with interceptor bindings  
+        // In this step we collect all intercepted static methods, ie. static methods annotated with interceptor bindings
         Set<DotName> interceptorBindings = interceptorResolver.getInterceptorBindings();
 
         for (ClassInfo clazz : beanArchiveIndex.getIndex().getKnownClasses()) {
@@ -169,7 +169,7 @@ public class InterceptedStaticMethodsProcessor {
             list.add(interceptedStaticMethod);
         }
 
-        // For each declaring class create an initializer class that: 
+        // For each declaring class create an initializer class that:
         // 1. registers all interceptor chains inside an "init_static_intercepted_methods" method
         // 2. adds static methods to invoke the interceptor chain and delegate to the copy of the original static method
         // declaring class -> initializer class
@@ -293,13 +293,13 @@ public class InterceptedStaticMethodsProcessor {
 
         // 2. Method method = Reflections.findMethod(...)
         ResultHandle[] paramsHandles = new ResultHandle[3];
-        paramsHandles[0] = init.loadClass(method.declaringClass().name().toString());
+        paramsHandles[0] = init.loadClassFromTCCL(method.declaringClass().name().toString());
         paramsHandles[1] = init.load(method.name());
         if (!method.parameters().isEmpty()) {
             ResultHandle paramsArray = init.newArray(Class.class, init.load(method.parameters().size()));
             for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
                 init.writeArrayValue(paramsArray, iterator.nextIndex(),
-                        init.loadClass(iterator.next().name().toString()));
+                        init.loadClassFromTCCL(iterator.next().name().toString()));
             }
             paramsHandles[2] = paramsArray;
         } else {

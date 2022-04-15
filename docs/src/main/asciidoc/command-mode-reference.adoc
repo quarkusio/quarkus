@@ -124,9 +124,30 @@ in order to unblock the main thread and initiate the shutdown process.
 
 === Development Mode
 
-Also for command mode applications the dev mode is supported. When you run `mvn quarkus:dev`, the command mode application is executed.
+Also for command mode applications the dev mode is supported.
+When you start your application in dev mode, the command mode application is executed:
 
-As command mode applications will often require arguments to be passed on the commandline, this is also possible in dev mode via the `quarkus.args` system property. For example `mvn quarkus:dev -Dquarkus.args='--help'` and the same can be achieved with Gradle: `./gradlew quarkusDev --quarkus-args='--help'`.
+include::includes/devtools/dev.adoc[]
+
+As command mode applications will often require arguments to be passed on the command line, this is also possible in dev mode:
+
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+.CLI
+----
+quarkus dev '--help'
+----
+
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+----
+./mvnw quarkus:dev -Dquarkus.args='--help'
+----
+
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew quarkusDev --quarkus-args='--help'
+----
 
 You should see the following down the bottom of the screen after the application is stopped: 
 
@@ -189,5 +210,66 @@ import io.quarkus.test.junit.main.QuarkusMainIntegrationTest;
 @QuarkusMainIntegrationTest
 public class HelloIT extends HelloTest {
 }
-
 ----
+
+=== Mocking
+
+CDI injection is not supported in the `@QuarkusMainTest` tests.
+Consequently, mocking CDI beans with `QuarkusMock` or `@InjectMock` is not supported either.
+
+It is possible to mock CDI beans by leveraging xref:getting-started-testing.adoc#testing_different_profiles[test profiles] though.
+
+For instance, in the following test, the singleton `CdiBean1` will be mocked by `MockedCdiBean1`:
+
+[source,java]
+----
+package org.acme.commandmode.test;
+
+import java.util.Set;
+
+import javax.enterprise.inject.Alternative;
+import javax.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.acme.commandmode.test.MyCommandModeTest.MyTestProfile;
+
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.junit.main.Launch;
+import io.quarkus.test.junit.main.LaunchResult;
+import io.quarkus.test.junit.main.QuarkusMainTest;
+
+@QuarkusMainTest
+@TestProfile(MyTestProfile.class)
+public class MyCommandModeTest {
+
+    @Test
+    @Launch(value = {})
+    public void testLaunchCommand(LaunchResult result) {
+        // ... assertions ...
+    }
+
+    public static class MyTestProfile implements QuarkusTestProfile {
+
+        @Override
+        public Set<Class<?>> getEnabledAlternatives() {
+            return Set.of(MockedCdiBean1.class); <1>
+        }
+    }
+
+    @Alternative <2>
+    @Singleton <3>
+    public static class MockedCdiBean1 implements CdiBean1 {
+
+        @Override
+        public String myMethod() {
+            return "mocked value";
+        }
+    }
+}
+----
+<1> List all the CDI beans for which you want to enable an alternative mocked bean.
+<2> Use `@Alternative` without a `@Priority`. Make sure you don't use `@Mock`.
+<3> The scope of the mocked bean should be consistent with the original one.
+
+Using this pattern, you can enable specific alternatives for any given test.

@@ -39,7 +39,7 @@ public final class OracleMetadataOverrides {
 
     /**
      * Should match the contents of {@literal reflect-config.json}
-     * 
+     *
      * @param reflectiveClass builItem producer
      */
     @BuildStep
@@ -67,8 +67,12 @@ public final class OracleMetadataOverrides {
     @BuildStep
     void runtimeInitializeDriver(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized) {
         //These re-implement all the "--initialize-at-build-time" arguments found in the native-image.properties :
-        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.OracleDriver"));
-        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.OracleDriver"));
+
+        // Override: the original metadata marks the drivers as "runtime initialized" but this makes it incompatible with
+        // other systems (e.g. DB2 drivers) as it makes them incompatible with the JDK DriverManager integrations:
+        // the DriverManager will typically (and most likely) need to load all drivers in a different phase.
+        // runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.OracleDriver"));
+        // runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.OracleDriver"));
 
         // The Oracle driver's metadata hints to require java.sql.DriverManager to be initialized at runtime, but:
         //  A) I disagree with the fact that a driver makes changes outside of its scope (java.sql in this case)

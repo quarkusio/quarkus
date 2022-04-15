@@ -1,6 +1,7 @@
 package io.quarkus.datasource.runtime;
 
 import java.util.Map;
+import java.util.Objects;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -32,10 +33,6 @@ public class DataSourcesRuntimeConfig {
         }
 
         DataSourceRuntimeConfig dataSourceRuntimeConfig = namedDataSources.get(dataSourceName);
-        if (dataSourceRuntimeConfig == null) {
-            return new DataSourceRuntimeConfig();
-        }
-
-        return dataSourceRuntimeConfig;
+        return Objects.requireNonNullElseGet(dataSourceRuntimeConfig, DataSourceRuntimeConfig::new);
     }
 }

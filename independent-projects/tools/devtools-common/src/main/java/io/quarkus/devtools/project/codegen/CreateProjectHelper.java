@@ -8,10 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -19,9 +22,12 @@ import javax.lang.model.SourceVersion;
 
 public class CreateProjectHelper {
 
-    public static final Set<String> JAVA_VERSIONS_LTS = Set.of("11", "17");
-    public static final String DEFAULT_JAVA_VERSION = "11";
-    private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
+    // ordering is important here, so let's keep them ordered
+    public static final SortedSet<Integer> JAVA_VERSIONS_LTS = new TreeSet<>(List.of(11, 17));
+    private static final int DEFAULT_JAVA_VERSION = 11;
+    private static final int MAX_LTS_SUPPORTED_BY_KOTLIN = 17;
+    public static final String DETECT_JAVA_RUNTIME_VERSION = "<<detect java runtime version>>";
+    private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(\\d+)(?:\\..*)?");
 
     public static final String DEFAULT_GROUP_ID = "org.acme";
     public static final String DEFAULT_ARTIFACT_ID = "code-with-quarkus";
@@ -79,16 +85,43 @@ public class CreateProjectHelper {
     public static void setJavaVersion(Map<String, Object> values, String javaTarget) {
         requireNonNull(values, "Must provide values");
 
-        Matcher matcher = JAVA_VERSION_PATTERN
-                .matcher(javaTarget != null ? javaTarget : System.getProperty("java.version", ""));
+        Integer javaFeatureVersionTarget = null;
 
-        if (matcher.matches()) {
-            String versionExtracted = matcher.group(1);
-            String version = JAVA_VERSIONS_LTS.contains(versionExtracted) ? versionExtracted : DEFAULT_JAVA_VERSION;
-            values.put(ProjectGenerator.JAVA_TARGET, version);
-        } else {
-            values.put(ProjectGenerator.JAVA_TARGET, DEFAULT_JAVA_VERSION);
+        if (javaTarget != null && !DETECT_JAVA_RUNTIME_VERSION.equals(javaTarget)) {
+            // Probably too much as we should push only the feature version but let's be as thorough as we used to be
+            Matcher matcher = JAVA_VERSION_PATTERN.matcher(javaTarget);
+            if (matcher.matches()) {
+                javaFeatureVersionTarget = Integer.valueOf(matcher.group(1));
+            }
         }
+
+        if (javaFeatureVersionTarget == null) {
+            javaFeatureVersionTarget = Runtime.version().feature();
+        }
+
+        int bestJavaLtsVersion = determineBestJavaLtsVersion(javaFeatureVersionTarget);
+
+        if (SourceType.KOTLIN.equals(values.get(ProjectGenerator.SOURCE_TYPE))
+                && bestJavaLtsVersion > MAX_LTS_SUPPORTED_BY_KOTLIN) {
+            bestJavaLtsVersion = MAX_LTS_SUPPORTED_BY_KOTLIN;
+        }
+
+        values.put(ProjectGenerator.JAVA_TARGET, String.valueOf(bestJavaLtsVersion));
+    }
+
+    public static int determineBestJavaLtsVersion() {
+        return determineBestJavaLtsVersion(Runtime.version().feature());
+    }
+
+    public static int determineBestJavaLtsVersion(int runtimeVersion) {
+        int bestLtsVersion = DEFAULT_JAVA_VERSION;
+        for (int ltsVersion : JAVA_VERSIONS_LTS) {
+            if (ltsVersion > runtimeVersion) {
+                break;
+            }
+            bestLtsVersion = ltsVersion;
+        }
+        return bestLtsVersion;
     }
 
     public static Set<String> sanitizeExtensions(Set<String> extensions) {

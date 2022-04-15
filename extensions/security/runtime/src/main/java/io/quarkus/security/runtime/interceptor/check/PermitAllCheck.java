@@ -20,4 +20,9 @@ public class PermitAllCheck implements SecurityCheck {
     @Override
     public void apply(SecurityIdentity identity, MethodDescription method, Object[] parameters) {
     }
+
+    @Override
+    public boolean isPermitAll() {
+        return true;
+    }
 }

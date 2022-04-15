@@ -11,7 +11,7 @@ metadata:
   categories:
     - "cloud"
   guide: "https://quarkus.io/guides/funqy-gcp-functions"
-  status: "experimental"
+  status: "preview"
   codestart:
     name: "funqy-google-cloud-functions-example"
     kind: "example"

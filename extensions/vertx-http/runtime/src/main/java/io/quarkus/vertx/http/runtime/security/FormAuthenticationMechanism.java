@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import java.util.function.Consumer;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -118,6 +120,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         Cookie redirect = exchange.getCookie(locationCookie);
         String location;
         if (redirect != null) {
+            verifyRedirectBackLocation(exchange.request().absoluteURI(), redirect.getValue());
             redirect.setSecure(exchange.request().isSSL());
             location = redirect.getValue();
             exchange.response().addCookie(redirect.setMaxAge(0));
@@ -127,6 +130,18 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         exchange.response().setStatusCode(302);
         exchange.response().headers().add(HttpHeaderNames.LOCATION, location);
         exchange.response().end();
+    }
+
+    protected void verifyRedirectBackLocation(String requestURIString, String redirectUriString) {
+        URI requestUri = URI.create(requestURIString);
+        URI redirectUri = URI.create(redirectUriString);
+        if (!requestUri.getAuthority().equals(redirectUri.getAuthority())
+                || !requestUri.getScheme().equals(redirectUri.getScheme())) {
+            log.errorf("Location cookie value %s does not match the current request URI %s's scheme, host or port",
+                    redirectUriString,
+                    requestURIString);
+            throw new AuthenticationCompletionException();
+        }
     }
 
     protected void storeInitialLocation(final RoutingContext exchange) {
@@ -156,10 +171,12 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
         if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
             //we always re-auth if it is a post to the auth URL
+            context.put(HttpAuthenticationMechanism.class.getName(), this);
             return runFormAuth(context, identityProviderManager);
         } else {
             PersistentLoginManager.RestoreResult result = loginManager.restore(context);
             if (result != null) {
+                context.put(HttpAuthenticationMechanism.class.getName(), this);
                 Uni<SecurityIdentity> ret = identityProviderManager
                         .authenticate(HttpSecurityUtils
                                 .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
@@ -194,7 +211,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM);
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM));
     }
 }

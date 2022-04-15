@@ -9,7 +9,7 @@ import java.util.function.Function;
 public interface ParserHelper {
 
     /**
-     * 
+     *
      * @return the template id
      */
     String getTemplateId();
@@ -17,7 +17,7 @@ public interface ParserHelper {
     /**
      * Adds an <em>implicit</em> parameter declaration. This an alternative approach to <em>explicit</em> parameter declarations
      * used directly in the templates, e.g. <code>{@org.acme.Foo foo}</code>.
-     * 
+     *
      * @param name
      * @param type
      */
@@ -25,7 +25,7 @@ public interface ParserHelper {
 
     /**
      * The filter is used before the template contents is parsed.
-     * 
+     *
      * @param filter
      */
     void addContentFilter(Function<String, String> filter);

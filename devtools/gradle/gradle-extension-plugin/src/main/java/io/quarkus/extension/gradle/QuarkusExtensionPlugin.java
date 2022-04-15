@@ -20,6 +20,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.extension.gradle.dependency.DeploymentClasspathBuilder;
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
 import io.quarkus.extension.gradle.tasks.ValidateExtensionTask;
+import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
@@ -75,6 +76,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
             //This must be run after the extension has been configured
             Project deploymentProject = findDeploymentProject(project, quarkusExt);
             if (deploymentProject != null) {
+                ApplicationDeploymentClasspathBuilder.initConfigurations(deploymentProject);
                 deploymentProject.getPlugins().withType(
                         JavaPlugin.class,
                         javaPlugin -> addAnnotationProcessorDependency(deploymentProject));

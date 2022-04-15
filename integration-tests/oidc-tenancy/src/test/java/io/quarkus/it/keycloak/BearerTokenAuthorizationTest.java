@@ -304,7 +304,7 @@ public class BearerTokenAuthorizationTest {
         // Now enable the rotation
         RestAssured.when().post("/oidc/enable-rotate").then().body(equalTo("true"));
 
-        // JWK is available now in Quarkus OIDC, confirm that no timeout is needed 
+        // JWK is available now in Quarkus OIDC, confirm that no timeout is needed
         RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("2"))
                 .when().get("/tenant/tenant-oidc/api/user")
                 .then()
@@ -327,7 +327,7 @@ public class BearerTokenAuthorizationTest {
                 .statusCode(200)
                 .body(equalTo("tenant-oidc:alice"));
 
-        // Finally try the opaque token 
+        // Finally try the opaque token
         RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
                 .when().get("/tenant-opaque/tenant-oidc/api/user")
                 .then()
@@ -354,7 +354,7 @@ public class BearerTokenAuthorizationTest {
         // Now enable the rotation
         RestAssured.when().post("/oidc/enable-rotate").then().body(equalTo("true"));
 
-        // JWK is available now in Quarkus OIDC, confirm that no timeout is needed 
+        // JWK is available now in Quarkus OIDC, confirm that no timeout is needed
         RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("2"))
                 .when().get("/tenant/tenant-oidc-no-introspection/api/user")
                 .then()
@@ -470,7 +470,7 @@ public class BearerTokenAuthorizationTest {
     public void testOpaqueTokenIntrospectionDisallowed() {
         RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
 
-        // Verify the the opaque token is rejected with 401 
+        // Verify the the opaque token is rejected with 401
         RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
                 .when().get("/tenant-opaque/tenant-oidc-no-opaque-token/api/user")
                 .then()

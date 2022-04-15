@@ -15,7 +15,7 @@ public final class LiquibaseRuntimeConfig {
 
     /**
      * Gets the default runtime configuration
-     * 
+     *
      * @return the liquibase runtime default configuration
      */
     public static LiquibaseRuntimeConfig defaultConfig() {

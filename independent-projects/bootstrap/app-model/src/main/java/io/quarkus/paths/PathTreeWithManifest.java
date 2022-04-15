@@ -77,19 +77,27 @@ public abstract class PathTreeWithManifest implements PathTree {
 
     @Override
     public Manifest getManifest() {
+        // Optimistically try with a lock that allows concurrent access first, for performance.
         manifestReadLock().lock();
         try {
             if (manifestInitialized) {
                 return manifest;
             }
-            manifestReadLock().unlock();
-            final Manifest m = apply("META-INF/MANIFEST.MF", ManifestReader.INSTANCE, false);
-            manifestWriteLock().lock();
-            initManifest(m);
-            manifestReadLock().lock();
-            manifestWriteLock().unlock();
         } finally {
             manifestReadLock().unlock();
+        }
+        // Failing that, try with a lock that does not allow concurrent access, to initialize the manifest.
+        manifestWriteLock().lock();
+        try {
+            if (manifestInitialized) {
+                // Someone else got here between our call to manifestReadLock().unlock()
+                // and our call to manifestWriteLock().lock(); it can happen.
+                return manifest;
+            }
+            final Manifest m = apply("META-INF/MANIFEST.MF", ManifestReader.INSTANCE, false);
+            initManifest(m);
+        } finally {
+            manifestWriteLock().unlock();
         }
         return manifest;
     }

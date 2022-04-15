@@ -2,6 +2,7 @@ package io.quarkus.deployment.dev.testing;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -73,6 +74,20 @@ public class TestConfig {
     public Optional<String> excludePattern;
 
     /**
+     * Test engine ids that should be included for continuous testing.
+     */
+    @ConfigItem
+    public Optional<List<String>> includeEngines;
+
+    /**
+     * Test engine ids that should be excluded by default with continuous testing.
+     *
+     * This is ignored if include-engines has been set.
+     */
+    @ConfigItem
+    public Optional<List<String>> excludeEngines;
+
+    /**
      * Disable the testing status/prompt message at the bottom of the console
      * and log these messages to STDOUT instead.
      *
@@ -139,6 +154,12 @@ public class TestConfig {
      */
     @ConfigItem
     Profile profile;
+
+    /**
+     * Container related test settings
+     */
+    @ConfigItem
+    Container container;
 
     /**
      * Additional launch parameters to be used when Quarkus launches the produced artifact for {@code @QuarkusIntegrationTest}
@@ -230,6 +251,24 @@ public class TestConfig {
          */
         @ConfigItem(defaultValue = "")
         Optional<List<String>> tags;
+    }
+
+    @ConfigGroup
+    public static class Container {
+
+        /**
+         * Controls the container network to be used when @QuarkusIntegration needs to launch the application in a container.
+         * This setting only applies if Quarkus does not need to use a shared network - which is the case if DevServices are
+         * used when running the test.
+         */
+        @ConfigItem
+        Optional<String> network;
+
+        /**
+         * Set additional ports to be exposed when @QuarkusIntegration needs to launch the application in a container.
+         */
+        @ConfigItem
+        Map<String, String> additionalExposedPorts;
     }
 
     public enum Mode {

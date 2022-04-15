@@ -24,7 +24,7 @@ public interface RoutingExchange {
     }
 
     /**
-     * 
+     *
      * @param paramName
      * @return the request parameter
      * @see HttpServerRequest#getParam(String)
@@ -34,7 +34,7 @@ public interface RoutingExchange {
     }
 
     /**
-     * 
+     *
      * @param headerName
      * @return the first header value with the specified name
      * @see HttpServerRequest#getHeader(CharSequence)
@@ -53,7 +53,7 @@ public interface RoutingExchange {
     /**
      * Set the response status code to 200 and return the response.
      * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
-     * 
+     *
      * @return the HTTP response object
      */
     default HttpServerResponse ok() {
@@ -62,7 +62,7 @@ public interface RoutingExchange {
 
     /**
      * Set the response status code to 200, write a chunk of data to the response then ends it.
-     * 
+     *
      * @param chunk
      */
     default void ok(String chunk) {
@@ -72,7 +72,7 @@ public interface RoutingExchange {
     /**
      * Set the response status code to 500 and return the response.
      * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
-     * 
+     *
      * @return the HTTP response object
      */
     default HttpServerResponse serverError() {
@@ -82,7 +82,7 @@ public interface RoutingExchange {
     /**
      * Set the response status code to 404 and return the response.
      * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
-     * 
+     *
      * @return the HTTP response object
      */
     default HttpServerResponse notFound() {

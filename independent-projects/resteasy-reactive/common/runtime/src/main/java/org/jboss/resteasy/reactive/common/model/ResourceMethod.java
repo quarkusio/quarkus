@@ -6,6 +6,7 @@ import java.util.Set;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import org.jboss.resteasy.reactive.RestSseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 /**
  * A representation of a REST endpoint. This is passed directly to recorders so must be bytecode serializable.
@@ -30,10 +31,11 @@ public class ResourceMethod {
     private String[] produces;
 
     /**
-     * The value of the {@link RestSseElementType} annotation, if none is specified on the method
+     * The value of the {@link RestStreamElementType} or the {@link RestSseElementType} annotation, if none is specified on the
+     * method
      * then this represents the value inherited from the class level, or null if not specified.
      */
-    private String sseElementType;
+    private String streamElementType;
 
     /**
      * The value of the {@link Consumes} annotation, if none is specified on the method
@@ -68,14 +70,14 @@ public class ResourceMethod {
     public ResourceMethod() {
     }
 
-    public ResourceMethod(String httpMethod, String path, String[] produces, String sseElementType, String[] consumes,
+    public ResourceMethod(String httpMethod, String path, String[] produces, String streamElementType, String[] consumes,
             Set<String> nameBindingNames, String name, String returnType, String simpleReturnType, MethodParameter[] parameters,
             boolean blocking, boolean suspended, boolean isSse, boolean isFormParamRequired, boolean isMultipart,
             List<ResourceMethod> subResourceMethods) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.produces = produces;
-        this.sseElementType = sseElementType;
+        this.streamElementType = streamElementType;
         this.consumes = consumes;
         this.nameBindingNames = nameBindingNames;
         this.name = name;
@@ -220,13 +222,13 @@ public class ResourceMethod {
         return this;
     }
 
-    public ResourceMethod setSseElementType(String sseElementType) {
-        this.sseElementType = sseElementType;
+    public ResourceMethod setStreamElementType(String streamElementType) {
+        this.streamElementType = streamElementType;
         return this;
     }
 
-    public String getSseElementType() {
-        return sseElementType;
+    public String getStreamElementType() {
+        return streamElementType;
     }
 
     @Override

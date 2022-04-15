@@ -69,6 +69,7 @@
             <artifactId>quarkus-project-core-extension-codestarts</artifactId>
             <type>pom</type>
             <scope>test</scope>
+            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -81,7 +82,7 @@
     <build>
         <testResources>
             <testResource>
-                <directory>src/test/resources</directory>
+                <directory>src/test/resources-filtered</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>

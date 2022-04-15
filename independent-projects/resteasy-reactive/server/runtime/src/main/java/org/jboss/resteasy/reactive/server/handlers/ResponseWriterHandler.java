@@ -23,6 +23,7 @@ public class ResponseWriterHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
+        requestContext.requireCDIRequestScope();
         Object entity = requestContext.getResponseEntity();
         if (entity != null && !requestContext.getMethod().equals(HEAD)) {
             EntityWriter entityWriter = requestContext.getEntityWriter();

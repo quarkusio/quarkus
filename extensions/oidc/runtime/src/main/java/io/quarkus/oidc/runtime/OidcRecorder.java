@@ -74,6 +74,10 @@ public class OidcRecorder {
     private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,
             OidcTenantConfig oidcConfig, TlsConfig tlsConfig, String tenantId) {
 
+        if (oidcConfig.logout.backchannel.path.isPresent()) {
+            throw new ConfigurationException(
+                    "BackChannel Logout is currently not supported for dynamic tenants");
+        }
         if (!dynamicTenantsConfig.containsKey(tenantId)) {
             Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, tlsConfig, tenantId);
             uniContext.onFailure().transform(t -> logTenantConfigContextFailure(t, tenantId));
@@ -127,11 +131,14 @@ public class OidcRecorder {
     }
 
     @SuppressWarnings("resource")
-    private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, TlsConfig tlsConfig,
+    private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcTenantConfig, TlsConfig tlsConfig,
             String tenantId) {
-        if (!oidcConfig.tenantId.isPresent()) {
-            oidcConfig.tenantId = Optional.of(tenantId);
+        if (!oidcTenantConfig.tenantId.isPresent()) {
+            oidcTenantConfig.tenantId = Optional.of(tenantId);
         }
+
+        final OidcTenantConfig oidcConfig = OidcUtils.resolveProviderConfig(oidcTenantConfig);
+
         if (!oidcConfig.tenantEnabled) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
             return Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null), oidcConfig));
@@ -148,7 +155,7 @@ public class OidcRecorder {
             return Uni.createFrom().failure(t);
         }
 
-        if (!oidcConfig.discoveryEnabled) {
+        if (!oidcConfig.discoveryEnabled.orElse(true)) {
             if (!isServiceApp(oidcConfig)) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
                     throw new ConfigurationException(
@@ -157,9 +164,10 @@ public class OidcRecorder {
                             Set.of("quarkus.oidc.authorization-path", "quarkus.oidc.token-path"));
                 }
             }
-            // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
+            // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications
             if (!oidcConfig.jwksPath.isPresent() && !oidcConfig.introspectionPath.isPresent()) {
-                if (!oidcConfig.authentication.isIdTokenRequired() && oidcConfig.authentication.isUserInfoRequired()) {
+                if (!oidcConfig.authentication.isIdTokenRequired().orElse(true)
+                        && oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
                     LOG.debugf("tenant %s supports only UserInfo", oidcConfig.tenantId.get());
                 } else {
                     throw new ConfigurationException(
@@ -189,7 +197,8 @@ public class OidcRecorder {
 
         if (oidcConfig.tokenStateManager.strategy != Strategy.KEEP_ALL_TOKENS) {
 
-            if (oidcConfig.authentication.isUserInfoRequired() || oidcConfig.roles.source.orElse(null) == Source.userinfo) {
+            if (oidcConfig.authentication.isUserInfoRequired().orElse(false)
+                    || oidcConfig.roles.source.orElse(null) == Source.userinfo) {
                 throw new ConfigurationException(
                         "UserInfo is required but DefaultTokenStateManager is configured to not keep the access token");
             }
@@ -250,7 +259,7 @@ public class OidcRecorder {
     }
 
     protected static Uni<JsonWebKeySet> getJsonWebSetUni(OidcProviderClient client, OidcTenantConfig oidcConfig) {
-        if (!oidcConfig.isDiscoveryEnabled()) {
+        if (!oidcConfig.isDiscoveryEnabled().orElse(true)) {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
             return client.getJsonWebKeySet().onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
                     .retry()
@@ -277,7 +286,7 @@ public class OidcRecorder {
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
-        if (!oidcConfig.discoveryEnabled) {
+        if (!oidcConfig.discoveryEnabled.orElse(true)) {
             metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
@@ -327,7 +336,7 @@ public class OidcRecorder {
     }
 
     private static boolean isServiceApp(OidcTenantConfig oidcConfig) {
-        return ApplicationType.SERVICE.equals(oidcConfig.applicationType);
+        return ApplicationType.SERVICE.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
     }
 
     private static void verifyAuthServerUrl(OidcCommonConfig oidcConfig) {

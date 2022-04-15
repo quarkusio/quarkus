@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -81,7 +82,7 @@ public final class Types {
         if (typeParam.kind() == Kind.CLASS) {
             ClassInfo classInfo = index.getClassByName(typeParam.name());
             if (classInfo == null && !typeParam.name().toString().contains(".")) {
-                // If not indexed and no package then try the java.lang prefix 
+                // If not indexed and no package then try the java.lang prefix
                 classInfo = index.getClassByName(DotName.createSimple(JAVA_LANG_PREFIX + typeParam.name().toString()));
                 if (classInfo != null) {
                     return Type.create(classInfo.name(), Kind.CLASS);
@@ -94,7 +95,7 @@ public final class Types {
             ParameterizedType parameterizedType = typeParam.asParameterizedType();
             ClassInfo classInfo = index.getClassByName(parameterizedType.name());
             if (classInfo == null && !parameterizedType.name().toString().contains(".")) {
-                // If not indexed and no package then try the java.lang prefix 
+                // If not indexed and no package then try the java.lang prefix
                 classInfo = index.getClassByName(DotName.createSimple(JAVA_LANG_PREFIX + parameterizedType.name().toString()));
             }
             if (classInfo != null) {
@@ -154,6 +155,7 @@ public final class Types {
         for (ClassInfo implementor : implementors) {
             assignables.add(implementor.name());
         }
+        assignables.addAll(getAllInterfacesExtending(class1, index));
         return assignables.contains(class2);
     }
 
@@ -185,6 +187,19 @@ public final class Types {
             default:
                 throw new IllegalArgumentException("Unsupported primitive: " + primitive);
         }
+    }
+
+    private static Set<DotName> getAllInterfacesExtending(DotName target, IndexView index) {
+        Set<DotName> ret = new HashSet<>();
+        for (ClassInfo clazz : index.getKnownClasses()) {
+            if (!Modifier.isInterface(clazz.flags())) {
+                continue;
+            }
+            if (clazz.interfaceNames().contains(target)) {
+                ret.add(clazz.name());
+            }
+        }
+        return ret;
     }
 
 }

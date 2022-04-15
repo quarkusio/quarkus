@@ -19,6 +19,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-common</artifactId>
         </dependency>
         <dependency>
@@ -84,6 +88,10 @@
         <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-vertx-context</artifactId>
         </dependency>
         
         <!-- Test dependencies -->

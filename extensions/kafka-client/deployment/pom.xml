@@ -55,12 +55,16 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.strimzi</groupId>
+            <artifactId>strimzi-test-container</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit4-mock</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices-common</artifactId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
         </dependency>
     </dependencies>
 

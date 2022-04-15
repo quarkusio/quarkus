@@ -31,20 +31,20 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
             BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeInfo,
             Optional<KeycloakDevServicesConfigBuildItem> configProps,
             Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        if (configProps.isPresent() && configProps.get().getProperties().containsKey("keycloak.url")) {
-            String keycloakUrl = (String) configProps.get().getProperties().get("keycloak.url");
-            String realmUrl = keycloakUrl + "/realms/" + configProps.get().getProperties().get("keycloak.realm");
-
-            devConsoleInfo.produce(new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl", keycloakUrl));
+        if (configProps.isPresent() && configProps.get().getConfig().containsKey("keycloak.url")) {
             devConsoleInfo.produce(
-                    new DevConsoleTemplateInfoBuildItem("keycloakUsers", configProps.get().getProperties().get("oidc.users")));
+                    new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl", configProps.get().getConfig().get("keycloak.url")));
+            devConsoleInfo.produce(
+                    new DevConsoleTemplateInfoBuildItem("keycloakUsers",
+                            configProps.get().getProperties().get("oidc.users")));
 
+            String realmUrl = configProps.get().getConfig().get("quarkus.oidc.auth-server-url");
             produceDevConsoleTemplateItems(capabilities,
                     devConsoleInfo,
                     devConsoleRuntimeInfo,
                     curateOutcomeBuildItem,
                     "Keycloak",
-                    (String) configProps.get().getProperties().get("quarkus.oidc.application-type"),
+                    (String) configProps.get().getConfig().get("quarkus.oidc.application-type"),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType()
                             : keycloakConfig.devservices.grant.type.getGrantType(),
                     realmUrl + "/protocol/openid-connect/auth",
@@ -57,7 +57,7 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     void invokeEndpoint(BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
             Optional<KeycloakDevServicesConfigBuildItem> configProps) {
-        if (configProps.isPresent() && configProps.get().getProperties().containsKey("keycloak.url")) {
+        if (configProps.isPresent() && configProps.get().getConfig().containsKey("keycloak.url")) {
             @SuppressWarnings("unchecked")
             Map<String, String> users = (Map<String, String>) configProps.get().getProperties().get("oidc.users");
             Duration webClientTimeout = oidcConfig.devui.webClienTimeout.isPresent() ? oidcConfig.devui.webClienTimeout.get()

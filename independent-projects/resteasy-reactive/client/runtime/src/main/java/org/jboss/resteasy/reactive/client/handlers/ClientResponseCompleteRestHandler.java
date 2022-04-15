@@ -4,9 +4,12 @@ import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.GenericType;
@@ -84,14 +87,26 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                     }
                 }
             } else {
-                Object entity = context.readEntity(entityStream,
-                        context.getResponseType(),
-                        responseContext.getMediaType(),
-                        // FIXME: we have strings, it wants objects, perhaps there's
-                        // an Object->String conversion too many
-                        (MultivaluedMap) responseContext.getHeaders());
-                if (entity != null) {
-                    builder.entity(entity);
+                Class<?> rawType = context.getResponseType().getRawType();
+                if (context.isFileDownload()) {
+                    if (File.class.equals(rawType)) {
+                        builder.entity(new File(context.getTmpFilePath()));
+                    } else if (Path.class.equals(rawType)) {
+                        builder.entity(Paths.get(context.getTmpFilePath()));
+                    } else {
+                        throw new IllegalStateException("Unhandled type: " + rawType);
+                    }
+                    context.clearTmpFilePath();
+                } else if (!void.class.equals(rawType)) {
+                    Object entity = context.readEntity(entityStream,
+                            context.getResponseType(),
+                            responseContext.getMediaType(),
+                            // FIXME: we have strings, it wants objects, perhaps there's
+                            // an Object->String conversion too many
+                            (MultivaluedMap) responseContext.getHeaders());
+                    if (entity != null) {
+                        builder.entity(entity);
+                    }
                 }
             }
         } else {

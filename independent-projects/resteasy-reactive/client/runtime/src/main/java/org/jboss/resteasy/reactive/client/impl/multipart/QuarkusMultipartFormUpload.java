@@ -51,7 +51,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                 io.netty.handler.codec.http.HttpMethod.POST,
                 "/");
         Charset charset = parts.getCharset() != null ? parts.getCharset() : HttpConstants.DEFAULT_CHARSET;
-        DefaultHttpDataFactory httpDataFactory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE, charset) {
+        DefaultHttpDataFactory httpDataFactory = new DefaultHttpDataFactory(-1, charset) {
             @Override
             public FileUpload createFileUpload(HttpRequest request, String name, String filename, String contentType,
                     String contentTransferEncoding, Charset _charset, long size) {

@@ -128,7 +128,7 @@ public class CrudMethodsImplementor implements ResourceMethodsImplementor {
         ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
-                arcContainer, creator.loadClass(repositoryInterface), creator.newArray(Annotation.class, 0));
+                arcContainer, creator.loadClassFromTCCL(repositoryInterface), creator.newArray(Annotation.class, 0));
         ResultHandle instance = creator.invokeInterfaceMethod(
                 ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
         creator.ifNull(instance)

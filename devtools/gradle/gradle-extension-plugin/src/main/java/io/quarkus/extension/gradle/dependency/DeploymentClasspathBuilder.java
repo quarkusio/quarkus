@@ -29,26 +29,26 @@ public class DeploymentClasspathBuilder {
     public void exportDeploymentClasspath(String configurationName) {
 
         String deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(configurationName);
-        project.getConfigurations().create(deploymentConfigurationName);
+        project.getConfigurations().create(deploymentConfigurationName, config -> {
+            Configuration configuration = DependencyUtils.duplicateConfiguration(project,
+                    project.getConfigurations().getByName(configurationName));
+            Set<ExtensionDependency> extensionDependencies = collectFirstMetQuarkusExtensions(configuration);
 
-        Configuration configuration = DependencyUtils.duplicateConfiguration(project,
-                project.getConfigurations().getByName(configurationName));
-        Set<ExtensionDependency> extensionDependencies = collectFirstMetQuarkusExtensions(configuration);
+            DependencyHandler dependencies = project.getDependencies();
 
-        DependencyHandler dependencies = project.getDependencies();
-
-        for (ExtensionDependency extension : extensionDependencies) {
-            if (extension instanceof LocalExtensionDependency) {
-                DependencyUtils.addLocalDeploymentDependency(deploymentConfigurationName, (LocalExtensionDependency) extension,
-                        dependencies);
-            } else {
-                DependencyUtils.requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
-                if (!alreadyProcessed.add(extension.getExtensionId())) {
-                    continue;
+            for (ExtensionDependency extension : extensionDependencies) {
+                if (extension instanceof LocalExtensionDependency) {
+                    DependencyUtils.addLocalDeploymentDependency(deploymentConfigurationName,
+                            (LocalExtensionDependency) extension,
+                            dependencies);
+                } else {
+                    DependencyUtils.requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
+                    if (!alreadyProcessed.add(extension.getExtensionId())) {
+                        continue;
+                    }
                 }
-                extension.installDeploymentVariant(dependencies);
             }
-        }
+        });
     }
 
     private Set<ExtensionDependency> collectFirstMetQuarkusExtensions(Configuration configuration) {

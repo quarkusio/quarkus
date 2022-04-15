@@ -30,6 +30,12 @@ public class UserAgentTest {
         assertThat(client.call()).isEqualTo("Resteasy Reactive Client");
     }
 
+    @Test
+    void testHeaderOverride() {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        assertThat(client.callWithUserAgent("custom-agent")).isEqualTo("custom-agent");
+    }
+
     @Path("/")
     @ApplicationScoped
     public static class Resource {
@@ -44,6 +50,10 @@ public class UserAgentTest {
         @Path("/")
         @GET
         String call();
+
+        @Path("/")
+        @GET
+        String callWithUserAgent(@HeaderParam("User-AgenT") String userAgent);
     }
 
 }

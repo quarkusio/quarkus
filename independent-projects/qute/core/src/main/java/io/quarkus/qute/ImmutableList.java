@@ -56,7 +56,7 @@ public final class ImmutableList {
     }
 
     /**
-     * 
+     *
      * @param <E>
      * @param element
      * @return an immutable list
@@ -66,7 +66,7 @@ public final class ImmutableList {
     }
 
     /**
-     * 
+     *
      * @param <E>
      * @param e1
      * @param e2

@@ -5,6 +5,11 @@ import java.time.format.DateTimeFormatter;
 
 public class ZonedDateTimeParamConverter extends TemporalParamConverter<ZonedDateTime> {
 
+    // this can be called by generated code
+    public ZonedDateTimeParamConverter() {
+        super(DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    }
+
     public ZonedDateTimeParamConverter(DateTimeFormatter formatter) {
         super(formatter);
     }

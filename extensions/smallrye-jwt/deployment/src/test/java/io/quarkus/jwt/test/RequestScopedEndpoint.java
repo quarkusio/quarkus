@@ -33,7 +33,7 @@ public class RequestScopedEndpoint {
 
     /**
      * Validate that the passed in username parameter matches the injected preferred_username claim
-     * 
+     *
      * @param username - expected username
      * @return test result response
      */

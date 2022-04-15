@@ -21,7 +21,7 @@ public interface Cache {
      * Returns the unique and immutable default key for the current cache. This key is used by the annotations caching API when
      * a no-args method annotated with {@link CacheResult} or {@link CacheInvalidate} is invoked. It can also be used with the
      * programmatic caching API.
-     * 
+     *
      * @return default cache key
      */
     Object getDefaultKey();
@@ -29,7 +29,7 @@ public interface Cache {
     /**
      * Returns a lazy asynchronous action that will emit the cache value identified by {@code key}, obtaining that value from
      * {@code valueLoader} if necessary.
-     * 
+     *
      * @param <K> cache key type
      * @param <V> cache value type
      * @param key cache key
@@ -43,7 +43,7 @@ public interface Cache {
     /**
      * Removes the cache entry identified by {@code key} from the cache. If the key does not identify any cache entry, nothing
      * will happen.
-     * 
+     *
      * @param key cache key
      * @throws NullPointerException if the key is {@code null}
      */

@@ -113,11 +113,7 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail setBcc(List<String> bcc) {
-        if (bcc == null) {
-            this.bcc = new ArrayList<>();
-        } else {
-            this.bcc = bcc;
-        }
+        this.bcc = Objects.requireNonNullElseGet(bcc, ArrayList::new);
         return this;
     }
 
@@ -135,11 +131,7 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail setCc(List<String> cc) {
-        if (cc == null) {
-            this.cc = new ArrayList<>();
-        } else {
-            this.cc = cc;
-        }
+        this.cc = Objects.requireNonNullElseGet(cc, ArrayList::new);
         return this;
     }
 
@@ -299,11 +291,7 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail setTo(List<String> to) {
-        if (to == null) {
-            this.to = new ArrayList<>();
-        } else {
-            this.to = to;
-        }
+        this.to = Objects.requireNonNullElseGet(to, ArrayList::new);
         return this;
     }
 
@@ -351,11 +339,7 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail setHeaders(Map<String, List<String>> headers) {
-        if (headers == null) {
-            this.headers = new HashMap<>();
-        } else {
-            this.headers = headers;
-        }
+        this.headers = Objects.requireNonNullElseGet(headers, HashMap::new);
         return this;
     }
 

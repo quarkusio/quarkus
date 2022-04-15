@@ -74,6 +74,7 @@ class NarayanaJtaProcessor {
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(CDIDelegatingTransactionManager.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf("io.quarkus.narayana.jta.RequestScopedTransaction"));
 
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(
                 "com.arjuna.ats.internal.jta.resources.arjunacore.CommitMarkableResourceRecord"));

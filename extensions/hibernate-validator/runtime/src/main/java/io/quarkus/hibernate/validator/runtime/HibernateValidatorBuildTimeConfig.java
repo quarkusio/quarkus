@@ -1,5 +1,9 @@
 package io.quarkus.hibernate.validator.runtime;
 
+import java.util.Optional;
+
+import org.hibernate.validator.messageinterpolation.ExpressionLanguageFeatureLevel;
+
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -21,6 +25,12 @@ public class HibernateValidatorBuildTimeConfig {
      */
     @ConfigDocSection
     public HibernateValidatorMethodBuildTimeConfig methodValidation;
+
+    /**
+     * Expression Language.
+     */
+    @ConfigDocSection
+    public HibernateValidatorExpressionLanguageBuildTimeConfig expressionLanguage;
 
     @ConfigGroup
     public static class HibernateValidatorMethodBuildTimeConfig {
@@ -71,5 +81,23 @@ public class HibernateValidatorBuildTimeConfig {
          */
         @ConfigItem(defaultValue = "false")
         public boolean allowMultipleCascadedValidationOnReturnValues;
+    }
+
+    @ConfigGroup
+    public static class HibernateValidatorExpressionLanguageBuildTimeConfig {
+
+        /**
+         * Configure the Expression Language feature level for constraints, allowing the selection of
+         * Expression Language features available for message interpolation.
+         * <p>
+         * This property only affects the EL feature level of "static" constraint violation messages set through the
+         * <code>message</code> attribute of constraint annotations.
+         * <p>
+         * In particular, it doesn't affect the default EL feature level for custom violations
+         * created programmatically in validator implementations.
+         * The feature level for those can only be configured directly in the validator implementation.
+         */
+        @ConfigItem(defaultValueDocumentation = "bean-properties")
+        public Optional<ExpressionLanguageFeatureLevel> constraintExpressionFeatureLevel;
     }
 }

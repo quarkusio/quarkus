@@ -41,8 +41,9 @@ import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
-import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.deployment.steps.LocaleProcessor;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 public class NativeImageBuildStep {
 
@@ -84,6 +85,7 @@ public class NativeImageBuildStep {
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
     ArtifactResultBuildItem nativeSourcesResult(NativeConfig nativeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
@@ -109,6 +111,7 @@ public class NativeImageBuildStep {
 
         NativeImageInvokerInfo nativeImageArgs = new NativeImageInvokerInfo.Builder()
                 .setNativeConfig(nativeConfig)
+                .setLocalesBuildTimeConfig(localesBuildTimeConfig)
                 .setOutputTargetBuildItem(outputTargetBuildItem)
                 .setNativeImageProperties(nativeImageProperties)
                 .setExcludeConfigs(excludeConfigs)
@@ -140,7 +143,8 @@ public class NativeImageBuildStep {
     }
 
     @BuildStep
-    public NativeImageBuildItem build(NativeConfig nativeConfig, NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
+    public NativeImageBuildItem build(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig,
+            NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -207,6 +211,7 @@ public class NativeImageBuildStep {
 
             NativeImageInvokerInfo commandAndExecutable = new NativeImageInvokerInfo.Builder()
                     .setNativeConfig(nativeConfig)
+                    .setLocalesBuildTimeConfig(localesBuildTimeConfig)
                     .setOutputTargetBuildItem(outputTargetBuildItem)
                     .setNativeImageProperties(nativeImageProperties)
                     .setExcludeConfigs(excludeConfigs)
@@ -307,7 +312,7 @@ public class NativeImageBuildStep {
         }
 
         for (ResolvedDependency depArtifact : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
-            if (depArtifact.getType().equals(GACTV.TYPE_JAR)) {
+            if (depArtifact.isJar()) {
                 for (Path resolvedDep : depArtifact.getResolvedPaths()) {
                     if (!Files.isDirectory(resolvedDep)) {
                         // Do we need to handle transformed classes?
@@ -488,6 +493,7 @@ public class NativeImageBuildStep {
 
         static class Builder {
             private NativeConfig nativeConfig;
+            private LocalesBuildTimeConfig localesBuildTimeConfig;
             private OutputTargetBuildItem outputTargetBuildItem;
             private List<NativeImageSystemPropertyBuildItem> nativeImageProperties;
             private List<ExcludeConfigBuildItem> excludeConfigs;
@@ -504,6 +510,11 @@ public class NativeImageBuildStep {
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
+                return this;
+            }
+
+            public Builder setLocalesBuildTimeConfig(LocalesBuildTimeConfig localesBuildTimeConfig) {
+                this.localesBuildTimeConfig = localesBuildTimeConfig;
                 return this;
             }
 
@@ -607,12 +618,20 @@ public class NativeImageBuildStep {
                         }
                     }
                 }
-                if (nativeConfig.userLanguage.isPresent()) {
-                    nativeImageArgs.add("-J-Duser.language=" + nativeConfig.userLanguage.get());
+
+                final String userLanguage = LocaleProcessor.nativeImageUserLanguage(nativeConfig, localesBuildTimeConfig);
+                if (!userLanguage.isEmpty()) {
+                    nativeImageArgs.add("-J-Duser.language=" + userLanguage);
                 }
-                if (nativeConfig.userCountry.isPresent()) {
-                    nativeImageArgs.add("-J-Duser.country=" + nativeConfig.userCountry.get());
+                final String userCountry = LocaleProcessor.nativeImageUserCountry(nativeConfig, localesBuildTimeConfig);
+                if (!userCountry.isEmpty()) {
+                    nativeImageArgs.add("-J-Duser.country=" + userCountry);
                 }
+                final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig, localesBuildTimeConfig);
+                if (!includeLocales.isEmpty()) {
+                    nativeImageArgs.add("-H:IncludeLocales=" + includeLocales);
+                }
+
                 nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding);
 
                 if (enableSslNative) {
@@ -645,6 +664,19 @@ public class NativeImageBuildStep {
                 //address https://github.com/quarkusio/quarkus-quickstarts/issues/993
                 nativeImageArgs.add("-J--add-opens=java.base/java.text=ALL-UNNAMED");
 
+                if (nativeConfig.enableReports) {
+                    if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3_2)) {
+                        nativeImageArgs.add("-H:+PrintAnalysisCallTree");
+                    } else {
+                        nativeImageArgs.add("-H:PrintAnalysisCallTreeType=CSV");
+                    }
+                }
+
+                /*
+                 * Any parameters following this call are forced over the user provided parameters in
+                 * quarkus.native.additional-build-args. So if you need a parameter to be overridable through
+                 * quarkus.native.additional-build-args please make sure to add it before this call.
+                 */
                 handleAdditionalProperties(nativeImageArgs);
 
                 nativeImageArgs.add(
@@ -664,7 +696,11 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:FallbackThreshold=0");
                 }
 
-                if (classpathIsBroken) {
+                // 22.1 removes --allow-incomplete-classpath and makes it the default. --link-at-build-time is now
+                // needed to bring back the old behavior (which requires all classes to be resolvable at build time).
+                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_22_0_0_2) && !classpathIsBroken) {
+                    nativeImageArgs.add("--link-at-build-time");
+                } else if (!graalVMVersion.isNewerThan(GraalVM.Version.VERSION_22_0_0_2) && classpathIsBroken) {
                     nativeImageArgs.add("--allow-incomplete-classpath");
                 }
 
@@ -688,9 +724,6 @@ public class NativeImageBuildStep {
                     nativeImageArgs
                             .add("-J-Xrunjdwp:transport=dt_socket,address=" + debugBuildProcessHost + ":"
                                     + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
-                }
-                if (nativeConfig.enableReports) {
-                    nativeImageArgs.add("-H:+PrintAnalysisCallTree");
                 }
                 if (nativeConfig.dumpProxies) {
                     nativeImageArgs.add("-Dsun.misc.ProxyGenerator.saveGeneratedFiles=true");

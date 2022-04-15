@@ -18,7 +18,7 @@ public class Panache {
 
     /**
      * Returns the current {@link Mutiny.Session}
-     * 
+     *
      * @return the current {@link Mutiny.Session}
      */
     public static Uni<Mutiny.Session> getSession() {
@@ -29,7 +29,7 @@ public class Panache {
      * Performs the given work within the scope of a database transaction, automatically flushing the session.
      * The transaction will be rolled back if the work completes with an uncaught exception, or if
      * {@link Mutiny.Transaction#markForRollback()} is called.
-     * 
+     *
      * @param <T> The function's return type
      * @param work The function to execute in the new transaction
      * @return the result of executing the function
@@ -83,7 +83,7 @@ public class Panache {
 
     /**
      * Returns the current transaction, if any, or <code>null</code>.
-     * 
+     *
      * @return the current transaction, if any, or <code>null</code>.
      * @see Panache#withTransaction(Supplier)
      */

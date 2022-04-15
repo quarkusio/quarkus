@@ -69,13 +69,12 @@ public class BeanProcessor {
     private final boolean generateSources;
     private final boolean allowMocking;
     private final boolean transformUnproxyableClasses;
-    private final boolean failOnInterceptedPrivateMethod;
     private final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
     // This predicate is used to filter annotations for InjectionPoint metadata
     // Note that we do create annotation literals for all annotations for an injection point that resolves to a @Dependent bean that injects the InjectionPoint metadata
     // The original use case is to ignore JDK annotations that would prevent an application built with JDK 9+ from targeting JDK 8
-    // Such as java.lang.Deprecated 
+    // Such as java.lang.Deprecated
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
 
     private BeanProcessor(Builder builder) {
@@ -87,7 +86,6 @@ public class BeanProcessor {
         this.generateSources = builder.generateSources;
         this.allowMocking = builder.allowMocking;
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
-        this.failOnInterceptedPrivateMethod = builder.failOnInterceptedPrivateMethod;
         this.suppressConditionGenerators = builder.suppressConditionGenerators;
 
         // Initialize all build processors
@@ -198,13 +196,29 @@ public class BeanProcessor {
                 if (SpecialType.BEAN.equals(resource.getSpecialType())) {
                     if (bean.getScope().isNormal()) {
                         // Generate client proxy
-                        resources.addAll(
-                                clientProxyGenerator.generate(bean, resource.getFullyQualifiedName(),
-                                        bytecodeTransformerConsumer, transformUnproxyableClasses));
+                        Collection<Resource> proxyResources = clientProxyGenerator.generate(bean,
+                                resource.getFullyQualifiedName(),
+                                bytecodeTransformerConsumer, transformUnproxyableClasses);
+                        if (bean.isClassBean()) {
+                            for (Resource r : proxyResources) {
+                                if (r.getSpecialType() == SpecialType.CLIENT_PROXY) {
+                                    reflectionRegistration.registerClientProxy(bean.getBeanClass(), r.getFullyQualifiedName());
+                                    break;
+                                }
+                            }
+                        }
+                        resources.addAll(proxyResources);
                     }
                     if (bean.isSubclassRequired()) {
-                        resources.addAll(
-                                subclassGenerator.generate(bean, resource.getFullyQualifiedName()));
+                        Collection<Resource> subclassResources = subclassGenerator.generate(bean,
+                                resource.getFullyQualifiedName());
+                        for (Resource r : subclassResources) {
+                            if (r.getSpecialType() == SpecialType.SUBCLASS) {
+                                reflectionRegistration.registerSubclass(bean.getBeanClass(), r.getFullyQualifiedName());
+                                break;
+                            }
+                        }
+                        resources.addAll(subclassResources);
                     }
                 }
             }
@@ -348,7 +362,7 @@ public class BeanProcessor {
         /**
          * Set the bean archive index. This index is mandatory and is used to discover components (beans, interceptors,
          * qualifiers, etc.) and during type-safe resolution.
-         * 
+         *
          * @param beanArchiveIndex
          * @return self
          */
@@ -361,7 +375,7 @@ public class BeanProcessor {
          * Set the application index. This index is optional and is also used to discover types during type-safe resolution.
          * <p>
          * Some types may not be part of the bean archive index but are still needed during type-safe resolution.
-         * 
+         *
          * @param applicationIndex
          * @return self
          */
@@ -542,7 +556,7 @@ public class BeanProcessor {
 
         /**
          * Specify the types that should be excluded from discovery.
-         * 
+         *
          * @param predicate
          * @return self
          */
@@ -553,7 +567,7 @@ public class BeanProcessor {
 
         /**
          * A generator can contribute to the generated {@link InjectableBean#isSuppressed()} method body.
-         * 
+         *
          * @param generator
          * @return self
          */

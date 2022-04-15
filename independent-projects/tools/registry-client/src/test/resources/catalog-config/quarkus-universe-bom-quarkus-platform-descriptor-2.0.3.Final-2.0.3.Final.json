@@ -2306,7 +2306,7 @@
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "RESTEasy Reactive",
-    "description" : "Reactive implementation of JAX-RS with additional features. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+    "description" : "A JAX-RS implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
     "metadata" : {
       "short-name" : "resteasy-reactive",
       "keywords" : [ "jaxrs", "web", "rest" ],

@@ -14,7 +14,7 @@ public class AzureDiskVolumeConverter {
 
     private static AzureDiskVolumeBuilder convert(AzureDiskVolumeConfig c) {
         AzureDiskVolumeBuilder b = new AzureDiskVolumeBuilder();
-        b.withNewDiskName(c.diskName);
+        b.withDiskName(c.diskName);
         b.withDiskURI(c.diskURI);
         b.withKind(c.kind.name());
         b.withCachingMode(c.cachingMode.name());

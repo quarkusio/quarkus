@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.Router;
 
 public class CompressionTest {
@@ -57,10 +58,13 @@ public class CompressionTest {
         public void register(@Observes Router router) {
 
             router.route("/compress").handler(rc -> {
+                // The content-encoding header must be removed
+                rc.response().headers().remove(HttpHeaders.CONTENT_ENCODING);
                 rc.response().end(longString);
             });
             router.route("/nocompress").handler(rc -> {
-                rc.response().headers().set("content-encoding", "identity");
+                // This header is set by default
+                // rc.response().headers().set("content-encoding", "identity");
                 rc.response().end(longString);
             });
         }

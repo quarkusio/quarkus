@@ -150,9 +150,8 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
                 //we need it later, but we don't want it in this loop
                 Map<List<String>, Set<String>> building = new HashMap<>();
                 building.put(List.of(), new HashSet<>());
-                for (int i = 0; i < componentParts.size(); ++i) {
+                for (List<String> currentPart : componentParts) {
                     Map<List<String>, Set<String>> newBuilding = new HashMap<>();
-                    List<String> currentPart = componentParts.get(i);
                     for (Map.Entry<List<String>, Set<String>> entry : building.entrySet()) {
                         List<String> attempt = entry.getKey();
                         List<String> newBase = new ArrayList<>(attempt);
@@ -235,8 +234,8 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
             }
             List<String> segments = entry.getKey();
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < segments.size(); ++i) {
-                sb.append(segments.get(i));
+            for (String segment : segments) {
+                sb.append(segment);
                 sb.append(".");
             }
             String expandedName = sb.toString();

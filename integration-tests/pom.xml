@@ -179,6 +179,7 @@
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-blocking</module>
                 <module>hibernate-search-orm-elasticsearch</module>
+                <module>hibernate-search-orm-elasticsearch-coordination-outbox-polling</module>
                 <module>hibernate-search-orm-opensearch</module>
                 <module>hibernate-search-orm-elasticsearch-tenancy</module>
                 <module>hibernate-orm-tenancy</module>
@@ -187,6 +188,7 @@
                 <module>vertx-web</module>
                 <module>vertx-web-jackson</module>
                 <module>vertx</module>
+                <module>websockets</module>
                 <module>spring-di</module>
                 <module>spring-web</module>
                 <module>spring-data-jpa</module>
@@ -207,6 +209,8 @@
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
                 <module>oidc-token-propagation</module>
+                <module>oidc-token-propagation-reactive</module>
+                <module>smallrye-jwt-oidc-webapp</module>
                 <module>smallrye-jwt-token-propagation</module>
                 <module>oidc-code-flow</module>
                 <module>oidc-tenancy</module>
@@ -224,6 +228,7 @@
                 <module>amazon-lambda-http</module>
                 <module>amazon-lambda-rest</module>
                 <module>amazon-lambda-http-resteasy</module>
+                <module>amazon-lambda-http-resteasy-reactive</module>
                 <module>container-image</module>
                 <module>kubernetes</module>
                 <module>kubernetes-client</module>
@@ -267,6 +272,7 @@
                 <module>reactive-messaging-kafka</module>
                 <module>reactive-messaging-rabbitmq</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
+                <module>reactive-messaging-hibernate-reactive</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
@@ -287,6 +293,7 @@
                 <module>opentelemetry</module>
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
+                <module>opentelemetry-grpc</module>
                 <module>logging-json</module>
                 <module>jaxb</module>
                 <module>jaxp</module>
@@ -295,6 +302,7 @@
                 <module>logging-min-level-unset</module>
                 <module>logging-min-level-set</module>
                 <module>logging-panache</module>
+                <module>locales</module>
                 <module>redis-devservices</module>
 
                 <!-- gRPC tests -->
@@ -308,6 +316,9 @@
                 <module>grpc-health</module>
                 <module>grpc-hibernate</module>
                 <module>grpc-hibernate-reactive</module>
+                <module>grpc-external-proto</module>
+                <module>grpc-external-proto-test</module>
+                <module>grpc-stork-response-time</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
             </modules>

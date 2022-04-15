@@ -1,9 +1,11 @@
 package io.quarkus.smallrye.jwt.deployment;
 
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -30,6 +32,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
 import io.quarkus.smallrye.jwt.runtime.auth.JsonWebTokenCredentialProducer;
@@ -37,6 +40,7 @@ import io.quarkus.smallrye.jwt.runtime.auth.JwtPrincipalProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
+import io.smallrye.config.Expressions;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
@@ -115,16 +119,30 @@ class SmallRyeJwtProcessor {
      *
      * @return NativeImageResourceBuildItem
      */
-    @BuildStep
+    @BuildStep(onlyIf = NativeBuild.class)
     NativeImageResourceBuildItem registerNativeImageResources() {
         final Config config = ConfigProvider.getConfig();
-        Optional<String> publicKeyLocationOpt = config.getOptionalValue("mp.jwt.verify.publickey.location", String.class);
-        if (publicKeyLocationOpt.isPresent()) {
-            final String publicKeyLocation = publicKeyLocationOpt.get();
-            if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
-                log.infof("Adding %s to native image", publicKeyLocation);
-                return new NativeImageResourceBuildItem(publicKeyLocation);
+        try {
+            Optional<String> publicKeyLocationOpt = config.getOptionalValue("mp.jwt.verify.publickey.location", String.class);
+            if (publicKeyLocationOpt.isPresent()) {
+                final String publicKeyLocation = publicKeyLocationOpt.get();
+                if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
+                    log.infof("Adding %s to native image", publicKeyLocation);
+                    return new NativeImageResourceBuildItem(publicKeyLocation);
+                }
             }
+        } catch (NoSuchElementException e) {
+            // The Config may contain expansion variables. Don't fail in this case because the config is not build time.
+            // The user will have to provide the config for runtime and register the resource manually
+            String publicKeyRawValue = Expressions.withoutExpansion(new Supplier<String>() {
+                @Override
+                public String get() {
+                    return config.getConfigValue("mp.jwt.verify.publickey.location").getRawValue();
+                }
+            });
+            log.warnf("Cannot determine %s of mp.jwt.verify.publickey.location to register with the native image",
+                    publicKeyRawValue);
+            return null;
         }
         return null;
     }

@@ -29,6 +29,7 @@ import com.arjuna.ats.jta.logging.jtaLogger;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
@@ -323,7 +324,6 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     protected void handleExceptionNoThrow(InvocationContext ic, Throwable t, Transaction tx)
             throws IllegalStateException, SystemException {
-
         Transactional transactional = getTransactional(ic);
 
         for (Class<?> dontRollbackOnClass : transactional.dontRollbackOn()) {
@@ -337,6 +337,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                 tx.setRollbackOnly();
                 return;
             }
+        }
+
+        Rollback rollbackAnnotation = t.getClass().getAnnotation(Rollback.class);
+        if (rollbackAnnotation != null) {
+            if (rollbackAnnotation.value()) {
+                tx.setRollbackOnly();
+            }
+            // in both cases, behaviour is specified by the annotation
+            return;
         }
 
         // RuntimeException and Error are un-checked exceptions and rollback is expected

@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 
 import javax.inject.Inject;
 
+import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.runtime.QuarkusApplication;
@@ -18,20 +19,25 @@ import picocli.CommandLine.IParameterExceptionHandler;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.UsageMessageSpec;
 import picocli.CommandLine.ParameterException;
+import picocli.CommandLine.ScopeType;
 import picocli.CommandLine.UnmatchedArgumentException;
 
-@CommandLine.Command(name = "quarkus", versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = true, subcommands = {
-        Create.class, Build.class, Dev.class, ProjectExtensions.class, Registry.class, Version.class,
-        Completion.class }, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+@CommandLine.Command(name = "quarkus", subcommands = {
+        Create.class, Build.class, Dev.class, ProjectExtensions.class, Registry.class, Info.class, Update.class, Version.class,
+        Completion.class }, scope = ScopeType.INHERIT, sortOptions = false, showDefaultValues = true, versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = false, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n", headerHeading = "%n", parameterListHeading = "%n")
 public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
-        // Change default short option to display version from "-V" to "-v":
-        System.setProperty("picocli.version.name.0", "-v");
     }
 
     @Inject
     CommandLine.IFactory factory;
+
+    @CommandLine.Mixin
+    protected HelpOption helpOption;
+
+    @CommandLine.Option(names = { "-v", "--version" }, versionHelp = true, description = "Print version information and exit.")
+    public boolean showVersion;
 
     @CommandLine.Mixin(name = "output")
     OutputOptionMixin output;
@@ -52,7 +58,23 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
+        output.info("%n@|bold Quarkus CLI|@ version %s", Version.clientVersion());
+        output.info("");
+        output.info("Create Quarkus projects with Maven, Gradle, or JBang.");
+        output.info("Manage extensions and source registries.");
+        output.info("");
+        output.info("Create: @|bold quarkus create|@");
+        output.info("@|italic Iterate|@: @|bold quarkus dev|@");
+        output.info("Build and test: @|bold quarkus build|@");
+        output.info("");
+        output.info("Find more information at https://quarkus.io");
+        output.info("If you have questions, check https://github.com/quarkusio/quarkus/discussions");
+
         spec.commandLine().usage(output.out());
+
+        output.info("");
+        output.info("Use \"quarkus <command> --help\" for more information about a given command.");
+
         return spec.exitCodeOnUsageHelp();
     }
 

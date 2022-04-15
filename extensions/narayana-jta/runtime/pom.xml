@@ -23,6 +23,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-transaction-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
@@ -72,10 +76,15 @@
                         <provides>io.quarkus.transactions</provides>
                     </capabilities>
                     <excludedArtifacts>
+                        <!-- Reference JTA API du jour is jakarta.transaction:jakarta.transaction-api: all other variants need to be exiled -->
                         <excludedArtifact>org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec</excludedArtifact>
                         <excludedArtifact>org.jboss.spec.javax.transaction:jboss-transaction-api_1.3_spec</excludedArtifact>
                         <excludedArtifact>javax.transaction:jta</excludedArtifact>
                         <excludedArtifact>javax.transaction:javax.transaction-api</excludedArtifact>
+                        <excludedArtifact>org.apache.geronimo.specs:geronimo-jta_1.0.1B_spec</excludedArtifact>
+                        <excludedArtifact>org.apache.geronimo.specs:geronimo-jta_1.1_spec</excludedArtifact>
+                        <excludedArtifact>org.apache.geronimo.specs:geronimo-jta_1.2_spec</excludedArtifact>
+                        <excludedArtifact>org.glassfish.main.transaction:javax.transaction</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>
             </plugin>
@@ -93,4 +102,28 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jakarta-rewrite</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <configuration>
+                            <activeRecipes>
+                                <recipe>io.quarkus.hibernate-orm-narayana-switch</recipe>
+                            </activeRecipes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

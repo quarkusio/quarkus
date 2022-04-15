@@ -51,6 +51,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -78,6 +79,8 @@ import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.Expressions;
+import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.deployment.QuteProcessor.LookupConfig;
@@ -122,7 +125,7 @@ public class MessageBundleProcessor {
         Map<String, ClassInfo> found = new HashMap<>();
         List<MessageBundleBuildItem> bundles = new ArrayList<>();
         List<DotName> localizedInterfaces = new ArrayList<>();
-        Set<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem, watchedFiles);
+        List<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem, watchedFiles);
 
         // First collect all interfaces annotated with @MessageBundle
         for (AnnotationInstance bundleAnnotation : index.getAnnotations(Names.BUNDLE)) {
@@ -156,11 +159,17 @@ public class MessageBundleProcessor {
                     Map<String, ClassInfo> localeToInterface = new HashMap<>();
                     for (ClassInfo localizedInterface : localized) {
                         String locale = localizedInterface.classAnnotation(Names.LOCALIZED).value().asString();
+                        if (defaultLocale.equals(locale)) {
+                            throw new MessageBundleException(
+                                    String.format(
+                                            "Locale of [%s] conflicts with the locale [%s] of the default message bundle [%s]",
+                                            localizedInterface, locale, bundleClass));
+                        }
                         ClassInfo previous = localeToInterface.put(locale, localizedInterface);
-                        if (defaultLocale.equals(locale) || previous != null) {
+                        if (previous != null) {
                             throw new MessageBundleException(String.format(
-                                    "A localized message bundle interface [%s] already exists for locale %s: [%s]",
-                                    previous != null ? previous : bundleClass, locale, localizedInterface));
+                                    "Cannot register [%s] - a localized message bundle interface exists for locale [%s]: %s",
+                                    localizedInterface, locale, previous));
                         }
                         localizedInterfaces.add(localizedInterface.name());
                     }
@@ -172,12 +181,18 @@ public class MessageBundleProcessor {
                         if (fileName.startsWith(name)) {
                             // msg_en.txt -> en
                             String locale = fileName.substring(fileName.indexOf('_') + 1, fileName.indexOf('.'));
+                            if (defaultLocale.equals(locale)) {
+                                throw new MessageBundleException(
+                                        String.format(
+                                                "Locale of [%s] conflicts with the locale [%s] of the default message bundle [%s]",
+                                                fileName, locale, bundleClass));
+                            }
                             ClassInfo localizedInterface = localeToInterface.get(locale);
                             if (localizedInterface != null) {
                                 throw new MessageBundleException(
                                         String.format(
-                                                "A localized message bundle interface [%s] already exists for locale %s: [%s]",
-                                                localizedInterface, locale, fileName));
+                                                "Cannot register [%s] - a localized message bundle interface exists for locale [%s]: %s",
+                                                fileName, locale, localizedInterface));
                             }
                             localeToFile.put(locale, messageFile);
                         }
@@ -197,9 +212,7 @@ public class MessageBundleProcessor {
                 if (Modifier.isInterface(localized.flags())) {
                     if (!localizedInterfaces.contains(localized.name())) {
                         throw new MessageBundleException(
-                                String.format(
-                                        "A localized message bundle interface must extend a message bundle interface: "
-                                                + localized));
+                                "A localized message bundle interface must extend a message bundle interface: " + localized);
                     }
                 } else {
                     throw new MessageBundleException("@Localized must be declared on an interface: " + localized);
@@ -295,21 +308,25 @@ public class MessageBundleProcessor {
     @BuildStep
     void validateMessageBundleMethods(TemplatesAnalysisBuildItem templatesAnalysis,
             List<MessageBundleMethodBuildItem> messageBundleMethods,
+            List<TemplateGlobalBuildItem> templateGlobals,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
 
         Map<String, MessageBundleMethodBuildItem> bundleMethods = messageBundleMethods.stream()
                 .filter(MessageBundleMethodBuildItem::isValidatable)
                 .collect(Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId, Function.identity()));
+        Set<String> globals = templateGlobals.stream().map(TemplateGlobalBuildItem::getName)
+                .collect(Collectors.toUnmodifiableSet());
 
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
             MessageBundleMethodBuildItem messageBundleMethod = bundleMethods.get(analysis.id);
             if (messageBundleMethod != null) {
+                // All top-level expressions without a namespace should be mapped to a param
                 Set<String> usedParamNames = new HashSet<>();
-                // All top-level expressions without namespace map to a param
                 Set<String> paramNames = IntStream.range(0, messageBundleMethod.getMethod().parameters().size())
                         .mapToObj(idx -> getParameterName(messageBundleMethod.getMethod(), idx)).collect(Collectors.toSet());
                 for (Expression expression : analysis.expressions) {
-                    validateExpression(incorrectExpressions, messageBundleMethod, expression, paramNames, usedParamNames);
+                    validateExpression(incorrectExpressions, messageBundleMethod, expression, paramNames, usedParamNames,
+                            globals);
                 }
                 // Log a warning if a parameter is not used in the template
                 for (String paramName : paramNames) {
@@ -325,27 +342,38 @@ public class MessageBundleProcessor {
 
     private void validateExpression(BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             MessageBundleMethodBuildItem messageBundleMethod, Expression expression, Set<String> paramNames,
-            Set<String> usedParamNames) {
+            Set<String> usedParamNames, Set<String> globals) {
         if (expression.isLiteral()) {
             return;
         }
         if (!expression.hasNamespace()) {
-            String name = expression.getParts().get(0).getName();
-            if (!paramNames.contains(name)) {
-                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                        name + " is not a parameter of the message bundle method "
-                                + messageBundleMethod.getMethod().declaringClass().name() + "#"
-                                + messageBundleMethod.getMethod().name() + "()",
-                        expression.getOrigin()));
-            } else {
-                usedParamNames.add(name);
+            Expression.Part firstPart = expression.getParts().get(0);
+            String name = firstPart.getName();
+            String typeInfo = firstPart.getTypeInfo();
+            boolean isGlobal = globals.contains(name);
+            boolean isLoopMetadata = typeInfo != null && typeInfo.endsWith(LoopSectionHelper.Factory.HINT_METADATA);
+            // Type info derived from a parent section, e.g "it<loop#3>" and "foo<set#3>"
+            boolean hasDerivedTypeInfo = typeInfo != null && !typeInfo.startsWith("" + Expressions.TYPE_INFO_SEPARATOR);
+
+            if (!isGlobal && !isLoopMetadata && !hasDerivedTypeInfo) {
+                if (typeInfo == null || !paramNames.contains(name)) {
+                    // Expression has no type info or type info that does not match a method parameter
+                    // expressions that have
+                    incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                            name + " is not a parameter of the message bundle method "
+                                    + messageBundleMethod.getMethod().declaringClass().name() + "#"
+                                    + messageBundleMethod.getMethod().name() + "()",
+                            expression.getOrigin()));
+                } else {
+                    usedParamNames.add(name);
+                }
             }
         }
         // Inspect method params too
         for (Part part : expression.getParts()) {
             if (part.isVirtualMethod()) {
                 for (Expression param : part.asVirtualMethod().getParameters()) {
-                    validateExpression(incorrectExpressions, messageBundleMethod, param, paramNames, usedParamNames);
+                    validateExpression(incorrectExpressions, messageBundleMethod, param, paramNames, usedParamNames, globals);
                 }
             }
         }
@@ -374,8 +402,8 @@ public class MessageBundleProcessor {
             }
         };
 
-        // IMPLEMENTATION NOTE: 
-        // We do not support injection of synthetic beans with names 
+        // IMPLEMENTATION NOTE:
+        // We do not support injection of synthetic beans with names
         // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
         Map<String, BeanInfo> namedBeans = beanDiscovery.beanStream().withName()
                 .collect(toMap(BeanInfo::getName, Function.identity()));
@@ -475,7 +503,7 @@ public class MessageBundleProcessor {
                         }
 
                         if (methodPart.isVirtualMethod()) {
-                            // For virtual method validate the number of params first  
+                            // For virtual method validate the number of params first
                             List<Expression> params = methodPart.asVirtualMethod().getParameters();
                             List<Type> methodParams = method.parameters();
 
@@ -525,6 +553,10 @@ public class MessageBundleProcessor {
                 }
 
                 for (Entry<DotName, Set<String>> e : implicitClassToMembersUsed.entrySet()) {
+                    if (e.getValue().isEmpty()) {
+                        // No members
+                        continue;
+                    }
                     ClassInfo clazz = index.getClassByName(e.getKey());
                     if (clazz != null) {
                         implicitClasses.produce(new ImplicitValueResolverBuildItem(clazz,
@@ -799,7 +831,7 @@ public class MessageBundleProcessor {
         return generatedName.replace('/', '.');
     }
 
-    private String getParameterName(MethodInfo method, int position) {
+    static String getParameterName(MethodInfo method, int position) {
         String name = method.parameterName(position);
         AnnotationInstance paramAnnotation = Annotations
                 .find(Annotations.getParameterAnnotations(method.annotations()).stream()
@@ -830,7 +862,7 @@ public class MessageBundleProcessor {
         ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
         ResultHandle ret = resolve.newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
 
-        // First handle dynamic messages, i.e. the "message" virtual method 
+        // First handle dynamic messages, i.e. the "message" virtual method
         BytecodeCreator dynamicMessage = resolve.ifTrue(resolve.invokeVirtualMethod(Descriptors.EQUALS,
                 resolve.load(MESSAGE), name))
                 .trueBranch();
@@ -885,7 +917,7 @@ public class MessageBundleProcessor {
         dynamicMessage.returnValue(ret);
 
         // Proceed with generated messages
-        // We do group messages to workaround limits of a JVM method body 
+        // We do group messages to workaround limits of a JVM method body
         ResultHandle evaluatedParams = resolve.invokeStaticMethod(Descriptors.EVALUATED_PARAMS_EVALUATE, evalContext);
         final int groupLimit = 300;
         int groupIndex = 0;
@@ -1033,32 +1065,66 @@ public class MessageBundleProcessor {
         return defaultLocale;
     }
 
-    private Set<Path> findMessageFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    private List<Path> findMessageFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) throws IOException {
-        return applicationArchivesBuildItem.getRootArchive().apply(tree -> {
-            final Path messagesPath = tree.getPath(MESSAGES);
-            if (messagesPath == null) {
-                return Collections.emptySet();
-            }
-            Set<Path> messageFiles = new HashSet<>();
-            try (Stream<Path> files = Files.list(messagesPath)) {
-                Iterator<Path> iter = files.iterator();
-                while (iter.hasNext()) {
-                    Path filePath = iter.next();
-                    if (Files.isRegularFile(filePath)) {
-                        messageFiles.add(filePath);
-                        String messageFilePath = messagesPath.relativize(filePath).toString();
-                        if (File.separatorChar != '/') {
-                            messageFilePath = messageFilePath.replace(File.separatorChar, '/');
-                        }
-                        watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFilePath));
-                    }
+
+        Map<String, List<Path>> messageFileNameToPath = new HashMap<>();
+
+        for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
+            archive.accept(tree -> {
+                final Path messagesPath = tree.getPath(MESSAGES);
+                if (messagesPath == null) {
+                    return;
                 }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                try (Stream<Path> files = Files.list(messagesPath)) {
+                    Iterator<Path> iter = files.iterator();
+                    while (iter.hasNext()) {
+                        Path filePath = iter.next();
+                        if (Files.isRegularFile(filePath)) {
+                            String messageFileName = messagesPath.relativize(filePath).toString();
+                            if (File.separatorChar != '/') {
+                                messageFileName = messageFileName.replace(File.separatorChar, '/');
+                            }
+                            List<Path> paths = messageFileNameToPath.get(messageFileName);
+                            if (paths == null) {
+                                paths = new ArrayList<>();
+                                messageFileNameToPath.put(messageFileName, paths);
+                            }
+                            paths.add(filePath);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        }
+
+        if (messageFileNameToPath.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Check duplicates
+        List<Entry<String, List<Path>>> duplicates = messageFileNameToPath.entrySet().stream()
+                .filter(e -> e.getValue().size() > 1).collect(Collectors.toList());
+        if (!duplicates.isEmpty()) {
+            StringBuilder builder = new StringBuilder("Duplicate localized files found:");
+            for (Entry<String, List<Path>> e : duplicates) {
+                builder.append("\n\t- ")
+                        .append(e.getKey())
+                        .append(": ")
+                        .append(e.getValue());
             }
-            return messageFiles;
-        });
+            throw new IllegalStateException(builder.toString());
+        }
+
+        // Hot deployment
+        for (String messageFileName : messageFileNameToPath.keySet()) {
+            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFileName));
+        }
+
+        List<Path> messageFiles = new ArrayList<>();
+        messageFileNameToPath.values().forEach(messageFiles::addAll);
+        return messageFiles;
     }
 
     private static class AppClassPredicate implements Predicate<String> {

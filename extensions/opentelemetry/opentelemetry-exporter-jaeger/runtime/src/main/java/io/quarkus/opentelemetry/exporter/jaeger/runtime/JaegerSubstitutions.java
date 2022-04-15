@@ -11,7 +11,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
-import io.opentelemetry.exporter.otlp.internal.grpc.ManagedChannelUtil;
+import io.opentelemetry.exporter.internal.grpc.ManagedChannelUtil;
 
 /**
  * Replace the {@link ManagedChannelUtil#setTrustedCertificatesPem(ManagedChannelBuilder, byte[])} method in native
@@ -30,7 +30,7 @@ final class JaegerSubstitutions {
             requireNonNull(managedChannelBuilder, "managedChannelBuilder");
             requireNonNull(trustedCertificatesPem, "trustedCertificatesPem");
 
-            X509TrustManager tm = io.opentelemetry.exporter.otlp.internal.TlsUtil.trustManager(trustedCertificatesPem);
+            X509TrustManager tm = io.opentelemetry.exporter.internal.TlsUtil.trustManager(trustedCertificatesPem);
 
             // gRPC does not abstract TLS configuration so we need to check the implementation and act
             // accordingly.

@@ -276,7 +276,7 @@ public class JacksonProcessor {
                             customize.load(jacksonModule.getName()));
 
                     for (JacksonModuleBuildItem.Item item : jacksonModule.getItems()) {
-                        ResultHandle targetClass = customize.loadClass(item.getTargetClassName());
+                        ResultHandle targetClass = customize.loadClassFromTCCL(item.getTargetClassName());
 
                         String serializerClassName = item.getSerializerClassName();
                         if (serializerClassName != null && !serializerClassName.isEmpty()) {

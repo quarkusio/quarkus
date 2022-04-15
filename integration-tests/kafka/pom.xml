@@ -51,6 +51,12 @@
             <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- Kafka Test Companion -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-kafka-companion</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

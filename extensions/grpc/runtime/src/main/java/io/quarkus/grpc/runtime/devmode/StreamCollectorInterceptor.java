@@ -6,8 +6,8 @@ import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
 import io.grpc.stub.StreamObserver;
-import io.quarkus.grpc.runtime.ServerCalls;
-import io.quarkus.grpc.runtime.StreamCollector;
+import io.quarkus.grpc.stubs.ServerCalls;
+import io.quarkus.grpc.stubs.StreamCollector;
 
 @CollectStreams
 @Priority(1)

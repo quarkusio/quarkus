@@ -1,5 +1,7 @@
 package io.quarkus.qute.deployment.i18n;
 
+import java.util.List;
+
 public class Item {
 
     private String name;
@@ -17,6 +19,10 @@ public class Item {
 
     public Integer getAge() {
         return age;
+    }
+
+    public List<String> getNames() {
+        return List.of(name);
     }
 
 }

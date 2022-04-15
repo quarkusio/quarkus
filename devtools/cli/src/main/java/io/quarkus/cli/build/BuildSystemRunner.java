@@ -100,6 +100,10 @@ public interface BuildSystemRunner {
 
     Integer removeExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
+    Integer info(boolean perModule) throws Exception;
+
+    Integer update(boolean rectify, boolean recommendedState, boolean perModule) throws Exception;
+
     BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 
     List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,

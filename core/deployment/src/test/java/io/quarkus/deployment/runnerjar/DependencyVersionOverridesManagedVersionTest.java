@@ -4,10 +4,10 @@ import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 
-public class DependencyVersionOverridesManagedVersionTest extends ExecutableOutputOutcomeTestBase {
+public class DependencyVersionOverridesManagedVersionTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsQuarkusExt extA_100 = new TsQuarkusExt("ext-a", "1.0.0");
         install(extA_100);

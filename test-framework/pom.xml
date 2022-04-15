@@ -28,7 +28,8 @@
         <module>junit5-properties</module>
         <module>junit5</module>
         <module>junit5-mockito</module>
-        <module>junit5-vertx</module>
+        <module>junit5-mockito-config</module>
+        <module>vertx</module>
         <module>amazon-lambda</module>
         <module>arquillian</module>
         <module>devmode-test-utils</module>
@@ -37,11 +38,13 @@
         <module>security</module>
         <module>security-jwt</module>
         <module>security-oidc</module>
+        <module>security-webauthn</module>
         <module>oidc-server</module>
         <module>keycloak-server</module>
         <module>jacoco</module>
         <module>mongodb</module>
         <module>infinispan-client</module>
+        <module>kafka-companion</module>
     </modules>
 
 </project>

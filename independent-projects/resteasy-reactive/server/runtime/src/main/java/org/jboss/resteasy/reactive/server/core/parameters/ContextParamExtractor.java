@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.ResourceContext;
@@ -24,6 +25,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 public class ContextParamExtractor implements ParameterExtractor {
 
     private final Class<?> type;
+    private volatile Instance<?> select;
 
     public ContextParamExtractor(String type) {
         try {
@@ -87,6 +89,15 @@ public class ContextParamExtractor implements ParameterExtractor {
             return ResourceContextImpl.INSTANCE;
         }
         Object instance = context.unwrap(type);
+        if (instance != null) {
+            return instance;
+        }
+        if (select == null) {
+            select = CDI.current().select(type);
+        }
+        if (select != null) {
+            instance = select.get();
+        }
         if (instance != null) {
             return instance;
         }

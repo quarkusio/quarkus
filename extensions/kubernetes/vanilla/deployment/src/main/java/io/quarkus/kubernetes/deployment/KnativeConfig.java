@@ -187,6 +187,12 @@ public class KnativeConfig implements PlatformConfiguration {
     Map<String, AzureDiskVolumeConfig> azureDiskVolumes;
 
     /**
+     * If set, it will change the name of the container according to the configuration
+     */
+    @ConfigItem
+    Optional<String> containerName;
+
+    /**
      * Init containers
      */
     @ConfigItem
@@ -262,6 +268,11 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Optional<String> getHost() {
         return host;
+    }
+
+    @Override
+    public Optional<String> getContainerName() {
+        return containerName;
     }
 
     public Map<String, PortConfig> getPorts() {
@@ -435,11 +446,22 @@ public class KnativeConfig implements PlatformConfiguration {
     @ConfigItem
     Optional<String> appConfigMap;
 
+    /**
+     * If set, it will copy the security context configuration provided into the generated pod settings.
+     */
+    @ConfigItem
+    SecurityContextConfig securityContext;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }
 
     public Optional<String> getAppConfigMap() {
         return this.appConfigMap;
+    }
+
+    @Override
+    public SecurityContextConfig getSecurityContext() {
+        return securityContext;
     }
 }

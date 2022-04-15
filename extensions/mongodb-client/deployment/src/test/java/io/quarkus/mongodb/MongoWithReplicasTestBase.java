@@ -1,5 +1,6 @@
 package io.quarkus.mongodb;
 
+import static de.flapdoodle.embed.process.config.process.ProcessOutput.builder;
 import static io.quarkus.mongodb.MongoTestBase.getConfiguredConnectionString;
 import static org.awaitility.Awaitility.await;
 
@@ -30,7 +31,7 @@ import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.config.RuntimeConfig;
-import de.flapdoodle.embed.process.config.io.ProcessOutput;
+import de.flapdoodle.embed.process.io.Processors;
 
 public class MongoWithReplicasTestBase {
 
@@ -89,7 +90,11 @@ public class MongoWithReplicasTestBase {
 
     private static MongodExecutable doGetExecutable(MongodConfig config) {
         RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
-                .processOutput(ProcessOutput.silent())
+                .processOutput(builder()
+                        .output(Processors.silent())
+                        .error(Processors.silent())
+                        .commands(Processors.silent())
+                        .build())
                 .build();
         return MongodStarter.getInstance(runtimeConfig).prepare(config);
     }

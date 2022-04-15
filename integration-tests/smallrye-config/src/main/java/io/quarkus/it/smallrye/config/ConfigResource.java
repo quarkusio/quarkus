@@ -8,8 +8,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.eclipse.microprofile.config.ConfigValue;
-
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.config.SmallRyeConfig;
 

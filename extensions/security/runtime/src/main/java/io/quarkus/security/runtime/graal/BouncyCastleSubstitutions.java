@@ -1,9 +1,13 @@
 package io.quarkus.security.runtime.graal;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
+
+import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
 
 final class BouncyCastlePackages {
     static final String ORG_BOUNCYCASTLE_CRYPTO_PACKAGE = "org.bouncycastle.crypto";
@@ -84,6 +88,24 @@ final class Target_org_bouncycastle_crypto_internal_AsymmetricCipherKeyPair {
 
 @com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.fips.RsaBlindedEngine", onlyWith = BouncyCastleCryptoFips.class)
 final class Target_org_bouncycastle_crypto_fips_RsaBlindedEngine {
+}
+
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider", onlyWith = BouncyCastleCryptoFips.class)
+final class Target_org_bouncycastle_jcajce_provider_BouncyCastleFipsProvider {
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //
+    private SecureRandom entropySource;
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //
+    private SecureRandom providerDefaultRandom;
+}
+
+@com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.math.ec.ECPoint", onlyWith = BouncyCastleCryptoFips.class)
+final class Target_org_bouncycastle_math_ec_ECPoint {
+    @Alias //
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //
+    private static SecureRandom testRandom;
 }
 
 class BouncyCastleCryptoFips implements BooleanSupplier {

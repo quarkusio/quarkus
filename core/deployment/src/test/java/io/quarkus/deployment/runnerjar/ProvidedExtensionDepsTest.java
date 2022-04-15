@@ -13,10 +13,10 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACTV;
 
-public class ProvidedExtensionDepsTest extends ExecutableOutputOutcomeTestBase {
+public class ProvidedExtensionDepsTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsArtifact extADep = TsArtifact.jar("ext-a-dep");
         addToExpectedLib(extADep);
@@ -35,10 +35,17 @@ public class ProvidedExtensionDepsTest extends ExecutableOutputOutcomeTestBase {
                 .addDependency(new TsDependency(extADeploymentDep))
                 .addDependency(new TsDependency(extAOptionalDeploymentDep, "provided"));
 
+        final TsQuarkusExt extB = new TsQuarkusExt("ext-b");
+        this.install(extB);
+
+        final TsArtifact someProvidedDep = TsArtifact.jar("some-provided-dep");
+
         return TsArtifact.jar("app")
                 .addManagedDependency(platformDescriptor())
                 .addManagedDependency(platformProperties())
-                .addDependency(extA);
+                .addDependency(extA)
+                .addDependency(extB, "provided")
+                .addDependency(new TsDependency(someProvidedDep, "provided"));
     }
 
     @Override

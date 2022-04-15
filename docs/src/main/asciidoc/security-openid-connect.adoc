@@ -22,14 +22,9 @@ Please read the xref:security-openid-connect-multitenancy.adoc[Using OpenID Conn
 
 === Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
-* Docker
 
 === Architecture
 
@@ -59,35 +54,34 @@ The solution is located in the `security-openid-connect-quickstart` {quickstarts
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-openid-connect-quickstart \
-    -Dextensions="resteasy,oidc,resteasy-jackson" \
-    -DnoExamples
-cd security-openid-connect-quickstart
-----
+:create-app-artifact-id: security-openid-connect-quickstart
+:create-app-extensions: oidc,resteasy-reactive-jackson
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `keycloak` extension
-which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
+This command generates a Maven project, importing the `oidc` extension
+which is an implementation of OIDC for Quarkus.
 
 If you already have your Quarkus project configured, you can add the `oidc` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="oidc"
-----
+:add-extension-extensions: oidc
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-oidc</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-oidc")
 ----
 
 === Writing the application
@@ -103,7 +97,7 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.resteasy.annotations.cache.NoCache;
+import org.jboss.resteasy.reactive.NoCache;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/api/users")
@@ -171,7 +165,7 @@ Example configuration:
 
 [source,properties]
 ----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=backend-service
 quarkus.oidc.client-secret=secret
 
@@ -191,22 +185,28 @@ To start a Keycloak Server you can use Docker and just run the following command
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak version}
+docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
+where `keycloak.version` should be set to `17.0.0` or higher.
+
+You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
 
 Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
 Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
 NOTE: If you want to use the Keycloak Admin Client to configure your server from your application you need to include the
-`quarkus-keycloak-admin-client` extension.
+either `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
 
 [[keycloak-dev-mode]]
 === Running the Application in Dev mode
 
-To run the application in a dev mode, use `./mvnw clean compile quarkus:dev`. xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
+To run the application in a dev mode, use:
+
+include::includes/devtools/dev.adoc[]
+
+xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
 Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 
@@ -225,10 +225,7 @@ When you're done playing with the `dev` mode" you can run it as a standard Java 
 
 First compile it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Then run it:
 
@@ -248,10 +245,7 @@ the produced binary, and optimized to run with minimal resource overhead.
 Compilation will take a bit longer, so this step is disabled by default;
 let's build again by enabling the `native` profile:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 
@@ -272,7 +266,7 @@ order to access the application resources:
 [source,bash]
 ----
 export access_token=$(\
-    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
@@ -308,7 +302,7 @@ In order to access the admin endpoint you should obtain a token for the `admin` 
 [source,bash]
 ----
 export access_token=$(\
-    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
@@ -370,7 +364,7 @@ The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is 
 
 SecurityIdentity roles can be mapped from the verified JWT access tokens as follows:
 
-* If `quarkus.oidc.roles.role-claim-path` property is set and a matching array or string claim is found then the roles are extracted from this claim.
+* If `quarkus.oidc.roles.role-claim-path` property is set and matching array or string claims are found then the roles are extracted from these claims.
   For example, `customroles`, `customroles/array`, `scope`, `"http://namespace-qualified-custom-claim"/roles`, `"http://namespace-qualified-roles"`, etc.
 * If `groups` claim is available then its value is used
 * If `realm_access/roles` or `resource_access/client_id/roles` (where `client_id` is the value of the `quarkus.oidc.client-id` property) claim is available then its value is used.
@@ -403,9 +397,9 @@ However, there could be cases where JWT tokens must be verified via the introspe
 
 [source, properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+# Token Introspection endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/tokens/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
@@ -510,7 +504,7 @@ For example, here is how you can use `keycloak.js` to authenticate the users and
 <head>
     <title>keycloak-spa</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="http://localhost:8180/auth/js/keycloak.js"></script>
+    <script src="http://localhost:8180/js/keycloak.js"></script>
     <script>
         var keycloak = new Keycloak();
         keycloak.init({onLoad: 'login-required'}).success(function () {
@@ -558,15 +552,15 @@ Alternatively, if the discovery endpoint is not available or you would like to s
 
 [source, properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token
+# Token endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/token
 quarkus.oidc.token-path=/protocol/openid-connect/token
-# JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
+# JWK set endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/certs
 quarkus.oidc.jwks-path=/protocol/openid-connect/certs
-# UserInfo endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
+# UserInfo endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/userinfo
 quarkus.oidc.user-info-path=/protocol/openid-connect/userinfo
-# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens/introspect
+# Token Introspection endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/tokens/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 ----
 
@@ -584,7 +578,8 @@ Please see xref:security-openid-connect-client.adoc#token-propagation[Token Prop
 
 Start by adding the following dependencies to your test project:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.rest-assured</groupId>
@@ -598,18 +593,32 @@ Start by adding the following dependencies to your test project:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.rest-assured:rest-assured")
+testImplementation("io.quarkus:quarkus-junit5")
+----
+
 [[integration-testing-wiremock]]
 ==== Wiremock
 
 Add the following dependencies to your test project:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-oidc-server</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-oidc-server")
 ----
 
 Prepare the REST test endpoint, set `application.properties`, for example:
@@ -699,7 +708,7 @@ public class CustomOidcWireMockStubTest {
 
     @Test
     public void testInvalidBearerToken() {
-        wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
+        wireMockServer.stubFor(WireMock.post("/realms/quarkus/protocol/openid-connect/token/introspect")
                 .withRequestBody(matching(".*token=invalid_token.*"))
                 .willReturn(WireMock.aResponse().withStatus(400)));
 
@@ -720,13 +729,20 @@ Using xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] 
 
 First you need to add the following dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-keycloak-server</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-keycloak-server")
 ----
 
 which provides a utility class `io.quarkus.test.keycloak.client.KeycloakTestClient` you can use in tests for acquiring the access tokens.
@@ -737,14 +753,14 @@ But if you already have all the required `quarkus-oidc` properties configured th
 
 [source,properties]
 ----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 ----
 
 If a custom realm file has to be imported into Keycloak before running the tests then you can configure `Dev Services for Keycloak` as follows:
 
 [source,properties]
 ----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
@@ -805,13 +821,20 @@ Use `KeycloakTestResourceLifecycleManager` for your tests only if there is a goo
 
 Start with adding the following dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-keycloak-server</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-keycloak-server")
 ----
 
 which provides `io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager` - an implementation of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which starts a Keycloak container.
@@ -908,13 +931,21 @@ This approach provides a more limited coverage compared to the Wiremock approach
 You can use `@TestSecurity` and `@OidcSecurity` annotations for testing the `service` application endpoint code which depends on the injected `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
 
 Add the following dependency:
-[source,xml]
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-security-oidc</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-security-oidc")
 ----
 
 and write a test code like this one:

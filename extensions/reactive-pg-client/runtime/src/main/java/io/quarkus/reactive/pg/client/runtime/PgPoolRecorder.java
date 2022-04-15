@@ -11,6 +11,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -36,6 +37,7 @@ public class PgPoolRecorder {
     private static final Logger log = Logger.getLogger(PgPoolRecorder.class);
 
     public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
+            Supplier<Integer> eventLoopCount,
             String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
@@ -43,6 +45,7 @@ public class PgPoolRecorder {
             ShutdownContext shutdown) {
 
         PgPool pgPool = initialize(vertx.getValue(),
+                eventLoopCount.get(),
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactivePostgreSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
@@ -55,10 +58,12 @@ public class PgPoolRecorder {
         return new RuntimeValue<>(io.vertx.mutiny.pgclient.PgPool.newInstance(pgPool.getValue()));
     }
 
-    private PgPool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private PgPool initialize(Vertx vertx,
+            Integer eventLoopCount,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
-        PoolOptions poolOptions = toPoolOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
         PgConnectOptions pgConnectOptions = toPgConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
@@ -69,7 +74,8 @@ public class PgPoolRecorder {
         return PgPool.pool(vertx, pgConnectOptions, poolOptions);
     }
 
-    private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private PoolOptions toPoolOptions(Integer eventLoopCount,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
         PoolOptions poolOptions;
@@ -82,6 +88,19 @@ public class PgPoolRecorder {
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
             int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
             poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+        }
+
+        if (dataSourceReactiveRuntimeConfig.shared) {
+            poolOptions.setShared(true);
+            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            }
+        }
+
+        if (dataSourceReactiveRuntimeConfig.eventLoopSize.isPresent()) {
+            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize.getAsInt()));
+        } else if (eventLoopCount != null) {
+            poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
 
         return poolOptions;

@@ -33,7 +33,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param scopeName
      * @return the new stream of beans
      * @see BeanInfo#getScope()
@@ -43,7 +43,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param scopeName
      * @return the new stream of beans
      * @see BeanInfo#getScope()
@@ -54,7 +54,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param beanType
      * @return the new stream of beans
      * @see BeanInfo#getTypes()
@@ -64,7 +64,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param beanType
      * @return the new stream of beans
      * @see BeanInfo#getTypes()
@@ -75,7 +75,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param beanType
      * @return the new stream of beans
      * @see BeanInfo#getTypes()
@@ -86,7 +86,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param beanClass
      * @return the new stream of beans
      * @see BeanInfo#getBeanClass()
@@ -96,7 +96,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param predicate
      * @return the new stream of beans
      */
@@ -106,7 +106,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of beans
      * @see BeanInfo#getTarget()
      */
@@ -116,7 +116,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param beanClass
      * @return the new stream of beans
      * @see BeanInfo#getBeanClass()
@@ -127,7 +127,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param qualifier
      * @return the new stream of beans
      * @see BeanInfo#getQualifiers()
@@ -142,7 +142,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param qualifierNames
      * @return the new stream of beans
      * @see BeanInfo#getQualifiers()
@@ -164,7 +164,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param name
      * @return the new stream of beans
      * @see BeanInfo#getName()
@@ -175,7 +175,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of beans
      * @see BeanInfo#getName()
      */
@@ -185,7 +185,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param id
      * @return an {@link Optional} with the matching bean, or an empty {@link Optional} if no such bean is found
      * @see BeanInfo#getIdentifier()
@@ -195,7 +195,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of producer beans
      */
     public BeanStream producers() {
@@ -204,7 +204,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of producer method beans
      */
     public BeanStream producerMethods() {
@@ -213,7 +213,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of producer field beans
      */
     public BeanStream producerFields() {
@@ -222,7 +222,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of class beans
      */
     public BeanStream classBeans() {
@@ -231,7 +231,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of synthetic beans
      */
     public BeanStream syntheticBeans() {
@@ -240,7 +240,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of named beans
      * @see BeanInfo#getName()
      */
@@ -250,7 +250,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of default beans
      * @see BeanInfo#isDefaultBean()
      */
@@ -260,7 +260,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the new stream of default beans
      * @see BeanInfo#isAlternative()
      */
@@ -270,7 +270,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param requiredType
      * @param requiredQualifiers
      * @return the new stream of beans assignable to the required type and qualifiers
@@ -281,7 +281,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @param predicate
      * @return the new stream
      */
@@ -292,7 +292,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      * Terminal operation.
-     * 
+     *
      * @return the list of beans
      */
     public List<BeanInfo> collect() {
@@ -300,7 +300,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
     }
 
     /**
-     * 
+     *
      * @return the underlying stream instance
      */
     public Stream<BeanInfo> stream() {
@@ -309,7 +309,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      * Terminal operation.
-     * 
+     *
      * @return true if the stream contains no elements
      */
     public boolean isEmpty() {
@@ -318,7 +318,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      * Terminal operation.
-     * 
+     *
      * @return the iterator
      */
     @Override
@@ -328,7 +328,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      * Terminal operation.
-     * 
+     *
      * @return an {@link Optional} with the first matching bean, or an empty {@link Optional} if no bean is matching
      */
     public Optional<BeanInfo> firstResult() {
@@ -337,7 +337,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      * Terminal operation.
-     * 
+     *
      * @param <R>
      * @param <A>
      * @param collector

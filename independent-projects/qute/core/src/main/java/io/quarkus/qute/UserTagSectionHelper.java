@@ -35,7 +35,7 @@ public class UserTagSectionHelper implements SectionHelper {
                 result.completeExceptionally(t1);
             } else {
                 if (!isEmpty) {
-                    // Execute the nested content first and make it accessible via the "nested-content" key 
+                    // Execute the nested content first and make it accessible via the "nested-content" key
                     evaluatedParams.put(NESTED_CONTENT,
                             context.execute(
                                     context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null)));
@@ -76,7 +76,7 @@ public class UserTagSectionHelper implements SectionHelper {
         private final String templateId;
 
         /**
-         * 
+         *
          * @param name Identifies the tag
          * @param templateId Used to locate the template
          */
@@ -169,7 +169,7 @@ public class UserTagSectionHelper implements SectionHelper {
             // Use the defaulted key if:
             // 1. The key is a generated id
             // 2. The value is a single identifier
-            // {#myTag user} should be equivalent to {#myTag user=user} 
+            // {#myTag user} should be equivalent to {#myTag user=user}
             return LiteralSupport.INTEGER_LITERAL_PATTERN.matcher(key).matches()
                     && isSinglePart(value);
         }

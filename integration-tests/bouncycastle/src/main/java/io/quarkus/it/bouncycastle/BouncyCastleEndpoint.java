@@ -10,6 +10,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import javax.crypto.Cipher;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -46,11 +47,26 @@ public class BouncyCastleEndpoint {
     }
 
     @GET
+    @Path("generateEcDsaKeyPair")
+    public String generateEcDsaKeyPair() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");
+        keyPairGenerator.generateKeyPair();
+        return "success";
+    }
+
+    @GET
     @Path("generateRsaKeyPair")
     public String generateRsaKeyPair() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
         keyPairGenerator.generateKeyPair();
         return "success";
+    }
+
+    @GET
+    @Path("checkAesCbcPKCS7PaddingCipher")
+    public String checkAesCbcPKCS7PaddingCipher() throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "BC");
+        return cipher.getAlgorithm();
     }
 
     @GET

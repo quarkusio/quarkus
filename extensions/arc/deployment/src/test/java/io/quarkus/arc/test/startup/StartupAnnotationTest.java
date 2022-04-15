@@ -110,7 +110,7 @@ public class StartupAnnotationTest {
     }
 
     // @Startup is added by an annotation transformer
-    @Unremovable // only classes annotated with @Startup are made unremovable 
+    @Unremovable // only classes annotated with @Startup are made unremovable
     @Singleton
     static class SingletonStartMe {
 

@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.ws.rs.CookieParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
@@ -111,8 +112,12 @@ public class ProtectedResource {
 
     @GET
     @Path("tenant-split-tokens")
-    public String getNameSplitTokens() {
-        return "tenant-split-tokens:" + getName();
+    public String getNameSplitTokens(@CookieParam("q_session_tenant-split-tokens") String idToken,
+            @CookieParam("q_session_at_tenant-split-tokens") String accessToken,
+            @CookieParam("q_session_rt_tenant-split-tokens") String refreshToken) {
+        return String.format(
+                "tenant-split-tokens:%s, id token has %d parts, access token has %d parts, refresh token has %d parts",
+                getName(), idToken.split("\\.").length, accessToken.split("\\.").length, refreshToken.split("\\.").length);
     }
 
     @GET

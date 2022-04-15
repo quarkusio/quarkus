@@ -12,7 +12,7 @@ public class SchedulerConfig {
 
     /**
      * The syntax used in CRON expressions.
-     * 
+     *
      * @see Scheduled#cron()
      */
     @ConfigItem(defaultValue = "quartz")

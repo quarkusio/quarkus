@@ -116,8 +116,8 @@ public class RestAssuredURLManager {
                 oldPort = (Integer) portField.get(null);
                 if (port == null) {
                     port = useSecureConnection ? getPortFromConfig(DEFAULT_HTTPS_PORT, "quarkus.https.test-port")
-                            : getPortFromConfig(DEFAULT_HTTP_PORT, "quarkus.http.test-port",
-                                    "quarkus.lambda.mock-event-server.test-port");
+                            : getPortFromConfig(DEFAULT_HTTP_PORT, "quarkus.lambda.mock-event-server.test-port",
+                                    "quarkus.http.test-port");
                 }
                 portField.set(null, port);
             } catch (IllegalAccessException e) {
@@ -184,7 +184,7 @@ public class RestAssuredURLManager {
 
     /**
      * Execute the following code:
-     * 
+     *
      * <pre>
      * {@code
      * RestAssured.config = RestAssured.config().httpClient(

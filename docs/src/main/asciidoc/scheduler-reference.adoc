@@ -22,19 +22,41 @@ NOTE: If you add the `quarkus-quartz` dependency to your project the lightweight
 
 == Scheduled Methods
 
-If you annotate a method with `@io.quarkus.scheduler.Scheduled` it is automatically scheduled for invocation.
-In fact, such a method must be a non-private non-static method of a CDI bean. 
-As a consequence of being a method of a CDI bean a scheduled method can be annotated with interceptor bindings, such as `@javax.transaction.Transactional` and `@org.eclipse.microprofile.metrics.annotation.Counted`.
+A method annotated with `@io.quarkus.scheduler.Scheduled` is automatically scheduled for invocation.
+A scheduled method must not be abstract or private.
+It may be either static or non-static.
+A scheduled method can be annotated with interceptor bindings, such as `@javax.transaction.Transactional` and `@org.eclipse.microprofile.metrics.annotation.Counted`.
 
-NOTE: If there is no CDI scope defined on the declaring class then `@Singleton` is used. 
+NOTE: If there is a bean class that has no scope and declares at least one non-static method annotated with `@Scheduled` then `@Singleton` is used.
 
 Furthermore, the annotated method must return `void` and either declare no parameters or one parameter of type `io.quarkus.scheduler.ScheduledExecution`.
 
 TIP: The annotation is repeatable so a single method could be scheduled multiple times.
 
+[WARNING]
+====
+Subclasses never inherit the metadata of a `@Scheduled` method declared on a superclass. In the following example, the `everySecond()` method is only invoked upon the instance of `Jobs`.
+[source,java]
+----
+class Jobs {
+
+   @Scheduled(every = "1s")
+   void everySecond() {
+     // ..do something 
+   }
+}
+
+@Singleton
+class MyJobs extends Jobs {
+}
+----
+====
+
+A CDI event of type `io.quarkus.scheduler.SuccessfulExecution` is fired synchronously and asynchronously when an execution of a scheduled method is successful. A CDI event of type `io.quarkus.scheduler.FailedExecution` is fired synchronously and asynchronously  when an execution of a scheduled method throws an exception.
+
 === Triggers
 
-A trigger is defined either by the `@Scheduled#cron()` or by the `@Scheduled#every()` attributes.
+A trigger is defined either by the `@Scheduled#cron()` or by the `@Scheduled#every()` attribute.
 If both are specified, the cron expression takes precedence.
 If none is specified, the build fails with an `IllegalStateException`.
 
@@ -121,9 +143,9 @@ void myMethod() { }
 
 === Identity
 
-By default, a unique id is generated for each scheduled method.
-This id is used in log messages and during debugging.
-Sometimes a possibility to specify an explicit id may come in handy.
+By default, a unique identifier is generated for each scheduled method.
+This identifier is used in log messages, during debugging and as a parameter of some `io.quarkus.scheduler.Scheduler` methods.
+Therefore, a possibility to specify an explicit identifier may come in handy.
 
 .Identity Example
 [source,java]
@@ -256,6 +278,24 @@ The main idea is to keep the the logic to skip the execution outside the schedul
 
 TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
 
+=== Non-blocking Methods
+
+By default, a scheduled method is executed on the main executor for blocking tasks. 
+As a result, a technology that is designed to run on a Vert.x event loop (such as Hibernate Reactive) cannot be used inside the method body.
+For this reason, a scheduled method that returns `java.util.concurrent.CompletionStage<Void>` or `io.smallrye.mutiny.Uni<Void>`, or is annotated with `@io.smallrye.common.annotation.NonBlocking` is executed on the Vert.x event loop instead.
+
+[source,java]
+----
+class Jobs {
+  
+   @Scheduled(every = "1s")
+   Uni<Void> everySecond() { <1>
+     // ...do something async
+   }
+}
+----
+<1> The return type `Uni<Void>` instructs the scheduler to execute the method on the Vert.x event loop.
+
 == Scheduler
 
 Quarkus provides a built-in bean of type `io.quarkus.scheduler.Scheduler` that can be injected and used to pause/resume the scheduler and individual scheduled methods identified by a specific `Scheduled#identity()`.
@@ -278,6 +318,11 @@ class MyService {
       }
       scheduler.resume("myIdentity"); <3>
       scheduler.resume(); <4>
+      scheduler.getScheduledJobs(); <5>
+      Trigger jobTrigger = scheduler.getScheduledJob("myIdentity"); <6>
+      if (jobTrigger != null && jobTrigger.isOverdue()){ <7>
+        // the job is late to the party.
+      }
    }
 }
 ----
@@ -285,6 +330,9 @@ class MyService {
 <2> Pause a specific scheduled method by its identity
 <3> Resume a specific scheduled method by its identity
 <4> Resume the scheduler.
+<5> List all jobs in the scheduler.
+<6> Get Trigger metadata for a specific scheduled job by its identity.
+<7> You can configure the grace period for isOverdue() with quarkus.scheduler.overdue-grace-period
 
 == Programmatic Scheduling
 

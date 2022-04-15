@@ -15,7 +15,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.jdbc.postgresql.runtime.PostgreSQLAgroalConnectionConfigurer;
-import io.quarkus.jdbc.postgresql.runtime.PostgreSqlServiceBindingConverter;
+import io.quarkus.jdbc.postgresql.runtime.PostgreSQLServiceBindingConverter;
 
 public class JDBCPostgreSQLProcessor {
 
@@ -55,7 +55,7 @@ public class JDBCPostgreSQLProcessor {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            PostgreSqlServiceBindingConverter.class.getName()));
+                            PostgreSQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.POSTGRESQL));
     }

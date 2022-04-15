@@ -19,7 +19,7 @@ public @interface LoggerName {
 
     /**
      * The logger name must not be empty.
-     * 
+     *
      * @return the logger name
      */
     @Nonbinding

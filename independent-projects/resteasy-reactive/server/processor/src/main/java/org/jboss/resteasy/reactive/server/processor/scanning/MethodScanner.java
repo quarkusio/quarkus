@@ -18,7 +18,7 @@ public interface MethodScanner {
 
     /**
      * Method that allows for customising an endpoints handler chain
-     * 
+     *
      * @param method The method
      * @param actualEndpointClass
      * @param methodContext Any context discovered by {@link #handleCustomParameter(Type, Map, boolean, Map)}
@@ -31,7 +31,7 @@ public interface MethodScanner {
 
     /**
      * Method that is called when a parameter of an unknown type is discovered.
-     * 
+     *
      * @param paramType The parameter type
      * @param annotations The annotations
      * @param field If this is field injection

@@ -3,7 +3,7 @@ package io.quarkus.registry.catalog;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.registry.json.JsonBuilder;
-import io.quarkus.registry.json.JsonEntityWithAnySupport;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -18,17 +18,18 @@ import java.util.Objects;
  * @see JsonBuilder.JsonBuilderSerializer for building a builder before serializing it.
  */
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-public class CategoryImpl extends JsonEntityWithAnySupport implements Category {
+public class CategoryImpl implements Category {
 
     private final String id;
     private final String name;
     private final String description;
+    private final Map<String, Object> metadata;
 
     private CategoryImpl(Builder builder) {
-        super(builder);
         this.id = builder.id;
         this.name = builder.name;
         this.description = builder.description;
+        this.metadata = JsonBuilder.toUnmodifiableMap(builder.metadata);
     }
 
     @Override
@@ -44,6 +45,11 @@ public class CategoryImpl extends JsonEntityWithAnySupport implements Category {
     @Override
     public String getDescription() {
         return description;
+    }
+
+    @Override
+    public Map<String, Object> getMetadata() {
+        return metadata;
     }
 
     @Override
@@ -64,10 +70,11 @@ public class CategoryImpl extends JsonEntityWithAnySupport implements Category {
     /**
      * Builder.
      */
-    public static class Builder extends JsonEntityWithAnySupport.Builder implements Category.Mutable {
+    public static class Builder implements Category.Mutable {
         protected String id;
         protected String name;
         protected String description;
+        protected Map<String, Object> metadata;
 
         Builder() {
         }
@@ -77,7 +84,7 @@ public class CategoryImpl extends JsonEntityWithAnySupport implements Category {
             this.id = config.getId();
             this.name = config.getName();
             this.description = config.getDescription();
-            super.setMetadata(config.getMetadata());
+            this.metadata = config.getMetadata();
         }
 
         @Override
@@ -111,20 +118,25 @@ public class CategoryImpl extends JsonEntityWithAnySupport implements Category {
         }
 
         @Override
-        public Builder setMetadata(Map<String, Object> metadata) {
-            super.setMetadata(metadata);
+        public Map<String, Object> getMetadata() {
+            return metadata == null ? metadata = new HashMap<>() : metadata;
+        }
+
+        @Override
+        public Builder setMetadata(Map<String, Object> newValues) {
+            metadata = JsonBuilder.modifiableMapOrNull(newValues, HashMap::new);
             return this;
         }
 
         @Override
         public Builder setMetadata(String name, Object value) {
-            super.setMetadata(name, value);
+            getMetadata().put(name, value);
             return this;
         }
 
         @Override
         public Builder removeMetadata(String key) {
-            super.removeMetadata(key);
+            getMetadata().remove(key);
             return this;
         }
 

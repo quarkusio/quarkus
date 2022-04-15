@@ -27,7 +27,7 @@ import io.vertx.ext.web.RoutingContext;
  * </ul>
  * Furthermore, it is possible to inject the request parameters into a method parameter annotated with
  * {@link io.quarkus.vertx.web.Param}:
- * 
+ *
  * <pre>
  * <code>
  *  class Routes {
@@ -38,9 +38,9 @@ import io.vertx.ext.web.RoutingContext;
  *  }
  *  </code>
  * </pre>
- * 
+ *
  * The request headers can be injected into a method parameter annotated with {@link io.quarkus.vertx.web.Header}:
- * 
+ *
  * <pre>
  * <code>
  *  class Routes {
@@ -51,9 +51,9 @@ import io.vertx.ext.web.RoutingContext;
  *  }
  *  </code>
  * </pre>
- * 
+ *
  * The request body can be injected into a method parameter annotated with {@link io.quarkus.vertx.web.Body}:
- * 
+ *
  * <pre>
  * <code>
  *  class Routes {
@@ -65,7 +65,7 @@ import io.vertx.ext.web.RoutingContext;
  *  }
  *  </code>
  * </pre>
- * 
+ *
  * If the annotated method returns {@code void} then it has to accept at least one argument that makes it possible to end the
  * response, for example {@link RoutingContext}.
  * If the annotated method does not return {@code void} then the arguments are optional.
@@ -125,7 +125,7 @@ public @interface Route {
 
     /**
      * If set to a positive number, it indicates the place of the route in the chain.
-     * 
+     *
      * @see io.vertx.ext.web.Route#order(int)
      */
     int order() default 0;
@@ -151,7 +151,7 @@ public @interface Route {
      * When this attribute is not set, and the route returns a {@link io.smallrye.mutiny.Multi}, no special serialization is
      * applied.
      * The items are sent one-by-one without delimiters.
-     * 
+     *
      * @see io.vertx.ext.web.Route#produces(String)
      * @see RoutingContext#getAcceptableContentType()
      * @return the produced content types
@@ -183,7 +183,7 @@ public @interface Route {
         /**
          * A failure handler can declare a single method parameter whose type extends {@link Throwable}. The type of the
          * parameter is used to match the result of {@link RoutingContext#failure()}.
-         * 
+         *
          * <pre>
          * <code>
          *  class Routes {
@@ -194,10 +194,10 @@ public @interface Route {
          *  }
          *  </code>
          * </pre>
-         * 
+         *
          * <p>
          * If a failure handler declares neither a path nor a regex then the route matches all requests.
-         * 
+         *
          * @see io.vertx.ext.web.Route#failureHandler(Handler)
          */
         FAILURE;

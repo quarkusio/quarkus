@@ -1,5 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -132,7 +134,11 @@ public class TracerRecorder {
     }
 
     /* RUNTIME INIT */
-    public void setupSampler(TracerRuntimeConfig config) {
+    public void setupSampler(
+            TracerRuntimeConfig config,
+            List<String> dropNonApplicationUris,
+            List<String> dropStaticResources) {
+
         LateBoundSampler lateBoundSampler = CDI.current().select(LateBoundSampler.class, Any.Literal.INSTANCE).get();
         Optional<Sampler> samplerBean = CDI.current()
                 .select(Sampler.class, Any.Literal.INSTANCE)
@@ -144,8 +150,15 @@ public class TracerRecorder {
         if (samplerBean.isPresent()) {
             lateBoundSampler.setSamplerDelegate(samplerBean.get());
         } else {
+            List<String> dropNames = new ArrayList<>();
+            if (config.suppressNonApplicationUris) {
+                dropNames.addAll(dropNonApplicationUris);
+            }
+            if (!config.includeStaticResources) {
+                dropNames.addAll(dropStaticResources);
+            }
             // Define Sampler using config
-            lateBoundSampler.setSamplerDelegate(TracerUtil.mapSampler(config.sampler, config.suppressNonApplicationUris));
+            lateBoundSampler.setSamplerDelegate(TracerUtil.mapSampler(config.sampler, dropNames));
         }
     }
 }

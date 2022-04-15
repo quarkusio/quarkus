@@ -20,11 +20,10 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
-
-    private static final String DOCKER_BINARY = "docker";
 
     private int httpPort;
     private int httpsPort;
@@ -34,12 +33,15 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
     private String containerImage;
     private boolean pullRequired;
+    private Map<Integer, Integer> additionalExposedPorts;
 
     private final Map<String, String> systemProps = new HashMap<>();
 
     private boolean isSsl;
 
     private String containerName;
+
+    private String containerRuntimeBinaryName;
 
     @Override
     public void init(DockerContainerArtifactLauncher.DockerInitContext initContext) {
@@ -51,6 +53,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.devServicesLaunchResult = initContext.getDevServicesLaunchResult();
         this.containerImage = initContext.containerImage();
         this.pullRequired = initContext.pullRequired();
+        this.additionalExposedPorts = initContext.additionalExposedPorts();
     }
 
     @Override
@@ -61,11 +64,13 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     @Override
     public void start() throws IOException {
 
+        containerRuntimeBinaryName = determineBinary();
+
         if (pullRequired) {
             System.out.println("Pulling container image '" + containerImage + "'");
             try {
                 int pullResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
-                        .command(DOCKER_BINARY, "pull", containerImage).start().waitFor();
+                        .command(containerRuntimeBinaryName, "pull", containerImage).start().waitFor();
                 if (pullResult > 0) {
                     throw new RuntimeException("Pulling container image '" + containerImage + "' completed unsuccessfully");
                 }
@@ -84,7 +89,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         }
 
         List<String> args = new ArrayList<>();
-        args.add(DOCKER_BINARY); // TODO: determine this dynamically?
+        args.add(containerRuntimeBinaryName);
         args.add("run");
         if (!argLine.isEmpty()) {
             args.addAll(argLine);
@@ -97,6 +102,10 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(httpPort + ":" + httpPort);
         args.add("-p");
         args.add(httpsPort + ":" + httpsPort);
+        for (var entry : additionalExposedPorts.entrySet()) {
+            args.add("-p");
+            args.add(entry.getKey() + ":" + entry.getValue());
+        }
         // if the dev services resulted in creating a dedicated network, then use it
         if (devServicesLaunchResult.networkId() != null) {
             args.add("--net=" + devServicesLaunchResult.networkId());
@@ -143,6 +152,10 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         }
     }
 
+    private String determineBinary() {
+        return ContainerRuntimeUtil.detectContainerRuntime().getExecutableName();
+    }
+
     private int getRandomPort() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {
             return socket.getLocalPort();
@@ -174,7 +187,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     @Override
     public void close() {
         try {
-            Process dockerStopProcess = new ProcessBuilder(DOCKER_BINARY, "stop", containerName).redirectError(DISCARD)
+            Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "stop", containerName)
+                    .redirectError(DISCARD)
                     .redirectOutput(DISCARD).start();
             dockerStopProcess.waitFor(10, TimeUnit.SECONDS);
         } catch (IOException | InterruptedException e) {

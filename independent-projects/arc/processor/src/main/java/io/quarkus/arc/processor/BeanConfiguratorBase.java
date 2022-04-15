@@ -57,7 +57,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
 
     /**
      * Read metadata from another configurator base.
-     * 
+     *
      * @param base
      * @return self
      */
@@ -157,7 +157,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
     /**
      * Unlike for the {@link #name(String)} method a new {@link javax.inject.Named} qualifier with the specified value is added
      * to the configured bean.
-     * 
+     *
      * @param name
      * @return self
      */
@@ -238,7 +238,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
      * <p>
      * The container attempts to derive the provider type from the implementation class. However, in some cases it's better to
      * specify it manually.
-     * 
+     *
      * @param providerType
      * @return self
      */

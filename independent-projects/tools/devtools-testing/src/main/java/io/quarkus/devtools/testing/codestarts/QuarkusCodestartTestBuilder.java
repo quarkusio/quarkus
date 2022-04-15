@@ -46,7 +46,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the package name to use in the generated projects
-     * 
+     *
      * @param packageName
      * @return
      */
@@ -57,7 +57,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the list of codestarts that should be added to the generated projects
-     * 
+     *
      * @param codestarts the list of codestarts
      * @return
      */
@@ -68,7 +68,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the list of languages in which we should generated projects
-     * 
+     *
      * @param languages the list of languages
      * @return
      */
@@ -79,7 +79,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the build tool to use for testing (default is maven)
-     * 
+     *
      * @param buildTool
      * @return
      */
@@ -90,7 +90,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Add some custom codestart data for testing
-     * 
+     *
      * @param key
      * @param value
      * @return
@@ -102,7 +102,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Add some custom codestart data for testing
-     * 
+     *
      * @param key
      * @param value
      * @return
@@ -114,7 +114,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the list of extensions (and their codestarts) that should be added to the generated projects
-     * 
+     *
      * @param extensions the list of extensions
      * @return
      */
@@ -125,7 +125,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the extension (and its codestarts) that should be added to the generated projects
-     * 
+     *
      * @param extension the extension
      * @return
      */
@@ -136,7 +136,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the extension (and its codestarts) that should be added to the generated projects
-     * 
+     *
      * @param extension the extension
      * @return
      */
@@ -147,7 +147,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Add artifacts which contains codestarts
-     * 
+     *
      * @param artifacts the artifacts coords
      * @return
      */
@@ -158,7 +158,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Specify a custom quarkus codestart catalog, by default it will use the extension catalog to get it.
-     * 
+     *
      * @param quarkusCodestartCatalog the quarkusCodestartCatalog
      * @return
      */
@@ -169,7 +169,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Specify a custom extensionCatalog, by default it will use the test registry to get it.
-     * 
+     *
      * @param extensionCatalog
      * @return
      */
@@ -181,7 +181,7 @@ public class QuarkusCodestartTestBuilder {
     /**
      * This should be use in standalone/quarkiverse extension to add the local extension as part of the catalog, so it can be
      * tested
-     * 
+     *
      * @return
      */
     public QuarkusCodestartTestBuilder standaloneExtensionCatalog() {

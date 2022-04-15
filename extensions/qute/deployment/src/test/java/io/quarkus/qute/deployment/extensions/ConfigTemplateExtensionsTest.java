@@ -18,12 +18,12 @@ public class ConfigTemplateExtensionsTest {
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             "{config:foo}={config:property('foo')}\n" +
-                                    "{config:nonExistent ?: 'NOT_FOUND'}={config:property('nonExistent') ?: 'NOT_FOUND'}\n" +
+                                    "{config:nonExistent ?: 'Not found!'}={config:property('nonExistent') ?: 'Not found!'}\n" +
                                     "{config:['foo.bar.baz']}={config:property('foo.bar.baz')}\n" +
                                     "{config:['quarkus.qute.remove-standalone-lines']}={config:property('quarkus.qute.remove-standalone-lines')}\n"
                                     +
                                     "{config:property(name)}\n" +
-                                    "{config:boolean('foo.bool') ?: 'NOT_FOUND'} {config:boolean('foo.boolean') ?: 'NOT_FOUND'}\n"
+                                    "{config:boolean('foo.bool') ?: 'Not found!'} {config:boolean('foo.boolean') ?: 'Not found!'}\n"
                                     +
                                     "{config:integer('foo.bar.baz')}"),
                             "templates/foo.html")
@@ -35,11 +35,11 @@ public class ConfigTemplateExtensionsTest {
     @Test
     public void testGetProperty() {
         assertEquals("false=false\n" +
-                "NOT_FOUND=NOT_FOUND\n" +
+                "Not found!=Not found!\n" +
                 "11=11\n" +
                 "true=true\n" +
                 "false\n" +
-                "true NOT_FOUND\n" +
+                "true Not found!\n" +
                 "11",
                 foo.data("name", "foo").render());
     }

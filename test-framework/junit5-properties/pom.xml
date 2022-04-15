@@ -13,7 +13,7 @@
     <artifactId>quarkus-junit5-properties</artifactId>
     <name>Quarkus - Test Framework - JUnit 5 - Properties</name>
     <description>
-        Contains junit-platform.properties in a "use-excludable" way
+        Contains junit-platform.properties in a "user-excludable" way
         until https://github.com/junit-team/junit5/issues/2794 is available.
     </description>
 

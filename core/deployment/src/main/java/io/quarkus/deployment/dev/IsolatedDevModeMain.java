@@ -1,7 +1,6 @@
 package io.quarkus.deployment.dev;
 
 import static io.quarkus.deployment.dev.testing.MessageFormat.BLUE;
-import static java.util.Collections.singleton;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -15,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -82,6 +82,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private Thread shutdownThread;
     private final FSWatchUtil fsWatchUtil = new FSWatchUtil();
     private static volatile ConsoleStateManager.ConsoleContext consoleContext;
+    private final List<DevModeListener> listeners = new ArrayList<>();
 
     private synchronized void firstStart(QuarkusClassLoader deploymentClassLoader, List<CodeGenData> codeGens) {
 
@@ -146,6 +147,20 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 RuntimeUpdatesProcessor.INSTANCE.setConfiguredInstrumentationEnabled(
                         runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false));
                 firstStartCompleted = true;
+
+                for (DevModeListener listener : ServiceLoader.load(DevModeListener.class)) {
+                    listeners.add(listener);
+                }
+                listeners.sort(Comparator.comparingInt(DevModeListener::order));
+
+                for (DevModeListener listener : ServiceLoader.load(DevModeListener.class)) {
+                    try {
+                        listener.afterFirstStart(runner);
+                    } catch (Exception e) {
+                        log.warn("Unable to invoke 'afterFirstStart' of " + listener.getClass(), e);
+                    }
+                }
+
             } catch (Throwable t) {
                 Throwable rootCause = t;
                 while (rootCause.getCause() != null) {
@@ -201,7 +216,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         try {
                             CodeGenerator.trigger(classLoader,
                                     codeGen,
-                                    curatedApplication.getApplicationModel(), properties, LaunchMode.DEVELOPMENT);
+                                    curatedApplication.getApplicationModel(), properties, LaunchMode.DEVELOPMENT, false);
                         } catch (Exception any) {
                             log.warn("Code generation failed", any);
                         }
@@ -332,6 +347,15 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         //don't attempt to restart in the exit code handler
         restarting = true;
         fsWatchUtil.shutdown();
+
+        for (int i = listeners.size() - 1; i >= 0; i--) {
+            try {
+                listeners.get(i).beforeShutdown();
+            } catch (Exception e) {
+                log.warn("Unable to invoke 'beforeShutdown' of " + listeners.get(i).getClass(), e);
+            }
+        }
+
         try {
             stop();
             if (RuntimeUpdatesProcessor.INSTANCE == null) {
@@ -444,7 +468,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     module.getSourceParents(),
                                     Paths.get(module.getPreBuildOutputDir()),
                                     Paths.get(module.getTargetDir()),
-                                    sourcePath -> module.addSourcePaths(singleton(sourcePath.toAbsolutePath().toString()))));
+                                    sourcePath -> module.addSourcePathFirst(sourcePath.toAbsolutePath().toString())));
                 }
             }
             RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT),

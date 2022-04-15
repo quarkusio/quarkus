@@ -31,9 +31,10 @@ public class BasicTest {
     String appleUrl;
     @TestHTTPResource()
     String baseUrl;
-
     @TestHTTPResource("/hello")
     String helloUrl;
+    @TestHTTPResource("/params")
+    String paramsUrl;
 
     @Test
     public void shouldMakeTextRequest() {
@@ -93,6 +94,21 @@ public class BasicTest {
     }
 
     @Test
+    void shouldApplyInterfaceLevelInterceptorBinding() {
+        for (int i = 0; i < 2; i++) {
+            RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance-on-interface")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("ClientWebApplicationException"));
+        }
+
+        RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance-on-interface")
+                .then()
+                .statusCode(200)
+                .body(equalTo("CircuitBreakerOpenException"));
+    }
+
+    @Test
     void shouldCreateClientSpans() {
         // Reset captured traces
         RestAssured.given().when().get("/export-clear").then().statusCode(200);
@@ -115,13 +131,13 @@ public class BasicTest {
             Assertions.assertNotNull(spanData.get("spanId"));
 
             if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("call-hello-client")) {
+                    && spanData.get("name").equals("/call-hello-client")) {
                 outsideServerFound = true;
                 // Server Span
                 serverSpanId = (String) spanData.get("spanId");
                 serverTraceId = (String) spanData.get("traceId");
 
-                Assertions.assertEquals("call-hello-client", spanData.get("name"));
+                Assertions.assertEquals("/call-hello-client", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -138,11 +154,11 @@ public class BasicTest {
                 Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
                 Assertions.assertNotNull(spanData.get("attr_http.user_agent"));
             } else if (spanData.get("kind").equals(SpanKind.CLIENT.toString())
-                    && spanData.get("name").equals("hello")) {
+                    && spanData.get("name").equals("/hello")) {
                 clientFound = true;
                 // Client span
+                Assertions.assertEquals("/hello", spanData.get("name"));
 
-                Assertions.assertEquals("hello", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.CLIENT.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -161,11 +177,11 @@ public class BasicTest {
 
                 clientSpanId = (String) spanData.get("spanId");
             } else if (spanData.get("kind").equals(SpanKind.SERVER.toString())
-                    && spanData.get("name").equals("hello")) {
+                    && spanData.get("name").equals("/hello")) {
                 clientServerFound = true;
                 // Server span of client
 
-                Assertions.assertEquals("hello", spanData.get("name"));
+                Assertions.assertEquals("/hello", spanData.get("name"));
                 Assertions.assertEquals(SpanKind.SERVER.toString(), spanData.get("kind"));
                 Assertions.assertTrue((Boolean) spanData.get("ended"));
 
@@ -192,6 +208,14 @@ public class BasicTest {
         Assertions.assertTrue(outsideServerFound);
         Assertions.assertTrue(clientFound);
         Assertions.assertTrue(clientServerFound);
+    }
+
+    @Test
+    public void shouldConvertParamFirstToOneUsingCustomConverter() {
+        RestAssured.with().body(paramsUrl).post("/call-params-client-with-param-first")
+                .then()
+                .statusCode(200)
+                .body(equalTo("1"));
     }
 
     private List<Map<String, Object>> getSpans() {

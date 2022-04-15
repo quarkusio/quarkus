@@ -47,8 +47,11 @@ public class ConsoleHelper {
                         connection.setStdinHandler(new Consumer<int[]>() {
                             @Override
                             public void accept(int[] ints) {
+                                QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
                                 for (int i : ints) {
-                                    queue.add(i);
+                                    if (redirectIn != null && !redirectIn.acceptInput(i)) {
+                                        queue.add(i);
+                                    }
                                 }
                             }
                         });

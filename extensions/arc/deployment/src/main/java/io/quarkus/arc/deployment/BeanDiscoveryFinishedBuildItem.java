@@ -9,7 +9,7 @@ import io.quarkus.arc.processor.BeanDeployment;
  * <p>
  * Additionaly, the bean resolver can be used to apply the type-safe resolution rules, e.g. to find out wheter there is a bean
  * that would satisfy certain combination of required type and qualifiers.
- * 
+ *
  * @see SynthesisFinishedBuildItem
  */
 public final class BeanDiscoveryFinishedBuildItem extends RegisteredComponentsBuildItem {

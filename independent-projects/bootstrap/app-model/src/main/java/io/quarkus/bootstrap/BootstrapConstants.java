@@ -32,6 +32,7 @@ public interface BootstrapConstants {
 
     String PROP_DEPLOYMENT_ARTIFACT = "deployment-artifact";
     String PROP_PROVIDES_CAPABILITIES = "provides-capabilities";
+    String PROP_REQUIRES_CAPABILITIES = "requires-capabilities";
     String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
     String EXCLUDED_ARTIFACTS = "excluded-artifacts";
     String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";

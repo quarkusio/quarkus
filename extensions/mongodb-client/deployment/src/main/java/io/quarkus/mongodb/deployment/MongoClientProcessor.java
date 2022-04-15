@@ -26,6 +26,7 @@ import org.jboss.jandex.IndexView;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
+import com.mongodb.client.model.changestream.UpdateDescription;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
 
@@ -45,6 +46,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.AllowJNDIBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -71,6 +73,12 @@ public class MongoClientProcessor {
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
 
     private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
+
+    @BuildStep
+    AllowJNDIBuildItem enableJndi() {
+        //unfortunately mongo+srv protocol needs JNDI
+        return new AllowJNDIBuildItem();
+    }
 
     @BuildStep
     AdditionalIndexedClassesBuildItem includeBsonTypesToIndex() {
@@ -144,6 +152,7 @@ public class MongoClientProcessor {
                 .collect(Collectors.toCollection(ArrayList::new));
         // ChangeStreamDocument needs to be registered for reflection with its fields.
         reflectiveClass.add(new ReflectiveClassBuildItem(true, true, true, ChangeStreamDocument.class.getName()));
+        reflectiveClass.add(new ReflectiveClassBuildItem(true, true, false, UpdateDescription.class.getName()));
         return reflectiveClass;
     }
 

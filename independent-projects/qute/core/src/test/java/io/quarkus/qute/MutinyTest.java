@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -62,6 +63,19 @@ public class MutinyTest {
         Uni<Object> fooUni = Uni.createFrom().item("FOO");
         Uni<List<String>> itemsUni = Uni.createFrom().item(() -> Arrays.asList("foo", "bar", "baz"));
         assertEquals("foo::1.foo,2.bar,3.baz", template.data("foo", fooUni, "items", itemsUni).render());
+    }
+
+    @Test
+    public void testUniFailure() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        Template template = engine.parse("{foo.toLowerCase}");
+        Uni<String> fooUni = Uni.createFrom().item(() -> {
+            throw new IllegalStateException("Foo!");
+        });
+        assertThatIllegalStateException()
+                .isThrownBy(() -> template.data("foo", fooUni).render())
+                .withMessage("Foo!");
+
     }
 
     private void assertMulti(Multi<String> multi, String expected) throws InterruptedException {

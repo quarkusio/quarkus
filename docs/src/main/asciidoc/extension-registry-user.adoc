@@ -150,6 +150,21 @@ registries:
 - registry.acme.org
 - registry.quarkus.io
 ----
+=== Overriding a registry URL
+
+There may be situations where the URL of the registry changes, however the ID needs to be the same (because the Maven coordinates are queried). To override the registry URL, add the following:
+
+[source,yaml]
+----
+registries:
+- registry.acme.org
+- registry.quarkus.io:
+    maven:
+      repository:
+        url: https://internal.registry.acme.org/maven
+----
+
+
 
 === [[how-to-register-as-nexus-repository]] How to register as a Nexus Repository proxy
 

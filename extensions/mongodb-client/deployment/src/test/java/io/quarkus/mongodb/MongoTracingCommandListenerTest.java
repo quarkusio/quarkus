@@ -23,7 +23,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Test the inclusion and config of the {@link MongoTracingCommandListener}.
- * 
+ *
  * @see io.quarkus.smallrye.opentracing.deployment.TracingTest
  */
 public class MongoTracingCommandListenerTest extends MongoTestBase {

@@ -40,7 +40,7 @@ public interface AnnotationsTransformer extends BuildExtension {
     void transform(TransformationContext transformationContext);
 
     /**
-     * 
+     *
      * @return a new builder instance
      */
     static Builder builder() {
@@ -57,14 +57,14 @@ public interface AnnotationsTransformer extends BuildExtension {
         /**
          * The initial set of annotations instances corresponds to {@link org.jboss.jandex.ClassInfo#classAnnotations()},
          * {@link org.jboss.jandex.FieldInfo#annotations()} and {@link org.jboss.jandex.MethodInfo#annotations()} respectively.
-         * 
+         *
          * @return the annotation instances
          */
         Collection<AnnotationInstance> getAnnotations();
 
         /**
          * The transformation is not applied until the {@link Transformation#done()} method is invoked.
-         * 
+         *
          * @return a new transformation
          */
         Transformation transform();
@@ -97,7 +97,7 @@ public interface AnnotationsTransformer extends BuildExtension {
         }
 
         /**
-         * 
+         *
          * @param appliesToKind
          * @return self
          * @see AnnotationsTransformer#appliesTo(Kind)
@@ -107,7 +107,7 @@ public interface AnnotationsTransformer extends BuildExtension {
         }
 
         /**
-         * 
+         *
          * @param appliesTo
          * @return self
          * @see AnnotationsTransformer#appliesTo(Kind)
@@ -118,7 +118,7 @@ public interface AnnotationsTransformer extends BuildExtension {
         }
 
         /**
-         * 
+         *
          * @param priority
          * @return self
          */
@@ -129,7 +129,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -146,7 +146,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -156,7 +156,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -168,7 +168,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -178,7 +178,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -188,7 +188,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -200,7 +200,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -210,7 +210,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -220,7 +220,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
-         * 
+         *
          * @param annotationNames
          * @return self
          */
@@ -233,7 +233,7 @@ public interface AnnotationsTransformer extends BuildExtension {
         /**
          * The transformation logic is only performed if the given predicate is evaluated to true. Multiple predicates are
          * logically-ANDed.
-         * 
+         *
          * @param predicate
          * @return self
          */
@@ -248,7 +248,7 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         /**
          * The given transformation logic is only performed if all conditions added via {@link #when(Predicate)} are met.
-         * 
+         *
          * @param consumer
          * @return a new annotation transformer
          */

@@ -9,6 +9,7 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,6 +102,7 @@ import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.HttpCompression;
 import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.Route.HttpMethod;
@@ -145,12 +147,12 @@ class ReactiveRoutesProcessor {
     @BuildStep
     void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         unremovableBeans
-                .produce(UnremovableBeanBuildItem.beanClassAnnotation(io.quarkus.vertx.web.deployment.DotNames.ROUTE));
+                .produce(UnremovableBeanBuildItem.beanClassAnnotation(DotNames.ROUTE));
         unremovableBeans
-                .produce(UnremovableBeanBuildItem.beanClassAnnotation(io.quarkus.vertx.web.deployment.DotNames.ROUTES));
+                .produce(UnremovableBeanBuildItem.beanClassAnnotation(DotNames.ROUTES));
         unremovableBeans
                 .produce(UnremovableBeanBuildItem
-                        .beanClassAnnotation(io.quarkus.vertx.web.deployment.DotNames.ROUTE_FILTER));
+                        .beanClassAnnotation(DotNames.ROUTE_FILTER));
     }
 
     @BuildStep
@@ -168,18 +170,22 @@ class ReactiveRoutesProcessor {
             // NOTE: inherited business methods are not taken into account
             ClassInfo beanClass = bean.getTarget().get().asClass();
             AnnotationInstance routeBaseAnnotation = beanClass
-                    .classAnnotation(io.quarkus.vertx.web.deployment.DotNames.ROUTE_BASE);
+                    .classAnnotation(DotNames.ROUTE_BASE);
             for (MethodInfo method : beanClass.methods()) {
+                if (method.isSynthetic() || Modifier.isStatic(method.flags()) || method.name().equals("<init>")) {
+                    continue;
+                }
+
                 List<AnnotationInstance> routes = new LinkedList<>();
                 AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method,
-                        io.quarkus.vertx.web.deployment.DotNames.ROUTE);
+                        DotNames.ROUTE);
                 if (routeAnnotation != null) {
                     validateRouteMethod(bean, method, transformedAnnotations, beanArchive.getIndex(), routeAnnotation);
                     routes.add(routeAnnotation);
                 }
                 if (routes.isEmpty()) {
                     AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method,
-                            io.quarkus.vertx.web.deployment.DotNames.ROUTES);
+                            DotNames.ROUTES);
                     if (routesAnnotation != null) {
                         for (AnnotationInstance annotation : routesAnnotation.value().asNestedArray()) {
                             validateRouteMethod(bean, method, transformedAnnotations, beanArchive.getIndex(), annotation);
@@ -187,14 +193,31 @@ class ReactiveRoutesProcessor {
                         }
                     }
                 }
+
                 if (!routes.isEmpty()) {
                     LOGGER.debugf("Found route handler business method %s declared on %s", method, bean);
+
+                    HttpCompression compression = HttpCompression.UNDEFINED;
+                    if (annotationStore.hasAnnotation(method, DotNames.COMPRESSED)) {
+                        compression = HttpCompression.ON;
+                    }
+                    if (annotationStore.hasAnnotation(method, DotNames.UNCOMPRESSED)) {
+                        if (compression == HttpCompression.ON) {
+                            errors.produce(new ValidationErrorBuildItem(new IllegalStateException(
+                                    String.format(
+                                            "@Compressed and @Uncompressed cannot be both declared on business method %s declared on %s",
+                                            method, bean))));
+                        } else {
+                            compression = HttpCompression.OFF;
+                        }
+                    }
                     routeHandlerBusinessMethods
-                            .produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes, routeBaseAnnotation));
+                            .produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes, routeBaseAnnotation,
+                                    annotationStore.hasAnnotation(method, DotNames.BLOCKING), compression));
                 }
                 //
                 AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method,
-                        io.quarkus.vertx.web.deployment.DotNames.ROUTE_FILTER);
+                        DotNames.ROUTE_FILTER);
                 if (filterAnnotation != null) {
                     if (!routes.isEmpty()) {
                         errors.produce(new ValidationErrorBuildItem(new IllegalStateException(
@@ -367,7 +390,7 @@ class ReactiveRoutesProcessor {
                     }
                 }
 
-                if (businessMethod.getMethod().annotation(DotNames.BLOCKING) != null) {
+                if (businessMethod.isBlocking()) {
                     if (handlerType == HandlerType.NORMAL) {
                         handlerType = HandlerType.BLOCKING;
                     } else if (handlerType == HandlerType.FAILURE) {
@@ -388,6 +411,10 @@ class ReactiveRoutesProcessor {
                     routeHandler = recorder.createHandler(handlerClass);
                     routeHandlers.put(routeString, routeHandler);
                 }
+
+                // Wrap the route handler if necessary
+                // Note that route annotations with the same values share a single handler implementation
+                routeHandler = recorder.compressRouteHandler(routeHandler, businessMethod.getCompression());
 
                 RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
                 matchers.put(matcher, businessMethod.getMethod());
@@ -453,9 +480,9 @@ class ReactiveRoutesProcessor {
     @BuildStep
     AutoAddScopeBuildItem autoAddScope() {
         return AutoAddScopeBuildItem.builder()
-                .containsAnnotations(io.quarkus.vertx.web.deployment.DotNames.ROUTE,
-                        io.quarkus.vertx.web.deployment.DotNames.ROUTES,
-                        io.quarkus.vertx.web.deployment.DotNames.ROUTE_FILTER)
+                .containsAnnotations(DotNames.ROUTE,
+                        DotNames.ROUTES,
+                        DotNames.ROUTE_FILTER)
                 .defaultScope(BuiltinScope.SINGLETON)
                 .reason("Found route handler business methods").build();
     }
@@ -467,10 +494,10 @@ class ReactiveRoutesProcessor {
         }
         List<Type> params = method.parameters();
         if (params.size() != 1 || !params.get(0).name()
-                .equals(io.quarkus.vertx.web.deployment.DotNames.ROUTING_CONTEXT)) {
+                .equals(DotNames.ROUTING_CONTEXT)) {
             throw new IllegalStateException(String.format(
                     "Route filter method must accept exactly one parameter of type %s: %s [method: %s, bean: %s]",
-                    io.quarkus.vertx.web.deployment.DotNames.ROUTING_CONTEXT, params, method, bean));
+                    DotNames.ROUTING_CONTEXT, params, method, bean));
         }
     }
 
@@ -725,7 +752,7 @@ class ReactiveRoutesProcessor {
                 ResultHandle failureClass = invoke.invokeVirtualMethod(Methods.GET_CLASS, failure);
                 BytecodeCreator failureTypeIsNotAssignable = invoke
                         .ifFalse(invoke.invokeVirtualMethod(Methods.IS_ASSIGNABLE_FROM,
-                                invoke.loadClass(failureType.name().toString()), failureClass))
+                                invoke.loadClassFromTCCL(failureType.name().toString()), failureClass))
                         .trueBranch();
                 failureTypeIsNotAssignable.invokeInterfaceMethod(Methods.NEXT, routingContext);
                 failureTypeIsNotAssignable.returnValue(null);
@@ -1252,7 +1279,7 @@ class ReactiveRoutesProcessor {
         List<ParameterInjector> injectors = new ArrayList<>();
 
         injectors.add(
-                ParameterInjector.builder().canEndResponse().matchType(io.quarkus.vertx.web.deployment.DotNames.ROUTING_CONTEXT)
+                ParameterInjector.builder().canEndResponse().matchType(DotNames.ROUTING_CONTEXT)
                         .resultHandleProvider(new ResultHandleProvider() {
                             @Override
                             public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
@@ -1424,7 +1451,7 @@ class ReactiveRoutesProcessor {
                                 BytecodeCreator bodyNotNull = bodyIfNotNull.trueBranch();
                                 bodyNotNull.assign(ret, bodyNotNull.invokeVirtualMethod(Methods.JSON_OBJECT_MAP_TO,
                                         bodyAsJson,
-                                        invoke.loadClass(paramType.name().toString())));
+                                        bodyNotNull.loadClassFromTCCL(paramType.name().toString())));
                                 BytecodeCreator bodyNull = bodyIfNotNull.falseBranch();
                                 bodyNull.assign(ret, bodyNull.loadNull());
                                 return ret;

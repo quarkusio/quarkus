@@ -58,6 +58,20 @@ public class OpenshiftWithS2iTest {
                 });
 
         assertThat(openshiftList).filteredOn(h -> "BuildConfig".equals(h.getKind())).hasSize(1);
+        // Has output image stream
+        assertThat(openshiftList)
+                .filteredOn(h -> "ImageStream".equals(h.getKind()) && h.getMetadata().getName().equals("openshift-s2i"))
+                .hasSize(1);
+
+        // Has builder image stream
+        assertThat(openshiftList)
+                .filteredOn(h -> "ImageStream".equals(h.getKind()) && !h.getMetadata().getName().equals("openshift-s2i"))
+                .singleElement().satisfies(r -> {
+                    assertThat(r).isInstanceOfSatisfying(ImageStream.class, i -> {
+                        assertThat(i.getSpec()).isNotNull();
+                        assertThat(i.getSpec().getDockerImageRepository()).isNotNull();
+                    });
+                });
 
         assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {

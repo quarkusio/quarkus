@@ -1,6 +1,7 @@
 package io.quarkus.rest.client.reactive.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -162,6 +163,14 @@ public class ParamConverterProviderTest {
         @Override
         public <T> javax.ws.rs.ext.ParamConverter<T> getConverter(Class<T> rawType, Type genericType,
                 Annotation[] annotations) {
+            if (genericType == null) {
+                fail("Generic Type cannot be null!");
+            }
+
+            if (annotations == null) {
+                fail("Annotations cannot be null!");
+            }
+
             if (rawType == Param.class) {
                 return (javax.ws.rs.ext.ParamConverter<T>) new javax.ws.rs.ext.ParamConverter<Param>() {
                     @Override

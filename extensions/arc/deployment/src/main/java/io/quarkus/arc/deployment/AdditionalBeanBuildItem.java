@@ -30,7 +30,7 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
 
     /**
      * Convenient factory method to create an unremovable build item for a single bean class.
-     * 
+     *
      * @param beanClass
      * @return a new build item
      */
@@ -132,7 +132,7 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
          * <p>
          * The default scope should be used in cases where a bean class source is not controlled by the extension and the
          * scope annotation cannot be declared directly on the class.
-         * 
+         *
          * @param defaultScope
          * @return self
          */

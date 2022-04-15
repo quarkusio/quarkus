@@ -5,7 +5,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEAD;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATCH;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.POST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUT;
 
@@ -79,6 +78,9 @@ public class ResteasyReactiveScanner {
         BlockingDefault blocking = BlockingDefault.AUTOMATIC;
         for (ClassInfo applicationClassInfo : applications) {
             if (Modifier.isAbstract(applicationClassInfo.flags())) {
+                continue;
+            }
+            if (excludedClasses.contains(applicationClassInfo.name().toString())) {
                 continue;
             }
             if (selectedAppClass != null) {

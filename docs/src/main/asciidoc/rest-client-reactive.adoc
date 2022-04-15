@@ -8,19 +8,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
-REST Client Reactive is a non-blocking counterpart of the RESTEasy REST Client.
+REST Client Reactive is the REST Client implementation compatible with RESTEasy Reactive.
 
 If your application uses a client and exposes REST endpoints, please use xref:resteasy-reactive.adoc[RESTEasy Reactive]
 for the server part.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == Solution
 
@@ -35,16 +30,9 @@ The solution is located in the `rest-client-reactive-quickstart` {quickstarts-tr
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-client-reactive-quickstart \
-    -DclassName="org.acme.rest.client.ExtensionsResource" \
-    -Dpath="/extension" \
-    -Dextensions="resteasy-reactive-jackson,rest-client-reactive-jackson"
-cd rest-client-reactive-quickstart
-----
+:create-app-artifact-id: rest-client-reactive-quickstart
+:create-app-extensions: resteasy-reactive-jackson,rest-client-reactive-jackson
+include::includes/devtools/create-app.adoc[]
 
 This command generates the Maven project with a REST endpoint and imports:
 
@@ -54,19 +42,24 @@ This command generates the Maven project with a REST endpoint and imports:
 If you already have your Quarkus project configured, you can add the `rest-client-reactive-jackson` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="rest-client-reactive-jackson"
-----
+:add-extension-extensions: rest-client-reactive-jackson
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-rest-client-reactive-jackson")
 ----
 
 == Setting up the model
@@ -203,9 +196,9 @@ quarkus.rest-client.extensions-api.url=https://stage.code.quarkus.io/api
 quarkus.rest-client.extensions-api.scope=javax.inject.Singleton
 ----
 
-== Update the JAX-RS resource
+== Create the JAX-RS resource
 
-Open the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file and update it with the following content:
+Create the `src/main/java/org/acme/rest/client/ExtensionsResource.java` file with the following content:
 
 
 [source,java]
@@ -276,6 +269,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
@@ -286,7 +280,7 @@ public class ExtensionsResource {
 
     public ExtensionsResource() {
         extensionsService = RestClientBuilder.newBuilder()
-            .baseUri("https://stage.code.quarkus.io/api")
+            .baseUri(URI.create("https://stage.code.quarkus.io/api"))
             .build(ExtensionsService.class);
     }
 
@@ -617,7 +611,9 @@ public class GetTokenReactiveClientHeadersFactory extends ReactiveClientHeadersF
     Service service;
 
     @Override
-    public Uni<MultivaluedMap<String, String>> getHeaders(MultivaluedMap<String, String> incomingHeaders) {
+    public Uni<MultivaluedMap<String, String>> getHeaders(
+            MultivaluedMap<String, String> incomingHeaders,
+            MultivaluedMap<String, String> clientOutgoingHeaders);
         return Uni.createFrom().item(() -> {
             MultivaluedHashMap<String, String> newHeaders = new MultivaluedHashMap<>();
             // perform blocking call
@@ -652,6 +648,62 @@ public interface ExtensionsService {
 org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Authorization
 ----
 
+== Exception handling
+
+The MicroProfile REST Client specification introduces the `org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper` whose purpose is to convert an HTTP response to an exception.
+
+A simple example of implementing such a `ResponseExceptionMapper` for the `ExtensionsService` discussed above, could be:
+
+[source, java]
+----
+public interface MyResponseExceptionMapper implements ResponseExceptionMapper<RuntimeException> {
+
+    RuntimeException toThrowable(Response response) {
+        if (response.getStatus() == 500) {
+            throw new RuntimeException("The remote service responded with HTTP 500");
+        }
+        return null;
+    }
+}
+----
+
+`ResponseExceptionMapper` also defines the `getPriority` method which is used in order to determine the priority with which `ResponseExceptionMapper` implementations will be called (implementations with a lower value for `getPriority` will be invoked first).
+If `toThrowable` returns an exception, then that exception will be thrown. If `null` is returned, the next implementation of `ResponseExceptionMapper` in the chain will be called (if there is any).
+
+The class as written above, would not be automatically be used by any REST Client. To make it available to every REST Client of the application, the class needs to be annotated with `@Provider` (as long as `quarkus.rest-client-reactive.provider-autodiscovery` is not set to `false`).
+Alternatively, if the exception handling class should only apply to specific REST Client interfaces, you can either annotate the interfaces with `@RegisterProvider(MyResponseExceptionMapper.class)`, or register it using configuration using the `providers` property of the proper `quarkus.rest-client` configuration group.
+
+=== Using @ClientExceptionMapper
+
+A simpler way to convert HTTP response codes of 400 or above is to use the `@ClientExceptionMapper` annotation.
+
+For the `ExtensionsService` REST Client interface defined above, an example use of `@ClientExceptionMapper` would be:
+
+[source, java]
+----
+@Path("/extensions")
+@RegisterRestClient
+public interface ExtensionsService {
+
+    @GET
+    Set<Extension> getById(@QueryParam("id") String id);
+
+    @GET
+    CompletionStage<Set<Extension>> getByIdAsync(@QueryParam("id") String id);
+
+    @ClientExceptionMapper
+    static RuntimeException toException(Response response) {
+        if (response.getStatus() == 500) {
+            return new RuntimeException("The remote service responded with HTTP 500");
+        }
+        return null;
+    }
+}
+----
+
+Naturally this handling is per REST Client. `@ClientExceptionMapper` uses the default priority if the `priority` attribute is not set and the normal rules of invoking all handlers in turn apply.
+
+[[multipart]]
 == Multipart Form support
 
 REST Client Reactive support multipart messages.
@@ -773,13 +825,23 @@ NOTE: MicroProfile REST Client specification does not allow setting proxy creden
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application with:
+
+include::includes/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-rest-client-reactive.
 
 You should see a JSON object containing some basic information about this extension.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+And executed with `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
 
 == Logging traffic
 REST Client Reactive can log the requests it sends and the responses it receives.
@@ -802,11 +864,127 @@ quarkus.rest-client.logging.body-limit=50
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
 ----
 
+== Mocking the client for tests
+If you use a client injected with the `@RestClient` annotation, you can easily mock it for tests.
+You can do it with Mockito's `@InjectMock` or with `QuarkusMock`.
+
+This section shows how to replace your client with a mock. If you would like to get a more in-depth understanding of how mocking works in Quarkus, see the blog post on https://quarkus.io/blog/mocking/[Mocking CDI beans].
+
+NOTE: Mocking does not work when using `@NativeImageTest` or `@QuarkusIntegrationTest`.
+
+Let's assume you have the following client:
+[source,java]
+----
+package io.quarkus.it.rest.client.main;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+
+@Path("/")
+@RegisterRestClient
+public interface Client {
+    @GET
+    String get();
+}
+----
+
+
+=== Mocking with InjectMock
+The simplest approach to mock a client for tests is to use Mockito and `@InjectMock`.
+
+First, add the following dependency to your application:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5-mockito</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-junit5-mockito")
+----
+
+Then, in your test you can simply use `@InjectMock` to create and inject a mock:
+
+[source,java]
+----
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.mockito.InjectMock;
+
+@QuarkusTest
+public class InjectMockTest {
+
+    @InjectMock
+    Client mock;
+
+    @BeforeEach
+    public void setUp() {
+        when(mock.get()).thenReturn("MockAnswer");
+    }
+
+    @Test
+    void doTest() {
+        // ...
+    }
+}
+----
+
+=== Mocking with QuarkusMock
+If Mockito doesn't meet your needs, you can create a mock programmatically using `QuarkusMock`, e.g.:
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusMock;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class QuarkusMockTest {
+
+    @BeforeEach
+    public void setUp() {
+        Client customMock = new Client() { //<1>
+            @Override
+            public String get() {
+                return "MockAnswer";
+            }
+        };
+        QuarkusMock.installMockForType(customMock, Client.class, RestClient.LITERAL); // <2>
+    }
+    @Test
+    void doTest() {
+        // ...
+    }
+}
+----
+
+<1> here we use a manually created implementation of the client interface to replace the actual Client
+<2> note that `RestClient.LITERAL` has to be passed as the last argument of the `installMockForType` method
 
 
 == Using a Mock HTTP Server for tests
+In some cases you may want to mock the remote endpoint - the HTTP server - instead of mocking the client itself.
+This may be especially useful for native tests, or for programmatically created clients.
 
-For tests, you can easily mock the HTTP server with Wiremock.
+You can easily mock an HTTP Server with Wiremock.
 The xref:rest-client.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
 describes how to set it up in detail.
 

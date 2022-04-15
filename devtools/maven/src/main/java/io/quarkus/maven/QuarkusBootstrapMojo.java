@@ -1,10 +1,14 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecution;
@@ -20,13 +24,21 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.maven.components.BootstrapSessionListener;
+import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.LaunchMode;
 
 public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
+    static final String CLOSE_BOOTSTRAPPED_APP = "closeBootstrappedApp";
+
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
+
+    @Component(hint = "quarkus-bootstrap", role = AbstractMavenLifecycleParticipant.class)
+    private BootstrapSessionListener bootstrapSessionListener;
 
     /**
      * The current repository/network configuration of Maven.
@@ -57,6 +69,18 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.build.finalName}")
     private String finalName;
+
+    /**
+     * The list of main manifest attributes
+     */
+    @Parameter
+    private Map<String, String> manifestEntries = new LinkedHashMap<>();
+
+    /**
+     * The list of manifest sections
+     */
+    @Parameter
+    private List<ManifestSection> manifestSections = new ArrayList<>();
 
     /**
      * When building an uber-jar, this array specifies entries that should
@@ -113,6 +137,12 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
     private MojoExecution mojoExecution;
 
+    /**
+     * Whether to close the bootstrapped applications after the execution
+     */
+    @Parameter(property = "quarkusCloseBootstrappedApp")
+    private Boolean closeBootstrappedApp;
+
     private ArtifactKey projectId;
 
     @Override
@@ -120,7 +150,20 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         if (!beforeExecute()) {
             return;
         }
-        doExecute();
+        try {
+            doExecute();
+        } finally {
+            if (closeBootstrappedApp != null) {
+                // This trick is for dev mode from which we invoke other goals using the invoker API,
+                // in which case the session listener won't be enabled and the app bootstrapped in generate-code will be closed immediately
+                // causing DevMojo to bootstrap a new instance
+                if (closeBootstrappedApp) {
+                    bootstrapProvider.bootstrapper(this).close();
+                }
+            } else if (!bootstrapSessionListener.isEnabled()) {
+                bootstrapProvider.bootstrapper(this).close();
+            }
+        }
     }
 
     @Override
@@ -148,6 +191,17 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected String appArtifactCoords() {
         return appArtifact;
+    }
+
+    /**
+     * Allows implementations to provide extra dependencies that should be enforced on the application.
+     * Originally requested by Camel K.
+     *
+     * @param mode launch mode the application is being bootstrapped in
+     * @return list of extra dependencies that should be enforced on the application
+     */
+    protected List<Dependency> forcedDependencies(LaunchMode mode) {
+        return Collections.emptyList();
     }
 
     protected RepositorySystem repositorySystem() {
@@ -184,6 +238,14 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected String finalName() {
         return finalName;
+    }
+
+    protected Map<String, String> manifestEntries() {
+        return manifestEntries;
+    }
+
+    protected List<ManifestSection> manifestSections() {
+        return manifestSections;
     }
 
     protected String[] ignoredEntries() {

@@ -123,7 +123,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
 
     /**
      * This will run the build on all generated projects (with real data)
-     * 
+     *
      * @throws IOException
      */
     public void buildAllProjects() throws IOException {
@@ -179,7 +179,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     /**
      * It will validate (compare and check package name) the class against the snapshots in all the projects for the given
      * language
-     * 
+     *
      * @param language the language to check
      * @param className the full qualified className (using `org.acme.ClassName` also works, it will be replaced by the project
      *        package name)
@@ -193,7 +193,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     /**
      * It will validate (compare and check package name) the test class against the snapshots in all the projects for the given
      * language
-     * 
+     *
      * @param language the language to check
      * @param className the full qualified test className (using `org.acme.ClassName` also works, it will be replaced by the
      *        project package name)
@@ -246,7 +246,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
 
     /**
      * This let you compare the project file structure (tree) for a specific language against its snapshot
-     * 
+     *
      * @param language the language
      * @return the ListAssert
      * @throws Throwable
@@ -258,7 +258,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     /**
      * see {link #assertThatGeneratedTreeMatchSnapshots(Language language)}
      * but for a specific sub directory
-     * 
+     *
      * @param language the language
      * @param dirRelativePath the sub directory
      * @return the ListAssert

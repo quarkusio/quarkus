@@ -44,7 +44,7 @@ public class OpenTelemetryHttpCDITest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
         assertEquals("HelloBean.hello", spans.get(0).getName());
         assertEquals(INTERNAL, spans.get(0).getKind());
-        assertEquals("hello", spans.get(1).getName());
+        assertEquals("/hello", spans.get(1).getName());
         assertEquals(SERVER, spans.get(1).getKind());
         assertEquals(spans.get(0).getParentSpanId(), spans.get(1).getSpanId());
     }

@@ -54,7 +54,7 @@ public class MultipleCacheAnnotationsTest {
         assertTrue(value2 == value4);
 
         // STEP 5
-        // Action: @CacheResult(cache2)-annotated method call. 
+        // Action: @CacheResult(cache2)-annotated method call.
         // Expected effect: method invoked because of STEP 4 and result cached into `cache2`.
         // Verified by: different objects references between STEPS 3 AND 5 results.
         String value5 = cachedService.cachedMethod2(KEY);

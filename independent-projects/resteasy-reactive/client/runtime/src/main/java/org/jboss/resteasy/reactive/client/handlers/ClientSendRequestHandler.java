@@ -2,27 +2,38 @@ package org.jboss.resteasy.reactive.client.handlers;
 
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.stork.ServiceInstance;
 import io.smallrye.stork.Stork;
+import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.AsyncFile;
+import io.vertx.core.file.OpenOptions;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
+import io.vertx.core.streams.Pump;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.ws.rs.InternalServerErrorException;
@@ -38,6 +49,7 @@ import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
@@ -46,6 +58,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartRespons
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -70,20 +83,35 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             return;
         }
         requestContext.suspend();
-        Uni<HttpClientRequest> future = createRequest(requestContext);
+        Uni<HttpClientRequest> future = createRequest(requestContext)
+                .runSubscriptionOn(new Executor() {
+                    @Override
+                    public void execute(Runnable command) {
+                        Context current = Vertx.currentContext();
+                        ClientRequestContextImpl clientRequestContext = requestContext.getClientRequestContext();
+                        Context captured = null;
+                        if (clientRequestContext != null) {
+                            captured = clientRequestContext.getContext();
+                        }
+                        if (current == captured || captured == null) {
+                            // No need to switch to another context.
+                            command.run();
+                        } else {
+                            // Switch back to the captured context
+                            captured.runOnContext(new Handler<Void>() {
+                                @Override
+                                public void handle(Void ignored) {
+                                    command.run();
+                                }
+                            });
+                        }
+                    }
+                });
 
         // DNS failures happen before we send the request
         future.subscribe().with(new Consumer<>() {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
-                final long startTime;
-
-                if (requestContext.getCallStatsCollector() != null) {
-                    startTime = System.nanoTime();
-                } else {
-                    startTime = 0L;
-                }
-                Future<HttpClientResponse> sent;
                 if (requestContext.isMultipart()) {
                     Promise<HttpClientRequest> requestPromise = Promise.promise();
                     QuarkusMultipartFormUpload actualEntity;
@@ -96,6 +124,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
                         Pipe<Buffer> pipe = actualEntity.pipe(); // Shouldn't this be called in an earlier phase ?
                         requestPromise.future().onComplete(ar -> {
+
                             if (ar.succeeded()) {
                                 HttpClientRequest req = ar.result();
                                 if (httpClientRequest.headers() == null
@@ -113,15 +142,46 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 pipe.close();
                             }
                         });
-                        sent = httpClientRequest.response();
-
+                        Future<HttpClientResponse> sent = httpClientRequest.response();
                         requestPromise.complete(httpClientRequest);
+                        attachSentHandlers(sent, httpClientRequest, requestContext);
                     } catch (Throwable e) {
-                        reportFinish(System.nanoTime() - startTime, e, requestContext);
+                        reportFinish(e, requestContext);
                         requestContext.resume(e);
                         return;
                     }
+                } else if (requestContext.isFileUpload()) {
+                    Vertx vertx = Vertx.currentContext().owner();
+                    Object entity = requestContext.getEntity().getEntity();
+                    String filePathToUpload = null;
+                    if (entity instanceof File) {
+                        filePathToUpload = ((File) entity).getAbsolutePath();
+                    } else if (entity instanceof Path) {
+                        filePathToUpload = ((Path) entity).toAbsolutePath().toString();
+                    }
+                    vertx.fileSystem()
+                            .open(filePathToUpload, new OpenOptions().setRead(true).setWrite(false),
+                                    new Handler<>() {
+                                        @Override
+                                        public void handle(AsyncResult<AsyncFile> openedAsyncFile) {
+                                            if (openedAsyncFile.failed()) {
+                                                requestContext.resume(openedAsyncFile.cause());
+                                                return;
+                                            }
+
+                                            MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
+                                                    .asMap();
+                                            updateRequestHeadersFromConfig(requestContext, headerMap);
+
+                                            // set the Vertx headers after we've run the interceptors because they can modify them
+                                            setVertxHeaders(httpClientRequest, headerMap);
+
+                                            Future<HttpClientResponse> sent = httpClientRequest.send(openedAsyncFile.result());
+                                            attachSentHandlers(sent, httpClientRequest, requestContext);
+                                        }
+                                    });
                 } else {
+                    Future<HttpClientResponse> sent;
                     Buffer actualEntity;
                     try {
                         actualEntity = ClientSendRequestHandler.this
@@ -141,101 +201,170 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             clientLogger.logRequest(httpClientRequest, actualEntity, false);
                         }
                     }
+                    attachSentHandlers(sent, httpClientRequest, requestContext);
                 }
-
-                sent.onSuccess(new Handler<>() {
-                    @Override
-                    public void handle(HttpClientResponse clientResponse) {
-                        try {
-                            requestContext.initialiseResponse(clientResponse);
-                            int status = clientResponse.statusCode();
-                            if (requestContext.getCallStatsCollector() != null) {
-                                if (status >= 500 && status < 600) {
-                                    reportFinish(System.nanoTime() - startTime, new InternalServerErrorException(),
-                                            requestContext);
-                                } else {
-                                    reportFinish(System.nanoTime() - startTime, null, requestContext);
-                                }
-                            }
-
-                            if (isResponseMultipart(requestContext)) {
-                                QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
-                                        clientResponse);
-
-                                clientResponse.handler(multipartDecoder::offer);
-
-                                clientResponse.endHandler(new Handler<>() {
-                                    @Override
-                                    public void handle(Void event) {
-                                        multipartDecoder.offer(LastHttpContent.EMPTY_LAST_CONTENT);
-
-                                        List<InterfaceHttpData> datas = multipartDecoder.getBodyHttpDatas();
-                                        requestContext.setResponseMultipartParts(datas);
-
-                                        if (loggingScope != LoggingScope.NONE) {
-                                            clientLogger.logResponse(clientResponse, false);
-                                        }
-
-                                        requestContext.resume();
-                                    }
-                                });
-                            } else if (!requestContext.isRegisterBodyHandler()) {
-                                clientResponse.pause();
-                                if (loggingScope != LoggingScope.NONE) {
-                                    clientLogger.logResponse(clientResponse, false);
-                                }
-                                requestContext.resume();
-                            } else {
-                                clientResponse.bodyHandler(new Handler<>() {
-                                    @Override
-                                    public void handle(Buffer buffer) {
-                                        if (loggingScope != LoggingScope.NONE) {
-                                            clientLogger.logResponse(clientResponse, false);
-                                        }
-                                        try {
-                                            if (buffer.length() > 0) {
-                                                requestContext.setResponseEntityStream(
-                                                        new ByteArrayInputStream(buffer.getBytes()));
-                                            } else {
-                                                requestContext.setResponseEntityStream(null);
-                                            }
-                                            requestContext.resume();
-                                        } catch (Throwable t) {
-                                            requestContext.resume(t);
-                                        }
-                                    }
-                                });
-                            }
-                        } catch (Throwable t) {
-                            reportFinish(System.nanoTime() - startTime, t, requestContext);
-                            requestContext.resume(t);
-                        }
-                    }
-                })
-                        .onFailure(new Handler<>() {
-                            @Override
-                            public void handle(Throwable failure) {
-                                if (failure instanceof IOException) {
-                                    requestContext.resume(new ProcessingException(failure));
-                                } else {
-                                    requestContext.resume(failure);
-                                }
-                            }
-                        });
             }
         }, new Consumer<>() {
             @Override
             public void accept(Throwable event) {
+                // set some properties to prevent NPEs down the chain
+                requestContext.setResponseHeaders(new MultivaluedTreeMap<>());
+                requestContext.setResponseReasonPhrase("unknown");
+
                 if (event instanceof IOException) {
                     ProcessingException throwable = new ProcessingException(event);
-                    reportFinish(0, throwable, requestContext);
+                    reportFinish(throwable, requestContext);
                     requestContext.resume(throwable);
                 } else {
                     requestContext.resume(event);
-                    reportFinish(0, event, requestContext);
+                    reportFinish(event, requestContext);
                 }
             }
         });
+    }
+
+    private void attachSentHandlers(Future<HttpClientResponse> sent,
+            HttpClientRequest httpClientRequest,
+            RestClientRequestContext requestContext) {
+        sent.onSuccess(new Handler<>() {
+            @Override
+            public void handle(HttpClientResponse clientResponse) {
+                try {
+                    requestContext.initialiseResponse(clientResponse);
+                    int status = clientResponse.statusCode();
+                    if (requestContext.getCallStatsCollector() != null) {
+                        if (status >= 500 && status < 600) {
+                            reportFinish(new InternalServerErrorException(),
+                                    requestContext);
+                        } else {
+                            reportFinish(null, requestContext);
+                        }
+                    }
+
+                    if (isResponseMultipart(requestContext)) {
+                        QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
+                                clientResponse);
+
+                        clientResponse.handler(multipartDecoder::offer);
+
+                        clientResponse.endHandler(new Handler<>() {
+                            @Override
+                            public void handle(Void event) {
+                                multipartDecoder.offer(LastHttpContent.EMPTY_LAST_CONTENT);
+
+                                List<InterfaceHttpData> datas = multipartDecoder.getBodyHttpDatas();
+                                requestContext.setResponseMultipartParts(datas);
+
+                                if (loggingScope != LoggingScope.NONE) {
+                                    clientLogger.logResponse(clientResponse, false);
+                                }
+
+                                requestContext.resume();
+                            }
+                        });
+                    } else if (!requestContext.isRegisterBodyHandler()) {
+                        clientResponse.pause();
+                        if (loggingScope != LoggingScope.NONE) {
+                            clientLogger.logResponse(clientResponse, false);
+                        }
+                        requestContext.resume();
+                    } else {
+                        if (requestContext.isFileDownload()) {
+                            // when downloading a file we copy the bytes to the file system and manually set the entity type
+                            // this is needed because large files can cause OOM or exceed the InputStream limit (of 2GB)
+
+                            clientResponse.pause();
+                            Vertx vertx = Vertx.currentContext().owner();
+                            vertx.fileSystem().createTempFile("rest-client", "",
+                                    new Handler<>() {
+                                        @Override
+                                        public void handle(AsyncResult<String> tempFileCreation) {
+                                            if (tempFileCreation.failed()) {
+                                                reportFinish(tempFileCreation.cause(), requestContext);
+                                                requestContext.resume(tempFileCreation.cause());
+                                                return;
+                                            }
+                                            String tmpFilePath = tempFileCreation.result();
+                                            vertx.fileSystem().open(tmpFilePath,
+                                                    new OpenOptions().setWrite(true),
+                                                    new Handler<>() {
+                                                        @Override
+                                                        public void handle(AsyncResult<AsyncFile> asyncFileOpened) {
+                                                            if (asyncFileOpened.failed()) {
+                                                                reportFinish(asyncFileOpened.cause(), requestContext);
+                                                                requestContext.resume(asyncFileOpened.cause());
+                                                                return;
+                                                            }
+                                                            final AsyncFile tmpAsyncFile = asyncFileOpened.result();
+                                                            final Pump downloadPump = Pump.pump(clientResponse,
+                                                                    tmpAsyncFile);
+                                                            downloadPump.start();
+
+                                                            clientResponse.resume();
+                                                            clientResponse.endHandler(new Handler<>() {
+                                                                public void handle(Void event) {
+                                                                    tmpAsyncFile.flush(new Handler<>() {
+                                                                        public void handle(AsyncResult<Void> flushed) {
+                                                                            if (flushed.failed()) {
+                                                                                reportFinish(flushed.cause(),
+                                                                                        requestContext);
+                                                                                requestContext.resume(flushed.cause());
+                                                                                return;
+                                                                            }
+
+                                                                            if (loggingScope != LoggingScope.NONE) {
+                                                                                clientLogger.logRequest(
+                                                                                        httpClientRequest, null, false);
+                                                                            }
+
+                                                                            requestContext.setTmpFilePath(tmpFilePath);
+                                                                            requestContext.resume();
+                                                                        }
+                                                                    });
+                                                                }
+                                                            });
+                                                        }
+                                                    });
+                                        }
+                                    });
+                        } else {
+                            clientResponse.bodyHandler(new Handler<>() {
+                                @Override
+                                public void handle(Buffer buffer) {
+                                    if (loggingScope != LoggingScope.NONE) {
+                                        clientLogger.logResponse(clientResponse, false);
+                                    }
+                                    try {
+                                        if (buffer.length() > 0) {
+                                            requestContext.setResponseEntityStream(
+                                                    new ByteArrayInputStream(buffer.getBytes()));
+                                        } else {
+                                            requestContext.setResponseEntityStream(null);
+                                        }
+                                        requestContext.resume();
+                                    } catch (Throwable t) {
+                                        requestContext.resume(t);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } catch (Throwable t) {
+                    reportFinish(t, requestContext);
+                    requestContext.resume(t);
+                }
+            }
+        })
+                .onFailure(new Handler<>() {
+                    @Override
+                    public void handle(Throwable failure) {
+                        if (failure instanceof IOException) {
+                            requestContext.resume(new ProcessingException(failure));
+                        } else {
+                            requestContext.resume(failure);
+                        }
+                    }
+                });
     }
 
     private boolean isResponseMultipart(RestClientRequestContext requestContext) {
@@ -251,10 +380,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         return false;
     }
 
-    private void reportFinish(long timeInNs, Throwable throwable, RestClientRequestContext requestContext) {
+    private void reportFinish(Throwable throwable, RestClientRequestContext requestContext) {
         ServiceInstance serviceInstance = requestContext.getCallStatsCollector();
         if (serviceInstance != null) {
-            serviceInstance.recordResult(timeInNs, throwable);
+            serviceInstance.recordReply();
+            serviceInstance.recordEnd(throwable);
         }
     }
 
@@ -264,14 +394,22 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         Object readTimeout = state.getConfiguration().getProperty(QuarkusRestClientProperties.READ_TIMEOUT);
         Uni<RequestOptions> requestOptions;
         state.setMultipartResponsesData(multipartResponseDataMap);
+        if (uri.getScheme() == null) { // invalid URI
+            return Uni.createFrom()
+                    .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
+        }
         if (uri.getScheme().startsWith(Stork.STORK)) {
             boolean isHttps = "storks".equals(uri.getScheme());
             String serviceName = uri.getHost();
+            if (serviceName == null) { // invalid URI
+                return Uni.createFrom()
+                        .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
+            }
             Uni<ServiceInstance> serviceInstance;
             try {
                 serviceInstance = Stork.getInstance()
                         .getService(serviceName)
-                        .selectServiceInstance();
+                        .selectInstanceAndRecordStart(shouldMeasureTime(state));
             } catch (Throwable e) {
                 log.error("Error selecting service instance for serviceName: " + serviceName, e);
                 return Uni.createFrom().failure(e);
@@ -279,7 +417,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             requestOptions = serviceInstance.onItem().transform(new Function<>() {
                 @Override
                 public RequestOptions apply(ServiceInstance serviceInstance) {
-                    if (serviceInstance.gatherStatistics()) {
+                    if (serviceInstance.gatherStatistics() && shouldMeasureTime(state)) {
                         state.setCallStatsCollector(serviceInstance);
                     }
                     return new RequestOptions()
@@ -289,6 +427,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 }
             });
         } else {
+            try {
+                URL ignored = uri.toURL();
+            } catch (MalformedURLException mue) {
+                log.error("Invalid REST Client URL used: '" + uri + "'");
+                return Uni.createFrom()
+                        .failure(new IllegalArgumentException("Invalid REST Client URL used: '" + uri + "'"));
+            }
+
             boolean isHttps = "https".equals(uri.getScheme());
             int port = getPort(isHttps, uri.getPort());
             requestOptions = Uni.createFrom().item(new RequestOptions().setHost(uri.getHost())
@@ -310,6 +456,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         return AsyncResultUni.toUni(handler -> httpClient.request(options, handler));
                     }
                 });
+    }
+
+    private boolean shouldMeasureTime(RestClientRequestContext state) {
+        return !Multi.class.equals(state.getResponseType().getRawType());
     }
 
     private int getPort(boolean isHttps, int specifiedPort) {
@@ -364,6 +514,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
             actualEntity = state.writeEntity(entity, headerMap,
                     state.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR));
+        } else {
+            // some servers don't like the fact that a POST or PUT does not have a method body if there is no content-length header associated
+            if (state.getHttpMethod().equals("POST") || state.getHttpMethod().equals("PUT")) {
+                headerMap.putSingle(HttpHeaders.CONTENT_LENGTH, "0");
+            }
         }
         // set the Vertx headers after we've run the interceptors because they can modify them
         setVertxHeaders(httpClientRequest, headerMap);

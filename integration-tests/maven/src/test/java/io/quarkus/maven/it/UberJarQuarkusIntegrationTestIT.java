@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 public class UberJarQuarkusIntegrationTestIT extends QuarkusITBase {
 
     @Test
-    public void testFastJar() throws MavenInvocationException, IOException {
+    public void testUberJar() throws MavenInvocationException, IOException {
         doTest("qit-uber-jar", "uberjar");
     }
 }

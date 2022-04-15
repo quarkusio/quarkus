@@ -36,10 +36,10 @@ import com.mongodb.client.result.DeleteResult;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
-import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
 import io.quarkus.mongodb.panache.common.MongoEntity;
-import io.quarkus.mongodb.panache.transaction.MongoTransactionException;
+import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
+import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.common.transaction.MongoTransactionException;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
@@ -747,6 +747,10 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public UpdateType update(Class<?> entityClass, String update, Object... params) {
         return executeUpdate(entityClass, update, params);
+    }
+
+    public UpdateType update(Class<?> entityClass, Document update) {
+        return createUpdate(mongoCollection(entityClass), entityClass, update);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Object... params) {

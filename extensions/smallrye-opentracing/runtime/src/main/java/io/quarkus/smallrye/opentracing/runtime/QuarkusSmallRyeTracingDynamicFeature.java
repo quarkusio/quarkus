@@ -8,8 +8,8 @@ import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
 import io.opentracing.Tracer;
-import io.opentracing.contrib.jaxrs2.server.OperationNameProvider;
-import io.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
+import io.smallrye.opentracing.contrib.jaxrs2.server.OperationNameProvider;
+import io.smallrye.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
 
 @Provider
 public class QuarkusSmallRyeTracingDynamicFeature implements DynamicFeature {

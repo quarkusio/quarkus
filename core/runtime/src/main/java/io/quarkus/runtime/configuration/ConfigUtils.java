@@ -33,10 +33,12 @@ import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
+import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfig;
@@ -104,10 +106,12 @@ public final class ConfigUtils {
         if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
             builder.withSources(new RuntimeOverrideConfigSource(classLoader));
         }
-        if (runTime) {
+        if (runTime || bootstrap) {
             builder.addDefaultSources();
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
             builder.withSources(new DotEnvConfigSourceProvider());
+            builder.withSources(
+                    new PropertiesConfigSource(loadRuntimeDefaultValues(), "Runtime Defaults", Integer.MIN_VALUE + 50));
         } else {
             List<ConfigSource> sources = new ArrayList<>();
             sources.addAll(classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
@@ -119,10 +123,6 @@ public final class ConfigUtils {
         if (addDiscovered) {
             builder.addDiscoveredSources();
         }
-        if (runTime || bootstrap) {
-            Map<String, String> runtimeDefaults = loadRuntimeDefaultValues();
-            builder.withSources(new PropertiesConfigSource(runtimeDefaults, "Runtime Defaults", Integer.MIN_VALUE + 50));
-        }
         return builder;
     }
 
@@ -130,28 +130,39 @@ public final class ConfigUtils {
         SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         builder.withDefaultValue(SMALLRYE_CONFIG_PROFILE, ProfileManager.getActiveProfile());
 
-        Map<String, String> relocations = new HashMap<>();
-        relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
-        relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
-        // Override the priority, because of the ProfileConfigSourceInterceptor and profile.parent.
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                Map<String, String> relocations = new HashMap<>();
+                relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
+                relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
+
+                // Also adds to the relocations the profile parent in the active profile
+                ConfigValue profileValue = context.proceed(SMALLRYE_CONFIG_PROFILE);
+                if (profileValue != null) {
+                    List<String> profiles = ProfileConfigSourceInterceptor.convertProfile(profileValue.getValue());
+                    for (String profile : profiles) {
+                        relocations.put("%" + profile + "." + SMALLRYE_CONFIG_PROFILE_PARENT,
+                                "%" + profile + "." + "quarkus.config.profile.parent");
+                    }
+                }
+
                 return new RelocateConfigSourceInterceptor(relocations);
             }
 
             @Override
             public OptionalInt getPriority() {
+                // So it executes before the ProfileConfigSourceInterceptor and applies the profile relocation
                 return OptionalInt.of(Priorities.LIBRARY + 200 - 5);
             }
         });
 
-        Map<String, String> fallbacks = new HashMap<>();
-        fallbacks.put("quarkus.config.locations", SMALLRYE_CONFIG_LOCATIONS);
-        fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
+                Map<String, String> fallbacks = new HashMap<>();
+                fallbacks.put("quarkus.config.locations", SMALLRYE_CONFIG_LOCATIONS);
+                fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
                 return new FallbackConfigSourceInterceptor(fallbacks);
             }
 

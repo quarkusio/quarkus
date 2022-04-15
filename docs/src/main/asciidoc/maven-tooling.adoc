@@ -6,25 +6,27 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Building applications with Maven
 
 include::./attributes.adoc[]
+:devtools-no-gradle:
 
 [[project-creation]]
 == Creating a new project
 
-With Maven, you can scaffold a new project with:
+You can scaffold a new Maven project with:
 
-[source,bash,subs=attributes+]
+:create-app-group-id: my-groupId
+:create-app-artifact-id: my-artifactId
+:create-app-code:
+:create-app-post-command:
+include::includes/devtools/create-app.adoc[]
+
+If you are using the CLI, you can get the list of available options with:
+
+[source,bash]
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=my-groupId \
-    -DprojectArtifactId=my-artifactId \
-    -DprojectVersion=my-version \
-    -DclassName="org.my.group.MyResource"
+quarkus create app --help
 ----
 
-NOTE: If you just launch `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
-for user inputs. You can disable (and use default values) this interactive mode by passing `-B` to the Maven command.
-
-The following table lists the attributes you can pass to the `create` command:
+If you are using the Maven command, the following table lists the attributes you can pass to the `create` command:
 
 [cols=3*,options="header"]
 |===
@@ -76,9 +78,6 @@ The following table lists the attributes you can pass to the `create` command:
 
 By default, the command will target the `io.quarkus.platform:quarkus-bom:{quarkus-version}` platform release (unless the coordinates of the desired platform release have been specified).
 
-If you decide to generate a REST resource (using the `className` attribute), the endpoint is exposed at: `http://localhost:8080/$path`.
-If you use the default `path`, the URL is: http://localhost:8080/hello.
-
 The project is generated in a directory named after the passed artifactId.
 If the directory already exists, the generation fails.
 
@@ -89,17 +88,12 @@ Instructions to build the image and run the container are written in those Docke
 
 From inside a Quarkus project, you can obtain a list of the available extensions with:
 
-[source,bash]
-----
-./mvnw quarkus:list-extensions
-----
+include::includes/devtools/extension-list.adoc[]
 
-You can enable an extension using:
+You can add an extension using:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="hibernate-validator"
-----
+:add-extension-extensions: hibernate-validator
+include::includes/devtools/extension-add.adoc[]
 
 Extensions are passed using a comma-separated list.
 
@@ -124,10 +118,8 @@ $ ./mvnw quarkus:add-extensions -Dextensions=jdbc,agroal,non-exist-ent
 
 You can install all extensions which match a globbing pattern :
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="hibernate-*"
-----
+:add-extension-extensions: smallrye-*
+include::includes/devtools/extension-add.adoc[]
 
 [[dev-mode]]
 == Development mode
@@ -135,16 +127,13 @@ You can install all extensions which match a globbing pattern :
 Quarkus comes with a built-in development mode.
 Run your application with:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.
 This is great to do development spanning UI and database as you see changes reflected immediately.
 
-`quarkus:dev` enables hot deployment with background compilation, which means
+Dev mode enables hot deployment with background compilation, which means
 that when you modify your Java files or your resource files and refresh your browser these changes will automatically take effect.
 This works too for resource files like the configuration property file.
 The act of
@@ -158,10 +147,9 @@ Hit `CTRL+C` to stop the application.
 ====
 By default, `quarkus:dev` sets the debug host to `localhost` (for security reasons). If you need to change this, for example to enable debugging on all hosts, you can use the `-DdebugHost` option like so:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev -DdebugHost=0.0.0.0
-----
+:dev-additional-parameters: -DdebugHost=0.0.0.0
+include::includes/devtools/dev-parameters.adoc[]
+:!dev-additional-parameters:
 ====
 
 === Remote Development Mode
@@ -190,10 +178,7 @@ may want to leave it out of the properties file and specify it as a system prope
 
 The `mutable-jar` is then built in the same way that a regular Quarkus jar is built, i.e. by issuing:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Before you start Quarkus on the remote host set the environment variable `QUARKUS_LAUNCH_DEVMODE=true`. If you are
 on bare metal you can set it via the `export QUARKUS_LAUNCH_DEVMODE=true` command and then run the application with the proper `java -jar ...` command to run the application.
@@ -281,7 +266,11 @@ An additional system property `suspend` can be used to suspend the JVM, when lau
 
 [TIP]
 ====
-You can also run a Quarkus application in debug mode with a suspended JVM using `./mvnw compile quarkus:dev -Dsuspend` which is a shorthand for `./mvnw compile quarkus:dev -Dsuspend=true`.
+You can also run a Quarkus application in debug mode with a suspended JVM using:
+
+:dev-additional-parameters: -Dsuspend -Ddebug
+include::includes/devtools/dev-parameters.adoc[]
+:!dev-additional-parameters:
 
 Then, attach your debugger to `localhost:5005`.
 ====
@@ -298,7 +287,11 @@ In the wizard, select: `Maven -> Existing Maven Project`.
 On the next screen, select the root location of the project.
 The next screen list the found modules; select the generated project and click on `Finish`. Done!
 
-In a separated terminal, run `./mvnw compile quarkus:dev`, and enjoy a highly productive environment.
+In a separated terminal, run:
+
+include::includes/devtools/dev.adoc[]
+
+and enjoy a highly productive environment.
 
 **IntelliJ**
 
@@ -310,7 +303,11 @@ In IntelliJ:
 4. Next a few times (review the different options if needed)
 5. On the last screen click on Finish
 
-In a separated terminal or in the embedded terminal, run `./mvnw compile quarkus:dev`. Enjoy!
+In a separated terminal or in the embedded terminal, run:
+
+include::includes/devtools/dev.adoc[]
+
+Enjoy!
 
 **Apache NetBeans**
 
@@ -320,7 +317,11 @@ In NetBeans:
 2. Select the project root
 3. Click on `Open Project`
 
-In a separated terminal or the embedded terminal, go to the project root and run `./mvnw compile quarkus:dev`. Enjoy!
+In a separated terminal or the embedded terminal, go to the project root and run:
+
+include::includes/devtools/dev.adoc[]
+
+Enjoy!
 
 **Visual Studio Code**
 
@@ -363,7 +364,7 @@ To enable the use-case of building and testing a Quarkus application offline, th
 
 [source,bash]
 ----
-mvn quarkus:go-offline
+./mvnw quarkus:go-offline
 ----
 
 This goal will resolve all the runtime, build time, test and dev mode dependencies of the application downloading them to the configured local Maven repository.
@@ -375,7 +376,10 @@ Native executables make Quarkus applications ideal for containers and serverless
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version} (Make sure to use a Java 11 version of GraalVM).
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
 
-Create a native executable using: `./mvnw package -Pnative`.
+Create a native executable using:
+
+include::includes/devtools/build-native.adoc[]
+
 A native executable will be present in `target/`.
 
 To run Integration Tests on the native executable, make sure to have the proper Maven plugin configured (see <<build-tool-maven>>) and launch the `verify` goal.
@@ -401,7 +405,7 @@ $ ./mvnw verify -Pnative
 [INFO] Running org.acme.quickstart.GreetingResourceIT
 Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started-native/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=target/quarkus.log]
 2019-02-28 16:52:42,020 INFO  [io.quarkus] (main) Quarkus started in 0.007s. Listening on: http://localhost:8080
-2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.081 s - in org.acme.quickstart.GreetingResourceIT
 [INFO]
 [INFO] Results:
@@ -416,10 +420,9 @@ Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/gettin
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-[source,bash]
-----
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-----
+:build-additional-parameters: -Dquarkus.native.container-build=true
+include::includes/devtools/build-native.adoc[]
+:!build-additional-parameters:
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
@@ -529,12 +532,14 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 `maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
 <5> Use a specific `native` profile for native executable building.
 <6> Enable the `native` package type. The build will therefore produce a native executable.
-<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the xref:building-native-image.adoc[Native executable guide] for more info.
+<7> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` or `@QuarkusIntegrationTest` will be run against the native executable. See the xref:building-native-image.adoc[Native executable guide] for more info.
 
 [[fast-jar]]
 === Using fast-jar
 
-`fast-jar` is now the default quarkus package type. The result of `./mvnw package` command is a new directory under `target` named `quarkus-app`.
+`fast-jar` is the default quarkus package type.
+
+The result of the build is a directory under `target` named `quarkus-app`.
 
 You can run the application using: `java -jar target/quarkus-app/quarkus-run.jar`.
 
@@ -596,8 +601,14 @@ More information on this topic can be found on the xref:cdi-reference.adoc#bean_
 
 Quarkus supports xref:config-reference.adoc#profiles[configuration profiles] in order to provide a specific configuration according to the target environment.
 
-The profile can be provided directly in the Maven build's command thanks to the system property `quarkus.profile` with a command of type `./mvnw package -Dquarkus.profile=<profile-name-here>`,
-however it is also possible to specify the profile directly in the POM file of the project using project properties, the Quarkus Maven plugin configuration properties or system properties set in the Quarkus Maven plugin configuration.
+The profile can be provided directly in the Maven build's command thanks to the system property `quarkus.profile` with a command of type:
+
+// TODO switch to <profile-name-here> once escaping issue is fixed in Asciidoctor
+:build-additional-parameters: -Dquarkus.profile=profile-name-here
+include::includes/devtools/build.adoc[]
+:!build-additional-parameters:
+
+However it is also possible to specify the profile directly in the POM file of the project using project properties, the Quarkus Maven plugin configuration properties or system properties set in the Quarkus Maven plugin configuration.
 
 In order of precedence (greater precedence first):
 
@@ -941,3 +952,148 @@ the `${maven.multiModuleProjectDirectory}` will be pointing to the directory fro
 
 The `${session.topLevelProject.basedir.absolutePath}` will be pointing either to the directory from which the `mvn` command was launched or to the directory targeted with
 the `-f` argument, if it was specified.
+
+[[project-info]]
+== Quarkus project info
+
+NOTE: This goal was introduced in Quarkus Maven plugin 2.7.0.Final and can be used in projects that are based on Quarkus version 2.0.0.Final or later.
+
+The Quarkus Maven plugin includes a goal called `info` (currently marked as 'experimental') that logs Quarkus-specific information about the project, such as: the imported Quarkus platform BOMs and the Quarkus extensions found among the project dependencies.
+In a multi-module project `quarkus:info` will assume that the current module, in which it is executed, is the main module of the application.
+
+NOTE: The report generated by `quarkus:info` is not currently including the Quarkus Maven plugin information, however it's planned to be added in the future releases.
+
+Here is an example `info` output for a simple project:
+[source,text,subs=attributes+]
+----
+[aloubyansky@localhost code-with-quarkus]$ mvn quarkus:info
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< org.acme:code-with-quarkus >---------------------
+[INFO] Building code-with-quarkus 1.0.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- quarkus-maven-plugin:{quarkus-version}:info (default-cli) @ code-with-quarkus ---
+[WARNING] quarkus:info goal is experimental, its options and output may change in future versions
+[INFO] Quarkus platform BOMs: <1>
+[INFO]   io.quarkus.platform:quarkus-bom:pom:{quarkus-version}
+[INFO]   io.quarkus.platform:quarkus-kogito-bom:pom:{quarkus-version}
+[INFO]   io.quarkus.platform:quarkus-camel-bom:pom:{quarkus-version}
+[INFO] 
+[INFO] Extensions from io.quarkus.platform:quarkus-bom: <2>
+[INFO]   io.quarkus:quarkus-resteasy-reactive
+[INFO] 
+[INFO] Extensions from io.quarkus.platform:quarkus-kogito-bom: <3>
+[INFO]   org.kie.kogito:kogito-quarkus-decisions
+[INFO] 
+[INFO] Extensions from io.quarkus.platform:quarkus-camel-bom: <4>
+[INFO]   org.apache.camel.quarkus:camel-quarkus-rabbitmq
+[INFO] 
+[INFO] Extensions from registry.quarkus.io: <5>
+[INFO]   io.quarkiverse.prettytime:quarkus-prettytime:0.2.1
+----
+
+<1> Quarkus platform BOMs imported in the project (BOMs imported by parent POMs will also be reported)
+<2> Direct Quarkus extension dependencies managed by the `quarkus-bom`
+<3> Direct Quarkus extension dependencies managed by the `quarkus-kogito-bom`
+<4> Direct Quarkus extension dependencies managed by the `quarkus-camel-bom`
+<5> Direct Quarkus extensions dependencies that aren't managed by Quarkus BOMs but found in the Quarkus extension registry
+
+NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in the Quarkus extension registries if those are present among the project dependencies, indicating they have an 'unknown origin'.
+
+[[project-info-misaligned]]
+=== Highlighing misaligned versions
+
+`quarkus:info` will also highlight basic Quarkus dependency version misalignments, in case they are detected. For example, if we modify the project mentioned above by removing the `kogito-quarkus-decisions` extension from the dependencies and adding a `2.6.3.Final` `<version>` element to the `quarkus-resteasy-reactive` dependency that is managed by the `quarkus-bom` and then run `quarkus:info` again, we'll see something like:
+
+[source,text,subs=attributes+]
+----
+[INFO] --- quarkus-maven-plugin:{quarkus-version}:info (default-cli) @ code-with-quarkus ---
+[WARNING] quarkus:info goal is experimental, its options and output may change in future versions
+[INFO] Quarkus platform BOMs:
+[INFO]   io.quarkus.platform:quarkus-bom:pom:{quarkus-version}
+[INFO]   io.quarkus.platform:quarkus-kogito-bom:pom:{quarkus-version} | unnecessary <1>
+[INFO]   io.quarkus.platform:quarkus-camel-bom:pom:{quarkus-version}
+[INFO] 
+[INFO] Extensions from io.quarkus.platform:quarkus-bom:
+[INFO]   io.quarkus:quarkus-resteasy-reactive:2.6.3.Final | misaligned <2>
+[INFO] 
+[INFO] Extensions from io.quarkus.platform:quarkus-camel-bom:
+[INFO]   org.apache.camel.quarkus:camel-quarkus-rabbitmq
+[INFO] 
+[INFO] Extensions from registry.quarkus.io:
+[INFO]   io.quarkiverse.prettytime:quarkus-prettytime:0.2.1
+[INFO]
+[WARNING] Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'mvn quarkus:update -Drectify'
+----
+
+<1> The `quarkus-kogito-bom` import is now reported as 'unnecessary' since none of the Quarkus extensions it includes are found among the project dependencies
+<2> The version `2.6.3.Final` of the `quarkus-resteasy-reactive` is now reported as being misaligned with the version managed by the Quarkus platform BOM imported in the project, which is {quarkus-version}
+
+[[project-update]]
+== Quarkus project update
+
+NOTE: This goal was introduced in Quarkus Maven plugin 2.7.0.Final and can be used in projects that are based on Quarkus version 2.0.0.Final or later.
+
+The `quarkus:update` goal (currently marked as 'experimental') provided by the Quarkus Maven plugin can be used to check whether there are Quarkus-related updates available for a project, such as: new releases of the relevant Quarkus platform BOMs and non-platform Quarkus extensions present in the project. In a multi-module project the `update` goal is meant to be executed from the main Quarkus application module.
+
+IMPORTANT: At this point, the `quarkus:update` goal does not actually apply the recommended updates but simply reports what they are and how to apply them manually.
+
+NOTE: The Quarkus Maven plugin version isn't currently included in the update report, however it's planned to be added in the future releases.
+
+The way `quarkus:update` works, first, all the direct Quarkus extension dependencies of the project are collected (those that are managed by the Quarkus platform BOMs and those that aren't but found in the Quarkus extension registries). Then the configured Quarkus extension registries (typically the `registry.quarkus.io`) will be queried for the latest recommended/supported Quarkus platform versions and non-platform Quarkus extensions compatible with them. The algorithm will then select the latest compatible combination of all the extensions found in the project, assuming such a combination actually exists. Otherwise, no updates will be suggested.
+
+Assuming we have a project including Kogito, Camel and core Quarkus extensions available in the Quarkus platform based on Quarkus `2.7.1.Final`, the output of the `quarkus:update` would look like:
+[source,text,subs=attributes+]
+----
+[aloubyansky@localhost code-with-quarkus]$ mvn quarkus:update
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< org.acme:code-with-quarkus >---------------------
+[INFO] Building code-with-quarkus 1.0.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- quarkus-maven-plugin:{quarkus-version}:update (default-cli) @ code-with-quarkus ---
+[WARNING] quarkus:update goal is experimental, its options and output might change in future versions
+[INFO] 
+[INFO] Recommended Quarkus platform BOM updates: <1>
+[INFO] Update: io.quarkus.platform:quarkus-bom:pom:2.7.1.Final -> {quarkus-version}
+[INFO] Update: io.quarkus.platform:quarkus-kogito-bom:pom:2.7.1.Final -> {quarkus-version}
+[INFO] Update: io.quarkus.platform:quarkus-camel-bom:pom:2.7.1.Final -> {quarkus-version}
+----
+
+<1> A list of currently recommended Quarkus platform BOM updates
+
+NOTE: Typically, a single project property will be used to manage all the Quarkus platform BOMs but the implementation isn't currently smart enough to point that out and will report updates for each BOM individually.
+
+If we modify the project to remove all the Kogito extensions from the project, change the version of the `quarkus-resteasy-reactive` extension to `2.6.3.Final` and downgrade `quarkus-prettytime` which is not included in the Quarkus platform BOMs to `0.2.0`, `quarkus:update` will report something like:
+
+[source,text,subs=attributes+]
+----
+[INFO] Recommended Quarkus platform BOM updates: <1>
+[INFO] Update: io.quarkus.platform:quarkus-bom:pom:2.7.1.Final -> {quarkus-version}
+[INFO] Update: io.quarkus.platform:quarkus-camel-bom:pom:2.7.1.Final -> {quarkus-version}
+[INFO] Remove: io.quarkus.platform:quarkus-kogito-bom:pom:2.7.1.Final <2>
+[INFO] 
+[INFO] Extensions from io.quarkus.platform:quarkus-bom:
+[INFO] Update: io.quarkus:quarkus-resteasy-reactive:2.6.3.Final -> remove version (managed) <3>
+[INFO] 
+[INFO] Extensions from registry.quarkus.io:
+[INFO] Update: io.quarkiverse.prettytime:quarkus-prettytime:0.2.0 -> 0.2.1 <4>
+----
+
+<1> A list of the currently recommended Quarkus platform BOM updates for the project
+<2> Given that the project does not include any Kogito extensions, the BOM import is recommended to be removed
+<3> An outdated version of the `quarkus-resteasy-reactive` is recommended to be removed in favor of the one managed by the `quarkus-bom`
+<4> The latest compatible version of the `quarkus-prettytime` extension
+
+=== Quarkus project rectify
+
+As was mentioned above, `quarkus:info`, besides reporting Quarkus platform and extension versions, performs a quick version alignment check, to make sure the extension versions used in the project are compatible with the imported Quarkus platform BOMs. If misalignments are detected, the following warning message will be logged:
+
+[source,text,subs=attributes+]
+----
+[WARNING] Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'mvn quarkus:update -Drectify'
+----
+
+When the `rectify` option is enabled, `quarkus:update`, instead of suggesting the latest recommended Quarkus version updates, will log update instructions to simply align the extension dependency versions found in the project with the currently imported Quarkus platform BOMs.

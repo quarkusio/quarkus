@@ -4,13 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class PackageLevelAnnotationTest {
@@ -18,6 +17,7 @@ public class PackageLevelAnnotationTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
+                    .addClass(TransactionTestUtils.class)
                     .addPackage(PackageLevelAnnotationTest.class.getPackage())
                     .addAsResource("application.properties"));
 
@@ -56,16 +56,6 @@ public class PackageLevelAnnotationTest {
     }
 
     private void inTransaction(Runnable runnable) {
-        try {
-            transaction.begin();
-            try {
-                runnable.run();
-                transaction.commit();
-            } catch (Exception e) {
-                transaction.rollback();
-            }
-        } catch (SystemException | NotSupportedException e) {
-            throw new IllegalStateException("Transaction exception", e);
-        }
+        TransactionTestUtils.inTransaction(transaction, runnable);
     }
 }

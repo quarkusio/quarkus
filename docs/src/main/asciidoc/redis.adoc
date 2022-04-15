@@ -13,14 +13,8 @@ include::./status-include.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 * A running Redis server, or Docker Compose to start one
-* GraalVM installed if you want to run in native mode.
 
 == Architecture
 
@@ -43,30 +37,23 @@ The solution is located in the `redis-quickstart` {quickstarts-tree-url}/redis-q
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=redis-quickstart \
-    -Dextensions="redis-client,resteasy-jackson,resteasy-mutiny" \
-    -DnoExamples
-cd redis-quickstart
-----
+:create-app-artifact-id: redis-quickstart
+:create-app-extensions: redis-client,resteasy-reactive-jackson
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the Redis extension.
+This command generates a new project, importing the Redis extension.
 
 
 If you already have your Quarkus project configured, you can add the `redis-client` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="redis-client"
-----
+:add-extension-extensions: redis-client
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -74,6 +61,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-redis-client")
+----
 
 == Starting the Redis server
 
@@ -99,7 +91,7 @@ This is done in the `application.properties` configuration file. Edit it to the 
 quarkus.redis.hosts=redis://localhost:6379 <1>
 ----
 
-1. Configure Redis hosts to connect to. Here we connect to the Redis server we started in the previous section
+<1> Configure Redis hosts to connect to. Here we connect to the Redis server we started in the previous section
 
 [NOTE]
 ====
@@ -129,9 +121,8 @@ public class Increment {
     }
 }
 ----
-
-1. The key that will be used as the Redis key
-2. The value held by the Redis key
+<1> The key that will be used as the Redis key
+<2> The value held by the Redis key
 
 
 == Creating the Increment Service
@@ -197,8 +188,8 @@ class IncrementService {
     }
 }
 ----
-1. Inject the Redis synchronous client
-2. Inject the Reactive Redis client
+<1> Inject the Redis synchronous client
+<2> Inject the Reactive Redis client
 
 == Creating the Increment Resource
 
@@ -210,7 +201,6 @@ package org.acme.redis;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.POST;
@@ -238,27 +228,27 @@ public class IncrementResource {
 
     @GET
     @Path("/{key}")
-    public Increment get(@PathParam("key") String key) {
+    public Increment get(String key) {
         return new Increment(key, Integer.valueOf(service.get(key)));
     }
 
     @PUT
     @Path("/{key}")
-    public void increment(@PathParam("key") String key, Integer value) {
+    public void increment(String key, Integer value) {
         service.increment(key, value);
     }
 
     @DELETE
     @Path("/{key}")
-    public Uni<Void> delete(@PathParam("key") String key) {
+    public Uni<Void> delete(String key) {
         return service.del(key);
     }
 }
 ----
 
-== Modifying the test class
+== Creating the test class
 
-Edit the `src/test/java/org/acme/redis/IncrementResourceTest.java` file to the following content:
+Create the `src/test/java/org/acme/redis/IncrementResourceTest.java` file with the following content:
 
 [source, java]
 ----
@@ -401,10 +391,7 @@ public class IncrementResourceTest {
 If you followed the instructions, you should have the Redis server running.
 Then, you just need to run the application using:
 
-[source,bash]
-----
-./mvnw quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 Open another terminal and run the `curl http://localhost:8080/increments` command.
 
@@ -420,8 +407,7 @@ a key.
 ----
 curl -X POST -H "Content-Type: application/json" -d '{"key":"first","value":10}' http://localhost:8080/increments <1>
 ----
-
-1. We create the first increment, with the key `first` and an initial value of `10`.
+<1> We create the first increment, with the key `first` and an initial value of `10`.
 
 Running the above command should return the result below:
 
@@ -452,8 +438,7 @@ To retrieve an increment using its key, we will have to run the below command:
 ----
 curl http://localhost:8080/increments/first <1>
 ----
-
-1. Running this command, should return the following result:
+<1> Running this command, should return the following result:
 
 [source, json]
 ----
@@ -471,8 +456,7 @@ To increment a value, run the following command:
 ----
 curl -X PUT -H "Content-Type: application/json" -d '27' http://localhost:8080/increments/first <1>
 ----
-
-1. Increment the `first` value by 27.
+<1> Increment the `first` value by 27.
 
 Now, running the command `curl http://localhost:8080/increments/first` should return the following result:
 
@@ -483,8 +467,7 @@ Now, running the command `curl http://localhost:8080/increments/first` should re
   "value": 37 <1>
 }
 ----
-
-1. We see that the value of the `first` key is now `37` which is exactly the result of `10 + 27`, quick maths.
+<1> We see that the value of the `first` key is now `37` which is exactly the result of `10 + 27`, quick maths.
 
 === Deleting a key
 
@@ -494,8 +477,7 @@ Use the command below, to delete an increment given its key.
 ----
 curl -X DELETE  http://localhost:8080/increments/first <1>
 ----
-
-1. Delete the `first` increment.
+<1> Delete the `first` increment.
 
 Now, running the command `curl http://localhost:8080/increments` should return an empty list `[]`
 
@@ -505,10 +487,7 @@ You can run the application as a conventional jar file.
 
 First, we will need to package it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 NOTE: This command will start a Redis instance to execute the tests. Thus your Redis containers need to be stopped.
 
@@ -530,10 +509,7 @@ Compiling a native executable takes a bit longer, as GraalVM performs additional
 steps to remove unnecessary codepaths. Use the  `native` profile to compile a
 native executable:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
 Once the build is finished, you can run the executable with:
 
@@ -567,7 +543,7 @@ Notice there's an extra bit in the key (the `second` segment).
 The syntax is as follows: `quarkus.redis.[optional name.][redis configuration property]`.
 If the name is omitted, it configures the default client.
 
-=== Named Redis client Injection
+== Named Redis Client Injection
 
 When using multiple clients, you can select the client to inject using the `io.quarkus.redis.client.RedisClientName` qualifier.
 Using the above properties to configure three different clients, you can also inject each one as follows:
@@ -586,7 +562,36 @@ RedisClient redisClient2;
 ReactiveRedisClient reactiveClient2;
 ----
 
-=== Creating Clients Programmatically
+== Providing Redis Hosts Programmatically
+
+The `RedisHostsProvider` programmatically provides redis hosts. This allows for configuration of properties like redis connection password coming from other sources.
+
+[NOTE]
+====
+This is useful as it removes the need to store sensitive data in application.properties.
+====
+
+[source,java,indent=0]
+----
+@ApplicationScoped
+@Named("hosts-provider") // the name of the host provider
+public class ExampleRedisHostProvider implements RedisHostsProvider {
+    @Override
+    public Set<URI> getHosts() {
+        // do stuff to get the host
+        String host = "redis://localhost:6379/3"
+        return Collections.singleton(URI.create(host));
+    }
+}
+----
+
+The host provider can be used to configure the redis client like shown below
+[source,properties,indent=0]
+----
+quarkus.redis.hosts-provider-name=hosts-provider
+----
+
+== Creating Clients Programmatically
 
 The `RedisClient` and `ReactiveRedisClient` provide factory methods to create clients programmatically.
 The client to be created are configured using the usual <<config-reference,Redis configuration>>.
@@ -614,6 +619,53 @@ ReactiveRedisClient defaultReactiveRedisClient = ReactiveRedisClient.createClien
 // creating a named reactive redis client whose configuration name is "second"
 ReactiveRedisClient namedReactiveRedisClient = ReactiveRedisClient.createClient("second");
 ----
+
+== Working with Binary Data
+
+While `RedisClient` and `ReactiveRedisClient` expose convenient
+`String`-based methods that mirror the commands available in Redis,
+they do not handle binary data.  In order to store binary data in
+Redis, you can inject an instance of the lower-level `MutinyRedis`
+class:
+
+[source,java,indent=0]
+----
+import io.quarkus.redis.client.runtime.MutinyRedis;
+import io.vertx.mutiny.redis.client.Command;
+import io.vertx.mutiny.redis.client.Request;
+import io.vertx.mutiny.redis.client.Response;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+@ApplicationScoped
+class BinaryCacheService {
+
+    @Inject
+    MutinyRedis mutinyRedis; // <1>
+
+    Uni<Void> set(String key, byte[] data) {
+        return mutinyRedis
+            .send( // <2>
+                Request.cmd(Command.SET)
+                    .arg(key)
+                    .arg(data)) // <3>
+            .replaceWithVoid();
+    }
+
+    Uni<byte[]> get(String key) {
+        return mutinyRedis
+            .send(
+                Request.cmd(Command.GET)
+                    .arg(key))
+            .ifNotNull()
+            .transform(Response::toBytes); // <4>
+    }
+}
+----
+<1> Inject the `MutinyRedis` instance
+<2> Use the https://smallrye.io/smallrye-mutiny-vertx-bindings/2.20.0/apidocs/io/vertx/mutiny/redis/client/Redis.html#send(io.vertx.mutiny.redis.client.Request)[`send`] method to send a command
+<3> `Request#arg` has overloads to support various types including `byte[]`
+<4> Convert a bulk response into a byte array
 
 Please see also <<redis-reference.adoc#custom_redis_commands,How to use custom Redis Commands>>.
 

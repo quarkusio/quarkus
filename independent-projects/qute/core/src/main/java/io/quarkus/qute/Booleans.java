@@ -15,7 +15,7 @@ public final class Booleans {
     /**
      * A value is considered falsy if it's null, "not found" as defined by {@link Results#isNotFound(Object)}, {code false}, an
      * empty collection, an empty map, an empty array, an empty string/char sequence or a number equal to zero.
-     * 
+     *
      * @param value
      * @return {@code true} if the value is falsy
      */

@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
@@ -18,7 +19,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serializer;
 import org.assertj.core.groups.Tuple;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -38,6 +43,8 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -45,23 +52,40 @@ import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
 import io.smallrye.reactive.messaging.kafka.Record;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 public class DefaultSerdeConfigTest {
     private static void doTest(Tuple[] expectations, Class<?>... classesToIndex) {
+        doTest(null, expectations, classesToIndex);
+    }
+
+    private static void doTest(Config customConfig, Tuple[] expectations, Class<?>... classesToIndex) {
         List<RunTimeConfigurationDefaultBuildItem> configs = new ArrayList<>();
 
         DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classesToIndex)) {
+            @Override
+            Config getConfig() {
+                return customConfig != null ? customConfig : super.getConfig();
+            }
+
             @Override
             boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> list, boolean incoming, String channelName) {
                 return true;
             }
         };
-        new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, Collections.emptyList(),
-                configs::add, null, null);
+        try {
+            new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, Collections.emptyList(),
+                    configs::add, null, null);
 
-        assertThat(configs)
-                .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
-                .containsExactlyInAnyOrder(expectations);
+            assertThat(configs)
+                    .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
+                    .containsExactlyInAnyOrder(expectations);
+        } finally {
+            // must not leak the Config instance associated to the system classloader
+            if (customConfig == null) {
+                ConfigProviderResolver.instance().releaseConfig(discovery.getConfig());
+            }
+        }
     }
 
     private static IndexView index(Class<?>... classes) {
@@ -2465,6 +2489,190 @@ public class DefaultSerdeConfigTest {
         void channel10(List<Message<JacksonDto>> jacksonDto) {
         }
 
+    }
+
+    // ---
+
+    @Test
+    public void connectorConfigNotOverriden() {
+        // @formatter:off
+        Tuple[] expectations1 = {
+                // "mp.messaging.outgoing.channel1.key.serializer" NOT expected, connector config exists
+                tuple("mp.messaging.outgoing.channel1.value.serializer",   "org.apache.kafka.common.serialization.StringSerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer",   "org.apache.kafka.common.serialization.LongDeserializer"),
+                // "mp.messaging.incoming.channel2.value.deserializer" NOT expected, connector config exists
+
+                tuple("mp.messaging.incoming.channel3.key.deserializer",   "org.apache.kafka.common.serialization.LongDeserializer"),
+                // "mp.messaging.incoming.channel3.value.deserializer" NOT expected, connector config exists
+                // "mp.messaging.outgoing.channel4.key.serializer" NOT expected, connector config exists
+                tuple("mp.messaging.outgoing.channel4.value.serializer",   "org.apache.kafka.common.serialization.StringSerializer"),
+        };
+
+        Tuple[] expectations2 = {
+                tuple("mp.messaging.outgoing.channel1.key.serializer",   "org.apache.kafka.common.serialization.LongSerializer"),
+                // "mp.messaging.outgoing.channel1.value.serializer" NOT expected, connector config exists
+
+                // "mp.messaging.incoming.channel2.key.deserializer" NOT expected, connector config exists
+                tuple("mp.messaging.incoming.channel2.value.deserializer",   "org.apache.kafka.common.serialization.StringDeserializer"),
+
+                // "mp.messaging.incoming.channel3.key.deserializer" NOT expected, connector config exists
+                tuple("mp.messaging.incoming.channel3.value.deserializer",   "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.outgoing.channel4.key.serializer",   "org.apache.kafka.common.serialization.LongSerializer"),
+                // "mp.messaging.outgoing.channel4.value.serializer" NOT expected, connector config exists
+        };
+        // @formatter:on
+
+        doTest(new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test", Map.of(
+                        "mp.messaging.connector.smallrye-kafka.key.serializer", "foo.Bar",
+                        "mp.messaging.connector.smallrye-kafka.value.deserializer", "foo.Baz")) {
+                })
+                .build(), expectations1, ConnectorConfigNotOverriden.class);
+
+        doTest(new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test", Map.of(
+                        "mp.messaging.connector.smallrye-kafka.key.deserializer", "foo.Bar",
+                        "mp.messaging.connector.smallrye-kafka.value.serializer", "foo.Baz")) {
+                })
+                .build(), expectations2, ConnectorConfigNotOverriden.class);
+    }
+
+    private static class ConnectorConfigNotOverriden {
+        @Outgoing("channel1")
+        Record<Long, String> method1() {
+            return null;
+        }
+
+        @Incoming("channel2")
+        CompletionStage<?> method2(Record<Long, String> msg) {
+            return null;
+        }
+
+        @Incoming("channel3")
+        @Outgoing("channel4")
+        Record<Long, String> method3(Record<Long, String> msg) {
+            return null;
+        }
+    }
+
+    // ---
+
+    @Test
+    public void genericSerdeImplementationAutoDetect() {
+        // @formatter:off
+
+        Tuple[] expectations1 = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.vertx.kafka.client.serialization.JsonObjectDeserializer"),
+        };
+
+        Tuple[] expectations2 = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MySerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyDeserializer"),
+
+                tuple("mp.messaging.incoming.channel3.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDtoDeserializer"),
+        };
+
+        Tuple[] expectations3 = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MySerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyDeserializer"),
+
+                tuple("mp.messaging.incoming.channel3.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyObjectMapperDeserializer"),
+        };
+        Tuple[] expectations4 = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyDeserializer"),
+
+                tuple("mp.messaging.incoming.channel3.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyObjectMapperDeserializer"),
+        };
+        // @formatter:on
+
+        doTest(expectations1, CustomSerdeImplementation.class, CustomDto.class);
+
+        doTest(expectations2, CustomSerdeImplementation.class, CustomDto.class,
+                MySerializer.class,
+                MyDeserializer.class, MyObjectMapperDeserializer.class, CustomDtoDeserializer.class);
+
+        doTest(expectations3, CustomSerdeImplementation.class, CustomDto.class,
+                MySerializer.class,
+                MyDeserializer.class, MyObjectMapperDeserializer.class);
+
+        doTest(expectations4, CustomSerdeImplementation.class, CustomDto.class,
+                MyWrongSerializer.class, CustomInterface.class,
+                MyDeserializer.class, MyObjectMapperDeserializer.class);
+    }
+
+    private static class CustomDto {
+
+    }
+
+    private interface CustomInterface<T> {
+
+    }
+
+    private static class MyWrongSerializer implements Serializer<Integer>, CustomInterface<Long> {
+
+        @Override
+        public byte[] serialize(String topic, Integer data) {
+            return new byte[0];
+        }
+    }
+
+    private static class MySerializer implements Serializer<Long>, CustomInterface<Long> {
+
+        @Override
+        public byte[] serialize(String topic, Long data) {
+            return new byte[0];
+        }
+    }
+
+    private static class MyDeserializer implements Deserializer<JsonObject> {
+
+        @Override
+        public JsonObject deserialize(String topic, byte[] data) {
+            return null;
+        }
+    }
+
+    private static class MyObjectMapperDeserializer extends ObjectMapperDeserializer<CustomDto> {
+
+        public MyObjectMapperDeserializer() {
+            super(CustomDto.class);
+        }
+    }
+
+    private static class CustomDtoDeserializer implements Deserializer<CustomDto> {
+
+        @Override
+        public CustomDto deserialize(String topic, byte[] data) {
+            return null;
+        }
+    }
+
+    private static class CustomSerdeImplementation {
+        @Outgoing("channel1")
+        Multi<Long> method1() {
+            return null;
+        }
+
+        @Incoming("channel2")
+        void method2(Record<Long, JsonObject> msg) {
+
+        }
+
+        @Incoming("channel3")
+        void method3(CustomDto payload) {
+
+        }
     }
 
 }

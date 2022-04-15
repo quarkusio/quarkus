@@ -117,7 +117,7 @@ public class SseUtil extends CommonSseUtil {
         Object entity = event.getData();
         Class<?> entityClass = event.getType();
         Type entityType = event.getGenericType();
-        MediaType mediaType = eventMediaType != null ? eventMediaType : context.getTarget().getSseElementType();
+        MediaType mediaType = eventMediaType != null ? eventMediaType : context.getTarget().getStreamElementType();
         if (mediaType == null) {
             mediaType = MediaType.TEXT_PLAIN_TYPE;
         }
@@ -129,7 +129,7 @@ public class SseUtil extends CommonSseUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
-            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations 
+            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
                 // FIXME: spec doesn't really say what headers we should use here
                 writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
@@ -151,19 +151,18 @@ public class SseUtil extends CommonSseUtil {
 
     public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response,
             List<PublisherResponseHandler.StreamingResponseCustomizer> customizers) {
-        // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
-        // happens first
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
             response.setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.SERVER_SENT_EVENTS);
-            if (context.getTarget().getSseElementType() != null) {
-                response.setResponseHeader(SSE_CONTENT_TYPE, context.getTarget().getSseElementType().toString());
+            if (context.getTarget().getStreamElementType() != null) {
+                response.setResponseHeader(SSE_CONTENT_TYPE, context.getTarget().getStreamElementType().toString());
             }
             response.setChunked(true);
             for (int i = 0; i < customizers.size(); i++) {
                 customizers.get(i).customize(response);
             }
             // FIXME: other headers?
+
         }
     }
 }

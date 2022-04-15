@@ -41,6 +41,9 @@ public class ClientCallingResource {
     @RestClient
     FaultToleranceClient faultToleranceClient;
 
+    @RestClient
+    FaultToleranceOnInterfaceClient faultToleranceOnInterfaceClient;
+
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
 
@@ -115,6 +118,17 @@ public class ClientCallingResource {
             rc.response().end(greeting);
         });
 
+        router.post("/params/param").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
+                .end(getParam(rc)));
+
+        router.route("/call-params-client-with-param-first").blockingHandler(rc -> {
+            String url = rc.getBody().toString();
+            ParamClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(ParamClient.class);
+            String result = client.getParam(Param.FIRST);
+            rc.response().end(result);
+        });
+
         router.route("/rest-response").blockingHandler(rc -> {
             String url = rc.getBody().toString();
             RestResponseClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
@@ -139,6 +153,16 @@ public class ClientCallingResource {
         router.route("/call-with-fault-tolerance").blockingHandler(rc -> {
             rc.end(faultToleranceClient.helloWithFallback());
         });
+
+        router.route("/call-with-fault-tolerance-on-interface").blockingHandler(rc -> {
+            String exception = "";
+            try {
+                faultToleranceOnInterfaceClient.hello();
+            } catch (Exception e) {
+                exception = e.getClass().getSimpleName();
+            }
+            rc.end(exception);
+        });
     }
 
     private Future<Void> success(RoutingContext rc, String body) {
@@ -153,9 +177,17 @@ public class ClientCallingResource {
         return Integer.parseInt(countQueryParam.get(0));
     }
 
+    private String getParam(io.vertx.ext.web.RoutingContext rc) {
+        return rc.queryParam("param").get(0);
+    }
+
     private void callGet(RoutingContext rc, ClientWithExceptionMapper client) {
         try {
-            client.get();
+            String response = client.get();
+            if ("MockAnswer".equals(response)) {
+                rc.response().setStatusCode(503).end(response);
+                return;
+            }
         } catch (MyException expected) {
             rc.response().setStatusCode(200).end();
             return;

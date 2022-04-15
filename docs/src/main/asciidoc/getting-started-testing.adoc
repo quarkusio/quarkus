@@ -27,12 +27,7 @@ This guide covers:
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 * The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
 
 == Architecture
@@ -56,10 +51,12 @@ This guide assumes you already have the completed application from the `getting-
 == Recap of HTTP based Testing in JVM mode
 
 If you have started from the Getting Started example you should already have a completed test, including the correct
-`pom.xml` setup.
+tooling setup.
 
-In the `pom.xml` file you should see 2 test dependencies:
-
+In your build file you should see 2 test dependencies:
+[role="primary asciidoc-tabs-sync-maven"]
+.Maven
+****
 [source,xml,subs=attributes+]
 ----
 <dependency>
@@ -73,6 +70,18 @@ In the `pom.xml` file you should see 2 test dependencies:
     <scope>test</scope>
 </dependency>
 ----
+****
+[role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+****
+[source,groovy,subs=attributes+]
+----
+dependencies {
+    testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.rest-assured:rest-assured")
+}
+----
+****
 
 `quarkus-junit5` is required for testing, as it provides the `@QuarkusTest` annotation that controls the testing framework.
 `rest-assured` is not required but is a convenient way to test HTTP endpoints, we also provide integration that automatically
@@ -199,7 +208,6 @@ We will create a simple test to ensure that this is being served correctly:
 ----
 package org.acme.getting.started.testing;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -218,21 +226,11 @@ public class StaticContentTest {
     URL url;
 
     @Test
-    public void testIndexHtml() throws Exception {
+    public void testIndexHtml() throws IOException {
         try (InputStream in = url.openStream()) {
-            String contents = readStream(in);
+            String contents = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             Assertions.assertTrue(contents.contains("<title>Testing Guide</title>"));
         }
-    }
-
-    private static String readStream(InputStream in) throws IOException {
-        byte[] data = new byte[1024];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(data)) > 0) {
-            out.write(data, 0, r);
-        }
-        return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 }
 ----
@@ -274,7 +272,6 @@ be appended to the end of the endpoint path.
 ----
 package org.acme.getting.started.testing;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -295,21 +292,11 @@ public class StaticContentTest {
     URL url;
 
     @Test
-    public void testIndexHtml() throws Exception {
+    public void testIndexHtml() throws IOException {
         try (InputStream in = url.openStream()) {
-            String contents = readStream(in);
-            Assertions.assertTrue(contents.equals("hello"));
+            String contents = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            Assertions.assertEquals("hello", contents);
         }
-    }
-
-    private static String readStream(InputStream in) throws IOException {
-        byte[] data = new byte[1024];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(data)) > 0) {
-            out.write(data, 0, r);
-        }
-        return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 }
 ----
@@ -520,7 +507,7 @@ import java.util.Set;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
 
-public class MockGreetingProfile implements QuarkusTestProfile {
+public class MockGreetingProfile implements QuarkusTestProfile { <1>
 
     /**
      * Returns additional config to be applied to the test. This
@@ -566,15 +553,16 @@ public class MockGreetingProfile implements QuarkusTestProfile {
      */
     @Override
     public List<TestResourceEntry> testResources() {
-        return Collections.singletonList(new TestResourceEntry(CustomWireMockServerManager.class)); <4>
+        return Collections.singletonList(new TestResourceEntry(CustomWireMockServerManager.class));
     }
 
 
     /**
-     * If this is returns true then only the test resources returned from {@link #testResources()} will be started,
+     * If this returns true then only the test resources returned from {@link #testResources()} will be started,
      * global annotated test resources will be ignored.
      */
-    default boolean disableGlobalTestResources() {
+    @Override
+    public boolean disableGlobalTestResources() {
         return false;
     }
 
@@ -584,21 +572,24 @@ public class MockGreetingProfile implements QuarkusTestProfile {
      * then Quarkus will only execute tests that are annotated with a {@code @TestProfile} that has at least one of the
      * supplied (via the aforementioned system property) tags.
      */
-    default Set<String> tags() {
+    @Override
+    public Set<String> tags() {
         return Collections.emptySet();
     }
 
     /**
      * The command line parameters that are passed to the main method on startup.
      */
-    default String[] commandLineParameters() {
+    @Override
+    public String[] commandLineParameters() {
         return new String[0];
     }
 
     /**
-     * If the main method should be run
+     * If the main method should be run.
      */
-    default boolean runMainMethod() {
+    @Override
+    public boolean runMainMethod() {
         return false;
     }
 
@@ -606,15 +597,18 @@ public class MockGreetingProfile implements QuarkusTestProfile {
      * If this method returns true then all {@code StartupEvent} and {@code ShutdownEvent} observers declared on application
      * beans should be disabled.
      */
-    default boolean disableApplicationLifecycleObservers() {
+    @Override
+    public boolean disableApplicationLifecycleObservers() {
         return false;
     }
 }
 ----
+<1> All these methods have default implementations so just override the ones you need to override.
 
-Now we have defined our profile we need to include it on our test class. We do this with `@TestProfile(MockGreetingProfile.class)`.
+Now we have defined our profile we need to include it on our test class.
+We do this by annotating the test class with `@TestProfile(MockGreetingProfile.class)`.
 
-All the test profile config is stored in a single class, which makes it easy to tell if the previous test ran with the
+All the test profile configuration is stored in a single class, which makes it easy to tell if the previous test ran with the
 same configuration.
 
 === Running specific tests
@@ -944,6 +938,12 @@ public class MockGreetingServiceTest {
 ----
 <1> Since we configured `greetingService` as a mock, the `GreetingResource` which uses the `GreetingService` bean, we get the mocked response instead of the response of the regular `GreetingService` bean
 
+By default the `@InjectMock` annotation can be used for any normal CDI scoped bean (e.g. `@ApplicationScoped`, `@RequestScoped`).
+Mocking `@Singleton` beans can be performed by setting the `convertScopes` property to true (such as `@InjectMock(convertScopes = true`).
+This will convert the `@Singleton` bean to an `@ApplicationScoped` bean for the test.
+
+This is considered an advanced option and should only be performed if you fully understand the consequences of changing the scope of the bean.
+
 ==== Using Spies instead of Mocks with `@InjectSpy`
 
 Building on the features provided by `InjectMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for spying on the beans supported by `QuarkusMock`.
@@ -1070,7 +1070,7 @@ A very common need is to start some services on which your Quarkus application d
 By simply annotating any test in the test suite with `@QuarkusTestResource`, Quarkus will run the corresponding `QuarkusTestResourceLifecycleManager` before any tests are run.
 A test suite is also free to utilize multiple `@QuarkusTestResource` annotations, in which case all the corresponding `QuarkusTestResourceLifecycleManager` objects will be run before the tests. When using multiple test resources they can be started concurrently. For that you need to set `@QuarkusTestResource(parallel = true)`.
 
-NOTE: test resources are global, even if they are defined on a test class or custom profile, which means they will all be activated for all tests, even though we do
+NOTE: Test resources are global, even if they are defined on a test class or custom profile, which means they will all be activated for all tests, even though we do
 remove duplicates. If you want to only enable a test resource on a single test class or test profile, you can use `@QuarkusTestResource(restrictToAnnotatedClass = true)`.
 
 Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesServerTestResource` which starts a mock Kubernetes API server),
@@ -1202,17 +1202,11 @@ be read until Quarkus has started, so the timeout for Quarkus start will be the 
 
 == Native Executable Testing
 
-It is also possible to test native executables using `@NativeImageTest`. This supports all the features mentioned in this
+It is also possible to test native executables using `@QuarkusIntegrationTest`. This supports all the features mentioned in this
 guide except injecting into tests (and the native executable runs in a separate non-JVM process this is not really possible).
 
 
 This is covered in the xref:building-native-image.adoc[Native Executable Guide].
-
-[WARNING]
-====
-Although `@NativeImageTest` is not yet deprecated, it will be in the future as its functionality is covered by `@QuarkusIntegrationTest`
-which is described in the following section.
-====
 
 [#quarkus-integration-test]
 == Using @QuarkusIntegrationTest
@@ -1227,7 +1221,7 @@ As is the case with `@NativeImageTest`, this is a black box test that supports t
 
 [NOTE]
 ====
-As a test annotated with `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e. via the `maven-failsafe-plugin` if using Maven or an additional task if using Gradle.
+As a test annotated with `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e. via the `maven-failsafe-plugin` if using Maven or the `quarkusIntTest` task if using Gradle.
 These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
 ====
 

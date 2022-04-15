@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Hibernate Search guide
-:hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/
+:hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.1/reference/en-US/html_single/
 include::./attributes.adoc[]
 
 You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You're at the right place.
@@ -14,14 +14,9 @@ We will also explore how you can query your Elasticsearch or OpenSearch cluster 
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 20 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
-* xref:building-native-image.adoc[GraalVM installed if you want to run in native mode]
+:prerequisites-time: 20 minutes
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -47,35 +42,27 @@ The provided solution contains a few additional elements such as tests and testi
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=hibernate-search-orm-elasticsearch-quickstart \
-    -DclassName="org.acme.hibernate.search.elasticsearch.LibraryResource" \
-    -Dpath="/library" \
-    -Dextensions="resteasy,hibernate-orm-panache,hibernate-search-orm-elasticsearch,resteasy-jackson,jdbc-postgresql"
-cd hibernate-search-orm-elasticsearch-quickstart
-----
+:create-app-artifact-id: hibernate-search-orm-elasticsearch-quickstart
+:create-app-extensions: hibernate-orm-panache,jdbc-postgresql,hibernate-search-orm-elasticsearch,resteasy-reactive-jackson
+include::includes/devtools/create-app.adoc[]
 
 This command generates a Maven structure importing the following extensions:
 
  * Hibernate ORM with Panache,
  * the PostgreSQL JDBC driver,
  * Hibernate Search + Elasticsearch,
- * RESTEasy and Jackson.
+ * RESTEasy Reactive and Jackson.
 
 If you already have your Quarkus project configured, you can add the `hibernate-search-orm-elasticsearch` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="hibernate-search-orm-elasticsearch"
-----
+:add-extension-extensions: hibernate-search-orm-elasticsearch
+include::includes/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -83,12 +70,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
-[IMPORTANT]
-====
-For now, let's delete the two generated tests `LibraryResourceTest` and `NativeLibraryResourceIT` present in `src/test/java`.
-If you are interested in how you can test this application, just refer to the solution in the quickstarts Git repository:
-it contains a lot of tests and the required testing infrastructure.
-====
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-hibernate-search-orm-elasticsearch")
+----
 
 == Creating the bare entities
 
@@ -190,25 +176,32 @@ public class Book extends PanacheEntity {
 
 While everything is not yet set up for our REST service, we can initialize it with the standard CRUD operations we will need.
 
-Just copy this content in the `LibraryResource` file created by the Maven `create-project` command:
+Create the `org.acme.hibernate.search.elasticsearch.LibraryResource` class:
 
 [source,java]
 ----
 package org.acme.hibernate.search.elasticsearch;
 
+import java.util.List;
+import java.util.Optional;
+
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import javax.transaction.Transactional;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.acme.hibernate.search.elasticsearch.model.Author;
 import org.acme.hibernate.search.elasticsearch.model.Book;
-import org.jboss.resteasy.annotations.jaxrs.FormParam;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
+import org.hibernate.search.mapper.orm.session.SearchSession;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.RestQuery;
+
+import io.quarkus.runtime.StartupEvent;
 
 @Path("/library")
 public class LibraryResource {
@@ -217,7 +210,7 @@ public class LibraryResource {
     @Path("book")
     @Transactional
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public void addBook(@FormParam String title, @FormParam Long authorId) {
+    public void addBook(@RestForm String title, @RestForm Long authorId) {
         Author author = Author.findById(authorId);
         if (author == null) {
             return;
@@ -235,7 +228,7 @@ public class LibraryResource {
     @DELETE
     @Path("book/{id}")
     @Transactional
-    public void deleteBook(@PathParam Long id) {
+    public void deleteBook(Long id) {
         Book book = Book.findById(id);
         if (book != null) {
             book.author.books.remove(book);
@@ -247,7 +240,7 @@ public class LibraryResource {
     @Path("author")
     @Transactional
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public void addAuthor(@FormParam String firstName, @FormParam String lastName) {
+    public void addAuthor(@RestForm String firstName, @RestForm String lastName) {
         Author author = new Author();
         author.firstName = firstName;
         author.lastName = lastName;
@@ -258,7 +251,7 @@ public class LibraryResource {
     @Path("author/{id}")
     @Transactional
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public void updateAuthor(@PathParam Long id, @FormParam String firstName, @FormParam String lastName) {
+    public void updateAuthor(Long id, @RestForm String firstName, @RestForm String lastName) {
         Author author = Author.findById(id);
         if (author == null) {
             return;
@@ -271,7 +264,7 @@ public class LibraryResource {
     @DELETE
     @Path("author/{id}")
     @Transactional
-    public void deleteAuthor(@PathParam Long id) {
+    public void deleteAuthor(Long id) {
         Author author = Author.findById(id);
         if (author != null) {
             author.delete();
@@ -280,7 +273,7 @@ public class LibraryResource {
 }
 ----
 
-Nothing out of the ordinary here: it is just good old Hibernate ORM with Panache operations in a standard JAX-RS service.
+Nothing out of the ordinary here: it is just good old Hibernate ORM with Panache operations in a REST service.
 
 In fact, the interesting part is that we will need to add very few elements to make our full text search application working.
 
@@ -503,13 +496,13 @@ And then we can add the following methods (and a few ``import``s):
     @GET
     @Path("author/search") // <3>
     @Transactional
-    public List<Author> searchAuthors(@QueryParam String pattern, // <4>
-            @QueryParam Optional<Integer> size) {
+    public List<Author> searchAuthors(@RestQuery String pattern, // <4>
+            @RestQuery Optional<Integer> size) {
         return searchSession.search(Author.class) // <5>
                 .where(f ->
                     pattern == null || pattern.trim().isEmpty() ?
-                            f.matchAll() : // <6>
-                            f.simpleQueryString()
+                        f.matchAll() : // <6>
+                        f.simpleQueryString()
                                 .fields("firstName", "lastName", "books.title").matching(pattern) // <7>
                 )
                 .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <8>
@@ -523,7 +516,7 @@ All the upcoming updates coming through Hibernate ORM operations will be synchro
 If you don't import data manually in the database, you don't need that:
 the mass indexer should then only be used when you change your indexing configuration (adding a new field, changing an analyzer's configuration...) and you want the new configuration to be applied to your existing entities.
 <3> This is where the magic begins: just adding the annotations to our entities makes them available for full text search: we can now query the index using the Hibernate Search DSL.
-<4> Use the `org.jboss.resteasy.annotations.jaxrs.QueryParam` annotation type to avoid repeating the parameter name.
+<4> Use the `org.jboss.resteasy.reactive.RestQuery` annotation type to avoid repeating the parameter name.
 <5> We indicate that we are searching for ``Author``s.
 <6> We create a predicate: if the pattern is empty, we use a `matchAll()` predicate.
 <7> If we have a valid pattern, we create a https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html[`simpleQueryString()`] predicate on the `firstName`, `lastName` and `books.title` fields matching our pattern.
@@ -550,9 +543,6 @@ Edit `src/main/resources/application.properties` and inject the following config
 quarkus.ssl.native=false <1>
 
 quarkus.datasource.db-kind=postgresql <2>
-quarkus.datasource.username=quarkus_test
-quarkus.datasource.password=quarkus_test
-quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus_test
 
 quarkus.hibernate-orm.database.generation=drop-and-create <3>
 quarkus.hibernate-orm.sql-load-script=import.sql <4>
@@ -561,6 +551,11 @@ quarkus.hibernate-search-orm.elasticsearch.version=7 <5>
 quarkus.hibernate-search-orm.elasticsearch.analysis.configurer=bean:myAnalysisConfigurer <6>
 quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create <7>
 quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <8>
+
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test <9>
+%prod.quarkus.datasource.username=quarkus_test
+%prod.quarkus.datasource.password=quarkus_test
+%prod.hibernate-search-orm.elasticsearch.hosts=localhost:9200 <9>
 ----
 <1> We won't use SSL so we disable it to have a more compact native executable.
 <2> Let's create a PostgreSQL datasource.
@@ -575,9 +570,29 @@ Note that, for OpenSearch, you need to prefix the version with `opensearch:`; se
 <8> This means that we wait for the entities to be searchable before considering a write complete.
 On a production setup, the `write-sync` default will provide better performance.
 Using `sync` is especially important when testing as you need the entities to be searchable immediately.
+<9> For development and tests, we rely on <<dev-services,Dev Services>>,
+which means Quarkus will start a PostgreSQL database and Elasticsearch cluster automatically.
+In production mode, however,
+you will want to start a PostgreSQL database and Elasticsearch cluster manually,
+which is why we provide Quarkus with this connection info in the `prod` profile (`%prod.` prefix).
 
 [TIP]
 For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
+
+[[dev-services]]
+=== Dev Services (Configuration Free Databases)
+Quarkus supports a feature called Dev Services that allows you to start various containers without any config.
+In the case of Elasticsearch this support extends to the default Elasticsearch connection.
+What that means practically, is that if you have not configured `quarkus.hibernate-search-orm.elasticsearch.hosts` Quarkus will automatically
+start an Elasticsearch container when running tests or in xref:dev-mode-differences.adoc[dev mode], and automatically configure the connection.
+
+When running the production version of the application, the Elasticsearch connection needs to be configured as normal,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Elasticsearch settings.
+
+NOTE: Dev Services for Elasticsearch is currently unable to start multiple clusters concurrently, so it only works with the default backend of the default persistence unit: named persistence units or named backends won't be able to take advantage of Dev Services for Elasticsearch.
+
+For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch guide].
 
 == Creating a frontend
 
@@ -612,30 +627,20 @@ INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), 'S
 INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), '4 3 2 1', 2);
 ----
 
-== Preparing the infrastructure
-
-We need a PostgreSQL instance and an Elasticsearch cluster.
-
-Let's use Docker to start one of each:
-
-[source,bash,subs=attributes+]
-----
-docker run -it --rm=true --name elasticsearch_quarkus_test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:{elasticsearch-version}
-----
-
-[source,bash]
-----
-docker run -it --rm=true --name postgresql_quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:14.1
-----
-
 == Time to play with your application
 
 You can now interact with your REST service:
 
- * start Quarkus with `./mvnw compile quarkus:dev`
+:devtools-wrapped:
+
+ * start your Quarkus application with:
++
+include::includes/devtools/dev.adoc[]
  * open a browser to `http://localhost:8080/`
  * search for authors or book titles (we initialized some data for you)
  * create new authors and books and search for them too
+
+:!devtools-wrapped:
 
 As you can see, all your updates are automatically synchronized to the Elasticsearch cluster.
 
@@ -813,6 +818,78 @@ See link:{hibernate-search-doc-prefix}#mapper-orm-schema-management-manager[this
 for more information.
 ====
 
+[[coordination]]
+== Coordination through outbox polling
+
+[CAUTION]
+====
+Coordination through outbox polling is considered preview.
+
+In _preview_, backward compatibility and presence in the ecosystem is not guaranteed.
+Specific improvements might require changing configuration or APIs, or even storage formats,
+and plans to become _stable_ are under way.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list]
+or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
+While it’s technically possible to use Hibernate Search and Elasticsearch in distributed applications,
+by default they suffer from
+link:{hibernate-search-doc-prefix}#architecture-examples-no-coordination-elasticsearch-pros-and-cons[a few limitations].
+
+These limitations are the result of Hibernate Search not coordinating between threads or application nodes by default.
+
+In order to get rid of these limitations, you can
+link:{hibernate-search-doc-prefix}#architecture-examples-outbox-polling-elasticsearch[use the `outbox-polling` coordination strategy].
+This strategy creates an outbox table in the database to push entity change events to,
+and relies on a background processor to consume these events and perform automatic indexing.
+
+To enable the `outbox-polling` coordination strategy, an additional extension is required:
+
+:add-extension-extensions: hibernate-search-orm-coordination-outbox-polling
+include::includes/devtools/extension-add.adoc[]
+
+Once the extension is there, you will need to explicitly select the `outbox-polling` strategy
+by setting link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.coordination.strategy[`quarkus.hibernate-search-orm.coordination.strategy`]
+to `outbox-polling`.
+
+Finally, you will need to make sure that the Hibernate ORM entities added by Hibernate Search
+(to represent the outbox and agents) have corresponding tables/sequences in your database:
+
+* If you are just starting with your application
+and intend to xref:hibernate-orm.adoc#dev-mode[let Hibernate ORM generate your database schema],
+then no worries: the entities required by Hibernate Search will be included in the generated schema.
+* Otherwise, you must
+link:{hibernate-search-doc-prefix}#coordination-outbox-polling-schema[manually alter your schema to add the necessary tables/sequences].
+
+Once you are done with the above, you're ready to use Hibernate Search with an outbox.
+Don't change any code, and just start your application:
+it will automatically detect when multiple applications are connected to the same database,
+and coordinate the index updates accordingly.
+
+[NOTE]
+====
+Hibernate Search mostly behaves the same when using the `outbox-polling` coordination strategy
+as when not using it: application code (persisting entities, searching, etc.) should not require any change.
+
+However, there is one key difference: index updates are necessarily asynchronous;
+they are guaranteed to happen _eventually_, but not immediately.
+
+This means in particular that the configuration property
+link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy[`quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy`]
+cannot be set when using the `outbox-polling` coordination strategy:
+Hibernate Search will always behave as if this property was set to `write-sync` (the default).
+
+This behavior is consistent with Elasticsearch's
+https://www.elastic.co/guide/en/elasticsearch/reference/current/near-real-time.html[near-real-time search]
+and the recommended way of using Hibernate Search even when coordination is disabled.
+====
+
+For more information about coordination in Hibernate Search,
+see link:{hibernate-search-doc-prefix}#coordination[this section of the reference documentation].
+
+For more information about configuration options related to coordination,
+see <<configuration-reference-coordination-outbox-polling>>.
+
 [[aws-request-signing]]
 == [[configuration-reference-aws]] AWS request signing
 
@@ -872,3 +949,10 @@ for more information.
 ====
 
 :no-duration-note: true
+
+[[configuration-reference-coordination-outbox-polling]]
+=== Configuration of coordination with outbox polling
+
+NOTE: These configuration properties require an additional extension. See <<coordination>>.
+
+include::{generated-dir}/config/quarkus-hibernate-search-orm-coordination-outboxpolling.adoc[leveloffset=+1, opts=optional]

@@ -24,7 +24,7 @@ class SpringWebCodestartTest {
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource("org.acme.GreetingController");
         codestartTest.checkGeneratedTestSource("org.acme.GreetingControllerTest");
-        codestartTest.checkGeneratedTestSource("org.acme.NativeGreetingControllerIT");
+        codestartTest.checkGeneratedTestSource("org.acme.GreetingControllerIT");
     }
 
 }

@@ -26,8 +26,6 @@ public class PostgresqlDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(PostgresqlDevServicesProcessor.class);
 
-    public static final String TAG = "14.1";
-
     @BuildStep
     ConsoleCommandBuildItem psqlCommand(DevServicesLauncherConfigResultBuildItem devServices) {
         return new ConsoleCommandBuildItem(new PostgresCommand(devServices));
@@ -54,7 +52,9 @@ public class PostgresqlDevServicesProcessor {
 
                 LOG.info("Dev Services for PostgreSQL started.");
 
-                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getContainerId(),
+                        container.getEffectiveJdbcUrl(),
+                        container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
                             @Override
@@ -76,8 +76,7 @@ public class PostgresqlDevServicesProcessor {
 
         public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName
-                            .orElse("docker.io/" + PostgreSQLContainer.IMAGE + ":" + PostgresqlDevServicesProcessor.TAG))
+                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("postgresql")))
                     .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

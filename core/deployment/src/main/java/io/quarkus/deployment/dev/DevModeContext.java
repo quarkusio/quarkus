@@ -27,6 +27,8 @@ import io.quarkus.paths.PathList;
  */
 public class DevModeContext implements Serializable {
 
+    private static final long serialVersionUID = 4688502145533897982L;
+
     public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null);
 
     public static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
@@ -211,8 +213,8 @@ public class DevModeContext implements Serializable {
 
     public List<ModuleInfo> getAllModules() {
         List<ModuleInfo> ret = new ArrayList<>();
-        ret.add(applicationRoot);
         ret.addAll(additionalModules);
+        ret.add(applicationRoot);
         return ret;
     }
 
@@ -237,6 +239,8 @@ public class DevModeContext implements Serializable {
     }
 
     public static class ModuleInfo implements Serializable {
+
+        private static final long serialVersionUID = -1376678003747618410L;
 
         private final ArtifactKey appArtifactKey;
         private final String name;
@@ -306,6 +310,12 @@ public class DevModeContext implements Serializable {
 
         public Optional<CompilationUnit> getTest() {
             return Optional.ofNullable(test);
+        }
+
+        public void addSourcePathFirst(String path) {
+            String absolutePath = Paths.get(path).isAbsolute() ? path
+                    : (projectDirectory + File.separator + path);
+            this.main.sourcePaths = this.main.sourcePaths.addFirst(Paths.get(absolutePath));
         }
 
         public static class Builder {
@@ -404,6 +414,9 @@ public class DevModeContext implements Serializable {
     }
 
     public static class CompilationUnit implements Serializable {
+
+        private static final long serialVersionUID = -511238068393954948L;
+
         private PathCollection sourcePaths;
         private final String classesPath;
         private final PathCollection resourcePaths;

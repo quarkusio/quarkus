@@ -11,6 +11,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -34,6 +35,7 @@ public class DB2PoolRecorder {
     private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
 
     public RuntimeValue<DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
+            Supplier<Integer> eventLoopCount,
             String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
@@ -41,6 +43,7 @@ public class DB2PoolRecorder {
             ShutdownContext shutdown) {
 
         DB2Pool db2Pool = initialize(vertx.getValue(),
+                eventLoopCount.get(),
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactiveDB2Config.getDataSourceReactiveRuntimeConfig(dataSourceName));
@@ -53,10 +56,12 @@ public class DB2PoolRecorder {
         return new RuntimeValue<>(io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool.getValue()));
     }
 
-    private DB2Pool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private DB2Pool initialize(Vertx vertx,
+            Integer eventLoopCount,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
-        PoolOptions poolOptions = toPoolOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
         DB2ConnectOptions connectOptions = toConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
@@ -67,7 +72,8 @@ public class DB2PoolRecorder {
         return DB2Pool.pool(vertx, connectOptions, poolOptions);
     }
 
-    private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private PoolOptions toPoolOptions(Integer eventLoopCount,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
         PoolOptions poolOptions;
@@ -80,6 +86,19 @@ public class DB2PoolRecorder {
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
             int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
             poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+        }
+
+        if (dataSourceReactiveRuntimeConfig.shared) {
+            poolOptions.setShared(true);
+            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            }
+        }
+
+        if (dataSourceReactiveRuntimeConfig.eventLoopSize.isPresent()) {
+            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize.getAsInt()));
+        } else if (eventLoopCount != null) {
+            poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
 
         return poolOptions;

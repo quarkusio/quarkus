@@ -23,7 +23,7 @@ public class AddPortToKubernetesConfig extends Configurator<KubernetesConfigFlue
 
     /**
      * Check if the {@link KubernetesConfig} already has port.
-     * 
+     *
      * @param config The port.
      * @return True if port with same container port exists.
      */

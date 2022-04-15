@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -103,7 +102,8 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
         ext.install(repo);
         root.addDependency(ext);
         addCollectedDep(ext.getRuntime(), "compile", false,
-                DependencyFlags.DIRECT | DependencyFlags.RUNTIME_EXTENSION_ARTIFACT);
+                DependencyFlags.DIRECT | DependencyFlags.RUNTIME_EXTENSION_ARTIFACT
+                        | DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
         addCollectedDeploymentDep(ext.getDeployment());
     }
 
@@ -160,7 +160,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
         if (expectedResult.isEmpty()) {
             expectedResult = new ArrayList<>();
         }
-        expectedResult.add(new ArtifactDependency(new ResolvedArtifactDependency(artifact.toArtifact()), scope, allFlags));
+        expectedResult.add(new ArtifactDependency(artifact.toArtifact(), scope, allFlags));
     }
 
     protected void addCollectedDeploymentDep(TsArtifact ext) {
@@ -168,7 +168,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
             deploymentDeps = new ArrayList<>();
         }
         deploymentDeps
-                .add(new ArtifactDependency(new ResolvedArtifactDependency(ext.toArtifact()), "compile",
+                .add(new ArtifactDependency(ext.toArtifact(), "compile",
                         DependencyFlags.DEPLOYMENT_CP));
     }
 

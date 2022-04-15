@@ -9,6 +9,7 @@ import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -56,6 +57,12 @@ public class DeploymentInjectingDependencyVisitor {
     private static final String QUARKUS_RUNTIME_ARTIFACT = "quarkus.runtime";
     private static final String QUARKUS_EXTENSION_DEPENDENCY = "quarkus.ext";
 
+    /* @formatter:off */
+    private static final byte COLLECT_TOP_EXTENSION_RUNTIME_NODES = 0b001;
+    private static final byte COLLECT_DIRECT_DEPS =                 0b010;
+    private static final byte COLLECT_RELOADABLE_MODULES =          0b100;
+    /* @formatter:on */
+
     private static final Artifact[] NO_ARTIFACTS = new Artifact[0];
 
     public static Artifact getRuntimeArtifact(DependencyNode dep) {
@@ -66,10 +73,8 @@ public class DeploymentInjectingDependencyVisitor {
     private final List<Dependency> managedDeps;
     private final List<RemoteRepository> mainRepos;
     private final ApplicationModelBuilder appBuilder;
-    private final boolean collectReloadableModules;
 
-    private boolean collectingTopExtensionRuntimeNodes = true;
-    private boolean collectingDirectDeps = true;
+    private byte walkingFlags = COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS;
     private final List<ExtensionDependency> topExtensionDeps = new ArrayList<>();
     private ExtensionDependency lastVisitedRuntimeExtNode;
     private final Map<ArtifactKey, ExtensionInfo> allExtensions = new HashMap<>();
@@ -82,7 +87,9 @@ public class DeploymentInjectingDependencyVisitor {
             List<RemoteRepository> mainRepos, ApplicationModelBuilder appBuilder,
             boolean collectReloadableModules)
             throws BootstrapDependencyProcessingException {
-        this.collectReloadableModules = collectReloadableModules;
+        if (collectReloadableModules) {
+            setWalkingFlag(COLLECT_RELOADABLE_MODULES);
+        }
         // we need to be able to take into account whether the deployment dependencies are on an optional dependency branch
         // for that we are going to use a custom dependency selector and re-initialize the resolver to use it
         final DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(resolver.getSession());
@@ -169,8 +176,7 @@ public class DeploymentInjectingDependencyVisitor {
 
     private void visitRuntimeDependency(DependencyNode node) {
 
-        final boolean prevCollectingDirectDeps = collectingDirectDeps;
-        final boolean prevCollectingTopExtRtNodes = collectingTopExtensionRuntimeNodes;
+        final byte prevWalkingFlags = walkingFlags;
         final ExtensionDependency prevLastVisitedRtExtNode = lastVisitedRuntimeExtNode;
 
         final boolean popExclusions;
@@ -198,21 +204,24 @@ public class DeploymentInjectingDependencyVisitor {
                         .setDeploymentCp()
                         .setOptional(node.getDependency().isOptional())
                         .setScope(node.getDependency().getScope())
-                        .setDirect(collectingDirectDeps);
+                        .setDirect(isWalkingFlagOn(COLLECT_DIRECT_DEPS));
                 if (module != null) {
                     newRtDep.setWorkspaceModule().setReloadable();
-                    if (collectReloadableModules) {
+                    if (isWalkingFlagOn(COLLECT_RELOADABLE_MODULES)) {
                         appBuilder.addReloadableWorkspaceModule(new GACT(artifact.getGroupId(), artifact.getArtifactId(),
                                 artifact.getClassifier(), artifact.getExtension()));
                     }
                 }
                 if (extDep != null) {
                     newRtDep.setRuntimeExtensionArtifact();
+                    if (isWalkingFlagOn(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
+                        newRtDep.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
+                    }
                 }
                 appBuilder.addDependency(newRtDep.build());
             }
 
-            collectingDirectDeps = false;
+            clearWalkingFlag(COLLECT_DIRECT_DEPS);
 
             if (extDep != null) {
                 extDep.info.ensureActivated();
@@ -228,8 +237,7 @@ public class DeploymentInjectingDependencyVisitor {
         if (popExclusions) {
             exclusionStack.pollLast();
         }
-        collectingDirectDeps = prevCollectingDirectDeps;
-        collectingTopExtensionRuntimeNodes = prevCollectingTopExtRtNodes;
+        walkingFlags = prevWalkingFlags;
         lastVisitedRuntimeExtNode = prevLastVisitedRtExtNode;
     }
 
@@ -266,8 +274,8 @@ public class DeploymentInjectingDependencyVisitor {
 
         collectConditionalDependencies(extDep);
 
-        if (collectingTopExtensionRuntimeNodes) {
-            collectingTopExtensionRuntimeNodes = false;
+        if (isWalkingFlagOn(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
+            clearWalkingFlag(COLLECT_TOP_EXTENSION_RUNTIME_NODES);
             topExtensionDeps.add(extDep);
         }
         if (lastVisitedRuntimeExtNode != null) {
@@ -297,7 +305,7 @@ public class DeploymentInjectingDependencyVisitor {
     }
 
     private ExtensionInfo getExtensionInfoOrNull(Artifact artifact) throws BootstrapDependencyProcessingException {
-        if (!artifact.getExtension().equals("jar")) {
+        if (!artifact.getExtension().equals(ArtifactCoords.TYPE_JAR)) {
             return null;
         }
         final ArtifactKey extKey = getKey(artifact);
@@ -452,6 +460,20 @@ public class DeploymentInjectingDependencyVisitor {
         }
     }
 
+    private void setWalkingFlag(byte flag) {
+        walkingFlags |= flag;
+    }
+
+    private boolean isWalkingFlagOn(byte flag) {
+        return (walkingFlags & flag) > 0;
+    }
+
+    private void clearWalkingFlag(byte flag) {
+        if ((walkingFlags & flag) > 0) {
+            walkingFlags ^= flag;
+        }
+    }
+
     private static Properties readDescriptor(Path path) throws BootstrapDependencyProcessingException {
         if (!Files.exists(path)) {
             // not a platform artifact
@@ -517,9 +539,10 @@ public class DeploymentInjectingDependencyVisitor {
             appBuilder.handleExtensionProperties(props, runtimeArtifact.toString());
 
             final String providesCapabilities = props.getProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES);
-            if (providesCapabilities != null) {
+            final String requiresCapabilities = props.getProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES);
+            if (providesCapabilities != null || requiresCapabilities != null) {
                 appBuilder.addExtensionCapabilities(
-                        CapabilityContract.providesCapabilities(toGactv(runtimeArtifact), providesCapabilities));
+                        CapabilityContract.of(toCompactCoords(runtimeArtifact), providesCapabilities, requiresCapabilities));
             }
         }
     }
@@ -587,7 +610,7 @@ public class DeploymentInjectingDependencyVisitor {
                 return;
             }
             activated = true;
-            collectingTopExtensionRuntimeNodes = false;
+            clearWalkingFlag(COLLECT_TOP_EXTENSION_RUNTIME_NODES);
             final ExtensionDependency extDep = getExtensionDependency();
             final DependencyNode originalNode = collectDependencies(info.runtimeArtifact, extDep.exclusions);
             final DefaultDependencyNode rtNode = (DefaultDependencyNode) extDep.runtimeNode;
@@ -639,8 +662,16 @@ public class DeploymentInjectingDependencyVisitor {
                 .setResolvedPaths(artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath()));
     }
 
-    private static String toGactv(Artifact a) {
-        return a.getGroupId() + ":" + a.getArtifactId() + ":" + a.getClassifier() + ":" + a.getExtension() + ":"
-                + a.getVersion();
+    private static String toCompactCoords(Artifact a) {
+        final StringBuilder b = new StringBuilder();
+        b.append(a.getGroupId()).append(':').append(a.getArtifactId()).append(':');
+        if (!a.getClassifier().isEmpty()) {
+            b.append(a.getClassifier()).append(':');
+        }
+        if (!ArtifactCoords.TYPE_JAR.equals(a.getExtension())) {
+            b.append(a.getExtension()).append(':');
+        }
+        b.append(a.getVersion());
+        return b.toString();
     }
 }

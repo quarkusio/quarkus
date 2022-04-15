@@ -16,6 +16,10 @@ and provide secured access to the Quarkus HTTP endpoints using Bearer Token Auth
 NOTE: Quarkus OpenID Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`, please read the xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications] guide for more information.
 OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications] guide for more information.
 
+== Prerequisites
+
+include::includes/devtools/prerequisites.adoc[]
+
 == Quickstart
 
 === Solution
@@ -31,30 +35,22 @@ The solution is located in the `security-jwt-quickstart` {quickstarts-tree-url}/
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-jwt-quickstart \
-    -DclassName="org.acme.security.jwt.TokenSecuredResource" \
-    -Dpath="/secured" \
-    -Dextensions="resteasy,resteasy-jackson,smallrye-jwt,smallrye-jwt-build"
-cd security-jwt-quickstart
-----
+:create-app-artifact-id: security-jwt-quickstart
+:create-app-extensions: resteasy-reactive-jackson,smallrye-jwt,smallrye-jwt-build
+include::includes/devtools/create-app.adoc[]
 
-This command generates the Maven project with a REST endpoint and imports the `smallrye-jwt` extension, which includes the {mp-jwt} support.
+This command generates the Maven project and imports the `smallrye-jwt` extension, which includes the {mp-jwt} support.
 
 If you already have your Quarkus project configured, you can add the `smallrye-jwt` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-jwt, smallrye-jwt-build"
-----
+:add-extension-extensions: smallrye-jwt,smallrye-jwt-build
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -66,33 +62,16 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-jwt")
+implementation("io.quarkus:quarkus-smallrye-jwt-build")
+----
+
 === Examine the JAX-RS resource
 
-Open the `src/main/java/org/acme/security/jwt/TokenSecuredResource.java` file and see the following content:
-
-.Basic REST Endpoint
-[source,java]
-----
-package org.acme.security.jwt;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-@Path("/secured")
-public class TokenSecuredResource {
-
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return "hello";
-    }
-}
-----
-
-This is a basic REST endpoint that does not have any of the {extension-name} specific features, so let's add some.
-
+Create a REST endpoint in `src/main/java/org/acme/security/jwt/TokenSecuredResource.java` with the following content:
 
 .REST Endpoint V1
 [source,java]
@@ -145,7 +124,7 @@ public class TokenSecuredResource {
     }
 
     private boolean hasJwt() {
-	return jwt.getClaimNames() != null;
+        return jwt.getClaimNames() != null;
     }
 }
 ----
@@ -161,17 +140,13 @@ public class TokenSecuredResource {
 
 Now we are ready to run our application. Use:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 and you should see output similar to:
 
 .quarkus:dev Output
 [source,shell]
 ----
-$ ./mvnw compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO]
 [INFO] ----------------------< org.acme:security-jwt-quickstart >-----------------------
@@ -181,7 +156,7 @@ $ ./mvnw compile quarkus:dev
 Listening for transport dt_socket at address: 5005
 2020-07-15 16:09:50,883 INFO  [io.quarkus] (Quarkus Main Thread) security-jwt-quickstart 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 1.073s. Listening on: http://0.0.0.0:8080
 2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
-2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, mutiny, resteasy, resteasy-jackson, security, smallrye-context-propagation, smallrye-jwt, vertx, vertx-web]
+2020-07-15 16:09:50,885 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, mutiny, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-context-propagation, smallrye-jwt, vertx, vertx-web]
 ----
 
 Now that the REST endpoint is running, we can access it using a command line tool like curl:
@@ -456,7 +431,7 @@ The JWT string is the Base64 URL encoded string that has 3 parts separated by '.
 First part - JWT headers, second part - JWT claims, third part - JWT signature.
 
 === Finally, Secured Access to /secured/roles-allowed
-Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the Quarkus server running using the `./mvnw compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
+Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the Quarkus server still running in dev mode, and then run the following command, making sure to use your version of the generated JWT from the previous step:
 
 [source,bash]
 ----
@@ -584,24 +559,28 @@ hello + jdoe@quarkus.io, isHttps: false, authScheme: Bearer, hasJWT: true, birth
 ----
 
 === Package and run the application
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file:
+
+As usual, the application can be packaged using:
+
+include::includes/devtools/build.adoc[]
+
+And executed using `java -jar target/quarkus-app/quarkus-run.jar`:
+
 .Runner jar Example
 [source,shell,subs=attributes+]
 ----
-$ ./mvnw clean package
-[INFO] Scanning for projects...
-...
-
 $ java -jar target/quarkus-app/quarkus-run.jar
 2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.796s. Listening on: http://[::]:8080
-2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, smallrye-jwt]
+2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-jwt]
 ----
 
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+You can also generate the native executable with:
+
+include::includes/devtools/build-native.adoc[]
+
 .Native Executable Example
 [source,shell]
 ----
-$ ./mvnw clean package -Pnative
 [INFO] Scanning for projects...
 ...
 [security-jwt-quickstart-runner:25602]     universe:     493.17 ms
@@ -621,7 +600,7 @@ $ ./mvnw clean package -Pnative
 
 $ ./target/security-jwt-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
-2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, security, smallrye-jwt]
+2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson, security, smallrye-jwt]
 ----
 
 === Explore the Solution
@@ -854,13 +833,21 @@ smallrye.jwt.sign.key.location=privateKey.pem
 ==== TestSecurity annotation
 
 Add the following dependency:
-[source,xml]
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-security-jwt</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-security-jwt")
 ----
 
 and write a test code like this one:
@@ -950,9 +937,10 @@ Note that you can't access the injected `JsonWebToken` in the public methods if 
 
 If you work with Quarkus extensions which do not support `HTTP` (for example, `Quarkus GRPC`) or provide their own extension specific `HTTP` support conflicting with the one offered by `quarkus-smallrye-jwt` and `Vert.x HTTP` (example, `Quarkus Amazon Lambda`) and you would like to <<jwt-parser, Parse and Verify JsonWebToken with JWTParser>> then please use `smallrye-jwt` directly instead of `quarkus-smallrye-jwt`.
 
-Add this Maven dependency:
+Add this dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.smallrye</groupId>
@@ -960,12 +948,18 @@ Add this Maven dependency:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye:smallrye-jwt")
+----
+
 and update `application.properties` to get all the CDI producers provided by `smallrye-jwt` included as follows:
 
-[source, propertyes]
+[source, properties]
 ----
-quarkus.index-dependency.smallraye-jwt.group-id=io.smallrye
-quarkus.index-dependency.smallraye-jwt.artifact-id=smallrye-jwt
+quarkus.index-dependency.smallrye-jwt.group-id=io.smallrye
+quarkus.index-dependency.smallrye-jwt.artifact-id=smallrye-jwt
 ----
 
 [[configuration-reference]]
@@ -998,7 +992,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |===
 |Property Name|Default|Description
 |smallrye.jwt.verify.key.location|NONE|Location of the verification key which can point to both public and secret keys. Secret keys can only be in the JWK format. Note that 'mp.jwt.verify.publickey.location' will be ignored if this property is set.
-|smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm. This property is deprecated, use `mp.jwt.verify.publickey.algorithm`.
+|smallrye.jwt.verify.algorithm||Signature algorithm. This property should only be used for setting a required symmetric algorithm such as `HS256`. It is deprecated for setting asymmetric algorithms such as `ES256` - use 'mp.jwt.verify.publickey.algorithm' instead.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
 |smallrye.jwt.verify.relax-key-validation|false|Relax the validation of the verification keys, setting this property to `true` will allow public RSA keys with the length less than 2048 bit.
 |smallrye.jwt.verify.certificate-thumbprint|false|If this property is enabled then a signed token must contain either 'x5t' or 'x5t#S256' X509Certificate thumbprint headers. Verification keys can only be in JWK or PEM Certificate key formats in this case. JWK keys must have a 'x5c' (Base64-encoded X509Certificate) property set.

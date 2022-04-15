@@ -9,13 +9,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
-@SuppressWarnings("rawtypes")
 public final class EvaluatedParams {
 
     static final EvaluatedParams EMPTY = new EvaluatedParams(CompletedStage.VOID, new Supplier<?>[0]);
 
     /**
-     * 
+     *
      * @param context
      * @return the evaluated params
      */
@@ -29,12 +28,17 @@ public final class EvaluatedParams {
         Supplier<?>[] allResults = new Supplier[params.size()];
         List<CompletableFuture<?>> asyncResults = null;
         int i = 0;
+        CompletedStage<?> failure = null;
         Iterator<Expression> it = params.iterator();
         while (it.hasNext()) {
             Expression expression = it.next();
             CompletionStage<?> result = context.evaluate(expression);
             if (result instanceof CompletedStage) {
-                allResults[i++] = (CompletedStage<?>) result;
+                CompletedStage<?> completed = (CompletedStage<?>) result;
+                allResults[i++] = completed;
+                if (completed.isFailure()) {
+                    failure = completed;
+                }
                 // No async computation needed
                 continue;
             } else {
@@ -48,7 +52,7 @@ public final class EvaluatedParams {
         }
         CompletionStage<?> cs;
         if (asyncResults == null) {
-            cs = CompletedStage.VOID;
+            cs = failure != null ? failure : CompletedStage.VOID;
         } else if (asyncResults.size() == 1) {
             cs = asyncResults.get(0);
         } else {
@@ -71,18 +75,23 @@ public final class EvaluatedParams {
             return EMPTY;
         }
         Supplier<?>[] allResults = new Supplier[params.size()];
-        List<CompletableFuture<Object>> asyncResults = null;
+        List<CompletableFuture<?>> asyncResults = null;
 
         int i = 0;
+        CompletedStage<?> failure = null;
         Iterator<Expression> it = params.subList(1, params.size()).iterator();
         while (it.hasNext()) {
-            CompletionStage<Object> result = context.evaluate(it.next());
+            CompletionStage<?> result = context.evaluate(it.next());
             if (result instanceof CompletedStage) {
-                allResults[i++] = (CompletedStage<Object>) result;
+                CompletedStage<?> completed = (CompletedStage<?>) result;
+                allResults[i++] = completed;
+                if (completed.isFailure()) {
+                    failure = completed;
+                }
                 // No async computation needed
                 continue;
             } else {
-                CompletableFuture<Object> fu = result.toCompletableFuture();
+                CompletableFuture<?> fu = result.toCompletableFuture();
                 if (asyncResults == null) {
                     asyncResults = new ArrayList<>();
                 }
@@ -92,7 +101,7 @@ public final class EvaluatedParams {
         }
         CompletionStage<?> cs;
         if (asyncResults == null) {
-            cs = CompletedStage.VOID;
+            cs = failure != null ? failure : CompletedStage.VOID;
         } else if (asyncResults.size() == 1) {
             cs = asyncResults.get(0);
         } else {
@@ -107,7 +116,7 @@ public final class EvaluatedParams {
     EvaluatedParams(CompletionStage<?> stage) {
         this.stage = stage;
         if (stage instanceof CompletedStage) {
-            this.results = new Supplier[] { (CompletedStage) stage };
+            this.results = new Supplier[] { (CompletedStage<?>) stage };
         } else {
             this.results = new Supplier[] { Futures.toSupplier(stage.toCompletableFuture()) };
         }
@@ -123,7 +132,7 @@ public final class EvaluatedParams {
     }
 
     /**
-     * 
+     *
      * @param varargs
      * @param types
      * @return {@code true} if the parameter types match the type of the evaluated params

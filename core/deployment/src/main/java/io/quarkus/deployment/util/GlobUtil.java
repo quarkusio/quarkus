@@ -13,7 +13,7 @@ public class GlobUtil {
 
     /**
      * @deprecated in favor of {@link io.quarkus.util.GlobUtil#toRegexPattern(String)}
-     * 
+     *
      *             Transforms the given {@code glob} to a regular expression suitable for passing to
      *             {@link Pattern#compile(String)}.
      *

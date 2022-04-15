@@ -146,7 +146,7 @@ public class MicrometerProcessor {
 
             @Override
             public boolean appliesTo(Kind kind) {
-                // @Counted is only applicable to a method 
+                // @Counted is only applicable to a method
                 return kind == Kind.METHOD;
             }
 
@@ -167,10 +167,13 @@ public class MicrometerProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     RootMeterRegistryBuildItem createRootRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BeanContainerBuildItem beanContainerBuildItem) {
         // BeanContainerBuildItem is present to indicate we call this after Arc is initialized
 
-        RuntimeValue<MeterRegistry> registry = recorder.createRootRegistry(config);
+        RuntimeValue<MeterRegistry> registry = recorder.createRootRegistry(config,
+                nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
+                nonApplicationRootPathBuildItem.getNormalizedHttpRootPath());
         return new RootMeterRegistryBuildItem(registry);
     }
 

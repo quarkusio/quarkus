@@ -14,9 +14,9 @@ public class Function extends BaseFunction {
     public HttpResponseMessage run(
             @HttpTrigger(name = "req") HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context) {
-        if (!started && !bootstrapError) {
-            initQuarkus();
-        }
+
+        ensureQuarkusInitialized();
+
         if (bootstrapError) {
             HttpResponseMessage.Builder responseBuilder = request
                     .createResponseBuilder(HttpStatus.valueOf(500)).body(

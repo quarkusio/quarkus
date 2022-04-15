@@ -113,8 +113,7 @@ public final class QuarkusMappingFileParser implements AutoCloseable {
                 return Collections.emptyList();
             }
         };
-        final QuarkusStrategySelectorBuilder strategySelectorBuilder = new QuarkusStrategySelectorBuilder();
-        final StrategySelector strategySelector = strategySelectorBuilder.buildSelector(providedClassLoaderService);
+        final StrategySelector strategySelector = QuarkusStrategySelectorBuilder.buildSelector(providedClassLoaderService);
         return new BootstrapServiceRegistryImpl(true, providedClassLoaderService, strategySelector, integratorService);
     }
 }

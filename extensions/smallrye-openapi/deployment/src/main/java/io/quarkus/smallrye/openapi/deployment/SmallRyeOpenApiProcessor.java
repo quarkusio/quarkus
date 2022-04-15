@@ -1,10 +1,13 @@
 package io.quarkus.smallrye.openapi.deployment;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,13 +16,17 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -30,6 +37,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
+import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -64,16 +72,18 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.paths.PathUtils;
+import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
+import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
@@ -155,9 +165,10 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) throws IOException {
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         // To map from smallrye and mp config to quarkus
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(OpenApiConfigMapping.class.getName()));
+        serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(OASFactoryResolver.class.getName()));
     }
 
     @BuildStep
@@ -165,13 +176,12 @@ public class SmallRyeOpenApiProcessor {
             SmallRyeOpenApiConfig openApiConfig,
             LaunchModeBuildItem launchMode,
             OutputTargetBuildItem outputTargetBuildItem) throws IOException {
-
         // Add any aditional directories if configured
         if (launchMode.getLaunchMode().isDevOrTest() && openApiConfig.additionalDocsDirectory.isPresent()) {
             List<Path> additionalStaticDocuments = openApiConfig.additionalDocsDirectory.get();
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
-                List<String> filesInDir = getResourceFiles(path.toString(), outputTargetBuildItem.getOutputDirectory());
+                List<String> filesInDir = getResourceFiles(path, outputTargetBuildItem.getOutputDirectory());
                 for (String possibleFile : filesInDir) {
                     watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(possibleFile));
                 }
@@ -608,11 +618,18 @@ public class SmallRyeOpenApiProcessor {
             OutputTargetBuildItem out,
             SmallRyeOpenApiConfig openApiConfig,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
-            OutputTargetBuildItem outputTargetBuildItem) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem,
+            List<IgnoreStaticDocumentBuildItem> ignoreStaticDocumentBuildItems) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENAPI));
-        OpenAPI staticModel = generateStaticModel(openApiConfig, outputTargetBuildItem.getOutputDirectory());
+
+        List<Pattern> urlIgnorePatterns = new ArrayList<>();
+        for (IgnoreStaticDocumentBuildItem isdbi : ignoreStaticDocumentBuildItems) {
+            urlIgnorePatterns.add(isdbi.getUrlIgnorePattern());
+        }
+
+        OpenAPI staticModel = generateStaticModel(openApiConfig, urlIgnorePatterns, outputTargetBuildItem.getOutputDirectory());
 
         OpenAPI annotationModel;
 
@@ -710,11 +727,12 @@ public class SmallRyeOpenApiProcessor {
         return false;
     }
 
-    private OpenAPI generateStaticModel(SmallRyeOpenApiConfig openApiConfig, Path target) throws IOException {
+    private OpenAPI generateStaticModel(SmallRyeOpenApiConfig openApiConfig, List<Pattern> ignorePatterns, Path target)
+            throws IOException {
         if (openApiConfig.ignoreStaticDocument) {
             return null;
         } else {
-            List<Result> results = findStaticModels(openApiConfig, target);
+            List<Result> results = findStaticModels(openApiConfig, ignorePatterns, target);
             if (!results.isEmpty()) {
                 OpenAPI mergedStaticModel = new OpenAPIImpl();
                 for (Result result : results) {
@@ -776,16 +794,16 @@ public class SmallRyeOpenApiProcessor {
         return scanners.toArray(new String[] {});
     }
 
-    private List<Result> findStaticModels(SmallRyeOpenApiConfig openApiConfig, Path target) {
+    private List<Result> findStaticModels(SmallRyeOpenApiConfig openApiConfig, List<Pattern> ignorePatterns, Path target) {
         List<Result> results = new ArrayList<>();
 
         // First check for the file in both META-INF and WEB-INF/classes/META-INF
-        addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YAML);
-        addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
-        addStaticModelIfExist(results, Format.YAML, META_INF_OPENAPI_YML);
-        addStaticModelIfExist(results, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YML);
-        addStaticModelIfExist(results, Format.JSON, META_INF_OPENAPI_JSON);
-        addStaticModelIfExist(results, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
+        addStaticModelIfExist(results, ignorePatterns, Format.YAML, META_INF_OPENAPI_YAML);
+        addStaticModelIfExist(results, ignorePatterns, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
+        addStaticModelIfExist(results, ignorePatterns, Format.YAML, META_INF_OPENAPI_YML);
+        addStaticModelIfExist(results, ignorePatterns, Format.YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YML);
+        addStaticModelIfExist(results, ignorePatterns, Format.JSON, META_INF_OPENAPI_JSON);
+        addStaticModelIfExist(results, ignorePatterns, Format.JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
 
         // Add any aditional directories if configured
         if (openApiConfig.additionalDocsDirectory.isPresent()) {
@@ -793,9 +811,9 @@ public class SmallRyeOpenApiProcessor {
             for (Path path : additionalStaticDocuments) {
                 // Scan all yaml and json files
                 try {
-                    List<String> filesInDir = getResourceFiles(PathUtils.asString(path, "/"), target);
+                    List<String> filesInDir = getResourceFiles(path, target);
                     for (String possibleModelFile : filesInDir) {
-                        addStaticModelIfExist(results, possibleModelFile);
+                        addStaticModelIfExist(results, ignorePatterns, possibleModelFile);
                     }
                 } catch (IOException ioe) {
                     ioe.printStackTrace();
@@ -806,49 +824,77 @@ public class SmallRyeOpenApiProcessor {
         return results;
     }
 
-    private void addStaticModelIfExist(List<Result> results, String path) {
+    private void addStaticModelIfExist(List<Result> results, List<Pattern> ignorePatterns, String path) {
         if (path.endsWith(".json")) {
             // Scan a specific json file
-            addStaticModelIfExist(results, Format.JSON, path);
+            addStaticModelIfExist(results, ignorePatterns, Format.JSON, path);
         } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
             // Scan a specific yaml file
-            addStaticModelIfExist(results, Format.YAML, path);
+            addStaticModelIfExist(results, ignorePatterns, Format.YAML, path);
         }
     }
 
-    private void addStaticModelIfExist(List<Result> results, Format format, String path) {
+    private void addStaticModelIfExist(List<Result> results, List<Pattern> ignorePatterns, Format format, String path) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        try (InputStream inputStream = cl.getResourceAsStream(path)) {
-            if (inputStream != null) {
-                results.add(new Result(format, inputStream));
+
+        try {
+            Enumeration<URL> urls = cl.getResources(path);
+            while (urls.hasMoreElements()) {
+                URL url = urls.nextElement();
+                // Check if we should ignore
+                if (!shouldIgnore(ignorePatterns, url.toString())) {
+                    // Add as static model
+                    try (InputStream inputStream = url.openStream()) {
+                        if (inputStream != null) {
+                            byte[] contents = IoUtil.readBytes(inputStream);
+
+                            results.add(new Result(format, new ByteArrayInputStream(contents)));
+                        }
+                    } catch (IOException ex) {
+                        throw new UncheckedIOException(ex);
+                    }
+                }
             }
+
         } catch (IOException ex) {
-            ex.printStackTrace();
+            throw new UncheckedIOException(ex);
         }
     }
 
-    private List<String> getResourceFiles(String pathName, Path target) throws IOException {
+    private boolean shouldIgnore(List<Pattern> ignorePatterns, String url) {
+        for (Pattern ignorePattern : ignorePatterns) {
+            Matcher matcher = ignorePattern.matcher(url);
+            if (matcher.matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<String> getResourceFiles(Path resourcePath, Path target) throws IOException {
+        final String resourceName = ClassPathUtils.toResourceName(resourcePath);
         List<String> filenames = new ArrayList<>();
-        if (target == null) {
+        // Here we are resolving the resource dir relative to the classes dir and if it does not exist, we fallback to locating the resource dir on the classpath.
+        // Although the classes dir should already be on the classpath.
+        // In a QuarkusUnitTest the module's classes dir and the test application root could be different directories, is this code here for that reason?
+        final Path targetResourceDir = target == null ? null : target.resolve("classes").resolve(resourcePath);
+        if (targetResourceDir != null && Files.exists(targetResourceDir)) {
+            try (Stream<Path> paths = Files.list(targetResourceDir)) {
+                return paths.map((t) -> {
+                    return resourceName + "/" + t.getFileName().toString();
+                }).collect(Collectors.toList());
+            }
+        } else {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            try (InputStream inputStream = cl.getResourceAsStream(pathName)) {
+            try (InputStream inputStream = cl.getResourceAsStream(resourceName)) {
                 if (inputStream != null) {
                     try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
                         String resource;
                         while ((resource = br.readLine()) != null) {
-                            filenames.add(pathName + "/" + resource);
+                            filenames.add(resourceName + "/" + resource);
                         }
                     }
                 }
-            }
-        } else {
-            Path classes = target.resolve("classes");
-            if (classes != null) {
-                Path path = classes.resolve(pathName);
-
-                return Files.list(path).map((t) -> {
-                    return pathName + "/" + t.getFileName().toString();
-                }).collect(Collectors.toList());
             }
         }
         return filenames;

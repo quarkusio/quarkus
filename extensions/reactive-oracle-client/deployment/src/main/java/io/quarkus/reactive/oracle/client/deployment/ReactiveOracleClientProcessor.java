@@ -36,6 +36,7 @@ import io.quarkus.reactive.oracle.client.runtime.DataSourcesReactiveOracleConfig
 import io.quarkus.reactive.oracle.client.runtime.OraclePoolRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.oracleclient.OraclePool;
 import io.vertx.sqlclient.Pool;
@@ -49,6 +50,7 @@ class ReactiveOracleClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             OraclePoolRecorder recorder,
             VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
@@ -61,13 +63,14 @@ class ReactiveOracleClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_ORACLE_CLIENT));
 
-        createPoolIfDefined(recorder, vertx, shutdown, oraclePool, vertxPool, syntheticBeans,
+        createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, oraclePool, vertxPool, syntheticBeans,
                 DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactiveOracleConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
-            createPoolIfDefined(recorder, vertx, shutdown, oraclePool, vertxPool, syntheticBeans, dataSourceName,
+            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, oraclePool, vertxPool, syntheticBeans,
+                    dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveOracleConfig, defaultDataSourceDbKindBuildItems,
                     curateOutcomeBuildItem);
@@ -117,6 +120,7 @@ class ReactiveOracleClientProcessor {
 
     private void createPoolIfDefined(OraclePoolRecorder recorder,
             VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<OraclePoolBuildItem> oraclePool,
             BuildProducer<VertxPoolBuildItem> vertxPool,
@@ -136,6 +140,7 @@ class ReactiveOracleClientProcessor {
         }
 
         RuntimeValue<OraclePool> pool = recorder.configureOraclePool(vertx.getVertx(),
+                eventLoopCount.getEventLoopCount(),
                 dataSourceName,
                 dataSourcesRuntimeConfig,
                 dataSourcesReactiveRuntimeConfig,

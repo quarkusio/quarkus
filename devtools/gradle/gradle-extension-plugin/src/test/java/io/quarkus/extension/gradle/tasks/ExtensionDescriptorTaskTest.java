@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.quarkus.extension.gradle.QuarkusExtensionPlugin;
 import io.quarkus.extension.gradle.TestUtils;
 
 public class ExtensionDescriptorTaskTest {
@@ -37,7 +36,7 @@ public class ExtensionDescriptorTaskTest {
 
     @Test
     public void shouldCreateFilesWithDefaultValues() throws IOException {
-        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList()));
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
         File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
@@ -75,10 +74,8 @@ public class ExtensionDescriptorTaskTest {
 
     @Test
     public void shouldUseCustomDeploymentArtifactName() throws IOException {
-        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList())
-                + QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { " +
-                "deploymentArtifact = 'custom.group:custom-deployment-artifact:0.1.0'" +
-                "}";
+        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
+                "deploymentArtifact = 'custom.group:custom-deployment-artifact:0.1.0'");
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
@@ -91,10 +88,8 @@ public class ExtensionDescriptorTaskTest {
 
     @Test
     public void shouldContainsConditionalDependencies() throws IOException {
-        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList())
-                + QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { " +
-                "conditionalDependencies= ['org.acme:ext-a:0.1.0', 'org.acme:ext-b:0.1.0']" +
-                "}";
+        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
+                "conditionalDependencies= ['org.acme:ext-a:0.1.0', 'org.acme:ext-b:0.1.0']");
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
@@ -109,10 +104,9 @@ public class ExtensionDescriptorTaskTest {
 
     @Test
     public void shouldContainsParentFirstArtifacts() throws IOException {
-        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList())
-                + QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { " +
-                "parentFirstArtifacts = ['org.acme:ext-a:0.1.0', 'org.acme:ext-b:0.1.0']" +
-                "}";
+        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
+                "parentFirstArtifacts = ['org.acme:ext-a:0.1.0', 'org.acme:ext-b:0.1.0']");
+
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
@@ -126,7 +120,7 @@ public class ExtensionDescriptorTaskTest {
 
     @Test
     public void shouldGenerateDescriptorBasedOnExistingFile() throws IOException {
-        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList()));
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
         File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
         metaInfDir.mkdirs();
         String description = "name: extension-name\n" +
@@ -142,5 +136,28 @@ public class ExtensionDescriptorTaskTest {
         assertThat(extensionDescriptor.get("name").asText()).isEqualTo("extension-name");
         assertThat(extensionDescriptor.has("description")).isTrue();
         assertThat(extensionDescriptor.get("description").asText()).isEqualTo("this is a sample extension");
+    }
+
+    @Test
+    public void shouldGenerateDescriptorWithCapabilities() throws IOException {
+        String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
+                "capabilities { \n" +
+                        "   provides 'org.acme:ext-a:0.1.0' \n" +
+                        "   provides 'org.acme:ext-b:0.1.0' onlyIf(['org.acme:ext-b:0.1.0']) onlyIfNot(['org.acme:ext-c:0.1.0']) \n"
+                        +
+                        "   requires 'sunshine' onlyIf(['org.acme:ext-b:0.1.0']) \n" +
+                        "}\n");
+
+        TestUtils.writeFile(buildFile, buildFileContent);
+        TestUtils.runExtensionDescriptorTask(testProjectDir);
+
+        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        assertThat(extensionPropertiesFile).exists();
+
+        Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
+        assertThat(extensionProperty).containsEntry("provides-capabilities",
+                "org.acme:ext-a:0.1.0,org.acme:ext-b:0.1.0?org.acme:ext-b:0.1.0?!org.acme:ext-c:0.1.0");
+        assertThat(extensionProperty).containsEntry("requires-capabilities",
+                "sunshine?org.acme:ext-b:0.1.0");
     }
 }

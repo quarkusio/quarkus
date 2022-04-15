@@ -14,7 +14,7 @@ import io.quarkus.qute.generator.ExtensionMethodGenerator.Parameters;
 
 /**
  * Represents a template extension method.
- * 
+ *
  * @see TemplateExtension
  */
 public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {

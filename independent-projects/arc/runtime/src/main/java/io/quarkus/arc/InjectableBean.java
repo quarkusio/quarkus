@@ -29,7 +29,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
     String getIdentifier();
 
     /**
-     * 
+     *
      * @return the kind of the bean
      * @see Kind
      */
@@ -90,7 +90,8 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return Collections.emptySet();
     }
 
-    @Override
+    // Deprecated method which can be safely removed once we use CDI 4.0+
+    @Deprecated
     default boolean isNullable() {
         return false;
     }
@@ -117,7 +118,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
 
     /**
      * Suppressed beans cannot be obtained by programmatic lookup via {@link Instance}.
-     * 
+     *
      * @return {@code true} if the bean should be suppressed
      */
     default boolean isSuppressed() {
@@ -132,7 +133,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      * <p>
      * This priority is used to sort the resolved beans when performing programmatic lookup via
      * {@link Instance} or when injecting a list of beans by means of the {@link All} qualifier.
-     * 
+     *
      * @return the priority
      * @see Priority
      */

@@ -113,7 +113,7 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * The host under which the application is going to be exposed
-     * 
+     *
      * @deprecated Use the {@code quarkus.kubernetes.ingress.host} instead
      */
     @ConfigItem
@@ -256,7 +256,7 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * If true, a Kubernetes Ingress will be created
-     * 
+     *
      * @deprecated Use the {@code quarkus.kubernetes.ingress.expose} instead
      */
     @ConfigItem
@@ -286,11 +286,28 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<String> appSecret;
 
     /**
-     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * If set, the config map will be mounted to the application container and its contents will be used for application
      * configuration.
      */
     @ConfigItem
     Optional<String> appConfigMap;
+
+    /**
+     * If set, it will copy the security context configuration provided into the generated pod settings.
+     */
+    @ConfigItem
+    SecurityContextConfig securityContext;
+
+    /**
+     * If set, it will change the name of the container according to the configuration
+     */
+    @ConfigItem
+    Optional<String> containerName;
+
+    /**
+     * Debug configuration to be set in pods.
+     */
+    DebugConfig remoteDebug;
 
     public Optional<String> getPartOf() {
         return partOf;
@@ -382,6 +399,11 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getHost() {
         return host;
+    }
+
+    @Override
+    public Optional<String> getContainerName() {
+        return containerName;
     }
 
     public Map<String, PortConfig> getPorts() {
@@ -484,5 +506,10 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public Optional<ExpositionConfig> getExposition() {
         return Optional.of(ingress);
+    }
+
+    @Override
+    public SecurityContextConfig getSecurityContext() {
+        return securityContext;
     }
 }

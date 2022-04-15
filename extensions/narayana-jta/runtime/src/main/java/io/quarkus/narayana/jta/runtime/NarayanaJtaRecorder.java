@@ -52,10 +52,9 @@ public class NarayanaJtaRecorder {
     }
 
     public void setDefaultTimeout(TransactionManagerConfiguration transactions) {
-        transactions.defaultTransactionTimeout.ifPresent(defaultTimeout -> {
-            arjPropertyManager.getCoordinatorEnvironmentBean().setDefaultTimeout((int) defaultTimeout.getSeconds());
-            TxControl.setDefaultTimeout((int) defaultTimeout.getSeconds());
-        });
+        arjPropertyManager.getCoordinatorEnvironmentBean()
+                .setDefaultTimeout((int) transactions.defaultTransactionTimeout.getSeconds());
+        TxControl.setDefaultTimeout((int) transactions.defaultTransactionTimeout.getSeconds());
     }
 
     public static Properties getDefaultProperties() {

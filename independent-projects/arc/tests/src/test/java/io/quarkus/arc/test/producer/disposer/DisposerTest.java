@@ -102,13 +102,13 @@ public class DisposerTest {
 
         static final AtomicInteger DESTROYED = new AtomicInteger();
 
-        static final AtomicReference<String> DISPOSED = new AtomicReference<>();
+        static final AtomicReference<CharSequence> DISPOSED = new AtomicReference<>();
 
         @MyQualifier
         @Produces
         String produce = toString();
 
-        void dipose(@Disposes @MyQualifier String value) {
+        void dipose(@Disposes @MyQualifier CharSequence value) {
             DISPOSED.set(value);
         }
 

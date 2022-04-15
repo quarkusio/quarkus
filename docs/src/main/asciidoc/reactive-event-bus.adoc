@@ -25,32 +25,31 @@ However, it is limited to single-event behavior (no stream) and to local message
 This mechanism uses the Vert.x EventBus, so you need to enable the `vertx` extension to use this feature.
 If you are creating a new project, set the `extensions` parameter are follows:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=vertx-quickstart \
-    -Dextensions="vertx,resteasy-mutiny" \
-    -DnoExamples
-cd vertx-quickstart
-----
+:create-app-artifact-id: vertx-quickstart
+:create-app-extensions: vertx,resteasy-reactive
+include::includes/devtools/create-app.adoc[]
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
 the `add-extension` command:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="vertx,resteasy-mutiny"
-----
+:add-extension-extensions: vertx
+include::includes/devtools/extension-add.adoc[]
 
-Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
+Otherwise, you can manually add this to the dependencies section of your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-vertx</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-vertx")
 ----
 
 == Consuming events
@@ -239,7 +238,6 @@ package org.acme.vertx;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -256,7 +254,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return bus.<String>request("greeting", name)        // <2>
                 .onItem().transform(Message::body);
     }
@@ -291,17 +289,13 @@ This message is consumed by another bean and the response is sent using the _rep
 
 First create a new project using:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=vertx-http-quickstart \
-    -Dextensions="vertx" \
-    -DnoExamples
-cd vertx-http-quickstart
-----
+:create-app-artifact-id: vertx-http-quickstart
+:create-app-extensions: vertx,resteasy-reactive
+include::includes/devtools/create-app.adoc[]
 
-You can already start the application in _dev mode_ using `./mvnw compile quarkus:dev`.
+You can already start the application in _dev mode_ using:
+
+include::includes/devtools/dev.adoc[]
 
 Then, creates a new JAX-RS resource with the following content:
 
@@ -313,7 +307,6 @@ package org.acme.vertx;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -330,7 +323,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return bus.<String>request("greeting", name)            // <1>
                 .onItem().transform(Message::body);            // <2>
     }
@@ -381,17 +374,11 @@ To better understand, let's detail how the HTTP request/response has been handle
 
 This application can be packaged using:
 
-[source,bash]
-----
-./mvnw clean package
-----
+include::includes/devtools/build.adoc[]
 
 You can also compile it as a native executable with:
 
-[source,bash]
-----
-./mvnw clean package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
 == Using codecs
 
@@ -404,7 +391,7 @@ So you can exchange objects as follows:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(String name) {
     return bus.<String>request("greeting", new MyName(name))
         .onItem().transform(Message::body);
 }
@@ -422,7 +409,7 @@ If you want to use a specific codec, you need to explicitly set it on both ends:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(String name) {
     return bus.<String>request("greeting", name,
         new DeliveryOptions().setCodecName(MyNameCodec.class.getName())) // <1>
         .onItem().transform(Message::body);
@@ -433,5 +420,5 @@ Uni<String> greeting(MyName name) {
     return Uni.createFrom().item(() -> "Hello "+name.getName());
 }
 ----
-1. Set the name of the codec to use to send the message
-2. Set the codec to use to receive the message
+<1> Set the name of the codec to use to send the message
+<2> Set the codec to use to receive the message

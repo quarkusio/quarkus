@@ -128,6 +128,8 @@ public final class DotNames {
     public static final DotName IDENTIFIED = create(Identified.class);
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
+    public static final DotName DEPRECATED = create(Deprecated.class);
+    public static final DotName KOTLIN_METADATA_ANNOTATION = create("kotlin.Metadata");
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);
@@ -138,8 +140,6 @@ public final class DotNames {
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
     public static final DotName STRING = create(String.class);
-
-    public static final DotName DEPRECATED = create(Deprecated.class);
 
     private DotNames() {
     }

@@ -11,10 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
@@ -197,11 +197,10 @@ public class LoggingSetupRecorder {
             categories.forEach(new BiConsumer<String, CategoryConfig>() {
                 @Override
                 public void accept(String categoryName, CategoryConfig config) {
-                    final CategoryBuildTimeConfig buildCategory = isSubsetOf(categoryName, buildConfig.categories);
-                    final Level logLevel = getLogLevel(categoryName, config, categories, buildConfig.minLevel);
-                    final Level minLogLevel = buildCategory == null
-                            ? buildConfig.minLevel
-                            : buildCategory.minLevel.getLevel();
+                    final Level logLevel = getLogLevel(categoryName, categories, CategoryConfig::getLevel,
+                            buildConfig.minLevel);
+                    final Level minLogLevel = getLogLevel(categoryName, buildConfig.categories,
+                            CategoryBuildTimeConfig::getMinLevel, buildConfig.minLevel);
 
                     if (logLevel.intValue() < minLogLevel.intValue()) {
                         log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s",
@@ -261,11 +260,10 @@ public class LoggingSetupRecorder {
                 logCleanupFilter, launchMode);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
-            final CategoryBuildTimeConfig buildCategory = isSubsetOf(entry.getKey(), buildConfig.categories);
-            final Level logLevel = getLogLevel(entry.getKey(), entry.getValue(), categories, buildConfig.minLevel);
-            final Level minLogLevel = buildCategory == null
-                    ? buildConfig.minLevel
-                    : buildCategory.minLevel.getLevel();
+            final String categoryName = entry.getKey();
+            final Level logLevel = getLogLevel(categoryName, categories, CategoryConfig::getLevel, buildConfig.minLevel);
+            final Level minLogLevel = getLogLevel(categoryName, buildConfig.categories, CategoryBuildTimeConfig::getMinLevel,
+                    buildConfig.minLevel);
 
             if (logLevel.intValue() < minLogLevel.intValue()) {
                 log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s", logLevel,
@@ -291,29 +289,22 @@ public class LoggingSetupRecorder {
         InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
     }
 
-    private static Level getLogLevel(String categoryName, CategoryConfig categoryConfig, Map<String, CategoryConfig> categories,
-            Level rootMinLevel) {
-        if (Objects.isNull(categoryConfig))
-            return rootMinLevel;
-
-        final InheritableLevel inheritableLevel = categoryConfig.level;
-        if (!inheritableLevel.isInherited())
-            return inheritableLevel.getLevel();
-
-        int lastDotIndex = categoryName.lastIndexOf('.');
-        if (lastDotIndex == -1)
-            return rootMinLevel;
-
-        String parent = categoryName.substring(0, lastDotIndex);
-        return getLogLevel(parent, categories.get(parent), categories, rootMinLevel);
-    }
-
-    private static CategoryBuildTimeConfig isSubsetOf(String categoryName, Map<String, CategoryBuildTimeConfig> categories) {
-        return categories.entrySet().stream()
-                .filter(buildCategoryEntry -> categoryName.startsWith(buildCategoryEntry.getKey()))
-                .map(Entry::getValue)
-                .findFirst()
-                .orElse(null);
+    public static <T> Level getLogLevel(String categoryName, Map<String, T> categories,
+            Function<T, InheritableLevel> levelExtractor, Level rootMinLevel) {
+        while (true) {
+            T categoryConfig = categories.get(categoryName);
+            if (categoryConfig != null) {
+                final InheritableLevel inheritableLevel = levelExtractor.apply(categoryConfig);
+                if (inheritableLevel != null && !inheritableLevel.isInherited()) {
+                    return inheritableLevel.getLevel();
+                }
+            }
+            final int lastDotIndex = categoryName.lastIndexOf('.');
+            if (lastDotIndex == -1) {
+                return rootMinLevel;
+            }
+            categoryName = categoryName.substring(0, lastDotIndex);
+        }
     }
 
     private static Map<String, Handler> createNamedHandlers(LogConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,

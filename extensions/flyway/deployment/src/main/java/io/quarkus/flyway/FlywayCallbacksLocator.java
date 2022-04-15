@@ -45,7 +45,7 @@ class FlywayCallbacksLocator {
 
     /**
      * Main logic to identify callbacks and return them to be processed by the {@link FlywayProcessor}
-     * 
+     *
      * @return Map containing the callbacks for each datasource. The datasource name is the map key
      * @exception ClassNotFoundException if the {@link Callback} class cannot be located by the Quarkus class loader
      * @exception InstantiationException if the {@link Callback} class represents an abstract class.
@@ -66,7 +66,7 @@ class FlywayCallbacksLocator {
     /**
      *
      * Reads the configuration, instantiates the {@link Callback} class. Also, adds it to the reflective producer
-     * 
+     *
      * @return List of callbacks for the datasource
      * @exception ClassNotFoundException if the {@link Callback} class cannot be located by the Quarkus class loader
      * @exception InstantiationException if the {@link Callback} class represents an abstract class.

@@ -16,7 +16,6 @@
 
     <properties>
         <mariadb.base_url>jdbc:mariadb://localhost:3306</mariadb.base_url>
-        <mariadb.image>mariadb:10.4</mariadb.image>
     </properties>
 
     <dependencies>
@@ -251,7 +250,7 @@
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all mariadb:10.4 images currently running, not just those 
+                            <!--Stops all mariadb images currently running, not just those
                                 we just started. Useful to stop processes still running from a previously 
                                 failed integration test run -->
                             <allContainers>true</allContainers>

@@ -35,6 +35,10 @@
             <artifactId>smallrye-common-annotation</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-vertx-context</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mutiny</artifactId>
         </dependency>

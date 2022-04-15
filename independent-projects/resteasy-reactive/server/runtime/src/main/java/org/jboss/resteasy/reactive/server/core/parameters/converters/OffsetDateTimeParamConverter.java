@@ -5,6 +5,11 @@ import java.time.format.DateTimeFormatter;
 
 public class OffsetDateTimeParamConverter extends TemporalParamConverter<OffsetDateTime> {
 
+    // this can be called by generated code
+    public OffsetDateTimeParamConverter() {
+        super(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
     public OffsetDateTimeParamConverter(DateTimeFormatter formatter) {
         super(formatter);
     }

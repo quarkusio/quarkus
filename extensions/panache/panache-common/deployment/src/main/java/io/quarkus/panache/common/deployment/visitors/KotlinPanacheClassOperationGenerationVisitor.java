@@ -237,8 +237,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     private String desc(String name) {
         String s = name.replace(".", "/");
-        s = s.startsWith("L") || s.startsWith("[") ? s : "L" + s + ";";
-        return s;
+        return s.startsWith("[") ? s : "L" + s + ";";
     }
 
     private void descriptors(MethodInfo method, StringJoiner joiner) {

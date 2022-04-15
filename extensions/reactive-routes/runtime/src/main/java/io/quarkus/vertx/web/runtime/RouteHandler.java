@@ -62,9 +62,9 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
         } else {
             try {
                 // First attempt to obtain the request context state.
-                // If there is a route filter and the request can have body (POST, PUT, etc.) the route 
-                // method is invoked asynchronously (once all data are read). 
-                // However, the request context is activated by the filter and we need to make sure 
+                // If there is a route filter and the request can have body (POST, PUT, etc.) the route
+                // method is invoked asynchronously (once all data are read).
+                // However, the request context is activated by the filter and we need to make sure
                 // the same context is then used in the route method
                 ContextState state = context.get(REQUEST_CONTEXT_STATE);
                 // Activate the context, i.e. set the thread locals, state can be null

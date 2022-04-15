@@ -7,11 +7,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import org.jboss.logging.Logger;
 
 /**
  * Section node.
  */
 class SectionNode implements TemplateNode {
+
+    private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
 
     static Builder builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
             Function<String, TemplateException> errorFun) {
@@ -22,16 +25,25 @@ class SectionNode implements TemplateNode {
     final List<SectionBlock> blocks;
     private final SectionHelper helper;
     private final Origin origin;
+    private final boolean traceLevel;
 
     SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin) {
         this.name = name;
         this.blocks = blocks;
         this.helper = helper;
         this.origin = origin;
+        this.traceLevel = LOG.isTraceEnabled();
     }
 
     @Override
     public CompletionStage<ResultNode> resolve(ResolutionContext context) {
+        if (traceLevel && !Parser.ROOT_HELPER_NAME.equals(name)) {
+            LOG.tracef("Resolve {#%s} started: %s", name, origin);
+            return helper.resolve(new SectionResolutionContextImpl(context)).thenApply(r -> {
+                LOG.tracef("Resolve {#%s} completed: %s", name, origin);
+                return r;
+            });
+        }
         return helper.resolve(new SectionResolutionContextImpl(context));
     }
 
@@ -75,7 +87,7 @@ class SectionNode implements TemplateNode {
             this.helperName = helperName;
             this.origin = origin;
             this.blocks = new ArrayList<>();
-            // The main block is always present 
+            // The main block is always present
             addBlock(SectionBlock
                     .builder(SectionHelperFactory.MAIN_BLOCK_NAME, expressionFun, errorFun)
                     .setOrigin(origin));

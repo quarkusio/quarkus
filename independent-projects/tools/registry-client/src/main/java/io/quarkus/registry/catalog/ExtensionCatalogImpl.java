@@ -27,7 +27,8 @@ import java.util.Map;
  * @see JsonBuilder.JsonBuilderSerializer for building a builder before serializing it.
  */
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-@JsonPropertyOrder({ "id", "platform", "bom", "quarkus-core-version", "extensions", "categories", "metadata" })
+@JsonPropertyOrder({ "id", "platform", "bom", "quarkus-core-version", "upstream-quarkus-core-version", "extensions",
+        "categories", "metadata" })
 public class ExtensionCatalogImpl extends ExtensionOriginImpl implements ExtensionCatalog {
 
     private final String quarkusCoreVersion;

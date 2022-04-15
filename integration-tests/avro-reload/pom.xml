@@ -10,8 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-avro-reload-test</artifactId>
-    <name>Quarkus - Integration Test - Avro code generation and reload</name>
+    <artifactId>quarkus-integration-test-avro-reload</artifactId>
+    <name>Quarkus - Integration Tests - Avro code generation and reload</name>
 
     <properties>
         <avro.codegen.avsc.imports>imports,directImport/PrivacyDirectImport.avsc</avro.codegen.avsc.imports>

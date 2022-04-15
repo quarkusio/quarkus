@@ -47,6 +47,7 @@ public class ContainerLocator {
                             .flatMap(containerPort -> Optional.ofNullable(containerPort.getPublicPort())
                                     .map(port -> {
                                         final ContainerAddress containerAddress = new ContainerAddress(
+                                                container.getId(),
                                                 DockerClientFactory.instance().dockerHostIpAddress(),
                                                 containerPort.getPublicPort());
                                         log.infof("Dev Services container found: %s (%s). Connecting to: %s.",

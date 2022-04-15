@@ -8,6 +8,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -34,6 +35,7 @@ import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
+import io.quarkus.extension.gradle.dsl.Capability;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.GACT;
 
@@ -138,6 +140,26 @@ public class ExtensionDescriptorTask extends DefaultTask {
         if (lesserPriorityArtifacts != null && !lesserPriorityArtifacts.isEmpty()) {
             String val = String.join(",", lesserPriorityArtifacts);
             props.put(AppModel.LESSER_PRIORITY_ARTIFACTS, val);
+        }
+
+        if (!quarkusExtensionConfiguration.getProvidedCapabilities().isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            final Iterator<Capability> i = quarkusExtensionConfiguration.getProvidedCapabilities().iterator();
+            appendCapability(i.next(), buf);
+            while (i.hasNext()) {
+                appendCapability(i.next(), buf.append(','));
+            }
+            props.setProperty(BootstrapConstants.PROP_PROVIDES_CAPABILITIES, buf.toString());
+        }
+
+        if (!quarkusExtensionConfiguration.getRequiredCapabilities().isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            final Iterator<Capability> i = quarkusExtensionConfiguration.getRequiredCapabilities().iterator();
+            appendCapability(i.next(), buf);
+            while (i.hasNext()) {
+                appendCapability(i.next(), buf.append(','));
+            }
+            props.setProperty(BootstrapConstants.PROP_REQUIRES_CAPABILITIES, buf.toString());
         }
 
         try {
@@ -260,6 +282,20 @@ public class ExtensionDescriptorTask extends DefaultTask {
         if (coreVersion != null) {
             ObjectNode metadata = getMetadataNode(extObject);
             metadata.put("built-with-quarkus-core", coreVersion);
+        }
+    }
+
+    private static void appendCapability(Capability capability, StringBuilder buf) {
+        buf.append(capability.getName());
+        if (!capability.getOnlyIf().isEmpty()) {
+            for (String onlyIf : capability.getOnlyIf()) {
+                buf.append('?').append(onlyIf);
+            }
+        }
+        if (!capability.getOnlyIfNot().isEmpty()) {
+            for (String onlyIfNot : capability.getOnlyIfNot()) {
+                buf.append("?!").append(onlyIfNot);
+            }
         }
     }
 

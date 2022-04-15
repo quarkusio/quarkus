@@ -65,7 +65,7 @@ public class SyntheticObserverTest {
     @Test
     public void testSyntheticObserver() {
         MyObserver.EVENTS.clear();
-        Arc.container().beanManager().fireEvent("foo");
+        Arc.container().beanManager().getEvent().fire("foo");
         assertEquals(2, MyObserver.EVENTS.size(), "Events: " + MyObserver.EVENTS);
         assertTrue(MyObserver.EVENTS.contains("synthetic"));
         assertTrue(MyObserver.EVENTS.contains("foo_MyObserver"));

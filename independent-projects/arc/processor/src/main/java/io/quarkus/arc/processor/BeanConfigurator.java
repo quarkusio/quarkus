@@ -12,7 +12,7 @@ import org.jboss.jandex.DotName;
  * Synthetic bean configurator. An alternative to {@link javax.enterprise.inject.spi.configurator.BeanConfigurator}.
  * <p>
  * This construct is not thread-safe and should not be re-used.
- * 
+ *
  * @param <T>
  */
 public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigurator<T>, T> {

@@ -12,7 +12,6 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import picocli.CommandLine;
 import picocli.CommandLine.Help.ColorScheme;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Spec;
 
 public class OutputOptionMixin implements MessageWriter {
 
@@ -83,7 +82,7 @@ public class OutputOptionMixin implements MessageWriter {
         return CommandLine.Help.Ansi.AUTO.enabled();
     }
 
-    public void printText(String[] text) {
+    public void printText(String... text) {
         for (String line : text) {
             out().println(colorScheme().ansi().new Text(line, colorScheme()));
         }
@@ -126,13 +125,13 @@ public class OutputOptionMixin implements MessageWriter {
     @Override
     public void debug(String msg) {
         if (isVerbose()) {
-            out().println(colorScheme().ansi().new Text("[DEBUG] " + msg, colorScheme()));
+            out().println(colorScheme().ansi().new Text("@|faint [DEBUG] " + msg + "|@", colorScheme()));
         }
     }
 
     @Override
     public void warn(String msg) {
-        out().println(colorScheme().ansi().new Text(WARN_ICON + " " + msg, colorScheme()));
+        out().println(colorScheme().ansi().new Text("@|yellow " + WARN_ICON + " " + msg + "|@", colorScheme()));
     }
 
     // CommandLine must be passed in (forwarded commands)

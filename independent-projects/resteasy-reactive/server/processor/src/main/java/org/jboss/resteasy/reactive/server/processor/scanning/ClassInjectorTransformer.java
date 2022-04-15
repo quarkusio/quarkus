@@ -325,7 +325,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
 
         private void injectParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
                 ServerIndexedParameter extractor, boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
-            // spec says: 
+            // spec says:
             /*
              * 3.2 Fields and Bean Properties
              * if the field or property is annotated with @MatrixParam, @QueryParam or @PathParam then an implementation

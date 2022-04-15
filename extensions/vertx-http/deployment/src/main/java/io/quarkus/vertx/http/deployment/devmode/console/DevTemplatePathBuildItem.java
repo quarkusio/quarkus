@@ -19,7 +19,7 @@ public final class DevTemplatePathBuildItem extends MultiBuildItem {
 
     /**
      * Uses the {@code /} path separator.
-     * 
+     *
      * @return the path relative to the template root
      */
     public String getPath() {
@@ -28,7 +28,7 @@ public final class DevTemplatePathBuildItem extends MultiBuildItem {
 
     /**
      * Returns the template contents
-     * 
+     *
      * @return the template contents
      */
     public String getContents() {
@@ -36,7 +36,7 @@ public final class DevTemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return {@code true} if it represents a user tag, {@code false} otherwise
      */
     public boolean isTag() {

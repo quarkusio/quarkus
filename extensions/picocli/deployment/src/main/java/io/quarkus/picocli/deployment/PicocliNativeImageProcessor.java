@@ -3,6 +3,7 @@ package io.quarkus.picocli.deployment;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -87,9 +88,7 @@ public class PicocliNativeImageProcessor {
                     if (value.kind() == Kind.CLASS) {
                         typeAnnotationValues.add(value.asClass());
                     } else if (value.kind() == Kind.ARRAY && value.componentKind() == Kind.CLASS) {
-                        for (Type componentClass : value.asClassArray()) {
-                            typeAnnotationValues.add(componentClass);
-                        }
+                        Collections.addAll(typeAnnotationValues, value.asClassArray());
                     }
                 }
             }

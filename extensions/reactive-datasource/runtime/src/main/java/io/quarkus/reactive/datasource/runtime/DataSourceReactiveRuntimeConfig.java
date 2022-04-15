@@ -33,6 +33,18 @@ public class DataSourceReactiveRuntimeConfig {
     public OptionalInt maxSize = OptionalInt.empty();
 
     /**
+     * When a new connection object is created, the pool assigns it an event loop.
+     * <p>
+     * When {@code #event-loop-size} is set to a strictly positive value, the pool assigns as many event loops as specified, in
+     * a round-robin fashion.
+     * By default, the number of event loops configured or calculated by Quarkus is used.
+     * If {@code #event-loop-size} is set to zero or a negative value, the pool assigns the current event loop to the new
+     * connection.
+     */
+    @ConfigItem
+    public OptionalInt eventLoopSize = OptionalInt.empty();
+
+    /**
      * Whether all server certificates should be trusted.
      */
     @ConfigItem(defaultValue = "false")
@@ -88,7 +100,7 @@ public class DataSourceReactiveRuntimeConfig {
 
     /**
      * Deprecated: this was removed and is no longer available.
-     * 
+     *
      * @Deprecated
      */
     @ConfigItem
@@ -119,4 +131,18 @@ public class DataSourceReactiveRuntimeConfig {
      */
     @ConfigItem(defaultValueDocumentation = "no timeout")
     public Optional<Duration> idleTimeout = Optional.empty();
+
+    /**
+     * Set to true to share the pool among datasources.
+     * There can be multiple shared pools distinguished by <name>name</name>, when no specific name is set,
+     * the <code>__vertx.DEFAULT</code> name is used.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean shared;
+
+    /**
+     * Set the pool name, used when the pool is shared among datasources, otherwise ignored.
+     */
+    @ConfigItem
+    public Optional<String> name;
 }

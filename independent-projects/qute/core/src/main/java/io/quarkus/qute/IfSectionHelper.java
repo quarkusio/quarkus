@@ -531,11 +531,11 @@ public class IfSectionHelper implements SectionHelper {
                         }
                     }
                     highestGroup.add(param);
-                    // Add non-grouped elements 
+                    // Add non-grouped elements
                     if (prevIdx > lastGroupdIdx) {
                         int from = lastGroupdIdx > 0 ? lastGroupdIdx + 1 : 0;
                         int to = op.isBinary() ? prevIdx : prevIdx + 1;
-                        params.subList(from, to).forEach(ret::add);
+                        ret.addAll(params.subList(from, to));
                     }
                 } else if (op.precedence < highestPrecedence) {
                     if (highestGroup != null) {
@@ -555,7 +555,7 @@ public class IfSectionHelper implements SectionHelper {
         } else {
             // Add all remaining non-grouped elements
             if (lastGroupdIdx + 1 != params.size()) {
-                params.subList(lastGroupdIdx + 1, params.size()).forEach(ret::add);
+                ret.addAll(params.subList(lastGroupdIdx + 1, params.size()));
             }
         }
         return parseParams(ret, parserDelegate);

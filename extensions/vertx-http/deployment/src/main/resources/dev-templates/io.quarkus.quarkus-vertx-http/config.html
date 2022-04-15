@@ -99,11 +99,11 @@ function postChangeConfigValue(name, value, $el){
         },
         function(data, status){
             if(status === "success"){
-                showToastMessage("Update", "Configuration updated successful");
+                showToastMessage("Update", "Configuration update successful");
                 hideEmptyTables();
                 changeBackgroundColor("#76be6b", $el);
             }else{
-                showToastMessage("Update", "Configuration updated failed");
+                showToastMessage("Update", "Configuration update failed");
                 hideEmptyTables();
                 changeBackgroundColor("#ff6366", $el);
             }
@@ -144,9 +144,9 @@ function saveApplicationPropertiesFile(){
         },
         function(data, status){
             if(status === "success"){
-                showToastMessage("Update", "Configuration updated successful");
+                showToastMessage("Update", "Configuration update successful");
             }else{
-                showToastMessage("Update", "Configuration updated failed");
+                showToastMessage("Update", "Configuration update failed");
             }
             hideEmptyTables();
             reloadApplicationPropertiesFile();
@@ -281,6 +281,10 @@ function applyConfigFilter(){
 }
 
 function filterByConfigExtension(configfilterText, configfilterKeys){
+    if(configfilterKeys.startsWith("[") && configfilterKeys.endsWith("]")){
+        configfilterKeys = configfilterKeys.substring(1, configfilterKeys.length-1);
+    }
+
     configfilter = configfilterKeys.split(",");
     $('#configCurrentFilter').show();
     configCurrentFilter.innerHTML = "<span style='border-bottom: 1px dotted;'>" + configfilterText + " <i class='fas fa-times-circle' onclick='clearConfigFilter();'></i></span>";
@@ -289,6 +293,7 @@ function filterByConfigExtension(configfilterText, configfilterKeys){
         var ck = $(this).text().trim();
         var hide = true;
         configfilter.forEach(function (item, index) {
+            item = item.trim();
             if(ck.startsWith(item)){
                 hide = false;
             }

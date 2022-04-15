@@ -6,6 +6,7 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.deployment.util.ReflectUtil.toError;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.unwrapInvocationTargetException;
+import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static io.smallrye.config.Expressions.withoutExpansion;
 import static java.util.stream.Collectors.toSet;
 
@@ -59,6 +60,9 @@ import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.PropertiesUtil;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigMappings;
+import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
 import io.smallrye.config.EnvConfigSource;
@@ -74,13 +78,18 @@ public final class BuildTimeConfigurationReader {
 
     final ConfigPatternMap<Container> buildTimePatternMap;
     final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
-    final ConfigPatternMap<Container> bootstrapPatternMap;
     final ConfigPatternMap<Container> runTimePatternMap;
+    final ConfigPatternMap<Container> bootstrapPatternMap;
 
-    final List<RootDefinition> buildTimeVisibleRoots;
     final List<RootDefinition> allRoots;
+    final List<RootDefinition> buildTimeVisibleRoots;
 
     final boolean bootstrapRootsEmpty;
+
+    final List<ConfigClassWithPrefix> buildTimeMappings;
+    final List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
+    final List<ConfigClassWithPrefix> runTimeMappings;
+    final List<ConfigClassWithPrefix> buildTimeVisibleMappings;
 
     /**
      * Construct a new instance.
@@ -90,12 +99,47 @@ public final class BuildTimeConfigurationReader {
     public BuildTimeConfigurationReader(final List<Class<?>> configRoots) {
         Assert.checkNotNullParam("configRoots", configRoots);
 
-        List<RootDefinition> bootstrapRoots = new ArrayList<>();
-        List<RootDefinition> runTimeRoots = new ArrayList<>();
-        List<RootDefinition> buildTimeRunTimeRoots = new ArrayList<>();
         List<RootDefinition> buildTimeRoots = new ArrayList<>();
+        List<RootDefinition> buildTimeRunTimeRoots = new ArrayList<>();
+        List<RootDefinition> runTimeRoots = new ArrayList<>();
+        List<RootDefinition> bootstrapRoots = new ArrayList<>();
+
+        buildTimeMappings = new ArrayList<>();
+        buildTimeRunTimeMappings = new ArrayList<>();
+        runTimeMappings = new ArrayList<>();
+
         Map<Class<?>, GroupDefinition> groups = new HashMap<>();
         for (Class<?> configRoot : configRoots) {
+            boolean isMapping = configRoot.isAnnotationPresent(ConfigMapping.class);
+            if (isMapping) {
+                ConfigPhase phase = ConfigPhase.BUILD_TIME;
+                // To retrieve config phase
+                ConfigRoot annotation = configRoot.getAnnotation(ConfigRoot.class);
+                if (annotation != null) {
+                    if (!annotation.prefix().equals("quarkus")) {
+                        throw reportError(configRoot,
+                                "@ConfigRoot.prefix() is not allowed in combination with @ConfigMapping, please use @ConfigMapping.prefix()");
+                    }
+
+                    if (!annotation.name().equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+                        throw reportError(configRoot, "@ConfigRoot.name() is not allowed in combination with @ConfigMapping");
+                    }
+
+                    phase = annotation.phase();
+                }
+
+                ConfigClassWithPrefix mapping = configClassWithPrefix(configRoot);
+                if (phase.equals(ConfigPhase.BUILD_TIME)) {
+                    buildTimeMappings.add(mapping);
+                } else if (phase.equals(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)) {
+                    buildTimeRunTimeMappings.add(mapping);
+                } else if (phase.equals(ConfigPhase.RUN_TIME)) {
+                    runTimeMappings.add(mapping);
+                }
+
+                continue;
+            }
+
             String prefix = "quarkus";
             String name = ConfigItem.HYPHENATED_ELEMENT_NAME;
             ConfigPhase phase = ConfigPhase.BUILD_TIME;
@@ -123,10 +167,11 @@ public final class BuildTimeConfigurationReader {
             }
         }
 
-        bootstrapPatternMap = PatternMapBuilder.makePatterns(bootstrapRoots);
-        runTimePatternMap = PatternMapBuilder.makePatterns(runTimeRoots);
-        buildTimeRunTimePatternMap = PatternMapBuilder.makePatterns(buildTimeRunTimeRoots);
+        // ConfigRoots
         buildTimePatternMap = PatternMapBuilder.makePatterns(buildTimeRoots);
+        buildTimeRunTimePatternMap = PatternMapBuilder.makePatterns(buildTimeRunTimeRoots);
+        runTimePatternMap = PatternMapBuilder.makePatterns(runTimeRoots);
+        bootstrapPatternMap = PatternMapBuilder.makePatterns(bootstrapRoots);
 
         buildTimeVisibleRoots = new ArrayList<>(buildTimeRoots.size() + buildTimeRunTimeRoots.size());
         buildTimeVisibleRoots.addAll(buildTimeRoots);
@@ -134,13 +179,15 @@ public final class BuildTimeConfigurationReader {
 
         bootstrapRootsEmpty = bootstrapRoots.isEmpty();
 
-        List<RootDefinition> allRoots = new ArrayList<>(
-                buildTimeVisibleRoots.size() + bootstrapRoots.size() + runTimeRoots.size());
+        allRoots = new ArrayList<>(buildTimeVisibleRoots.size() + bootstrapRoots.size() + runTimeRoots.size());
         allRoots.addAll(buildTimeVisibleRoots);
         allRoots.addAll(bootstrapRoots);
         allRoots.addAll(runTimeRoots);
 
-        this.allRoots = allRoots;
+        // ConfigMappings
+        buildTimeVisibleMappings = new ArrayList<>(buildTimeMappings.size() + buildTimeRunTimeMappings.size());
+        buildTimeVisibleMappings.addAll(buildTimeMappings);
+        buildTimeVisibleMappings.addAll(buildTimeRunTimeMappings);
     }
 
     private static void processClass(ClassDefinition.Builder builder, Class<?> clazz,
@@ -259,6 +306,18 @@ public final class BuildTimeConfigurationReader {
         return allRoots;
     }
 
+    public List<ConfigClassWithPrefix> getBuildTimeMappings() {
+        return buildTimeMappings;
+    }
+
+    public List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+        return buildTimeRunTimeMappings;
+    }
+
+    public List<ConfigClassWithPrefix> getBuildTimeVisibleMappings() {
+        return buildTimeVisibleMappings;
+    }
+
     public ReadResult readConfiguration(final SmallRyeConfig config) {
         return new ReadOperation(config).run();
     }
@@ -267,10 +326,10 @@ public final class BuildTimeConfigurationReader {
         final SmallRyeConfig config;
         final Set<String> processedNames = new HashSet<>();
 
-        final Map<Class<?>, Object> objectsByRootClass = new HashMap<>();
-        final Map<String, String> specifiedRunTimeDefaultValues = new TreeMap<>();
-        final Map<String, String> buildTimeRunTimeVisibleValues = new TreeMap<>();
+        final Map<Class<?>, Object> objectsByClass = new HashMap<>();
         final Map<String, String> allBuildTimeValues = new TreeMap<>();
+        final Map<String, String> buildTimeRunTimeVisibleValues = new TreeMap<>();
+        final Map<String, String> specifiedRunTimeDefaultValues = new TreeMap<>();
 
         final Map<ConverterType, Converter<?>> convByType = new HashMap<>();
 
@@ -297,16 +356,17 @@ public final class BuildTimeConfigurationReader {
                 } catch (NoSuchMethodException e) {
                     throw toError(e);
                 }
-                objectsByRootClass.put(clazz, instance);
+                objectsByClass.put(clazz, instance);
                 nameBuilder.append(root.getName());
                 readConfigGroup(root, instance, nameBuilder);
                 nameBuilder.setLength(0);
             }
 
-            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getPrefix).collect(toSet());
-            // sweep-up
             SmallRyeConfig runtimeDefaultsConfig = getConfigForRuntimeDefaults();
-            for (String propertyName : getAllProperties(registeredRoots)) {
+            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getPrefix).collect(toSet());
+            Set<String> allProperties = getAllProperties(registeredRoots);
+            Set<String> unknownBuildProperties = new HashSet<>();
+            for (String propertyName : allProperties) {
                 if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
                     continue;
                 }
@@ -389,6 +449,7 @@ public final class BuildTimeConfigurationReader {
                         if (configValue.getValue() != null) {
                             specifiedRunTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
+                        continue;
                     }
                     // also check for the bootstrap properties since those need to be added to specifiedRunTimeDefaultValues as well
                     ni.goToStart();
@@ -399,7 +460,11 @@ public final class BuildTimeConfigurationReader {
                         if (configValue.getValue() != null) {
                             specifiedRunTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
+                        continue;
                     }
+
+                    // If we reach here it means we were not able to match the property (and it shares roots namespace)
+                    unknownBuildProperties.add(propertyName);
                 } else {
                     // it's not managed by us; record it
                     ConfigValue configValue = withoutExpansion(() -> runtimeDefaultsConfig.getConfigValue(propertyName));
@@ -409,13 +474,67 @@ public final class BuildTimeConfigurationReader {
                 }
             }
 
-            filterActiveProfileProperties(buildTimeRunTimeVisibleValues);
-            filterActiveProfileProperties(specifiedRunTimeDefaultValues);
+            // Remove properties coming from the Build System, because most likely they are used in build scripts
+            config.getConfigSource("PropertiesConfigSource[source=Build system]").ifPresent(
+                    configSource -> unknownBuildProperties.removeAll(configSource.getPropertyNames()));
 
-            return new ReadResult(objectsByRootClass, specifiedRunTimeDefaultValues, buildTimeRunTimeVisibleValues,
-                    allBuildTimeValues,
-                    buildTimePatternMap, buildTimeRunTimePatternMap, bootstrapPatternMap, runTimePatternMap, allRoots,
-                    bootstrapRootsEmpty);
+            // ConfigMappings
+            for (ConfigClassWithPrefix mapping : buildTimeVisibleMappings) {
+                objectsByClass.put(mapping.getKlass(), config.getConfigMapping(mapping.getKlass(), mapping.getPrefix()));
+            }
+
+            // Build Time Values Recording
+            for (ConfigClassWithPrefix mapping : buildTimeMappings) {
+                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
+                for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
+                    ConfigValue value = config.getConfigValue(property);
+                    if (value != null && value.getRawValue() != null) {
+                        allBuildTimeValues.put(property, value.getRawValue());
+                    }
+                }
+            }
+
+            // Build Time and Run Time Values Recording
+            for (ConfigClassWithPrefix mapping : buildTimeRunTimeMappings) {
+                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
+                for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
+                    ConfigValue value = config.getConfigValue(property);
+                    if (value != null && value.getRawValue() != null) {
+                        allBuildTimeValues.put(property, value.getRawValue());
+                        buildTimeRunTimeVisibleValues.put(property, value.getRawValue());
+                    }
+                }
+            }
+
+            // Run Time Values Recording
+            for (ConfigClassWithPrefix mapping : runTimeMappings) {
+                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
+                for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
+                    ConfigValue value = config.getConfigValue(property);
+                    if (value != null && value.getRawValue() != null) {
+                        specifiedRunTimeDefaultValues.put(property, value.getRawValue());
+                    }
+                }
+            }
+
+            return new ReadResult.Builder().setObjectsByClass(objectsByClass)
+                    .setAllBuildTimeValues(allBuildTimeValues)
+                    .setBuildTimeRunTimeVisibleValues(filterActiveProfileProperties(buildTimeRunTimeVisibleValues))
+                    .setSpecifiedRunTimeDefaultValues(filterActiveProfileProperties(specifiedRunTimeDefaultValues))
+                    .setBuildTimePatternMap(buildTimePatternMap)
+                    .setBuildTimeRunTimePatternMap(buildTimeRunTimePatternMap)
+                    .setBootstrapPatternMap(bootstrapPatternMap)
+                    .setRunTimePatternMap(runTimePatternMap)
+                    .setAllRoots(allRoots)
+                    .setBootstrapRootsEmpty(bootstrapRootsEmpty)
+                    .setBuildTimeMappings(buildTimeMappings)
+                    .setBuildTimeRunTimeMappings(buildTimeRunTimeMappings)
+                    .setRunTimeMappings(runTimeMappings)
+                    .setUnknownBuildProperties(unknownBuildProperties)
+                    .createReadResult();
         }
 
         /**
@@ -431,7 +550,7 @@ public final class BuildTimeConfigurationReader {
             Class<?> configurationClass = definition.getConfigurationClass();
             if (definition instanceof RootDefinition) {
                 // found the root
-                return objectsByRootClass.get(configurationClass);
+                return objectsByClass.get(configurationClass);
             }
             Container parent = matched.getParent();
             final boolean consume = !classMember.getPropertyName().isEmpty();
@@ -799,7 +918,7 @@ public final class BuildTimeConfigurationReader {
             return builder.build();
         }
 
-        private void filterActiveProfileProperties(final Map<String, String> properties) {
+        private Map<String, String> filterActiveProfileProperties(final Map<String, String> properties) {
             Set<String> propertiesToRemove = new HashSet<>();
             for (String property : properties.keySet()) {
                 String profiledProperty = "%" + ProfileManager.getActiveProfile() + "." + property;
@@ -808,65 +927,95 @@ public final class BuildTimeConfigurationReader {
                 }
             }
             properties.keySet().removeAll(propertiesToRemove);
+            return properties;
         }
     }
 
     public static final class ReadResult {
-        final Map<Class<?>, Object> objectsByRootClass;
-        final Map<String, String> specifiedRunTimeDefaultValues;
-        final Map<String, String> buildTimeRunTimeVisibleValues;
+        final Map<Class<?>, Object> objectsByClass;
+
         final Map<String, String> allBuildTimeValues;
+        final Map<String, String> buildTimeRunTimeVisibleValues;
+        final Map<String, String> specifiedRunTimeDefaultValues;
+
         final ConfigPatternMap<Container> buildTimePatternMap;
         final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
         final ConfigPatternMap<Container> bootstrapPatternMap;
         final ConfigPatternMap<Container> runTimePatternMap;
-        final Map<Class<?>, RootDefinition> runTimeRootsByClass;
-        final List<RootDefinition> allRoots;
+
         final boolean bootstrapRootsEmpty;
 
-        ReadResult(final Map<Class<?>, Object> objectsByRootClass, final Map<String, String> specifiedRunTimeDefaultValues,
-                final Map<String, String> buildTimeRunTimeVisibleValues,
-                Map<String, String> allBuildTimeValues,
-                final ConfigPatternMap<Container> buildTimePatternMap,
-                final ConfigPatternMap<Container> buildTimeRunTimePatternMap,
-                final ConfigPatternMap<Container> bootstrapPatternMap,
-                final ConfigPatternMap<Container> runTimePatternMap, final List<RootDefinition> allRoots,
-                boolean bootstrapRootsEmpty) {
-            this.objectsByRootClass = objectsByRootClass;
-            this.specifiedRunTimeDefaultValues = specifiedRunTimeDefaultValues;
-            this.buildTimeRunTimeVisibleValues = buildTimeRunTimeVisibleValues;
-            this.buildTimePatternMap = buildTimePatternMap;
-            this.buildTimeRunTimePatternMap = buildTimeRunTimePatternMap;
-            this.bootstrapPatternMap = bootstrapPatternMap;
-            this.runTimePatternMap = runTimePatternMap;
-            this.allRoots = allRoots;
-            this.bootstrapRootsEmpty = bootstrapRootsEmpty;
-            this.allBuildTimeValues = allBuildTimeValues;
+        final List<RootDefinition> allRoots;
+        final Map<Class<?>, RootDefinition> allRootsByClass;
+
+        final List<ConfigClassWithPrefix> buildTimeMappings;
+        final List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
+        final List<ConfigClassWithPrefix> runTimeMappings;
+        final Map<Class<?>, ConfigClassWithPrefix> allMappings;
+
+        final Set<String> unknownBuildProperties;
+
+        public ReadResult(final Builder builder) {
+            this.objectsByClass = builder.getObjectsByClass();
+
+            this.allBuildTimeValues = builder.getAllBuildTimeValues();
+            this.buildTimeRunTimeVisibleValues = builder.getBuildTimeRunTimeVisibleValues();
+            this.specifiedRunTimeDefaultValues = builder.getSpecifiedRunTimeDefaultValues();
+
+            this.buildTimePatternMap = builder.getBuildTimePatternMap();
+            this.buildTimeRunTimePatternMap = builder.getBuildTimeRunTimePatternMap();
+            this.bootstrapPatternMap = builder.getBootstrapPatternMap();
+            this.runTimePatternMap = builder.getRunTimePatternMap();
+
+            this.bootstrapRootsEmpty = builder.isBootstrapRootsEmpty();
+
+            this.allRoots = builder.getAllRoots();
+            this.allRootsByClass = rootsToMap(builder);
+
+            this.buildTimeMappings = builder.getBuildTimeMappings();
+            this.buildTimeRunTimeMappings = builder.getBuildTimeRunTimeMappings();
+            this.runTimeMappings = builder.getRunTimeMappings();
+            this.allMappings = mappingsToMap(builder);
+
+            this.unknownBuildProperties = builder.getUnknownBuildProperties();
+        }
+
+        private static Map<Class<?>, RootDefinition> rootsToMap(Builder builder) {
             Map<Class<?>, RootDefinition> map = new HashMap<>();
-            for (RootDefinition root : allRoots) {
+            for (RootDefinition root : builder.getAllRoots()) {
                 map.put(root.getConfigurationClass(), root);
             }
-            runTimeRootsByClass = map;
+            return map;
         }
 
-        public Map<Class<?>, Object> getObjectsByRootClass() {
-            return objectsByRootClass;
-        }
-
-        public Object requireRootObjectForClass(Class<?> clazz) {
-            Object obj = objectsByRootClass.get(clazz);
-            if (obj == null) {
-                throw new IllegalStateException("No root found for " + clazz);
+        private static Map<Class<?>, ConfigClassWithPrefix> mappingsToMap(Builder builder) {
+            Map<Class<?>, ConfigClassWithPrefix> map = new HashMap<>();
+            for (ConfigClassWithPrefix mapping : builder.getBuildTimeMappings()) {
+                map.put(mapping.getKlass(), mapping);
             }
-            return obj;
+            for (ConfigClassWithPrefix mapping : builder.getBuildTimeRunTimeMappings()) {
+                map.put(mapping.getKlass(), mapping);
+            }
+            for (ConfigClassWithPrefix mapping : builder.getRunTimeMappings()) {
+                map.put(mapping.getKlass(), mapping);
+            }
+            return map;
         }
 
-        public Map<String, String> getSpecifiedRunTimeDefaultValues() {
-            return specifiedRunTimeDefaultValues;
+        public Map<Class<?>, Object> getObjectsByClass() {
+            return objectsByClass;
+        }
+
+        public Map<String, String> getAllBuildTimeValues() {
+            return allBuildTimeValues;
         }
 
         public Map<String, String> getBuildTimeRunTimeVisibleValues() {
             return buildTimeRunTimeVisibleValues;
+        }
+
+        public Map<String, String> getSpecifiedRunTimeDefaultValues() {
+            return specifiedRunTimeDefaultValues;
         }
 
         public ConfigPatternMap<Container> getBuildTimePatternMap() {
@@ -885,24 +1034,191 @@ public final class BuildTimeConfigurationReader {
             return runTimePatternMap;
         }
 
-        public Map<String, String> getAllBuildTimeValues() {
-            return allBuildTimeValues;
+        public boolean isBootstrapRootsEmpty() {
+            return bootstrapRootsEmpty;
         }
 
         public List<RootDefinition> getAllRoots() {
             return allRoots;
         }
 
-        public boolean isBootstrapRootsEmpty() {
-            return bootstrapRootsEmpty;
+        public Map<Class<?>, RootDefinition> getAllRootsByClass() {
+            return allRootsByClass;
         }
 
-        public RootDefinition requireRootDefinitionForClass(Class<?> clazz) {
-            final RootDefinition def = runTimeRootsByClass.get(clazz);
-            if (def == null) {
-                throw new IllegalStateException("No root definition found for " + clazz);
+        public List<ConfigClassWithPrefix> getBuildTimeMappings() {
+            return buildTimeMappings;
+        }
+
+        public List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+            return buildTimeRunTimeMappings;
+        }
+
+        public List<ConfigClassWithPrefix> getRunTimeMappings() {
+            return runTimeMappings;
+        }
+
+        public Map<Class<?>, ConfigClassWithPrefix> getAllMappings() {
+            return allMappings;
+        }
+
+        public Set<String> getUnknownBuildProperties() {
+            return unknownBuildProperties;
+        }
+
+        public Object requireObjectForClass(Class<?> clazz) {
+            Object obj = objectsByClass.get(clazz);
+            if (obj == null) {
+                throw new IllegalStateException("No config found for " + clazz);
             }
-            return def;
+            return obj;
+        }
+
+        static class Builder {
+            private Map<Class<?>, Object> objectsByClass;
+            private Map<String, String> allBuildTimeValues;
+            private Map<String, String> buildTimeRunTimeVisibleValues;
+            private Map<String, String> specifiedRunTimeDefaultValues;
+            private ConfigPatternMap<Container> buildTimePatternMap;
+            private ConfigPatternMap<Container> buildTimeRunTimePatternMap;
+            private ConfigPatternMap<Container> bootstrapPatternMap;
+            private ConfigPatternMap<Container> runTimePatternMap;
+            private List<RootDefinition> allRoots;
+            private boolean bootstrapRootsEmpty;
+            private List<ConfigClassWithPrefix> buildTimeMappings;
+            private List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
+            private List<ConfigClassWithPrefix> runTimeMappings;
+            private Set<String> unknownBuildProperties;
+
+            Map<Class<?>, Object> getObjectsByClass() {
+                return objectsByClass;
+            }
+
+            Builder setObjectsByClass(final Map<Class<?>, Object> objectsByClass) {
+                this.objectsByClass = objectsByClass;
+                return this;
+            }
+
+            Map<String, String> getAllBuildTimeValues() {
+                return allBuildTimeValues;
+            }
+
+            Builder setAllBuildTimeValues(final Map<String, String> allBuildTimeValues) {
+                this.allBuildTimeValues = allBuildTimeValues;
+                return this;
+            }
+
+            Map<String, String> getBuildTimeRunTimeVisibleValues() {
+                return buildTimeRunTimeVisibleValues;
+            }
+
+            Builder setBuildTimeRunTimeVisibleValues(final Map<String, String> buildTimeRunTimeVisibleValues) {
+                this.buildTimeRunTimeVisibleValues = buildTimeRunTimeVisibleValues;
+                return this;
+            }
+
+            Map<String, String> getSpecifiedRunTimeDefaultValues() {
+                return specifiedRunTimeDefaultValues;
+            }
+
+            Builder setSpecifiedRunTimeDefaultValues(final Map<String, String> specifiedRunTimeDefaultValues) {
+                this.specifiedRunTimeDefaultValues = specifiedRunTimeDefaultValues;
+                return this;
+            }
+
+            ConfigPatternMap<Container> getBuildTimePatternMap() {
+                return buildTimePatternMap;
+            }
+
+            Builder setBuildTimePatternMap(final ConfigPatternMap<Container> buildTimePatternMap) {
+                this.buildTimePatternMap = buildTimePatternMap;
+                return this;
+            }
+
+            ConfigPatternMap<Container> getBuildTimeRunTimePatternMap() {
+                return buildTimeRunTimePatternMap;
+            }
+
+            Builder setBuildTimeRunTimePatternMap(final ConfigPatternMap<Container> buildTimeRunTimePatternMap) {
+                this.buildTimeRunTimePatternMap = buildTimeRunTimePatternMap;
+                return this;
+            }
+
+            ConfigPatternMap<Container> getBootstrapPatternMap() {
+                return bootstrapPatternMap;
+            }
+
+            Builder setBootstrapPatternMap(final ConfigPatternMap<Container> bootstrapPatternMap) {
+                this.bootstrapPatternMap = bootstrapPatternMap;
+                return this;
+            }
+
+            ConfigPatternMap<Container> getRunTimePatternMap() {
+                return runTimePatternMap;
+            }
+
+            Builder setRunTimePatternMap(final ConfigPatternMap<Container> runTimePatternMap) {
+                this.runTimePatternMap = runTimePatternMap;
+                return this;
+            }
+
+            List<RootDefinition> getAllRoots() {
+                return allRoots;
+            }
+
+            Builder setAllRoots(final List<RootDefinition> allRoots) {
+                this.allRoots = allRoots;
+                return this;
+            }
+
+            boolean isBootstrapRootsEmpty() {
+                return bootstrapRootsEmpty;
+            }
+
+            Builder setBootstrapRootsEmpty(final boolean bootstrapRootsEmpty) {
+                this.bootstrapRootsEmpty = bootstrapRootsEmpty;
+                return this;
+            }
+
+            List<ConfigClassWithPrefix> getBuildTimeMappings() {
+                return buildTimeMappings;
+            }
+
+            Builder setBuildTimeMappings(final List<ConfigClassWithPrefix> buildTimeMappings) {
+                this.buildTimeMappings = buildTimeMappings;
+                return this;
+            }
+
+            List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+                return buildTimeRunTimeMappings;
+            }
+
+            Builder setBuildTimeRunTimeMappings(final List<ConfigClassWithPrefix> buildTimeRunTimeMappings) {
+                this.buildTimeRunTimeMappings = buildTimeRunTimeMappings;
+                return this;
+            }
+
+            List<ConfigClassWithPrefix> getRunTimeMappings() {
+                return runTimeMappings;
+            }
+
+            Builder setRunTimeMappings(final List<ConfigClassWithPrefix> runTimeMappings) {
+                this.runTimeMappings = runTimeMappings;
+                return this;
+            }
+
+            Set<String> getUnknownBuildProperties() {
+                return unknownBuildProperties;
+            }
+
+            Builder setUnknownBuildProperties(final Set<String> unknownBuildProperties) {
+                this.unknownBuildProperties = unknownBuildProperties;
+                return this;
+            }
+
+            ReadResult createReadResult() {
+                return new ReadResult(this);
+            }
         }
     }
 }

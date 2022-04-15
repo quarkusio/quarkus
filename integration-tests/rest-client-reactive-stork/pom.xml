@@ -28,7 +28,7 @@
         </dependency>
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8</artifactId>
+            <artifactId>wiremock-jre8-standalone</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -38,11 +38,16 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.stork</groupId>
-            <artifactId>smallrye-stork-load-balancer-response-time</artifactId>
+            <artifactId>stork-load-balancer-least-response-time</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.stork</groupId>
-            <artifactId>smallrye-stork-service-discovery-static-list</artifactId>
+            <artifactId>stork-service-discovery-static-list</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.stork</groupId>
+            <artifactId>stork-configuration-generator</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Test dependencies -->

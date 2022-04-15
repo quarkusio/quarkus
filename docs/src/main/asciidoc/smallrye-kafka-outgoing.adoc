@@ -117,6 +117,10 @@ Type: _boolean_ | false | `false`
 
 Type: _int_ | false | `-1`
 
+| [.no-hyphens]#*propagate-headers*# | A comma-separating list of incoming record headers to be propagated to the outgoing record
+
+Type: _string_ | false |
+
 | [.no-hyphens]#*propagate-record-key*# | Propagate incoming record key to the outgoing record
 
 Type: _boolean_ | false | `false`

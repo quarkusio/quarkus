@@ -31,8 +31,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.aesh.readline.terminal.impl.ExecPty;
 import org.aesh.readline.terminal.impl.Pty;
@@ -48,6 +46,7 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
@@ -81,8 +80,10 @@ import org.fusesource.jansi.internal.Kernel32;
 import org.fusesource.jansi.internal.WindowsSupport;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
@@ -116,9 +117,9 @@ public class DevMojo extends AbstractMojo {
 
     /**
      * running any one of these phases means the compile phase will have been run, if these have
-     * not been run we manually run compile
+     * not been run we manually run compile.
      */
-    private static final Set<String> POST_COMPILE_PHASES = Set.of(
+    private static final List<String> POST_COMPILE_PHASES = List.of(
             "compile",
             "process-classes",
             "generate-test-sources",
@@ -141,7 +142,7 @@ public class DevMojo extends AbstractMojo {
      * running any one of these phases means the test-compile phase will have been run, if these have
      * not been run we manually run test-compile
      */
-    private static final Set<String> POST_TEST_COMPILE_PHASES = Set.of(
+    private static final List<String> POST_TEST_COMPILE_PHASES = List.of(
             "test-compile",
             "process-test-classes",
             "test",
@@ -153,6 +154,7 @@ public class DevMojo extends AbstractMojo {
             "verify",
             "install",
             "deploy");
+
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
     private static final String QUARKUS_GENERATE_CODE_TESTS_GOAL = "generate-code-tests";
 
@@ -163,6 +165,9 @@ public class DevMojo extends AbstractMojo {
 
     private static final String ORG_JETBRAINS_KOTLIN = "org.jetbrains.kotlin";
     private static final String KOTLIN_MAVEN_PLUGIN = "kotlin-maven-plugin";
+
+    private static final String ORG_JBOSS_JANDEX = "org.jboss.jandex";
+    private static final String JANDEX_MAVEN_PLUGIN = "jandex-maven-plugin";
 
     /**
      * The directory for compiled classes.
@@ -341,6 +346,9 @@ public class DevMojo extends AbstractMojo {
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
 
+    @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
+    MojoExecution mojoExecution;
+
     /**
      * console attributes, used to restore the console state
      */
@@ -363,7 +371,7 @@ public class DevMojo extends AbstractMojo {
 
         initToolchain();
 
-        //we always want to compile if needed, so if it is run from the parent it will compile dependent projects
+        // we always want to compile if needed, so if it is run from the parent it will compile dependent projects
         handleAutoCompile();
 
         if (enforceBuildGoal) {
@@ -492,6 +500,10 @@ public class DevMojo extends AbstractMojo {
         boolean testCompileNeeded = true;
         boolean prepareNeeded = true;
         boolean prepareTestsNeeded = true;
+
+        String jandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", "process-classes");
+        boolean indexClassNeeded = jandexGoalPhase != null;
+
         for (String goal : session.getGoals()) {
             if (goal.endsWith("quarkus:generate-code")) {
                 prepareNeeded = false;
@@ -502,11 +514,15 @@ public class DevMojo extends AbstractMojo {
 
             if (POST_COMPILE_PHASES.contains(goal)) {
                 compileNeeded = false;
-                break;
             }
+
+            if (jandexGoalPhase != null
+                    && POST_COMPILE_PHASES.indexOf(goal) >= POST_COMPILE_PHASES.indexOf(jandexGoalPhase)) {
+                indexClassNeeded = false;
+            }
+
             if (POST_TEST_COMPILE_PHASES.contains(goal)) {
                 testCompileNeeded = false;
-                break;
             }
             if (goal.endsWith("quarkus:dev")) {
                 break;
@@ -516,6 +532,9 @@ public class DevMojo extends AbstractMojo {
         //if the user did not compile we run it for them
         if (compileNeeded) {
             triggerCompile(false, prepareNeeded);
+        }
+        if (indexClassNeeded) {
+            initClassIndexes();
         }
         if (testCompileNeeded) {
             try {
@@ -534,11 +553,15 @@ public class DevMojo extends AbstractMojo {
         final PluginDescriptor pluginDescr = getPluginDescriptor();
         executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(),
                 test ? QUARKUS_GENERATE_CODE_TESTS_GOAL : QUARKUS_GENERATE_CODE_GOAL,
-                Collections.singletonMap("mode", LaunchMode.DEVELOPMENT.name()));
+                Map.of("mode", LaunchMode.DEVELOPMENT.name(), QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false"));
+    }
+
+    private void initClassIndexes() throws MojoExecutionException {
+        executeIfConfigured(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, "jandex", Collections.emptyMap());
     }
 
     private PluginDescriptor getPluginDescriptor() {
-        return (PluginDescriptor) getPluginContext().get("pluginDescriptor");
+        return mojoExecution.getMojoDescriptor().getPluginDescriptor();
     }
 
     private void triggerCompile(boolean test, boolean prepareNeeded) throws MojoExecutionException {
@@ -589,6 +612,21 @@ public class DevMojo extends AbstractMojo {
                         project,
                         session,
                         pluginManager));
+    }
+
+    private String getGoalPhaseOrNull(String groupId, String artifactId, String goal, String defaultPhase) {
+        Plugin plugin = getConfiguredPluginOrNull(groupId, artifactId);
+
+        if (plugin == null) {
+            return null;
+        }
+        for (PluginExecution pluginExecution : plugin.getExecutions()) {
+            if (pluginExecution.getGoals().contains(goal)) {
+                var configuredPhase = pluginExecution.getPhase();
+                return configuredPhase != null ? configuredPhase : defaultPhase;
+            }
+        }
+        return null;
     }
 
     public boolean isGoalConfigured(Plugin plugin, String goal) {
@@ -955,7 +993,9 @@ public class DevMojo extends AbstractMojo {
                     .setRepositorySystem(repoSystem)
                     .setRemoteRepositories(repos)
                     .setRemoteRepositoryManager(remoteRepositoryManager)
-                    .setWorkspaceDiscovery(true);
+                    .setWorkspaceDiscovery(true)
+                    .setPreferPomsFromWorkspace(true)
+                    .setCurrentProject(project.getFile().toString());
 
             // if it already exists, it may be a reload triggered by a change in a POM
             // in which case we should not be using the original Maven session
@@ -970,7 +1010,7 @@ public class DevMojo extends AbstractMojo {
             appModel = new BootstrapAppModelResolver(resolverBuilder.build())
                     .setDevMode(true)
                     .setCollectReloadableDependencies(!noDeps)
-                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, GACTV.TYPE_JAR,
+                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR,
                             project.getVersion()));
         }
 
@@ -981,7 +1021,8 @@ public class DevMojo extends AbstractMojo {
         if (noDeps) {
             addProject(builder, appModel.getAppArtifact(), true);
             appModel.getApplicationModule().getBuildFiles().forEach(p -> builder.watchedBuildFile(p));
-            builder.localArtifact(new GACT(project.getGroupId(), project.getArtifactId(), null, GACTV.TYPE_JAR));
+            builder.localArtifact(
+                    ArtifactKey.gact(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR));
         } else {
             for (ResolvedDependency project : DependenciesFilter.getReloadableModules(appModel)) {
                 addProject(builder, project, project == appModel.getAppArtifact());
@@ -991,36 +1032,26 @@ public class DevMojo extends AbstractMojo {
         }
 
         addQuarkusDevModeDeps(builder);
+        //look for an application.properties
+        Set<Path> resourceDirs = new HashSet<>();
+        for (Resource resource : project.getResources()) {
+            String dir = resource.getDirectory();
+            Path path = Paths.get(dir);
+            resourceDirs.add(path);
+        }
+        Set<ArtifactKey> configuredParentFirst = QuarkusBootstrap.createClassLoadingConfig(PathsCollection.from(resourceDirs),
+                QuarkusBootstrap.Mode.DEV, Collections.emptyList()).parentFirstArtifacts;
 
         //in most cases these are not used, however they need to be present for some
         //parent-first cases such as logging
         //first we go through and get all the parent first artifacts
-        Set<ArtifactKey> parentFirstArtifacts = new HashSet<>();
-        for (Artifact appDep : project.getArtifacts()) {
-            if (appDep.getArtifactHandler().getExtension().equals("jar") && appDep.getFile().isFile()) {
-                try (ZipFile file = new ZipFile(appDep.getFile())) {
-                    ZipEntry entry = file.getEntry(EXT_PROPERTIES_PATH);
-                    if (entry != null) {
-                        Properties p = new Properties();
-                        try (InputStream inputStream = file.getInputStream(entry)) {
-                            p.load(inputStream);
-                            String parentFirst = p.getProperty(ApplicationModel.PARENT_FIRST_ARTIFACTS);
-                            if (parentFirst != null) {
-                                String[] artifacts = parentFirst.split(",");
-                                for (String artifact : artifacts) {
-                                    parentFirstArtifacts.add(new GACT(artifact.split(":")));
-                                }
-                            }
-                        }
+        Set<ArtifactKey> parentFirstArtifacts = new HashSet<>(configuredParentFirst);
+        parentFirstArtifacts.addAll(appModel.getParentFirst());
 
-                    }
-                }
-            }
-        }
         for (Artifact appDep : project.getArtifacts()) {
             // only add the artifact if it's present in the dev mode context
             // we need this to avoid having jars on the classpath multiple times
-            ArtifactKey key = new GACT(appDep.getGroupId(), appDep.getArtifactId(),
+            ArtifactKey key = ArtifactKey.gact(appDep.getGroupId(), appDep.getArtifactId(),
                     appDep.getClassifier(), appDep.getArtifactHandler().getExtension());
             if (!builder.isLocal(key) && parentFirstArtifacts.contains(key)) {
                 builder.classpathEntry(appDep.getFile());

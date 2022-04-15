@@ -34,7 +34,8 @@ public class H2DevServicesProcessor {
                     OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort",
-                            port.isPresent() ? String.valueOf(port.getAsInt()) : "0");
+                            port.isPresent() ? String.valueOf(port.getAsInt()) : "0",
+                            "-ifNotExists");
                     tcpServer.start();
 
                     StringBuilder additionalArgs = new StringBuilder();
@@ -50,7 +51,7 @@ public class H2DevServicesProcessor {
                     String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
                             + datasourceName.orElse("default")
                             + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
-                    return new RunningDevServicesDatasource(
+                    return new RunningDevServicesDatasource(null,
                             connectionUrl,
                             "sa",
                             "sa",

@@ -26,6 +26,7 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class MockRestEventServer extends MockEventServer {
+    public static final String CONTINUE = "100-continue";
 
     private final ObjectWriter eventWriter;
     private final ObjectReader responseReader;
@@ -84,6 +85,12 @@ public class MockRestEventServer extends MockEventServer {
         if (ctx.request().headers() != null) {
             event.setMultiValueHeaders(new Headers());
             for (String header : ctx.request().headers().names()) {
+                if (header.equalsIgnoreCase("Expect")) {
+                    String expect = ctx.request().getHeader("Expect");
+                    if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
+                        continue;
+                    }
+                }
                 List<String> values = ctx.request().headers().getAll(header);
                 for (String val : values)
                     event.getMultiValueHeaders().add(header, val);

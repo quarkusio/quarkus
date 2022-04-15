@@ -1,6 +1,9 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment.test.sse;
 
+import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.time.Duration;
@@ -14,10 +17,13 @@ import java.util.function.Consumer;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
 
+import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -104,6 +110,28 @@ public class SseTestCase {
     @Test
     public void testJsonMultiFromMultiWithDefaultElementType() {
         testJsonMulti("sse/json/multi2");
+    }
+
+    @Test
+    public void testNdJsonMultiFromMulti() {
+        when().get(uri.toString() + "sse/ndjson/multi")
+                .then().statusCode(HttpStatus.SC_OK)
+                // @formatter:off
+                .body(is("{\"name\":\"hello\"}\n"
+                            + "{\"name\":\"stef\"}\n"))
+                // @formatter:on
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_NDJSON));
+    }
+
+    @Test
+    public void testStreamJsonMultiFromMulti() {
+        when().get(uri.toString() + "sse/stream-json/multi")
+                .then().statusCode(HttpStatus.SC_OK)
+                // @formatter:off
+                .body(is("{\"name\":\"hello\"}\n"
+                        + "{\"name\":\"stef\"}\n"))
+                // @formatter:on
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_STREAM_JSON));
     }
 
     private void testJsonMulti(String path) {

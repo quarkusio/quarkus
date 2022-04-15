@@ -51,7 +51,7 @@ public class LockTest {
                     }
                 }));
             }
-            // Wait until the first method invocation is locked 
+            // Wait until the first method invocation is locked
             assertTrue(SimpleBean.FIRST_INSIDE_LATCH.await(5, TimeUnit.SECONDS));
             // Verify that no invocation was completed but one started
             assertEquals(0, SimpleBean.COMPLETED.get());

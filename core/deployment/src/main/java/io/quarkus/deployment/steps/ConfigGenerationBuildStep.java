@@ -1,5 +1,6 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.configuration.ConfigMappingUtils.processExtensionConfigMapping;
 import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
@@ -38,7 +39,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
-import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
@@ -65,6 +67,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.StaticInitSafe;
+import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ProfileManager;
@@ -74,16 +77,6 @@ import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesLocationConfigSourceFactory;
 
 public class ConfigGenerationBuildStep {
-
-    @BuildStep
-    void deprecatedStaticInitBuildItem(
-            List<AdditionalStaticInitConfigSourceProviderBuildItem> additionalStaticInitConfigSourceProviders,
-            BuildProducer<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviderBuildItem) {
-        for (AdditionalStaticInitConfigSourceProviderBuildItem item : additionalStaticInitConfigSourceProviders) {
-            staticInitConfigSourceProviderBuildItem
-                    .produce(new StaticInitConfigSourceProviderBuildItem(item.getProviderClassName()));
-        }
-    }
 
     @BuildStep
     void staticInitSources(
@@ -109,6 +102,26 @@ public class ConfigGenerationBuildStep {
         return new GeneratedResourceBuildItem(ConfigUtils.QUARKUS_RUNTIME_CONFIG_DEFAULTS_PROPERTIES, out.toByteArray());
     }
 
+    @BuildStep
+    void extensionMappings(ConfigurationBuildItem configItem,
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConfigClassBuildItem> configClasses) {
+
+        List<ConfigClassWithPrefix> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
+        for (ConfigClassWithPrefix buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
+            processExtensionConfigMapping(buildTimeRunTimeMapping.getKlass(), buildTimeRunTimeMapping.getPrefix(),
+                    combinedIndex, generatedClasses, reflectiveClasses, configClasses);
+        }
+
+        final List<ConfigClassWithPrefix> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
+        for (ConfigClassWithPrefix runTimeMapping : runTimeMappings) {
+            processExtensionConfigMapping(runTimeMapping.getKlass(), runTimeMapping.getPrefix(), combinedIndex,
+                    generatedClasses, reflectiveClasses, configClasses);
+        }
+    }
+
     /**
      * Generate the Config class that instantiates MP Config and holds all the config objects
      */
@@ -128,6 +141,9 @@ public class ConfigGenerationBuildStep {
             List<RunTimeConfigBuilderBuildItem> runTimeConfigBuilders)
             throws IOException {
 
+        reportUnknownBuildProperties(launchModeBuildItem.getLaunchMode(),
+                configItem.getReadResult().getUnknownBuildProperties());
+
         if (liveReloadBuildItem.isLiveReload()) {
             return;
         }
@@ -145,6 +161,15 @@ public class ConfigGenerationBuildStep {
         staticConfigSourceFactories.addAll(staticInitConfigSourceFactories.stream()
                 .map(StaticInitConfigSourceFactoryBuildItem::getFactoryClassName).collect(Collectors.toSet()));
 
+        Set<ConfigClassWithPrefix> staticMappings = new HashSet<>();
+        staticMappings.addAll(staticSafeConfigMappings(configMappings));
+        staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
+
+        Set<ConfigClassWithPrefix> runtimeMappings = new HashSet<>();
+        runtimeMappings.addAll(runtimeConfigMappings(configMappings));
+        runtimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
+        runtimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
+
         RunTimeConfigurationGenerator.GenerateOperation
                 .builder()
                 .setBuildTimeReadResult(configItem.getReadResult())
@@ -158,20 +183,30 @@ public class ConfigGenerationBuildStep {
                 .setStaticConfigSources(staticSafeServices(discoveredConfigSources))
                 .setStaticConfigSourceProviders(staticConfigSourceProviders)
                 .setStaticConfigSourceFactories(staticConfigSourceFactories)
-                .setStaticConfigMappings(staticSafeConfigMappings(configMappings))
+                .setStaticConfigMappings(staticMappings)
                 .setStaticConfigBuilders(staticInitConfigBuilders.stream()
                         .map(StaticInitConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
                 .setRuntimeConfigSources(discoveredConfigSources)
                 .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
                 .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
-                .setRuntimeConfigMappings(runtimeConfigMappings(configMappings))
+                .setRuntimeConfigMappings(runtimeMappings)
                 .setRuntimeConfigBuilders(
                         runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
                 .build()
                 .run();
     }
 
-    private List<String> getAdditionalBootstrapConfigSourceProviders(
+    private static void reportUnknownBuildProperties(LaunchMode launchMode, Set<String> unknownBuildProperties) {
+        // So it only reports during the build, because it is very likely that the property is available in runtime
+        // and, it will be caught by the RuntimeConfig and log double warnings
+        if (!launchMode.isDevOrTest()) {
+            for (String unknownProperty : unknownBuildProperties) {
+                ConfigDiagnostic.unknown(unknownProperty);
+            }
+        }
+    }
+
+    private static List<String> getAdditionalBootstrapConfigSourceProviders(
             List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders) {
         if (additionalBootstrapConfigSourceProviders.isEmpty()) {
             return Collections.emptyList();

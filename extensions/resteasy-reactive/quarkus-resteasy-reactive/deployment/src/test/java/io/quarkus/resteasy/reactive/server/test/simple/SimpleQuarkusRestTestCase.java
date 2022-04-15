@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
+import static io.quarkus.resteasy.reactive.server.test.simple.OptionalQueryParamResource.AND;
+import static io.quarkus.resteasy.reactive.server.test.simple.OptionalQueryParamResource.HELLO;
+import static io.quarkus.resteasy.reactive.server.test.simple.OptionalQueryParamResource.NOBODY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 
@@ -8,6 +11,7 @@ import java.util.function.Supplier;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -21,7 +25,7 @@ public class SimpleQuarkusRestTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -38,7 +42,7 @@ public class SimpleQuarkusRestTestCase {
                                     FeatureResponseFilter.class, DynamicFeatureRequestFilterWithLowPriority.class,
                                     TestFeature.class, TestDynamicFeature.class,
                                     SubResource.class, RootAResource.class, RootBResource.class,
-                                    QueryParamResource.class, HeaderParamResource.class,
+                                    QueryParamResource.class, HeaderParamResource.class, OptionalQueryParamResource.class,
                                     TestWriter.class, TestClass.class,
                                     SimpleBeanParam.class, OtherBeanParam.class, FieldInjectedResource.class,
                                     ParameterWithFromString.class, BeanParamSubClass.class, FieldInjectedSubClassResource.class,
@@ -431,5 +435,41 @@ public class SimpleQuarkusRestTestCase {
     public void testInterfaceResource() {
         RestAssured.get("/iface")
                 .then().statusCode(200).body(Matchers.equalTo("Hello"));
+    }
+
+    @Test
+    public void testQueryParamWithOptionalSingleValue() {
+        // verify with empty
+        Assertions.assertEquals(HELLO + NOBODY, RestAssured.get("/optional-query/greetings/one").asString());
+        // verify with values
+        Assertions.assertEquals(HELLO + "albert", RestAssured.given().queryParam("name", "albert")
+                .get("/optional-query/greetings/one").asString());
+    }
+
+    @Test
+    public void testQueryParamWithOptionalList() {
+        // verify with empty
+        Assertions.assertEquals(HELLO + NOBODY, RestAssured.get("/optional-query/greetings/list").asString());
+        // verify with values
+        Assertions.assertEquals(HELLO + "albert" + AND + "jose", RestAssured.given().queryParam("name", "albert", "jose")
+                .get("/optional-query/greetings/list").asString());
+    }
+
+    @Test
+    public void testQueryParamWithOptionalSet() {
+        // verify with empty
+        Assertions.assertEquals(HELLO + NOBODY, RestAssured.get("/optional-query/greetings/set").asString());
+        // verify with values
+        Assertions.assertEquals(HELLO + "albert" + AND + "jose", RestAssured.given().queryParam("name", "albert", "jose")
+                .get("/optional-query/greetings/set").asString());
+    }
+
+    @Test
+    public void testQueryParamWithOptionalSortedSet() {
+        // verify with empty
+        Assertions.assertEquals(HELLO + NOBODY, RestAssured.get("/optional-query/greetings/sortedset").asString());
+        // verify with values
+        Assertions.assertEquals(HELLO + "albert" + AND + "jose", RestAssured.given().queryParam("name", "albert", "jose")
+                .get("/optional-query/greetings/sortedset").asString());
     }
 }

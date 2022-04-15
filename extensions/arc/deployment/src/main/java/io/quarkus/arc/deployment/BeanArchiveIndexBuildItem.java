@@ -15,7 +15,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * that were indexed while bean discovery was in progress.
  *
  * It also holds information about all programmatically registered beans and all generated bean classes.
- * 
+ *
  * @see GeneratedBeanBuildItem
  * @see AdditionalBeanBuildItem
  * @see io.quarkus.deployment.builditem.CombinedIndexBuildItem

@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 :extension-status: preview
+:devtools-no-gradle:
 
 Quarkus Funqy link:https://knative.dev/docs/eventing[Knative Events] builds off of the xref:funqy-http.adoc[Funqy HTTP] extension to allow you to
 route and process Knative Events within a Funqy function.
@@ -16,12 +17,10 @@ with Knative Events.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* 60+ minutes
+:prerequisites-time: 1 hour
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
 * Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
 * Have gone through the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[Knative Tutorial], specifically link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial-eventing/eventing-trigger-broker.html[Brokers and Triggers]
 
 == Setting up Knative
@@ -180,10 +179,10 @@ public interface CloudEvent {
 
 == Maven
 
-If you look at the {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/pom.xml[pom],
-you'll see that it is a typical Quarkus pom that pulls in one funqy dependency
+If you look at the {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/pom.xml[POM],
+you'll see that it is a typical Quarkus POM that pulls in one Funqy dependency:
 
-[source, xml]
+[source,xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -207,10 +206,7 @@ Funqy also works with Quarkus Dev mode!
 
 First build the Java artifacts:
 
-[source,bash]
-----
-mvn clean install
-----
+include::includes/devtools/build.adoc[]
 
 Next, a docker image is required by Knative, so you'll need to build that next:
 

@@ -9,13 +9,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.paths.PathTree;
 import java.io.File;
 import java.net.URL;
@@ -355,9 +355,9 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(MvnProjectBuilder.DEFAULT_GROUP_ID, project.getGroupId());
         assertEquals("independent", project.getArtifactId());
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
-        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(6, projects.size());
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "independent")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "independent")));
 
         assertNull(project.getLocalParent());
     }
@@ -383,9 +383,9 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals("root-no-parent-module", project.getArtifactId());
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
         assertNotNull(project.getWorkspace());
-        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(5, projects.size());
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
 
         assertParents(project);
     }
@@ -438,16 +438,16 @@ public class LocalWorkspaceDiscoveryTest {
         assertNotNull(project);
         assertNotNull(project.getWorkspace());
         assertEquals("non-module-child", project.getArtifactId());
-        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent")));
+        final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent")));
         assertTrue(
-                projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "non-module-child")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "another-child")));
+                projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "non-module-child")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "another-child")));
         assertTrue(projects
-                .containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
+                .containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
         assertEquals(7, projects.size());
 
         assertParents(project, "root");
@@ -588,15 +588,15 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     private void assertCompleteWorkspace(final LocalProject project) {
-        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(5, projects.size());
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent")));
         assertTrue(
-                projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child")));
+                projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child")));
         assertTrue(projects
-                .containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
+                .containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
     }
 
     private static void assertParents(LocalProject project, String... parentArtifactId) {

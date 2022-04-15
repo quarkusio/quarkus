@@ -15,48 +15,44 @@
 
     <properties>
         <bouncycastle.version>1.70</bouncycastle.version>
-        <bouncycastle.fips.version>1.0.2.1</bouncycastle.fips.version>
-        <bouncycastle.tls.fips.version>1.0.12.2</bouncycastle.tls.fips.version>
+        <bouncycastle.fips.version>1.0.2.3</bouncycastle.fips.version>
+        <bouncycastle.tls.fips.version>1.0.12.3</bouncycastle.tls.fips.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>2.4.2.Final</jandex.version>
-        <resteasy.version>4.7.4.Final</resteasy.version>
+        <resteasy.version>4.7.5.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
-        <opentracing-jaxrs.version>1.0.0</opentracing-jaxrs.version>
-        <opentracing-web-servlet-filter.version>0.4.1</opentracing-web-servlet-filter.version>
-        <opentracing-tracerresolver.version>0.1.8</opentracing-tracerresolver.version>
-        <opentracing-concurrent.version>0.4.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.9.1</opentelemetry.version>
-        <opentelemetry-alpha.version>1.9.0-alpha</opentelemetry-alpha.version>
-        <jaeger.version>1.7.0</jaeger.version>
-        <quarkus-http.version>4.1.4</quarkus-http.version>
-        <micrometer.version>1.8.2</micrometer.version>
+        <opentelemetry.version>1.12.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.12.0-alpha</opentelemetry-alpha.version>
+        <jaeger.version>1.8.0</jaeger.version>
+        <quarkus-http.version>4.1.8</quarkus-http.version>
+        <micrometer.version>1.8.4</micrometer.version>
         <google-auth.version>0.22.0</google-auth.version>
-        <microprofile-config-api.version>2.0</microprofile-config-api.version>
-        <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
+        <microprofile-config-api.version>2.0.1</microprofile-config-api.version>
+        <microprofile-metrics-api.version>3.0.1</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.2</microprofile-context-propagation.version>
         <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
         <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
-        <smallrye-common.version>1.8.0</smallrye-common.version>
-        <smallrye-config.version>2.8.1</smallrye-config.version>
-        <smallrye-health.version>3.1.2</smallrye-health.version>
+        <smallrye-common.version>1.11.0</smallrye-common.version>
+        <smallrye-config.version>2.10.0</smallrye-config.version>
+        <smallrye-health.version>3.2.1</smallrye-health.version>
         <smallrye-metrics.version>3.0.4</smallrye-metrics.version>
-        <smallrye-open-api.version>2.1.17</smallrye-open-api.version>
-        <smallrye-graphql.version>1.4.1</smallrye-graphql.version>
-        <smallrye-opentracing.version>2.0.1</smallrye-opentracing.version>
-        <smallrye-fault-tolerance.version>5.2.1</smallrye-fault-tolerance.version>
-        <smallrye-jwt.version>3.3.2</smallrye-jwt.version>
+        <smallrye-open-api.version>2.1.22</smallrye-open-api.version>
+        <smallrye-graphql.version>1.4.4</smallrye-graphql.version>
+        <smallrye-opentracing.version>2.1.0</smallrye-opentracing.version>
+        <smallrye-fault-tolerance.version>5.4.0</smallrye-fault-tolerance.version>
+        <smallrye-jwt.version>3.3.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.2.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
-        <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>2.18.0</smallrye-mutiny-vertx-binding.version>
-        <smallrye-reactive-messaging.version>3.13.0</smallrye-reactive-messaging.version>
-        <smallrye-stork.version>1.0.0.Beta1</smallrye-stork.version>
+        <smallrye-reactive-types-converter.version>2.7.0</smallrye-reactive-types-converter.version>
+        <smallrye-mutiny-vertx-binding.version>2.19.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-reactive-messaging.version>3.15.0</smallrye-reactive-messaging.version>
+        <smallrye-stork.version>1.1.0</smallrye-stork.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
         <jakarta.el-impl.version>3.0.4</jakarta.el-impl.version>
@@ -76,89 +72,88 @@
         <jaxb-runtime.version>2.3.3-b02</jaxb-runtime.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
-        <asm.version>9.2</asm.version>
+        <asm.version>9.3</asm.version>
         <commons-io.version>2.11.0</commons-io.version>
         <jboss-metadata-web.version>14.0.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
-        <graal-sdk.version>21.3.0</graal-sdk.version>
+        <graal-sdk.version>22.0.0.2</graal-sdk.version>
         <gizmo.version>1.0.10.Final</gizmo.version>
-        <jackson.version>2.13.1</jackson.version>
+        <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <hibernate-orm.version>5.6.3.Final</hibernate-orm.version>
-        <hibernate-reactive.version>1.1.1.Final</hibernate-reactive.version>
-        <hibernate-validator.version>6.2.1.Final</hibernate-validator.version>
-        <hibernate-search.version>6.1.0.Beta2</hibernate-search.version>
-        <narayana.version>5.12.4.Final</narayana.version>
+        <hibernate-orm.version>5.6.8.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
+        <bytebuddy.version>1.12.9</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
+        <hibernate-reactive.version>1.1.4.Final</hibernate-reactive.version>
+        <hibernate-validator.version>6.2.3.Final</hibernate-validator.version>
+        <hibernate-search.version>6.1.3.Final</hibernate-search.version>
+        <narayana.version>5.12.6.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
-        <agroal.version>1.14</agroal.version>
+        <agroal.version>1.16</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-rest-client.version>7.16.2</elasticsearch-rest-client.version>
-        <elasticsearch-opensource-components.version>${elasticsearch-rest-client.version}</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.1.2</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>
-        <slf4j.version>1.7.33</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>1.18.1.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>1.19.0.Final</wildfly-elytron.version>
         <jboss-threads.version>3.4.2.Final</jboss-threads.version>
-        <vertx.version>4.2.2</vertx.version>
+        <vertx.version>4.2.6</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.15</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
         <cronutils.version>9.1.6</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
-        <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
-        <postgresql-jdbc.version>42.3.1</postgresql-jdbc.version>
-        <mariadb-jdbc.version>2.7.4</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.27</mysql-jdbc.version>
+        <h2.version>2.1.210</h2.version>
+        <postgresql-jdbc.version>42.3.3</postgresql-jdbc.version>
+        <mariadb-jdbc.version>3.0.4</mariadb-jdbc.version>
+        <mysql-jdbc.version>8.0.28</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
-        <oracle-jdbc.version>21.4.0.0</oracle-jdbc.version>
+        <adal4j.version>1.6.7</adal4j.version>
+        <oracle-jdbc.version>21.5.0.0</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <db2-jdbc.version>11.5.7.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
-        <rest-assured.version>4.4.0</rest-assured.version>
+        <rest-assured.version>4.5.1</rest-assured.version>
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
-        <assertj.version>3.22.0</assertj.version>
-        <infinispan.version>13.0.5.Final</infinispan.version>
+        <infinispan.version>13.0.8.Final</infinispan.version>
         <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
         <caffeine.version>2.9.3</caffeine.version>
-        <netty.version>4.1.72.Final</netty.version>
+        <netty.version>4.1.74.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.4.3.Final</jboss-logging.version>
-        <mutiny.version>1.3.0</mutiny.version>
-        <kafka3.version>3.0.0</kafka3.version>
-        <snappy.version>1.1.8.1</snappy.version>
-        <zookeeper.version>3.5.7</zookeeper.version>
+        <mutiny.version>1.4.0</mutiny.version>
+        <kafka3.version>3.1.0</kafka3.version>
+        <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overriden by other imported BOMs in the platform -->
+        <snappy.version>1.1.8.4</snappy.version>
+        <strimzi-test-container.version>0.100.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.12.13</scala.version>
         <aws-lambda-java.version>1.2.1</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.11.0</aws-lambda-java-events.version>
-        <aws-lambda-serverless-java-container.version>1.6.1</aws-lambda-serverless-java-container.version>
-        <aws-xray.version>2.10.0</aws-xray.version>
+        <aws-xray.version>2.11.1</aws-xray.version>
         <azure-functions-java-library.version>1.4.2</azure-functions-java-library.version>
-        <kotlin.version>1.6.10</kotlin.version>
-        <kotlin.coroutine.version>1.6.0</kotlin.coroutine.version>
+        <kotlin.version>1.6.20</kotlin.version>
+        <kotlin.coroutine.version>1.6.1</kotlin.coroutine.version>
         <kotlin-serialization.version>1.3.2</kotlin-serialization.version>
-        <dekorate.version>2.6.0</dekorate.version>
-        <maven-invoker.version>3.0.1</maven-invoker.version>
-        <awaitility.version>4.1.1</awaitility.version>
+        <dekorate.version>2.9.2</dekorate.version>
+        <maven-invoker.version>3.1.0</maven-invoker.version>
+        <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
-        <flyway.version>8.4.1</flyway.version>
-        <yasson.version>1.0.10</yasson.version>
-        <liquibase.version>4.6.2</liquibase.version>
-        <liquibase-mongodb.version>4.6.2</liquibase-mongodb.version>
+        <flyway.version>8.5.7</flyway.version>
+        <yasson.version>1.0.11</yasson.version>
+        <liquibase.version>4.9.1</liquibase.version>
         <snakeyaml.version>1.30</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.3.4</mongo-client.version>
@@ -166,41 +161,42 @@
         <proton-j.version>0.33.10</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.11.2</kubernetes-client.version>
-        <flapdoodle.mongo.version>3.2.0</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
+        <kubernetes-client.version>5.12.2</kubernetes-client.version>
+        <flapdoodle.mongo.version>3.3.0</flapdoodle.mongo.version>
+        <quarkus-spring-api.version>5.2.SP6</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.3.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mockito.version>4.2.0</mockito.version>
+        <mockito.version>4.4.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.9.2</antlr.version>
         <quarkus-security.version>1.1.4.Final</quarkus-security.version>
-        <keycloak.version>16.0.0</keycloak.version>
-        <logstash-gelf.version>1.14.1</logstash-gelf.version>
-        <checker-qual.version>3.21.1</checker-qual.version>
-        <error-prone-annotations.version>2.10.0</error-prone-annotations.version>
-        <jib-core.version>0.20.0</jib-core.version>
-        <google-http-client.version>1.41.0</google-http-client.version>
+        <keycloak.version>17.0.1</keycloak.version>
+        <logstash-gelf.version>1.15.0</logstash-gelf.version>
+        <checker-qual.version>3.21.4</checker-qual.version>
+        <error-prone-annotations.version>2.12.1</error-prone-annotations.version>
+        <jib-core.version>0.21.0</jib-core.version>
+        <google-http-client.version>1.41.6</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
-        <picocli.version>4.6.2</picocli.version>
+        <picocli.version>4.6.3</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
         <commons-compress.version>1.21</commons-compress.version>
-        <gson.version>2.8.6</gson.version>
+        <gson.version>2.9.0</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>
-        <log4j2-api.version>2.17.1</log4j2-api.version>
-        <log4j-jboss-logmanager.version>1.2.2.Final</log4j-jboss-logmanager.version>
+        <log4j2-api.version>2.17.2</log4j2-api.version>
+        <log4j-jboss-logmanager.version>1.3.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.11.0</avro.version>
-        <apicurio-registry.version>2.1.5.Final</apicurio-registry.version>
-        <apicurio-common-rest-client.version>0.1.5.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
-        <jacoco.version>0.8.7</jacoco.version>
-        <testcontainers.version>1.16.2</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
-        <docker-java.version>3.2.12</docker-java.version> <!-- must be the version Testcontainers use -->
+        <apicurio-registry.version>2.2.1.Final</apicurio-registry.version>
+        <apicurio-common-rest-client.version>0.1.7.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
+        <jacoco.version>0.8.8</jacoco.version>
+        <testcontainers.version>1.17.1</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <docker-java.version>3.2.13</docker-java.version> <!-- must be the version Testcontainers use -->
         <aesh-readline.version>2.2</aesh-readline.version>
         <aesh.version>2.6</aesh.version>
         <!-- these two artifacts needs to be compatible together -->
-        <strimzi-oauth.version>0.9.0</strimzi-oauth.version>
-        <strimzi-oauth.nimbus.version>9.15.2</strimzi-oauth.nimbus.version>
+        <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
+        <strimzi-oauth.nimbus.version>9.21</strimzi-oauth.nimbus.version>
+        <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
     </properties>
 
     <dependencyManagement>
@@ -244,7 +240,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>${jackson.version}</version>
+                <version>${jackson-bom.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -386,7 +382,16 @@
                 <version>${kotlin.coroutine.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>            
+            </dependency>
+
+            <!-- Mockito BOM -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${mockito.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
             <!-- Quarkus core -->
 
@@ -635,6 +640,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devservices-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-elasticsearch-rest-client-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -780,6 +790,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-token-propagation-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-oidc-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -806,6 +826,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-keycloak-admin-client-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -950,6 +980,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-reactive-rest-data-panache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-reactive-rest-data-panache-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-rest-data-panache</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1016,6 +1056,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1141,6 +1191,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kafka-streams-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-kafka-companion</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1492,6 +1547,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-transaction-annotations</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-narayana-jta</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1682,7 +1742,12 @@
                 </exclusions>
             </dependency>
             <dependency>
-            <groupId>io.quarkus</groupId>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-grpc-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1714,11 +1779,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-undertow-websockets</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-websockets</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1740,6 +1800,21 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-undertow-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-scheduler-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-scheduler-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-scheduler-kotlin</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2024,16 +2099,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-kotlin-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-kotlin-common-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy-reactive-kotlin</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2106,6 +2171,26 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jaxb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jaxb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jsonb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jsonb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy-reactive-kotlin-serialization-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2146,12 +2231,32 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jsonb-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jsonb-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy-reactive-jaxb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy-reactive-jaxb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jaxb-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jaxb-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2197,6 +2302,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-azure-functions-http-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-container-image-buildpack</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-container-image-buildpack-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2291,6 +2406,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kind</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kind-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2332,6 +2457,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes-service-binding</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kubernetes-service-binding-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2387,6 +2517,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-security-jpa-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-security-webauthn</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-security-webauthn-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2538,6 +2678,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-security-webauthn</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-junit5-internal</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2553,7 +2698,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-junit5-vertx</artifactId>
+                <artifactId>quarkus-junit5-mockito-config</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-vertx</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2631,8 +2781,27 @@
                 <artifactId>quarkus-webjars-locator-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-utilities</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-project-core-extension-codestarts</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- External dependencies -->
+
+            <!-- Normally controlled by Hibernate ORM upstream,
+                but making the version of ByteBuddy explicit so that this BOM can control the version
+                in case of conflicts with other libraries -->
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
 
             <!-- GRPC dependency -->
             <dependency>
@@ -2689,6 +2858,12 @@
             <dependency>
                 <groupId>io.dekorate</groupId>
                 <artifactId>servicebinding-annotations</artifactId>
+                <version>${dekorate.version}</version>
+                <classifier>noapt</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>helm-annotations</artifactId>
                 <version>${dekorate.version}</version>
                 <classifier>noapt</classifier>
             </dependency>
@@ -3000,26 +3175,6 @@
             </dependency>
             <dependency>
                 <groupId>io.opentracing.contrib</groupId>
-                <artifactId>opentracing-jaxrs2</artifactId>
-                <version>${opentracing-jaxrs.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentracing.contrib</groupId>
-                <artifactId>opentracing-concurrent</artifactId>
-                <version>${opentracing-concurrent.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentracing.contrib</groupId>
-                <artifactId>opentracing-web-servlet-filter</artifactId>
-                <version>${opentracing-web-servlet-filter.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentracing.contrib</groupId>
-                <artifactId>opentracing-tracerresolver</artifactId>
-                <version>${opentracing-tracerresolver.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentracing.contrib</groupId>
                 <artifactId>opentracing-jdbc</artifactId>
                 <version>${opentracing-jdbc.version}</version>
             </dependency>
@@ -3263,6 +3418,12 @@
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-health</artifactId>
                 <version>${smallrye-health.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
@@ -3402,6 +3563,16 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-fault-tolerance-kotlin</artifactId>
+                <version>${smallrye-fault-tolerance.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-fault-tolerance-mutiny</artifactId>
+                <version>${smallrye-fault-tolerance.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-fault-tolerance-tracing-propagation</artifactId>
                 <version>${smallrye-fault-tolerance.version}</version>
             </dependency>
@@ -3465,29 +3636,10 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.stork</groupId>
-                <artifactId>smallrye-stork-api</artifactId>
+                <artifactId>stork-bom</artifactId>
                 <version>${smallrye-stork.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.stork</groupId>
-                <artifactId>smallrye-stork-load-balancer-response-time</artifactId>
-                <version>${smallrye-stork.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.stork</groupId>
-                <artifactId>smallrye-stork-service-discovery-static-list</artifactId>
-                <version>${smallrye-stork.version}</version>
-            </dependency>
-            <!-- mstodo stork BOM???-->
-            <dependency>
-                <groupId>io.smallrye.stork</groupId>
-                <artifactId>smallrye-stork-load-balancer-round-robin</artifactId>
-                <version>${smallrye-stork.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.stork</groupId>
-                <artifactId>smallrye-stork-microprofile-config</artifactId>
-                <version>${smallrye-stork.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>jakarta.activation</groupId>
@@ -3593,6 +3745,11 @@
                 <version>${kafka3.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.lz4</groupId>
+                <artifactId>lz4-java</artifactId>
+                <version>${lz4.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.xerial.snappy</groupId>
                 <artifactId>snappy-java</artifactId>
                 <version>${snappy.version}</version>
@@ -3629,14 +3786,20 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.apache.zookeeper</groupId>
-                <artifactId>zookeeper</artifactId>
-                <version>${zookeeper.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.strimzi</groupId>
                 <artifactId>kafka-oauth-client</artifactId>
                 <version>${strimzi-oauth.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.strimzi</groupId>
+                <artifactId>strimzi-test-container</artifactId>
+                <version>${strimzi-test-container.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.nimbusds</groupId>
@@ -3664,12 +3827,6 @@
                 <artifactId>logging-interceptor</artifactId>
                 <version>${okhttp.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.assertj</groupId>
-                <artifactId>assertj-core</artifactId>
-                <version>${assertj.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
@@ -4366,6 +4523,11 @@
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>
+                <artifactId>hibernate-search-mapper-orm-coordination-outbox-polling</artifactId>
+                <version>${hibernate-search.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.search</groupId>
                 <artifactId>hibernate-search-mapper-orm</artifactId>
                 <version>${hibernate-search.version}</version>
                 <exclusions>
@@ -4451,21 +4613,6 @@
                 <version>${elasticsearch-opensource-components.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
-                <version>${mockito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-inline</artifactId>
-                <version>${mockito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-junit-jupiter</artifactId>
-                <version>${mockito.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.junit-pioneer</groupId>
                 <artifactId>junit-pioneer</artifactId>
                 <version>${junit-pioneer.version}</version>
@@ -4539,7 +4686,49 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
+            <dependency>
+                <groupId>com.microsoft.azure</groupId>
+                <artifactId>adal4j</artifactId>
+                <version>${adal4j.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-lang3</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.mail</groupId>
+                        <artifactId>javax.mail</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.stephenc.jcip</groupId>
+                        <artifactId>jcip-annotations</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.nimbusds</groupId>
+                        <artifactId>lang-tag</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.nimbusds</groupId>
+                        <artifactId>nimbus-jose-jwt</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>net.minidev</groupId>
+                        <artifactId>json-smart</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.google.code.gson</groupId>
+                        <artifactId>gson</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-codec</groupId>
+                        <artifactId>commons-codec</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
             <dependency>
                 <groupId>com.cronutils</groupId>
                 <artifactId>cron-utils</artifactId>
@@ -4604,6 +4793,17 @@
                     <exclusion>
                         <groupId>log4j</groupId>
                         <artifactId>log4j</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-reactive-messaging-kafka-test-companion</artifactId>
+                <version>${smallrye-reactive-messaging.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -4844,25 +5044,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>com.amazonaws.serverless</groupId>
-                <artifactId>aws-serverless-java-container-core</artifactId>
-                <version>${aws-lambda-serverless-java-container.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>javax.servlet-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.ws.rs</groupId>
-                        <artifactId>javax.ws.rs-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
 
             <dependency>
                 <groupId>com.microsoft.azure.functions</groupId>
@@ -4874,10 +5055,26 @@
                 <groupId>org.apache.maven.shared</groupId>
                 <artifactId>maven-invoker</artifactId>
                 <version>${maven-invoker.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.inject</groupId>
+                        <artifactId>javax.inject</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility</artifactId>
+                <version>${awaitility.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility-kotlin</artifactId>
+                <version>${awaitility.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility-scala</artifactId>
                 <version>${awaitility.version}</version>
             </dependency>
             <dependency>
@@ -4919,7 +5116,7 @@
             <dependency>
                 <groupId>org.liquibase.ext</groupId>
                 <artifactId>liquibase-mongodb</artifactId>
-                <version>${liquibase-mongodb.version}</version>
+                <version>${liquibase.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.yaml</groupId>
@@ -5066,6 +5263,13 @@
                 <groupId>io.quarkus.qute</groupId>
                 <artifactId>qute-generator</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- Buildpacks Container Extension -->
+            <dependency>
+                <groupId>dev.snowdrop</groupId>
+                <artifactId>buildpack-client</artifactId>
+                <version>${java-buildpack-client.version}</version>
             </dependency>
 
             <!-- Jib -->
@@ -5342,16 +5546,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-amazon-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-amazon-common-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-amazon-dynamodb</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -5512,11 +5706,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vault-model</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vault-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -5567,4 +5756,61 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jakarta-rewrite</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <configuration>
+                            <activeRecipes>
+                                <recipe>io.quarkus.maven.javax.managed</recipe>
+                                <recipe>io.quarkus.maven.javax.versions</recipe>
+                                <recipe>io.quarkus.jakarta-versions</recipe>
+                                <recipe>io.quarkus.jakarta-jaxrs-jaxb</recipe>
+                                <recipe>io.quarkus.jakarta-security</recipe>
+                                <recipe>io.quarkus.smallrye</recipe>
+                                <recipe>io.quarkus.bom.resteasy-microprofile</recipe>
+                            </activeRecipes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>jakarta-rewrite-cleanup</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite-cleanup</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <version>4.21.0-SNAPSHOT</version>
+                        <configuration>
+                            <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                            <activeStyles>
+                                <style>io.quarkus.style.maven</style>
+                            </activeStyles>
+                            <activeRecipes>
+                                <recipe>io.quarkus.jakarta-jaxrs-jaxb-cleanup</recipe>
+                                <recipe>io.quarkus.jakarta-security-cleanup</recipe>
+                            </activeRecipes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

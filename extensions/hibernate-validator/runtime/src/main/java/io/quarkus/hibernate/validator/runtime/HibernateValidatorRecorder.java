@@ -55,7 +55,7 @@ public class HibernateValidatorRecorder {
 
                 LocaleResolver localeResolver = null;
                 InstanceHandle<LocaleResolver> configuredLocaleResolver = Arc.container()
-                        .instance(LocaleResolver.class);
+                        .instance("locale-resolver-wrapper");
                 if (configuredLocaleResolver.isAvailable()) {
                     localeResolver = configuredLocaleResolver.get();
                     configuration.localeResolver(localeResolver);
@@ -67,6 +67,11 @@ public class HibernateValidatorRecorder {
                         .locales(localesBuildTimeConfig.locales)
                         .defaultLocale(localesBuildTimeConfig.defaultLocale)
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
+
+                if (hibernateValidatorBuildTimeConfig.expressionLanguage.constraintExpressionFeatureLevel.isPresent()) {
+                    configuration.constraintExpressionLanguageFeatureLevel(
+                            hibernateValidatorBuildTimeConfig.expressionLanguage.constraintExpressionFeatureLevel.get());
+                }
 
                 InstanceHandle<ConstraintValidatorFactory> configuredConstraintValidatorFactory = Arc.container()
                         .instance(ConstraintValidatorFactory.class);

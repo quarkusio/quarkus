@@ -59,6 +59,12 @@ public class MockHttpEventServer extends MockEventServer {
         event.setRawPath(ctx.request().path());
         event.setRawQueryString(ctx.request().query());
         for (String header : ctx.request().headers().names()) {
+            if (header.equalsIgnoreCase("Expect")) {
+                String expect = ctx.request().getHeader("Expect");
+                if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
+                    continue;
+                }
+            }
             if (event.getHeaders() == null)
                 event.setHeaders(new HashMap<>());
             List<String> values = ctx.request().headers().getAll(header);
@@ -111,8 +117,13 @@ public class MockHttpEventServer extends MockEventServer {
                 HttpServerResponse response = pending.response();
                 if (res.getHeaders() != null) {
                     for (Map.Entry<String, String> header : res.getHeaders().entrySet()) {
-                        for (String val : header.getValue().split(",")) {
-                            response.headers().add(header.getKey(), val);
+                        if (canHaveCommaValue(header.getKey())) {
+                            response.headers().add(header.getKey(), header.getValue());
+
+                        } else {
+                            for (String val : header.getValue().split(",")) {
+                                response.headers().add(header.getKey(), val);
+                            }
                         }
                     }
                 }

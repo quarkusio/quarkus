@@ -2,7 +2,7 @@ package io.quarkus.vertx.http.runtime.devmode;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -31,7 +31,7 @@ import io.vertx.ext.web.impl.Utils;
  */
 public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeable {
 
-    private static final String DEFAULT_CONTENT_ENCODING = Charset.defaultCharset().name();
+    private static final String DEFAULT_CONTENT_ENCODING = StandardCharsets.UTF_8.name();
 
     private static final ReentrantLock ROOT_CREATION_LOCK = new ReentrantLock();
 
@@ -92,7 +92,7 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
 
     /**
      * Resolves the web roots based on the webRootConfigurations
-     * 
+     *
      * @throws IOException if an I/O error occurs
      */
     private void resolveWebRoots() throws IOException {

@@ -61,7 +61,7 @@ public class OpenApiHandler implements Handler<RoutingContext> {
             } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
                 format = Format.YAML;
             } else {
-                // Content negotiation with Accept header    
+                // Content negotiation with Accept header
                 String accept = req.headers().get("Accept");
 
                 List<String> formatParams = event.queryParam(QUERY_PARAM_FORMAT);

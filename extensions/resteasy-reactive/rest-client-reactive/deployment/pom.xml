@@ -41,6 +41,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-routes-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
@@ -61,7 +66,7 @@
         </dependency>
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8</artifactId>
+            <artifactId>wiremock-jre8-standalone</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -71,12 +76,12 @@
         </dependency>
         <dependency>
             <groupId>io.smallrye.stork</groupId>
-            <artifactId>smallrye-stork-load-balancer-response-time</artifactId>
+            <artifactId>stork-load-balancer-least-response-time</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.smallrye.stork</groupId>
-            <artifactId>smallrye-stork-service-discovery-static-list</artifactId>
+            <artifactId>stork-service-discovery-static-list</artifactId>
             <scope>test</scope>
         </dependency>
    </dependencies>

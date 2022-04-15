@@ -51,7 +51,7 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @return {@code true} if the collection contains a custom scope annotation, {@code false} otherwise
      */
@@ -77,7 +77,7 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @return {@code true} if the collection contains any scope annotation, {@code false} otherwise
      * @see #isCustomScopeIn(Collection)
@@ -87,7 +87,7 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * 
+     *
      * @param annotations
      * @return the scope or empty optional
      */

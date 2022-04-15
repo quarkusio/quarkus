@@ -1,6 +1,7 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,16 +26,17 @@ public class DevServicesConfig {
     /**
      * The container image name to use, for container based DevServices providers.
      *
-     * Image with a Quarkus based Keycloak-X distribution is used by default.
-     * Image with a WildFly based Keycloak distribution can be selected instead, for example:
-     * 'quay.io/keycloak/keycloak:16.0.0'.
+     * Image with a Quarkus based distribution is used by default.
+     * Image with a WildFly based distribution can be selected instead, for example:
+     * 'quay.io/keycloak/keycloak:17.0.1-legacy'.
      * <p>
-     * Note Keycloak-X and Keycloak images are initialized differently.
-     * By default, Dev Services for Keycloak will assume it is a Keycloak-X image if the image name contains a 'keycloak-x'
+     * Note Keycloak Quarkus and Keycloak WildFly images are initialized differently.
+     * By default, Dev Services for Keycloak will assume it is a Keycloak Quarkus image if the image version does not end with a
+     * '-legacy'
      * string.
-     * Set 'quarkus.devservices.keycloak.keycloak-x-image' to override this check.
+     * Set 'quarkus.keycloak.devservices.keycloak-x-image' to override this check.
      */
-    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak-x:16.0.0")
+    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:17.0.1")
     public String imageName;
 
     /**
@@ -42,7 +44,7 @@ public class DevServicesConfig {
      *
      * By default, Dev Services for Keycloak will assume a Keycloak-X image is used if the image name contains a 'keycloak-x'
      * string.
-     * Set 'quarkus.devservices.keycloak.keycloak-x-image' to override this check which may be necessary if you build custom
+     * Set 'quarkus.keycloak.devservices.keycloak-x-image' to override this check which may be necessary if you build custom
      * Keycloak-X or Keycloak images.
      * You do not need to set this property if the default check works.
      */
@@ -126,11 +128,11 @@ public class DevServicesConfig {
      * not exist.
      */
     @ConfigItem
-    public Map<String, String> roles;
+    public Map<String, List<String>> roles;
 
     /**
      * Grant type.
-     * 
+     *
      * @deprecated Use {@link DevUiConfig#grant}.
      */
     @Deprecated

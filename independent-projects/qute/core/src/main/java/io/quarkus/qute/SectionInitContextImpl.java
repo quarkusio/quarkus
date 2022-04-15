@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * 
+ *
  */
 final class SectionInitContextImpl implements SectionInitContext {
 
@@ -22,7 +22,7 @@ final class SectionInitContextImpl implements SectionInitContext {
     }
 
     /**
-     * 
+     *
      * @return the params of the main block
      */
     public Map<String, String> getParameters() {

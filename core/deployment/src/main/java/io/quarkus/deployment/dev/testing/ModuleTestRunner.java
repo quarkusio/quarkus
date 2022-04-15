@@ -59,6 +59,8 @@ public class ModuleTestRunner {
                         .setExcludeTags(testSupport.excludeTags)
                         .setInclude(testSupport.include)
                         .setExclude(testSupport.exclude)
+                        .setIncludeEngines(testSupport.includeEngines)
+                        .setExcludeEngines(testSupport.excludeEngines)
                         .setTestType(testSupport.testType)
                         .setModuleInfo(moduleInfo)
                         .addListener(listener)
@@ -88,10 +90,10 @@ public class ModuleTestRunner {
                     Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
                     try {
                         prepared.run();
+                    } finally {
                         synchronized (ModuleTestRunner.this) {
                             runner = null;
                         }
-                    } finally {
                         Thread.currentThread().setContextClassLoader(old);
                     }
                 }

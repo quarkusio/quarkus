@@ -36,14 +36,21 @@ See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture do
 The first way to use reactive routes is to use the `@Route` annotation.
 To have access to this annotation, you need to add the `quarkus-reactive-routes` extension:
 
-In your `pom.xml` file, add:
+In your build file, add:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-reactive-routes</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-reactive-routes")
 ----
 
 Then in a _bean_, you can use the `@Route` annotation as follows:
@@ -366,7 +373,7 @@ Multi<String> hellos(RoutingContext context) {
     return Multi.createFrom().items("hello", "world", "!");  // <1>
 }
 ----
-1. Produces `helloworld!`
+<1> Produces `helloworld!`
 
 The method can return:
 
@@ -637,7 +644,7 @@ Check the https://vertx.io/docs/vertx-web/java/#_basic_vert_x_web_concepts[Vert.
 [NOTE]
 ====
 `Router` access is provided by the `quarkus-vertx-http` extension.
-If you use `quarkus-resteasy` or `quarkus-reactive-routes`, the extension will be added automatically.
+If you use `quarkus-resteasy-reactive` or `quarkus-reactive-routes`, the extension will be added automatically.
 ====
 
 You can also receive the Mutiny variant of the Router (`io.vertx.mutiny.ext.web.Router`):
@@ -675,25 +682,50 @@ public class MyFilters {
 <1> The `RouteFilter#value()` defines the priority used to sort the filters - filters with higher priority are called first.
 <2> The filter is likely required to call the `next()` method to continue the chain.
 
+== HTTP Compression
+
+The body of an HTTP response is not compressed by default.
+You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
+
+If compression support is enabled then the response body is compressed if:
+
+- the route method is annotated with `@io.quarkus.vertx.http.Compressed`, or
+- the `Content-Type` header is set and the value is a compressed media type as configured via `quarkus.http.compress-media-types`.
+
+The response body is never compressed if:
+
+- the route method is annotated with `@io.quarkus.vertx.http.Uncompressed`, or
+- the `Content-Type` header is not set.
+
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+
+NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
+
 == Adding OpenAPI and Swagger UI
 
 You can add support for link:https://www.openapis.org/[OpenAPI] and link:https://swagger.io/tools/swagger-ui/[Swagger UI] by using the `quarkus-smallrye-openapi` extension.
 
 Add the extension by running this command:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="io.quarkus:quarkus-smallrye-openapi"
-----
+:add-extension-extensions: quarkus-smallrye-openapi
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-openapi</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-openapi")
 ----
 
 This is enough to generate a basic OpenAPI schema document from your Vert.x Routes:

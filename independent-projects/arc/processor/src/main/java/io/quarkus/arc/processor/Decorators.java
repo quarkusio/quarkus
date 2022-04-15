@@ -80,6 +80,16 @@ final class Decorators {
                 throw new DefinitionException("The delegate type " + delegateInjectionPoint.getRequiredType()
                         + " does not implement the decorated type: " + decoratedType);
             }
+            for (BuiltinBean bean : BuiltinBean.values()) {
+                if (bean.equals(BuiltinBean.RESOURCE)) {
+                    // do not take Resource into consideration
+                    continue;
+                }
+                if (bean.hasRawTypeDotName(decoratedType.name())) {
+                    throw new UnsupportedOperationException("Decorating built-in bean types is not supported! " +
+                            "Decorator " + decoratorClass + " is attempting to decorate " + decoratedType.name());
+                }
+            }
         }
 
         if (priority == null) {

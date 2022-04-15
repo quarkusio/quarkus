@@ -31,6 +31,7 @@ import org.jboss.forge.roaster.model.JavaDocCapable;
 import org.jboss.forge.roaster.model.source.FieldSource;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -151,7 +152,7 @@ class quarkusbuilditemdoc implements Callable<Integer> {
 
     private Map<String, String> extractNames(Path root, Iterable<String> extensionDirs) throws IOException {
         Map<String, String> names = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        Yaml yaml = new Yaml();
+        Yaml yaml = new Yaml(new SafeConstructor());
         for (String extension : extensionDirs) {
             Path yamlPath = root.resolve("extensions/" + extension + "/runtime/src/main/resources/META-INF/quarkus-extension.yaml");
             if (Files.exists(yamlPath)) {

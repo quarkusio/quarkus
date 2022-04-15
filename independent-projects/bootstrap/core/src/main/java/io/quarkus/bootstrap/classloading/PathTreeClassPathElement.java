@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
@@ -64,7 +65,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     /**
      * In case the root path is configured, Vert.x may be looking for resources like 'META-INF/resources//index.html'.
      * This method will make sure there are no duplicate separators.
-     * 
+     *
      * @param path path to santize
      * @return sanitized path
      */
@@ -208,7 +209,25 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
             lock.readLock().lock();
             try {
                 if (pathTree.isOpen()) {
-                    return url = path.toUri().toURL();
+                    URI uri = path.toUri();
+                    URL url;
+                    // the URLClassLoader doesn't add trailing slashes to directories, so we make sure we return
+                    // the same URL as it would to avoid having QuarkusClassLoader return different URLs
+                    // (one with a trailing slash and one without) for same resource
+                    if (uri.getPath() != null && uri.getPath().endsWith("/")) {
+                        String uriStr = uri.toString();
+                        url = new URL(uriStr.substring(0, uriStr.length() - 1));
+                    } else {
+                        url = uri.toURL();
+                    }
+                    if (url.getQuery() != null) {
+                        //huge hack to work around a JDK bug. ZipPath does not escape properly, so if there is a ?
+                        //in the path then it ends up in the query string and everything is screwy.
+                        //if there are multiple question marks the extra ones end up in the path and not the query string as you would expect
+                        url = new URL(url.getProtocol(), url.getHost(), url.getPort(),
+                                url.getPath().replaceAll("\\?", "%3F") + "%3F" + url.getQuery());
+                    }
+                    return this.url = url;
                 }
                 return url = apply(tree -> tree.apply(name, visit -> visit == null ? null : visit.getUrl()));
             } catch (MalformedURLException e) {

@@ -29,6 +29,21 @@ public final class FlywayDataSourceRuntimeConfig {
     public OptionalInt connectRetries = OptionalInt.empty();
 
     /**
+     * Sets the default schema managed by Flyway. This schema name is case-sensitive. If not specified, but <i>schemas</i>
+     * is, Flyway uses the first schema in that list. If that is also not specified, Flyway uses the default schema for the
+     * database connection.
+     * <p>
+     * Consequences:
+     * </p>
+     * <ul>
+     * <li>This schema will be the one containing the schema history table.</li>
+     * <li>This schema will be the default for the database connection (provided the database supports this concept).</li>
+     * </ul>
+     */
+    @ConfigItem
+    public Optional<String> defaultSchema = Optional.empty();
+
+    /**
      * Comma-separated case-sensitive list of schemas managed by Flyway.
      * The first schema in the list will be automatically set as the default one during the migration.
      * It will also be the one containing the schema history table.

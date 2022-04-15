@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
  * {@link TemplateEnum} annotation is ignored.
  * <p>
  * {@link TemplateEnum} declared on non-enum classes is ignored.
- * 
+ *
  * @see TemplateData
  * @see NamespaceResolver
  */

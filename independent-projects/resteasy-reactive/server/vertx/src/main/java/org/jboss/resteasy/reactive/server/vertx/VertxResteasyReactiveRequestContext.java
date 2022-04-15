@@ -5,12 +5,12 @@ import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 import java.io.ByteArrayInputStream;
@@ -52,7 +52,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     public VertxResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
             RoutingContext context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
-            ClassLoader devModeTccl, List<String> vertxContextPropsToCopy) {
+            ClassLoader devModeTccl) {
         super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
         this.context = context;
         this.request = context.request();
@@ -60,26 +60,14 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         this.devModeTccl = devModeTccl;
         context.addHeadersEndHandler(this);
         String expect = request.getHeader(HttpHeaderNames.EXPECT);
-        ContextInternal internal = ((ConnectionBase) context.request().connection()).getContext();
-        if (!vertxContextPropsToCopy.isEmpty()) {
-            ContextInternal current = (ContextInternal) Vertx.currentContext();
-            Map<Object, Object> internalLocalContextData = internal.localContextData();
-            Map<Object, Object> currentLocalContextData = current.localContextData();
-            for (int i = 0; i < vertxContextPropsToCopy.size(); i++) {
-                String name = vertxContextPropsToCopy.get(i);
-                Object value = currentLocalContextData.get(name);
-                if (value != null) {
-                    internalLocalContextData.put(name, value);
-                }
-            }
-        }
+        Context current = Vertx.currentContext();
         if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
             continueState = ContinueState.REQUIRED;
         }
         this.contextExecutor = new Executor() {
             @Override
             public void execute(Runnable command) {
-                internal.runOnContext(new Handler<Void>() {
+                current.runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void unused) {
                         command.run();
@@ -388,6 +376,11 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public String getResponseHeader(String name) {
         return response.headers().get(name);
+    }
+
+    @Override
+    public void removeResponseHeader(String name) {
+        response.headers().remove(name);
     }
 
     @Override

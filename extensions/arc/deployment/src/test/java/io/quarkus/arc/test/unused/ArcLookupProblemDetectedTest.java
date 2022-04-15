@@ -40,7 +40,7 @@ public class ArcLookupProblemDetectedTest {
 
     @Test
     public void testWarning() {
-        // Note that the warning is only displayed once, subsequent calls use a cached result 
+        // Note that the warning is only displayed once, subsequent calls use a cached result
         assertFalse(CDI.current().select(Alpha.class).isResolvable());
     }
 

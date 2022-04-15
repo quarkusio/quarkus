@@ -1,6 +1,9 @@
 package io.quarkus.rest.client.reactive.deployment;
 
 import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_EXCEPTION_MAPPER;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
@@ -45,6 +48,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -53,6 +57,7 @@ import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -61,6 +66,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.AsmUtil;
@@ -93,6 +99,14 @@ class RestClientReactiveProcessor {
 
     private static final String DISABLE_SMART_PRODUCES_QUARKUS = "quarkus.rest-client.disable-smart-produces";
     private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
+
+    private static final Set<DotName> SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS = Set.of(
+            REGISTER_REST_CLIENT,
+            REGISTER_PROVIDER,
+            REGISTER_PROVIDERS,
+            CLIENT_HEADER_PARAM,
+            CLIENT_HEADER_PARAMS,
+            REGISTER_CLIENT_HEADERS);
 
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
@@ -200,7 +214,7 @@ class RestClientReactiveProcessor {
      * <li>registers all the provider implementations annotated with @Provider using
      * {@link AnnotationRegisteredProviders#addGlobalProvider(Class, int)}</li>
      * </ul>
-     * 
+     *
      *
      * @param indexBuildItem index
      * @param generatedBeans build producer for generated beans
@@ -208,7 +222,9 @@ class RestClientReactiveProcessor {
     @BuildStep
     void registerProvidersFromAnnotations(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             RestClientReactiveConfig clientConfig) {
         String annotationRegisteredProvidersImpl = AnnotationRegisteredProviders.class.getName() + "Implementation";
         IndexView index = indexBuildItem.getIndex();
@@ -261,9 +277,23 @@ class RestClientReactiveProcessor {
                             MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addGlobalProvider",
                                     void.class, Class.class,
                                     int.class),
-                            constructor.getThis(), constructor.loadClass(providerClass.name().toString()),
+                            constructor.getThis(), constructor.loadClassFromTCCL(providerClass.name().toString()),
                             constructor.load(priority));
                 }
+            }
+
+            Map<String, ClientExceptionMapperHandler.Result> ifaceToGeneratedMapper = new HashMap<>();
+            ClientExceptionMapperHandler clientExceptionMapperHandler = new ClientExceptionMapperHandler(
+                    new GeneratedClassGizmoAdaptor(generatedClasses, true));
+            for (AnnotationInstance instance : index.getAnnotations(CLIENT_EXCEPTION_MAPPER)) {
+                ClientExceptionMapperHandler.Result result = clientExceptionMapperHandler
+                        .generateResponseExceptionMapper(instance);
+                if (ifaceToGeneratedMapper.containsKey(result.interfaceName)) {
+                    throw new IllegalStateException("Only a single instance of '" + CLIENT_EXCEPTION_MAPPER
+                            + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
+                }
+                ifaceToGeneratedMapper.put(result.interfaceName, result);
+                reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, false, result.generatedClassName));
             }
 
             for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
@@ -278,13 +308,31 @@ class RestClientReactiveProcessor {
                         priority = priorityAnnotationValue.asInt();
                     }
 
-                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(className),
+                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClassFromTCCL(className),
                             constructor.load(priority));
+                }
+                String ifaceName = annotationsForClass.getKey();
+                if (ifaceToGeneratedMapper.containsKey(ifaceName)) {
+                    // remove the interface from the generated mapper since it's going to be handled now
+                    // the remaining entries will be handled later
+                    ClientExceptionMapperHandler.Result result = ifaceToGeneratedMapper.remove(ifaceName);
+                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(result.generatedClassName),
+                            constructor.load(result.priority));
                 }
                 constructor.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
                                 Map.class),
-                        constructor.getThis(), constructor.load(annotationsForClass.getKey()), map);
+                        constructor.getThis(), constructor.load(ifaceName), map);
+            }
+            // add the remaining generated mappers
+            for (Map.Entry<String, ClientExceptionMapperHandler.Result> entry : ifaceToGeneratedMapper.entrySet()) {
+                ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(entry.getValue().generatedClassName),
+                        constructor.load(entry.getValue().priority));
+                constructor.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(AnnotationRegisteredProviders.class, "addProviders", void.class, String.class,
+                                Map.class),
+                        constructor.getThis(), constructor.load(entry.getKey()), map);
             }
 
             constructor.returnValue(null);
@@ -331,6 +379,7 @@ class RestClientReactiveProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            CustomScopeAnnotationsBuildItem scopes,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             RestClientReactiveConfig clientConfig,
             RestClientRecorder recorder) {
@@ -353,7 +402,7 @@ class RestClientReactiveProcessor {
                 // but emitting the correct invokespecial instruction would become convoluted
                 // (as invokespecial may only reference a method from a _direct_ super interface)
                 for (MethodInfo method : jaxrsInterface.methods()) {
-                    boolean isDefault = !Modifier.isAbstract(method.flags());
+                    boolean isDefault = !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags());
                     if (isDefault) {
                         methodsToImplement.add(method);
                     }
@@ -389,6 +438,19 @@ class RestClientReactiveProcessor {
                     classCreator.addAnnotation(Typed.class.getName(), RetentionPolicy.RUNTIME)
                             .addValue("value", new org.objectweb.asm.Type[] { asmType });
 
+                    for (AnnotationInstance annotation : jaxrsInterface.classAnnotations()) {
+                        if (SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS.contains(annotation.name())) {
+                            continue;
+                        }
+
+                        // scope annotation is added to the generated class already, see above
+                        if (scopes.isScopeIn(Set.of(annotation))) {
+                            continue;
+                        }
+
+                        classCreator.addAnnotation(annotation);
+                    }
+
                     // CONSTRUCTOR:
 
                     MethodCreator constructor = classCreator
@@ -401,7 +463,7 @@ class RestClientReactiveProcessor {
                             MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
                                     String.class),
                             constructor.getThis(),
-                            constructor.loadClass(jaxrsInterface.toString()),
+                            constructor.loadClassFromTCCL(jaxrsInterface.toString()),
                             baseUriHandle,
                             configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull());
                     constructor.returnValue(null);
@@ -525,7 +587,7 @@ class RestClientReactiveProcessor {
             if (scopeToUse == null) {
                 log.warnf("Unsupported default scope {} provided for rest client {}. Defaulting to {}",
                         scope, restClientInterface.name(), globalDefaultScope.getName());
-                scopeToUse = BuiltinScope.DEPENDENT.getInfo();
+                scopeToUse = globalDefaultScope.getInfo();
             }
         } else {
             final Set<DotName> annotations = restClientInterface.annotations().keySet();

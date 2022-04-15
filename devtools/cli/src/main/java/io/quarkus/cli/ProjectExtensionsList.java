@@ -18,14 +18,14 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List platforms and extensions. ", footer = {
+@CommandLine.Command(name = "list", aliases = "ls", header = "List platforms and extensions. ", footer = {
         "%nList modes:%n",
         "(relative). Active when invoked within a project unless an explicit release is specified. " +
                 "The current project configuration will determine what extensions are listed, " +
                 "with installed (available) extensions listed by default.%n",
         "(absolute). Active when invoked outside of a project or when an explicit release is specified. " +
                 "All extensions for the specified release will be listed. " +
-                "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
+                "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" })
 public class ProjectExtensionsList extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Mixin
@@ -64,8 +64,6 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
                 installable = false;
                 // check if any format was specified
                 boolean formatSpecified = format.isSpecified();
-                // show origins by default
-                format.useOriginsUnlessSpecified();
 
                 if (runMode.isDryRun()) {
                     return dryRunList(spec.commandLine().getHelp(), null);

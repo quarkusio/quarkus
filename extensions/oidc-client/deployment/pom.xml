@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -33,6 +33,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-common-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -156,7 +160,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${keycloak.docker.image}</name>
+                                    <name>${keycloak.docker.legacy.image}</name>
                                     <alias>quarkus-test-keycloak</alias>
                                     <run>
                                         <ports>

@@ -22,9 +22,9 @@ public class AnyDelegatingSecurityCheck implements SecurityCheck {
     @Override
     public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
         SecurityException thrownException = null;
-        for (int i = 0; i < securityChecks.size(); i++) {
+        for (SecurityCheck securityCheck : securityChecks) {
             try {
-                securityChecks.get(i).apply(identity, method, parameters);
+                securityCheck.apply(identity, method, parameters);
                 // no exception was thrown so we can just return
                 return;
             } catch (SecurityException e) {
@@ -39,9 +39,9 @@ public class AnyDelegatingSecurityCheck implements SecurityCheck {
     @Override
     public void apply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters) {
         SecurityException thrownException = null;
-        for (int i = 0; i < securityChecks.size(); i++) {
+        for (SecurityCheck securityCheck : securityChecks) {
             try {
-                securityChecks.get(i).apply(identity, methodDescription, parameters);
+                securityCheck.apply(identity, methodDescription, parameters);
                 // no exception was thrown so we can just return
                 return;
             } catch (SecurityException e) {

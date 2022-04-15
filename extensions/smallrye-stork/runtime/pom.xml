@@ -16,11 +16,23 @@
     <dependencies>
         <dependency>
             <groupId>io.smallrye.stork</groupId>
-            <artifactId>smallrye-stork-microprofile-config</artifactId>
+            <artifactId>stork-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.stork</groupId>
+            <artifactId>stork-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx</artifactId>
         </dependency>
     </dependencies>
 

@@ -6,8 +6,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -104,6 +104,8 @@ public class IdeProcessor {
                     }
                     if (matches.size() == 1) {
                         result = matches.get(0);
+                    } else if (matches.size() == 0 && runningIdes.size() > 0) {
+                        result = runningIdes.iterator().next();
                     }
                 }
             }
@@ -133,7 +135,7 @@ public class IdeProcessor {
             return null;
         }
 
-        Set<Ide> result = new HashSet<>(2);
+        Set<Ide> result = EnumSet.noneOf(Ide.class);
         Path root = buildSystemTarget.getOutputDirectory();
 
         // hack to try and guess the IDE when using a multi-module project
@@ -160,7 +162,7 @@ public class IdeProcessor {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
-        Set<Ide> result = new HashSet<>(4);
+        Set<Ide> result = EnumSet.noneOf(Ide.class);
         List<ProcessInfo> processInfos = Collections.emptyList();
         try {
             processInfos = ProcessUtil.runningProcesses();

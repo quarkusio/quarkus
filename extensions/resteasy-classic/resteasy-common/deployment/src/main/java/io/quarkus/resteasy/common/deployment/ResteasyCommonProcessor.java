@@ -56,6 +56,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
 import io.quarkus.resteasy.common.runtime.config.ResteasyConfigSourceProvider;
@@ -322,6 +323,12 @@ public class ResteasyCommonProcessor {
         }
     }
 
+    @BuildStep
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(org.jboss.resteasy.spi.config.ConfigurationFactory.class.getName()));
+    }
+
     private void registerJsonContextResolver(
             DotName jsonImplementation,
             DotName jsonContextResolver,
@@ -531,8 +538,10 @@ public class ResteasyCommonProcessor {
             AnnotationInstance mediaTypeClassAnnotationInstance = methodTarget.declaringClass()
                     .classAnnotation(mediaTypeAnnotation);
             if (mediaTypeClassAnnotationInstance != null) {
-                if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
-                        mediaTypeClassAnnotationInstance.value().asStringArray(), methodTarget)) {
+                AnnotationValue mediaTypeClassValue = mediaTypeClassAnnotationInstance.value();
+                if ((mediaTypeClassValue != null)
+                        && collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
+                                mediaTypeClassValue.asStringArray(), methodTarget)) {
                     return true;
                 }
                 return false;

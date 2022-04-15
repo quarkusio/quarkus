@@ -34,6 +34,17 @@ public class TracerRuntimeConfig {
     @ConfigItem(defaultValue = "true")
     public boolean suppressNonApplicationUris;
 
+    /**
+     * Include static resources from trace collection.
+     * <p>
+     * Providing a custom {@code io.opentelemetry.sdk.trace.samplers.Sampler} CDI Bean
+     * will ignore this setting.
+     * <p>
+     * Include static resources is disabled by default.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean includeStaticResources;
+
     @ConfigGroup
     public static class SamplerConfig {
         /**

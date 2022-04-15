@@ -1,9 +1,9 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -14,15 +14,16 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -43,7 +44,8 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
-import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
@@ -58,6 +60,7 @@ import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -65,7 +68,6 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class KeycloakDevServicesProcessor {
-    static volatile DevServicesConfig capturedDevServicesConfiguration;
     static volatile Vertx vertxInstance;
 
     private static final Logger LOG = Logger.getLogger(KeycloakDevServicesProcessor.class);
@@ -73,17 +75,18 @@ public class KeycloakDevServicesProcessor {
     private static final String CONFIG_PREFIX = "quarkus.oidc.";
     private static final String TENANT_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "tenant-enabled";
     private static final String AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
+    private static final String PROVIDER_CONFIG_KEY = CONFIG_PREFIX + "provider";
     // avoid the Quarkus prefix in order to prevent warnings when the application starts in container integration tests
     private static final String CLIENT_AUTH_SERVER_URL_CONFIG_KEY = "client." + CONFIG_PREFIX + "auth-server-url";
     private static final String APPLICATION_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
     private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
     private static final String KEYCLOAK_URL_KEY = "keycloak.url";
-    private static final String KEYCLOAK_REALM_KEY = "keycloak.realm";
 
+    private static final String KEYCLOAK_CONTAINER_NAME = "keycloak";
     private static final int KEYCLOAK_PORT = 8080;
 
-    private static final String KEYCLOAK_X_IMAGE_NAME = "keycloak-x";
+    private static final String KEYCLOAK_LEGACY_IMAGE_VERSION_PART = "-legacy";
 
     private static final String KEYCLOAK_ADMIN_USER = "admin";
     private static final String KEYCLOAK_ADMIN_PASSWORD = "admin";
@@ -114,18 +117,16 @@ public class KeycloakDevServicesProcessor {
     private static final ContainerLocator keycloakDevModeContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
             KEYCLOAK_PORT);
 
-    private static volatile List<Closeable> closeables;
+    private static volatile RunningDevService devService;
+    static volatile DevServicesConfig capturedDevServicesConfiguration;
     private static volatile boolean first = true;
-    private static volatile String capturedKeycloakInternalURL;
-    private static volatile String capturedKeycloakHostURL;
     private static volatile FileTime capturedRealmFileLastModifiedDate;
     private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
-    private static volatile KeycloakDevServicesConfigBuildItem existingDevServiceConfig;
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
-    public KeycloakDevServicesConfigBuildItem startKeycloakContainer(
+    public DevServicesResultBuildItem startKeycloakContainer(
+            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            BuildProducer<DevServicesConfigResultBuildItem> devServices,
             Optional<OidcDevServicesBuildItem> oidcProviderBuildItem,
             KeycloakBuildTimeConfig config,
             CuratedApplicationShutdownBuildItem closeBuildItem,
@@ -142,7 +143,7 @@ public class KeycloakDevServicesProcessor {
         DevServicesConfig currentDevServicesConfiguration = config.devservices;
         // Figure out if we need to shut down and restart any existing Keycloak container
         // if not and the Keycloak container has already started we just return
-        if (closeables != null) {
+        if (devService != null) {
             boolean restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
             if (!restartRequired) {
                 FileTime currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(
@@ -154,46 +155,44 @@ public class KeycloakDevServicesProcessor {
                 }
             }
             if (!restartRequired) {
-                return existingDevServiceConfig;
+                return devService.toBuildItem();
             }
-            for (Closeable closeable : closeables) {
-                try {
-                    closeable.close();
-                } catch (Throwable e) {
-                    LOG.error("Failed to stop Keycloak container", e);
-                }
+            try {
+                devService.close();
+            } catch (Throwable e) {
+                LOG.error("Failed to stop Keycloak container", e);
             }
-            closeables = null;
+            devService = null;
             capturedDevServicesConfiguration = null;
-            capturedKeycloakInternalURL = null;
-            existingDevServiceConfig = null;
         }
         capturedDevServicesConfiguration = currentDevServicesConfiguration;
-        StartResult startResult;
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "KeyCloak Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
+        if (vertxInstance == null) {
+            vertxInstance = Vertx.vertx();
+        }
         try {
-            startResult = startContainer(!devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
-            if (startResult == null) {
+            RunningDevService newDevService = startContainer(keycloakBuildItemBuildProducer,
+                    !devServicesSharedNetworkBuildItem.isEmpty(),
+                    devServicesConfig.timeout);
+            if (newDevService == null) {
                 compressor.close();
                 return null;
             }
 
-            closeables = startResult.closeable != null ? Collections.singletonList(startResult.closeable) : null;
+            devService = newDevService;
 
             if (first) {
                 first = false;
                 Runnable closeTask = new Runnable() {
                     @Override
                     public void run() {
-                        if (closeables != null) {
-                            for (Closeable closeable : closeables) {
-                                try {
-                                    closeable.close();
-                                } catch (Throwable t) {
-                                    LOG.error("Failed to stop Keycloak container", t);
-                                }
+                        if (devService != null) {
+                            try {
+                                devService.close();
+                            } catch (Throwable t) {
+                                LOG.error("Failed to stop Keycloak container", t);
                             }
                         }
                         if (vertxInstance != null) {
@@ -204,7 +203,7 @@ public class KeycloakDevServicesProcessor {
                             }
                         }
                         first = true;
-                        closeables = null;
+                        devService = null;
                         capturedDevServicesConfiguration = null;
                         vertxInstance = null;
                         capturedRealmFileLastModifiedDate = null;
@@ -213,11 +212,6 @@ public class KeycloakDevServicesProcessor {
                 closeBuildItem.addCloseTask(closeTask, true);
             }
 
-            capturedKeycloakInternalURL = startResult.internalURL;
-            capturedKeycloakHostURL = startResult.hostURL;
-            if (vertxInstance == null) {
-                vertxInstance = Vertx.vertx();
-            }
             capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath);
             compressor.close();
         } catch (Throwable t) {
@@ -226,20 +220,21 @@ public class KeycloakDevServicesProcessor {
         }
         LOG.info("Dev Services for Keycloak started.");
 
-        return prepareConfiguration(startResult.realmRep, startResult.keycloakX, devServices);
+        return devService.toBuildItem();
     }
 
     private String startURL(String host, Integer port, boolean isKeyCloakX) {
         return "http://" + host + ":" + port + (isKeyCloakX ? "" : "/auth");
     }
 
-    private KeycloakDevServicesConfigBuildItem prepareConfiguration(RealmRepresentation realmRep, boolean keycloakX,
-            BuildProducer<DevServicesConfigResultBuildItem> devServices) {
+    private Map<String, String> prepareConfiguration(
+            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer, String internalURL,
+            String hostURL, RealmRepresentation realmRep,
+            boolean keycloakX) {
         final String realmName = realmRep != null ? realmRep.getRealm() : getDefaultRealmName();
-        final String authServerInternalUrl = realmsURL(capturedKeycloakInternalURL, realmName);
+        final String authServerInternalUrl = realmsURL(internalURL, realmName);
 
-        String clientAuthServerBaseUrl = capturedKeycloakHostURL != null ? capturedKeycloakHostURL
-                : capturedKeycloakInternalURL;
+        String clientAuthServerBaseUrl = hostURL != null ? hostURL : internalURL;
         String clientAuthServerUrl = realmsURL(clientAuthServerBaseUrl, realmName);
 
         String oidcClientId = getOidcClientId();
@@ -254,24 +249,19 @@ public class KeycloakDevServicesProcessor {
         } else if (realmRep != null && keycloakX) {
             createRealm(clientAuthServerBaseUrl, realmRep);
         }
-        devServices.produce(new DevServicesConfigResultBuildItem(KEYCLOAK_URL_KEY, capturedKeycloakInternalURL));
-        devServices.produce(new DevServicesConfigResultBuildItem(AUTH_SERVER_URL_CONFIG_KEY, authServerInternalUrl));
-        devServices.produce(new DevServicesConfigResultBuildItem(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl));
-        devServices.produce(new DevServicesConfigResultBuildItem(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType));
-        devServices.produce(new DevServicesConfigResultBuildItem(CLIENT_ID_CONFIG_KEY, oidcClientId));
-        devServices.produce(new DevServicesConfigResultBuildItem(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret));
 
-        Map<String, Object> configProperties = new HashMap<>();
-        configProperties.put(KEYCLOAK_URL_KEY, capturedKeycloakInternalURL);
-        configProperties.put(KEYCLOAK_REALM_KEY, realmName);
+        Map<String, String> configProperties = new HashMap<>();
+        configProperties.put(KEYCLOAK_URL_KEY, internalURL);
         configProperties.put(AUTH_SERVER_URL_CONFIG_KEY, authServerInternalUrl);
+        configProperties.put(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl);
         configProperties.put(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType);
         configProperties.put(CLIENT_ID_CONFIG_KEY, oidcClientId);
         configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
-        configProperties.put(OIDC_USERS, users);
 
-        existingDevServiceConfig = new KeycloakDevServicesConfigBuildItem(configProperties);
-        return existingDevServiceConfig;
+        keycloakBuildItemBuildProducer
+                .produce(new KeycloakDevServicesConfigBuildItem(configProperties, Map.of(OIDC_USERS, users)));
+
+        return configProperties;
     }
 
     private String realmsURL(String baseURL, String realmName) {
@@ -282,7 +272,8 @@ public class KeycloakDevServicesProcessor {
         return capturedDevServicesConfiguration.realmName.orElse("quarkus");
     }
 
-    private StartResult startContainer(boolean useSharedNetwork, Optional<Duration> timeout) {
+    private RunningDevService startContainer(BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
+            boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
@@ -294,6 +285,10 @@ public class KeycloakDevServicesProcessor {
         }
         if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
+            return null;
+        }
+        if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
+            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.provider' has been provided");
             return null;
         }
 
@@ -310,7 +305,7 @@ public class KeycloakDevServicesProcessor {
         String imageName = capturedDevServicesConfiguration.imageName;
         DockerImageName dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName);
 
-        final Supplier<StartResult> defaultKeycloakContainerSupplier = () -> {
+        final Supplier<RunningDevService> defaultKeycloakContainerSupplier = () -> {
 
             QuarkusOidcContainer oidcContainer = new QuarkusOidcContainer(dockerImageName,
                     capturedDevServicesConfiguration.port,
@@ -323,35 +318,33 @@ public class KeycloakDevServicesProcessor {
             timeout.ifPresent(oidcContainer::withStartupTimeout);
             oidcContainer.start();
 
-            return new StartResult(
-                    startURL(oidcContainer.getHost(), oidcContainer.getPort(), oidcContainer.keycloakX),
-                    oidcContainer.useSharedNetwork
-                            ? startURL("localhost", oidcContainer.fixedExposedPort.getAsInt(), oidcContainer.keycloakX)
-                            : null,
-                    oidcContainer.keycloakX,
-                    oidcContainer.realmRep,
-                    new Closeable() {
-                        @Override
-                        public void close() {
-                            oidcContainer.close();
+            String internalUrl = startURL(oidcContainer.getHost(), oidcContainer.getPort(), oidcContainer.keycloakX);
+            String hostUrl = oidcContainer.useSharedNetwork
+                    ? startURL("localhost", oidcContainer.fixedExposedPort.getAsInt(), oidcContainer.keycloakX)
+                    : null;
 
-                            LOG.info("Dev Services for Keycloak shut down.");
-                        }
-                    });
+            Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer, internalUrl, hostUrl,
+                    oidcContainer.realmRep,
+                    oidcContainer.keycloakX);
+            return new RunningDevService(KEYCLOAK_CONTAINER_NAME, oidcContainer.getContainerId(),
+                    oidcContainer::close, configs);
         };
 
         return maybeContainerAddress
-                .map(containerAddress -> new StartResult(
-                        getSharedContainerUrl(containerAddress),
-                        getSharedContainerUrl(containerAddress), // TODO: this probably needs to be addressed
-                        false, null, null))
+                .map(containerAddress -> {
+                    // TODO: this probably needs to be addressed
+                    Map<String, String> configs = prepareConfiguration(keycloakBuildItemBuildProducer,
+                            getSharedContainerUrl(containerAddress),
+                            getSharedContainerUrl(containerAddress), null, false);
+                    return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
+                })
                 .orElseGet(defaultKeycloakContainerSupplier);
     }
 
     private static boolean isKeycloakX(DockerImageName dockerImageName) {
         return capturedDevServicesConfiguration.keycloakXImage.isPresent()
                 ? capturedDevServicesConfiguration.keycloakXImage.get()
-                : dockerImageName.getUnversionedPart().contains(KEYCLOAK_X_IMAGE_NAME);
+                : !dockerImageName.getVersionPart().endsWith(KEYCLOAK_LEGACY_IMAGE_VERSION_PART);
     }
 
     private String getSharedContainerUrl(ContainerAddress containerAddress) {
@@ -359,24 +352,7 @@ public class KeycloakDevServicesProcessor {
                 + ":" + containerAddress.getPort();
     }
 
-    private static class StartResult {
-        private final String internalURL;
-        private final String hostURL;
-        private final RealmRepresentation realmRep;
-        private final Closeable closeable;
-        private final boolean keycloakX;
-
-        public StartResult(String internalURL, String hostURL,
-                boolean keycloakX, RealmRepresentation realmRep, Closeable closeable) {
-            this.internalURL = internalURL;
-            this.hostURL = hostURL;
-            this.keycloakX = keycloakX;
-            this.realmRep = realmRep;
-            this.closeable = closeable;
-        }
-    }
-
-    private static class QuarkusOidcContainer extends GenericContainer {
+    private static class QuarkusOidcContainer extends GenericContainer<QuarkusOidcContainer> {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
         private final Optional<String> realmPath;
@@ -439,7 +415,8 @@ public class KeycloakDevServicesProcessor {
             if (keycloakX) {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
-                withCommand(KEYCLOAK_QUARKUS_START_CMD);
+                withCommand(KEYCLOAK_QUARKUS_START_CMD
+                        + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_WILDFLY_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
@@ -553,21 +530,55 @@ public class KeycloakDevServicesProcessor {
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", null, capturedDevServicesConfiguration.webClienTimeout);
 
-            HttpResponse<Buffer> response = client.postAbs(keycloakUrl + "/admin/realms")
+            HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
                     .sendBuffer(Buffer.buffer().appendString(JsonSerialization.writeValueAsString(realm)))
                     .await().atMost(capturedDevServicesConfiguration.webClienTimeout);
 
-            if (response.statusCode() > 299) {
-                LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), response.statusCode(),
-                        response.statusMessage());
+            if (createRealmResponse.statusCode() > 299) {
+                LOG.errorf("Realm %s can not be created %d - %s ", realm.getRealm(), createRealmResponse.statusCode(),
+                        createRealmResponse.statusMessage());
             }
+
+            Uni<Integer> realmStatusCodeUni = client.getAbs(keycloakUrl + "/realms/" + realm.getRealm())
+                    .send().onItem()
+                    .transform(resp -> {
+                        LOG.debugf("Realm status: %d", resp.statusCode());
+                        if (resp.statusCode() == 200) {
+                            return 200;
+                        } else {
+                            throw new RealmEndpointAccessException(resp.statusCode());
+                        }
+                    }).onFailure(realmEndpointNotAvailable())
+                    .retry()
+                    .withBackOff(Duration.ofSeconds(2), Duration.ofSeconds(2))
+                    .expireIn(10 * 1000)
+                    .onFailure().transform(t -> t.getCause());
+            realmStatusCodeUni.await().atMost(Duration.ofSeconds(10));
         } catch (Throwable t) {
             LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
         } finally {
             client.close();
         }
+    }
+
+    @SuppressWarnings("serial")
+    static class RealmEndpointAccessException extends RuntimeException {
+        private final int errorStatus;
+
+        public RealmEndpointAccessException(int errorStatus) {
+            this.errorStatus = errorStatus;
+        }
+
+        public int getErrorStatus() {
+            return errorStatus;
+        }
+    }
+
+    public static Predicate<? super Throwable> realmEndpointNotAvailable() {
+        return t -> (t instanceof ConnectException
+                || (t instanceof RealmEndpointAccessException && ((RealmEndpointAccessException) t).getErrorStatus() == 404));
     }
 
     private Map<String, String> getUsers(Map<String, String> configuredUsers, boolean createRealm) {
@@ -581,10 +592,10 @@ public class KeycloakDevServicesProcessor {
         }
     }
 
-    private String[] getUserRoles(String user) {
-        String roles = capturedDevServicesConfiguration.roles.get(user);
-        return roles == null ? ("alice".equals(user) ? new String[] { "admin", "user" } : new String[] { "user" })
-                : roles.split(",");
+    private List<String> getUserRoles(String user) {
+        List<String> roles = capturedDevServicesConfiguration.roles.get(user);
+        return roles == null ? ("alice".equals(user) ? List.of("admin", "user") : List.of("user"))
+                : roles;
     }
 
     private RealmRepresentation createRealmRep() {
@@ -605,10 +616,14 @@ public class KeycloakDevServicesProcessor {
             realm.getRoles().getRealm().add(new RoleRepresentation("user", null, false));
             realm.getRoles().getRealm().add(new RoleRepresentation("admin", null, false));
         } else {
-            List<String> distinctRoles = capturedDevServicesConfiguration.roles.values().stream().distinct()
-                    .collect(Collectors.toList());
-            for (String role : distinctRoles) {
-                realm.getRoles().getRealm().add(new RoleRepresentation(role, null, false));
+            Set<String> allRoles = new HashSet<>();
+            for (List<String> distinctRoles : capturedDevServicesConfiguration.roles.values()) {
+                for (String role : distinctRoles) {
+                    if (!allRoles.contains(role)) {
+                        allRoles.add(role);
+                        realm.getRoles().getRealm().add(new RoleRepresentation(role, null, false));
+                    }
+                }
             }
         }
         return realm;
@@ -631,13 +646,13 @@ public class KeycloakDevServicesProcessor {
         return client;
     }
 
-    private UserRepresentation createUser(String username, String password, String... realmRoles) {
+    private UserRepresentation createUser(String username, String password, List<String> realmRoles) {
         UserRepresentation user = new UserRepresentation();
 
         user.setUsername(username);
         user.setEnabled(true);
         user.setCredentials(new ArrayList<>());
-        user.setRealmRoles(List.of(realmRoles));
+        user.setRealmRoles(realmRoles);
 
         CredentialRepresentation credential = new CredentialRepresentation();
 

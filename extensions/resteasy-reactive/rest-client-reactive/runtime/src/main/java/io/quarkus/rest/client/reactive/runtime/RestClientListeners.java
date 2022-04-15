@@ -14,8 +14,7 @@ public class RestClientListeners {
 
     static Collection<RestClientListener> get() {
         List<RestClientListener> result = new ArrayList<>();
-        ServiceLoader<RestClientListener> listeners = ServiceLoader.load(RestClientListener.class,
-                RestClientListeners.class.getClassLoader());
+        ServiceLoader<RestClientListener> listeners = ServiceLoader.load(RestClientListener.class);
         for (RestClientListener listener : listeners) {
             result.add(listener);
         }

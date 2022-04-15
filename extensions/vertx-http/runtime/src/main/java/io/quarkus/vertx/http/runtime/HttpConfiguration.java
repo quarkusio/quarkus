@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -9,6 +10,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.vertx.http.Compressed;
+import io.quarkus.vertx.http.Uncompressed;
 import io.quarkus.vertx.http.runtime.cors.CORSConfig;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
@@ -65,7 +68,7 @@ public class HttpConfiguration {
     /**
      * If this is true then the address, scheme etc will be set from headers forwarded by the proxy server, such as
      * {@code X-Forwarded-For}. This should only be set if you are behind a proxy that sets these headers.
-     * 
+     *
      * @deprecated use quarkus.http.proxy.proxy-address-forwarding instead.
      */
     @Deprecated
@@ -75,7 +78,7 @@ public class HttpConfiguration {
     /**
      * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used,
      * rather than the more common but not standard {@code X-Forwarded-For}.
-     * 
+     *
      * @deprecated use quarkus.http.proxy.allow-forwarded instead.
      */
     @Deprecated
@@ -182,6 +185,12 @@ public class HttpConfiguration {
     public boolean tcpFastOpen;
 
     /**
+     * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
+     */
+    @ConfigItem
+    public int acceptBacklog;
+
+    /**
      * Path to a unix domain socket
      */
     @ConfigItem(defaultValue = "/var/run/io.quarkus.app.socket")
@@ -214,9 +223,9 @@ public class HttpConfiguration {
      *
      * Note that this will attempt to compress all responses, to avoid compressing
      * already compressed content (such as images) you need to set the following header:
-     * 
+     *
      * Content-Encoding: identity
-     * 
+     *
      * Which will tell vert.x not to compress the response.
      */
     @ConfigItem
@@ -230,6 +239,19 @@ public class HttpConfiguration {
      */
     @ConfigItem
     public boolean enableDecompression;
+
+    /**
+     * List of media types for which the compression should be enabled automatically, unless declared explicitly via
+     * {@link Compressed} or {@link Uncompressed}.
+     */
+    @ConfigItem(defaultValue = "text/html,text/plain,text/xml,text/css,text/javascript,application/javascript")
+    public Optional<List<String>> compressMediaTypes;
+
+    /**
+     * The compression level used when compression support is enabled.
+     */
+    @ConfigItem
+    public OptionalInt compressionLevel;
 
     /**
      * Provides a hint (optional) for the default content type of responses generated for

@@ -35,3 +35,12 @@ compileTestJava {
 quarkusDev {
     workingDir = "./build"
 }
+
+quarkusBuild {
+    manifest {
+        attributes ([
+          'Built-By': 'quarkus-gradle-plugin'
+        ])
+        attributes(['framework': 'quarkus'], 'org.acme')
+    }
+}

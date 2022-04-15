@@ -14,6 +14,7 @@ import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Instance;
+import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -27,12 +28,14 @@ public class SimpleObserverInjectionTest {
     public void testObserverInjection() {
         AtomicReference<String> msg = new AtomicReference<String>();
         Fool.DESTROYED.set(false);
-        Arc.container().beanManager().fireEvent(msg);
+        Arc.container().beanManager().getEvent().select(new TypeLiteral<AtomicReference<String>>() {
+        }).fire(msg);
         String id1 = msg.get();
         assertNotNull(id1);
         assertTrue(Fool.DESTROYED.get());
         Fool.DESTROYED.set(false);
-        Arc.container().beanManager().fireEvent(msg);
+        Arc.container().beanManager().getEvent().select(new TypeLiteral<AtomicReference<String>>() {
+        }).fire(msg);
         assertNotEquals(id1, msg.get());
         assertTrue(Fool.DESTROYED.get());
     }

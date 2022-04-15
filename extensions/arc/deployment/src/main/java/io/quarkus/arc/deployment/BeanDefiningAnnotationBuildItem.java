@@ -40,7 +40,7 @@ public final class BeanDefiningAnnotationBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return true if the resulting beans should be removed if they're considered unused as described in
      *         {@link ArcConfig#removeUnusedBeans}
      */

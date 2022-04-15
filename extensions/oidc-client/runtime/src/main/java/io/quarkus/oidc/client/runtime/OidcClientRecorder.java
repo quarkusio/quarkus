@@ -126,7 +126,7 @@ public class OidcClientRecorder {
             tokenRequestUriUni = Uni.createFrom().item(oidcConfig.tokenPath.get());
         } else {
             String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
-            if (!oidcConfig.discoveryEnabled) {
+            if (!oidcConfig.discoveryEnabled.orElse(true)) {
                 tokenRequestUriUni = Uni.createFrom()
                         .item(OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath));
             } else {

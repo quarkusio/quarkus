@@ -12,6 +12,7 @@ import org.apache.commons.lang3.SystemUtils;
 
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContainerRunner {
 
@@ -23,7 +24,7 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
             String gid = getLinuxID("-gr");
             if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
                 Collections.addAll(containerRuntimeArgs, "--user", uid + ":" + gid);
-                if (containerRuntime == NativeConfig.ContainerRuntime.PODMAN) {
+                if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN) {
                     // Needed to avoid AccessDeniedExceptions
                     containerRuntimeArgs.add("--userns=keep-id");
                 }

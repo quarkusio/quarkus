@@ -289,7 +289,7 @@ public class ConfigBuildStep {
         Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
         Set<ConfigClassBuildItem> configMappings = new HashSet<>();
         for (InjectionPointInfo injectionPoint : beanRegistration.getInjectionPoints()) {
-            Type type = Type.create(injectionPoint.getType().name(), Type.Kind.CLASS);
+            Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
             ConfigClassBuildItem configClass = configMappingTypes.get(type);
             if (configClass != null) {
                 configMappings.add(configClass);
@@ -331,7 +331,7 @@ public class ConfigBuildStep {
                 continue;
             }
 
-            Type type = Type.create(injectionPoint.getType().name(), Type.Kind.CLASS);
+            Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
             ConfigClassBuildItem configClass = configPropertiesTypes.get(type);
             if (configClass != null) {
                 configProperties.add(configClass);
@@ -367,7 +367,7 @@ public class ConfigBuildStep {
         Map<Type, ConfigClassBuildItem> configMappingTypes = configClassesToTypesMap(configClasses, MAPPING);
         Set<ConfigMappingBuildItem> toRegister = new HashSet<>();
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
-            Type type = Type.create(injectionPoint.getType().name(), Type.Kind.CLASS);
+            Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
             ConfigClassBuildItem configClass = configMappingTypes.get(type);
             if (configClass != null) {
                 AnnotationTarget target = injectionPoint.getTarget();
@@ -422,7 +422,7 @@ public class ConfigBuildStep {
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().getInjectionPoints()) {
             AnnotationInstance properties = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTIES_NAME);
             if (properties != null) {
-                Type type = Type.create(injectionPoint.getType().name(), Type.Kind.CLASS);
+                Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
                 ConfigClassBuildItem configClass = configPropertiesTypes.get(type);
                 if (configClass != null) {
                     AnnotationValue annotationPrefix = properties.value("prefix");

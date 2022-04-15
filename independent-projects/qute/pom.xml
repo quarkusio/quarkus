@@ -2,7 +2,8 @@
 <project
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
     xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jboss</groupId>
@@ -15,6 +16,7 @@
     <version>999-SNAPSHOT</version>
 
     <name>Qute - Parent</name>
+    <url>https://github.com/quarkusio/quarkus</url>
 
     <licenses>
         <license>
@@ -24,7 +26,9 @@
         </license>
     </licenses>
 
-    <scm>
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
         <url>https://github.com/quarkusio/quarkus</url>
         <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
         <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
@@ -42,7 +46,7 @@
         <version.jboss-logging>3.4.3.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
-        <version.smallrye-mutiny>1.3.0</version.smallrye-mutiny>
+        <version.smallrye-mutiny>1.4.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
@@ -203,7 +207,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.17.1</version>
+                    <version>2.18.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -213,7 +217,7 @@
                       </dependencies>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache</cachedir>
+                        <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
                         <configFile>eclipse-format.xml</configFile>
                         <lineEnding>LF</lineEnding>
                         <skip>${format.skip}</skip>
@@ -225,7 +229,7 @@
                     <version>1.6.2</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache</cachedir>
+                        <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
                         <removeUnused>true</removeUnused>
                         <skip>${format.skip}</skip>
                     </configuration>
@@ -417,6 +421,31 @@
                         </executions>
                     </plugin>
                 </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>jakarta-rewrite</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite</name>
+                </property>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.openrewrite.maven</groupId>
+                            <artifactId>rewrite-maven-plugin</artifactId>
+                            <version>4.21.0-SNAPSHOT</version>
+                            <configuration>
+                                <configLocation>${maven.multiModuleProjectDirectory}/jakarta/rewrite.yml</configLocation>
+                                <activeStyles>
+                                    <style>io.quarkus.style.maven</style>
+                                </activeStyles>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
     </profiles>

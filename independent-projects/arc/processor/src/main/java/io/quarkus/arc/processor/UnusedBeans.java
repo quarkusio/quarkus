@@ -60,8 +60,10 @@ final class UnusedBeans {
             }
             // Instance<Foo>
             for (InjectionPointInfo injectionPoint : instanceInjectionPoints) {
-                if (Beans.hasQualifiers(bean, injectionPoint.getRequiredQualifiers()) && Beans.matchesType(bean,
-                        injectionPoint.getType().asParameterizedType().arguments().get(0))) {
+                if (Beans.hasQualifiers(bean, injectionPoint.getRequiredQualifiers())
+                        && bean.getDeployment().getBeanResolver().matchesType(bean,
+                                injectionPoint.getType().asParameterizedType().arguments().get(0))) {
+
                     continue test;
                 }
             }

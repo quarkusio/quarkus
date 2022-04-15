@@ -118,8 +118,10 @@ public final class RunTimeConfigurationGenerator {
     static final FieldDescriptor C_SPECIFIED_RUN_TIME_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
             "specifiedRunTimeConfigSource",
             ConfigSource.class);
-    static final FieldDescriptor C_UNUSED = FieldDescriptor.of(CONFIG_CLASS_NAME, "unused", List.class);
-    static final FieldDescriptor C_UNUSED_RUNTIME = FieldDescriptor.of(CONFIG_CLASS_NAME, "unusedRuntime", List.class);
+    static final FieldDescriptor C_UNKNOWN = FieldDescriptor.of(CONFIG_CLASS_NAME, "unknown", List.class);
+    static final FieldDescriptor C_UNKNOWN_RUNTIME = FieldDescriptor.of(CONFIG_CLASS_NAME, "unknownRuntime", List.class);
+    static final MethodDescriptor C_REPORT_UNKNOWN = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "reportUnknown", void.class,
+            String.class, List.class);
 
     static final MethodDescriptor CD_INVALID_VALUE = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "invalidValue",
             void.class, String.class, IllegalArgumentException.class);
@@ -188,6 +190,9 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor RCS_NEW = MethodDescriptor.ofConstructor(RuntimeConfigSource.class, String.class);
     static final MethodDescriptor RCSP_NEW = MethodDescriptor.ofConstructor(RuntimeConfigSourceProvider.class, String.class);
     static final MethodDescriptor RCSF_NEW = MethodDescriptor.ofConstructor(RuntimeConfigSourceFactory.class, String.class);
+
+    static final MethodDescriptor CS_GET_VALUE = MethodDescriptor.ofMethod(ConfigSource.class, "getValue", String.class,
+            String.class);
 
     static final MethodDescriptor AL_NEW = MethodDescriptor.ofConstructor(ArrayList.class);
     static final MethodDescriptor AL_ADD = MethodDescriptor.ofMethod(ArrayList.class, "add", boolean.class, Object.class);
@@ -293,6 +298,7 @@ public final class RunTimeConfigurationGenerator {
         final ResultHandle clinitNameBuilder;
         final BuildTimeConfigurationReader.ReadResult buildTimeConfigResult;
         final List<RootDefinition> roots;
+        final Map<String, String> allBuildTimeValues;
         // default values given in the build configuration
         final Map<String, String> specifiedRunTimeDefaultValues;
         final Map<String, String> buildTimeRunTimeVisibleValues;
@@ -335,6 +341,7 @@ public final class RunTimeConfigurationGenerator {
             this.liveReloadPossible = builder.liveReloadPossible;
             final BuildTimeConfigurationReader.ReadResult buildTimeReadResult = builder.buildTimeReadResult;
             buildTimeConfigResult = Assert.checkNotNullParam("buildTimeReadResult", buildTimeReadResult);
+            allBuildTimeValues = Assert.checkNotNullParam("allBuildTimeValues", buildTimeReadResult.getAllBuildTimeValues());
             specifiedRunTimeDefaultValues = Assert.checkNotNullParam("specifiedRunTimeDefaultValues",
                     buildTimeReadResult.getSpecifiedRunTimeDefaultValues());
             buildTimeRunTimeVisibleValues = Assert.checkNotNullParam("buildTimeRunTimeVisibleValues",
@@ -372,11 +379,11 @@ public final class RunTimeConfigurationGenerator {
             clinit = cc.getMethodCreator(MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "<clinit>", void.class));
             clinit.setModifiers(Opcodes.ACC_STATIC);
 
-            cc.getFieldCreator(C_UNUSED).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
-            clinit.writeStaticField(C_UNUSED, clinit.newInstance(AL_NEW));
+            cc.getFieldCreator(C_UNKNOWN).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            clinit.writeStaticField(C_UNKNOWN, clinit.newInstance(AL_NEW));
 
-            cc.getFieldCreator(C_UNUSED_RUNTIME).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
-            clinit.writeStaticField(C_UNUSED_RUNTIME, clinit.newInstance(AL_NEW));
+            cc.getFieldCreator(C_UNKNOWN_RUNTIME).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            clinit.writeStaticField(C_UNKNOWN_RUNTIME, clinit.newInstance(AL_NEW));
 
             clinit.invokeStaticMethod(PM_SET_RUNTIME_DEFAULT_PROFILE, clinit.load(ProfileManager.getActiveProfile()));
             clinitNameBuilder = clinit.newInstance(SB_NEW);
@@ -416,14 +423,36 @@ public final class RunTimeConfigurationGenerator {
                     .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
             clinit.writeStaticField(C_RUN_TIME_DEFAULTS_CONFIG_SOURCE, clinit.newInstance(RTDVCS_NEW));
 
+            // create the map for run time specified values config source
+            final ResultHandle specifiedRunTimeValues = clinit.newInstance(HM_NEW);
+            if (!liveReloadPossible) {
+                //we don't need these in devmode
+                //including it would just cache the first values
+                //but these can already just be read directly, as we are in the same JVM
+                for (Map.Entry<String, String> entry : specifiedRunTimeDefaultValues.entrySet()) {
+                    clinit.invokeVirtualMethod(HM_PUT, specifiedRunTimeValues, clinit.load(entry.getKey()),
+                            clinit.load(entry.getValue()));
+                }
+            }
+
+            final ResultHandle specifiedRunTimeSource = clinit.newInstance(PCS_NEW, specifiedRunTimeValues,
+                    clinit.load("Specified default values"), clinit.load(Integer.MIN_VALUE + 100));
+
+            cc.getFieldCreator(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE)
+                    .setModifiers(Opcodes.ACC_STATIC | (liveReloadPossible ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
+            clinit.writeStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE, specifiedRunTimeSource);
+
             // the build time config, which is for user use only (not used by us other than for loading converters)
             final ResultHandle buildTimeBuilder = clinit.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED,
                     clinit.load(true), clinit.load(false), clinit.load(launchMode));
-            final ResultHandle array = clinit.newArray(ConfigSource[].class, 2);
-            // build time values
+            final ResultHandle array = clinit.newArray(ConfigSource[].class, 3);
+            // build time values (recorded visible for runtime)
             clinit.writeArrayValue(array, 0, buildTimeConfigSource);
-            // build time defaults
+            // build time runtime defaults for Config Roots
             clinit.writeArrayValue(array, 1, buildTimeRunTimeDefaultValuesConfigSource);
+            // runtime default values (recorded during build time)
+            clinit.writeArrayValue(array, 2, clinit.readStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE));
+
             clinit.invokeVirtualMethod(SRCB_WITH_SOURCES, buildTimeBuilder, array);
             // add safe static sources
             for (String runtimeConfigSource : staticConfigSources) {
@@ -459,6 +488,8 @@ public final class RunTimeConfigurationGenerator {
 
             // block for converter setup
             converterSetup = clinit.createScope();
+
+            reportUnknown(cc.getMethodCreator(C_REPORT_UNKNOWN));
 
             // create readBootstrapConfig method - this will always exist whether or not it contains a method body
             // the method body will be empty when there are no bootstrap configuration roots
@@ -572,7 +603,7 @@ public final class RunTimeConfigurationGenerator {
             ResultHandle bootstrapBuilder = null;
             if (bootstrapConfigSetupNeeded()) {
                 bootstrapBuilder = readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED_AND_BOOTSRAP,
-                        readBootstrapConfig.load(false), readBootstrapConfig.load(true), readBootstrapConfig.load(false),
+                        readBootstrapConfig.load(true), readBootstrapConfig.load(true), readBootstrapConfig.load(false),
                         readBootstrapConfig.load(launchMode));
             }
 
@@ -585,24 +616,6 @@ public final class RunTimeConfigurationGenerator {
             // add in our run time only config source provider
             readConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, runTimeBuilder, readConfig.newInstance(
                     MethodDescriptor.ofConstructor("io.quarkus.runtime.generated.ConfigSourceProviderImpl")));
-
-            // create the map for run time specified values config source
-            final ResultHandle specifiedRunTimeValues = clinit.newInstance(HM_NEW);
-            if (!liveReloadPossible) {
-                //we don't need these in devmode
-                //including it would just cache the first values
-                //but these can already just be read directly, as we are in the same JVM
-                for (Map.Entry<String, String> entry : specifiedRunTimeDefaultValues.entrySet()) {
-                    clinit.invokeVirtualMethod(HM_PUT, specifiedRunTimeValues, clinit.load(entry.getKey()),
-                            clinit.load(entry.getValue()));
-                }
-            }
-            final ResultHandle specifiedRunTimeSource = clinit.newInstance(PCS_NEW, specifiedRunTimeValues,
-                    clinit.load("Specified default values"), clinit.load(Integer.MIN_VALUE + 100));
-
-            cc.getFieldCreator(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE)
-                    .setModifiers(Opcodes.ACC_STATIC | (liveReloadPossible ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
-            clinit.writeStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE, specifiedRunTimeSource);
 
             // add in the custom sources that bootstrap config needs
             ResultHandle bootstrapConfigSourcesArray = null;
@@ -648,7 +661,7 @@ public final class RunTimeConfigurationGenerator {
                 FieldDescriptor fd = convertersByType.get(type);
                 if (fd == null) {
                     // it's an unknown
-                    final ResultHandle clazzHandle = converterSetup.loadClass(additionalType);
+                    final ResultHandle clazzHandle = converterSetup.loadClassFromTCCL(additionalType);
                     fd = FieldDescriptor.of(cc.getClassName(), "conv$" + converterIndex++, Converter.class);
                     ResultHandle converter = converterSetup.invokeVirtualMethod(SRC_GET_CONVERTER, clinitConfig, clazzHandle);
                     cc.getFieldCreator(fd).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
@@ -664,10 +677,10 @@ public final class RunTimeConfigurationGenerator {
                     final Class<?> type = entry.getValue();
                     if (bootstrapConfigSetupNeeded()) {
                         readBootstrapConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, bootstrapBuilder,
-                                readBootstrapConfig.loadClass(type),
+                                readBootstrapConfig.loadClassFromTCCL(type),
                                 readBootstrapConfig.load(100), readBootstrapConfig.readStaticField(descriptor));
                     }
-                    readConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, runTimeBuilder, readConfig.loadClass(type),
+                    readConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, runTimeBuilder, readConfig.loadClassFromTCCL(type),
                             readConfig.load(100), readConfig.readStaticField(descriptor));
                 }
             }
@@ -835,8 +848,7 @@ public final class RunTimeConfigurationGenerator {
             // generate sweep for clinit
             configSweepLoop(siParserBody, clinit, clinitConfig, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED));
 
-            clinit.invokeStaticMethod(CD_UNKNOWN_PROPERTIES,
-                    clinit.readStaticField(FieldDescriptor.of(cc.getClassName(), "unused", List.class)));
+            clinit.invokeStaticMethod(CD_UNKNOWN_PROPERTIES, clinit.readStaticField(C_UNKNOWN));
 
             if (liveReloadPossible) {
                 configSweepLoop(siParserBody, readConfig, runTimeConfig, getRegisteredRoots(RUN_TIME));
@@ -844,8 +856,7 @@ public final class RunTimeConfigurationGenerator {
             // generate sweep for run time
             configSweepLoop(rtParserBody, readConfig, runTimeConfig, getRegisteredRoots(RUN_TIME));
 
-            readConfig.invokeStaticMethod(CD_UNKNOWN_PROPERTIES_RT,
-                    readConfig.readStaticField(FieldDescriptor.of(cc.getClassName(), "unusedRuntime", List.class)));
+            readConfig.invokeStaticMethod(CD_UNKNOWN_PROPERTIES_RT, readConfig.readStaticField(C_UNKNOWN_RUNTIME));
 
             if (bootstrapConfigSetupNeeded()) {
                 // generate sweep for bootstrap config
@@ -1596,12 +1607,12 @@ public final class RunTimeConfigurationGenerator {
                     // TODO: temporary until type param inference is in
                     if (convertWith == HyphenateEnumConverter.class.asSubclass(Converter.class)) {
                         converter = converterSetup.newInstance(MethodDescriptor.ofConstructor(convertWith, Class.class),
-                                converterSetup.loadClass(type.getLeafType()));
+                                converterSetup.loadClassFromTCCL(type.getLeafType()));
                     } else {
                         converter = converterSetup.newInstance(MethodDescriptor.ofConstructor(convertWith));
                     }
                 } else {
-                    final ResultHandle clazzHandle = converterSetup.loadClass(leaf.getLeafType());
+                    final ResultHandle clazzHandle = converterSetup.loadClassFromTCCL(leaf.getLeafType());
                     converter = converterSetup.invokeVirtualMethod(SRC_GET_CONVERTER, clinitConfig, clazzHandle);
                     storeConverter = true;
                 }
@@ -1610,7 +1621,7 @@ public final class RunTimeConfigurationGenerator {
                 final ResultHandle nestedConv = instanceCache
                         .get(getOrCreateConverterInstance(field, arrayOf.getElementType()));
                 converter = converterSetup.invokeStaticMethod(CONVS_NEW_ARRAY_CONVERTER, nestedConv,
-                        converterSetup.loadClass(arrayOf.getArrayType()));
+                        converterSetup.loadClassFromTCCL(arrayOf.getArrayType()));
             } else if (type instanceof CollectionOf) {
                 final CollectionOf collectionOf = (CollectionOf) type;
                 final ResultHandle nestedConv = instanceCache
@@ -1693,16 +1704,56 @@ public final class RunTimeConfigurationGenerator {
             return fd;
         }
 
-        private void reportUnknown(BytecodeCreator methodCreator, ResultHandle unusedProperty) {
-            ResultHandle unused = methodCreator.readStaticField(C_UNUSED);
-            methodCreator.invokeVirtualMethod(AL_ADD, unused,
-                    methodCreator.invokeVirtualMethod(NI_GET_NAME, unusedProperty));
+        private void reportUnknown(final MethodCreator mc) {
+            mc.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
+
+            ResultHandle unknownProperty = mc.getMethodParam(0);
+
+            // Ignore all build property names. This is to ignore any properties mapped with @ConfigMapping, because
+            // these do not fall into the ignore ConfigPattern.
+            for (String buildTimeProperty : allBuildTimeValues.keySet()) {
+                ResultHandle equalsResult = mc.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class), unknownProperty,
+                        mc.load(buildTimeProperty));
+                mc.ifTrue(equalsResult).trueBranch().returnValue(null);
+            }
+
+            ResultHandle unknown = mc.getMethodParam(1);
+
+            // Ignore recorded properties. If properties are present here, it means that they were recorded at build
+            // time as being mapped in a @ConfigMapping
+            ResultHandle buildTimeRunTimeSource = mc.readStaticField(C_BUILD_TIME_CONFIG_SOURCE);
+            ResultHandle buildTimeRunTimeValue = mc.invokeInterfaceMethod(CS_GET_VALUE, buildTimeRunTimeSource,
+                    unknownProperty);
+            mc.ifNotNull(buildTimeRunTimeValue).trueBranch().returnValue(null);
+
+            ResultHandle buildTimeRunTimeDefaultsSource = mc.readStaticField(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE);
+            ResultHandle buildTimeRunTimeDefaultValue = mc.invokeInterfaceMethod(CS_GET_VALUE, buildTimeRunTimeDefaultsSource,
+                    unknownProperty);
+            mc.ifNotNull(buildTimeRunTimeDefaultValue).trueBranch().returnValue(null);
+
+            ResultHandle runtimeSpecifiedSource = mc.readStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE);
+            ResultHandle runtimeSpecifiedValue = mc.invokeInterfaceMethod(CS_GET_VALUE, runtimeSpecifiedSource,
+                    unknownProperty);
+            mc.ifNotNull(runtimeSpecifiedValue).trueBranch().returnValue(null);
+
+            // Add the property as unknown only if all checks fail
+            mc.invokeVirtualMethod(AL_ADD, unknown, unknownProperty);
+
+            mc.returnValue(null);
+            mc.close();
         }
 
-        private void reportUnknownRuntime(BytecodeCreator methodCreator, ResultHandle unusedProperty) {
-            ResultHandle unused = methodCreator.readStaticField(C_UNUSED_RUNTIME);
-            methodCreator.invokeVirtualMethod(AL_ADD, unused,
-                    methodCreator.invokeVirtualMethod(NI_GET_NAME, unusedProperty));
+        private void reportUnknown(BytecodeCreator bc, ResultHandle unknownProperty) {
+            ResultHandle property = bc.invokeVirtualMethod(NI_GET_NAME, unknownProperty);
+            ResultHandle unknown = bc.readStaticField(C_UNKNOWN);
+            bc.invokeStaticMethod(C_REPORT_UNKNOWN, property, unknown);
+        }
+
+        private void reportUnknownRuntime(BytecodeCreator bc, ResultHandle unknownProperty) {
+            ResultHandle property = bc.invokeVirtualMethod(NI_GET_NAME, unknownProperty);
+            ResultHandle unknown = bc.readStaticField(C_UNKNOWN_RUNTIME);
+            bc.invokeStaticMethod(C_REPORT_UNKNOWN, property, unknown);
         }
 
         public void close() {

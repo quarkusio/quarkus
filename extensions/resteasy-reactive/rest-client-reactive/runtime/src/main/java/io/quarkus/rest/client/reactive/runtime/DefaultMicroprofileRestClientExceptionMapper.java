@@ -14,7 +14,9 @@ public class DefaultMicroprofileRestClientExceptionMapper implements ResponseExc
         } catch (Exception var3) {
         }
 
-        return new WebApplicationException("Unknown error, status code " + response.getStatus(), response);
+        return new WebApplicationException(
+                String.format("%s, status code %d", response.getStatusInfo().getReasonPhrase(), response.getStatus()),
+                response);
     }
 
     public boolean handles(int status, MultivaluedMap headers) {

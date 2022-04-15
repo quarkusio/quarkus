@@ -4,11 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.IOException;
-
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
 
@@ -31,14 +27,6 @@ public class PolicyEnforcerTest {
 
     private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
-
-    @BeforeAll
-    public static void configureKeycloakRealm() throws IOException {
-    }
-
-    @AfterAll
-    public static void removeKeycloakRealm() {
-    }
 
     @Test
     public void testUserHasAdminRoleServiceTenant() {

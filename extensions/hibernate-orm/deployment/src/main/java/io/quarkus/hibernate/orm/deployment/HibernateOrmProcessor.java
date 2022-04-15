@@ -72,6 +72,7 @@ import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -91,6 +92,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
@@ -103,6 +105,7 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -143,7 +146,9 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.pool.TypePool;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -493,9 +498,10 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    public ProxyDefinitionsBuildItem pregenProxies(
+    public BytecodeRecorderConstantDefinitionBuildItem pregenProxies(
             JpaModelBuildItem jpaModel,
             JpaModelIndexBuildItem indexBuildItem,
+            TransformedClassesBuildItem transformedClassesBuildItem,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) {
@@ -508,8 +514,28 @@ public final class HibernateOrmProcessor {
             managedClassAndPackageNames.addAll(pud.getManagedClassNames());
         }
         PreGeneratedProxies proxyDefinitions = generatedProxies(managedClassAndPackageNames,
-                indexBuildItem.getIndex(), generatedClassBuildItemBuildProducer, liveReloadBuildItem);
-        return new ProxyDefinitionsBuildItem(proxyDefinitions);
+                indexBuildItem.getIndex(), transformedClassesBuildItem,
+                generatedClassBuildItemBuildProducer, liveReloadBuildItem);
+
+        // Make proxies available through a constant;
+        // this is a hack to avoid introducing circular dependencies between build steps.
+        //
+        // If we just passed the proxy definitions to #build as a normal build item,
+        // we would have the following dependencies:
+        //
+        // #pregenProxies => ProxyDefinitionsBuildItem => #build => BeanContainerListenerBuildItem
+        // => Arc container init => BeanContainerBuildItem
+        // => some RestEasy Reactive Method => BytecodeTransformerBuildItem
+        // => build step that transforms bytecode => TransformedClassesBuildItem
+        // => #pregenProxies
+        //
+        // Since the dependency from #preGenProxies to #build is only a static init thing
+        // (#build needs to pass the proxy definitions to the recorder),
+        // we get rid of the circular dependency by defining a constant
+        // to pass the proxy definitions to the recorder.
+        // That way, the dependency is only between #pregenProxies
+        // and the build step that generates the bytecode of bytecode recorders.
+        return new BytecodeRecorderConstantDefinitionBuildItem(PreGeneratedProxies.class, proxyDefinitions);
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -553,7 +579,6 @@ public final class HibernateOrmProcessor {
             JpaModelBuildItem jpaModel,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationBuildItems,
-            ProxyDefinitionsBuildItem proxyDefinitions,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             LaunchModeBuildItem launchMode) throws Exception {
@@ -619,8 +644,7 @@ public final class HibernateOrmProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses,
-                                proxyDefinitions.getProxies())));
+                        recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses)));
     }
 
     private void validateHibernatePropertiesNotUsed() {
@@ -708,7 +732,6 @@ public final class HibernateOrmProcessor {
     @Record(STATIC_INIT)
     public void build(HibernateOrmRecorder recorder, HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            BuildProducer<BeanContainerListenerBuildItem> buildProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) throws Exception {
@@ -734,7 +757,7 @@ public final class HibernateOrmProcessor {
                 .scope(Singleton.class)
                 .unremovable()
                 .supplier(recorder.jpaConfigSupportSupplier(
-                        new JPAConfigSupport(persistenceUnitNames, entityPersistenceUnitMapping)))
+                        new JPAConfigSupport(persistenceUnitNames)))
                 .done());
     }
 
@@ -742,7 +765,8 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     public PersistenceProviderSetUpBuildItem setupPersistenceProvider(HibernateOrmRecorder recorder,
             Capabilities capabilities, HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
-            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems) {
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
+            BuildProducer<RecorderBeanInitializedBuildItem> orderEnforcer) {
         if (capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
             recorder.setupPersistenceProvider(hibernateOrmRuntimeConfig,
                     HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
@@ -1109,7 +1133,16 @@ public final class HibernateOrmProcessor {
 
         if (!importFiles.isEmpty()) {
             for (String importFile : importFiles) {
-                Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
+                Path loadScriptPath;
+                try {
+                    loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
+                } catch (RuntimeException e) {
+                    throw new ConfigurationException(
+                            "Unable to interpret path referenced in '"
+                                    + HibernateOrmConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
+                                    + String.join(",", persistenceUnitConfig.sqlLoadScript.get())
+                                    + "': " + e.getMessage());
+                }
 
                 if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                     // enlist resource if present
@@ -1472,6 +1505,7 @@ public final class HibernateOrmProcessor {
     }
 
     private PreGeneratedProxies generatedProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,
+            TransformedClassesBuildItem transformedClassesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) {
         ProxyCache proxyCache = liveReloadBuildItem.getContextObject(ProxyCache.class);
@@ -1496,7 +1530,9 @@ public final class HibernateOrmProcessor {
             }
             proxyAnnotations.put(i.target().asClass().name().toString(), proxyClass.asClass().name().toString());
         }
-        try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(Thread.currentThread().getContextClassLoader())) {
+        TypePool transformedClassesTypePool = createTransformedClassesTypePool(transformedClassesBuildItem,
+                managedClassAndPackageNames);
+        try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(transformedClassesTypePool)) {
             for (String managedClassOrPackageName : managedClassAndPackageNames) {
                 CachedProxy result;
                 if (proxyCache.cache.containsKey(managedClassOrPackageName)
@@ -1541,6 +1577,27 @@ public final class HibernateOrmProcessor {
             }
         }
         return preGeneratedProxies;
+    }
+
+    // Creates a TypePool that is aware of class transformations applied to entity classes,
+    // so that ByteBuddy can take these transformations into account.
+    // This is especially important when getters/setters are added to entity classes,
+    // because we want those methods to be overridden in proxies to trigger proxy initialization.
+    private TypePool createTransformedClassesTypePool(TransformedClassesBuildItem transformedClassesBuildItem,
+            Set<String> entityClasses) {
+        Map<String, byte[]> transformedClasses = new HashMap<>();
+        for (Set<TransformedClassesBuildItem.TransformedClass> transformedClassSet : transformedClassesBuildItem
+                .getTransformedClassesByJar().values()) {
+            for (TransformedClassesBuildItem.TransformedClass transformedClass : transformedClassSet) {
+                String className = transformedClass.getClassName();
+                if (entityClasses.contains(className)) {
+                    transformedClasses.put(className, transformedClass.getData());
+                }
+            }
+        }
+        return TypePool.Default.of(new ClassFileLocator.Compound(
+                new ClassFileLocator.Simple(transformedClasses),
+                ClassFileLocator.ForClassLoader.of(Thread.currentThread().getContextClassLoader())));
     }
 
     private boolean isModified(String entity, Set<String> changedClasses, IndexView index) {

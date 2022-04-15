@@ -79,7 +79,6 @@ import hello.Greeter;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -91,7 +90,7 @@ public class ExampleResource {
 
    @GET
    @Path("/mutiny/{name}")
-   public Uni<String> helloMutiny(@PathParam("name") String name) {
+   public Uni<String> helloMutiny(String name) {
       return hello.sayHello(HelloRequest.newBuilder().setName(name).build())
             .onItem().transform(HelloReply::getMessage);
    }
@@ -109,7 +108,6 @@ import hello.GreeterGrpc.GreeterBlockingStub;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -121,7 +119,7 @@ public class ExampleResource {
 
    @GET
    @Path("/blocking/{name}")
-   public String helloBlocking(@PathParam("name") String name) {
+   public String helloBlocking(String name) {
       return blockingHelloService.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage();
    }
 }
@@ -158,7 +156,6 @@ import io.smallrye.mutiny.Uni;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -178,7 +175,7 @@ public class StreamingEndpoint {
 
     @GET
     @Path("sink/{max}")
-    public Uni<Void> invokeSink(@PathParam("max") int max) {
+    public Uni<Void> invokeSink(int max) {
         // Send a stream and wait for completion
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
@@ -188,7 +185,7 @@ public class StreamingEndpoint {
 
     @GET
     @Path("/{max}")
-    public Multi<String> invokePipe(@PathParam("max") int max) {
+    public Multi<String> invokePipe(int max) {
         // Send a stream and retrieve a stream
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))

@@ -219,7 +219,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
-        if (!bean.hasDefaultDestroy()) {
+        if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, Collections.emptyMap(), isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
@@ -308,7 +308,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
-        if (!bean.hasDefaultDestroy()) {
+        if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, injectionPointToProviderSupplierField, isApplicationClass,
                     baseName);
         }
@@ -412,7 +412,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
-        if (!bean.hasDefaultDestroy()) {
+        if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, injectionPointToProviderField, isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
@@ -501,7 +501,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
-        if (!bean.hasDefaultDestroy()) {
+        if (bean.hasDestroyLogic()) {
             implementDestroy(bean, beanCreator, providerType, null, isApplicationClass, baseName);
         }
         implementCreate(classOutput, beanCreator, bean, providerType, baseName,
@@ -1067,7 +1067,8 @@ public class BeanGenerator extends AbstractGenerator {
 
                 registration.registerMethod(noArgsConstructor);
                 return creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_NEW_INSTANCE,
-                        creator.loadClass(noArgsConstructor.declaringClass().name().toString()), paramTypesArray, argsArray);
+                        creator.loadClass(noArgsConstructor.declaringClass().name().toString()), paramTypesArray,
+                        argsArray);
             } else {
                 // new SimpleBean()
                 return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName));
@@ -1114,7 +1115,8 @@ public class BeanGenerator extends AbstractGenerator {
                     String.format("Producer field %s#%s", producerField.declaringClass().name(), producerField.name()));
             reflectionRegistration.registerField(producerField);
             create.assign(instanceHandle, create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_READ_FIELD,
-                    create.loadClass(producerField.declaringClass().name().toString()), create.load(producerField.name()),
+                    create.loadClass(producerField.declaringClass().name().toString()),
+                    create.load(producerField.name()),
                     declaringProviderInstanceHandle));
         } else {
             ResultHandle readFieldHandle;
@@ -1208,7 +1210,8 @@ public class BeanGenerator extends AbstractGenerator {
             }
             reflectionRegistration.registerMethod(producerMethod);
             create.assign(instanceHandle, create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                    create.loadClass(producerMethod.declaringClass().name().toString()), create.load(producerMethod.name()),
+                    create.loadClass(producerMethod.declaringClass().name().toString()),
+                    create.load(producerMethod.name()),
                     paramTypesArray,
                     declaringProviderInstanceHandle,
                     argsArray));
@@ -1835,7 +1838,7 @@ public class BeanGenerator extends AbstractGenerator {
         // Create a new proxy instance, atomicity does not really matter here
         BytecodeCreator proxyNull = proxy.ifNull(proxyInstance).trueBranch();
         proxyNull.assign(proxyInstance, proxyNull.newInstance(
-                MethodDescriptor.ofConstructor(proxyTypeName, beanCreator.getClassName()), proxyNull.getThis()));
+                MethodDescriptor.ofConstructor(proxyTypeName, String.class), proxyNull.load(bean.getIdentifier())));
         proxyNull.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_PROXY, proxyTypeName),
                 proxyNull.getThis(),
                 proxyInstance);
@@ -1972,7 +1975,7 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     /**
-     * 
+     *
      * @see InjectableReferenceProvider
      */
     static final class ProviderType {
@@ -1988,7 +1991,7 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         /**
-         * 
+         *
          * @return the class name, e.g. {@code org.acme.Foo}
          */
         String className() {
@@ -1996,7 +1999,7 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         /**
-         * 
+         *
          * @return the name used in JVM descriptors, e.g. {@code Lorg/acme/Foo;}
          */
         String descriptorName() {

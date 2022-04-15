@@ -12,6 +12,8 @@ import java.util.function.Supplier;
 
 public class PlatformStreamInfo implements Serializable {
 
+    private static final long serialVersionUID = 7472307823974997268L;
+
     private final String id;
     private final Map<String, PlatformReleaseInfo> releases = new HashMap<>();
 

@@ -2,11 +2,11 @@ package io.quarkus.it.resteasy.reactive.kotlin
 
 import io.quarkus.test.common.http.TestHTTPResource
 import io.quarkus.test.junit.QuarkusTest
-import io.restassured.RestAssured
+import io.restassured.module.kotlin.extensions.Then
+import io.restassured.module.kotlin.extensions.When
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.*
-import java.util.Map
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.ws.rs.client.ClientBuilder
@@ -35,11 +35,12 @@ class FlowResourceTest {
 
     @Test
     fun testResponseStatusAndHeaders() {
-        RestAssured
-                .get("/flow/str")
-                .then()
-                .statusCode(201)
-                .headers(Map.of("foo", "bar"))
+        When {
+            get("/flow/str")
+        } Then {
+            statusCode(201)
+            headers(mapOf("foo" to "bar"))
+        }
     }
 
     @Test

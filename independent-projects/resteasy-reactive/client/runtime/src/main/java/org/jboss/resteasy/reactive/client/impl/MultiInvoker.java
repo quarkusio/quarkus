@@ -13,6 +13,8 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
@@ -114,6 +116,11 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         });
     }
 
+    private boolean isNewlineDelimited(ResponseImpl response) {
+        return RestMediaType.APPLICATION_STREAM_JSON_TYPE.isCompatible(response.getMediaType()) ||
+                RestMediaType.APPLICATION_NDJSON_TYPE.isCompatible(response.getMediaType());
+    }
+
     private <R> void registerForSse(MultiRequest<? super R> multiRequest,
             GenericType<R> responseType,
             Response response,
@@ -143,8 +150,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
     private <R> void registerForChunks(MultiRequest<? super R> multiRequest,
             RestClientRequestContext restClientRequestContext,
             GenericType<R> responseType,
-            Response response,
+            ResponseImpl response,
             HttpClientResponse vertxClientResponse) {
+        boolean isNewlineDelimited = isNewlineDelimited(response);
         // make sure we get exceptions on the response, like close events, otherwise they
         // will be logged as errors by vertx
         vertxClientResponse.exceptionHandler(t -> {
@@ -161,17 +169,70 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             @Override
             public void handle(Buffer buffer) {
                 try {
-                    ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
-                    R item = restClientRequestContext.readEntity(in, responseType, response.getMediaType(),
-                            response.getMetadata());
-                    multiRequest.emitter.emit(item);
+                    byte[] bytes = buffer.getBytes();
+                    MediaType mediaType = response.getMediaType();
+
+                    if (isNewlineDelimited) {
+                        String charset = mediaType.getParameters().get(MediaType.CHARSET_PARAMETER);
+                        charset = charset == null ? "UTF-8" : charset;
+                        byte[] separator = "\n".getBytes(charset);
+                        int start = 0;
+                        if (startsWith(bytes, separator)) {
+                            start += separator.length;
+                        }
+                        while (start < bytes.length) {
+                            int end = bytes.length;
+                            for (int i = start; i < bytes.length - separator.length; i++) {
+                                if (bytes[i] == separator[0]) {
+                                    int j;
+                                    boolean matches = true;
+                                    for (j = 1; j < separator.length; j++) {
+                                        if (bytes[i + j] != separator[j]) {
+                                            matches = false;
+                                            break;
+                                        }
+                                    }
+                                    if (matches) {
+                                        end = i;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (start < end) {
+                                ByteArrayInputStream in = new ByteArrayInputStream(bytes, start, end - start);
+                                R item = restClientRequestContext.readEntity(in, responseType, mediaType,
+                                        response.getMetadata());
+                                multiRequest.emitter.emit(item);
+                            }
+                            start = end + separator.length;
+                        }
+                    } else {
+                        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+                        R item = restClientRequestContext.readEntity(in, responseType, mediaType,
+                                response.getMetadata());
+                        multiRequest.emitter.emit(item);
+                    }
                 } catch (Throwable t) {
                     // FIXME: probably close the client too? watch out that it doesn't call our close handler
                     // which calls emitter.complete()
                     multiRequest.emitter.fail(t);
                 }
             }
+
+            private boolean startsWith(byte[] array, byte[] prefix) {
+                if (array.length < prefix.length) {
+                    return false;
+                }
+                for (int i = 0; i < prefix.length; i++) {
+                    if (array[i] != prefix[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
         });
+
         // this captures the end of the response
         // FIXME: won't this call complete twice()?
         vertxClientResponse.endHandler(v -> {

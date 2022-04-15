@@ -150,10 +150,10 @@ public class RuntimeDeploymentManager {
             abortHandlingChain.add(interceptorDeployment.getGlobalInterceptorHandler());
         }
         abortHandlingChain.add(new ExceptionHandler());
+        abortHandlingChain.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
         if (!interceptors.getContainerResponseFilters().getGlobalResourceInterceptors().isEmpty()) {
             abortHandlingChain.addAll(interceptorDeployment.getGlobalResponseInterceptorHandlers());
         }
-        abortHandlingChain.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         // sanitise the prefix for our usage to make it either an empty string, or something which starts with a / and does not
         // end with one
@@ -171,7 +171,8 @@ public class RuntimeDeploymentManager {
         List<ServerRestHandler> preMatchHandlers = new ArrayList<>();
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
             preMatchHandlers
-                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH));
+                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH,
+                            null, null));
         }
         if (!interceptors.getContainerRequestFilters().getPreMatchInterceptors().isEmpty()) {
             preMatchHandlers = new ArrayList<>(interceptorDeployment.getPreMatchContainerRequestFilters().size());

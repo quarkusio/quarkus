@@ -12,6 +12,7 @@ import org.jboss.jandex.DotName;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
 import io.smallrye.faulttolerance.api.CircuitBreakerName;
 import io.smallrye.faulttolerance.api.CustomBackoff;
 import io.smallrye.faulttolerance.api.CustomBackoffStrategy;
@@ -28,9 +29,12 @@ public final class DotNames {
     public static final DotName RETRY = DotName.createSimple(Retry.class.getName());
     public static final DotName TIMEOUT = DotName.createSimple(Timeout.class.getName());
 
+    public static final DotName APPLY_FAULT_TOLERANCE = DotName.createSimple(ApplyFaultTolerance.class.getName());
+
     // SmallRye annotations (@CircuitBreakerName, @[Non]Blocking, @*Backoff) alone do _not_ trigger
     // the fault tolerance interceptor, only in combination with other fault tolerance annotations
-    public static final Set<DotName> FT_ANNOTATIONS = Set.of(ASYNCHRONOUS, BULKHEAD, CIRCUIT_BREAKER, FALLBACK, RETRY, TIMEOUT);
+    public static final Set<DotName> FT_ANNOTATIONS = Set.of(ASYNCHRONOUS, BULKHEAD, CIRCUIT_BREAKER, FALLBACK, RETRY, TIMEOUT,
+            APPLY_FAULT_TOLERANCE);
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());

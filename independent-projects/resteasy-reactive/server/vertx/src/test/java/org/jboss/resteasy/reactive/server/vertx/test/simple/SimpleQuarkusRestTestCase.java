@@ -20,7 +20,7 @@ public class SimpleQuarkusRestTestCase {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -109,9 +109,37 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.with()
                 .queryParam("q", "qv")
                 .header("h", "123")
+                .header("h2", "a")
+                .header("h3", "b")
                 .formParam("f", "fv")
                 .post("/simple/params/pv")
-                .then().body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv"));
+                .then().statusCode(200).body(Matchers.equalTo("params: p: pv, q: qv, h: 123, h2: a, h3: b, f: fv"));
+    }
+
+    @Test
+    public void testArrayHeaders() {
+        RestAssured
+                .with()
+                .header("h2", "a")
+                .header("h2", "b")
+                .header("h3", "1")
+                .header("h4", "10")
+                .header("h4", "20")
+                .get("/simple/arrayHeaders")
+                .then().statusCode(200).body(Matchers.equalTo("h1: [], h2: [a, b], h3: [1], h4: [10, 20]"));
+    }
+
+    @Test
+    public void testArrayForms() {
+        RestAssured
+                .with()
+                .formParam("f2", "a")
+                .formParam("f2", "b")
+                .formParam("f3", "1")
+                .formParam("f4", "10")
+                .formParam("f4", "20")
+                .post("/simple/arrayForms")
+                .then().statusCode(200).body(Matchers.equalTo("f1: [], f2: [a, b], f3: [1], f4: [10, 20]"));
     }
 
     @Test

@@ -57,7 +57,7 @@ public class PrimeNumberResource {
 
     /**
      * This method is called by the registered {@code highest.prime.number} gauge.
-     * 
+     *
      * @return the highest observed prime value
      */
     long highestObservedPrimeNumber() {

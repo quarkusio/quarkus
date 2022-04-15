@@ -23,16 +23,22 @@ public interface DevServicesDatasourceProvider {
 
     class RunningDevServicesDatasource {
 
+        private final String id;
         private final String url;
         private final String username;
         private final String password;
         private final Closeable closeTask;
 
-        public RunningDevServicesDatasource(String url, String username, String password, Closeable closeTask) {
+        public RunningDevServicesDatasource(String id, String url, String username, String password, Closeable closeTask) {
+            this.id = id;
             this.url = url;
             this.username = username;
             this.password = password;
             this.closeTask = closeTask;
+        }
+
+        public String getId() {
+            return id;
         }
 
         public String getUrl() {

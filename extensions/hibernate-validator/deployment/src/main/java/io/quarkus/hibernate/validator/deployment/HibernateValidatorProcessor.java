@@ -54,6 +54,8 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -66,7 +68,7 @@ import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -145,7 +147,9 @@ class HibernateValidatorProcessor {
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
             additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyContextLocaleResolver"));
+                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.locale.ResteasyContextLocaleResolver"));
             syntheticBeanBuildItems.produce(SyntheticBeanBuildItem.configure(ResteasyConfigSupport.class)
                     .scope(Singleton.class)
                     .unremovable()
@@ -157,7 +161,15 @@ class HibernateValidatorProcessor {
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveEndPointValidationInterceptor"));
             additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveContextLocaleResolver"));
+                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.locale.VertxLocaleResolver"));
+        }
+        if (capabilities.isPresent(Capability.SMALLRYE_GRAPHQL)) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.locale.VertxLocaleResolver"));
         }
 
         // A constraint validator with an injection point but no scope is added as @Dependent
@@ -345,29 +357,20 @@ class HibernateValidatorProcessor {
     }
 
     @BuildStep
-    NativeImageConfigBuildItem nativeImageConfig() {
-        List<String> potentialHibernateValidatorResourceBundles = List.of(
+    void optionalResouceBundles(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundles) {
+        String[] potentialHibernateValidatorResourceBundles = {
                 AbstractMessageInterpolator.DEFAULT_VALIDATION_MESSAGES,
                 AbstractMessageInterpolator.USER_VALIDATION_MESSAGES,
-                AbstractMessageInterpolator.CONTRIBUTOR_VALIDATION_MESSAGES);
-        List<String> userDefinedHibernateValidatorResourceBundles = new ArrayList<>();
+                AbstractMessageInterpolator.CONTRIBUTOR_VALIDATION_MESSAGES };
 
         for (String potentialHibernateValidatorResourceBundle : potentialHibernateValidatorResourceBundles) {
-            if (Thread.currentThread().getContextClassLoader().getResource(potentialHibernateValidatorResourceBundle) != null) {
-                userDefinedHibernateValidatorResourceBundles.add(potentialHibernateValidatorResourceBundle);
+            for (ClassPathElement cpe : QuarkusClassLoader.getElements(potentialHibernateValidatorResourceBundle, false)) {
+                if (cpe.isRuntime()) {
+                    resourceBundles.produce(new NativeImageResourceBundleBuildItem(potentialHibernateValidatorResourceBundle));
+                    break;
+                }
             }
         }
-
-        if (userDefinedHibernateValidatorResourceBundles.isEmpty()) {
-            return null;
-        }
-
-        NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
-        for (String hibernateValidatorResourceBundle : userDefinedHibernateValidatorResourceBundles) {
-            builder.addResourceBundle(hibernateValidatorResourceBundle);
-        }
-
-        return builder.build();
     }
 
     @BuildStep

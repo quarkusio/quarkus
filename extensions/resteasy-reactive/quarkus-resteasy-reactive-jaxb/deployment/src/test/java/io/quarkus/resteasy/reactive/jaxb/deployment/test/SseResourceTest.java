@@ -26,7 +26,7 @@ import javax.ws.rs.sse.SseEventSource;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.jboss.resteasy.reactive.RestSseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -154,7 +154,7 @@ public class SseResourceTest {
         @Path("xml")
         @GET
         @Produces(MediaType.SERVER_SENT_EVENTS)
-        @RestSseElementType(MediaType.APPLICATION_XML)
+        @RestStreamElementType(MediaType.APPLICATION_XML)
         public void sseXml(Sse sse, SseEventSink sink) {
             if (sink == null) {
                 throw new IllegalStateException("No client connected.");
@@ -170,7 +170,7 @@ public class SseResourceTest {
         @Path("blocking/xml")
         @GET
         @Produces(MediaType.SERVER_SENT_EVENTS)
-        @RestSseElementType(MediaType.APPLICATION_XML)
+        @RestStreamElementType(MediaType.APPLICATION_XML)
         public void blockingSseXml(Sse sse, SseEventSink sink) {
             if (sink == null) {
                 throw new IllegalStateException("No client connected.");

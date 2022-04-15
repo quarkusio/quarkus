@@ -25,7 +25,7 @@ public class StaticObserverTest {
     public void testObserver() {
         assertEquals(0, StringObserver.EVENTS.size());
         assertFalse(Fool.DESTROYED.get());
-        Arc.container().beanManager().fireEvent("hello");
+        Arc.container().beanManager().getEvent().fire("hello");
         assertEquals(1, StringObserver.EVENTS.size());
         assertEquals("hello", StringObserver.EVENTS.get(0));
         assertTrue(Fool.DESTROYED.get());

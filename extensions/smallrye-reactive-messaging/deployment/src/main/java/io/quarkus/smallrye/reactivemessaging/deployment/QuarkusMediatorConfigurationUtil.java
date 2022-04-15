@@ -332,10 +332,8 @@ public final class QuarkusMediatorConfigurationUtil {
                 if (t != null) {
                     return load(t.name().toString(), classLoader);
                 }
-                return null;
-            } else {
-                return null;
             }
+            return null;
         }
     }
 

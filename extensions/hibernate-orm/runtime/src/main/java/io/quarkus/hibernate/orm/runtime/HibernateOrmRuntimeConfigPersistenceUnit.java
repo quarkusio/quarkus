@@ -52,14 +52,14 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
          */
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> defaultCatalog;
+        public Optional<String> defaultCatalog = Optional.empty();
 
         /**
          * The default schema to use for the database objects.
          */
         @ConfigItem
         @ConvertWith(TrimmedStringConverter.class)
-        public Optional<String> defaultSchema;
+        public Optional<String> defaultSchema = Optional.empty();
 
         public boolean isAnyPropertySet() {
             return generation.isAnyPropertySet()

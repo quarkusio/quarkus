@@ -29,7 +29,7 @@ public class UpstreamStreamCoordsWithNullPlatformKeyTest extends MultiplePlatfor
                 .quarkusVersion("1.1.1-downstream")
                 .upstreamQuarkusVersion("1.1.1")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 // foo platform member
                 .newMember("acme-a-bom").addExtension("io.acme", "ext-a", "1.1.1-downstream").release()
                 .stream().platform().registry()
@@ -43,14 +43,14 @@ public class UpstreamStreamCoordsWithNullPlatformKeyTest extends MultiplePlatfor
                 .newRelease("2.0.5")
                 .quarkusVersion("2.0.5")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-a-bom").addExtension("io.acme", "ext-a", "2.0.5").release().stream().platform()
                 // 1.0 STREAM
                 .newStream("1.0")
                 .newRelease("1.1.1")
                 .quarkusVersion("1.1.1")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-a-bom").addExtension("io.acme", "ext-a", "1.1.1")
                 .registry()
                 .clientBuilder()

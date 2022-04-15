@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import javax.annotation.PostConstruct;
@@ -59,6 +61,8 @@ public class DefaultTenantConfigResolver {
     private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext = new BlockingTaskRunner<OidcTenantConfig>();
 
     private volatile boolean securityEventObserved;
+
+    private ConcurrentHashMap<String, TokenVerificationResult> backChannelLogoutTokens = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void verifyResolvers() {
@@ -124,18 +128,21 @@ public class DefaultTenantConfigResolver {
 
     private TenantConfigContext getStaticTenantContext(RoutingContext context) {
 
-        String tenantId = null;
+        String tenantId = context.get(CURRENT_STATIC_TENANT_ID);
 
-        if (tenantResolver.isResolvable()) {
-            tenantId = context.get(CURRENT_STATIC_TENANT_ID);
-            if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
+        if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
+            if (tenantResolver.isResolvable()) {
                 tenantId = tenantResolver.get().resolve(context);
-                if (tenantId != null) {
-                    context.put(CURRENT_STATIC_TENANT_ID, tenantId);
-                } else {
-                    context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
-                }
             }
+            if (tenantId == null) {
+                tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            }
+        }
+
+        if (tenantId != null) {
+            context.put(CURRENT_STATIC_TENANT_ID, tenantId);
+        } else {
+            context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
         }
 
         TenantConfigContext configContext = tenantId != null ? tenantConfigBean.getStaticTenantsConfig().get(tenantId) : null;
@@ -182,6 +189,8 @@ public class DefaultTenantConfigResolver {
                 if (oidcConfig == null) {
                     //shouldn't happen, but guard against it anyway
                     oidcConfig = Uni.createFrom().nullItem();
+                } else {
+                    oidcConfig = oidcConfig.onItem().transform(cfg -> OidcUtils.resolveProviderConfig(cfg));
                 }
                 context.put(CURRENT_DYNAMIC_TENANT_CONFIG, oidcConfig);
             }
@@ -212,6 +221,14 @@ public class DefaultTenantConfigResolver {
 
     boolean isEnableHttpForwardedPrefix() {
         return enableHttpForwardedPrefix;
+    }
+
+    public Map<String, TokenVerificationResult> getBackChannelLogoutTokens() {
+        return backChannelLogoutTokens;
+    }
+
+    public TenantConfigBean getTenantConfigBean() {
+        return tenantConfigBean;
     }
 
 }

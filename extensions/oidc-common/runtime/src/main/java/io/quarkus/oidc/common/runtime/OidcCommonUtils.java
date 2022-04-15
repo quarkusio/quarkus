@@ -32,6 +32,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
@@ -130,7 +131,7 @@ public class OidcCommonUtils {
                         .setPassword(oidcConfig.tls.getTrustStorePassword().orElse("password"))
                         .setAlias(oidcConfig.tls.getTrustStoreCertAlias().orElse(null))
                         .setValue(io.vertx.core.buffer.Buffer.buffer(trustStoreData))
-                        .setType("JKS");
+                        .setType(getStoreType(oidcConfig.tls.trustStoreFileType, oidcConfig.tls.trustStoreFile.get()));
                 options.setTrustOptions(trustStoreOptions);
                 if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification.orElse(Verification.REQUIRED)) {
                     options.setVerifyHost(false);
@@ -139,6 +140,23 @@ public class OidcCommonUtils {
                 throw new ConfigurationException(String.format(
                         "OIDC truststore file does not exist or can not be read",
                         oidcConfig.tls.trustStoreFile.get().toString()), ex);
+            }
+        }
+        if (oidcConfig.tls.keyStoreFile.isPresent()) {
+            try {
+                byte[] keyStoreData = getFileContent(oidcConfig.tls.keyStoreFile.get());
+                io.vertx.core.net.KeyStoreOptions keyStoreOptions = new KeyStoreOptions()
+                        .setPassword(oidcConfig.tls.keyStorePassword)
+                        .setAlias(oidcConfig.tls.keyStoreKeyAlias.orElse(null))
+                        .setAliasPassword(oidcConfig.tls.keyStoreKeyPassword.orElse(null))
+                        .setValue(io.vertx.core.buffer.Buffer.buffer(keyStoreData))
+                        .setType(getStoreType(oidcConfig.tls.keyStoreFileType, oidcConfig.tls.keyStoreFile.get()));
+                options.setKeyCertOptions(keyStoreOptions);
+
+            } catch (IOException ex) {
+                throw new ConfigurationException(String.format(
+                        "OIDC keystore file does not exist or can not be read",
+                        oidcConfig.tls.keyStoreFile.get().toString()), ex);
             }
         }
         Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
@@ -152,6 +170,19 @@ public class OidcCommonUtils {
         }
 
         options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
+    }
+
+    private static String getStoreType(Optional<String> fileType, Path storePath) {
+        if (fileType.isPresent()) {
+            return fileType.get().toUpperCase();
+        }
+        final String pathName = storePath.toString();
+        if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
+            return "PKCS12";
+        } else {
+            // assume jks
+            return "JKS";
+        }
     }
 
     public static String getAuthServerUrl(OidcCommonConfig oidcConfig) {
@@ -274,7 +305,7 @@ public class OidcCommonUtils {
                     key = ks.getKey(creds.jwt.keyId.get(), creds.jwt.keyPassword.toCharArray());
                 }
             } catch (Exception ex) {
-                throw new ConfigurationException("Key can not be loaded");
+                throw new ConfigurationException("Key can not be loaded", ex);
             }
             if (key == null) {
                 throw new ConfigurationException("Key is null");
@@ -371,7 +402,8 @@ public class OidcCommonUtils {
 
     private static byte[] getFileContent(Path path) throws IOException {
         byte[] data;
-        final InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+        final InputStream resource = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(ClassPathUtils.toResourceName(path));
         if (resource != null) {
             try (InputStream is = resource) {
                 data = doRead(is);

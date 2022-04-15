@@ -27,7 +27,7 @@ public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends 
                 .newRelease("2.0.4")
                 .quarkusVersion("2.2.2")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 // foo platform member
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "2.0.4").addExtension("ext-b").release()
                 .stream().platform().registry()
@@ -37,7 +37,7 @@ public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends 
                 // 1.0.1 release
                 .newRelease("1.0.1")
                 .quarkusVersion("1.1.2")
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "1.0.1").release()
                 .newMember("acme-baz-bom").addExtension("io.acme", "ext-b", "1.0.1").release()
                 .stream().platform().registry()

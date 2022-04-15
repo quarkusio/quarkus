@@ -1,5 +1,7 @@
 package io.quarkus.mongodb.reactive;
 
+import static de.flapdoodle.embed.process.config.process.ProcessOutput.builder;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,11 +22,12 @@ import de.flapdoodle.embed.mongo.Command;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
 import de.flapdoodle.embed.mongo.config.Defaults;
+import de.flapdoodle.embed.mongo.config.MongoCmdOptions;
 import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.config.RuntimeConfig;
-import de.flapdoodle.embed.process.config.io.ProcessOutput;
+import de.flapdoodle.embed.process.io.Processors;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.smallrye.mutiny.Uni;
 
@@ -69,6 +72,9 @@ public class MongoTestBase {
             MongodConfig config = MongodConfig.builder()
                     .version(version)
                     .net(new Net(port, Network.localhostIsIPv6()))
+                    .cmdOptions(MongoCmdOptions.builder()
+                            .useNoJournal(false)
+                            .build())
                     .build();
             MONGO = getMongodExecutable(config);
             try {
@@ -103,7 +109,11 @@ public class MongoTestBase {
 
     private static MongodExecutable doGetExecutable(MongodConfig config) {
         RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
-                .processOutput(ProcessOutput.silent())
+                .processOutput(builder()
+                        .output(Processors.silent())
+                        .error(Processors.silent())
+                        .commands(Processors.silent())
+                        .build())
                 .build();
         return MongodStarter.getInstance(runtimeConfig).prepare(config);
     }

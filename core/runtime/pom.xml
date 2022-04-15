@@ -103,7 +103,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-extension-processor</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Test -->
@@ -170,6 +177,7 @@
                         <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
                         <parentFirstArtifact>org.jacoco:org.jacoco.agent:runtime</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-junit5-mockito-config</parentFirstArtifact>
 
                         <!-- RestAssured uses groovy, which seems to do some things with soft references that
                         prevent the ClassLoader from being GC'ed, see https://github.com/quarkusio/quarkus/issues/12498 -->
@@ -215,7 +223,6 @@
                         <runnerParentFirstArtifact>org.wildfly.common:wildfly-common</runnerParentFirstArtifact>
                         <!-- This is needed because it contains some jar handling classes -->
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
-
                     </runnerParentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

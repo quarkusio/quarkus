@@ -222,11 +222,21 @@ public class WebTargetImpl implements WebTarget {
         if (name == null)
             throw new NullPointerException("Param was null");
         UriBuilder copy = uriBuilder.clone();
-        if (values == null || (values.length == 1 && values[0] == null)) {
-            copy.replaceQueryParam(name, (Object[]) null);
+        if (copy instanceof UriBuilderImpl) {
+            var impl = (UriBuilderImpl) copy;
+            if (values == null || (values.length == 1 && values[0] == null)) {
+                impl.replaceQueryParam(name, (Object[]) null);
+            } else {
+                String[] stringValues = toStringValues(values);
+                impl.clientQueryParam(name, (Object[]) stringValues);
+            }
         } else {
-            String[] stringValues = toStringValues(values);
-            copy.queryParam(name, (Object[]) stringValues);
+            if (values == null || (values.length == 1 && values[0] == null)) {
+                copy.replaceQueryParam(name, (Object[]) null);
+            } else {
+                String[] stringValues = toStringValues(values);
+                copy.queryParam(name, (Object[]) stringValues);
+            }
         }
         return newInstance(client, copy, configuration);
     }

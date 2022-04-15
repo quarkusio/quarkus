@@ -52,13 +52,13 @@ public class SyntheticObserverTest {
     @Test
     public void testSyntheticObserver() {
         MyObserver.EVENTS.clear();
-        Arc.container().beanManager().fireEvent("foo");
+        Arc.container().beanManager().getEvent().fire("foo");
         assertEquals(2, MyObserver.EVENTS.size(), "Events: " + MyObserver.EVENTS);
         assertTrue(MyObserver.EVENTS.contains("foo"));
         assertTrue(MyObserver.EVENTS.contains("foo_MyObserver"));
 
         MyObserver.EVENTS.clear();
-        Arc.container().beanManager().fireEvent("foo", NamedLiteral.of("bla"));
+        Arc.container().beanManager().getEvent().select(String.class, NamedLiteral.of("bla")).fire("foo");
         assertEquals(3, MyObserver.EVENTS.size(), "Events: " + MyObserver.EVENTS);
         assertTrue(MyObserver.EVENTS.contains("foo"));
         assertTrue(MyObserver.EVENTS.contains("foo_MyObserver"));

@@ -2,7 +2,6 @@ package io.quarkus.hibernate.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.enterprise.context.control.ActivateRequestContext;
 import javax.inject.Inject;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -19,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
 
 public class NoJtaTest {
 
@@ -35,8 +36,8 @@ public class NoJtaTest {
     Mutiny.SessionFactory factory;
 
     @Test
-    @ActivateRequestContext
-    public void test() {
+    @RunOnVertxContext
+    public void test(UniAsserter asserter) {
         ServiceRegistryImplementor serviceRegistry = sessionFactory.unwrap(SessionFactoryImplementor.class)
                 .getServiceRegistry();
 
@@ -46,12 +47,11 @@ public class NoJtaTest {
 
         // Quick test to make sure HRX works
         MyEntity entity = new MyEntity("default");
-        MyEntity retrievedEntity = factory.withTransaction((session, tx) -> session.persist(entity))
-                .chain(() -> factory.withTransaction((session, tx) -> session.clear().find(MyEntity.class, entity.getId())))
-                .await().indefinitely();
-        assertThat(retrievedEntity)
-                .isNotSameAs(entity)
-                .returns(entity.getName(), MyEntity::getName);
+
+        asserter.assertThat(() -> factory.withTransaction((session, tx) -> session.persist(entity))
+                .chain(() -> factory.withTransaction((session, tx) -> session.clear().find(MyEntity.class, entity.getId()))),
+                retrievedEntity -> assertThat(retrievedEntity).isNotSameAs(entity).returns(entity.getName(),
+                        MyEntity::getName));
     }
 
     @Entity

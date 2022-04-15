@@ -11,19 +11,9 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.bootstrap.resolver.update.DefaultUpdateDiscovery;
-import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
-import io.quarkus.bootstrap.resolver.update.UpdateDiscovery;
-import io.quarkus.bootstrap.resolver.update.VersionUpdate;
-import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
 import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.GACTV;
-import io.quarkus.maven.dependency.ResolvedArtifactDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -31,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,11 +28,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
 import org.jboss.logging.Logger;
 
 /**
@@ -81,9 +68,6 @@ public class BootstrapAppModelFactory {
     private boolean devMode;
     private AppModelResolver bootstrapAppModelResolver;
 
-    private VersionUpdateNumber versionUpdateNumber;
-    private VersionUpdate versionUpdate;
-    private DependenciesOrigin dependenciesOrigin;
     private ResolvedDependency appArtifact;
     private MavenArtifactResolver mavenArtifactResolver;
 
@@ -140,21 +124,6 @@ public class BootstrapAppModelFactory {
         return this;
     }
 
-    public BootstrapAppModelFactory setVersionUpdateNumber(VersionUpdateNumber versionUpdateNumber) {
-        this.versionUpdateNumber = versionUpdateNumber;
-        return this;
-    }
-
-    public BootstrapAppModelFactory setVersionUpdate(VersionUpdate versionUpdate) {
-        this.versionUpdate = versionUpdate;
-        return this;
-    }
-
-    public BootstrapAppModelFactory setDependenciesOrigin(DependenciesOrigin dependenciesOrigin) {
-        this.dependenciesOrigin = dependenciesOrigin;
-        return this;
-    }
-
     public BootstrapAppModelFactory setAppArtifact(ResolvedDependency appArtifact) {
         this.appArtifact = appArtifact;
         return this;
@@ -177,7 +146,7 @@ public class BootstrapAppModelFactory {
                 if (mavenArtifactResolver == null) {
                     final BootstrapMavenContext mvnCtx = createBootstrapMavenContext();
                     if (managingProject == null) {
-                        managingProject = mvnCtx.getCurrentProjectArtifact("pom");
+                        managingProject = mvnCtx.getCurrentProjectArtifact(ArtifactCoords.TYPE_POM);
                     }
                     mvn = new MavenArtifactResolver(mvnCtx);
                 } else {
@@ -341,143 +310,21 @@ public class BootstrapAppModelFactory {
     }
 
     private CurationResult createAppModelForJar(Path appArtifactPath) {
-        log.debugf("provideOutcome depsOrigin=%s, versionUpdate=%s, versionUpdateNumber=%s", dependenciesOrigin, versionUpdate,
-                versionUpdateNumber);
-
-        ResolvedDependency stateArtifact = null;
-        boolean loadedFromState = false;
         AppModelResolver modelResolver = getAppModelResolver();
-        final ApplicationModel initialDepsList;
+        final ApplicationModel appModel;
         ResolvedDependency appArtifact = this.appArtifact;
         try {
             if (appArtifact == null) {
                 appArtifact = ModelUtils.resolveAppArtifact(appArtifactPath);
             }
             modelResolver.relink(appArtifact, appArtifactPath);
-
-            if (dependenciesOrigin == DependenciesOrigin.LAST_UPDATE) {
-                log.info("Looking for the state of the last update");
-                Path statePath = null;
-                try {
-                    ArtifactCoords stateCoords = ModelUtils.getStateArtifact(appArtifact);
-                    final String latest = modelResolver.getLatestVersion(stateCoords, null, false);
-                    if (!stateCoords.getVersion().equals(latest)) {
-                        stateCoords = new GACTV(stateCoords.getGroupId(),
-                                stateCoords.getArtifactId(),
-                                stateCoords.getClassifier(), stateCoords.getType(), latest);
-                    }
-                    stateArtifact = modelResolver.resolve(stateArtifact);
-                    statePath = stateArtifact.getResolvedPaths().getSinglePath();
-                    log.info("- located the state at " + statePath);
-                } catch (AppModelResolverException e) {
-                    // for now let's assume this means artifact does not exist
-                }
-
-                if (statePath != null) {
-                    Model model;
-                    try {
-                        model = ModelUtils.readModel(statePath);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to read application state " + statePath, e);
-                    }
-                    final List<Dependency> modelStateDeps = model.getDependencies();
-                    final List<io.quarkus.maven.dependency.Dependency> updatedDeps = new ArrayList<>(modelStateDeps.size());
-                    final String groupIdProp = "${" + CREATOR_APP_GROUP_ID + "}";
-                    for (Dependency modelDep : modelStateDeps) {
-                        if (modelDep.getGroupId().equals(groupIdProp)) {
-                            continue;
-                        }
-                        updatedDeps.add(new ArtifactDependency(
-                                new ResolvedArtifactDependency(new GACTV(modelDep.getGroupId(), modelDep.getArtifactId(),
-                                        modelDep.getClassifier(), modelDep.getType(), modelDep.getVersion())),
-                                modelDep.getScope(),
-                                modelDep.isOptional() ? DependencyFlags.OPTIONAL : 0));
-                    }
-                    initialDepsList = modelResolver.resolveModel(appArtifact, updatedDeps);
-                    loadedFromState = true;
-                } else {
-                    initialDepsList = modelResolver.resolveModel(appArtifact);
-                }
-            } else {
-                //we need some way to figure out dependencies here
-                initialDepsList = modelResolver.resolveManagedModel(appArtifact, Collections.emptyList(), managingProject,
-                        reloadableModules);
-            }
+            //we need some way to figure out dependencies here
+            appModel = modelResolver.resolveManagedModel(appArtifact, Collections.emptyList(), managingProject,
+                    reloadableModules);
         } catch (AppModelResolverException | IOException e) {
             throw new RuntimeException("Failed to resolve initial application dependencies", e);
         }
-
-        if (versionUpdate == VersionUpdate.NONE) {
-            return new CurationResult(initialDepsList, Collections.emptyList(),
-                    loadedFromState, appArtifact,
-                    stateArtifact);
-        }
-
-        log.info("Checking for available updates");
-        Collection<ResolvedDependency> appDeps;
-        try {
-            appDeps = modelResolver.resolveUserDependencies(appArtifact,
-                    new ArrayList<>(initialDepsList.getRuntimeDependencies()));
-        } catch (AppModelResolverException e) {
-            throw new RuntimeException("Failed to determine the list of dependencies to update", e);
-        }
-        final Iterator<ResolvedDependency> depsI = appDeps.iterator();
-        while (depsI.hasNext()) {
-            final ResolvedDependency appDep = depsI.next();
-            if (!appDep.getType().equals(ArtifactCoords.TYPE_JAR)) {
-                depsI.remove();
-                continue;
-            }
-            appDep.getResolvedPaths().forEach(path -> {
-                if (Files.isDirectory(path)) {
-                    if (!Files.exists(path.resolve(BootstrapConstants.DESCRIPTOR_PATH))) {
-                        depsI.remove();
-                    }
-                    return;
-                }
-                try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
-                    if (!Files.exists(artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH))) {
-                        depsI.remove();
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to open " + path, e);
-                }
-            });
-        }
-
-        final UpdateDiscovery ud = new DefaultUpdateDiscovery(modelResolver, versionUpdateNumber);
-        List<io.quarkus.maven.dependency.Dependency> availableUpdates = null;
-        for (ResolvedDependency depArtifact : appDeps) {
-            final String updatedVersion = versionUpdate == VersionUpdate.NEXT ? ud.getNextVersion(depArtifact)
-                    : ud.getLatestVersion(depArtifact);
-            if (updatedVersion == null || depArtifact.getVersion().equals(updatedVersion)) {
-                continue;
-            }
-            log.info(depArtifact.toGACTVString() + " -> " + updatedVersion);
-            if (availableUpdates == null) {
-                availableUpdates = new ArrayList<>();
-            }
-            availableUpdates.add(new ArtifactDependency(
-                    new GACTV(depArtifact.getGroupId(), depArtifact.getArtifactId(), depArtifact.getClassifier(),
-                            depArtifact.getType(), updatedVersion),
-                    depArtifact.getScope()));
-        }
-
-        if (availableUpdates != null) {
-            try {
-                return new CurationResult(
-                        modelResolver.resolveManagedModel(appArtifact, availableUpdates, managingProject, reloadableModules),
-                        availableUpdates,
-                        loadedFromState, appArtifact, stateArtifact);
-            } catch (AppModelResolverException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            log.info("- no updates available");
-            return new CurationResult(initialDepsList, Collections.emptyList(),
-                    loadedFromState, appArtifact,
-                    stateArtifact);
-        }
+        return new CurationResult(appModel);
     }
 
     private Path resolveCachedCpPath(LocalProject project) {

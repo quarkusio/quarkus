@@ -42,8 +42,8 @@ public class VertxWithHttpEnabledTest {
         Assertions.assertTrue(httpBinderConfiguration.isClientEnabled());
         Assertions.assertTrue(httpBinderConfiguration.isServerEnabled());
 
-        // prefer http-server.ignore-patterns
-        Assertions.assertEquals(1, httpBinderConfiguration.getServerIgnorePatterns().size());
+        // http-server.ignore-patterns: add 1 due to default ignore ^/q/.*
+        Assertions.assertEquals(2, httpBinderConfiguration.getServerIgnorePatterns().size());
         Pattern p = httpBinderConfiguration.getServerIgnorePatterns().get(0);
         Assertions.assertTrue(p.matcher("/http").matches());
 

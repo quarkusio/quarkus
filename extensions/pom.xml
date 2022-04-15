@@ -78,6 +78,7 @@
         <module>redis-client</module>
 
         <!-- Data access and validation -->
+        <module>transaction-annotations</module>
         <module>narayana-jta</module>
         <module>narayana-stm</module>
         <module>narayana-lra</module>
@@ -90,6 +91,7 @@
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-orm-elasticsearch</module>
+        <module>hibernate-search-orm-coordination-outbox-polling</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
@@ -114,6 +116,7 @@
         <!-- Security -->
         <module>security</module>
         <module>security-jpa</module>
+        <module>security-webauthn</module>
         <module>elytron-security-common</module>
         <module>elytron-security</module>
         <module>elytron-security-jdbc</module>
@@ -124,12 +127,14 @@
         <module>smallrye-jwt</module>
         <module>oidc-common</module>
         <module>oidc</module>
-        <module>oidc-token-propagation</module>
         <module>oidc-client</module>
         <module>oidc-client-filter</module>
         <module>oidc-client-reactive-filter</module>
+        <module>oidc-token-propagation</module>
+        <module>oidc-token-propagation-reactive</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client</module>
+        <module>keycloak-admin-client-reactive</module>
         <module>credentials</module>
 
         <!-- Infinispan -->

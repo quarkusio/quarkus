@@ -42,7 +42,7 @@ public class OidcClientTest {
         waitUntillAccessTokenHasExpired();
 
         // access_token_1 has expired, refresh_token_1 is assumed to be valid and used to acquire access_token_2 and refresh_token_2.
-        // access_token_2 expires in 4 seconds, but refresh_token_2 - in 1 sec - it will expire by the time access_token_2 has expired 
+        // access_token_2 expires in 4 seconds, but refresh_token_2 - in 1 sec - it will expire by the time access_token_2 has expired
         // "Default OidcClient has refreshed the tokens" record is added to the log
         RestAssured.when().get("/frontend/echoToken")
                 .then()
@@ -54,7 +54,7 @@ public class OidcClientTest {
 
         // Both access_token_2 and refresh_token_2 have now expired therefore a password grant request is repeated,
         // as opposed to using a refresh token grant.
-        // access_token_1 is returned again - as the same token URL and grant properties are used and Wiremock stub returns access_token_1 
+        // access_token_1 is returned again - as the same token URL and grant properties are used and Wiremock stub returns access_token_1
         // 2nd "Default OidcClient has acquired the tokens" record is added to the log
         RestAssured.when().get("/frontend/echoToken")
                 .then()

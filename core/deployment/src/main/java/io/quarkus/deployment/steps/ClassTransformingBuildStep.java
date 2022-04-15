@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import org.objectweb.asm.ClassWriter;
 import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.QuarkusClassVisitor;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -280,7 +282,12 @@ public class ClassTransformingBuildStep {
             removed.computeIfAbsent(i.getArtifact(), k -> new HashSet<>()).addAll(i.getResources());
         }
         if (!removed.isEmpty()) {
-            for (ResolvedDependency i : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
+            ApplicationModel applicationModel = curateOutcomeBuildItem.getApplicationModel();
+            Collection<ResolvedDependency> runtimeDependencies = applicationModel.getRuntimeDependencies();
+            List<ResolvedDependency> allArtifacts = new ArrayList<>(runtimeDependencies.size() + 1);
+            allArtifacts.addAll(runtimeDependencies);
+            allArtifacts.add(applicationModel.getAppArtifact());
+            for (ResolvedDependency i : allArtifacts) {
                 Set<String> filtered = removed.remove(i.getKey());
                 if (filtered != null) {
                     for (Path path : i.getResolvedPaths()) {

@@ -19,6 +19,7 @@ import io.quarkus.registry.client.spi.RegistryClientFactoryProvider;
 import io.quarkus.registry.config.RegistriesConfig;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
+import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -43,6 +44,7 @@ public class ExtensionCatalogResolver {
     public static ExtensionCatalogResolver empty() {
         final ExtensionCatalogResolver resolver = new ExtensionCatalogResolver();
         resolver.registries = Collections.emptyList();
+        resolver.log = MessageWriter.info();
         return resolver;
     }
 
@@ -418,8 +420,8 @@ public class ExtensionCatalogResolver {
         int platformIndex = 0;
         for (Platform platform : pc.getPlatforms()) {
             platformIndex++;
+            int releaseIndex = 0;
             for (PlatformStream stream : platform.getStreams()) {
-                int releaseIndex = 0;
                 for (PlatformRelease release : stream.getReleases()) {
                     releaseIndex++;
                     final String quarkusVersion = release.getQuarkusCoreVersion();
@@ -579,7 +581,7 @@ public class ExtensionCatalogResolver {
                 final StringBuilder buf = new StringBuilder();
                 buf.append(
                         "The following registries were configured as exclusive providers of the ");
-                buf.append(bom);
+                buf.append(PlatformArtifacts.ensureBomArtifact(bom).toCompactCoords());
                 buf.append("platform: ").append(e.conflictingRegistries.get(0).getId());
                 for (int i = 1; i < e.conflictingRegistries.size(); ++i) {
                     buf.append(", ").append(e.conflictingRegistries.get(i).getId());
@@ -588,7 +590,7 @@ public class ExtensionCatalogResolver {
             }
 
             if (registries.isEmpty()) {
-                log.warn("None of the configured registries recognizes platform %s", bom);
+                log.warn("None of the configured registries recognizes platform " + bom.toCompactCoords());
                 continue;
             }
 
@@ -600,15 +602,21 @@ public class ExtensionCatalogResolver {
                     catalog = registry.resolvePlatformExtensions(bom);
                     break;
                 } catch (RegistryResolutionException e) {
+                    if (registries.size() == i + 1) {
+                        throw e;
+                    }
+                    log.debug("%s", e.getLocalizedMessage());
                 }
             }
 
             if (catalog == null) {
                 final StringBuilder buf = new StringBuilder();
-                buf.append("Failed to resolve platform ").append(bom).append(" using the following registries: ");
+                buf.append("Failed to resolve extension catalog of ")
+                        .append(PlatformArtifacts.ensureBomArtifact(bom).toCompactCoords())
+                        .append(" from ");
                 buf.append(registries.get(0).getId());
                 for (int i = 1; i < registries.size(); ++i) {
-                    buf.append(", ").append(registries.get(i++));
+                    buf.append(", ").append(registries.get(i));
                 }
                 log.warn(buf.toString());
                 throw new RegistryResolutionException(buf.toString());
@@ -665,6 +673,24 @@ public class ExtensionCatalogResolver {
             catalogBuilder.addCatalog(catalog);
         }
 
+        if (quarkusVersion == null) {
+            if (catalogBuilder.catalogs.isEmpty()) {
+                final StringBuilder buf = new StringBuilder();
+                final Iterator<ArtifactCoords> boms = preferredPlatforms.iterator();
+                buf.append(PlatformArtifacts.ensureBomArtifact(boms.next()).toCompactCoords());
+                while (boms.hasNext()) {
+                    buf.append(", ").append(PlatformArtifacts.ensureBomArtifact(boms.next()).toCompactCoords());
+                }
+                buf.append(" could not be resolved from ");
+                RegistryExtensionResolver registry = registries.get(0);
+                buf.append(registry.getId());
+                for (int i = 1; i < registries.size(); ++i) {
+                    buf.append(", ").append(registries.get(i).getId());
+                }
+                throw new RegistryResolutionException(buf.toString());
+            }
+            return catalogBuilder.catalogs.isEmpty() ? null : catalogBuilder.build();
+        }
         return preferredPlatforms.isEmpty() ? catalogBuilder.build()
                 : resolveExtensionCatalog(quarkusVersion, catalogBuilder, preferredPlatformKeys);
     }
@@ -749,8 +775,8 @@ public class ExtensionCatalogResolver {
             RegistryExtensionResolver registry, int platformIndex,
             Platform p) throws RegistryResolutionException {
 
+        int releaseIndex = 0;
         for (PlatformStream s : p.getStreams()) {
-            int releaseIndex = 0;
             for (PlatformRelease r : s.getReleases()) {
                 ++releaseIndex;
                 int memberIndex = 0;

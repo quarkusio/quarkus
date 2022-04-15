@@ -50,14 +50,10 @@ and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
 == Prerequisites
 
-To complete this guide using Oracle GraalVM CE/EE, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11 installed with `JAVA_HOME` configured appropriately
+:prerequisites-docker:
+:prerequisites-graalvm-mandatory:
+include::includes/devtools/prerequisites.adoc[]
 * A xref:configuring-c-development[working C development environment]
-* Mandrel or Oracle GraalVM CE/EE version {graalvm-version} installed and xref:configuring-graalvm[configured appropriately]
-* A working container runtime (Docker, podman)
 * The code of the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
 .Supporting native compilation in C
@@ -199,7 +195,9 @@ We use a profile because, you will see very soon, packaging the native executabl
 just pass -Dquarkus.package.type=native as a property on the command line, however it is better to use a profile as
 this allows native image tests to also be run.
 
-Create a native executable using: `./mvnw package -Pnative`.
+Create a native executable using:
+
+include::includes/devtools/build-native.adoc[]
 
 [[graal-and-windows]]
 [NOTE]
@@ -219,6 +217,15 @@ cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\
 
 In addition to the regular files, the build also produces `target/getting-started-1.0.0-SNAPSHOT-runner`.
 You can run it using: `./target/getting-started-1.0.0-SNAPSHOT-runner`.
+
+[[graal-package-preview]]
+[NOTE]
+.Java preview features
+====
+Java code that relies on preview features requires special attention.
+To produce a native executable, this means that the `--enable-preview` flag needs to be passed to the underlying native image invocation.
+You can do so by prepending the flag with `-J` and passing it as additional native build argument: `-Dquarkus.native.additional-build-args=-J--enable-preview`.
+====
 
 == Testing the native executable
 
@@ -252,17 +259,17 @@ In the `pom.xml` file, the `native` profile contains:
 
 This instructs the failsafe-maven-plugin to run integration-test and indicates the location of the produced native executable.
 
-Then, open the `src/test/java/org/acme/quickstart/NativeGreetingResourceIT.java`. It contains:
+Then, open the `src/test/java/org/acme/quickstart/GreetingResourceIT.java`. It contains:
 
 [source,java]
 ----
 package org.acme.quickstart;
 
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest // <1>
-public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
+@QuarkusIntegrationTest // <1>
+public class GreetingResourceIT extends GreetingResourceTest { // <2>
 
     // Run the same tests
 
@@ -272,7 +279,7 @@ public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
 
-To see the `NativeGreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
+To see the `GreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
 [source,shell]
 ----
 $ ./mvnw verify -Pnative
@@ -291,11 +298,11 @@ $ ./mvnw verify -Pnative
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
-[INFO] Running org.acme.quickstart.NativeGreetingResourceIT
+[INFO] Running org.acme.quickstart.GreetingResourceIT
 Executing [/data/home/gsmet/git/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=build/quarkus.log]
 2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.002s. Listening on: http://[::]:8081
-2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.387 s - in org.acme.quickstart.NativeGreetingResourceIT
+2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.387 s - in org.acme.quickstart.GreetingResourceIT
 ...
 ----
 
@@ -308,16 +315,25 @@ to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.wait-time=300`.
 
 [WARNING]
 ====
-In the future, `@NativeImageTest` will be deprecated in favor of `@QuarkusIntegrationTest` which provides a superset of the testing
+This procedure was formerly accomplished using the `@NativeImageTest` annotation. `@NativeImageTest` is considered deprecated in favor of `@QuarkusIntegrationTest` which provides a superset of the testing
 capabilities of `@NativeImageTest`. More information about `@QuarkusIntegrationTest` can be found in the xref:getting-started-testing.adoc#quarkus-integration-test[Testing Guide].
 ====
 
-By default, native tests runs using the `prod` profile.
+By default, integration tests runs using the `prod` profile.
 This can be overridden using the `quarkus.test.native-image-profile` property.
 For example, in your `application.properties` file, add: `quarkus.test.native-image-profile=test`.
 Alternatively, you can run your tests with: `./mvnw verify -Pnative -Dquarkus.test.native-image-profile=test`.
 However, don't forget that when the native executable is built the `prod` profile is enabled.
 So, the profile you enable this way must be compatible with the produced executable.
+
+[[graal-test-preview]]
+[NOTE]
+.Java preview features
+====
+Java code that relies on preview features requires special attention.
+To test a native executable, this means that the `--enable-preview` flag needs to be passed to the Surefire plugin.
+Adding `<argLine>--enable-preview</argLine>` to its `configuration` section is one way to do so.
+====
 
 === Excluding tests when running as a native executable
 
@@ -351,22 +367,24 @@ to install as little software as possible).
 To this end, Quarkus provides a very convenient way of creating a native Linux executable by leveraging a container runtime such as Docker or podman.
 The easiest way of accomplishing this task is to execute:
 
-[source,bash]
-----
-./mvnw package -Pnative -Dquarkus.native.container-build=true
-----
+include::includes/devtools/build-native-container.adoc[]
 
 [TIP]
 ====
 By default Quarkus automatically detects the container runtime.
 If you want to explicitely select the container runtime, you can do it with:
-[source,bash]
-----
-# Docker
-./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.container-runtime=docker
-# Podman
-./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.container-runtime=podman
-----
+
+For Docker:
+
+:build-additional-parameters: -Dquarkus.native.container-runtime=docker
+include::includes/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
+
+For podman:
+
+:build-additional-parameters: -Dquarkus.native.container-runtime=podman
+include::includes/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
 
 These are normal Quarkus config properties, so if you always want to build in a container
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
@@ -387,10 +405,10 @@ The reason for this is that the local build driver invoked through `-Dquarkus.na
 [TIP]
 ====
 Building with Mandrel requires a custom builder image parameter to be passed additionally:
-[source,bash,subs=attributes+]
-----
-./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
-----
+
+:build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
+include::includes/devtools/build-native-container-parameters.adoc[]
+:!build-additional-parameters:
 
 Please note that the above command points to a floating tag.
 It is highly recommended to use the floating tag,
@@ -549,7 +567,7 @@ Sample Dockerfile for building with Gradle:
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} AS build
 COPY --chown=quarkus:quarkus gradlew /code/gradlew
-COPY --chown=quarkus:quarkus /code/gradle
+COPY --chown=quarkus:quarkus gradle /code/gradle
 COPY --chown=quarkus:quarkus build.gradle /code/
 COPY --chown=quarkus:quarkus settings.gradle /code/
 COPY --chown=quarkus:quarkus gradle.properties /code/
@@ -769,6 +787,8 @@ e.g.,
 gdb -ex 'directory ./target' ./target/getting-started-1.0.0-SNAPSHOT-runner
 ----
 ====
+
+For a more detailed guide about debugging native images please refer to the xref:native-reference.adoc[Native Reference Guide].
 
 [[configuration-reference]]
 == Configuring the Native Executable

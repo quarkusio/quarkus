@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import org.aesh.readline.Readline;
 import org.aesh.readline.ReadlineBuilder;
 import org.aesh.readline.tty.terminal.TerminalConnection;
+import org.aesh.terminal.tty.Signal;
 
 /**
  * Prompt implementation.
@@ -49,6 +50,7 @@ public class Prompter {
             return;
         }
         final TerminalConnection connection = new TerminalConnection();
+        connection.setSignalHandler(interruptionSignalHandler());
         try {
             read(connection, ReadlineBuilder.builder().enableHistory(false).build(), prompts.iterator());
             connection.openBlocking();
@@ -68,5 +70,16 @@ public class Prompter {
                 read(connection, readline, prompts);
             }
         });
+    }
+
+    private Consumer<Signal> interruptionSignalHandler() {
+        return new Consumer<Signal>() {
+            @Override
+            public void accept(Signal signal) {
+                if (signal == Signal.INT) {
+                    throw new RuntimeException("Process interrupted");
+                }
+            }
+        };
     }
 }

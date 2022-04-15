@@ -6,5 +6,6 @@ public enum ItemType {
     COOKIE,
     HEADER_PARAM,
     PATH_PARAM,
+    FORM_PARAM,
     // TODO: more
 }

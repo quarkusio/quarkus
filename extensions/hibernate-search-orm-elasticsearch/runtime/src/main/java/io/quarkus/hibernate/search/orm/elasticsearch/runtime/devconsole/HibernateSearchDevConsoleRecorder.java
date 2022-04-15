@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.hibernate.search.mapper.orm.entity.SearchIndexedEntity;
@@ -8,6 +10,7 @@ import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -15,6 +18,11 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class HibernateSearchDevConsoleRecorder {
+
+    public Supplier<List<HibernateSearchSupplier.DevUiIndexedEntity>> infoSupplier(
+            HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
+        return new HibernateSearchSupplier(runtimeConfig);
+    }
 
     public Handler<RoutingContext> indexEntity() {
         return new DevConsolePostHandler() {

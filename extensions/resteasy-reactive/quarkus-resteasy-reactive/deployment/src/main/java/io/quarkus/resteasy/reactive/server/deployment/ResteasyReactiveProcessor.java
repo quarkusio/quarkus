@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -105,6 +106,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -141,7 +143,10 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Unauthorized
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.ResumeOn404BuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -155,7 +160,6 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
-import io.quarkus.vertx.deployment.CopyVertxContextDataBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -316,12 +320,26 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
+    public void additionalAsyncTypeMethodScanners(List<NonBlockingReturnTypeBuildItem> buildItems,
+            BuildProducer<MethodScannerBuildItem> producer) {
+        for (NonBlockingReturnTypeBuildItem bi : buildItems) {
+            producer.produce(new MethodScannerBuildItem(new MethodScanner() {
+                @Override
+                public boolean isMethodSignatureAsync(MethodInfo info) {
+                    return info.returnType().name().equals(bi.getType());
+                }
+            }));
+        }
+    }
+
+    @BuildStep
     //note useIdentityComparisonForParameters=false
     //resteasy can generate lots of small collections with similar values as part of its metadata gathering
     //this allows multiple objects to be compressed into a single object at runtime
     //saving memory and reducing reload time
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
-    public void setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+    public void setupEndpoints(ApplicationIndexBuildItem applicationIndexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -339,7 +357,9 @@ public class ResteasyReactiveProcessor {
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
             List<MethodScannerBuildItem> methodScanners,
-            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems)
+            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
+            List<ContextTypeBuildItem> contextTypeBuildItems,
+            Capabilities capabilities)
             throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -390,77 +410,69 @@ public class ResteasyReactiveProcessor {
             BiConsumer<String, BiFunction<String, ClassVisitor, ClassVisitor>> transformationConsumer = (name,
                     function) -> bytecodeTransformerBuildItemBuildProducer
                             .produce(new BytecodeTransformerBuildItem(name, function));
-            QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder()
-                    .addMethodScanners(
-                            methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
-                    .setIndex(index)
-                    .addContextTypes(CONTEXT_TYPES)
-                    .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
-                    .setEndpointInvokerFactory(new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
-                    .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
-                    .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
-                    .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
-                    .setExistingConverters(existingConverters)
-                    .setScannedResourcePaths(scannedResourcePaths)
-                    .setConfig(createRestReactiveConfig(config))
-                    .setAdditionalReaders(additionalReaders)
-                    .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
-                    .setInjectableBeans(injectableBeans)
-                    .setAdditionalWriters(additionalWriters)
-                    .setDefaultBlocking(appResult.getBlockingDefault())
-                    .setApplicationScanningResult(appResult)
-                    .setMultipartParameterIndexerExtension(
-                            new GeneratedMultipartParamIndexerExtension(transformationConsumer, classOutput))
-                    .setMultipartReturnTypeIndexerExtension(
-                            new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput))
-                    .setFieldInjectionIndexerExtension(
-                            new TransformedFieldInjectionIndexerExtension(transformationConsumer, false, (field) -> {
-                                initConverters.invokeStaticMethod(MethodDescriptor.ofMethod(field.getInjectedClassName(),
-                                        field.getMethodName(),
-                                        void.class, Deployment.class),
-                                        initConverters.getMethodParam(0));
-                            }))
-                    .setConverterSupplierIndexerExtension(new GeneratedConverterIndexerExtension(
-                            (name) -> new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
-                                    applicationClassPredicate.test(name))))
-                    .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
-                    .setClassLevelExceptionMappers(
-                            classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
-                                    : Collections.emptyMap())
-                    .setResourceMethodCallback(new Consumer<>() {
-                        @Override
-                        public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
-                            MethodInfo method = entry.getMethodInfo();
+            QuarkusServerEndpointIndexer.Builder serverEndpointIndexerBuilder = new QuarkusServerEndpointIndexer.Builder(
+                    capabilities)
+                            .addMethodScanners(
+                                    methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
+                            .setIndex(index)
+                            .setApplicationIndex(applicationIndexBuildItem.getIndex())
+                            .addContextTypes(additionalContextTypes(contextTypeBuildItems))
+                            .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
+                            .setEndpointInvokerFactory(
+                                    new QuarkusInvokerFactory(generatedClassBuildItemBuildProducer, recorder))
+                            .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
+                            .setBytecodeTransformerBuildProducer(bytecodeTransformerBuildItemBuildProducer)
+                            .setReflectiveClassProducer(reflectiveClassBuildItemBuildProducer)
+                            .setExistingConverters(existingConverters)
+                            .setScannedResourcePaths(scannedResourcePaths)
+                            .setConfig(createRestReactiveConfig(config))
+                            .setAdditionalReaders(additionalReaders)
+                            .setHttpAnnotationToMethod(result.getHttpAnnotationToMethod())
+                            .setInjectableBeans(injectableBeans)
+                            .setAdditionalWriters(additionalWriters)
+                            .setDefaultBlocking(appResult.getBlockingDefault())
+                            .setApplicationScanningResult(appResult)
+                            .setMultipartParameterIndexerExtension(
+                                    new GeneratedMultipartParamIndexerExtension(transformationConsumer, classOutput))
+                            .setMultipartReturnTypeIndexerExtension(
+                                    new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput))
+                            .setFieldInjectionIndexerExtension(
+                                    new TransformedFieldInjectionIndexerExtension(transformationConsumer, false, (field) -> {
+                                        initConverters.invokeStaticMethod(
+                                                MethodDescriptor.ofMethod(field.getInjectedClassName(),
+                                                        field.getMethodName(),
+                                                        void.class, Deployment.class),
+                                                initConverters.getMethodParam(0));
+                                    }))
+                            .setConverterSupplierIndexerExtension(new GeneratedConverterIndexerExtension(
+                                    (name) -> new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
+                                            applicationClassPredicate.test(name))))
+                            .setHasRuntimeConverters(!paramConverterProviders.getParamConverterProviders().isEmpty())
+                            .setClassLevelExceptionMappers(
+                                    classLevelExceptionMappers.isPresent() ? classLevelExceptionMappers.get().getMappers()
+                                            : Collections.emptyMap())
+                            .setResourceMethodCallback(new Consumer<>() {
+                                @Override
+                                public void accept(EndpointIndexer.ResourceMethodCallbackData entry) {
+                                    MethodInfo method = entry.getMethodInfo();
 
-                            resourceMethodEntries.add(new ResteasyReactiveResourceMethodEntriesBuildItem.Entry(
-                                    entry.getBasicResourceClassInfo(), method,
-                                    entry.getActualEndpointInfo(), entry.getResourceMethod()));
+                                    resourceMethodEntries.add(new ResteasyReactiveResourceMethodEntriesBuildItem.Entry(
+                                            entry.getBasicResourceClassInfo(), method,
+                                            entry.getActualEndpointInfo(), entry.getResourceMethod()));
 
-                            String source = ResteasyReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
-                                    + "[" + method + "]";
+                                    String source = ResteasyReactiveProcessor.class.getSimpleName() + " > "
+                                            + method.declaringClass()
+                                            + "[" + method + "]";
 
-                            ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
-                                    entry.getActualEndpointInfo(), index, c -> c);
-                            if (classInfoWithSecurity != null) {
-                                reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false,
-                                        entry.getActualEndpointInfo().name().toString()));
-                            }
+                                    ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
+                                            entry.getActualEndpointInfo(), index, c -> c);
+                                    if (classInfoWithSecurity != null) {
+                                        reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, false,
+                                                entry.getActualEndpointInfo().name().toString()));
+                                    }
 
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                    .type(method.returnType())
-                                    .index(index)
-                                    .ignoreTypePredicate(QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                                    .ignoreFieldPredicate(QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                                    .ignoreMethodPredicate(
-                                            QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                    .source(source)
-                                    .build());
-
-                            for (short i = 0; i < method.parameters().size(); i++) {
-                                Type parameterType = method.parameters().get(i);
-                                if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
                                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                            .type(parameterType)
+                                            .type(method.returnType())
                                             .index(index)
                                             .ignoreTypePredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
@@ -470,24 +482,39 @@ public class ResteasyReactiveProcessor {
                                                     QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                             .source(source)
                                             .build());
-                                }
-                            }
-                        }
 
-                        private boolean hasAnnotation(MethodInfo method, short paramPosition, DotName annotation) {
-                            for (AnnotationInstance annotationInstance : method.annotations()) {
-                                AnnotationTarget target = annotationInstance.target();
-                                if (target != null && target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER
-                                        && target.asMethodParameter().position() == paramPosition
-                                        && annotationInstance.name().equals(annotation)) {
-                                    return true;
+                                    for (short i = 0; i < method.parameters().size(); i++) {
+                                        Type parameterType = method.parameters().get(i);
+                                        if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
+                                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                                    .type(parameterType)
+                                                    .index(index)
+                                                    .ignoreTypePredicate(
+                                                            QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                                    .ignoreFieldPredicate(
+                                                            QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                                    .ignoreMethodPredicate(
+                                                            QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                                    .source(source)
+                                                    .build());
+                                        }
+                                    }
                                 }
-                            }
-                            return false;
-                        }
-                    })
-                    .setResteasyReactiveRecorder(recorder)
-                    .setApplicationClassPredicate(applicationClassPredicate);
+
+                                private boolean hasAnnotation(MethodInfo method, short paramPosition, DotName annotation) {
+                                    for (AnnotationInstance annotationInstance : method.annotations()) {
+                                        AnnotationTarget target = annotationInstance.target();
+                                        if (target != null && target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER
+                                                && target.asMethodParameter().position() == paramPosition
+                                                && annotationInstance.name().equals(annotation)) {
+                                            return true;
+                                        }
+                                    }
+                                    return false;
+                                }
+                            })
+                            .setResteasyReactiveRecorder(recorder)
+                            .setApplicationClassPredicate(applicationClassPredicate);
 
             if (!serverDefaultProducesHandlers.isEmpty()) {
                 List<DefaultProducesHandler> handlers = new ArrayList<>(serverDefaultProducesHandlers.size());
@@ -578,6 +605,18 @@ public class ResteasyReactiveProcessor {
         handleDateFormatReflection(reflectiveClass, index);
     }
 
+    private Collection<DotName> additionalContextTypes(List<ContextTypeBuildItem> contextTypeBuildItems) {
+        if (contextTypeBuildItems.isEmpty()) {
+            return CONTEXT_TYPES;
+        }
+        Set<DotName> contextTypes = new HashSet<>(CONTEXT_TYPES.size() + contextTypeBuildItems.size());
+        contextTypes.addAll(CONTEXT_TYPES);
+        for (ContextTypeBuildItem bi : contextTypeBuildItems) {
+            contextTypes.add(bi.getType());
+        }
+        return contextTypes;
+    }
+
     private void handleDateFormatReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, IndexView index) {
         Collection<AnnotationInstance> dateFormatInstances = index.getAnnotations(DATE_FORMAT);
         if (dateFormatInstances.isEmpty()) {
@@ -659,7 +698,7 @@ public class ResteasyReactiveProcessor {
             ContextResolversBuildItem contextResolversBuildItem,
             ResteasyReactiveServerConfig serverConfig,
             LaunchModeBuildItem launchModeBuildItem,
-            List<CopyVertxContextDataBuildItem> copyVertxContextDataBuildItems)
+            List<ResumeOn404BuildItem> resumeOn404Items)
             throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
@@ -735,7 +774,7 @@ public class ResteasyReactiveProcessor {
         BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
                 beanContainerBuildItem.getValue());
 
-        String applicationPath = determineApplicationPath(index, getAppPath(serverConfig.path));
+        String applicationPath = determineApplicationPath(appResult, getAppPath(serverConfig.path));
         // spec allows the path contain encoded characters
         if ((applicationPath != null) && applicationPath.contains("%")) {
             applicationPath = Encode.decodePath(applicationPath);
@@ -777,8 +816,7 @@ public class ResteasyReactiveProcessor {
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent,
-                copyVertxContextDataBuildItems.stream().map(CopyVertxContextDataBuildItem::getProperty).collect(toList()));
+                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent || !resumeOn404Items.isEmpty());
 
         quarkusRestDeploymentBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
@@ -960,32 +998,19 @@ public class ResteasyReactiveProcessor {
         return newPropertyValue;
     }
 
-    private String determineApplicationPath(IndexView index, Optional<String> defaultPath) {
-        Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyReactiveDotNames.APPLICATION_PATH);
-        if (applicationPaths.isEmpty()) {
+    private String determineApplicationPath(ApplicationScanningResult appResult,
+            Optional<String> defaultPath) {
+        if (appResult.getSelectedAppClass() == null) {
             return defaultPath.orElse("/");
         }
-        // currently we only examine the first class that is annotated with @ApplicationPath so best
-        // fail if the user code has multiple such annotations instead of surprising the user
-        // at runtime
-        if (applicationPaths.size() > 1) {
-            StringBuilder sb = new StringBuilder();
-            boolean first = true;
-            for (AnnotationInstance annotationInstance : applicationPaths) {
-                if (first) {
-                    first = false;
-                } else {
-                    sb.append(",");
-                }
-                sb.append(annotationInstance.target().asClass().name().toString());
-            }
-            throw new RuntimeException("Multiple classes ( " + sb.toString()
-                    + ") have been annotated with @ApplicationPath which is currently not supported");
+        AnnotationInstance applicationPathValue = appResult.getSelectedAppClass()
+                .classAnnotation(ResteasyReactiveDotNames.APPLICATION_PATH);
+        if (applicationPathValue == null) {
+            return defaultPath.orElse("/");
         }
         String applicationPath = null;
-        AnnotationValue applicationPathValue = applicationPaths.iterator().next().value();
-        if ((applicationPathValue != null)) {
-            applicationPath = applicationPathValue.asString();
+        if ((applicationPathValue.value() != null)) {
+            applicationPath = applicationPathValue.value().asString();
         }
         return applicationPath;
     }

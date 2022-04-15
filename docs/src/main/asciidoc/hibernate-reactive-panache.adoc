@@ -72,21 +72,32 @@ In your `pom.xml`, add the following dependencies:
 * the Hibernate Reactive with Panache extension
 * your reactive driver extension (`quarkus-reactive-pg-client`, `quarkus-reactive-mysql-client`, `quarkus-reactive-db2-client`, ...)
 
-[source,xml]
-----
-<dependencies>
-    <!-- Hibernate Reactive specific dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-hibernate-reactive-panache</artifactId>
-    </dependency>
+For instance:
 
-    <!-- JDBC driver dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-reactive-pg-client</artifactId>
-    </dependency>
-</dependencies>
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<!-- Hibernate Reactive dependency -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+</dependency>
+
+<!-- Reactive SQL client for PostgreSQL -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-reactive-pg-client</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// Hibernate Reactive dependency
+implementation("io.quarkus:quarkus-hibernate-reactive-panache")
+
+Reactive SQL client for PostgreSQL
+implementation("io.quarkus:quarkus-reactive-pg-client")
 ----
 
 Then add the relevant configuration properties in `{config-file}`.
@@ -591,10 +602,9 @@ public class PersonName {
 // only 'name' will be loaded from the database
 PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
 ----
-
-1. The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on  the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
-2. We use public fields here, but you can use private fields and getters/setters if you prefer.
-3. This constructor will be used by Hibernate, and it must have a matching constructor with all the class attributes as parameters.
+<1> The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on  the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
+<2> We use public fields here, but you can use private fields and getters/setters if you prefer.
+<3> This constructor will be used by Hibernate, and it must have a matching constructor with all the class attributes as parameters.
 
 
 [WARNING]
@@ -629,8 +639,7 @@ public class DogDto {
 
 PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
-
-1. The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
+<1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
 
 == Multiple Persistence Units
 
@@ -669,6 +678,13 @@ public Uni<Void> create(Person person){
             });
 }
 ----
+
+The `@ReactiveTransactional` annotation will also work for testing.
+This means that changes done during the test will be propagated to the database.
+If you want any changes made to be rolled back at the end of
+the test you can use the `io.quarkus.test.TestReactiveTransaction` annotation.
+This will run the test method in a transaction, but roll it back once the test method is
+complete to revert any database changes.
 
 == Lock management
 
@@ -760,9 +776,10 @@ If you are using the active record pattern you cannot use Mockito directly as it
 but you can use the `quarkus-panache-mock` module which allows you to use Mockito to mock all provided static
 methods, including your own.
 
-Add this dependency to your `pom.xml`:
+Add this dependency to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -771,6 +788,11 @@ Add this dependency to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-panache-mock")
+----
 
 Given this simple entity:
 
@@ -872,13 +894,20 @@ public class PanacheMockingTest {
 If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit5-mockito` module,
 which makes mocking beans much easier:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-junit5-mockito</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-junit5-mockito")
 ----
 
 Given this simple entity:

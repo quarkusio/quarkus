@@ -43,7 +43,6 @@ import org.jboss.resteasy.reactive.server.processor.scanning.CacheControlScanner
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveContextResolverScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveExceptionMappingScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFeatureScanner;
-import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
 
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.Unremovable;
@@ -88,6 +87,11 @@ public class ResteasyReactiveScanningProcessor {
     @BuildStep
     public MethodScannerBuildItem cacheControlSupport() {
         return new MethodScannerBuildItem(new CacheControlScanner());
+    }
+
+    @BuildStep
+    public MethodScannerBuildItem compressionSupport() {
+        return new MethodScannerBuildItem(new CompressionScanner());
     }
 
     @BuildStep
@@ -155,18 +159,13 @@ public class ResteasyReactiveScanningProcessor {
     }
 
     @BuildStep
-    public ParamConverterProvidersBuildItem scanForParamConverters(CombinedIndexBuildItem combinedIndexBuildItem,
+    public ParamConverterProvidersBuildItem scanForParamConverters(
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            ApplicationResultBuildItem applicationResultBuildItem,
             List<ParamConverterBuildItem> paramConverterBuildItems) {
 
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
-        ParamConverterProviders paramConverterProviders = ResteasyReactiveParamConverterScanner
-                .scanForParamConverters(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
-        for (ResourceParamConverterProvider i : paramConverterProviders.getParamConverterProviders()) {
-            beanBuilder.addBeanClass(i.getClassName());
-        }
+        ParamConverterProviders paramConverterProviders = new ParamConverterProviders();
         for (ParamConverterBuildItem additionalParamConverter : paramConverterBuildItems) {
             if (additionalParamConverter.isRegisterAsBean()) {
                 beanBuilder.addBeanClass(additionalParamConverter.getClassName());

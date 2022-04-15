@@ -28,6 +28,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
+import io.quarkus.registry.config.RegistriesConfigLocator;
 import picocli.CommandLine;
 
 public class MavenRunner implements BuildSystemRunner {
@@ -127,6 +128,36 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
+    public Integer info(boolean perModule) throws Exception {
+        ArrayDeque<String> args = new ArrayDeque<>();
+        setMavenProperties(args, true);
+        args.add("quarkus:info");
+        if (perModule) {
+            args.add("-DperModule");
+        }
+        args.add("-ntp");
+        return run(prependExecutable(args));
+    }
+
+    @Override
+    public Integer update(boolean rectify, boolean recommendedState, boolean perModule) {
+        ArrayDeque<String> args = new ArrayDeque<>();
+        setMavenProperties(args, true);
+        args.add("quarkus:update");
+        if (rectify) {
+            args.add("-Drectify");
+        }
+        if (recommendedState) {
+            args.add("-DrecommendedState");
+        }
+        if (perModule) {
+            args.add("-DperModule");
+        }
+        args.add("-ntp");
+        return run(prependExecutable(args));
+    }
+
+    @Override
     public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, runMode.isBatchMode());
@@ -203,9 +234,28 @@ public class MavenRunner implements BuildSystemRunner {
             args.addFirst("-Dstyle.color=always");
         }
 
+        String mavenSettings = propertiesOptions.properties.remove("maven.settings");
+        if (mavenSettings != null && !mavenSettings.isEmpty()) {
+            args.add("-s");
+            args.add(mavenSettings);
+        } else {
+            mavenSettings = System.getProperty("maven.settings");
+            if (mavenSettings != null && !mavenSettings.isEmpty()) {
+                args.add("-s");
+                args.add(mavenSettings);
+            }
+        }
+
         // add specified properties
         args.addAll(flattenMappedProperties(propertiesOptions.properties));
         args.add(registryClient.getRegistryClientProperty());
+
+        final String configFile = registryClient.getConfigArg() == null
+                ? System.getProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY)
+                : registryClient.getConfigArg();
+        if (configFile != null) {
+            args.add("-D" + RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY + "=" + configFile);
+        }
     }
 
     void verifyBuildFile() {

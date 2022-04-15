@@ -680,15 +680,11 @@ public class UndertowBuildStep {
                 List<String> urlPatterns = new ArrayList<String>();
                 AnnotationValue urlPatternsValue = annotation.value("urlPatterns");
                 if (urlPatternsValue != null) {
-                    for (String urlPattern : urlPatternsValue.asStringArray()) {
-                        urlPatterns.add(urlPattern);
-                    }
+                    Collections.addAll(urlPatterns, urlPatternsValue.asStringArray());
                 }
                 urlPatternsValue = annotation.value();
                 if (urlPatternsValue != null) {
-                    for (String urlPattern : urlPatternsValue.asStringArray()) {
-                        urlPatterns.add(urlPattern);
-                    }
+                    Collections.addAll(urlPatterns, urlPatternsValue.asStringArray());
                 }
                 if (urlPatterns.size() > 0) {
                     servletMapping.setUrlPatterns(urlPatterns);
@@ -747,24 +743,18 @@ public class UndertowBuildStep {
                 List<DispatcherType> dispatchers = new ArrayList<DispatcherType>();
                 AnnotationValue urlPatternsValue = annotation.value("urlPatterns");
                 if (urlPatternsValue != null) {
-                    for (String urlPattern : urlPatternsValue.asStringArray()) {
-                        urlPatterns.add(urlPattern);
-                    }
+                    Collections.addAll(urlPatterns, urlPatternsValue.asStringArray());
                 }
                 urlPatternsValue = annotation.value();
                 if (urlPatternsValue != null) {
-                    for (String urlPattern : urlPatternsValue.asStringArray()) {
-                        urlPatterns.add(urlPattern);
-                    }
+                    Collections.addAll(urlPatterns, urlPatternsValue.asStringArray());
                 }
                 if (urlPatterns.size() > 0) {
                     filterMapping.setUrlPatterns(urlPatterns);
                 }
                 AnnotationValue servletNamesValue = annotation.value("servletNames");
                 if (servletNamesValue != null) {
-                    for (String servletName : servletNamesValue.asStringArray()) {
-                        servletNames.add(servletName);
-                    }
+                    Collections.addAll(servletNames, servletNamesValue.asStringArray());
                 }
                 if (servletNames.size() > 0) {
                     filterMapping.setServletNames(servletNames);
@@ -916,9 +906,7 @@ public class UndertowBuildStep {
                     }
                     AnnotationValue rolesAllowedValue = httpConstraint.value("rolesAllowed");
                     if (rolesAllowedValue != null) {
-                        for (String role : rolesAllowedValue.asStringArray()) {
-                            rolesAllowed.add(role);
-                        }
+                        Collections.addAll(rolesAllowed, rolesAllowedValue.asStringArray());
                     }
                 }
                 servletSecurity.setRolesAllowed(rolesAllowed);
@@ -946,9 +934,7 @@ public class UndertowBuildStep {
                             AnnotationValue rolesAllowedValue = httpMethodConstraint.value("rolesAllowed");
                             rolesAllowed = new ArrayList<String>();
                             if (rolesAllowedValue != null) {
-                                for (String role : rolesAllowedValue.asStringArray()) {
-                                    rolesAllowed.add(role);
-                                }
+                                Collections.addAll(rolesAllowed, rolesAllowedValue.asStringArray());
                             }
                             methodConstraint.setRolesAllowed(rolesAllowed);
                             methodConstraints.add(methodConstraint);

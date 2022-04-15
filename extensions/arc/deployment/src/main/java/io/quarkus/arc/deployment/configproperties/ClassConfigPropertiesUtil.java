@@ -173,7 +173,7 @@ final class ClassConfigPropertiesUtil {
          * Add a method like this:
          *
          * @Produces
-         * 
+         *
          * @Default // (or @ConfigPrefix qualifier)
          * public SomeClass produceSomeClass(Config config) {
          *
@@ -182,7 +182,7 @@ final class ClassConfigPropertiesUtil {
          * or
          *
          * @Produces
-         * 
+         *
          * @Default // (or @ConfigPrefix qualifier)
          * public SomeClass produceSomeClass(Config config, Validator validator) {
          *
@@ -352,7 +352,7 @@ final class ClassConfigPropertiesUtil {
                                     MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
                                             Class.class),
                                     mpConfig, methodCreator.load(fullConfigName),
-                                    methodCreator.loadClass(genericType.name().toString()));
+                                    methodCreator.loadClassFromTCCL(genericType.name().toString()));
                             createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
                         } else {
                             // convert the String value and populate an Optional with it

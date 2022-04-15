@@ -19,7 +19,7 @@ import org.wildfly.security.authz.Roles;
  * <p>
  * A default implementation of {@link RoleDecoder} that delegates decoding of roles for a given {@link AuthorizationIdentity} to
  * an application specific implementation of {@link RoleDecoder}, if provided.
- * 
+ *
  */
 @ApplicationScoped
 public class DefaultRoleDecoder {

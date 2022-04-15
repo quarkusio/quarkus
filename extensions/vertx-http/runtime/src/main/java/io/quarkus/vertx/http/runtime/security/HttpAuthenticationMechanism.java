@@ -31,11 +31,26 @@ public interface HttpAuthenticationMechanism {
     }
 
     /**
-     * The credential transport, used to make sure multiple incompatible mechanisms are not installed
-     * 
+     * The credential transport, used for finding the best candidate for authenticating and challenging when more than one
+     * mechanism is installed.
+     * and finding the best candidate for issuing a challenge when more than one mechanism is installed.
+     *
      * May be null if this mechanism cannot interfere with other mechanisms
      */
-    HttpCredentialTransport getCredentialTransport();
+    @Deprecated
+    default HttpCredentialTransport getCredentialTransport() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * The credential transport, used for finding the best candidate for authenticating and challenging when more than one
+     * mechanism is installed.
+     *
+     * May be null if this mechanism cannot interfere with other mechanisms
+     */
+    default Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        throw new UnsupportedOperationException();
+    }
 
     class ChallengeSender implements Function<ChallengeData, Boolean> {
 

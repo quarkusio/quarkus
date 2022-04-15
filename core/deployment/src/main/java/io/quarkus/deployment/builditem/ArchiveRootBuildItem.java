@@ -138,7 +138,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
      * (returned by {@link #getResolvedPaths()} this method will return the path to the root of the mounted
      * {@link java.nio.file.ZipFileSystem}
      * instead.
-     * 
+     *
      * @deprecated in favor of {@link #getRootDirectories()}
      *
      * @return Collection of path representing the archive's root directories.
@@ -162,7 +162,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
     /**
      * Collection of paths that collectively constitute the application archive's content.
-     * 
+     *
      * @deprecated in favor of {@link #getResolvedPaths()}
      *
      * @return collection of paths that collectively constitute the application archive content.

@@ -38,7 +38,7 @@ public class FlywayH2TestCustomizer {
 
     void startH2() {
         try {
-            tcpServer = Server.createTcpServer("-tcpPort", String.valueOf(port));
+            tcpServer = Server.createTcpServer("-tcpPort", String.valueOf(port), "-ifNotExists");
             tcpServer.start();
             System.out.println("[INFO] Custom H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
             if (initSqlFile != null) {

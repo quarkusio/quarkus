@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-resteasy-jaxb</artifactId>
     <name>Quarkus - RESTEasy - JAXB - Runtime</name>
-    <description>XML serialization support for RESTEasy</description>
+    <description>XML serialization support for RESTEasy Classic</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -51,4 +51,28 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jakarta-rewrite</id>
+            <activation>
+                <property>
+                    <name>jakarta-rewrite</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <configuration>
+                            <activeRecipes>
+                                <recipe>io.quarkus.jakarta-jaxb-switch</recipe>
+                            </activeRecipes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

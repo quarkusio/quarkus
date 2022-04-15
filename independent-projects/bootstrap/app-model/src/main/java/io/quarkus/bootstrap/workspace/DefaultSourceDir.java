@@ -2,7 +2,6 @@ package io.quarkus.bootstrap.workspace;
 
 import io.quarkus.paths.DirectoryPathTree;
 import io.quarkus.paths.PathTree;
-import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -12,16 +11,17 @@ import java.util.Objects;
 
 public class DefaultSourceDir implements SourceDir, Serializable {
 
+    private static final long serialVersionUID = 6544177650615687691L;
     private final PathTree srcTree;
     private final PathTree outputTree;
     private final Map<Object, Object> data;
 
-    public DefaultSourceDir(File srcDir, File destinationDir) {
+    public DefaultSourceDir(Path srcDir, Path destinationDir) {
         this(srcDir, destinationDir, Collections.emptyMap());
     }
 
-    public DefaultSourceDir(File srcDir, File destinationDir, Map<Object, Object> data) {
-        this(new DirectoryPathTree(srcDir.toPath()), new DirectoryPathTree(destinationDir.toPath()), data);
+    public DefaultSourceDir(Path srcDir, Path destinationDir, Map<Object, Object> data) {
+        this(new DirectoryPathTree(srcDir), new DirectoryPathTree(destinationDir), data);
     }
 
     public DefaultSourceDir(PathTree srcTree, PathTree outputTree, Map<Object, Object> data) {

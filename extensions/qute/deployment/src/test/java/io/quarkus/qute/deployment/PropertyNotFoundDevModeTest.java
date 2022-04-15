@@ -26,10 +26,10 @@ public class PropertyNotFoundDevModeTest {
 
     @Test
     public void testExceptionIsThrown() {
-        assertEquals("Entry \"foo\" not found in the data map in expression {foo.surname} in template foo on line 1",
+        assertEquals("Entry \"foo\" not found in the data map in expression {foo.surname} in template foo.html on line 1",
                 RestAssured.get("test-foo").then().statusCode(200).extract().body().asString());
         assertEquals(
-                "Property \"name\" not found on the base object \"java.lang.String\" in expression {bar.name} in template bar on line 1",
+                "Property \"name\" not found on the base object \"java.lang.String\" in expression {bar.name} in template bar.html on line 1",
                 RestAssured.get("test-bar").then().statusCode(200).extract().body().asString());
     }
 

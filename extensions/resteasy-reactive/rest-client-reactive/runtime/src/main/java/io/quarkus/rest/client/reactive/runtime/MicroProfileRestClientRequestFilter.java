@@ -6,21 +6,20 @@ import java.util.Map;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.RequestScoped;
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.HeaderFiller;
 import io.quarkus.rest.client.reactive.ReactiveClientHeadersFactory;
 
 @Priority(Integer.MIN_VALUE)
-public class MicroProfileRestClientRequestFilter implements ClientRequestFilter {
+public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClientRequestFilter {
 
     private static final MultivaluedMap<String, String> EMPTY_MAP = new MultivaluedHashMap<>();
 
@@ -31,7 +30,7 @@ public class MicroProfileRestClientRequestFilter implements ClientRequestFilter 
     }
 
     @Override
-    public void filter(ClientRequestContext requestContext) {
+    public void filter(ResteasyReactiveClientRequestContext requestContext) {
         HeaderFiller headerFiller = (HeaderFiller) requestContext.getProperty(HeaderFiller.class.getName());
 
         // mutable collection of headers
@@ -67,22 +66,22 @@ public class MicroProfileRestClientRequestFilter implements ClientRequestFilter 
         if (clientHeadersFactory != null) {
             if (clientHeadersFactory instanceof ReactiveClientHeadersFactory) {
                 // reactive
-                ResteasyReactiveClientRequestContext reactiveRequestContext = (ResteasyReactiveClientRequestContext) requestContext;
                 ReactiveClientHeadersFactory reactiveClientHeadersFactory = (ReactiveClientHeadersFactory) clientHeadersFactory;
-                reactiveRequestContext.suspend();
-                MultivaluedMap<String, String> outgoingHeaders = incomingHeaders;
-                reactiveClientHeadersFactory.getHeaders(incomingHeaders).subscribe().with(newHeaders -> {
-                    outgoingHeaders.putAll(newHeaders);
-                    reactiveRequestContext.resume();
-                }, reactiveRequestContext::resume);
+                requestContext.suspend();
+                reactiveClientHeadersFactory.getHeaders(incomingHeaders, headers).subscribe().with(newHeaders -> {
+                    for (Map.Entry<String, List<String>> headerEntry : newHeaders.entrySet()) {
+                        requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+                    }
+                    requestContext.resume();
+                }, requestContext::resume);
             } else {
                 // blocking
                 incomingHeaders = clientHeadersFactory.update(incomingHeaders, headers);
-            }
-        }
 
-        for (Map.Entry<String, List<String>> headerEntry : incomingHeaders.entrySet()) {
-            requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+                for (Map.Entry<String, List<String>> headerEntry : incomingHeaders.entrySet()) {
+                    requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+                }
+            }
         }
     }
 

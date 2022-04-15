@@ -20,14 +20,24 @@ But first, read this page (including the small print at the end).
   + [IDE Config and Code Style](#ide-config-and-code-style)
     - [Eclipse Setup](#eclipse-setup)
     - [IDEA Setup](#idea-setup)
+      * [How to work](#how-to-work)
+      * [`OutOfMemoryError` while importing](#-outofmemoryerror--while-importing)
+      * [`package sun.misc does not exist` while building](#-package-sunmisc-does-not-exist--while-building)
+      * [Formatting](#formatting)
 * [Build](#build)
   + [Workflow tips](#workflow-tips)
     - [Building all modules of an extension](#building-all-modules-of-an-extension)
     - [Building a single module of an extension](#building-a-single-module-of-an-extension)
     - [Running a single test](#running-a-single-test)
+      * [Maven Invoker tests](#maven-invoker-tests)
+  + [Build with multiple threads](#build-with-multiple-threads)
+  + [Don't build any test modules](#don-t-build-any-test-modules)
     - [Automatic incremental build](#automatic-incremental-build)
       * [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
       * [Usage by CI](#usage-by-ci)
+* [Documentation](#documentation)
+  + [Building the documentation](#building-the-documentation)
+  + [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
 * [Usage](#usage)
     - [With Maven](#with-maven)
     - [With Gradle](#with-gradle)
@@ -40,6 +50,7 @@ But first, read this page (including the small print at the end).
 * [Frequently Asked Questions](#frequently-asked-questions)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 
 ## Legal
 
@@ -412,6 +423,42 @@ CI is using a slighty different GIB config than locally:
 * Certain "critical" branches like `main` are not built incrementally
 
 For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
+
+## Documentation
+
+The documentation is hosted in the [`docs` module](https://github.com/quarkusio/quarkus/tree/main/docs) of the main Quarkus repository and is synced to the [Quarkus.io website](https://quarkus.io/guides/) at release time.
+The Asciidoc files can be found in the [`src/main/asciidoc` directory](https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc).
+
+### Building the documentation
+
+When contributing a significant documentation change, it is highly recommended to run the build and check the output.
+
+First build the whole Quarkus repository with the documentation build enabled (`-Dquickly` skips the documentation build):
+
+```
+./mvnw -Dquickly -DskipDocs=false clean install
+```
+
+This will generate the configuration properties documentation includes in the root `target/asciidoc/generated/config/` directory and will avoid a lot of warnings when building the documentation module.
+
+Then you can build the `docs` module specifically:
+
+```
+./mvnw -f docs clean install
+```
+
+You can check the output of the build in the `docs/target/generated-docs/` directory.
+
+You can build the documentation this way as many times as needed, just avoid doing a `./mvnw clean` at the root level because you would lose the configuration properties documentation includes.
+
+### Referencing a new guide in the index
+
+The [Guides index page](https://quarkus.io/guides/) visible on the website is generated from a YAML file named `guides-latest.yaml` present in the [Quarkus.io website repository](https://github.com/quarkusio/quarkusio.github.io/blob/develop/_data/guides-latest.yaml).
+This particular file is for the latest stable version.
+
+When adding a new guide to the `main` version of Quarkus, you need to reference the guide in the [`main` guides index YAML file](https://github.com/quarkusio/quarkusio.github.io/blob/develop/_data/guides-main.yaml).
+
+This file will later be copied to become the new `guides-latest.yaml` file when the next major or minor version is released.
 
 ## Usage
 

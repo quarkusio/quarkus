@@ -14,10 +14,15 @@ Hibernate ORM with Panache focuses on making your entities trivial and fun to wr
 
 == First: an example
 
-What we're doing in Panache is allow you to write your Hibernate ORM entities like this:
+What we're doing in Panache is to allow you to write your Hibernate ORM entities like this:
 
 [source,java]
 ----
+public enum Status {
+    Alive,
+    Deceased
+}
+
 @Entity
 public class Person extends PanacheEntity {
     public String name;
@@ -66,26 +71,35 @@ To get started:
 
 Follow the xref:hibernate-orm.adoc#setting-up-and-configuring-hibernate-orm[Hibernate set-up guide for all configuration].
 
-In your `pom.xml`, add the following dependencies:
+In your build file, add the following dependencies:
 
-* the Panache JPA extension
+* the Hibernate ORM with Panache extension
 * your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <!-- Hibernate ORM specific dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-hibernate-orm-panache</artifactId>
-    </dependency>
+<!-- Hibernate ORM specific dependencies -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-orm-panache</artifactId>
+</dependency>
 
-    <!-- JDBC driver dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jdbc-postgresql</artifactId>
-    </dependency>
-</dependencies>
+<!-- JDBC driver dependencies -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// Hibernate ORM specific dependencies
+implementation("io.quarkus:quarkus-hibernate-orm-panache")
+
+// JDBC driver dependencies
+implementation("io.quarkus:quarkus-jdbc-postgresql")
 ----
 
 Then add the relevant configuration properties in `{config-file}`.
@@ -409,7 +423,7 @@ The repository pattern examples have been omitted for brevity.
 
 == Writing a JAX-RS resource
 
-First, include one of the RESTEasy extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-jackson` dependency for JAX-RS and JSON support.
+First, include one of the RESTEasy Reactive extensions to enable JAX-RS endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for JAX-RS and JSON support.
 
 Then, you can create the following resource to create/read/update/delete your Person entity:
 
@@ -427,7 +441,7 @@ public class PersonResource {
 
     @GET
     @Path("/{id}")
-    public Person get(@PathParam("id") Long id) {
+    public Person get(Long id) {
         return Person.findById(id);
     }
 
@@ -441,7 +455,7 @@ public class PersonResource {
     @PUT
     @Path("/{id}")
     @Transactional
-    public Person update(@PathParam("id") Long id, Person person) {
+    public Person update(Long id, Person person) {
         Person entity = Person.findById(id);
         if(entity == null) {
             throw new NotFoundException();
@@ -456,7 +470,7 @@ public class PersonResource {
     @DELETE
     @Path("/{id}")
     @Transactional
-    public void delete(@PathParam("id") Long id) {
+    public void delete(Long id) {
         Person entity = Person.findById(id);
         if(entity == null) {
             throw new NotFoundException();
@@ -466,7 +480,7 @@ public class PersonResource {
 
     @GET
     @Path("/search/{name}")
-    public Person search(@PathParam("name") String name) {
+    public Person search(String name) {
         return Person.findByName(name);
     }
 
@@ -705,17 +719,16 @@ public class PersonName {
 // only 'name' will be loaded from the database
 PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
 ----
-
-1. The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on  the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
-2. We use public fields here, but you can use private fields and getters/setters if you prefer.
-3. This constructor will be used by Hibernate, it must be the only constructor in your class and have all the class attributes as parameters.
+<1> The `@RegisterForReflection` annotation instructs Quarkus to keep the class and its members during the native compilation. More details about the `@RegisterForReflection` annotation can be found on  the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
+<2> We use public fields here, but you can use private fields and getters/setters if you prefer.
+<3> This constructor will be used by Hibernate, it must be the only constructor in your class and have all the class attributes as parameters.
 
 
 [WARNING]
 ====
 The implementation of the `project(Class)` method uses the constructor's parameter names to build the select clause of the query,
 so the compiler must be configured to store parameter names inside the compiled class.
-This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your pom.xml.
+This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your `pom.xml`.
 ====
 
 If in the DTO projection object you have a field from a referenced entity, you can use the `@ProjectedFieldName` annotation to provide the path for the SELECT statement.
@@ -743,8 +756,7 @@ public class DogDto {
 
 PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
-
-1. The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
+<1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
 
 == Multiple Persistence Units
 

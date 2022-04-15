@@ -19,6 +19,8 @@
         <datasource.username></datasource.username>
         <datasource.password></datasource.password>
 
+        <hibernate-orm.dialect>org.hibernate.dialect.H2Dialect</hibernate-orm.dialect>
+
         <!-- do not update this dependency, it is only used for testing -->
         <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
     </properties>
@@ -526,6 +528,8 @@
                 <datasource.url>${postgres.url}</datasource.url>
                 <datasource.username>hibernate_orm_test</datasource.username>
                 <datasource.password>hibernate_orm_test</datasource.password>
+
+                <hibernate-orm.dialect>org.hibernate.dialect.PostgreSQL10Dialect</hibernate-orm.dialect>
             </properties>
             <dependencies>
                 <dependency>
@@ -595,7 +599,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>postgres:14.1</name>
+                                    <name>${postgres.image}</name>
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>

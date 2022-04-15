@@ -11,6 +11,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -35,6 +36,7 @@ public class MSSQLPoolRecorder {
     private static final Logger log = Logger.getLogger(MSSQLPoolRecorder.class);
 
     public RuntimeValue<MSSQLPool> configureMSSQLPool(RuntimeValue<Vertx> vertx,
+            Supplier<Integer> eventLoopCount,
             String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
@@ -42,6 +44,7 @@ public class MSSQLPoolRecorder {
             ShutdownContext shutdown) {
 
         MSSQLPool mssqlPool = initialize(vertx.getValue(),
+                eventLoopCount.get(),
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactiveMSSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
@@ -54,10 +57,12 @@ public class MSSQLPoolRecorder {
         return new RuntimeValue<>(io.vertx.mutiny.mssqlclient.MSSQLPool.newInstance(mssqlPool.getValue()));
     }
 
-    private MSSQLPool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private MSSQLPool initialize(Vertx vertx,
+            Integer eventLoopCount,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
-        PoolOptions poolOptions = toPoolOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMSSQLConfig);
         MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig);
@@ -68,7 +73,8 @@ public class MSSQLPoolRecorder {
         return MSSQLPool.pool(vertx, mssqlConnectOptions, poolOptions);
     }
 
-    private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private PoolOptions toPoolOptions(Integer eventLoopCount,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
         PoolOptions poolOptions;
@@ -81,6 +87,19 @@ public class MSSQLPoolRecorder {
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
             int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
             poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+        }
+
+        if (dataSourceReactiveRuntimeConfig.shared) {
+            poolOptions.setShared(true);
+            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            }
+        }
+
+        if (dataSourceReactiveRuntimeConfig.eventLoopSize.isPresent()) {
+            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize.getAsInt()));
+        } else if (eventLoopCount != null) {
+            poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
 
         return poolOptions;

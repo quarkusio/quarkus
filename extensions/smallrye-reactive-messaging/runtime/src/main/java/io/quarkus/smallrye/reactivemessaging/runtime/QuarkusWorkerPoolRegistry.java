@@ -22,6 +22,7 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.smallrye.reactive.messaging.providers.connectors.WorkerPoolRegistry;
 import io.smallrye.reactive.messaging.providers.helpers.Validation;
+import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.WorkerExecutor;
 
 @AlternativePriority(1)
@@ -46,17 +47,32 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         }
     }
 
-    public <T> Uni<T> executeWork(Uni<T> uni, String workerName, boolean ordered) {
+    public <T> Uni<T> executeWork(Context currentContext, Uni<T> uni, String workerName, boolean ordered) {
         Objects.requireNonNull(uni, "Action to execute not provided");
 
         if (workerName == null) {
+            if (currentContext != null) {
+                return currentContext.executeBlocking(Uni.createFrom().deferred(() -> uni), ordered);
+            }
             return executionHolder.vertx().executeBlocking(uni, ordered);
         } else {
+            if (currentContext != null) {
+                return getWorker(workerName).executeBlocking(uni, ordered)
+                        .onItemOrFailure().transformToUni((item, failure) -> {
+                            return Uni.createFrom().emitter(emitter -> {
+                                if (failure != null) {
+                                    currentContext.runOnContext(() -> emitter.fail(failure));
+                                } else {
+                                    currentContext.runOnContext(() -> emitter.complete(item));
+                                }
+                            });
+                        });
+            }
             return getWorker(workerName).executeBlocking(uni, ordered);
         }
     }
 
-    private WorkerExecutor getWorker(String workerName) {
+    public WorkerExecutor getWorker(String workerName) {
         Objects.requireNonNull(workerName, "Worker Name not specified");
 
         if (workerExecutors.containsKey(workerName)) {

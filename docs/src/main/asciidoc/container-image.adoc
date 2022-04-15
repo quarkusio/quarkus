@@ -12,6 +12,7 @@ Quarkus provides extensions for building (and pushing) container images. Current
 - <<#jib,Jib>>
 - <<#docker,Docker>>
 - <<#s2i,S2I>>
+- <<#buildpack,Buildpack>>
 
 == Container Image extensions
 
@@ -25,10 +26,8 @@ when all that is needed is the ability to push to a container image registry.
 
 To use this feature, add the following extension to your project:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="container-image-jib"
-----
+:add-extension-extensions: container-image-jib
+include::includes/devtools/extension-add.adoc[]
 
 WARNING: In situations where all that is needed to build a container image and no push to a registry is necessary (essentially by having set `quarkus.container-image.build=true` and left `quarkus.container-image.push` unset - it defaults to `false`), then this extension creates a container image and registers
 it with the Docker daemon. This means that although Docker isn't used to build the image, it is nevertheless necessary. Also note that using this mode, the built container image *will*
@@ -44,28 +43,20 @@ For example, the presence of `src/main/jib/foo/bar` would result in  `/foo/bar` 
 ==== JVM Debugging
 
 There are cases where the built container image may need to have Java debugging conditionally enabled at runtime.
-There are a few ways to achieve this, but they all rely on the fact that in the `container-image-jib` you can control the entrypoint to use for the container image.
-By default, the container-image is created with a minimal `java -jar ...` style entrypoint, but that can be changed using the `quarkus.jib.jvm-entrypoint` configuration option.
 
-If the base image has not been changed (and therefore `fabric8/java-alpine-openjdk11-jre` is used) then you leverage that image's built-in `run-java.sh` script (more details about it can be found link:https://hub.docker.com/r/fabric8/java-alpine-openjdk11-jre#startup-script-run-javash[here]])
-by adding the following entries to `application.properties`:
+When the base image has not been changed (and therefore `ubi8/openjdk-11-runtime` or `ubi8/openjdk-17-runtime` is used), then the `quarkus.jib.jvm-additional-arguments` configuration property can be used in order to
+make the JVM listen on the debug port at startup.
+
+The exact configuration is:
 
 [source,properties]
 ----
-quarkus.jib.jvm-entrypoint=/deployments/run-java.sh #this is the location of the script in the container image
-quarkus.jib.environment-variables."JAVA_APP_DIR"=/work #this is needed so the script knows where the Quarkus jar is
+quarkus.jib.jvm-additional-arguments=-agentlib:jdwp=transport=dt_socket\\,server=y\\,suspend=n\\,address=*:5005
 ----
 
-When running the container, the `JAVA_DEBUG` environment variable can then be used to control whether or not the application will be listening on the debug port.
+Other base images might provide launch scripts that enable debugging when an environment variable is set, in which case you would set than environment variable when launching the container.
 
-An example launch command is:
-
-[source,bash]
-----
-docker run --rm -p 8080:8080 -p 5005:5005 -e JAVA_DEBUG=true quarkus/getting-started:1.0.0-SNAPSHOT
-----
-
-If you are using a different base image or would like to use a custom launch script, then see the previous section on how to add the script to the container image and set the `quarkus.jib.jvm-entrypoint` in `application.properties` to the location of that script.
+Finally, the `quarkus.jib.jvm-entrypoint` configuration property can be used to completely override the container entry point and can thus be used to either hard code the JVM debug configuration or point to a script that handles the details.
 
 [#docker]
 === Docker
@@ -74,10 +65,8 @@ The extension `quarkus-container-image-docker` is using the Docker binary and th
 
 To use this feature, add the following extension to your project.
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="container-image-docker"
-----
+:add-extension-extensions: container-image-docker
+include::includes/devtools/extension-add.adoc[]
 
 [#s2i]
 === S2I
@@ -89,22 +78,48 @@ The benefit of this approach, is that it can be combined with OpenShift's `Deplo
 
 To use this feature, add the following extension to your project.
 
-[source,xml]
-----
-./mvnw quarkus:add-extension -Dextensions="container-image-s2i"
-----
+:add-extension-extensions: container-image-s2i
+include::includes/devtools/extension-add.adoc[]
 
 S2I builds require creating a `BuildConfig` and two `ImageStream` resources, one for the builder image and one for the output image.
 The creation of such objects is being taken care of by the Quarkus Kubernetes extension.
+
+
+[#buildpack]
+=== Buildpack
+
+The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds. 
+Under the hood buildpacks will use a Docker daemon for the actual build.
+While buildpacks support alternatives to Docker, this extension will only work with Docker.
+
+Additionally, the user will have to configure which build image to use (no default image is provided). For example:
+
+[source,properties]
+----
+quarkus.buildpack.jvm-builder-image=<jvm builder image>
+----
+
+or for native:
+
+[source,properties]
+----
+quarkus.buildpack.native-builder-image=<native builder image>
+----
+
+To use this feature, add the following extension to your project.
+
+:add-extension-extensions: container-image-buildpack
+include::includes/devtools/extension-add.adoc[]
+
+NOTE: When using the buildpack container image extension it is strongly advised to avoid adding `quarkus.container-image.build=true` in your properties configuration as it might trigger nesting builds within builds. It's preferable to pass it as an option to the build command instead.
 
 == Building
 
 To build a container image for your project, `quarkus.container-image.build=true` needs to be set using any of the ways that Quarkus supports.
 
-[source,bash,subs=attributes+]
-----
-./mvnw clean package -Dquarkus.container-image.build=true
-----
+:build-additional-parameters: -Dquarkus.container-image.build=true
+include::includes/devtools/build.adoc[]
+:!build-additional-parameters:
 
 NOTE: If you ever want to build a native container image and already have an existing native image you can set `-Dquarkus.native.reuse-existing=true` and the native image build will not be re-run.
 
@@ -112,10 +127,9 @@ NOTE: If you ever want to build a native container image and already have an exi
 
 To push a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.
 
-[source,bash,subs=attributes+]
-----
-./mvnw clean package -Dquarkus.container-image.push=true
-----
+:build-additional-parameters: -Dquarkus.container-image.push=true
+include::includes/devtools/build.adoc[]
+:!build-additional-parameters:
 
 NOTE: If no registry is set (using `quarkus.container-image.registry`) then `docker.io` will be used as the default.
 

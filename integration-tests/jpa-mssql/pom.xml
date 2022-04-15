@@ -16,7 +16,6 @@
     <properties>
         <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
         <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
-        <mssqldb.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssqldb.image>
     </properties>
 
     <dependencies>
@@ -188,7 +187,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mssqldb.image}</name>
+                                    <name>${mssql.image}</name>
                                     <alias>quarkus-test-mssqldb</alias>
                                     <run>
                                         <ports>

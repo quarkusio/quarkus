@@ -31,8 +31,8 @@ integration-tests/src/test/java/
 integration-tests/src/test/java/org/
 integration-tests/src/test/java/org/extension/
 integration-tests/src/test/java/org/extension/it/
+integration-tests/src/test/java/org/extension/it/MyExtensionResourceIT.java
 integration-tests/src/test/java/org/extension/it/MyExtensionResourceTest.java
-integration-tests/src/test/java/org/extension/it/NativeMyExtensionResourceIT.java
 pom.xml
 runtime/
 runtime/pom.xml

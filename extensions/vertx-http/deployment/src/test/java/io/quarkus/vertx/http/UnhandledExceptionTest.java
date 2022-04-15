@@ -252,7 +252,11 @@ public class UnhandledExceptionTest {
             router.route("/unhandled-exception").handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext event) {
-                    throw new RuntimeException("Simulated failure");
+                    RuntimeException exception = new RuntimeException("Simulated failure");
+                    StackTraceElement[] cutDownStackTrace = new StackTraceElement[1];
+                    cutDownStackTrace[0] = exception.getStackTrace()[0];
+                    exception.setStackTrace(cutDownStackTrace);
+                    throw exception;
                 }
             });
         }

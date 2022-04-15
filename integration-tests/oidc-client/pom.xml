@@ -194,7 +194,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${keycloak.docker.image}</name>
+                                    <name>${keycloak.docker.legacy.image}</name>
                                     <alias>quarkus-test-keycloak</alias>
                                     <run>
                                         <ports>

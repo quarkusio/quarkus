@@ -1,11 +1,18 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.runtime.annotations.ConfigPhase.BOOTSTRAP;
+import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_AND_RUN_TIME_FIXED;
+import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
+import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
@@ -25,6 +32,11 @@ import io.quarkus.deployment.configuration.matching.Container;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.smallrye.config.ConfigMappingInterface.LeafProperty;
+import io.smallrye.config.ConfigMappingInterface.PrimitiveProperty;
+import io.smallrye.config.ConfigMappingInterface.Property;
+import io.smallrye.config.ConfigMappings;
+import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 
 public class ConfigDescriptionBuildStep {
 
@@ -40,11 +52,13 @@ public class ConfigDescriptionBuildStep {
             }
         });
         List<ConfigDescriptionBuildItem> ret = new ArrayList<>();
-        processConfig(config.getReadResult().getBuildTimePatternMap(), ret, javadoc, ConfigPhase.BUILD_TIME);
-        processConfig(config.getReadResult().getBuildTimeRunTimePatternMap(), ret, javadoc,
-                ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
-        processConfig(config.getReadResult().getBootstrapPatternMap(), ret, javadoc, ConfigPhase.BOOTSTRAP);
-        processConfig(config.getReadResult().getRunTimePatternMap(), ret, javadoc, ConfigPhase.RUN_TIME);
+        processConfig(config.getReadResult().getBuildTimePatternMap(), ret, javadoc, BUILD_TIME);
+        processConfig(config.getReadResult().getBuildTimeRunTimePatternMap(), ret, javadoc, BUILD_AND_RUN_TIME_FIXED);
+        processConfig(config.getReadResult().getBootstrapPatternMap(), ret, javadoc, BOOTSTRAP);
+        processConfig(config.getReadResult().getRunTimePatternMap(), ret, javadoc, RUN_TIME);
+        processMappings(config.getReadResult().getBuildTimeMappings(), ret, javadoc, BUILD_TIME);
+        processMappings(config.getReadResult().getBuildTimeRunTimeMappings(), ret, javadoc, BUILD_AND_RUN_TIME_FIXED);
+        processMappings(config.getReadResult().getRunTimeMappings(), ret, javadoc, RUN_TIME);
         return ret;
     }
 
@@ -98,7 +112,6 @@ public class ConfigDescriptionBuildStep {
                     }
                     String javadocKey = field.getDeclaringClass().getName().replace('$', '.') + '.' + field.getName();
                     ret.add(new ConfigDescriptionBuildItem(name,
-                            node.findEnclosingClass().getConfigurationClass(),
                             defVal,
                             javadoc.getProperty(javadocKey),
                             effectiveConfigTypeAndValues.getTypeName(),
@@ -106,6 +119,40 @@ public class ConfigDescriptionBuildStep {
                             configPhase));
                 }
             });
+        }
+    }
+
+    private void processMappings(List<ConfigClassWithPrefix> mappings, List<ConfigDescriptionBuildItem> descriptionBuildItems,
+            Properties javaDocProperties, ConfigPhase configPhase) {
+        for (ConfigClassWithPrefix mapping : mappings) {
+            Map<String, Property> properties = ConfigMappings.getProperties(mapping);
+            for (Map.Entry<String, Property> entry : properties.entrySet()) {
+                String propertyName = entry.getKey();
+                Property property = entry.getValue();
+                Method method = property.getMethod();
+
+                String defaultValue = null;
+                if (property instanceof PrimitiveProperty) {
+                    PrimitiveProperty primitiveProperty = (PrimitiveProperty) property;
+                    if (primitiveProperty.hasDefaultValue()) {
+                        defaultValue = primitiveProperty.getDefaultValue();
+                    } else if (primitiveProperty.getPrimitiveType() == boolean.class) {
+                        defaultValue = "false";
+                    } else if (primitiveProperty.getPrimitiveType() != char.class) {
+                        defaultValue = "0";
+                    }
+                } else if (property instanceof LeafProperty) {
+                    LeafProperty leafProperty = (LeafProperty) property;
+                    if (leafProperty.hasDefaultValue()) {
+                        defaultValue = leafProperty.getDefaultValue();
+                    }
+                }
+
+                String javadocKey = method.getDeclaringClass().getName().replace('$', '.') + '.' + method.getName();
+                // TODO - radcortez - Fix nulls
+                descriptionBuildItems.add(new ConfigDescriptionBuildItem(propertyName, defaultValue,
+                        javaDocProperties.getProperty(javadocKey), null, null, configPhase));
+            }
         }
     }
 
@@ -171,7 +218,7 @@ public class ConfigDescriptionBuildStep {
             typeAndValues.addAllowedValue(Level.WARNING.getName());
         }
 
-        // Map all primatives 
+        // Map all primatives
         if (name.equals("int")) {
             name = Integer.class.getName();
         } else if (name.equals("boolean")) {
@@ -194,7 +241,7 @@ public class ConfigDescriptionBuildStep {
         return typeAndValues;
     }
 
-    class EffectiveConfigTypeAndValues {
+    static class EffectiveConfigTypeAndValues {
         private String typeName;
         private List<String> allowedValues;
 
@@ -234,5 +281,4 @@ public class ConfigDescriptionBuildStep {
             allowedValues.add(v);
         }
     }
-
 }

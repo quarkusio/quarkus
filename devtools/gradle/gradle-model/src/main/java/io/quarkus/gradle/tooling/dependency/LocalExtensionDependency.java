@@ -6,7 +6,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class LocalExtensionDependency extends ExtensionDependency {
@@ -16,7 +16,7 @@ public class LocalExtensionDependency extends ExtensionDependency {
     private Project localProject;
 
     public LocalExtensionDependency(Project localProject, ModuleVersionIdentifier extensionId,
-            AppArtifactCoords deploymentModule,
+            ArtifactCoords deploymentModule,
             List<Dependency> conditionalDependencies, List<ArtifactKey> dependencyConditions) {
         super(extensionId, deploymentModule, conditionalDependencies, dependencyConditions);
         this.localProject = localProject;

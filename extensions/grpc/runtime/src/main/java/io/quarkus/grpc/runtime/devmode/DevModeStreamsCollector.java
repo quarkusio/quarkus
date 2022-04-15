@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import io.grpc.stub.StreamObserver;
-import io.quarkus.grpc.runtime.StreamCollector;
+import io.quarkus.grpc.stubs.StreamCollector;
 
 public class DevModeStreamsCollector implements StreamCollector {
     private final Set<StreamObserver<?>> streamObservers = new HashSet<>();

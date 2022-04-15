@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 Traditional blocking code uses link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ThreadLocal.html[`ThreadLocal`]
  variables to store contextual objects in order to avoid
 passing them as parameters everywhere. Many Quarkus extensions require those contextual objects to operate
-properly: xref:rest-json.adoc[RESTEasy], xref:cdi-reference.adoc[ArC] and xref:transaction.adoc[Transaction]
+properly: xref:rest-json.adoc[RESTEasy Reactive], xref:cdi-reference.adoc[ArC] and xref:transaction.adoc[Transaction]
 for example.
 
 If you write reactive/async code, you have to cut your work into a pipeline of code blocks that get executed
@@ -37,29 +37,33 @@ The solution is located in the `context-propagation-quickstart` {quickstarts-tre
 If you are using link:http://smallrye.io/smallrye-mutiny[Mutiny] (the `quarkus-mutiny` extension), you just need to add the
 the `quarkus-smallrye-context-propagation` extension to enable context propagation.
 
-In other words, add the following dependencies to your `pom.xml`:
+In other words, add the following dependencies to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <!-- Mutiny and RestEasy support extensions if not already included -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-mutiny</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-mutiny</artifactId>
-    </dependency>
-    <!-- Context Propagation extension -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-smallrye-context-propagation</artifactId>
-    </dependency>
-</dependencies>
+<!-- RESTEasy Reactive extension if not already included -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive</artifactId>
+</dependency>
+<!-- Context Propagation extension -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-context-propagation</artifactId>
+</dependency>
 ----
 
-With this, you will get context propagation for ArC, RESTEasy and transactions, if you are using them.
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// RESTEasy Reactive extension if not already included
+implementation("io.quarkus:quarkus-resteasy-reactive")
+// Context Propagation extension
+implementation("io.quarkus:quarkus-smallrye-context-propagation")
+----
+
+With this, you will get context propagation for ArC, RESTEasy Reactive and transactions, if you are using them.
 
 == Usage example with Mutiny
 
@@ -84,11 +88,14 @@ them to the client, you can do it like this:
     @GET
     @Path("/prices")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.TEXT_PLAIN)
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Publisher<Double> prices() {
         // get the next three prices from the price stream
         return Multi.createFrom().publisher(prices)
                 .select().first(3)
+                // The items are received from the event loop, so cannot use Hibernate ORM (classic)
+                // Switch to a worker thread, the transaction will be propagated
+                .emitOn(Infrastructure.getDefaultExecutor())
                 .map(price -> {
                     // store each price before we send them
                     Price priceEntity = new Price();
@@ -232,7 +239,7 @@ annotation:
     @GET
     @Path("/prices")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.TEXT_PLAIN)
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
     // Get rid of all context propagation, since we don't need it here
     @CurrentThreadContext(unchanged = ThreadContext.ALL_REMAINING)
     public Publisher<Double> prices() {
@@ -259,7 +266,7 @@ You can also inject a custom-built `ThreadContext` using the https://javadoc.io/
     @GET
     @Path("/prices")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.TEXT_PLAIN)
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Publisher<Double> prices() {
         // Get rid of all context propagation, since we don't need it here
         try(CleanAutoCloseable ac = SmallRyeThreadContext.withThreadContext(threadContext)){
@@ -270,33 +277,45 @@ You can also inject a custom-built `ThreadContext` using the https://javadoc.io/
     }
 ----
 
+Likewise, there is a similar way to inject a configured instance of `ManagedExecutor` using the https://javadoc.io/doc/io.smallrye/smallrye-context-propagation-api/latest/io/smallrye/context/api/ManagedExecutorConfig.html[`@ManagedExecutorConfig`] annotation:
 
-== Adding support for RxJava2
-
-You need to include the following modules to get RxJava2 support:
-
-[source,xml]
+[source,java]
 ----
-<dependencies>
-    <!-- Automatic context propagation for RxJava2 -->
-    <dependency>
-        <groupId>io.smallrye</groupId>
-        <artifactId>smallrye-context-propagation-propagators-rxjava2</artifactId>
-    </dependency>
-    <!-- 
-    Required if you want transactions extended to the end of methods returning
-    an RxJava2 type.
-     -->
-    <dependency>
-        <groupId>io.smallrye.reactive</groupId>
-        <artifactId>smallrye-reactive-converter-rxjava2</artifactId>
-    </dependency>
-    <!-- Required if you return RxJava2 types from your REST endpoints -->
-    <dependency>
-        <groupId>org.jboss.resteasy</groupId>
-        <artifactId>resteasy-rxjava2</artifactId>
-    </dependency>
-</dependencies>
+    // Custom ManagedExecutor with different async limit, queue and no propagation
+    @Inject
+    @ManagedExecutorConfig(maxAsync = 2, maxQueued = 3, cleared = ThreadContext.ALL_REMAINING)
+    ManagedExecutor configuredCustomExecutor;
+----
+
+=== Sharing configured CDI instances of ManagedExecutor and ThreadContext
+
+If you need to inject the same `ManagedExecutor` or `ThreadContext` into several places and share it's capacity, you can name the instance with https://javadoc.io/doc/io.smallrye/smallrye-context-propagation-api/latest/io/smallrye/context/api/NamedInstance.html[`@NamedInstance`] annotation.
+`@NamedInstance` is a CDI qualifier and all injections of the same type and name will therefore share the same underlying instance.
+If you also need to customize your instance, you can do so using `@ManagedExecutorConfig`/`ThreadContextConfig` annotation on one of its injection points:
+
+[source,java]
+----
+    // Custom configured ManagedExecutor with name
+    @Inject
+    @ManagedExecutorConfig(maxAsync = 2, maxQueued = 3, cleared = ThreadContext.ALL_REMAINING)
+    @NamedInstance("myExecutor")
+    ManagedExecutor sharedConfiguredExecutor;
+
+    // Since this executor has the same name, it will be the same instance as above
+    @Inject
+    @NamedInstance("myExecutor")
+    ManagedExecutor sameExecutor;
+
+    // Custom ThreadContext with a name
+    @Inject
+    @ThreadContextConfig(unchanged = ThreadContext.ALL_REMAINING)
+    @NamedInstance("myContext")
+    ThreadContext sharedConfiguredThreadContext;
+
+    // Given equal value of @NamedInstance, this ThreadContext will be the same as the above one
+    @Inject
+    @NamedInstance("myContext")
+    ThreadContext sameContext;
 ----
 
 == Context Propagation for CDI

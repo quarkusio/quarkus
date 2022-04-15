@@ -61,6 +61,7 @@ import io.quarkus.smallrye.faulttolerance.runtime.QuarkusExistingCircuitBreakerN
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.SmallRyeFaultToleranceRecorder;
+import io.smallrye.faulttolerance.CdiFaultToleranceSpi;
 import io.smallrye.faulttolerance.CircuitBreakerMaintenanceImpl;
 import io.smallrye.faulttolerance.ExecutorHolder;
 import io.smallrye.faulttolerance.FaultToleranceBinding;
@@ -196,11 +197,12 @@ public class SmallRyeFaultToleranceProcessor {
         beans.produce(builder.build());
 
         // TODO FT should be smart enough and only initialize the stuff in the recorder if it's really needed
-        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration - interceptors 
+        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration - interceptors
         // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(FaultToleranceInterceptor.class, QuarkusFaultToleranceOperationProvider.class,
-                        QuarkusExistingCircuitBreakerNames.class)
+                        QuarkusExistingCircuitBreakerNames.class, CdiFaultToleranceSpi.EagerDependencies.class,
+                        CdiFaultToleranceSpi.LazyDependencies.class)
                 .build());
 
         if (!metricsCapability.isPresent()) {

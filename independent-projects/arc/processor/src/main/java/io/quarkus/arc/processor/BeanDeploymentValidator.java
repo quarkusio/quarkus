@@ -30,13 +30,13 @@ public interface BeanDeploymentValidator extends BuildExtension {
         List<Throwable> getDeploymentProblems();
 
         /**
-         * 
+         *
          * @return a new stream of beans that form the deployment
          */
         BeanStream beans();
 
         /**
-         * 
+         *
          * @return a new stream of beans that are considered {@code unused} and were removed from the deployment
          */
         BeanStream removedBeans();

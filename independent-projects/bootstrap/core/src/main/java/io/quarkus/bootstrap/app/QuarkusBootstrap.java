@@ -6,9 +6,6 @@ import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
-import io.quarkus.bootstrap.resolver.update.VersionUpdate;
-import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
@@ -39,6 +36,8 @@ import java.util.Set;
  * to allow for customisation of the boot process.
  */
 public class QuarkusBootstrap implements Serializable {
+
+    private static final long serialVersionUID = -3400622859354530408L;
 
     /**
      * The root of the application, where the application classes live.
@@ -82,9 +81,6 @@ public class QuarkusBootstrap implements Serializable {
     private final ClassLoader baseClassLoader;
     private final AppModelResolver appModelResolver;
 
-    private final VersionUpdateNumber versionUpdateNumber;
-    private final VersionUpdate versionUpdate;
-    private final DependenciesOrigin dependenciesOrigin;
     private final ResolvedDependency appArtifact;
     private final boolean isolateDeployment;
     private final MavenArtifactResolver mavenArtifactResolver;
@@ -116,9 +112,6 @@ public class QuarkusBootstrap implements Serializable {
         this.targetDirectory = builder.targetDirectory;
         this.appModelResolver = builder.appModelResolver;
         this.assertionsEnabled = builder.assertionsEnabled;
-        this.versionUpdate = builder.versionUpdate;
-        this.versionUpdateNumber = builder.versionUpdateNumber;
-        this.dependenciesOrigin = builder.dependenciesOrigin;
         this.appArtifact = builder.appArtifact;
         this.isolateDeployment = builder.isolateDeployment;
         this.additionalDeploymentArchives = builder.additionalDeploymentArchives;
@@ -143,21 +136,11 @@ public class QuarkusBootstrap implements Serializable {
         if (existingModel != null) {
             return new CuratedApplication(this, new CurationResult(existingModel), classLoadingConfig);
         }
-        //first we check for updates
-        if (mode != Mode.PROD) {
-            if (versionUpdate != VersionUpdate.NONE) {
-                throw new BootstrapException(
-                        "updates are only supported for PROD mode for existing files, not for dev or test");
-            }
-        }
 
         BootstrapAppModelFactory appModelFactory = BootstrapAppModelFactory.newInstance()
                 .setOffline(offline)
                 .setMavenArtifactResolver(mavenArtifactResolver)
                 .setBootstrapAppModelResolver(appModelResolver)
-                .setVersionUpdate(versionUpdate)
-                .setVersionUpdateNumber(versionUpdateNumber)
-                .setDependenciesOrigin(dependenciesOrigin)
                 .setLocalProjectsDiscovery(localProjectDiscovery)
                 .setAppArtifact(appArtifact)
                 .setManagingProject(managingProject)
@@ -179,7 +162,8 @@ public class QuarkusBootstrap implements Serializable {
         return new CuratedApplication(this, appModelFactory.resolveAppModel(), classLoadingConfig);
     }
 
-    private static ConfiguredClassLoading createClassLoadingConfig(PathCollection applicationRoot, Mode mode) {
+    public static ConfiguredClassLoading createClassLoadingConfig(PathCollection applicationRoot, Mode mode,
+            List<ArtifactKey> parentFirstArtifacts) {
         //look for an application.properties
         for (Path path : applicationRoot) {
             Path props = path.resolve("application.properties");
@@ -189,6 +173,7 @@ public class QuarkusBootstrap implements Serializable {
                     p.load(in);
                     Set<ArtifactKey> parentFirst = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p, mode)));
+                    parentFirst.addAll(parentFirstArtifacts);
                     Set<ArtifactKey> liveReloadable = toArtifactSet(
                             p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, mode)));
                     Set<ArtifactKey> removedArtifacts = toArtifactSet(
@@ -204,7 +189,7 @@ public class QuarkusBootstrap implements Serializable {
                 }
             }
         }
-        return new ConfiguredClassLoading(Collections.emptySet(), Collections.emptySet(), Collections.emptySet(),
+        return new ConfiguredClassLoading(new HashSet<>(parentFirstArtifacts), Collections.emptySet(), Collections.emptySet(),
                 Collections.emptyMap(), false);
     }
 
@@ -347,9 +332,6 @@ public class QuarkusBootstrap implements Serializable {
                 .setTargetDirectory(targetDirectory)
                 .setAppModelResolver(appModelResolver)
                 .setAssertionsEnabled(assertionsEnabled)
-                .setVersionUpdateNumber(versionUpdateNumber)
-                .setVersionUpdate(versionUpdate)
-                .setDependenciesOrigin(dependenciesOrigin)
                 .setIsolateDeployment(isolateDeployment)
                 .setMavenArtifactResolver(mavenArtifactResolver)
                 .setManagingProject(managingProject)
@@ -400,18 +382,16 @@ public class QuarkusBootstrap implements Serializable {
         Path targetDirectory;
         AppModelResolver appModelResolver;
         boolean assertionsEnabled = inheritedAssertionsEnabled();
-        VersionUpdateNumber versionUpdateNumber = VersionUpdateNumber.MICRO;
-        VersionUpdate versionUpdate = VersionUpdate.NONE;
-        DependenciesOrigin dependenciesOrigin;
         ResolvedDependency appArtifact;
         boolean isolateDeployment;
         MavenArtifactResolver mavenArtifactResolver;
         ArtifactCoords managingProject;
-        List<Dependency> forcedDependencies = new ArrayList<>();
+        List<Dependency> forcedDependencies = Collections.emptyList();
         boolean disableClasspathCache;
         ApplicationModel existingModel;
         final Set<ArtifactKey> localArtifacts = new HashSet<>();
         boolean auxiliaryApplication;
+        List<ArtifactKey> parentFirstArtifacts = new ArrayList<>();
 
         public Builder() {
         }
@@ -517,23 +497,13 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
-        public Builder setVersionUpdateNumber(VersionUpdateNumber versionUpdateNumber) {
-            this.versionUpdateNumber = versionUpdateNumber;
-            return this;
-        }
-
-        public Builder setVersionUpdate(VersionUpdate versionUpdate) {
-            this.versionUpdate = versionUpdate;
-            return this;
-        }
-
-        public Builder setDependenciesOrigin(DependenciesOrigin dependenciesOrigin) {
-            this.dependenciesOrigin = dependenciesOrigin;
-            return this;
-        }
-
         public Builder setDisableClasspathCache(boolean disableClasspathCache) {
             this.disableClasspathCache = disableClasspathCache;
+            return this;
+        }
+
+        public Builder addParentFirstArtifact(ArtifactKey appArtifactKey) {
+            this.parentFirstArtifacts.add(appArtifactKey);
             return this;
         }
 
@@ -634,7 +604,7 @@ public class QuarkusBootstrap implements Serializable {
                 localArtifacts.add(appArtifact.getKey());
             }
 
-            ConfiguredClassLoading classLoadingConfig = createClassLoadingConfig(applicationRoot, mode);
+            ConfiguredClassLoading classLoadingConfig = createClassLoadingConfig(applicationRoot, mode, parentFirstArtifacts);
             if (classLoadingConfig.flatTestClassPath && mode == Mode.TEST) {
                 flatClassPath = true;
             }

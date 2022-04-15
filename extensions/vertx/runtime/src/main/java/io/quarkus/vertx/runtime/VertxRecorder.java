@@ -1,5 +1,8 @@
 package io.quarkus.vertx.runtime;
 
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +20,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -26,6 +30,7 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 
 @Recorder
@@ -81,7 +86,7 @@ public class VertxRecorder {
                 // Create a context attached to each consumer
                 // If we don't all consumers will use the same event loop and so published messages (dispatched to all
                 // consumers) delivery is serialized.
-                Context context = vi.createEventLoopContext();
+                ContextInternal context = vi.createEventLoopContext();
                 context.runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void x) {
@@ -96,7 +101,10 @@ public class VertxRecorder {
                             @Override
                             public void handle(Message<Object> m) {
                                 if (invoker.isBlocking()) {
-                                    context.executeBlocking(new Handler<Promise<Object>>() {
+                                    // We need to create a duplicated context from the "context"
+                                    Context dup = VertxContext.getOrCreateDuplicatedContext(context);
+                                    setContextSafe(dup, true);
+                                    dup.executeBlocking(new Handler<Promise<Object>>() {
                                         @Override
                                         public void handle(Promise<Object> event) {
                                             try {
@@ -113,7 +121,11 @@ public class VertxRecorder {
                                         }
                                     }, invoker.isOrdered(), null);
                                 } else {
-                                    // Will run on the context used for the consumer registration
+                                    // Will run on the context used for the consumer registration.
+                                    // It's a duplicated context, but we need to mark it as safe.
+                                    // The safety comes from the fact that it's instantiated by Vert.x for every
+                                    // message.
+                                    setCurrentContextSafe(true);
                                     try {
                                         invoker.invoke(m);
                                     } catch (Exception e) {

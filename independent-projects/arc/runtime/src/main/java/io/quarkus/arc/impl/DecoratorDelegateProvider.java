@@ -14,7 +14,7 @@ public class DecoratorDelegateProvider implements InjectableReferenceProvider<Ob
 
     /**
      * Set the current delegate for a non-null parameter, remove the threadlocal for null parameter.
-     * 
+     *
      * @param delegate
      * @return the previous delegate or {@code null}
      */

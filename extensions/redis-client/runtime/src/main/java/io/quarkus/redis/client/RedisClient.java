@@ -19,7 +19,7 @@ import io.vertx.redis.client.Response;
 public interface RedisClient {
     /**
      * Creates the {@link RedisClient} using the default redis client configuration
-     * 
+     *
      * @return {@link RedisClient} - the default redis client
      */
     static RedisClient createClient() {
@@ -28,7 +28,7 @@ public interface RedisClient {
 
     /**
      * Creates the {@link RedisClient} using the named redis client configuration
-     * 
+     *
      * @return {@link RedisClient} - the named client
      */
     static RedisClient createClient(String name) {

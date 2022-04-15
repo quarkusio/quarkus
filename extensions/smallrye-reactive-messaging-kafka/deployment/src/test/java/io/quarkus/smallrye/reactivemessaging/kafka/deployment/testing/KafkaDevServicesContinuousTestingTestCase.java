@@ -25,7 +25,7 @@ public class KafkaDevServicesContinuousTestingTestCase {
 
     @RegisterExtension
     public static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -33,7 +33,7 @@ public class KafkaDevServicesContinuousTestingTestCase {
                             .addAsResource(new StringAsset(ContinuousTestingTestUtils.appProperties("")),
                                     "application.properties");
                 }
-            }).setTestArchiveProducer(new Supplier<JavaArchive>() {
+            }).setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClass(PriceResourceET.class);

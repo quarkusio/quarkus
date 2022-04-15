@@ -18,14 +18,9 @@ Please read the xref:security-openid-connect-web-authentication.adoc[Using OpenI
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
-* Docker
 
 == Architecture
 
@@ -48,32 +43,31 @@ The solution is located in the `security-openid-connect-multi-tenancy-quickstart
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-openid-connect-multi-tenancy-quickstart \
-    -Dextensions="oidc,resteasy-jackson" \
-    -DnoExamples
-cd security-openid-connect-multi-tenancy-quickstart
-----
+:create-app-artifact-id: security-openid-connect-multi-tenancy-quickstart
+:create-app-extensions: oidc,resteasy-reactive-jackson
+include::includes/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `oidc` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="oidc"
-----
+:add-extension-extensions: oidc
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-oidc</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-oidc")
 ----
 
 == Writing the application
@@ -87,6 +81,7 @@ package org.acme.quickstart.oidc;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -109,6 +104,7 @@ public class HomeResource {
      * @return the landing page HTML
      */
     @GET
+    @Produces("text/html")
     public String getHome() {
         StringBuilder response = new StringBuilder().append("<html>").append("<body>");
         
@@ -214,12 +210,12 @@ public class CustomTenantResolver implements TenantResolver {
 [source,properties]
 ----
 # Default Tenant Configuration
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=multi-tenant-client
 quarkus.oidc.application-type=web-app
 
 # Tenant A Configuration
-quarkus.oidc.tenant-a.auth-server-url=http://localhost:8180/auth/realms/tenant-a
+quarkus.oidc.tenant-a.auth-server-url=http://localhost:8180/realms/tenant-a
 quarkus.oidc.tenant-a.client-id=multi-tenant-client
 quarkus.oidc.tenant-a.application-type=web-app
 
@@ -259,10 +255,12 @@ To start a Keycloak Server you can use Docker and just run the following command
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak version}
+docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
+where `keycloak.version` should be set to `17.0.0` or higher.
+
+You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
 
 Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
@@ -277,18 +275,17 @@ For more details, see the Keycloak documentation about how to https://www.keyclo
 
 === Running in Developer Mode
 
-To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`.
+To run the microservice in dev mode, use:
+
+include::includes/devtools/dev.adoc[]
 
 === Running in JVM Mode
 
-When you're done playing with "dev-mode" you can run it as a standard Java application.
+When you're done playing with dev mode, you can run it as a standard Java application.
 
 First compile it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Then run it:
 
@@ -306,12 +303,9 @@ production environment, as the runtime technology is included in
 the produced binary, and optimized to run with minimal resource overhead.
 
 Compilation will take a bit longer, so this step is disabled by default;
-let's build again by enabling the `native` profile:
+let's build again by enabling the native build:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 
@@ -344,6 +338,53 @@ You should be redirected again to the login page at Keycloak. However, now you a
 
 In both cases, if the user is successfully authenticated, the landing page will show the user's name and e-mail. Even though
 user `alice` exists in both tenants, for the application they are distinct users belonging to different realms/tenants.
+
+== Resolving Tenant Identifiers with Annotations
+
+You can use the annotations and CDI interceptors for resolving the tenant identifiers as an alternative to using
+`quarkus.oidc.TenantResolver`. This can be done by setting the value for the key `OidcUtils.TENANT_ID_ATTRIBUTE` on
+the current `RoutingContext`.
+
+Assuming your application supports two OIDC tenants (`hr`, and default) first you need to define one
+annotation per tenant ID other than default:
+
+[NOTE]
+====
+Proactive HTTP authentication needs to be disabled (`quarkus.http.auth.proactive=false`) for this to work. See
+xref:security-built-in-authentication.adoc#proactive-authentication[Proactive Authentication] section for further details.
+====
+
+[source,java]
+----
+@Inherited
+@InterceptorBinding
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.TYPE})
+public @interface HrTenant {
+}
+----
+
+Next, you'll need one interceptor for each of those annotations:
+
+[source,java]
+----
+@Interceptor
+@HrTenant
+public class HrTenantInterceptor {
+    @Inject
+    RoutingContext routingContext;
+
+    @AroundInvoke
+    Object setTenant(InvocationContext context) throws Exception {
+        routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, "hr");
+        return context.proceed();
+    }
+}
+----
+
+Now all methods and classes carrying `@HrTenant` will be authenticated using the OIDC provider configured by
+`quarkus.oidc.hr.auth-server-url`, while all other classes and methods will still be authenticated using the default
+OIDC provider.
 
 == Programmatically Resolving Tenants Configuration
 
@@ -391,7 +432,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         final OidcTenantConfig config = new OidcTenantConfig();
 
         config.setTenantId("tenant-c");
-        config.setAuthServerUrl("http://localhost:8180/auth/realms/tenant-c");
+        config.setAuthServerUrl("http://localhost:8180/realms/tenant-c");
         config.setClientId("multi-tenant-client");
         OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();
 

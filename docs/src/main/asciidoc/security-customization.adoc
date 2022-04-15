@@ -11,15 +11,22 @@ include::./attributes.adoc[]
 
 `io.quarkus:quarkus-security` module contains the core Quarkus security classes.
 
-In most cases it does not have to be added directly to your project's `pom.xml` as it is already provided by all of the security extensions.
-However if you need to write your own custom security code (for example, register a <<jaxrs-security-context, Custom JAX-RS SecurityContext>>) or use <<bouncy-castle, BouncyCastle>> libraries, then please make sure it is included:
+In most cases, it does not have to be added directly to your project's build file as it is already provided by all of the security extensions.
+However, if you need to write your own custom security code (for example, register a <<jaxrs-security-context, Custom JAX-RS SecurityContext>>) or use <<bouncy-castle, BouncyCastle>> libraries, then please make sure it is included:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-security</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-security</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-security")
 ----
 
 == HttpAuthenticationMechanism Customization
@@ -56,9 +63,65 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 	}
 
 	@Override
-	public HttpCredentialTransport getCredentialTransport() {
+	public Uni<HttpCredentialTransport> getCredentialTransport() {
 		return delegate.getCredentialTransport();
 	}
+
+}
+----
+
+== Dealing with more than one HttpAuthenticationMechanism
+
+More than one `HttpAuthenticationMechanism` can be combined, for example, the built-in `Basic` or `JWT` mechanism provided by `quarkus-smallrye-jwt` has to be used to verify the service clients credentials passed as the HTTP `Authorization` `Basic` or `Bearer` scheme values while the `Authorization Code` mechanism provided by `quarkus-oidc` has to be used to authenticate the users with `Keycloak` or other `OpenId Connect` providers.
+
+In such cases the mechanisms are asked to verify the credentials in turn until a `SecurityIdentity` is created. The mechanisms are sorted in the descending order using their priority. `Basic` authentication mechanism has the highest priority of `2000`, followed by the `Authorization Code` one with the priority of `1001`, with all other mechanisms provided by Quarkus having the priority of `1000`.
+
+If no credentials are provided then the mechanism specific challenge is created, for example, `401` status is returned by either `Basic` or `JWT` mechanisms, URL redirecting the user to the `OpenId Connect` provider is returned by `quarkus-oidc`, etc.
+
+So if `Basic` and `Authorization Code` mechanisms are combined then `401` will be returned if no credentials are provided and if `JWT` and `Authorization Code` mechanisms are combined then a redirect URL will be returned.
+
+In some cases such a default logic of selecting the challenge is exactly what is required by a given application but sometimes it may not meet the requirements. In such cases (or indeed in other similar cases where you'd like to change the order in which the mechanisms are asked to handle the current authentication or challenge request), you can create a custom mechanism and choose which mechanism should create a challenge, for example:
+
+[source,java]
+----
+@ApplicationScoped
+public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism {
+
+	private static final Logger LOG = LoggerFactory.getLogger(CustomAwareJWTAuthMechanism.class);
+
+	@Inject
+	JWTAuthMechanism jwt;
+
+        @Inject
+	OidcAuthenticationMechanism oidc;
+
+	@Override
+	public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+	    return selectBetweenJwtAndOidc(context).authenticate(context, identityProviderManager);
+	}
+
+	@Override
+	public Uni<ChallengeData> getChallenge(RoutingContext context) {
+		return selectBetweenJwtAndOidcChallenge(context).getChallenge(context);
+	}
+
+	@Override
+	public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
+		return selectBetweenJwtAndOidc(context).getCredentialTypes();
+	}
+
+	@Override
+	public HttpCredentialTransport getCredentialTransport(RoutingContext context) {
+		return selectBetweenJwtAndOidc(context).getCredentialTransport();
+	}
+
+        private HttpAuthenticationMechanism selectBetweenJwtAndOidc(RoutingContext context) {
+            ....
+        }
+
+        private HttpAuthenticationMechanism selectBetweenJwtAndOidcChallenge(RoutingContext context) {
+            // for example, if no `Authorization` header is available and no `code` parameter is provided - use `jwt` to create a challenge
+        }
 
 }
 ----
@@ -218,7 +281,7 @@ public class SecurityOverrideFilter implements ContainerRequestFilter {
 
 == Disabling Authorization
 
-If you have a good reason to disable the authorization (for example, when testing) then you can register a custom `AuthorizationController`:
+If you have a good reason to disable the authorization then you can register a custom `AuthorizationController`:
 
 [source,java]
 ----
@@ -234,6 +297,13 @@ public class DisabledAuthController extends AuthorizationController {
         return !disableAuthorization;
     }
 }
+----
+
+For manual testing Quarkus provides a convenient config property to disable authorization in dev mode. This property has the exact same effect as the custom `AuthorizationController` shown above, but is only available in dev mode:
+
+[source,properties]
+----
+quarkus.security.auth.enabled-in-dev-mode=false
 ----
 
 Please also see xref:security-testing.adoc#testing-security[TestingSecurity Annotation] section on how to disable the security checks using `TestSecurity` annotation.
@@ -266,12 +336,19 @@ quarkus.security.security-providers=BC
 
 and add the BouncyCastle provider dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>org.bouncycastle</groupId>
-  <artifactId>bcprov-jdk15on</artifactId>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcprov-jdk15on</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bcprov-jdk15on")
 ----
 
 [[bouncy-castle-jsse]]
@@ -294,12 +371,19 @@ quarkus.http.ssl.certificate.trust-store-password=password
 
 and add the BouncyCastle TLS dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>org.bouncycastle</groupId>
-  <artifactId>bctls-jdk15on</artifactId>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bctls-jdk15on</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bctls-jdk15on")
 ----
 
 [[bouncy-castle-fips]]
@@ -315,12 +399,19 @@ quarkus.security.security-providers=BCFIPS
 
 and add the BouncyCastle FIPS provider dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>org.bouncycastle</groupId>
-  <artifactId>bc-fips</artifactId>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bc-fips</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bc-fips")
 ----
 
 [NOTE]
@@ -359,7 +450,8 @@ quarkus.http.ssl.certificate.trust-store-provider=BCFIPS
 
 and the BouncyCastle TLS dependency optimized for using the BouncyCastle FIPS provider:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
   <groupId>org.bouncycastle</groupId>
@@ -367,9 +459,16 @@ and the BouncyCastle TLS dependency optimized for using the BouncyCastle FIPS pr
 </dependency>
 
 <dependency>
-  <groupId>org.bouncycastle</groupId>
-  <artifactId>bc-fips</artifactId>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bc-fips</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bctls-fips")
+implementation("org.bouncycastle:bc-fips")
 ----
 
 Note that the keystore and truststore type and provider are set to `BCFKS` and `BCFIPS`.
@@ -389,12 +488,19 @@ keytool -genkey -alias server -keyalg RSA -keystore server-keystore.jks -keysize
 
 If you are going to use security in a reactive environment, you will likely need SmallRye Context Propagation:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-context-propagation</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-context-propagation</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-context-propagation")
 ----
 
 This will allow you to propagate the identity throughout the reactive callbacks. You also need to make sure you

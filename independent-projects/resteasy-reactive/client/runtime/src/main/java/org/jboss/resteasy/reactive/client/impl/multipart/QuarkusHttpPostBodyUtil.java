@@ -130,7 +130,7 @@ final class QuarkusHttpPostBodyUtil {
 
     /**
      * Find the first non whitespace
-     * 
+     *
      * @return the rank of the first non whitespace
      */
     static int findNonWhitespace(String sb, int offset) {
@@ -145,7 +145,7 @@ final class QuarkusHttpPostBodyUtil {
 
     /**
      * Find the end of String
-     * 
+     *
      * @return the rank of the end of string
      */
     static int findEndOfString(String sb) {
@@ -276,7 +276,7 @@ final class QuarkusHttpPostBodyUtil {
 
     /**
      * copied from {@link HttpPostRequestDecoder}
-     * 
+     *
      * @param contentType
      * @return
      */

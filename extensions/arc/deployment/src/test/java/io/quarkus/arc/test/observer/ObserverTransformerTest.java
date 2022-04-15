@@ -81,7 +81,7 @@ public class ObserverTransformerTest {
     public void testTransformation() {
         MyEvent myEvent = new MyEvent();
         event.fire(myEvent);
-        // MyObserver.onMyEventRemoveQualifiers() would not match without transformation 
+        // MyObserver.onMyEventRemoveQualifiers() would not match without transformation
         assertEquals(1, myEvent.log.size());
         assertEquals("onMyEventRemoveQualifiers", myEvent.log.get(0));
     }

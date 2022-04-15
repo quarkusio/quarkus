@@ -11,7 +11,7 @@ public class NoConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.datasource.devservices", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class));
 

@@ -255,7 +255,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     }
 
     private String getPluginVersion() throws MojoExecutionException {
-        return CreateUtils.resolvePluginInfo(CreateExtensionLegacyMojo.class).getVersion();
+        return CreateUtils.resolvePluginInfo(CreateExtensionMojo.class).getVersion();
     }
 
     private void promptValues() throws MojoExecutionException {

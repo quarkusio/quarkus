@@ -8,18 +8,18 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class ExtensionDependency {
 
-    ModuleVersionIdentifier extensionId;
-    AppArtifactCoords deploymentModule;
-    List<Dependency> conditionalDependencies;
-    List<ArtifactKey> dependencyConditions;
-    boolean isConditional;
+    private final ModuleVersionIdentifier extensionId;
+    protected final ArtifactCoords deploymentModule;
+    private final List<Dependency> conditionalDependencies;
+    private final List<ArtifactKey> dependencyConditions;
+    private boolean isConditional;
 
-    public ExtensionDependency(ModuleVersionIdentifier extensionId, AppArtifactCoords deploymentModule,
+    public ExtensionDependency(ModuleVersionIdentifier extensionId, ArtifactCoords deploymentModule,
             List<Dependency> conditionalDependencies,
             List<ArtifactKey> dependencyConditions) {
         this.extensionId = extensionId;
@@ -39,27 +39,6 @@ public class ExtensionDependency {
         dependencies.components(handler -> handler.withModule(toModuleName(),
                 componentMetadataDetails -> componentMetadataDetails.allVariants(variantMetadata -> variantMetadata
                         .withDependencies(d -> d.add(DependencyUtils.asDependencyNotation(dependency))))));
-    }
-
-    public void installDeploymentVariant(DependencyHandler dependencies) {
-        dependencies.components(handler -> handler.withModule(toModuleName(),
-                componentMetadataDetails -> componentMetadataDetails
-                        .addVariant(DependencyUtils.asDependencyNotation(deploymentModule),
-                                variantMetadata -> {
-                                    variantMetadata.withCapabilities(
-                                            capabilities -> {
-                                                capabilities.removeCapability(extensionId.getGroup(),
-                                                        extensionId.getName());
-                                                capabilities.addCapability(deploymentModule.getGroupId(),
-                                                        deploymentModule.getArtifactId() + "-capability",
-                                                        deploymentModule.getVersion());
-                                            });
-                                    variantMetadata.withDependencies(
-                                            d -> {
-                                                d.remove(this.asDependencyNotation());
-                                                d.add(DependencyUtils.asDependencyNotation(deploymentModule));
-                                            });
-                                })));
     }
 
     public String asDependencyNotation() {
@@ -104,7 +83,7 @@ public class ExtensionDependency {
         return conditionalDependencies;
     }
 
-    public AppArtifactCoords getDeploymentModule() {
+    public ArtifactCoords getDeploymentModule() {
         return deploymentModule;
     }
 

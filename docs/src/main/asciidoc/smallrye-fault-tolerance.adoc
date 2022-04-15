@@ -18,12 +18,7 @@ In this guide, we demonstrate usage of MicroProfile Fault Tolerance annotations 
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 
 == The Scenario
 
@@ -46,35 +41,33 @@ The solution is located in the `microprofile-fault-tolerance-quickstart` {quicks
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=microprofile-fault-tolerance-quickstart \
-    -DclassName="org.acme.microprofile.faulttolerance.CoffeeResource" \
-    -Dpath="/coffee" \
-    -Dextensions="resteasy,smallrye-fault-tolerance,resteasy-jackson"
-cd microprofile-fault-tolerance-quickstart
-----
+:create-app-artifact-id: microprofile-fault-tolerance-quickstart
+:create-app-extensions: smallrye-fault-tolerance,resteasy-reactive-jackson
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven structure, importing the extensions for RESTEasy/JAX-RS and SmallRye Fault Tolerance.
+This command generates a project, importing the extensions for RESTEasy Reactive/JAX-RS and SmallRye Fault Tolerance.
 
 If you already have your Quarkus project configured, you can add the `smallrye-fault-tolerance` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
-----
+:add-extension-extensions: smallrye-fault-tolerance
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 ----
 
 == Preparing an Application: REST Endpoint and CDI Bean
@@ -152,7 +145,7 @@ public class CoffeeRepositoryService {
 }
 ----
 
-Finally, edit the `org.acme.microprofile.faulttolerance.CoffeeResource` class as follows:
+Finally, create the `org.acme.microprofile.faulttolerance.CoffeeResource` class as follows:
 
 [source,java]
 ----
@@ -202,10 +195,7 @@ in the `CoffeeResource#coffees()` endpoint method in about 50 % of requests.
 
 Why not check that our application works? Run the Quarkus development server with:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
 
 and open `http://localhost:8080/coffee` in your browser. Make couple of requests (remember, some of them we expect
 to fail). At least some of the requests should show us the list of our coffee samples in JSON, the rest will fail
@@ -266,7 +256,6 @@ and save the file.
 
 [source,java]
 ----
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.eclipse.microprofile.faulttolerance.Timeout;
 ...
 public class CoffeeResource {
@@ -274,7 +263,7 @@ public class CoffeeResource {
     @GET
     @Path("/{id}/recommendations")
     @Timeout(250)
-    public List<Coffee> recommendations(@PathParam int id) {
+    public List<Coffee> recommendations(int id) {
         long started = System.currentTimeMillis();
         final long invocationNumber = counter.getAndIncrement();
 
@@ -319,14 +308,13 @@ as follows:
 [source,java]
 ----
 import java.util.Collections;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 
 ...
 public class CoffeeResource {
     ...
     @Fallback(fallbackMethod = "fallbackRecommendations")
-    public List<Coffee> recommendations(@PathParam int id) {
+    public List<Coffee> recommendations(int id) {
         ...
     }
 
@@ -399,7 +387,7 @@ public class CoffeeResource {
     ...
     @Path("/{id}/availability")
     @GET
-    public Response availability(@PathParam int id) {
+    public Response availability(int id) {
         final Long invocationNumber = counter.getAndIncrement();
 
         Coffee coffee = coffeeRepository.getCoffeeById(id);
@@ -487,26 +475,32 @@ of our business logic.
 
 All that is needed to enable the fault tolerance features in Quarkus is:
 
+:devtools-wrapped:
 * adding the `smallrye-fault-tolerance` Quarkus extension to your project using the `quarkus-maven-plugin`:
 +
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
-----
+include::includes/devtools/extension-add.adoc[]
 * or simply adding the following Maven dependency:
 +
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
 </dependency>
 ----
++
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
+----
+:!devtools-wrapped:
 
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/5.2.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/5.4.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
@@ -523,7 +517,9 @@ We believe that in presence of MicroProfile Context Propagation, this requiremen
 The entire point of context propagation is to make sure the new thread has the same contexts as the original thread.
 ====
 
-Non-compatible mode is enabled by default, so methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without any `@Asynchronous`, `@Blocking` or `@NonBlocking` annotation.
+Non-compatible mode is enabled by default.
+This means that methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without any `@Asynchronous`, `@Blocking` or `@NonBlocking` annotation.
+It also means that circuit breaker, fallback and retry automatically inspect the exception cause chain if the exception itself is insufficient to decide what should happen.
 
 [NOTE]
 ====
@@ -535,3 +531,8 @@ To restore full compatibility, add this configuration property:
 smallrye.faulttolerance.mp-compatibility=true
 ----
 ====
+
+The link:https://smallrye.io/docs/smallrye-fault-tolerance/5.4.0/usage/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
+You can use the `FaultTolerance` and `MutinyFaultTolerance` APIs out of the box.
+
+Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin), so you can guard your `suspend` functions with fault tolerance annotations.

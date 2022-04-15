@@ -10,6 +10,8 @@ import java.util.Objects;
 
 public class ResolvedArtifactDependency extends ArtifactDependency implements ResolvableDependency, Serializable {
 
+    private static final long serialVersionUID = 4038042391733012566L;
+
     private PathCollection paths;
     private WorkspaceModule module;
     private volatile transient PathTree contentTree;
@@ -77,10 +79,10 @@ public class ResolvedArtifactDependency extends ArtifactDependency implements Re
             return true;
         if (!super.equals(obj))
             return false;
-        if (getClass() != obj.getClass())
+        if (!(obj instanceof ResolvableDependency))
             return false;
-        ResolvedArtifactDependency other = (ResolvedArtifactDependency) obj;
-        return Objects.equals(module, other.module) && Objects.equals(paths, other.paths);
+        ResolvableDependency other = (ResolvableDependency) obj;
+        return Objects.equals(module, other.getWorkspaceModule()) && Objects.equals(paths, other.getResolvedPaths());
     }
 
     @Override

@@ -3,7 +3,6 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
-import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
 import io.quarkus.gizmo.Gizmo;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -69,11 +68,11 @@ public final class Beans {
         return null;
     }
 
-    static BeanInfo createProducerMethod(MethodInfo producerMethod, BeanInfo declaringBean, BeanDeployment beanDeployment,
+    static BeanInfo createProducerMethod(Set<Type> beanTypes, MethodInfo producerMethod, BeanInfo declaringBean,
+            BeanDeployment beanDeployment,
             DisposerInfo disposer, InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         List<ScopeInfo> scopes = new ArrayList<>();
-        Set<Type> types = Types.getProducerMethodTypeClosure(producerMethod, beanDeployment);
         Integer priority = null;
         boolean isAlternative = false;
         boolean isDefaultBean = false;
@@ -113,7 +112,7 @@ public final class Beans {
                 priority = annotation.value().asInt();
                 continue;
             }
-            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1 
+            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1
             if ((!isAlternative || priority == null) && annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
                 continue;
@@ -169,7 +168,7 @@ public final class Beans {
         }
 
         List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer);
-        BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, types, qualifiers, injections, declaringBean,
+        BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, beanTypes, qualifiers, injections, declaringBean,
                 disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority);
         for (Injection injection : injections) {
             injection.init(bean);
@@ -216,7 +215,7 @@ public final class Beans {
                 priority = annotation.value().asInt();
                 continue;
             }
-            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1 
+            // This is not supported ATM but should work once we upgrade to Common Annotations 2.1
             if ((!isAlternative || priority == null) && annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
                 continue;
@@ -363,23 +362,20 @@ public final class Beans {
         return null;
     }
 
+    /**
+     * Checks if given {@link BeanInfo} has type and qualifiers matching those in provided {@link TypeAndQualifiers}.
+     * Uses standard bean assignability rules; see {@link BeanResolverImpl}.
+     */
     public static boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
-        return matches(bean, typeAndQualifiers.type, typeAndQualifiers.qualifiers);
+        return bean.getDeployment().getBeanResolver().matches(bean, typeAndQualifiers);
     }
 
+    /**
+     * Checks if given {@link BeanInfo} has all the required qualifiers and a bean type that matches required type.
+     * Uses standard bean assignability rules; see {@link BeanResolverImpl}.
+     */
     static boolean matches(BeanInfo bean, Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
-        // Bean has all the required qualifiers and a bean type that matches the required type
-        return matchesType(bean, requiredType) && hasQualifiers(bean, requiredQualifiers);
-    }
-
-    static boolean matchesType(BeanInfo bean, Type requiredType) {
-        BeanResolverImpl beanResolver = bean.getDeployment().beanResolver;
-        for (Type beanType : bean.getTypes()) {
-            if (beanResolver.matches(requiredType, beanType)) {
-                return true;
-            }
-        }
-        return false;
+        return bean.getDeployment().getBeanResolver().matches(bean, requiredType, requiredQualifiers);
     }
 
     static void resolveInjectionPoint(BeanDeployment deployment, InjectionTargetInfo target, InjectionPointInfo injectionPoint,
@@ -390,20 +386,7 @@ public final class Beans {
         }
         BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
         if (builtinBean != null) {
-            if (BuiltinBean.INJECTION_POINT == builtinBean
-                    && (target.kind() != TargetKind.BEAN || !BuiltinScope.DEPENDENT.is(target.asBean().getScope()))) {
-                errors.add(new DefinitionException("Only @Dependent beans can access metadata about an injection point: "
-                        + injectionPoint.getTargetInfo()));
-            } else if (BuiltinBean.EVENT_METADATA == builtinBean
-                    && target.kind() != TargetKind.OBSERVER) {
-                errors.add(new DefinitionException("EventMetadata can be only injected into an observer method: "
-                        + injectionPoint.getTargetInfo()));
-            } else if (BuiltinBean.INSTANCE == builtinBean
-                    && injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
-                errors.add(
-                        new DefinitionException("An injection point of raw type javax.enterprise.inject.Instance is defined: "
-                                + injectionPoint.getTargetInfo()));
-            }
+            builtinBean.validate(target, injectionPoint, errors::add);
             // Skip built-in beans
             return;
         }
@@ -597,8 +580,8 @@ public final class Beans {
         }
     }
 
-    static void validateBean(BeanInfo bean, List<Throwable> errors, List<BeanDeploymentValidator> validators,
-            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, Set<DotName> classesReceivingNoArgsCtor) {
+    static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            Set<DotName> classesReceivingNoArgsCtor) {
 
         if (bean.isClassBean()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();

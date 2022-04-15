@@ -13,8 +13,8 @@ import javax.ws.rs.ext.WriterInterceptorContext;
 
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
-import io.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 import io.opentracing.tag.Tags;
+import io.smallrye.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 
 @Provider
 // We must close the span after everything else has finished

@@ -167,6 +167,37 @@ public class CliProjectJBangTest {
                 "jbang command should not specify offline\n" + result);
     }
 
+    @Test
+    public void testCreateArgJava11() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
+                "-e", "-B", "--verbose",
+                "--java", "11");
+
+        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+
+        String source = CliDriver.readFileAsString(project, javaMain);
+        Assertions.assertTrue(source.contains("//JAVA 11"),
+                "Generated source should contain //JAVA 11. Found:\n" + source);
+    }
+
+    @Test
+    public void testCreateArgJava17() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
+                "-e", "-B", "--verbose",
+                "--java", "17");
+
+        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+        String source = CliDriver.readFileAsString(project, javaMain);
+        Assertions.assertTrue(source.contains("//JAVA 17"),
+                "Generated source should contain //JAVA 17. Found:\n" + source);
+    }
+
     void validateBasicIdentifiers(Path project, String group, String artifact, String version) throws Exception {
         Assertions.assertTrue(project.resolve("README.md").toFile().exists(),
                 "README.md should exist: " + project.resolve("README.md").toAbsolutePath().toString());

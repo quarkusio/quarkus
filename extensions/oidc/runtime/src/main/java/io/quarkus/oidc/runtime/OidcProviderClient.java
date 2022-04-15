@@ -62,6 +62,7 @@ public class OidcProviderClient implements Closeable {
     }
 
     public Uni<UserInfo> getUserInfo(String token) {
+        LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
         return client.getAbs(metadata.getUserInfoUri())
                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
                 .send().onItem().transform(resp -> getUserInfo(resp));
@@ -87,11 +88,14 @@ public class OidcProviderClient implements Closeable {
         return oidcConfig;
     }
 
-    public Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri) {
+    public Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
         MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         codeGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.AUTHORIZATION_CODE);
         codeGrantParams.add(OidcConstants.CODE_FLOW_CODE, code);
         codeGrantParams.add(OidcConstants.CODE_FLOW_REDIRECT_URI, redirectUri);
+        if (codeVerifier != null) {
+            codeGrantParams.add(OidcConstants.PKCE_CODE_VERIFIER, codeVerifier);
+        }
         return getHttpResponse(metadata.getTokenUri(), codeGrantParams).transform(resp -> getAuthorizationCodeTokens(resp));
     }
 
@@ -123,6 +127,7 @@ public class OidcProviderClient implements Closeable {
         } else {
             formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
         }
+        LOG.debugf("Get token on: %s params: %s headers: %s", metadata.getTokenUri(), formBody, request.headers());
         // Retry up to three times with a one second delay between the retries if the connection is closed.
         Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(formBody))
                 .onFailure(ConnectException.class)
@@ -149,6 +154,7 @@ public class OidcProviderClient implements Closeable {
 
     private static JsonObject getJsonObject(HttpResponse<Buffer> resp) {
         if (resp.statusCode() == 200) {
+            LOG.debugf("Request succeeded: %s", resp.bodyAsJsonObject());
             return resp.bodyAsJsonObject();
         } else {
             throw responseException(resp);
@@ -157,6 +163,7 @@ public class OidcProviderClient implements Closeable {
 
     private static String getString(HttpResponse<Buffer> resp) {
         if (resp.statusCode() == 200) {
+            LOG.debugf("Request succeeded: %s", resp.bodyAsString());
             return resp.bodyAsString();
         } else {
             throw responseException(resp);

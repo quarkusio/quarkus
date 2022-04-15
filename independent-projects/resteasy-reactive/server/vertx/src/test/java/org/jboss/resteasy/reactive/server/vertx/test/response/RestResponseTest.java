@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class RestResponseTest {
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -24,6 +24,10 @@ public class RestResponseTest {
     @Test
     public void test() {
         RestAssured.get("/rest-response")
+                .then().statusCode(200)
+                .and().body(Matchers.equalTo("Hello"))
+                .and().contentType("text/plain");
+        RestAssured.get("/rest-response-wildcard")
                 .then().statusCode(200)
                 .and().body(Matchers.equalTo("Hello"))
                 .and().contentType("text/plain");

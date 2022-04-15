@@ -35,7 +35,7 @@ import org.jboss.logging.Logger;
 class Parser implements Function<String, Expression>, ParserHelper {
 
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
-    private static final String ROOT_HELPER_NAME = "$root";
+    static final String ROOT_HELPER_NAME = "$root";
 
     static final Origin SYNTHETIC_ORIGIN = new OriginImpl(0, 0, 0, "<<synthetic>>", "<<synthetic>>", Optional.empty());
 
@@ -163,7 +163,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             if (!root.helperName.equals(ROOT_HELPER_NAME)) {
                 throw parserError("unterminated section [" + root.helperName + "] detected");
             }
-            TemplateImpl template = new TemplateImpl(engine, root.build(), generatedId, variant);
+            TemplateImpl template = new TemplateImpl(engine, root.build(), templateId, generatedId, variant);
 
             Set<TemplateNode> nodesToRemove = Collections.emptySet();
             if (hasLineSeparator && engine.removeStandaloneLines) {
@@ -226,7 +226,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     private void escape(char character) {
         if (character != START_DELIMITER && character != END_DELIMITER) {
-            // Invalid escape sequence is just ignored 
+            // Invalid escape sequence is just ignored
             buffer.append(ESCAPE_CHAR);
         }
         buffer.append(character);
@@ -258,7 +258,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             state = State.TEXT;
             processCharacter(character);
         }
-        // Parsing of one-line templates can be optimized 
+        // Parsing of one-line templates can be optimized
         hasLineSeparator = true;
     }
 
@@ -402,7 +402,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
             sectionName = sectionName.substring(1, sectionName.length());
 
             SectionNode.Builder lastSection = sectionStack.peek();
-            // Add a section block if the section name matches a section block label 
+            // Add a section block if the section name matches a section block label
             // or does not map to any section helper and the last section treats unknown subsections as blocks
             if (lastSection != null && lastSection.factory.getBlockLabels().contains(sectionName)
                     || (lastSection.factory.treatUnknownSectionsAsBlocks()
@@ -504,10 +504,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
 
     static TemplateException parserError(String message, Origin origin) {
         StringBuilder builder = new StringBuilder("Parser error");
-        if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-            builder.append(" in template [").append(origin.getTemplateId()).append("]");
-        }
-        builder.append(" on line ").append(origin.getLine()).append(": ")
+        origin.appendTo(builder);
+        builder.append(": ")
                 .append(message);
         return new TemplateException(origin,
                 builder.toString());
@@ -533,10 +531,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 && LOGGER.isDebugEnabled()) {
             StringBuilder builder = new StringBuilder("Too many section params for ").append(tag);
             Origin origin = origin(0);
-            if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-                builder.append(" in template [").append(origin.getTemplateId()).append("]");
-            }
-            builder.append(" on line ").append(origin.getLine());
+            origin.appendTo(builder);
             builder.append(String.format("[label=%s, params=%s, factoryParams=%s]", label, paramValues, factoryParams));
             LOGGER.debugf(builder.toString());
         }
@@ -805,8 +800,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
             String name = Expressions.parseVirtualMethodName(value);
             List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value, origin, exprValue));
             List<Expression> params = new ArrayList<>(strParams.size());
+            Scope paramScope = new Scope(scope);
             for (String strParam : strParams) {
-                params.add(parseExpression(idGenerator, strParam.trim(), scope, origin));
+                params.add(parseExpression(idGenerator, strParam.trim(), paramScope, origin));
             }
             // Note that an expression may never start with a virtual method
             String lastPartHint = strPartsIterator.hasNext() ? null : scope.getLastPartHint();
@@ -821,11 +817,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
             } else {
                 StringBuilder builder = new StringBuilder(literal == null ? "Null" : "Non-literal");
                 builder.append(" value used in bracket notation [").append(value).append("]");
-                if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-                    builder.append(" in template [").append(origin.getTemplateId()).append("]");
-                }
-                builder.append(" on line ").append(origin.getLine());
-                throw new TemplateException(builder.toString());
+                origin.appendTo(builder);
+                throw new TemplateException(origin, builder.toString());
             }
         }
 

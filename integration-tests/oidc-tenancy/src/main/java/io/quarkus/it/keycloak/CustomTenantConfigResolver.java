@@ -53,7 +53,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setClientId("client");
                     config.setAllowTokenIntrospectionCache(false);
                     // auto-discovery in Quarkus is enabled but the OIDC server returns an empty document, set the required endpoints in the config
-                    // try the path relative to the authServerUri 
+                    // try the path relative to the authServerUri
                     config.setJwksPath("jwks");
                     // try the absolute URI
                     config.setIntrospectionPath(authServerUri + "/introspect");

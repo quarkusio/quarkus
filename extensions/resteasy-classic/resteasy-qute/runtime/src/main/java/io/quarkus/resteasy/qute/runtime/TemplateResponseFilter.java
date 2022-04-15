@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
@@ -13,6 +15,8 @@ import javax.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.core.interception.jaxrs.SuspendableContainerResponseContext;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.qute.Engine;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
 
@@ -58,22 +62,27 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
                 mediaType = responseContext.getMediaType();
             }
 
+            CompletionStage<String> cs = instance.renderAsync();
+            if (!Arc.container().instance(Engine.class).get().useAsyncTimeout()) {
+                // Make sure the timeout is always used
+                long timeout = instance.getTimeout();
+                cs = cs.toCompletableFuture().orTimeout(timeout, TimeUnit.MILLISECONDS);
+            }
             try {
-                instance.renderAsync()
-                        .whenComplete((r, t) -> {
-                            if (t == null) {
-                                // make sure we avoid setting a null media type because that causes
-                                // an NPE further down
-                                if (mediaType != null) {
-                                    ctx.setEntity(r, null, mediaType);
-                                } else {
-                                    ctx.setEntity(r);
-                                }
-                                ctx.resume();
-                            } else {
-                                ctx.resume(t);
-                            }
-                        });
+                cs.whenComplete((r, t) -> {
+                    if (t == null) {
+                        // make sure we avoid setting a null media type because that causes
+                        // an NPE further down
+                        if (mediaType != null) {
+                            ctx.setEntity(r, null, mediaType);
+                        } else {
+                            ctx.setEntity(r);
+                        }
+                        ctx.resume();
+                    } else {
+                        ctx.resume(t);
+                    }
+                });
             } catch (Throwable t) {
                 ctx.resume(t);
             }

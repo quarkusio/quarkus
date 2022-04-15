@@ -27,18 +27,37 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
             CallOptions callOptions, Channel next) {
 
-        boolean isOnEventLoop = Context.isOnEventLoopThread();
-        Context context = Vertx.currentContext();
-
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
 
             @Override
             public void start(Listener<RespT> responseListener, Metadata headers) {
+
+                Context context = Vertx.currentContext();
+                boolean isOnIOThread = context != null && Context.isOnEventLoopThread();
+
                 super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
 
                     @Override
+                    public void onReady() {
+                        if (isOnIOThread) {
+                            context.runOnContext(unused -> super.onReady());
+                        } else {
+                            super.onReady();
+                        }
+                    }
+
+                    @Override
+                    public void onHeaders(Metadata headers) {
+                        if (isOnIOThread) {
+                            context.runOnContext(unused -> super.onHeaders(headers));
+                        } else {
+                            super.onHeaders(headers);
+                        }
+                    }
+
+                    @Override
                     public void onMessage(RespT message) {
-                        if (isOnEventLoop && context != null) {
+                        if (isOnIOThread) {
                             context.runOnContext(unused -> super.onMessage(message));
                         } else {
                             super.onMessage(message);
@@ -47,7 +66,7 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
 
                     @Override
                     public void onClose(Status status, Metadata trailers) {
-                        if (isOnEventLoop && context != null) {
+                        if (isOnIOThread) {
                             context.runOnContext(unused -> super.onClose(status, trailers));
                         } else {
                             super.onClose(status, trailers);

@@ -12,8 +12,10 @@ import java.util.Properties;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
@@ -25,13 +27,19 @@ import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.gradle.dsl.Manifest;
+import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.runtime.util.StringUtil;
 
 public class QuarkusBuild extends QuarkusTask {
 
     private static final String NATIVE_PROPERTY_NAMESPACE = "quarkus.native";
+    private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
+    private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
 
     private List<String> ignoredEntries = new ArrayList<>();
+    private Manifest manifest = new Manifest();
 
     public QuarkusBuild() {
         super("Quarkus builds a runner jar based on the build jar");
@@ -89,6 +97,16 @@ public class QuarkusBuild extends QuarkusTask {
         return quarkusEnvProperties;
     }
 
+    @Internal
+    public Manifest getManifest() {
+        return this.manifest;
+    }
+
+    public QuarkusBuild manifest(Action<Manifest> action) {
+        action.execute(this.getManifest());
+        return this;
+    }
+
     @OutputFile
     public File getRunnerJar() {
         return new File(getProject().getBuildDir(), extension().finalName() + "-runner.jar");
@@ -108,13 +126,22 @@ public class QuarkusBuild extends QuarkusTask {
     public void buildQuarkus() {
         getLogger().lifecycle("building quarkus jar");
 
-        final ApplicationModel appModel = extension().getApplicationModel();
+        final ApplicationModel appModel;
+        try {
+            appModel = extension().getAppModelResolver().resolveModel(new GACTV(getProject().getGroup().toString(),
+                    getProject().getName(), getProject().getVersion().toString()));
+        } catch (AppModelResolverException e) {
+            throw new GradleException("Failed to resolve Quarkus application model for " + getProject().getPath(), e);
+        }
 
         final Properties effectiveProperties = getBuildSystemProperties(appModel.getAppArtifact());
         if (ignoredEntries != null && ignoredEntries.size() > 0) {
             String joinedEntries = String.join(",", ignoredEntries);
             effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
         }
+
+        exportCustomManifestProperties(effectiveProperties);
+
         try (CuratedApplication appCreationContext = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)
@@ -138,6 +165,42 @@ public class QuarkusBuild extends QuarkusTask {
         } catch (BootstrapException e) {
             throw new GradleException("Failed to build a runnable JAR", e);
         }
+    }
+
+    private void exportCustomManifestProperties(Properties buildSystemProperties) {
+        if (this.manifest == null) {
+            return;
+        }
+
+        for (Map.Entry<String, Object> attribute : manifest.getAttributes().entrySet()) {
+            buildSystemProperties.put(toManifestAttributeKey(attribute.getKey()),
+                    attribute.getValue());
+        }
+
+        for (Map.Entry<String, Attributes> section : manifest.getSections().entrySet()) {
+            for (Map.Entry<String, Object> attribute : section.getValue().entrySet()) {
+                buildSystemProperties
+                        .put(toManifestSectionAttributeKey(section.getKey(), attribute.getKey()), attribute.getValue());
+            }
+        }
+    }
+
+    private String toManifestAttributeKey(String key) {
+        if (key.contains("\"")) {
+            throw new GradleException("Manifest entry name " + key + " is invalid. \" characters are not allowed.");
+        }
+        return String.format("%s.\"%s\"", MANIFEST_ATTRIBUTES_PROPERTY_PREFIX, key);
+    }
+
+    private String toManifestSectionAttributeKey(String section, String key) {
+        if (section.contains("\"")) {
+            throw new GradleException("Manifest section name " + section + " is invalid. \" characters are not allowed.");
+        }
+        if (key.contains("\"")) {
+            throw new GradleException("Manifest entry name " + key + " is invalid. \" characters are not allowed.");
+        }
+        return String.format("%s.\"%s\".\"%s\"", MANIFEST_SECTIONS_PROPERTY_PREFIX, section,
+                key);
     }
 
     private String expandConfigurationKey(String shortKey) {

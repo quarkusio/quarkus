@@ -3,6 +3,8 @@ package org.jboss.resteasy.reactive.client.impl;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Context;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -43,7 +45,7 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
     private final ConfigurationImpl configuration;
     private final RestClientRequestContext restClientRequestContext;
     private final ClientRequestHeadersMap headersMap;
-    private OutputStream entityStream;
+    private final Context context;
 
     public ClientRequestContextImpl(RestClientRequestContext restClientRequestContext, ClientImpl client,
             ConfigurationImpl configuration) {
@@ -51,6 +53,16 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.client = client;
         this.configuration = configuration;
         this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
+
+        // Capture or create a duplicated context, and store it.
+        Context current = client.vertx.getOrCreateContext();
+        this.context = VertxContext.getOrCreateDuplicatedContext(current);
+        restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
+    }
+
+    @Override
+    public Context getContext() {
+        return context;
     }
 
     @Override

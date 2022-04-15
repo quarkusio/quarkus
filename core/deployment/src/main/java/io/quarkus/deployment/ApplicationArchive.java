@@ -66,7 +66,7 @@ public interface ApplicationArchive {
     PathsCollection getPaths();
 
     /**
-     * 
+     *
      * @return The paths representing the application root paths.
      */
     PathCollection getResolvedPaths();
@@ -85,7 +85,7 @@ public interface ApplicationArchive {
 
     /**
      * Applies a function to the content tree of the archive.
-     * 
+     *
      * @param <T> result type of the function
      * @param func function to apply
      * @return the result of the function
@@ -94,7 +94,7 @@ public interface ApplicationArchive {
 
     /**
      * Accepts a consumer for the content tree of the archive.
-     * 
+     *
      * @param func consumer
      */
     void accept(Consumer<OpenPathTree> func);

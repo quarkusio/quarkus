@@ -45,7 +45,7 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
     /**
      * Converts a generic PersistenceUnitDescriptor into one of this specific type, and validates that
      * several options that Quarkus does not support are not set.
-     * 
+     *
      * @param toClone the descriptor to clone
      * @return a new instance of LightPersistenceXmlDescriptor
      * @throws UnsupportedOperationException on unsupported configurations

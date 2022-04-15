@@ -18,12 +18,14 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 
 public class HibernateSearchElasticsearchCdiProcessor {
 
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void generateSearchBeans(HibernateSearchElasticsearchRecorder recorder,
+            HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem persistenceUnit : configuredPersistenceUnits) {
@@ -34,13 +36,13 @@ public class HibernateSearchElasticsearchCdiProcessor {
                     .produce(createSyntheticBean(persistenceUnitName,
                             isDefaultPersistenceUnit,
                             SearchMapping.class,
-                            recorder.searchMappingSupplier(persistenceUnitName, isDefaultPersistenceUnit)));
+                            recorder.searchMappingSupplier(runtimeConfig, persistenceUnitName, isDefaultPersistenceUnit)));
 
             syntheticBeanBuildItemBuildProducer
                     .produce(createSyntheticBean(persistenceUnitName,
                             PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName),
                             SearchSession.class,
-                            recorder.searchSessionSupplier(persistenceUnitName, isDefaultPersistenceUnit)));
+                            recorder.searchSessionSupplier(runtimeConfig, persistenceUnitName, isDefaultPersistenceUnit)));
         }
     }
 
@@ -50,7 +52,8 @@ public class HibernateSearchElasticsearchCdiProcessor {
                 .configure(type)
                 .scope(Singleton.class)
                 .unremovable()
-                .supplier(supplier);
+                .supplier(supplier)
+                .setRuntimeInit();
 
         if (isDefaultPersistenceUnit) {
             configurator.addQualifier(Default.class);

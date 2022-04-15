@@ -91,6 +91,7 @@ import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestSseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.reactivestreams.Publisher;
 
 public final class ResteasyReactiveDotNames {
@@ -111,6 +112,7 @@ public final class ResteasyReactiveDotNames {
             .createSimple("org.jboss.resteasy.reactive.server.spi.ServerRequestContext");
 
     public static final DotName REST_SSE_ELEMENT_TYPE = DotName.createSimple(RestSseElementType.class.getName());
+    public static final DotName REST_STREAM_ELEMENT_TYPE = DotName.createSimple(RestStreamElementType.class.getName());
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
     public static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
     public static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());

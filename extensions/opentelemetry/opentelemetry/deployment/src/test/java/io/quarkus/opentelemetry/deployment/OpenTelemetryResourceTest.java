@@ -1,53 +1,58 @@
 package io.quarkus.opentelemetry.deployment;
 
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyOrNullString;
+import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.sdk.extension.resources.OsResource;
-import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.QuarkusUnitTest;
+import io.restassured.RestAssured;
+import io.smallrye.config.SmallRyeConfig;
 
 public class OpenTelemetryResourceTest {
-    private static final String RESOURCE_ATTRIBUTES = "quarkus.opentelemetry.tracer.resource-attributes";
-
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setBeforeAllCustomizer(() -> System.setProperty(RESOURCE_ATTRIBUTES, "service.name=authservice"))
-            .setAfterAllCustomizer(() -> System.getProperties().remove(RESOURCE_ATTRIBUTES))
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TestUtil.class)
-                    .addAsResource("resource-config/application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(TestSpanExporter.class)
+                    .addAsResource("resource-config/application.properties", "application.properties"));
 
     @Inject
-    OpenTelemetry openTelemetry;
+    SmallRyeConfig config;
+    @Inject
+    TestSpanExporter spanExporter;
 
     @Test
-    void test() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        Resource resource = TestUtil.getResource(openTelemetry);
+    void resource() {
+        RestAssured.when()
+                .get("/hello").then()
+                .statusCode(200)
+                .body(is("hello"));
 
-        assertEquals("authservice", resource.getAttributes().get(ResourceAttributes.SERVICE_NAME));
-        assertThat(resource.getAttributes().get(ResourceAttributes.OS_TYPE), not(emptyOrNullString()));
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+        assertEquals("/hello", spans.get(0).getName());
+        assertEquals(SERVER, spans.get(0).getKind());
+        assertEquals("authservice", spans.get(0).getResource().getAttribute(AttributeKey.stringKey("service.name")));
+        assertEquals(config.getRawValue("quarkus.uuid"),
+                spans.get(0).getResource().getAttribute(AttributeKey.stringKey("service.instance.id")));
     }
 
-    @ApplicationScoped
-    public static class OtelConfiguration {
-
-        @Produces
-        public Resource resource() {
-            return OsResource.get();
+    @Path("/hello")
+    public static class HelloResource {
+        @GET
+        public String hello() {
+            return "hello";
         }
     }
 }

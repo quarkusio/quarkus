@@ -22,6 +22,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.deployment.util.ProcessUtil;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class UpxCompressionBuildStep {
 
@@ -48,7 +49,7 @@ public class UpxCompressionBuildStep {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
         } else if (nativeConfig.isContainerBuild()) {
-            log.infof("Running UPX from a container using the builder image: " + nativeConfig.builderImage);
+            log.infof("Running UPX from a container using the builder image: " + nativeConfig.getEffectiveBuilderImage());
             if (!runUpxInContainer(image, nativeConfig)) {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
@@ -99,8 +100,8 @@ public class UpxCompressionBuildStep {
         List<String> extraArgs = nativeConfig.compression.additionalArgs.orElse(Collections.emptyList());
 
         List<String> commandLine = new ArrayList<>();
-        NativeConfig.ContainerRuntime containerRuntime = nativeConfig.containerRuntime
-                .orElseGet(NativeImageBuildContainerRunner::detectContainerRuntime);
+        ContainerRuntimeUtil.ContainerRuntime containerRuntime = nativeConfig.containerRuntime
+                .orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
         commandLine.add(containerRuntime.getExecutableName());
 
         commandLine.add("run");
@@ -121,7 +122,7 @@ public class UpxCompressionBuildStep {
             String gid = getLinuxID("-gr");
             if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
                 Collections.addAll(commandLine, "--user", uid + ":" + gid);
-                if (containerRuntime == NativeConfig.ContainerRuntime.PODMAN) {
+                if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN) {
                     // Needed to avoid AccessDeniedExceptions
                     commandLine.add("--userns=keep-id");
                 }
@@ -131,7 +132,7 @@ public class UpxCompressionBuildStep {
         Collections.addAll(commandLine, "-v",
                 volumeOutputPath + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + ":z");
 
-        commandLine.add(nativeConfig.builderImage);
+        commandLine.add(nativeConfig.getEffectiveBuilderImage());
         commandLine.add(level);
         commandLine.addAll(extraArgs);
 

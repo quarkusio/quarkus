@@ -5,6 +5,11 @@ import java.time.format.DateTimeFormatter;
 
 public class LocalTimeParamConverter extends TemporalParamConverter<LocalTime> {
 
+    // this can be called by generated code
+    public LocalTimeParamConverter() {
+        super(DateTimeFormatter.ISO_LOCAL_TIME);
+    }
+
     public LocalTimeParamConverter(DateTimeFormatter formatter) {
         super(formatter);
     }

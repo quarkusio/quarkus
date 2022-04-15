@@ -12,6 +12,7 @@ import java.util.List;
  */
 public class PlatformReleaseInfo implements Serializable {
 
+    private static final long serialVersionUID = 7751600738849301644L;
     private final String platformKey;
     private final String stream;
     private final String version;

@@ -8,6 +8,8 @@ import java.util.Set;
 
 public class ConfiguredClassLoading implements Serializable {
 
+    private static final long serialVersionUID = 8458420778153976864L;
+
     public final Set<ArtifactKey> parentFirstArtifacts;
     public final Set<ArtifactKey> reloadableArtifacts;
     public final Set<ArtifactKey> removedArtifacts;

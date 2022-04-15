@@ -19,6 +19,7 @@
         <module>deployment</module>
         <module>spi</module>
         <module>util</module>
+        <module>container-image-buildpack</module>
         <module>container-image-docker</module>
         <module>container-image-jib</module>
         <module>container-image-s2i</module>

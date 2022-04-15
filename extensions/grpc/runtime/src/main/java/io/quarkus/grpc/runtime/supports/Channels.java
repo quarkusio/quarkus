@@ -11,6 +11,7 @@ import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -41,10 +42,13 @@ import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslClientConfig;
+import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.ClassPathUtils;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
 
-@SuppressWarnings({ "OptionalIsPresent", "Convert2Lambda" })
+@SuppressWarnings({ "OptionalIsPresent" })
 public class Channels {
 
     private static final Logger LOGGER = Logger.getLogger(Channels.class.getName());
@@ -120,12 +124,18 @@ public class Channels {
 
         String loadBalancingPolicy = config.loadBalancingPolicy;
 
+        boolean stork = false;
         if (Stork.STORK.equalsIgnoreCase(nameResolver)) {
             loadBalancingPolicy = Stork.STORK;
+            stork = true;
         }
 
         NettyChannelBuilder builder = NettyChannelBuilder
                 .forTarget(target)
+                // clients are intercepted using the IOThreadClientInterceptor interceptor which will decide on which
+                // thread the messages should be processed.
+                .directExecutor() // will use I/O thread - must not be blocked.
+                .offloadExecutor(Infrastructure.getDefaultExecutor())
                 .defaultLoadBalancingPolicy(loadBalancingPolicy)
                 .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
                 .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
@@ -181,6 +191,10 @@ public class Channels {
         // Client-side interceptors
         GrpcClientInterceptorContainer interceptorContainer = Arc.container()
                 .instance(GrpcClientInterceptorContainer.class).get();
+        if (stork) {
+            perClientInterceptors = new HashSet<>(perClientInterceptors);
+            perClientInterceptors.add(StorkMeasuringGrpcInterceptor.class.getName());
+        }
         interceptorContainer.getSortedPerServiceInterceptors(perClientInterceptors).forEach(builder::intercept);
         interceptorContainer.getSortedGlobalInterceptors().forEach(builder::intercept);
 
@@ -223,7 +237,7 @@ public class Channels {
 
     private static InputStream streamFor(Path path, String resourceName) {
         final InputStream resource = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(path.toString());
+                .getResourceAsStream(ClassPathUtils.toResourceName(path));
         if (resource != null) {
             return resource;
         } else {

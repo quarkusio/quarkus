@@ -161,7 +161,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     /**
-     * 
+     *
      * @return the annotation target or an empty optional in case of synthetic beans
      */
     public Optional<AnnotationTarget> getTarget() {
@@ -337,17 +337,22 @@ public class BeanInfo implements InjectionTargetInfo {
                 || lifecycleInterceptors.containsKey(InterceptionType.PRE_DESTROY);
     }
 
-    boolean hasDefaultDestroy() {
-        if (isInterceptor()) {
+    /**
+     *
+     * @return {@code true} if the bean requires some customized destroy logic
+     */
+    public boolean hasDestroyLogic() {
+        if (isInterceptor() || isDecorator()) {
+            return false;
+        }
+        if (disposer != null || destroyerConsumer != null) {
+            // producer with disposer or custom bean with destruction logic
             return true;
         }
-        if (isClassBean()) {
-            return getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                    && Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getBeanArchiveIndex())
-                            .isEmpty();
-        } else {
-            return disposer == null && destroyerConsumer == null;
-        }
+        // test class bean with @PreDestroy interceptor or callback
+        return isClassBean() && (!getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
+                || !Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getBeanArchiveIndex())
+                        .isEmpty());
     }
 
     public boolean isForceApplicationClass() {
@@ -386,7 +391,7 @@ public class BeanInfo implements InjectionTargetInfo {
     /**
      * Note that the decorators are not available until the bean is fully initialized, i.e. they are available after
      * {@link BeanProcessor#initialize(Consumer, List)}.
-     * 
+     *
      * @return an ordered list of all decorators associated with the bean
      */
     public List<DecoratorInfo> getBoundDecorators() {
@@ -402,8 +407,8 @@ public class BeanInfo implements InjectionTargetInfo {
             }
         }
         // Sort by priority (highest goes first) and by bean class (reversed lexicographic-order)
-        // Highest priority first because the decorators are instantiated in the reverse order, 
-        // i.e. when the subclass constructor is generated the delegate subclass of the first decorator 
+        // Highest priority first because the decorators are instantiated in the reverse order,
+        // i.e. when the subclass constructor is generated the delegate subclass of the first decorator
         // (lower priority) needs a reference to the next decorator in the chain (higher priority)
         // Note that this set must be always reversed compared to the result coming from the BeanInfo#getNextDecorators(DecoratorInfo)
         Collections.sort(bound,
@@ -454,7 +459,7 @@ public class BeanInfo implements InjectionTargetInfo {
             qualifiers = new HashSet<>();
             Collections.addAll(qualifiers, requiredQualifiers);
         }
-        return Beans.matches(this, requiredType, qualifiers);
+        return beanDeployment.getBeanResolver().matches(this, requiredType, qualifiers);
     }
 
     Consumer<MethodCreator> getCreatorConsumer() {
@@ -508,9 +513,9 @@ public class BeanInfo implements InjectionTargetInfo {
         }
     }
 
-    void validate(List<Throwable> errors, List<BeanDeploymentValidator> validators,
-            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, Set<DotName> classesReceivingNoArgsCtor) {
-        Beans.validateBean(this, errors, validators, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
+    void validate(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            Set<DotName> classesReceivingNoArgsCtor) {
+        Beans.validateBean(this, errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
     }
 
     void init(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
@@ -520,8 +525,12 @@ public class BeanInfo implements InjectionTargetInfo {
                 if (injectionPoint.isDelegate() && !isDecorator()) {
                     errors.add(new DeploymentException(String.format(
                             "Only decorators can declare a delegate injection point: %s", this)));
+                } else if (injectionPoint.getType().kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
+                    errors.add(new DefinitionException(String.format("Type variable is not a legal injection point type: %s",
+                            injectionPoint.getTargetInfo())));
+                } else {
+                    Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint, errors);
                 }
-                Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint, errors);
             }
         }
         if (disposer != null) {
@@ -590,7 +599,9 @@ public class BeanInfo implements InjectionTargetInfo {
         // A decorator is bound to a bean if the bean is assignable to the delegate injection point
         List<DecoratorInfo> bound = new ArrayList<>();
         for (DecoratorInfo decorator : decorators) {
-            if (Beans.matches(this, decorator.getDelegateInjectionPoint().getTypeAndQualifiers())) {
+            // make sure we use delegate injection point assignability rules in this case
+            if (beanDeployment.delegateInjectionPointResolver.matches(this,
+                    decorator.getDelegateInjectionPoint().getTypeAndQualifiers())) {
                 bound.add(decorator);
             }
         }

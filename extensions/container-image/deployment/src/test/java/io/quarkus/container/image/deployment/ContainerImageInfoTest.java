@@ -116,7 +116,7 @@ public class ContainerImageInfoTest {
         SmallRyeConfig src = builder.build();
         BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
         ContainerImageConfig containerImageConfig = (ContainerImageConfig) readResult
-                .requireRootObjectForClass(ContainerImageConfig.class);
+                .requireObjectForClass(ContainerImageConfig.class);
 
         ApplicationInfoBuildItem app = new ApplicationInfoBuildItem(Optional.of(APP_NAME), Optional.of(APP_VERSION));
         Capabilities capabilities = new Capabilities(Collections.emptySet());

@@ -51,7 +51,7 @@ public class OidcTokenPropagationConfig {
 
     /**
      * Name of the configured OidcClient.
-     * 
+     *
      * Note this property is injected into AccessTokenRequestFilter and is only used if the `exchangeToken` property is enabled.
      */
     @ConfigItem

@@ -1,5 +1,7 @@
 package io.quarkus.spring.cloud.config.client.runtime;
 
+import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
@@ -19,7 +21,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.runtime.TlsConfig;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.VertxOptions;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.KeyStoreOptionsBase;
 import io.vertx.core.net.PfxOptions;
@@ -52,8 +56,29 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
             throw new IllegalArgumentException("Value: '" + springCloudConfigClientConfig.url
                     + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
         }
-        this.vertx = Vertx.vertx();
+        this.vertx = createVertxInstance();
         this.webClient = createHttpClient(vertx, springCloudConfigClientConfig, tlsConfig);
+    }
+
+    private Vertx createVertxInstance() {
+        // We must disable the async DNS resolver as it can cause issues when resolving the Vault instance.
+        // This is done using the DISABLE_DNS_RESOLVER_PROP_NAME system property.
+        // The DNS resolver used by vert.x is configured during the (synchronous) initialization.
+        // So, we just need to disable the async resolver around the Vert.x instance creation.
+        String originalValue = System.getProperty(DISABLE_DNS_RESOLVER_PROP_NAME);
+        Vertx vertx;
+        try {
+            System.setProperty(DISABLE_DNS_RESOLVER_PROP_NAME, "true");
+            vertx = Vertx.vertx(new VertxOptions());
+        } finally {
+            // Restore the original value
+            if (originalValue == null) {
+                System.clearProperty(DISABLE_DNS_RESOLVER_PROP_NAME);
+            } else {
+                System.setProperty(DISABLE_DNS_RESOLVER_PROP_NAME, originalValue);
+            }
+        }
+        return vertx;
     }
 
     public static WebClient createHttpClient(Vertx vertx, SpringCloudConfigClientConfig springCloudConfig,
@@ -130,7 +155,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private static byte[] storeBytes(Path keyStorePath)
             throws Exception {
         InputStream classPathResource = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(keyStorePath.toString());
+                .getResourceAsStream(ClassPathUtils.toResourceName(keyStorePath));
         if (classPathResource != null) {
             try (InputStream is = classPathResource) {
                 return allBytes(is);

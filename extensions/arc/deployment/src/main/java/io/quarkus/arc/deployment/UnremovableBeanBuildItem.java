@@ -25,7 +25,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  * {@link ArcConfig#removeUnusedBeans} is set to true.
  * <p>
  * Consider using one of the convenient static factory methods such as {@link #beanTypes(Class...)}:
- * 
+ *
  * <pre>
  * &#64;BuildStep
  * UnremovableBeanBuildItem unremovable() {
@@ -33,9 +33,9 @@ import io.quarkus.builder.item.MultiBuildItem;
  *     return UnremovableBeanBuildItem.beanTypes(MyService.class);
  * }
  * </pre>
- * 
+ *
  * Alternatively, you could make use of the pre-built predicate classes such as {@link BeanClassNameExclusion}:
- * 
+ *
  * <pre>
  * &#64;BuildStep
  * UnremovableBeanBuildItem unremovable() {
@@ -58,7 +58,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans whose bean class matches any of the specified class names.
-     * 
+     *
      * @param classNames
      * @return a new build item
      */
@@ -70,7 +70,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans whose bean class matches any of the specified class names.
-     * 
+     *
      * @param classNames
      * @return a new build item
      */
@@ -80,7 +80,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans which have any of the specified type names in its set of bean types.
-     * 
+     *
      * @param typeNames
      * @return a new build item
      */
@@ -92,7 +92,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans which have any of the specified type names in its set of bean types.
-     * 
+     *
      * @param typeNames
      * @return a new build item
      */
@@ -103,7 +103,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans which have any of the specified type names in its set of bean types.
-     * 
+     *
      * @param typeNames
      * @return a new build item
      */
@@ -115,7 +115,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * Match class beans whose target class contains the specified annotation.
      * <p>
      * The annotations can be declared on the class, and every nested element of the class (fields, types, methods, etc).
-     * 
+     *
      * @param annotationName
      * @return a new build item
      */
@@ -127,7 +127,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * Match class beans whose target class contains an annotation whose name starts with the specified value.
      * <p>
      * The annotations can be declared on the class, and every nested element of the class (fields, types, methods, etc).
-     * 
+     *
      * @param annotationName
      * @return a new build item
      */
@@ -137,7 +137,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans whose target (class, method or field) is annotated with the specified annotation.
-     * 
+     *
      * @param annotationName
      * @return a new build item
      */

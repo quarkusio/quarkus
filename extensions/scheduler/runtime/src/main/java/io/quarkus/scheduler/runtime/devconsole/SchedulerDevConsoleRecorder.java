@@ -13,12 +13,14 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Trigger;
-import io.quarkus.scheduler.runtime.ScheduledInvoker;
-import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
-import io.quarkus.scheduler.runtime.SchedulerContext;
-import io.quarkus.scheduler.runtime.util.SchedulerUtils;
+import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
+import io.quarkus.scheduler.common.runtime.ScheduledMethodMetadata;
+import io.quarkus.scheduler.common.runtime.SchedulerContext;
+import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -86,7 +88,20 @@ public class SchedulerDevConsoleRecorder {
                                         Thread.currentThread().setContextClassLoader(currentCl);
                                         ScheduledInvoker invoker = context
                                                 .createInvoker(metadata.getInvokerClassName());
-                                        invoker.invoke(new DevModeScheduledExecution());
+                                        if (invoker.isBlocking()) {
+                                            invoker.invoke(new DevModeScheduledExecution());
+                                        } else {
+                                            Vertx vertx = Arc.container().instance(Vertx.class).get();
+                                            VertxContext.getOrCreateDuplicatedContext(vertx).runOnContext(new Handler<Void>() {
+                                                @Override
+                                                public void handle(Void event) {
+                                                    try {
+                                                        invoker.invoke(new DevModeScheduledExecution());
+                                                    } catch (Exception ignored) {
+                                                    }
+                                                }
+                                            });
+                                        }
                                         LOG.infof("Invoked scheduled method %s via Dev UI", name);
                                     } catch (Exception e) {
                                         LOG.error(
@@ -135,6 +150,12 @@ public class SchedulerDevConsoleRecorder {
                 public Instant getPreviousFireTime() {
                     return now;
                 }
+
+                @Override
+                public boolean isOverdue() {
+                    return false;
+                }
+
             };
         }
 

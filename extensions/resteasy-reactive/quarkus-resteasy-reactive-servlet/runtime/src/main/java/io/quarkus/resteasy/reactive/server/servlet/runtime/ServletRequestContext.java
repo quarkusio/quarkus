@@ -417,6 +417,12 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     @Override
+    public void removeResponseHeader(String name) {
+        // Servlet API does not support this functionality
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean closed() {
         return context.response().closed();
     }

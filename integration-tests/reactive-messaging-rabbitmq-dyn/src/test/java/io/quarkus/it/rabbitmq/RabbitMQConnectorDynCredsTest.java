@@ -7,11 +7,11 @@ import static org.awaitility.Awaitility.await;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.RabbitMQContainer;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.it.rabbitmq.RabbitMQConnectorDynCredsTest.VaultResource;

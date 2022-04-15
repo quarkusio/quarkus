@@ -86,13 +86,20 @@ class EvaluatorImpl implements Evaluator {
 
     private CompletionStage<Object> resolveNamespace(EvalContext context, ResolutionContext resolutionContext,
             Iterator<Part> parts, Iterator<NamespaceResolver> resolvers, Expression expression) {
+        // Use the next matching namespace resolver
         NamespaceResolver resolver = resolvers.next();
         return resolver.resolve(context).thenCompose(r -> {
             if (Results.isNotFound(r)) {
+                // Result not found
                 if (resolvers.hasNext()) {
+                    // Try the next matching resolver
                     return resolveNamespace(context, resolutionContext, parts, resolvers, expression);
                 } else {
-                    if (strictRendering && !parts.hasNext()) {
+                    // No other matching namespace resolver exist
+                    if (parts.hasNext()) {
+                        // Continue to the next part of the expression
+                        return resolveReference(false, r, parts, resolutionContext, expression, 0);
+                    } else if (strictRendering) {
                         throw propertyNotFound(r, expression);
                     }
                     return Results.notFound(context);
@@ -137,7 +144,7 @@ class EvaluatorImpl implements Evaluator {
         }
 
         if (resolvers == null) {
-            // Iterate the resolvers lazily 
+            // Iterate the resolvers lazily
             resolvers = this.resolvers.iterator();
         }
 
@@ -165,7 +172,7 @@ class EvaluatorImpl implements Evaluator {
             } else {
                 // If the next part matches the ValueResolvers.orResolver() we can just use the empty NotFound constant
                 // and avoid unnecessary allocations
-                // This optimization should be ok in 99% of cases, for the rest an incomplete NotFound is an acceptable loss 
+                // This optimization should be ok in 99% of cases, for the rest an incomplete NotFound is an acceptable loss
                 Part nextPart = isLastPart ? null : expression.getParts().get(partIndex + 1);
                 if (nextPart != null
                         // is virtual method with a single param
@@ -173,7 +180,7 @@ class EvaluatorImpl implements Evaluator {
                         && nextPart.asVirtualMethod().getParameters().size() == 1
                         // name has less than 3 chars
                         && nextPart.getName().length() < 3
-                        // name is "?:", "or" or ":" 
+                        // name is "?:", "or" or ":"
                         && (nextPart.getName().equals(ValueResolvers.ELVIS)
                                 || nextPart.getName().equals(ValueResolvers.OR)
                                 || nextPart.getName().equals(ValueResolvers.COLON))) {

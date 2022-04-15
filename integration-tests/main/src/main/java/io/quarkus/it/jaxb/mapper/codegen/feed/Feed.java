@@ -204,7 +204,7 @@ public class Feed {
      *
      * <p>
      * For example, to add a new item, do as follows:
-     * 
+     *
      * <pre>
      * getLink().add(newItem);
      * </pre>
@@ -306,7 +306,7 @@ public class Feed {
      *
      * <p>
      * For example, to add a new item, do as follows:
-     * 
+     *
      * <pre>
      * getEntry().add(newItem);
      * </pre>

@@ -15,7 +15,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class LambdaDevServicesContinuousTestingTestCase {
     @RegisterExtension
     public static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -25,7 +25,7 @@ public class LambdaDevServicesContinuousTestingTestCase {
                                             "quarkus.log.category.\"io.quarkus.amazon.lambda.runtime\".level=DEBUG")),
                                     "application.properties");
                 }
-            }).setTestArchiveProducer(new Supplier<JavaArchive>() {
+            }).setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClass(LambdaHandlerET.class);

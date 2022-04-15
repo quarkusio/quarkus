@@ -17,14 +17,12 @@ final class LazyHostSupplier {
     }
 
     public String getRemoteHost() {
-        if (initialized) {
-            return this.remoteHost;
-        } else {
+        if (!initialized) {
             SocketAddress socketAddress = request.remoteAddress();
             // client address may not be available with VirtualHttp;
             this.remoteHost = socketAddress != null ? socketAddress.host() : null;
             initialized = true;
-            return this.remoteHost;
         }
+        return this.remoteHost;
     }
 }

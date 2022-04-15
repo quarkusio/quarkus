@@ -44,7 +44,10 @@ import io.smallrye.common.io.jar.JarFiles;
 
 /**
  * Utility for Web resource related operations
+ *
+ * @deprecated Use WebJarBuildItem and WebJarResultsBuildItem instead.
  */
+@Deprecated(forRemoval = true)
 public class WebJarUtil {
 
     private static final Logger LOG = Logger.getLogger(WebJarUtil.class);

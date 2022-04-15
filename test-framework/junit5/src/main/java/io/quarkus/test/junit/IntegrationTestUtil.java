@@ -4,7 +4,6 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLo
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -24,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -33,6 +33,8 @@ import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
@@ -50,6 +52,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -70,10 +73,15 @@ public final class IntegrationTestUtil {
         Class<?> current = testClass;
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {
-                Inject injectAnnotation = field.getAnnotation(Inject.class);
-                if (injectAnnotation != null) {
+                if (field.getAnnotation(Inject.class) != null) {
                     throw new JUnitException(
                             "@Inject is not supported in @NativeImageTest and @QuarkusIntegrationTest tests. Offending field is "
+                                    + field.getDeclaringClass().getTypeName() + "."
+                                    + field.getName());
+                }
+                if (field.getAnnotation(ConfigProperty.class) != null) {
+                    throw new JUnitException(
+                            "@ConfigProperty is not supported in @NativeImageTest and @QuarkusIntegrationTest tests. Offending field is "
                                     + field.getDeclaringClass().getTypeName() + "."
                                     + field.getName());
                 }
@@ -218,15 +226,7 @@ public final class IntegrationTestUtil {
 
         final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
         runnerBuilder.setProjectRoot(projectRoot);
-        Path outputDir;
-        try {
-            // this should work for both maven and gradle
-            outputDir = projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
-        } catch (Exception e) {
-            // this shouldn't happen since testClassLocation is usually found under the project dir
-            outputDir = projectRoot;
-        }
-        runnerBuilder.setTargetDirectory(outputDir);
+        runnerBuilder.setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation));
 
         rootBuilder.add(appClassLocation);
         final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
@@ -306,8 +306,17 @@ public final class IntegrationTestUtil {
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
                 networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
             } catch (Exception e) {
-                networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
-                manageNetwork = true;
+                // use the network the use has specified or else just generate one if none is configured
+
+                Config config = LauncherUtil.installAndGetSomeConfig();
+                Optional<String> networkIdOpt = config
+                        .getOptionalValue("quarkus.test.container.network", String.class);
+                if (networkIdOpt.isPresent()) {
+                    networkId = networkIdOpt.get();
+                } else {
+                    networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+                    manageNetwork = true;
+                }
             }
         }
 
@@ -353,7 +362,16 @@ public final class IntegrationTestUtil {
     static void activateLogging() {
         // calling this method of the Recorder essentially sets up logging and configures most things
         // based on the provided configuration
-        LoggingSetupRecorder.handleFailedStart();
+
+        //we need to run this from the TCCL, as we want to activate it from
+        //inside the isolated CL, if one exists
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try {
+            Class<?> lrs = cl.loadClass(LoggingSetupRecorder.class.getName());
+            lrs.getDeclaredMethod("handleFailedStart").invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {
@@ -459,12 +477,12 @@ public final class IntegrationTestUtil {
             final CodeSource codeSource = testClass.getProtectionDomain().getCodeSource();
             if (codeSource != null) {
                 URL codeSourceLocation = codeSource.getLocation();
-                File artifactPropertiesDirectory = determineBuildOutputDirectory(codeSourceLocation);
+                Path artifactPropertiesDirectory = determineBuildOutputDirectory(codeSourceLocation);
                 if (artifactPropertiesDirectory == null) {
                     throw new IllegalStateException(
                             "Unable to determine the output of the Quarkus build. Consider setting the 'build.output.directory' system property.");
                 }
-                result = artifactPropertiesDirectory.toPath();
+                result = artifactPropertiesDirectory;
             }
         }
         if (result == null) {
@@ -478,24 +496,37 @@ public final class IntegrationTestUtil {
         return result;
     }
 
-    private static File determineBuildOutputDirectory(final URL url) {
+    private static Path determineBuildOutputDirectory(final URL url) {
         if (url == null) {
             return null;
         }
-        if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
-            //we have the maven test classes dir
-            return toPath(url).getParent().toFile();
-        } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
-            //we have the gradle test classes dir, build/classes/java/test
-            return toPath(url).getParent().getParent().getParent().toFile();
-        } else if (url.getProtocol().equals("file") && url.getPath().contains("/target/surefire/")) {
-            //this will make mvn failsafe:integration-test work
-            String path = url.getPath();
-            int index = path.lastIndexOf("/target/");
-            try {
-                return Paths.get(new URI("file:" + (path.substring(0, index) + "/target/"))).toFile();
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
+        if (url.getProtocol().equals("file")) {
+            if (url.getPath().endsWith("test-classes/")) {
+                // we have the maven test classes dir
+                return toPath(url).getParent();
+            } else if (url.getPath().endsWith("test/") || url.getPath().endsWith("integrationTest/")) {
+                // we have the gradle test classes dir, build/classes/java/test
+                return toPath(url).getParent().getParent().getParent();
+            } else if (url.getPath().contains("/target/surefire/")) {
+                // this will make mvn failsafe:integration-test work
+                String path = url.getPath();
+                int index = path.lastIndexOf("/target/");
+                try {
+                    return Paths.get(new URI("file:" + (path.substring(0, index) + "/target/")));
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (url.getPath().endsWith("-tests.jar")) {
+                // integration platform test
+                final Path baseDir = Path.of("").normalize().toAbsolutePath();
+                Path outputDir = baseDir.resolve("target");
+                if (Files.exists(outputDir)) {
+                    return outputDir;
+                }
+                outputDir = baseDir.resolve("build");
+                if (Files.exists(outputDir)) {
+                    return outputDir;
+                }
             }
         }
         return null;

@@ -55,6 +55,7 @@ public class ParameterHandler implements ServerRestHandler {
                 handleResult(result, requestContext, false);
             }
         } catch (Exception e) {
+            log.debug("Error occurred during parameter extraction", e);
             if (e instanceof WebApplicationException) {
                 throw e;
             } else {
@@ -71,7 +72,7 @@ public class ParameterHandler implements ServerRestHandler {
         }
         Throwable toThrow = null;
         if (converter != null && ((result != null) || isOptional)) {
-            // spec says: 
+            // spec says:
             /*
              * 3.2 Fields and Bean Properties
              * if the field or property is annotated with @MatrixParam, @QueryParam or @PathParam then an implementation

@@ -27,9 +27,9 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
 
-import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
-import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
 import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
+import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
@@ -311,6 +311,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     private ReactiveMongoDatabase mongoDatabase(MongoEntity mongoEntity) {
         ReactiveMongoClient mongoClient = clientFromArc(mongoEntity, ReactiveMongoClient.class, true);
+        if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
+            return mongoClient.getDatabase(mongoEntity.database());
+        }
         String databaseName = getDefaultDatabaseName(mongoEntity);
         return mongoClient.getDatabase(databaseName);
     }
@@ -658,6 +661,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public UpdateType update(Class<?> entityClass, String update, Object... params) {
         return executeUpdate(entityClass, update, params);
+    }
+
+    public UpdateType update(Class<?> entityClass, Document update) {
+        return createUpdate(mongoCollection(entityClass), entityClass, update);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Object... params) {

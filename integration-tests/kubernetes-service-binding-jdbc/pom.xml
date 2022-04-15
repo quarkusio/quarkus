@@ -13,10 +13,6 @@
     <artifactId>quarkus-integration-test-k8s-service-binding-jdbc</artifactId>
     <name>Quarkus - Integration Tests - Kubernetes Service Binding JDBC</name>
 
-    <properties>
-        <postgres.image>postgres:14.1</postgres.image>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

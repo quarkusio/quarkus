@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 import javax.interceptor.InterceptorBinding;
 
 /**
- * 
+ *
  * @see StreamCollectorInterceptor
  */
 @InterceptorBinding

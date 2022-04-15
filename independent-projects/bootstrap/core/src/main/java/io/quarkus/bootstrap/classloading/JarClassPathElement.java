@@ -33,7 +33,7 @@ import org.jboss.logging.Logger;
 
 /**
  * A class path element that represents a file on the file system
- * 
+ *
  * @deprecated in favor of {@link PathTreeClassPathElement}
  */
 @Deprecated

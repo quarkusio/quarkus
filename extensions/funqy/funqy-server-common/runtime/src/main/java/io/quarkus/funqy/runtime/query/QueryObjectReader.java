@@ -19,7 +19,7 @@ class QueryObjectReader extends BaseObjectReader {
     @Override
     public Object create() {
         try {
-            return clz.newInstance();
+            return clz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

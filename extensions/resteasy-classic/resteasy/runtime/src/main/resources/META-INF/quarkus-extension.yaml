@@ -1,4 +1,4 @@
-name: "RESTEasy JAX-RS"
+name: "RESTEasy Classic"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   short-name: "jax-rs"
@@ -7,7 +7,7 @@ metadata:
   - "jaxrs"
   - "web"
   - "rest"
-  guide: "https://quarkus.io/guides/rest-json"
+  guide: "https://quarkus.io/guides/resteasy"
   categories:
   - "web"
   status: "stable"

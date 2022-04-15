@@ -44,7 +44,7 @@ public class MicrometerTimedInterceptor {
         final List<Sample> samples = getSamples(context);
 
         if (samples.isEmpty()) {
-            // This should never happen - at least one @Timed binding must be present  
+            // This should never happen - at least one @Timed binding must be present
             return context.proceed();
         }
 
@@ -103,8 +103,8 @@ public class MicrometerTimedInterceptor {
     }
 
     private void stop(List<Sample> samples, String throwableClassName) {
-        for (int i = 0; i < samples.size(); i++) {
-            samples.get(i).stop(throwableClassName);
+        for (Sample sample : samples) {
+            sample.stop(throwableClassName);
         }
     }
 

@@ -28,6 +28,8 @@ public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse
 
     String getResponseHeader(String name);
 
+    void removeResponseHeader(String name);
+
     boolean closed();
 
     ServerHttpResponse setChunked(boolean chunked);

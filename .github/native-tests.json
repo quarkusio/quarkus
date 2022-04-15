@@ -39,7 +39,7 @@
         {
             "category": "Data6",
             "timeout": 65,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-reactive-panache",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling, hibernate-reactive-panache",
             "os-name": "ubuntu-latest"
         },
         {
@@ -99,13 +99,13 @@
         {
             "category": "Misc1",
             "timeout": 65,
-            "test-modules": "maven, jackson, jsonb, kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space",
+            "test-modules": "maven, jackson, jsonb, kotlin-serialization, rest-client-reactive-kotlin-serialization, quartz, qute, logging-min-level-unset, logging-min-level-set, simple with space",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Misc2",
             "timeout": 65,
-            "test-modules": "hibernate-validator, test-extension, logging-gelf, bootstrap-config, mailer, native-config-profile",
+            "test-modules": "hibernate-validator, test-extension, logging-gelf, bootstrap-config, mailer, native-config-profile, locales",
             "os-name": "ubuntu-latest"
         },
         {

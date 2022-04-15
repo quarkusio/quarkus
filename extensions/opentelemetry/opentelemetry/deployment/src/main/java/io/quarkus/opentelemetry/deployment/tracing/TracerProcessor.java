@@ -3,8 +3,11 @@ package io.quarkus.opentelemetry.deployment.tracing;
 import static io.quarkus.opentelemetry.deployment.OpenTelemetryProcessor.isClassPresent;
 import static javax.interceptor.Interceptor.Priority.LIBRARY_AFTER;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
@@ -34,12 +37,15 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.opentelemetry.runtime.OpenTelemetryConfig;
 import io.quarkus.opentelemetry.runtime.tracing.TracerProducer;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingClientInterceptor;
+import io.quarkus.opentelemetry.runtime.tracing.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
+import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
+import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 
 public class TracerProcessor {
     private static final DotName ID_GENERATOR = DotName.createSimple(IdGenerator.class.getName());
@@ -48,15 +54,6 @@ public class TracerProcessor {
     private static final DotName SPAN_EXPORTER = DotName.createSimple(SpanExporter.class.getName());
     private static final DotName SPAN_PROCESSOR = DotName.createSimple(SpanProcessor.class.getName());
 
-    public static class TracerEnabled implements BooleanSupplier {
-        OpenTelemetryConfig otelConfig;
-
-        public boolean getAsBoolean() {
-            return otelConfig.tracer.enabled.map(tracerEnabled -> otelConfig.enabled && tracerEnabled)
-                    .orElseGet(() -> otelConfig.enabled);
-        }
-    }
-
     static class MetricsExtensionAvailable implements BooleanSupplier {
         private static final boolean IS_MICROMETER_EXTENSION_AVAILABLE = isClassPresent(
                 "io.quarkus.micrometer.runtime.binder.vertx.VertxHttpServerMetrics");
@@ -64,6 +61,16 @@ public class TracerProcessor {
         @Override
         public boolean getAsBoolean() {
             return IS_MICROMETER_EXTENSION_AVAILABLE;
+        }
+    }
+
+    static class GrpcExtensionAvailable implements BooleanSupplier {
+        private static final boolean IS_GRPC_EXTENSION_AVAILABLE = isClassPresent(
+                "io.quarkus.grpc.runtime.GrpcServerRecorder");
+
+        @Override
+        public boolean getAsBoolean() {
+            return IS_GRPC_EXTENSION_AVAILABLE;
         }
     }
 
@@ -132,6 +139,37 @@ public class TracerProcessor {
     }
 
     @BuildStep(onlyIf = TracerEnabled.class)
+    void dropNames(
+            Optional<FrameworkEndpointsBuildItem> frameworkEndpoints,
+            Optional<StaticResourcesBuildItem> staticResources,
+            BuildProducer<DropNonApplicationUrisBuildItem> dropNonApplicationUris,
+            BuildProducer<DropStaticResourcesBuildItem> dropStaticResources) {
+
+        // Drop framework paths
+        List<String> nonApplicationUris = new ArrayList<>();
+        frameworkEndpoints.ifPresent(
+                frameworkEndpointsBuildItem -> nonApplicationUris.addAll(frameworkEndpointsBuildItem.getEndpoints()));
+        dropNonApplicationUris.produce(new DropNonApplicationUrisBuildItem(nonApplicationUris));
+
+        // Drop Static Resources
+        List<String> resources = new ArrayList<>();
+        if (staticResources.isPresent()) {
+            for (StaticResourcesBuildItem.Entry entry : staticResources.get().getEntries()) {
+                if (!entry.isDirectory()) {
+                    resources.add(entry.getPath());
+                }
+            }
+        }
+        dropStaticResources.produce(new DropStaticResourcesBuildItem(resources));
+    }
+
+    @BuildStep(onlyIf = { TracerEnabled.class, GrpcExtensionAvailable.class })
+    void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
+    }
+
+    @BuildStep(onlyIf = TracerEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
     VertxOptionsConsumerBuildItem vertxTracingOptions(TracerRecorder recorder) {
         return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
@@ -158,9 +196,13 @@ public class TracerProcessor {
 
     @BuildStep(onlyIf = TracerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupTracer(TracerRuntimeConfig runtimeConfig,
-            TracerRecorder recorder) {
+    void setupTracer(
+            TracerRecorder recorder,
+            TracerRuntimeConfig runtimeConfig,
+            DropNonApplicationUrisBuildItem dropNonApplicationUris,
+            DropStaticResourcesBuildItem dropStaticResources) {
+
         recorder.setupResources(runtimeConfig);
-        recorder.setupSampler(runtimeConfig);
+        recorder.setupSampler(runtimeConfig, dropNonApplicationUris.getDropNames(), dropStaticResources.getDropNames());
     }
 }

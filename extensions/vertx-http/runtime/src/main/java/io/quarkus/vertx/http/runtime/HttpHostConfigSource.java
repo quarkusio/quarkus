@@ -48,9 +48,20 @@ public class HttpHostConfigSource implements ConfigSource, Serializable {
                 // in remote-dev mode we need to listen on all interfaces
                 return ALL_INTERFACES;
             }
-            return LaunchMode.current().isDevOrTest() ? "localhost" : ALL_INTERFACES;
+            // In dev-mode we want to only listen on localhost so others on the network cannot connect to the application.
+            // However, in WSL this would result in the application not being accessible,
+            // so in that case, we launch it on all interfaces.
+            return (LaunchMode.current().isDevOrTest() && !isWSL()) ? "localhost" : ALL_INTERFACES;
         }
         return null;
+    }
+
+    /**
+     * @return {@code true} if the application is running in a WSL (Windows Subsystem for Linux) environment
+     */
+    private boolean isWSL() {
+        var sysEnv = System.getenv();
+        return sysEnv.containsKey("IS_WSL") || sysEnv.containsKey("WSL_DISTRO_NAME");
     }
 
     @Override

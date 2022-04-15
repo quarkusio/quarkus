@@ -18,7 +18,7 @@ abstract class AbstractAnnotationsTransformation<T extends AnnotationsTransforma
     protected final C modifiedAnnotations;
 
     /**
-     * 
+     *
      * @param annotations Mutable collection of annotations
      * @param target
      * @param resultConsumer

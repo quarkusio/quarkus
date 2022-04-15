@@ -23,6 +23,8 @@ import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
+import io.smallrye.mutiny.Uni;
 
 public final class ListMethodImplementor extends StandardMethodImplementor {
 
@@ -30,19 +32,25 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
 
     private static final String RESOURCE_METHOD_NAME = "list";
 
+    private static final String EXCEPTION_MESSAGE = "Failed to list the entities";
+
     private static final String REL = "list";
 
-    private final PaginationImplementor paginationImplementor = new PaginationImplementor();
+    private final PaginationImplementor paginationImplementor;
 
     private final SortImplementor sortImplementor = new SortImplementor();
 
-    public ListMethodImplementor(boolean isResteasyClassic) {
-        super(isResteasyClassic);
+    public ListMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
+        super(isResteasyClassic, isReactivePanache);
+
+        this.paginationImplementor = new PaginationImplementor();
     }
 
     /**
-     * Generate JAX-RS GET method that exposes {@link RestDataResource#list(Page, Sort)}.
-     * Generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
+     * Generate JAX-RS GET method.
+     *
+     * The RESTEasy Classic version exposes {@link RestDataResource#list(Page, Sort)}
+     * and the generated pseudo-code with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
      * query parameters are skipped and null {@link Page} instance is used.
      *
      * <pre>
@@ -72,6 +80,39 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
      *     }
      * }
      * </pre>
+     *
+     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#list(Page, Sort)}
+     * and the generated code looks more or less like this:
+     *
+     * <pre>
+     * {@code
+     *     &#64;GET
+     *     &#64;Path("")
+     *     &#64;Produces({"application/json"})
+     *     &#64;LinkResource(
+     *         rel = "list",
+     *         entityClassName = "com.example.Entity"
+     *     )
+     *     public Uni<Response> list(@QueryParam("page") @DefaultValue("0") int pageIndex,
+     *             &#64;QueryParam("size") @DefaultValue("20") int pageSize,
+     *             &#64;QueryParam("sort") String sortQuery) {
+     *         Page page = Page.of(pageIndex, pageSize);
+     *         Sort sort = ...; // Build a sort instance by parsing a query param
+     *         try {
+     *             return resource.getAll(page, sort).map(entities -> {
+     *                // Get the page count, and build first, last, next, previous page instances
+     *                Response.ResponseBuilder responseBuilder = Response.status(200);
+     *                responseBuilder.entity(entities);
+     *                // Add headers with first, last, next and previous page URIs if they exist
+     *                return responseBuilder.build();
+     *             });
+     *
+     *         } catch (Throwable t) {
+     *             throw new RestDataPanacheException(t);
+     *         }
+     *     }
+     * }
+     * </pre>
      */
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
@@ -91,8 +132,9 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
     private void implementPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
         // Method parameters: sort strings, page index, page size, uri info
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class, List.class, int.class,
-                int.class, UriInfo.class);
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
+                isNotReactivePanache() ? Response.class : Uni.class,
+                List.class, int.class, int.class, UriInfo.class);
 
         // Add method annotations
         addGetAnnotation(methodCreator);
@@ -115,27 +157,49 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         ResultHandle page = paginationImplementor.getPage(methodCreator, pageIndex, pageSize);
         ResultHandle uriInfo = methodCreator.getMethodParam(3);
 
-        // Invoke resource methods
-        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to list the entities");
-        ResultHandle pageCount = tryBlock.invokeVirtualMethod(
-                ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
-                        int.class, Page.class),
-                resource, page);
-        ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount);
-        ResultHandle entities = tryBlock.invokeVirtualMethod(
-                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
-                resource, page, sort);
+        if (isNotReactivePanache()) {
+            TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
 
-        // Return response
-        tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities, links));
+            ResultHandle pageCount = tryBlock.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
+                            int.class, Page.class),
+                    resource, page);
 
-        tryBlock.close();
+            ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount);
+            ResultHandle entities = tryBlock.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
+                    resource, page, sort);
+
+            // Return response
+            tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities, links));
+            tryBlock.close();
+        } else {
+            ResultHandle uniPageCount = methodCreator.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
+                            Uni.class, Page.class),
+                    resource, page);
+
+            methodCreator.returnValue(UniImplementor.flatMap(methodCreator, uniPageCount, EXCEPTION_MESSAGE,
+                    (body, pageCount) -> {
+                        ResultHandle pageCountAsInt = body.checkCast(pageCount, Integer.class);
+                        ResultHandle links = paginationImplementor.getLinks(body, uriInfo, page, pageCountAsInt);
+                        ResultHandle uniEntities = body.invokeVirtualMethod(
+                                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Uni.class, Page.class,
+                                        Sort.class),
+                                resource, page, sort);
+                        body.returnValue(UniImplementor.map(body, uniEntities, EXCEPTION_MESSAGE,
+                                (listBody, list) -> listBody.returnValue(ResponseImplementor.ok(listBody, list, links))));
+                    }));
+        }
+
         methodCreator.close();
     }
 
     private void implementNotPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceFieldDescriptor) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class, List.class);
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME,
+                isNotReactivePanache() ? Response.class : Uni.class,
+                List.class);
 
         // Add method annotations
         addGetAnnotation(methodCreator);
@@ -148,16 +212,24 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         ResultHandle sort = sortImplementor.getSort(methodCreator, sortQuery);
         ResultHandle resource = methodCreator.readInstanceField(resourceFieldDescriptor, methodCreator.getThis());
 
-        // Invoke resource methods
-        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to list the entities");
-        ResultHandle entities = tryBlock.invokeVirtualMethod(
-                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, List.class, Page.class, Sort.class),
-                resource, tryBlock.loadNull(), sort);
+        if (isNotReactivePanache()) {
+            TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
+            ResultHandle entities = tryBlock.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME,
+                            List.class, Page.class, Sort.class),
+                    resource, tryBlock.loadNull(), sort);
+            tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities));
+            tryBlock.close();
+        } else {
+            ResultHandle uniEntities = methodCreator.invokeVirtualMethod(
+                    ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME,
+                            Uni.class, Page.class, Sort.class),
+                    resource, methodCreator.loadNull(), sort);
 
-        // Return response
-        tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities));
+            methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntities, EXCEPTION_MESSAGE,
+                    (body, entities) -> body.returnValue(ResponseImplementor.ok(body, entities))));
+        }
 
-        tryBlock.close();
         methodCreator.close();
     }
 }

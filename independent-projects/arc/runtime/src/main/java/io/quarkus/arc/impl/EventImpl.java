@@ -3,6 +3,7 @@ package io.quarkus.arc.impl;
 import static javax.transaction.Status.STATUS_COMMITTED;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.AsyncObserverExceptionHandler;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import java.lang.annotation.Annotation;
@@ -11,7 +12,6 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -97,7 +97,9 @@ class EventImpl<T> implements Event<T> {
         Supplier<U> notifyLogic = new Supplier<U>() {
             @Override
             public U get() {
-                ObserverExceptionHandler exceptionHandler = new CollectingExceptionHandler();
+                // Note that async observers are notified serially - no need to synchronize the collection
+                ObserverExceptionHandler exceptionHandler = new CollectingExceptionHandler(new ArrayList<>(),
+                        Arc.container().instance(AsyncObserverExceptionHandler.class).get());
                 notifier.notify(event, exceptionHandler, true);
                 handleExceptions(exceptionHandler);
                 return event;
@@ -205,9 +207,10 @@ class EventImpl<T> implements Event<T> {
                 exception = new CompletionException(handledExceptions.get(0));
             } else {
                 exception = new CompletionException(null);
-                for (Throwable handledException : handledExceptions) {
-                    exception.addSuppressed(handledException);
-                }
+            }
+            // always add exceptions into suppressed
+            for (Throwable handledException : handledExceptions) {
+                exception.addSuppressed(handledException);
             }
             throw exception;
         }
@@ -318,8 +321,8 @@ class EventImpl<T> implements Event<T> {
                 if (predicate.test(observerMethod)) {
                     try {
                         observerMethod.notify(eventContext);
-                    } catch (Throwable e) {
-                        exceptionHandler.handle(e);
+                    } catch (Throwable t) {
+                        exceptionHandler.handle(t, observerMethod, eventContext);
                     }
                 }
             }
@@ -430,7 +433,7 @@ class EventImpl<T> implements Event<T> {
         private EventContext eventContext;
         private Status status;
 
-        private static final Logger LOGGER = Logger.getLogger(DeferredEventNotification.class);
+        private static final Logger LOG = Logger.getLogger(DeferredEventNotification.class);
 
         DeferredEventNotification(ObserverMethod<? super T> observerMethod, EventContext eventContext, Status status) {
             this.observerMethod = observerMethod;
@@ -464,9 +467,11 @@ class EventImpl<T> implements Event<T> {
                 }
             } catch (Exception e) {
                 // swallow exception and log errors for every problematic OM
-                LOGGER.errorf("Failure while notifying an observer %s for event %s. Stack trace - %s",
-                        observerMethod, eventContext.getMetadata().getType().getTypeName(),
-                        e.getCause() != null ? e.getCause() : e);
+                LOG.errorf(
+                        "Failure occurred while notifying a transational %s for event of type %s \n- please enable debug logging to see the full stack trace",
+                        observerMethod, eventContext.getMetadata().getType().getTypeName());
+                LOG.debugf(e, "Failure occurred while notifying a transational %s for event of type %s",
+                        observerMethod, eventContext.getMetadata().getType().getTypeName());
             }
         }
     }
@@ -532,17 +537,17 @@ class EventImpl<T> implements Event<T> {
      */
     protected interface ObserverExceptionHandler {
 
-        ObserverExceptionHandler IMMEDIATE_HANDLER = throwable -> {
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException) throwable;
+        ObserverExceptionHandler IMMEDIATE_HANDLER = (t, m, e) -> {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
             }
-            if (throwable instanceof Error) {
-                throw (Error) throwable;
+            if (t instanceof Error) {
+                throw (Error) t;
             }
-            throw new ObserverException(throwable);
+            throw new ObserverException(t);
         };
 
-        void handle(Throwable throwable);
+        void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext);
 
         default List<Throwable> getHandledExceptions() {
             return Collections.emptyList();
@@ -551,19 +556,23 @@ class EventImpl<T> implements Event<T> {
 
     static class CollectingExceptionHandler implements ObserverExceptionHandler {
 
-        private List<Throwable> throwables;
+        private final List<Throwable> throwables;
 
-        CollectingExceptionHandler() {
-            this(new LinkedList<>());
-        }
+        private final AsyncObserverExceptionHandler exceptionHandler;
 
-        CollectingExceptionHandler(List<Throwable> throwables) {
+        CollectingExceptionHandler(List<Throwable> throwables, AsyncObserverExceptionHandler exceptionHandler) {
             this.throwables = throwables;
+            this.exceptionHandler = exceptionHandler;
         }
 
         @Override
-        public void handle(Throwable throwable) {
+        public void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext) {
             throwables.add(throwable);
+            try {
+                exceptionHandler.handle(throwable, observerMethod, eventContext);
+            } catch (Exception e) {
+                LOGGER.errorf(e, "Cannot handle exception of an async observer: %s", throwable);
+            }
         }
 
         @Override

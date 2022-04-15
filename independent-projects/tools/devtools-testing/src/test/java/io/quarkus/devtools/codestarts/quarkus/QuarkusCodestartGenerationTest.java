@@ -6,6 +6,7 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.Quarku
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapshot;
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
+import static io.quarkus.devtools.testing.SnapshotTesting.checkNotContains;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.devtools.project.BuildTool;
@@ -76,8 +77,25 @@ class QuarkusCodestartGenerationTest {
         checkConfigProperties(projectDir);
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/com/andy/BonjourResource.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/com/andy/NativeBonjourResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/com/andy/BonjourResourceIT.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/resources/META-INF/resources/index.html");
+    }
+
+    @Test
+    void verifyIndexExtensionList(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addData(getGenerationTestInputData())
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy-jackson"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy-jsonb"))
+                .build();
+        final Path projectDir = testDirPath.resolve("verify-index-extensions-list");
+        getCatalog().createProject(input).generate(projectDir);
+
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/resources/META-INF/resources/index.html")
+                .satisfies(checkContains("RESTEasy JAX-RS"))
+                .satisfies(checkContains("RESTEasy Jackson"))
+                .satisfies(checkContains("RESTEasy JSON-B"));
     }
 
     @Test
@@ -134,9 +152,9 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("class BonjourResourceTest"))
                 .satisfies(checkContains("\"/bonjour\""));
 
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/kotlin/com/andy/NativeBonjourResourceIT.kt")
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/kotlin/com/andy/BonjourResourceIT.kt")
                 .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class NativeBonjourResourceIT : BonjourResourceTest"));
+                .satisfies(checkContains("class BonjourResourceIT : BonjourResourceTest"));
     }
 
     @Test
@@ -167,9 +185,9 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("class BonjourResourceTest"))
                 .satisfies(checkContains("\"/bonjour\""));
 
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/NativeBonjourResourceIT.scala")
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/BonjourResourceIT.scala")
                 .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class NativeBonjourResourceIT extends BonjourResourceTest"));
+                .satisfies(checkContains("class BonjourResourceIT extends BonjourResourceTest"));
     }
 
     @Test
@@ -187,7 +205,7 @@ class QuarkusCodestartGenerationTest {
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/GreetingResource.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceTest.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/NativeGreetingResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceIT.java");
     }
 
     @Test
@@ -206,7 +224,7 @@ class QuarkusCodestartGenerationTest {
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/GreetingResource.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceTest.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/NativeGreetingResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceIT.java");
     }
 
     @Test
@@ -308,15 +326,17 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10"))//TODO: make a teste to java17
-                .satisfies(checkContains("ENTRYPOINT [ \"java\", \"-jar\", \"/deployments/quarkus-run.jar\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.11"))//TODO: make a teste to java17
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkNotContains("ENTRYPOINT"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.11"))
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
-                .satisfies(checkContains("ENTRYPOINT [ \"java\", \"-jar\", \"/deployments/quarkus-run.jar\" ]"));
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkNotContains("ENTRYPOINT"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./mvnw package -Pnative"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:1.0"))

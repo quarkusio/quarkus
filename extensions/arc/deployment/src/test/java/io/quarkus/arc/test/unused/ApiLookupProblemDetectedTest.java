@@ -40,7 +40,7 @@ public class ApiLookupProblemDetectedTest {
 
     @Test
     public void testWarning() {
-        // Note that the warning is only displayed once, subsequent calls use a cached result 
+        // Note that the warning is only displayed once, subsequent calls use a cached result
         assertFalse(Arc.container().instance(Alpha.class).isAvailable());
     }
 

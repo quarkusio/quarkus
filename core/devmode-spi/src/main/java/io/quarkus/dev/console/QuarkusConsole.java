@@ -1,9 +1,13 @@
 package io.quarkus.dev.console;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
@@ -52,9 +56,12 @@ public abstract class QuarkusConsole {
 
     public final static PrintStream ORIGINAL_OUT = System.out;
     public final static PrintStream ORIGINAL_ERR = System.err;
+    public final static InputStream ORIGINAL_IN = System.in;
 
     public static PrintStream REDIRECT_OUT = null;
     public static PrintStream REDIRECT_ERR = null;
+    public static StateChangeInputStream REDIRECT_IN;
+    protected volatile boolean userReadInProgress;
 
     public synchronized static void installRedirects() {
         if (redirectsInstalled) {
@@ -67,8 +74,10 @@ public abstract class QuarkusConsole {
         QuarkusConsole.INSTANCE.isInputSupported();
         REDIRECT_OUT = new RedirectPrintStream(false);
         REDIRECT_ERR = new RedirectPrintStream(true);
+        REDIRECT_IN = new StateChangeInputStream();
         System.setOut(REDIRECT_OUT);
         System.setErr(REDIRECT_ERR);
+        System.setIn(REDIRECT_IN);
     }
 
     public synchronized static void uninstallRedirects() {
@@ -86,8 +95,10 @@ public abstract class QuarkusConsole {
             REDIRECT_ERR.close();
             REDIRECT_ERR = null;
         }
+        REDIRECT_IN = null;
         System.setOut(ORIGINAL_OUT);
         System.setErr(ORIGINAL_ERR);
+        System.setIn(ORIGINAL_IN);
 
         redirectsInstalled = false;
     }
@@ -176,4 +187,69 @@ public abstract class QuarkusConsole {
         return false;
     }
 
+    protected void userReadStart() {
+
+    }
+
+    protected void userReadStop() {
+
+    }
+
+    public static class StateChangeInputStream extends InputStream {
+
+        private final LinkedBlockingDeque<Integer> queue = new LinkedBlockingDeque<>();
+
+        private volatile boolean reading;
+
+        public synchronized boolean acceptInput(int input) {
+            if (reading) {
+                queue.add(input);
+                notifyAll();
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public synchronized int read() throws IOException {
+            reading = true;
+            try {
+                while (queue.isEmpty()) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        throw new InterruptedIOException();
+                    }
+                }
+                return queue.pollFirst();
+            } finally {
+                reading = false;
+            }
+        }
+
+        @Override
+        public synchronized int read(byte[] b, int off, int len) throws IOException {
+            reading = true;
+            int read = 0;
+            try {
+                while (read < len) {
+                    while (queue.isEmpty()) {
+                        try {
+                            wait();
+                        } catch (InterruptedException e) {
+                            throw new InterruptedIOException();
+                        }
+                    }
+                    byte byteValue = queue.poll().byteValue();
+                    b[read++] = byteValue;
+                    if (byteValue == '\n' || byteValue == '\r') {
+                        return read;
+                    }
+                }
+                return read;
+            } finally {
+                reading = false;
+            }
+        }
+    }
 }

@@ -22,8 +22,8 @@ public class FlywayDevConsoleRecorder {
             protected void handlePost(RoutingContext event, MultiMap form) throws Exception {
                 String datasource = form.get("datasource");
                 String operation = form.get("operation");
-                Collection<FlywayContainer> liquibaseContainers = new FlywayContainersSupplier().get();
-                for (FlywayContainer flywayContainer : liquibaseContainers) {
+                Collection<FlywayContainer> flywayContainers = new FlywayContainersSupplier().get();
+                for (FlywayContainer flywayContainer : flywayContainers) {
                     if (flywayContainer.getDataSourceName().equals(datasource)) {
                         Flyway flyway = flywayContainer.getFlyway();
                         if ("clean".equals(operation)) {

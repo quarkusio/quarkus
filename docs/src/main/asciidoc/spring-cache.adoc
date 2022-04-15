@@ -13,48 +13,40 @@ This guide explains how a Quarkus application can leverage the well known Spring
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 * Some familiarity with the Spring DI extension
-
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=spring-cache-quickstart \
-    -DclassName="org.acme.spring.cache.GreeterResource" \
-    -Dpath="/greeting" \
-    -Dextensions="resteasy,spring-di,spring-cache"
-cd spring-cache-quickstart
-----
+:create-app-artifact-id: spring-cache-quickstart
+:create-app-extensions: resteasy-reactive,spring-di,spring-cache
+include::includes/devtools/create-app.adoc[]
 
-This command generates a Maven project with a REST endpoint and imports the `spring-cache` and `spring-di` extensions.
+This command generates a project which imports the `spring-cache` and `spring-di` extensions.
 
 If you already have your Quarkus project configured, you can add the `spring-cache` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="spring-cache"
-----
+:add-extension-extensions: spring-cache
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-spring-cache</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-cache")
 ----
 
 == Creating the REST API
@@ -130,7 +122,7 @@ public class WeatherForecast {
 }
 ----
 
-Now, we just need to update the generated `WeatherForecastResource` class to use the service and response:
+Now, we just need to create the `src/main/java/org/acme/spring/cache/WeatherForecastResource.java` class to use the service and response:
 
 [source,java]
 ----
@@ -144,7 +136,7 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.resteasy.annotations.jaxrs.QueryParam;
+import org.jboss.resteasy.reactive.RestQuery;
 
 @Path("/weather")
 public class WeatherForecastResource {
@@ -153,7 +145,7 @@ public class WeatherForecastResource {
     WeatherForecastService service;
 
     @GET
-    public WeatherForecast getForecast(@QueryParam String city, @QueryParam long daysInFuture) { // <1>
+    public WeatherForecast getForecast(@RestQuery String city, @RestQuery long daysInFuture) { // <1>
         long executionStart = System.currentTimeMillis();
         List<String> dailyForecasts = Arrays.asList(
                 service.getDailyForecast(LocalDate.now().plusDays(daysInFuture), city),
@@ -170,7 +162,9 @@ Otherwise, it will start from the current day plus the `daysInFuture` value.
 
 We're all done! Let's check if everything's working.
 
-First, run the application using `./mvnw compile quarkus:dev` from the project directory.
+First, run the application using:
+
+include::includes/devtools/dev.adoc[]
 
 Then, call `http://localhost:8080/weather?city=Raleigh` from a browser.
 After six long seconds, the application will answer something like this:

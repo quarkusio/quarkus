@@ -59,23 +59,29 @@ final class TypeInfos {
             if (classStr.equals(Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER)) {
                 return new Info(typeInfo, part);
             } else {
-                // TODO make the parsing logic more robust 
+                // TODO make the parsing logic more robust
                 ClassInfo rawClass;
                 Type resolvedType;
-                int idx = classStr.indexOf(ARRAY_DIM);
-                if (idx > 0) {
+                int arrayDimIdx = classStr.indexOf(ARRAY_DIM);
+                if (arrayDimIdx > 0) {
                     // int[], java.lang.String[][], etc.
-                    String componentTypeStr = classStr.substring(0, idx);
+                    String componentTypeStr = classStr.substring(0, arrayDimIdx);
                     Type componentType = decodePrimitive(componentTypeStr);
                     if (componentType == null) {
                         componentType = resolveType(componentTypeStr);
                     }
-                    String[] dimensions = classStr.substring(idx, classStr.length()).split("\\]");
+                    String[] dimensions = classStr.substring(arrayDimIdx, classStr.length()).split("\\]");
                     rawClass = null;
                     resolvedType = ArrayType.create(componentType, dimensions.length);
                 } else {
-                    rawClass = getClassInfo(classStr, index, templateIdToPathFun, expressionOrigin);
-                    resolvedType = resolveType(classStr);
+                    Type primitiveType = decodePrimitive(classStr);
+                    if (primitiveType != null) {
+                        resolvedType = primitiveType;
+                        rawClass = null;
+                    } else {
+                        rawClass = getClassInfo(classStr, index, templateIdToPathFun, expressionOrigin);
+                        resolvedType = resolveType(classStr);
+                    }
                 }
                 return new TypeInfo(typeInfo, part, helperHint(typeInfo.substring(endIdx, typeInfo.length())), resolvedType,
                         rawClass);

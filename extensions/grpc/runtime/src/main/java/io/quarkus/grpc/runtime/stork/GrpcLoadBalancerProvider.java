@@ -2,6 +2,8 @@ package io.quarkus.grpc.runtime.stork;
 
 import static io.grpc.ConnectivityState.IDLE;
 import static io.grpc.ConnectivityState.TRANSIENT_FAILURE;
+import static io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor.STORK_MEASURE_TIME;
+import static io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor.STORK_SERVICE_INSTANCE;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -22,11 +24,22 @@ import io.grpc.LoadBalancerProvider;
 import io.grpc.NameResolver;
 import io.grpc.Status;
 import io.grpc.internal.JsonUtil;
-import io.smallrye.stork.ServiceInstance;
 import io.smallrye.stork.Stork;
+import io.smallrye.stork.api.Service;
+import io.smallrye.stork.api.ServiceInstance;
 
 public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
     private static final Logger log = Logger.getLogger(GrpcLoadBalancerProvider.class);
+
+    private final boolean requestConnections;
+
+    /**
+     * @param requestConnections if true, the load balancer will proactively request connections from available channels.
+     *        This leads to better load balancing at the cost of keeping active connections.
+     */
+    public GrpcLoadBalancerProvider(boolean requestConnections) {
+        this.requestConnections = requestConnections;
+    }
 
     @Override
     public boolean isAvailable() {
@@ -102,6 +115,8 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
                                 log.error("gRPC Sub Channel failed", status == null ? null : status.getCause());
                                 helper.refreshNameResolution();
                             }
+                            log.debugf("subchannel changed state to %s for %s", stateInfo.getState(),
+                                    serviceInstance.getId());
                             switch (stateInfo.getState()) {
                                 case READY:
                                     activeSubchannels.add(serviceInstance);
@@ -114,7 +129,6 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
                                 case IDLE:
                                 case SHUTDOWN:
                                     activeSubchannels.remove(serviceInstance);
-                                    log.debugf("subchannel changed state to %s", stateInfo.getState());
                                     if (activeSubchannels.isEmpty()
                                             && state.compareAndSet(ConnectivityState.READY, stateInfo.getState())) {
                                         helper.updateBalancingState(state.get(), picker);
@@ -123,6 +137,9 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
                             }
                         }
                     });
+                    if (requestConnections) {
+                        subchannel.requestConnection();
+                    }
                     subChannels.put(serviceInstance, subchannel);
                 }
 
@@ -152,31 +169,39 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
     static class StorkSubchannelPicker extends LoadBalancer.SubchannelPicker {
         private final Map<ServiceInstance, LoadBalancer.Subchannel> subChannels;
         private final String serviceName;
-        private final Set<ServiceInstance> activeServerInstances;
+        private final Set<ServiceInstance> activeServiceInstances;
 
         StorkSubchannelPicker(Map<ServiceInstance, LoadBalancer.Subchannel> subChannels,
-                String serviceName, Set<ServiceInstance> activeServerInstances) {
+                String serviceName, Set<ServiceInstance> activeServiceInstances) {
             this.subChannels = subChannels;
             this.serviceName = serviceName;
-            this.activeServerInstances = activeServerInstances;
+            this.activeServiceInstances = activeServiceInstances;
         }
 
         @Override
         public LoadBalancer.PickResult pickSubchannel(LoadBalancer.PickSubchannelArgs args) {
-            ServiceInstance serviceInstance = pickServerInstance();
-
+            Boolean measureTime = STORK_MEASURE_TIME.get();
+            measureTime = measureTime != null && measureTime;
+            ServiceInstance serviceInstance = pickServerInstance(measureTime);
             LoadBalancer.Subchannel subchannel = subChannels.get(serviceInstance);
-            return LoadBalancer.PickResult.withSubchannel(subchannel);
+
+            if (serviceInstance.gatherStatistics() && STORK_SERVICE_INSTANCE.get() != null) {
+                STORK_SERVICE_INSTANCE.get().set(serviceInstance);
+                return LoadBalancer.PickResult.withSubchannel(subchannel);
+            } else {
+                return LoadBalancer.PickResult.withSubchannel(subchannel);
+            }
         }
 
-        private ServiceInstance pickServerInstance() {
-            io.smallrye.stork.LoadBalancer lb = Stork.getInstance().getService(serviceName).getLoadBalancer();
+        private ServiceInstance pickServerInstance(boolean measureTime) {
+            Service service = Stork.getInstance().getService(serviceName);
 
-            Set<ServiceInstance> toChooseFrom = this.activeServerInstances;
-            if (activeServerInstances.isEmpty()) {
+            Set<ServiceInstance> toChooseFrom = this.activeServiceInstances;
+            if (activeServiceInstances.isEmpty()) {
                 toChooseFrom = subChannels.keySet();
+                log.debugf("no active service instances, using all subChannels: %s", toChooseFrom);
             }
-            return lb.selectServiceInstance(toChooseFrom);
+            return service.selectInstanceAndRecordStart(toChooseFrom, measureTime);
         }
     }
 }

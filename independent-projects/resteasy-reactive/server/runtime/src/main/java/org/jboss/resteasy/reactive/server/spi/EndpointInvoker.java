@@ -9,7 +9,7 @@ public interface EndpointInvoker {
 
     /**
      * Delegates control over the bean that defines the endpoint
-     * 
+     *
      * @param instance the bean instance
      * @param parameters the method arguments
      * @return the result of the method call

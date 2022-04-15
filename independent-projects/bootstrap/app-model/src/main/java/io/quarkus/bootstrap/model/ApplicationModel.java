@@ -1,13 +1,13 @@
 package io.quarkus.bootstrap.model;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,13 +49,13 @@ public interface ApplicationModel {
     }
 
     default Collection<WorkspaceModule> getWorkspaceModules() {
-        final List<WorkspaceModule> modules = new ArrayList<>();
+        final Map<WorkspaceModuleId, WorkspaceModule> modules = new HashMap<>();
         for (ResolvedDependency d : getDependencies()) {
             final WorkspaceModule module = d.getWorkspaceModule();
             if (module != null) {
-                modules.add(module);
+                modules.putIfAbsent(module.getId(), module);
             }
         }
-        return modules;
+        return modules.values();
     }
 }

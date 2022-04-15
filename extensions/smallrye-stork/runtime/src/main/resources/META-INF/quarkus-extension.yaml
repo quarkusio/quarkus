@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "SmallRye Stork integration"
+name: "SmallRye Stork"
 metadata:
   keywords:
     - "Load Balancing"
@@ -9,4 +9,5 @@ metadata:
   categories:
     - "web"
   status: "preview"
-  unlisted: "true"
+  config:
+    - "quarkus.stork."

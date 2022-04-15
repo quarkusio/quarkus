@@ -18,6 +18,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.builder.Version;
@@ -38,6 +39,8 @@ import io.vertx.ext.web.RoutingContext;
 public class DevConsole implements Handler<RoutingContext> {
 
     private static final Logger log = Logger.getLogger(DevConsole.class);
+
+    private static final String HTML_CONTENT_TYPE = "text/html; charset=UTF-8";
 
     static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
     private static final Comparator<Map<String, Object>> EXTENSION_COMPARATOR = Comparator
@@ -72,7 +75,7 @@ public class DevConsole implements Handler<RoutingContext> {
             synchronized (extensions) {
                 if (extensions.isEmpty()) {
                     try {
-                        final Yaml yaml = new Yaml();
+                        final Yaml yaml = new Yaml(new SafeConstructor());
                         ClassPathUtils.consumeAsPaths("/META-INF/quarkus-extension.yaml", p -> {
                             try {
                                 final String desc;
@@ -125,7 +128,7 @@ public class DevConsole implements Handler<RoutingContext> {
             Template devTemplate = engine.getTemplate(path);
             if (devTemplate != null) {
                 String extName = getExtensionName(namespace);
-                ctx.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
+                ctx.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, HTML_CONTENT_TYPE);
                 TemplateInstance devTemplateInstance = devTemplate
                         .data("currentExtensionName", extName)
                         .data("query-string", ctx.request().query())
@@ -215,6 +218,7 @@ public class DevConsole implements Handler<RoutingContext> {
         nonActionableExtensions.sort(EXTENSION_COMPARATOR);
         TemplateInstance instance = devTemplate.data("actionableExtensions", actionableExtensions)
                 .data("nonActionableExtensions", nonActionableExtensions).data("flash", FlashScopeUtil.getFlash(event));
+        event.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, HTML_CONTENT_TYPE);
         renderTemplate(event, instance);
     }
 

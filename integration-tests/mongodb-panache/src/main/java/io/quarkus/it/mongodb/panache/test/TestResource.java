@@ -157,7 +157,10 @@ public class TestResource {
         Assertions.assertEquals(10, updated);
         updated = TestImperativeEntity.update("{'$inc': {'cpt': 1}}").all();
         Assertions.assertEquals(10, updated);
-        Assertions.assertEquals(10, TestImperativeEntity.count("cpt = ?1", 2));
+        updated = TestImperativeEntity.update(new Document("$inc", new Document("cpt", 1)))
+                .where(new Document("category", "newCategory3"));
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, TestImperativeEntity.count("cpt = ?1", 3));
 
         // delete
         TestImperativeEntity.delete("category = ?1", "newCategory3");
@@ -307,7 +310,10 @@ public class TestResource {
         Assertions.assertEquals(10, updated);
         updated = testImperativeRepository.update("{'$inc': {'cpt': 1}}").all();
         Assertions.assertEquals(10, updated);
-        Assertions.assertEquals(10, testImperativeRepository.count("cpt = ?1", 2));
+        updated = testImperativeRepository.update(new Document("$inc", new Document("cpt", 1)))
+                .where(new Document("category", "newCategory3"));
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, testImperativeRepository.count("cpt = ?1", 3));
 
         // delete
         testImperativeRepository.delete("category = ?1", "newCategory3");
@@ -536,7 +542,10 @@ public class TestResource {
         Assertions.assertEquals(10, updated);
         updated = TestReactiveEntity.update("{'$inc': {'cpt': 1}}").all().await().indefinitely();
         Assertions.assertEquals(10, updated);
-        Assertions.assertEquals(10, TestReactiveEntity.count("cpt = ?1", 2).await().indefinitely());
+        updated = TestReactiveEntity.update(new Document("$inc", new Document("cpt", 1)))
+                .where(new Document("category", "newCategory3")).await().indefinitely();
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, TestReactiveEntity.count("cpt = ?1", 3).await().indefinitely());
 
         // delete
         TestReactiveEntity.delete("category = ?1", "newCategory3").await().indefinitely();
@@ -696,7 +705,10 @@ public class TestResource {
         Assertions.assertEquals(10, updated);
         updated = testReactiveRepository.update("{'$inc': {'cpt': 1}}").all().await().indefinitely();
         Assertions.assertEquals(10, updated);
-        Assertions.assertEquals(10, testReactiveRepository.count("cpt = ?1", 2).await().indefinitely());
+        updated = testReactiveRepository.update(new Document("$inc", new Document("cpt", 1)))
+                .where(new Document("category", "newCategory3")).await().indefinitely();
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, testReactiveRepository.count("cpt = ?1", 3).await().indefinitely());
 
         // delete
         testReactiveRepository.delete("category = ?1", "newCategory3").await().indefinitely();

@@ -29,7 +29,7 @@ public final class PersistenceUnitsHolder {
      * The scanner may be null to use the default scanner, or a custom scanner can be
      * used to stop Hibernate scanning. It is expected that the scanner will be
      * provided by Quarkus via its hold of Jandex info.
-     * 
+     *
      * @param puDefinitions
      * @param scanner
      */

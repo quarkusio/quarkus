@@ -32,15 +32,22 @@ public class FormParamTest {
     @Test
     void shouldPassFormParam() {
         FormClient formClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(FormClient.class);
-        String result = formClient.directForm("par1", "par2");
-        assertThat(result).isEqualTo("root formParam1:par1,formParam2:par2");
+        String result = formClient.directForm("par1", "par 2");
+        assertThat(result).isEqualTo("root formParam1:par1,formParam2:par 2");
+    }
+
+    @Test
+    void nullFormParamShouldBeAllowed() {
+        FormClient formClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(FormClient.class);
+        String result = formClient.directForm("par1", null);
+        assertThat(result).isEqualTo("root formParam1:par1,formParam2:null");
     }
 
     @Test
     void shouldPassFormParamFromSubResource() {
         FormClient formClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(FormClient.class);
-        String result = formClient.subForm("par1", "par2").form("spar1", "spar2");
-        assertThat(result).isEqualTo("sub rootParam1:par1,rootParam2:par2,subParam1:spar1,subParam2:spar2");
+        String result = formClient.subForm("par1", "par 2").form("spar1", "spar 2");
+        assertThat(result).isEqualTo("sub rootParam1:par1,rootParam2:par 2,subParam1:spar1,subParam2:spar 2");
     }
 
     public interface FormClient {

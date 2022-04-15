@@ -17,6 +17,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.AmbiguousResolutionException;
+import javax.enterprise.inject.UnsatisfiedResolutionException;
+import javax.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -32,6 +35,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.AsyncObserverExceptionHandler;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
@@ -51,6 +55,7 @@ import io.quarkus.arc.processor.BeanGenerator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.processor.BeanResolver;
 import io.quarkus.arc.processor.Beans;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.BytecodeTransformer;
@@ -126,6 +131,7 @@ public class ArcProcessor {
     private static final Logger LOGGER = Logger.getLogger(ArcProcessor.class);
 
     static final DotName ADDITIONAL_BEAN = DotName.createSimple(AdditionalBean.class.getName());
+    static final DotName ASYNC_OBSERVER_EXCEPTION_HANDLER = DotName.createSimple(AsyncObserverExceptionHandler.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -154,6 +160,7 @@ public class ArcProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndex,
             CombinedIndexBuildItem combinedIndex,
             ApplicationIndexBuildItem applicationIndex,
+            List<ExcludedTypeBuildItem> excludedTypes,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
             List<ObserverTransformerBuildItem> observerTransformers,
@@ -369,6 +376,12 @@ public class ArcProcessor {
                 builder.addExcludeType(predicate);
             }
         }
+        if (!excludedTypes.isEmpty()) {
+            for (Predicate<ClassInfo> predicate : initClassPredicates(
+                    excludedTypes.stream().map(ExcludedTypeBuildItem::getMatch).collect(Collectors.toList()))) {
+                builder.addExcludeType(predicate);
+            }
+        }
 
         for (SuppressConditionGeneratorBuildItem generator : suppressConditionGenerators) {
             builder.addSuppressConditionGenerator(generator.getGenerator());
@@ -410,7 +423,8 @@ public class ArcProcessor {
             List<BeanConfiguratorBuildItem> beanConfigurators,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors) {
 
         for (BeanConfiguratorBuildItem configurator : beanConfigurators) {
             // Just make sure the configurator is processed
@@ -420,9 +434,34 @@ public class ArcProcessor {
         // Initialize the type -> bean map
         beanRegistrationPhase.getBeanProcessor().getBeanDeployment().initBeanByTypeMap();
 
-        // Register a synthetic bean for each List<?> with qualifier @All 
+        // Register a synthetic bean for each List<?> with qualifier @All
         List<InjectionPointInfo> listAll = beanRegistrationPhase.getInjectionPoints().stream()
                 .filter(this::isListAllInjectionPoint).collect(Collectors.toList());
+        for (InjectionPointInfo injectionPoint : listAll) {
+            // Note that at this point we can be sure that the required type is List<>
+            Type typeParam = injectionPoint.getType().asParameterizedType().arguments().get(0);
+            if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
+                ClassInfo declaringClass;
+                if (injectionPoint.isField()) {
+                    declaringClass = injectionPoint.getTarget().asField().declaringClass();
+                } else {
+                    declaringClass = injectionPoint.getTarget().asMethod().declaringClass();
+                }
+                if (declaringClass.classAnnotation(DotNames.KOTLIN_METADATA_ANNOTATION) != null) {
+                    validationErrors.produce(new ValidationErrorBuildItem(
+                            new DefinitionException(
+                                    "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "
+                                            + injectionPoint.getTargetInfo())));
+                } else {
+                    validationErrors.produce(new ValidationErrorBuildItem(
+                            new DefinitionException(
+                                    "Wildcard is not a legal type argument for " + injectionPoint.getTargetInfo())));
+                }
+            } else if (typeParam.kind() == Type.Kind.TYPE_VARIABLE) {
+                validationErrors.produce(new ValidationErrorBuildItem(new DefinitionException(
+                        "Type variable is not a legal type argument for " + injectionPoint.getTargetInfo())));
+            }
+        }
         if (!listAll.isEmpty()) {
             registerListInjectionPointsBeans(beanRegistrationPhase, listAll, reflectiveMethods, reflectiveFields,
                     unremovableBeans);
@@ -472,7 +511,9 @@ public class ArcProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LiveReloadBuildItem liveReloadBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer) throws Exception {
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
+            List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses,
+            Optional<CurrentContextFactoryBuildItem> currentContextFactory) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
             for (Throwable error : validationError.getValues()) {
@@ -489,6 +530,8 @@ public class ArcProcessor {
         }
 
         Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(bytecodeTransformer);
+        Set<DotName> reflectiveBeanClassesNames = reflectiveBeanClasses.stream().map(ReflectiveBeanClassBuildItem::getClassName)
+                .collect(Collectors.toSet());
 
         long start = System.currentTimeMillis();
         List<ResourceOutput.Resource> resources = beanProcessor.generateResources(new ReflectionRegistration() {
@@ -500,6 +543,22 @@ public class ArcProcessor {
             @Override
             public void registerField(FieldInfo fieldInfo) {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+            }
+
+            @Override
+            public void registerClientProxy(DotName beanClassName, String clientProxyName) {
+                if (reflectiveBeanClassesNames.contains(beanClassName)) {
+                    // Fields should never be registered for client proxies
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, clientProxyName));
+                }
+            }
+
+            @Override
+            public void registerSubclass(DotName beanClassName, String subclassName) {
+                if (reflectiveBeanClassesNames.contains(beanClassName)) {
+                    // Fields should never be registered for subclasses
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, subclassName));
+                }
             }
 
         }, existingClasses.existingClasses, bytecodeTransformerConsumer,
@@ -535,7 +594,8 @@ public class ArcProcessor {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, binding.name().toString()));
         }
 
-        ArcContainer container = recorder.getContainer(shutdown);
+        ArcContainer container = recorder.initContainer(shutdown,
+                currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null);
         BeanContainer beanContainer = recorder.initBeanContainer(container,
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()));
@@ -661,10 +721,10 @@ public class ArcProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 if (Annotations.contains(ctx.getAnnotations(), DotNames.ALL)) {
-                    // For each injection point annotated with @All add a synthetic qualifier 
+                    // For each injection point annotated with @All add a synthetic qualifier
                     AnnotationTarget target = ctx.getTarget();
                     if (target.kind() == Kind.FIELD) {
-                        // Identifier is a hash of "type + field annotations" 
+                        // Identifier is a hash of "type + field annotations"
                         String id = HashUtil
                                 .sha1(target.asField().type().toString() + target.asField().annotations().toString());
                         ctx.transform().add(DotNames.IDENTIFIED,
@@ -684,7 +744,7 @@ public class ArcProcessor {
                                     paramAnnotations.add(paramAnnotation);
                                 }
                             }
-                            // Identifier is a hash of "type + method param annotations" 
+                            // Identifier is a hash of "type + method param annotations"
                             String id = HashUtil.sha1(method.parameters().get(position) + paramAnnotations.toString());
                             toAdd.add(
                                     AnnotationInstance.create(DotNames.IDENTIFIED,
@@ -700,6 +760,29 @@ public class ArcProcessor {
             }
 
         });
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem unremovableAsyncObserverExceptionHandlers() {
+        // Make all classes implementing AsyncObserverExceptionHandler unremovable
+        return UnremovableBeanBuildItem.beanTypes(Set.of(ASYNC_OBSERVER_EXCEPTION_HANDLER));
+    }
+
+    @BuildStep
+    void validateAsyncObserverExceptionHandlers(ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationErrorBuildItem> errors) {
+        BeanResolver resolver = validationPhase.getBeanProcessor().getBeanDeployment().getBeanResolver();
+        try {
+            BeanInfo bean = resolver.resolveAmbiguity(
+                    resolver.resolveBeans(Type.create(ASYNC_OBSERVER_EXCEPTION_HANDLER, org.jboss.jandex.Type.Kind.CLASS)));
+            if (bean == null) {
+                // This should never happen because of the default impl
+                errors.produce(new ValidationErrorBuildItem(
+                        new UnsatisfiedResolutionException("AsyncObserverExceptionHandler bean not found")));
+            }
+        } catch (AmbiguousResolutionException e) {
+            errors.produce(new ValidationErrorBuildItem(e));
+        }
     }
 
     private void registerListInjectionPointsBeans(BeanRegistrationPhaseBuildItem beanRegistrationPhase,

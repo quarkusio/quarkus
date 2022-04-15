@@ -23,7 +23,7 @@ public class AddPortToKnativeConfig extends Configurator<KnativeConfigFluent<?>>
 
     /**
      * Check if the {@link KnativeConfig} already has port.
-     * 
+     *
      * @param config The port.
      * @return True if port with same container port exists.
      */

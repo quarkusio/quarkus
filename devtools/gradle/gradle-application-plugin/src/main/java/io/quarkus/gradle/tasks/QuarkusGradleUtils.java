@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -32,23 +34,30 @@ public class QuarkusGradleUtils {
     }
 
     public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean populated, boolean test) {
-        FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
-        Set<File> classDirFiles = classesDirs.getFiles();
+        final FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
+        final Set<File> classDirFiles = classesDirs.getFiles();
         if (classDirFiles.size() == 1) {
             return classesDirs.getAsPath();
         }
+        final Set<Path> classesPaths = new HashSet<>(classDirFiles.size());
+        classesDirs.forEach(f -> classesPaths.add(f.toPath()));
+        final Path merged = mergeClassesDirs(classesPaths, tmpDir, populated, test);
+        return merged == null ? null : merged.toString();
+    }
+
+    public static Path mergeClassesDirs(Collection<Path> classesDirs, File tmpDir, boolean populated, boolean test) {
         Path classesDir = null;
-        final Iterator<File> i = classDirFiles.iterator();
+        final Iterator<Path> i = classesDirs.iterator();
         int dirCount = 0;
         while (i.hasNext()) {
-            final File next = i.next();
-            if (!next.exists()) {
+            final Path next = i.next();
+            if (!Files.exists(next)) {
                 continue;
             }
             try {
                 switch (dirCount++) {
                     case 0:
-                        classesDir = next.toPath();
+                        classesDir = next;
                         break;
                     case 1:
                         //there does not seem to be any sane way of dealing with multiple output dirs, as there does not seem
@@ -56,7 +65,7 @@ public class QuarkusGradleUtils {
                         //all in a temp dir
                         final Path tmpClassesDir = tmpDir.toPath().resolve("quarkus-app-classes" + (test ? "-test" : ""));
                         if (!populated) {
-                            return tmpClassesDir.toString();
+                            return tmpClassesDir;
                         }
                         if (Files.exists(tmpClassesDir)) {
                             IoUtils.recursiveDelete(tmpClassesDir);
@@ -64,7 +73,7 @@ public class QuarkusGradleUtils {
                         IoUtils.copy(classesDir, tmpClassesDir);
                         classesDir = tmpClassesDir;
                     default:
-                        IoUtils.copy(next.toPath(), classesDir);
+                        IoUtils.copy(next, classesDir);
 
                 }
             } catch (IOException e) {
@@ -74,7 +83,7 @@ public class QuarkusGradleUtils {
         if (classesDir == null) {
             return null;
         }
-        return classesDir.toString();
+        return classesDir;
     }
 
 }

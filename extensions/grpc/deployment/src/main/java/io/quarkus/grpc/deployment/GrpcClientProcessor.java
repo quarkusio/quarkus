@@ -5,6 +5,7 @@ import static io.quarkus.grpc.deployment.GrpcDotNames.ADD_BLOCKING_CLIENT_INTERC
 import static io.quarkus.grpc.deployment.GrpcDotNames.CONFIGURE_STUB;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CREATE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RETRIEVE_CHANNEL_METHOD;
+import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 import static io.quarkus.grpc.deployment.ResourceRegistrationUtils.registerResourcesForProperties;
 
 import java.util.ArrayList;
@@ -66,6 +67,7 @@ import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientType;
 import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.GrpcClientRecorder;
+import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.quarkus.grpc.runtime.supports.IOThreadClientInterceptor;
@@ -85,6 +87,11 @@ public class GrpcClientProcessor {
         beans.produce(new AdditionalBeanBuildItem(GrpcClient.class, RegisterClientInterceptor.class));
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(GrpcClientConfigProvider.class,
                 GrpcClientInterceptorContainer.class, IOThreadClientInterceptor.class).build());
+    }
+
+    @BuildStep
+    void registerStorkInterceptor(BuildProducer<AdditionalBeanBuildItem> beans) {
+        beans.produce(new AdditionalBeanBuildItem(StorkMeasuringGrpcInterceptor.class));
     }
 
     @BuildStep
@@ -318,7 +325,7 @@ public class GrpcClientProcessor {
 
             @Override
             public void transform(TransformationContext ctx) {
-                // If annotated with @GrpcClient and no explicit value is used, i.e. @GrpcClient(), 
+                // If annotated with @GrpcClient and no explicit value is used, i.e. @GrpcClient(),
                 // then we need to determine the service name from the annotated element and transform the injection point
                 AnnotationInstance clientAnnotation = Annotations.find(ctx.getQualifiers(), GrpcDotNames.GRPC_CLIENT);
                 if (clientAnnotation != null && clientAnnotation.value() == null) {
@@ -359,6 +366,11 @@ public class GrpcClientProcessor {
         // The rest, if anything stays, should be logged as problematic
         Set<String> superfluousInterceptors = new HashSet<>(interceptors.nonGlobalInterceptors);
 
+        // Remove the metrics interceptors
+        for (String MICROMETER_INTERCEPTOR : MICROMETER_INTERCEPTORS) {
+            superfluousInterceptors.remove(MICROMETER_INTERCEPTOR);
+        }
+
         List<AnnotationInstance> found = new ArrayList<>(index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR));
         for (AnnotationInstance annotation : index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR_LIST)) {
             for (AnnotationInstance nested : annotation.value().asNestedArray()) {
@@ -379,6 +391,8 @@ public class GrpcClientProcessor {
             globalInterceptors.add(recorderContext.classProxy(globalInterceptor));
         }
 
+        // it's okay if this one is not used:
+        superfluousInterceptors.remove(StorkMeasuringGrpcInterceptor.class.getName());
         if (!superfluousInterceptors.isEmpty()) {
             LOGGER.warnf("At least one unused gRPC client interceptor found: %s. If there are meant to be used globally, " +
                     "annotate them with @GlobalInterceptor.", String.join(", ", superfluousInterceptors));

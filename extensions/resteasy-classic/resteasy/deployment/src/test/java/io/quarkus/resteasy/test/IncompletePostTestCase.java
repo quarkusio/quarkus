@@ -21,7 +21,8 @@ public class IncompletePostTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(PostEndpoint.class));
+                    .addClasses(PostEndpoint.class))
+            .overrideConfigKey("quarkus.http.accept-backlog", "200");
 
     @TestHTTPResource
     URL url;
@@ -31,8 +32,8 @@ public class IncompletePostTestCase {
         PostEndpoint.invoked = false;
 
         //make sure incomplete writes do not block threads
-        //and that incoplete data is not delivered to the endpoint
-        for (int i = 0; i < 1000; ++i) {
+        //and that incomplete data is not delivered to the endpoint
+        for (int i = 0; i < 100; ++i) {
             Socket socket = new Socket(url.getHost(), url.getPort());
             socket.getOutputStream().write(
                     "POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:10\r\n\r\ntest".getBytes(StandardCharsets.UTF_8));

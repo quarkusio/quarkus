@@ -184,7 +184,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
             JsonObjectBuilder input = Json.createObjectBuilder();
             input.add(QUERY, body);
             return input.build();
-            // Else we expect a Json in the content    
+            // Else we expect a Json in the content
         } else {
             if (body == null || body.isEmpty()) {
                 return null;
@@ -243,7 +243,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private boolean isValidAcceptRequest(String mimeType) {
-        // At this point we only accept two 
+        // At this point we only accept two
         return mimeType.startsWith("application/json")
                 || mimeType.startsWith("application/graphql+json");
     }

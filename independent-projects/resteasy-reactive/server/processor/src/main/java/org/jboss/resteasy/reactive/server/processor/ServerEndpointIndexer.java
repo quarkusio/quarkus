@@ -10,12 +10,15 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_VALUED_MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.util.ArrayList;
@@ -51,6 +54,9 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ArrayConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.CharParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.CharacterParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
@@ -167,7 +173,7 @@ public class ServerEndpointIndexer
         InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
                 actualEndpointInfo,
                 existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
-        if (injectableBean.getFieldExtractorsCount() == 0) {
+        if ((injectableBean.getFieldExtractorsCount() == 0) && !injectableBean.isInjectionRequired()) {
             throw new DeploymentException(String.format("No annotations found on fields at '%s'. "
                     + "Annotations like `@QueryParam` should be used in fields, not in methods.",
                     beanParamClassInfo.name()));
@@ -288,7 +294,7 @@ public class ServerEndpointIndexer
 
         currentInjectableBean.setFieldExtractorsCount(fieldExtractors.size());
 
-        if (!fieldExtractors.isEmpty() && fieldInjectionHandler != null) {
+        if ((fieldInjectionHandler != null) && (!fieldExtractors.isEmpty() || superTypeIsInjectable)) {
             fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable);
         }
         currentInjectableBean.setInjectionRequired(!fieldExtractors.isEmpty() || superTypeIsInjectable);
@@ -326,9 +332,29 @@ public class ServerEndpointIndexer
     }
 
     protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType) {
-        ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters);
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, String genericElementType) {
+        ParameterConverterSupplier converter = null;
+
+        if (genericElementType != null) {
+            ParameterConverterSupplier genericTypeConverter = extractConverter(genericElementType, index, existingConverters,
+                    errorLocation, hasRuntimeConverters);
+            if (LIST.toString().equals(elementType)) {
+                converter = new ListConverter.ListSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            } else if (SET.toString().equals(elementType)) {
+                converter = new SetConverter.SetSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            } else if (SORTED_SET.toString().equals(elementType)) {
+                converter = new SortedSetConverter.SortedSetSupplier(genericTypeConverter);
+                builder.setSingle(false);
+            }
+        }
+
+        if (converter == null) {
+            // If no generic type provided or element type is not supported, then we try to use a custom runtime converter:
+            converter = extractConverter(elementType, index, existingConverters, errorLocation, hasRuntimeConverters);
+        }
+
         builder.setConverter(new OptionalConverter.OptionalSupplier(converter));
     }
 
@@ -344,6 +370,13 @@ public class ServerEndpointIndexer
         ParameterConverterSupplier converter = extractConverter(elementType, index,
                 existingConverters, errorLocation, hasRuntimeConverters);
         builder.setConverter(new ListConverter.ListSupplier(converter));
+    }
+
+    protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            ServerIndexedParameter builder, String elementType) {
+        ParameterConverterSupplier converter = extractConverter(elementType, index,
+                existingConverters, errorLocation, hasRuntimeConverters);
+        builder.setConverter(new ArrayConverter.ArraySupplier(converter, elementType));
     }
 
     protected void handlePathSegmentParam(ServerIndexedParameter builder) {
@@ -449,6 +482,10 @@ public class ServerEndpointIndexer
             return delegate;
         } else if (elementType.equals(PathSegment.class.getName())) {
             return new PathSegmentParamConverter.Supplier();
+        } else if (elementType.equals("char")) {
+            return new CharParamConverter.Supplier();
+        } else if (elementType.equals(Character.class.getName())) {
+            return new CharacterParamConverter.Supplier();
         }
         return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters, errorLocation,
                 hasRuntimeConverters);

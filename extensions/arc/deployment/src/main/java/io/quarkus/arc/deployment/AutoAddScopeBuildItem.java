@@ -2,11 +2,13 @@ package io.quarkus.arc.deployment;
 
 import java.util.Collection;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -117,7 +119,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * Note that the detection algorithm is just the best effort. Some inheritance rules defined by the spec are not
          * followed, e.g. per spec an initializer method is only inherited if not overriden. This method merely scans the
          * annotations.
-         * 
+         *
          * @return self
          */
         public Builder requiresContainerServices() {
@@ -127,7 +129,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
         /**
          * The bean will be unremovable.
-         * 
+         *
          * @see ArcConfig#removeUnusedBeans
          * @return self
          */
@@ -138,7 +140,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
         /**
          * Set a custom predicate.
-         * 
+         *
          * @param predicate
          * @return self
          */
@@ -151,7 +153,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The class must be annotated with the given annotation. Otherwise, the scope annotation is not added.
          * <p>
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
-         * 
+         *
          * @param annotationName
          * @return self
          */
@@ -164,8 +166,8 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * added.
          * <p>
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
-         * 
-         * 
+         *
+         *
          * @param annotationNames
          * @return self
          */
@@ -181,10 +183,29 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         }
 
         /**
+         * The class declares a method that matches the given predicate.
+         * <p>
+         * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
+         *
+         * @param predicate
+         * @return self
+         */
+        public Builder anyMethodMatches(Predicate<MethodInfo> predicate) {
+            return and((clazz, annotations, index) -> {
+                for (MethodInfo method : clazz.methods()) {
+                    if (predicate.test(method)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+
+        /**
          * The class must directly or indirectly implement the given interface.
          * <p>
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
-         * 
+         *
          * @param interfaceName
          * @return self
          */
@@ -209,7 +230,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
         /**
          * The scope annotation added to the class.
-         * 
+         *
          * @param scopeAnnotationName
          * @return self
          */
@@ -220,7 +241,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
         /**
          * The scope annotation added to the class.
-         * 
+         *
          * @param scope
          * @return
          */
@@ -230,7 +251,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
         /**
          * Specify an optional reason description that is used in log messages.
-         * 
+         *
          * @param reason
          * @return the reason why the scope annotation was added
          */
@@ -242,7 +263,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         /**
          * Set the priority. The default priority is {@code 0}. An {@link AutoAddScopeBuildItem} with higher priority takes
          * precedence.
-         * 
+         *
          * @param priority
          * @return self
          */
@@ -256,7 +277,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * situation, i.e. log a warning or throw an exception. The first argument is the
          * {@link AutoAddScopeBuildItem#getDefaultScope()} and the second argument is the
          * {@link AutoAddScopeBuildItem#getReason()}.
-         * 
+         *
          * @param consumer
          * @return self
          */

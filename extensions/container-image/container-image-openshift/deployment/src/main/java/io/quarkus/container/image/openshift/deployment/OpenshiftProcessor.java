@@ -47,6 +47,7 @@ import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
@@ -56,6 +57,7 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -118,6 +120,7 @@ public class OpenshiftProcessor {
             OutputTargetBuildItem out,
             PackageConfig packageConfig,
             JarBuildItem jarBuildItem,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             BuildProducer<DecoratorBuildItem> decorator,
             BuildProducer<KubernetesEnvBuildItem> envProducer,
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
@@ -126,9 +129,11 @@ public class OpenshiftProcessor {
         OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
         String outputJarFileName = jarBuildItem.getPath().getFileName().toString();
         String jarFileName = config.jarFileName.orElse(outputJarFileName);
+        String baseJvmImage = config.baseJvmImage
+                .orElse(OpenshiftConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
 
-        builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseJvmImage));
-        Optional<OpenshiftBaseJavaImage> baseImage = OpenshiftBaseJavaImage.findMatching(config.baseJvmImage);
+        builderImageProducer.produce(new BaseImageInfoBuildItem(baseJvmImage));
+        Optional<OpenshiftBaseJavaImage> baseImage = OpenshiftBaseJavaImage.findMatching(baseJvmImage);
 
         if (config.buildStrategy == BuildStrategy.BINARY) {
             // Jar directory priorities:
@@ -143,13 +148,13 @@ public class OpenshiftProcessor {
             baseImage.ifPresent(b -> {
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, null));
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
-                        String.join(" ", config.jvmArguments), null));
+                        String.join(" ", config.getEffectiveJvmArguments()), null));
             });
             //In all other cases its the responsibility of the image to set those up correctly.
             if (!baseImage.isPresent()) {
                 List<String> cmd = new ArrayList<>();
                 cmd.add("java");
-                cmd.addAll(config.jvmArguments);
+                cmd.addAll(config.getEffectiveJvmArguments());
                 cmd.addAll(Arrays.asList("-jar", pathToJar));
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar("JAVA_APP_JAR", pathToJar, null));
                 commandProducer.produce(KubernetesCommandBuildItem.command(cmd));
@@ -218,6 +223,7 @@ public class OpenshiftProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
@@ -243,9 +249,8 @@ public class OpenshiftProcessor {
         }
 
         String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
-        LOG.info("Performing openshift binary build with jar on server: " + kubernetesClient.getClient().getMasterUrl()
-                + " in namespace:" + namespace + ".");
-
+        LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
+                + kubernetesClient.getClient().getMasterUrl() + " in namespace:" + namespace + ".");
         //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
         //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
         //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
@@ -262,6 +267,7 @@ public class OpenshiftProcessor {
                     jar.getPath());
         }
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
     }
 
     private String getContextRoot(String outputDirName, boolean isFastJar, BuildStrategy buildStrategy) {
@@ -284,6 +290,7 @@ public class OpenshiftProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             NativeImageBuildItem nativeImage) {
 
         OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
@@ -298,9 +305,9 @@ public class OpenshiftProcessor {
         }
 
         String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
-        LOG.info("Performing openshift binary build with native image on server: " + kubernetesClient.getClient().getMasterUrl()
-                + " in namespace:" + namespace + ".");
 
+        LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy + " on server: "
+                + kubernetesClient.getClient().getMasterUrl() + " in namespace:" + namespace + ".");
         Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
                 .stream()
                 .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
@@ -318,6 +325,7 @@ public class OpenshiftProcessor {
         createContainerImage(kubernetesClient, openshiftYml.get(), config, contextRoot, out.getOutputDirectory(),
                 nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
     }
 
     public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,

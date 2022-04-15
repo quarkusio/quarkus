@@ -16,7 +16,7 @@ import io.grpc.netty.NettyChannelBuilder;
  * Replace the {@code setTrustedCertificatesPem()} method in native because the upstream code supports using
  * either the grpc-netty or grpc-netty-shaded dependencies, but Quarkus only supports the former.
  */
-@TargetClass(className = "io.opentelemetry.exporter.otlp.internal.grpc.ManagedChannelUtil")
+@TargetClass(className = "io.opentelemetry.exporter.internal.grpc.ManagedChannelUtil")
 final class Target_io_opentelemetry_exporter_otlp_internal_grpc_ManagedChannelUtil {
 
     @Substitute
@@ -26,7 +26,7 @@ final class Target_io_opentelemetry_exporter_otlp_internal_grpc_ManagedChannelUt
         requireNonNull(managedChannelBuilder, "managedChannelBuilder");
         requireNonNull(trustedCertificatesPem, "trustedCertificatesPem");
 
-        X509TrustManager tm = io.opentelemetry.exporter.otlp.internal.TlsUtil.trustManager(trustedCertificatesPem);
+        X509TrustManager tm = io.opentelemetry.exporter.internal.TlsUtil.trustManager(trustedCertificatesPem);
 
         // gRPC does not abstract TLS configuration so we need to check the implementation and act
         // accordingly.

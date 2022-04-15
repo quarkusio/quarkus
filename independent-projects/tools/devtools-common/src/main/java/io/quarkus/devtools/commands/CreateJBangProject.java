@@ -8,6 +8,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.codegen.CreateProjectHelper;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class CreateJBangProject {
 
     private Set<String> extensions = new HashSet<>();
     private Map<String, Object> values = new HashMap<>();
+    private String javaVersion;
 
     public CreateJBangProject(QuarkusProject quarkusProject) {
         this.quarkusProject = requireNonNull(quarkusProject, "quarkusProject is required");
@@ -33,6 +35,11 @@ public class CreateJBangProject {
         return this;
     }
 
+    public CreateJBangProject javaTarget(String javaVersion) {
+        this.javaVersion = javaVersion;
+        return this;
+    }
+
     public CreateJBangProject setValue(String name, Object value) {
         if (value != null) {
             values.put(name, value);
@@ -42,6 +49,8 @@ public class CreateJBangProject {
 
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {
         setValue(EXTENSIONS, extensions);
+        CreateProjectHelper.setJavaVersion(values, javaVersion); // default
+
         final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, values);
         return new CreateJBangProjectCommandHandler().execute(invocation);
     }

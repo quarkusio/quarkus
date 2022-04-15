@@ -24,24 +24,11 @@ public class ReactiveMessagingCodestartIT {
             .languages(JAVA)
             .build();
 
-    @RegisterExtension
-    public static QuarkusCodestartTest mqttCodestartTest = QuarkusCodestartTest.builder()
-            .extension(ArtifactKey.fromString("io.quarkus:quarkus-smallrye-reactive-messaging-mqtt"))
-            .languages(JAVA)
-            .build();
-
     @Test
     void testKafkaContent() throws Throwable {
         kafkaCodestartTest.checkGeneratedSource("org.acme.MyReactiveMessagingApplication");
         kafkaCodestartTest.checkGeneratedTestSource("org.acme.MyReactiveMessagingApplicationTest");
         kafkaCodestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/application.properties");
-    }
-
-    @Test
-    void testMQTTContent() throws Throwable {
-        mqttCodestartTest.checkGeneratedSource("org.acme.MyReactiveMessagingApplication");
-        mqttCodestartTest.checkGeneratedTestSource("org.acme.MyReactiveMessagingApplicationTest");
-        mqttCodestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/application.properties");
     }
 
     @Test
@@ -55,12 +42,6 @@ public class ReactiveMessagingCodestartIT {
     @DisabledOnOs(OS.WINDOWS)
     void buildKafka() throws Throwable {
         kafkaCodestartTest.buildAllProjects();
-    }
-
-    @Test
-    @DisabledOnOs(OS.WINDOWS)
-    void buildMQTT() throws Throwable {
-        mqttCodestartTest.buildAllProjects();
     }
 
     @Test

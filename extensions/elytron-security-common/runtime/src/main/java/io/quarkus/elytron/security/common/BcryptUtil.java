@@ -24,7 +24,7 @@ public class BcryptUtil {
 
     /**
      * Produces a Modular Crypt Format bcrypt hash of the given password, using a generated salt and 10 iterations.
-     * 
+     *
      * @param password the password to hash
      * @return the Modular Crypt Format bcrypt hash of the given password
      * @throws NullPointerException if the password is null
@@ -36,7 +36,7 @@ public class BcryptUtil {
     /**
      * Produces a Modular Crypt Format bcrypt hash of the given password, using a generated salt and the specified iteration
      * count.
-     * 
+     *
      * @param password the password to hash
      * @param iterationCount the number of iterations to use while hashing
      * @return the Modular Crypt Format bcrypt hash of the given password
@@ -52,7 +52,7 @@ public class BcryptUtil {
     /**
      * Produces a Modular Crypt Format bcrypt hash of the given password, using the specified salt and the specified iteration
      * count.
-     * 
+     *
      * @param password the password to hash
      * @param iterationCount the number of iterations to use while hashing
      * @param salt the salt to use while hashing

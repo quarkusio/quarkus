@@ -53,7 +53,7 @@ public final class ResponseImplementor {
         ResultHandle instance = creator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                         Annotation[].class),
-                arcContainer, creator.loadClass(ResourceLinksProvider.class), creator.loadNull());
+                arcContainer, creator.loadClassFromTCCL(ResourceLinksProvider.class), creator.loadNull());
         ResultHandle linksProvider = creator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                 instance);

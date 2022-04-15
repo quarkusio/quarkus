@@ -57,8 +57,13 @@ public class JaegerProcessor {
     @BuildStep
     public ReflectiveClassBuildItem reflectiveClasses() {
         return ReflectiveClassBuildItem
-                .builder("io.jaegertracing.internal.samplers.http.SamplingStrategyResponse",
-                        "io.jaegertracing.internal.samplers.http.ProbabilisticSamplingStrategy")
-                .finalFieldsWritable(true).build();
+                .builder("io.jaegertracing.internal.samplers.http.OperationSamplingParameters",
+                        "io.jaegertracing.internal.samplers.http.PerOperationSamplingParameters",
+                        "io.jaegertracing.internal.samplers.http.ProbabilisticSamplingStrategy",
+                        "io.jaegertracing.internal.samplers.http.RateLimitingSamplingStrategy",
+                        "io.jaegertracing.internal.samplers.http.SamplingStrategyResponse")
+                .fields(true)
+                .finalFieldsWritable(true)
+                .build();
     }
 }

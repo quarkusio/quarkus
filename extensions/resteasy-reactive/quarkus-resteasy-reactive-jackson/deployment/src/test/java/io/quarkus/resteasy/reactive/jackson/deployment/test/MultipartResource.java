@@ -27,6 +27,9 @@ public class MultipartResource {
         result.put("htmlFileSize", formData.getHtmlPart().size());
         result.put("htmlFilePath", formData.getHtmlPart().uploadedFile().toAbsolutePath().toString());
         result.put("htmlFileContentType", formData.getHtmlPart().contentType());
+        result.put("names", formData.names);
+        result.put("numbers", formData.numbers);
+        result.put("persons", formData.persons);
         return result;
     }
 }

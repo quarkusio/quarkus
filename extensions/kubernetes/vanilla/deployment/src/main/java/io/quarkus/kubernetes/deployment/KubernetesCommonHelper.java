@@ -75,6 +75,7 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class KubernetesCommonHelper {
 
+    private static final String ANY = null;
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
     private static final String[] PROMETHEUS_ANNOTATION_TARGETS = { "Service",
             "Deployment", "DeploymentConfig" };
@@ -182,15 +183,16 @@ public class KubernetesCommonHelper {
 
         //Handle RBAC
         if (!roleBindings.isEmpty()) {
-            result.add(new DecoratorBuildItem(new ApplyServiceAccountNameDecorator()));
-            result.add(new DecoratorBuildItem(new AddServiceAccountResourceDecorator()));
-            roles.forEach(r -> result.add(new DecoratorBuildItem(new AddRoleResourceDecorator(r))));
+            result.add(new DecoratorBuildItem(target, new ApplyServiceAccountNameDecorator()));
+            result.add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator()));
+            roles.forEach(r -> result.add(new DecoratorBuildItem(target, new AddRoleResourceDecorator(name, r))));
             roleBindings.forEach(rb -> {
-                result.add(new DecoratorBuildItem(new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(),
-                        rb.isClusterWide() ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
-                                : AddRoleBindingResourceDecorator.RoleKind.Role)));
+                result.add(new DecoratorBuildItem(target,
+                        new AddRoleBindingResourceDecorator(rb.getName(), null, rb.getRole(),
+                                rb.isClusterWide() ? AddRoleBindingResourceDecorator.RoleKind.ClusterRole
+                                        : AddRoleBindingResourceDecorator.RoleKind.Role)));
                 labels.forEach(l -> {
-                    result.add(new DecoratorBuildItem(
+                    result.add(new DecoratorBuildItem(target,
                             new AddLabelDecorator(rb.getName(), l.getKey(), l.getValue(), "RoleBinding")));
                 });
             });
@@ -316,6 +318,10 @@ public class KubernetesCommonHelper {
             result.add(new DecoratorBuildItem(target, new ApplyRequestsMemoryDecorator(name, m)));
         });
 
+        if (config.getSecurityContext().isAnyPropertySet()) {
+            result.add(new DecoratorBuildItem(target, new ApplySecuritySettingsDecorator(name, config.getSecurityContext())));
+        }
+
         return result;
     }
 
@@ -329,7 +335,7 @@ public class KubernetesCommonHelper {
         config.getAppSecret().ifPresent(s -> {
             result.add(new DecoratorBuildItem(target, new AddSecretVolumeDecorator(new SecretVolumeBuilder()
                     .withSecretName(s)
-                    .withNewVolumeName("app-secret")
+                    .withVolumeName("app-secret")
                     .build())));
             result.add(new DecoratorBuildItem(target, new AddMountDecorator(new MountBuilder()
                     .withName("app-secret")
@@ -341,7 +347,7 @@ public class KubernetesCommonHelper {
         config.getAppConfigMap().ifPresent(s -> {
             result.add(new DecoratorBuildItem(target, new AddConfigMapVolumeDecorator(new ConfigMapVolumeBuilder()
                     .withConfigMapName(s)
-                    .withNewVolumeName("app-config-map")
+                    .withVolumeName("app-config-map")
                     .build())));
             result.add(new DecoratorBuildItem(target, new AddMountDecorator(new MountBuilder()
                     .withName("app-config-map")
@@ -366,7 +372,7 @@ public class KubernetesCommonHelper {
         List<DecoratorBuildItem> result = new ArrayList<>();
 
         config.getMounts().entrySet().forEach(e -> {
-            result.add(new DecoratorBuildItem(target, new AddMountDecorator(MountConverter.convert(e))));
+            result.add(new DecoratorBuildItem(target, new AddMountDecorator(ANY, name, MountConverter.convert(e))));
         });
 
         config.getSecretVolumes().entrySet().forEach(e -> {

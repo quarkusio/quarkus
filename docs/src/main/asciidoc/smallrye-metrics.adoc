@@ -19,9 +19,7 @@ IMPORTANT: xref:micrometer.adoc[Micrometer] is the recommended approach to metri
 
 == Prerequisites
 
-* Approximately 15 minutes.
-* An IDE.
-* JDK 11+ installed with `JAVA_HOME` configured appropriately.
+include::includes/devtools/prerequisites.adoc[]
 
 == Architecture
 
@@ -43,31 +41,23 @@ git clone {quickstarts-clone-url}
 [id="creating-a-maven-project_{context}"]
 == Creating a Maven project
 
-. To create a new Maven project:
-+
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=microprofile-metrics-quickstart \
-    -DclassName="org.acme.microprofile.metrics.PrimeNumberChecker" \
-    -Dpath="/" \
-    -Dextensions="resteasy,smallrye-metrics"
-cd microprofile-metrics-quickstart
-----
-+
-This command generates a Maven-based Quarkus project that uses the `smallrye-metrics` extension.
+To create a new project:
 
-* If you already have your Quarkus project configured, you can add the `smallrye-metrics` extension to your project by running the following command in your project base directory:
-+
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-metrics"
-----
-+
-This adds the following to your `pom.xml` file:
-+
-[source,xml]
+:create-app-artifact-id: microprofile-metrics-quickstart
+:create-app-extensions: resteasy-reactive,smallrye-metrics
+include::includes/devtools/create-app.adoc[]
+
+This command generates a Quarkus project that uses the `smallrye-metrics` extension.
+
+If you already have your Quarkus project configured, you can add the `smallrye-metrics` extension to your project by running the following command in your project base directory:
+
+:add-extension-extensions: smallrye-metrics
+include::includes/devtools/extension-add.adoc[]
+
+This adds the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -75,10 +65,16 @@ This adds the following to your `pom.xml` file:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-metrics")
+----
+
 [id="writing-an-application_{context}"]
 == Writing an application
 
-The following procedures create a Maven-based Quarkus application that consists of a single class that implements an algorithm for checking whether a number is prime. This algorithm is exposed over a REST interface. Additionally, specific annotations are required to ensure that the desired metrics are calculated over time and can be exported for manual analysis or processing by additional tooling.
+The following procedures create a Quarkus application that consists of a single class that implements an algorithm for checking whether a number is prime. This algorithm is exposed over a REST interface. Additionally, specific annotations are required to ensure that the desired metrics are calculated over time and can be exported for manual analysis or processing by additional tooling.
 
 The application will gather the following metrics:
 
@@ -95,7 +91,6 @@ import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Gauge;
 import org.eclipse.microprofile.metrics.annotation.Timed;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -112,7 +107,7 @@ public class PrimeNumberChecker {
     @Produces(MediaType.TEXT_PLAIN)
     @Counted(name = "performedChecks", description = "How many primality checks have been performed.")
     @Timed(name = "checksTimer", description = "A measure of how long it takes to perform the primality test.", unit = MetricUnits.MILLISECONDS)
-    public String checkIfPrime(@PathParam long number) {
+    public String checkIfPrime(long number) {
         if (number < 1) {
             return "Only natural numbers can be prime numbers.";
         }
@@ -149,12 +144,11 @@ public class PrimeNumberChecker {
 
 To execute the application created in xref:writing-an-application_{context}[], do the following:
 
-. Run the microservice in the dev mode:
+:devtools-wrapped:
+. Run the microservice in dev mode:
 +
-[source,bash]
-----
-./mvnw clean quarkus:dev
-----
+include::includes/devtools/dev.adoc[]
+:!devtools-wrapped:
 
 . Generate values for the metrics.
 

@@ -5,6 +5,7 @@ import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -29,6 +30,7 @@ public class OraclePoolRecorder {
     private static final Logger log = Logger.getLogger(OraclePoolRecorder.class);
 
     public RuntimeValue<OraclePool> configureOraclePool(RuntimeValue<Vertx> vertx,
+            Supplier<Integer> eventLoopCount,
             String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
@@ -36,6 +38,7 @@ public class OraclePoolRecorder {
             ShutdownContext shutdown) {
 
         OraclePool oraclePool = initialize(vertx.getValue(),
+                eventLoopCount.get(),
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactiveOracleConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
@@ -48,10 +51,12 @@ public class OraclePoolRecorder {
         return new RuntimeValue<>(io.vertx.mutiny.oracleclient.OraclePool.newInstance(oraclePool.getValue()));
     }
 
-    private OraclePool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private OraclePool initialize(Vertx vertx,
+            Integer eventLoopCount,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig) {
-        PoolOptions poolOptions = toPoolOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+        PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveOracleConfig);
         OracleConnectOptions oracleConnectOptions = toOracleConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveOracleConfig);
@@ -62,7 +67,8 @@ public class OraclePoolRecorder {
         return OraclePool.pool(vertx, oracleConnectOptions, poolOptions);
     }
 
-    private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private PoolOptions toPoolOptions(Integer eventLoopCount,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig) {
         PoolOptions poolOptions;
@@ -75,6 +81,19 @@ public class OraclePoolRecorder {
         if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
             int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
             poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+        }
+
+        if (dataSourceReactiveRuntimeConfig.shared) {
+            poolOptions.setShared(true);
+            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            }
+        }
+
+        if (dataSourceReactiveRuntimeConfig.eventLoopSize.isPresent()) {
+            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize.getAsInt()));
+        } else if (eventLoopCount != null) {
+            poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
 
         return poolOptions;

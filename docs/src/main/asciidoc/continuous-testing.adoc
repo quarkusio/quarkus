@@ -21,12 +21,7 @@ Learn how to use continuous testing in your Quarkus Application.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::includes/devtools/prerequisites.adoc[]
 * The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
 
 == Introduction
@@ -37,8 +32,11 @@ only run the relevant tests when code is changed.
 
 == Solution
 
-Start the xref:getting-started.adoc[Getting Started] application (or any other application) using `mvn quarkus:dev`. Quarkus
-will start in development mode as normal, but down the bottom of the screen you should see the following:
+Start the xref:getting-started.adoc[Getting Started] application (or any other application) using:
+
+include::includes/devtools/dev.adoc[]
+
+Quarkus will start in development mode as normal, but down the bottom of the screen you should see the following:
 
 [source]
 ----

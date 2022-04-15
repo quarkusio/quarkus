@@ -199,6 +199,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return paths;
     }
 
+    @Override
+    public List<Path> getTestSourcesDir() {
+        final List<Path> paths = new ArrayList<>();
+        for (ModuleInfo m : context.getAllModules()) {
+            if (m.getTest().isPresent()) {
+                for (Path p : m.getTest().get().getSourcePaths()) {
+                    paths.add(p);
+                }
+            }
+        }
+        return paths;
+    }
+
     private void startTestScanningTimer() {
         synchronized (this) {
             if (testClassChangeWatcher == null && testClassChangeTimer == null) {
@@ -472,7 +485,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         for (Path i : changedClassResults.changedClasses) {
                             byte[] bytes = Files.readAllBytes(i);
                             String name = indexer.index(new ByteArrayInputStream(bytes)).name().toString();
-                            defs[index++] = new ClassDefinition(Thread.currentThread().getContextClassLoader().loadClass(name),
+                            defs[index++] = new ClassDefinition(
+                                    Thread.currentThread().getContextClassLoader().loadClass(name),
                                     classTransformers.apply(name, bytes));
                         }
                         Index current = indexer.complete();

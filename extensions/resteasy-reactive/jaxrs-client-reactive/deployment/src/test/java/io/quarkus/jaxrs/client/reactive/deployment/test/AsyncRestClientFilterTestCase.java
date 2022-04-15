@@ -47,8 +47,10 @@ public class AsyncRestClientFilterTestCase {
 
     @BeforeEach
     public void before() {
-        client = ClientBuilder.newClient()
+        // register one filter with builder to test configuration inheritance
+        client = ClientBuilder.newBuilder()
                 .register(SyncClientRequestFilter.class)
+                .build()
                 .register(AsyncClientRequestFilter.class)
                 .register(AsyncClientResponseFilter.class);
     }

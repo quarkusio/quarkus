@@ -76,6 +76,7 @@ public class ParserTest {
                 + "{/for}"
                 + "{#each labels}"
                 + "{it.name}"
+                + "{it_hasNext}"
                 + "{/each}"
                 + "{inject:bean.name}"
                 + "{#each inject:bean.labels('foo')}"
@@ -89,7 +90,8 @@ public class ParserTest {
                 + "{foo.baz}"
                 + "{/for}"
                 + "{foo.call(labels,bar)}"
-                + "{#when machine.status}{#is OK}..{#is NOK}{/when}");
+                + "{#when machine.status}{#is OK}..{#is NOK}{/when}"
+                + "{not_typesafe}");
         List<Expression> expressions = template.getExpressions();
 
         assertExpr(expressions, "foo.name", 2, "|org.acme.Foo|.name");
@@ -117,6 +119,9 @@ public class ParserTest {
 
         Expression machineStatusExpr = find(expressions, "machine.status");
         assertExpr(expressions, "OK", 1, "OK<when#" + machineStatusExpr.getGeneratedId() + ">");
+
+        assertExpr(expressions, "it_hasNext", 1, "|java.lang.Boolean|<loop-metadata>");
+        assertExpr(expressions, "not_typesafe", 1, null);
     }
 
     @Test

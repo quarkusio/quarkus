@@ -6,8 +6,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.impl.MimeMapping;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -18,6 +21,12 @@ public class StaticResourcesRecorder {
     public static final String META_INF_RESOURCES = "META-INF/resources";
 
     private static volatile List<Path> hotDeploymentResourcePaths;
+
+    final RuntimeValue<HttpConfiguration> httpConfiguration;
+
+    public StaticResourcesRecorder(RuntimeValue<HttpConfiguration> httpConfiguration) {
+        this.httpConfiguration = httpConfiguration;
+    }
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
@@ -61,6 +70,10 @@ public class StaticResourcesRecorder {
                                     ctx.mountPoint().endsWith("/") ? ctx.mountPoint().length() - 1 : ctx.mountPoint().length());
                     if (knownPaths.contains(rel)) {
                         staticHandler.handle(ctx);
+                        if (httpConfiguration.getValue().enableCompression && isCompressed(rel)) {
+                            // Remove the "Content-Encoding: identity" header and enable compression
+                            ctx.response().headers().remove(HttpHeaders.CONTENT_ENCODING);
+                        }
                     } else {
                         // make sure we don't lose the correct TCCL to Vert.x...
                         Thread.currentThread().setContextClassLoader(currentCl);
@@ -79,6 +92,18 @@ public class StaticResourcesRecorder {
                 }
             }
         };
+    }
+
+    private boolean isCompressed(String path) {
+        String suffix;
+        int lastDot = path.lastIndexOf('.');
+        if (lastDot != -1 && lastDot != path.length() - 1) {
+            suffix = path.substring(lastDot + 1);
+        } else {
+            suffix = null;
+        }
+        String contentType = MimeMapping.getMimeTypeForExtension(suffix);
+        return httpConfiguration.getValue().compressMediaTypes.orElse(List.of()).contains(contentType);
     }
 
 }

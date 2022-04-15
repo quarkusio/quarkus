@@ -1,5 +1,6 @@
 package io.quarkus.it.spring.data.jpa;
 
+import javax.persistence.Column;
 import javax.persistence.DiscriminatorColumn;
 import javax.persistence.Entity;
 import javax.persistence.Inheritance;
@@ -10,6 +11,7 @@ import javax.persistence.InheritanceType;
 @DiscriminatorColumn(name = "type")
 public class CatalogValue extends AbstractEntity {
 
+    @Column(name = "key_")
     private String key;
     private String displayName;
 

@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - 'dependabot/**'
+      - 'jakarta-rewrite'
     # paths-ignore in ci-fork-mvn-cache.yml should match
     paths-ignore:
       - '.gitignore'
@@ -12,6 +13,7 @@ on:
       - '*.adoc'
       - '*.txt'
       - 'adr/**'
+      - 'jakarta/**'
       - 'docs/src/main/asciidoc/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
@@ -26,6 +28,7 @@ on:
       - '*.adoc'
       - '*.txt'
       - 'adr/**'
+      - 'jakarta/**'
       - 'docs/src/main/asciidoc/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
@@ -66,6 +69,7 @@ jobs:
         with:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
+          retention-days: 1
   ci-sanity-check:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
@@ -167,10 +171,11 @@ jobs:
         shell: bash
         run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: maven-repo
           path: maven-repo.tgz
+          retention-days: 1
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
@@ -314,11 +319,12 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
+          retention-days: 5
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
@@ -336,6 +342,7 @@ jobs:
           path: |
             **/windows-java-11.txt
             !**/build/tmp/**
+          retention-days: 5
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -354,6 +361,12 @@ jobs:
             name: "11",
             java-version: 11,
             os-name: "ubuntu-latest"
+          }
+          - {
+            name: "11 mvn 3.8.5",
+            java-version: 11,
+            os-name: "ubuntu-latest",
+            mvn-version: 3.8.5
           }
           - {
             name: "11 Windows",
@@ -375,6 +388,11 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+      - name: Switch Maven version
+        if: "matrix.java.mvn-version != ''"
+        run: |
+          echo 'distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${{matrix.java.mvn-version}}/apache-maven-${{matrix.java.mvn-version}}-bin.zip' >> .mvn/wrapper/maven-wrapper.properties
+          ./mvnw -version
       - name: Build
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl 'integration-tests/maven'
@@ -383,11 +401,20 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: test-reports-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
+          retention-days: 5
+      # see https://github.com/actions/toolkit/blob/master/packages/artifact/docs/additional-information.md#non-supported-characters
+      - name: Rename invalid path
+        if: ${{ failure() || cancelled() }}
+        run: |
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' 'integration-tests/maven/target/test-classes/projects/qit--fast--jar'; fi
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' 'integration-tests/maven/target/test-classes/projects/qit--legacy--jar'; fi
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
+        shell: bash
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
@@ -508,11 +535,12 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
+          retention-days: 5
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
@@ -567,11 +595,12 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
+          retention-days: 5
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}
@@ -595,7 +624,7 @@ jobs:
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:
-      max-parallel: 8
+      max-parallel: 12
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
@@ -646,11 +675,12 @@ jobs:
         shell: bash
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
+          retention-days: 5
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v2
         if: ${{ failure() || cancelled() }}

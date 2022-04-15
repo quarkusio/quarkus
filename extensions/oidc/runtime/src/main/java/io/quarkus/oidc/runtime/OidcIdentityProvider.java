@@ -58,6 +58,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
+        if (!(request.getToken() instanceof AccessTokenCredential || request.getToken() instanceof IdTokenCredential)) {
+            return Uni.createFrom().nullItem();
+        }
         RoutingContext vertxContext = HttpSecurityUtils.getRoutingContextAttribute(request);
         vertxContext.put(AuthenticationRequestContext.class.getName(), context);
 
@@ -112,7 +115,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             vertxContext.put(CODE_ACCESS_TOKEN_RESULT, codeAccessTokenResult);
         }
 
-        Uni<UserInfo> userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired()
+        Uni<UserInfo> userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)
                 ? getUserInfoUni(vertxContext, request, resolvedContext)
                 : NULL_USER_INFO_UNI;
 
@@ -131,8 +134,14 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(RoutingContext vertxContext,
             TokenAuthenticationRequest request, TenantConfigContext resolvedContext, final UserInfo userInfo) {
         Uni<TokenVerificationResult> tokenUni = null;
-        if ((request.getToken() instanceof IdTokenCredential) && ((IdTokenCredential) request.getToken()).isInternal()) {
-            tokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
+        if (isInternalIdToken(request)) {
+            if (vertxContext.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
+                // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
+                tokenUni = Uni.createFrom()
+                        .item(new TokenVerificationResult(OidcUtils.decodeJwtContent(request.getToken().getToken()), null));
+            } else {
+                tokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
+            }
         } else {
             tokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken());
         }
@@ -213,6 +222,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         }
                     }
                 });
+    }
+
+    private static boolean isInternalIdToken(TokenAuthenticationRequest request) {
+        return (request.getToken() instanceof IdTokenCredential) && ((IdTokenCredential) request.getToken()).isInternal();
     }
 
     private static boolean tokenAutoRefreshPrepared(JsonObject tokenJson, RoutingContext vertxContext,
@@ -347,6 +360,14 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<UserInfo> getUserInfoUni(RoutingContext vertxContext, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
+        if (isInternalIdToken(request) && resolvedContext.oidcConfig.cacheUserInfoInIdtoken) {
+            JsonObject userInfo = OidcUtils.decodeJwtContent(request.getToken().getToken())
+                    .getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE);
+            if (userInfo != null) {
+                return Uni.createFrom().item(new UserInfo(userInfo.encode()));
+            }
+        }
+
         String accessToken = vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
         if (accessToken == null) {
             accessToken = request.getToken().getToken();
@@ -366,7 +387,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<UserInfo> newUserInfoUni(TenantConfigContext resolvedContext, String accessToken) {
         Uni<UserInfo> userInfoUni = resolvedContext.provider.getUserInfo(accessToken);
-        if (tenantResolver.getUserInfoCache() == null || !resolvedContext.oidcConfig.allowUserInfoCache) {
+        if (tenantResolver.getUserInfoCache() == null || !resolvedContext.oidcConfig.allowUserInfoCache
+                || resolvedContext.oidcConfig.cacheUserInfoInIdtoken) {
             return userInfoUni;
         } else {
             return userInfoUni.call(new Function<UserInfo, Uni<?>>() {

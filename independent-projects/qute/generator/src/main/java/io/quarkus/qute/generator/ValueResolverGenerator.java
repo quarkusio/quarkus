@@ -55,7 +55,7 @@ import org.jboss.logging.Logger;
 
 /**
  * Generates value resolvers backed by classes.
- * 
+ *
  * @see ValueResolver
  */
 public class ValueResolverGenerator {
@@ -390,7 +390,7 @@ public class ValueResolverGenerator {
                 Match match = entry.getKey();
 
                 // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param 
+                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
                 Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
                 varargsMatches.entrySet().stream()
                         .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
@@ -527,7 +527,7 @@ public class ValueResolverGenerator {
                 Match match = entry.getKey();
 
                 // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param 
+                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
                 Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
                 varargsMatches.entrySet().stream()
                         .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
@@ -784,7 +784,8 @@ public class ValueResolverGenerator {
                     }
                     // Then we need to create an array for the last argument
                     Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
-                    ResultHandle componentType = tryCatch.loadClass(varargsParam.asArrayType().component().name().toString());
+                    ResultHandle componentType = tryCatch
+                            .loadClassFromTCCL(varargsParam.asArrayType().component().name().toString());
                     ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                             evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
                     // E.g. String, String, String -> String, String[]
@@ -853,27 +854,27 @@ public class ValueResolverGenerator {
         if (org.jboss.jandex.Type.Kind.PRIMITIVE.equals(paramType.kind())) {
             switch (paramType.asPrimitiveType().primitive()) {
                 case INT:
-                    return creator.loadClass(Integer.class);
+                    return creator.loadClassFromTCCL(Integer.class);
                 case LONG:
-                    return creator.loadClass(Long.class);
+                    return creator.loadClassFromTCCL(Long.class);
                 case BOOLEAN:
-                    return creator.loadClass(Boolean.class);
+                    return creator.loadClassFromTCCL(Boolean.class);
                 case BYTE:
-                    return creator.loadClass(Byte.class);
+                    return creator.loadClassFromTCCL(Byte.class);
                 case CHAR:
-                    return creator.loadClass(Character.class);
+                    return creator.loadClassFromTCCL(Character.class);
                 case DOUBLE:
-                    return creator.loadClass(Double.class);
+                    return creator.loadClassFromTCCL(Double.class);
                 case FLOAT:
-                    return creator.loadClass(Float.class);
+                    return creator.loadClassFromTCCL(Float.class);
                 case SHORT:
-                    return creator.loadClass(Short.class);
+                    return creator.loadClassFromTCCL(Short.class);
                 default:
                     throw new IllegalArgumentException("Unsupported primitive type: " + paramType);
             }
         }
         // TODO: we should probably use the TCCL to load the param type
-        return creator.loadClass(paramType.name().toString());
+        return creator.loadClassFromTCCL(paramType.name().toString());
     }
 
     private BytecodeCreator createMatchScope(BytecodeCreator bytecodeCreator, String methodName, int methodParams,
@@ -911,7 +912,7 @@ public class ValueResolverGenerator {
 
         // Test base object class
         ResultHandle baseClass = baseNotNullBranch.invokeVirtualMethod(Descriptors.GET_CLASS, base);
-        ResultHandle testClass = baseNotNullBranch.loadClass(clazz.name().toString());
+        ResultHandle testClass = baseNotNullBranch.loadClassFromTCCL(clazz.name().toString());
         ResultHandle test = baseNotNullBranch.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM, testClass, baseClass);
         BytecodeCreator baseAssignableBranch = baseNotNullBranch.ifNonZero(test).trueBranch();
         baseAssignableBranch.returnValue(baseAssignableBranch.load(true));
@@ -943,7 +944,7 @@ public class ValueResolverGenerator {
          * the given field</li>
          * <li>{@code null} if getters are not forced for the given class</li>
          * </ul>
-         * 
+         *
          * @param forceGettersFunction
          * @return self
          */
@@ -1101,7 +1102,7 @@ public class ValueResolverGenerator {
     }
 
     /**
-     * 
+     *
      * @param clazz
      * @return the simple name for the given top-level or nested class
      */
@@ -1130,7 +1131,7 @@ public class ValueResolverGenerator {
      * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would
      * return "Foo$Bar" for the
      * parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to distinguish the nested classes.
-     * 
+     *
      * @param name
      * @return the simple name
      */
@@ -1259,7 +1260,7 @@ public class ValueResolverGenerator {
 
         @Override
         public int compareTo(MethodKey other) {
-            // compare the name, then number of params and param type names 
+            // compare the name, then number of params and param type names
             int res = name.compareTo(other.name);
             if (res == 0) {
                 res = Integer.compare(params.size(), other.params.size());

@@ -5,26 +5,26 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * Defines the logic of a section node.
- * 
+ *
  * @see SectionHelperFactory
  */
 @FunctionalInterface
 public interface SectionHelper {
 
     /**
-     * 
+     *
      * @param context
      * @return the result node
      */
     CompletionStage<ResultNode> resolve(SectionResolutionContext context);
 
     /**
-     * 
+     *
      */
     public interface SectionResolutionContext {
 
         /**
-         * 
+         *
          * @return the current resolution context
          */
         ResolutionContext resolutionContext();
@@ -39,7 +39,7 @@ public interface SectionHelper {
 
         /**
          * Execute the main block with the current resolution context.
-         * 
+         *
          * @return the result node
          */
         default CompletionStage<ResultNode> execute() {
@@ -48,7 +48,7 @@ public interface SectionHelper {
 
         /**
          * Execute the main block with the specified {@link ResolutionContext}.
-         * 
+         *
          * @param context
          * @return the result node
          */
@@ -58,7 +58,7 @@ public interface SectionHelper {
 
         /**
          * Execute the specified block with the specified {@link ResolutionContext}.
-         * 
+         *
          * @param block
          * @param context
          * @return the result node

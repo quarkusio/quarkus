@@ -3,12 +3,14 @@ package io.quarkus.resteasy.runtime.standalone;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 
 import javax.ws.rs.core.HttpHeaders;
 
 import org.jboss.resteasy.spi.AsyncOutputStream;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class VertxOutputStream extends AsyncOutputStream {
 
@@ -160,36 +162,38 @@ public class VertxOutputStream extends AsyncOutputStream {
             return ret;
         }
 
-        CompletionStage<Void> ret = CompletableFuture.completedFuture(null);
-        int bufferSize = allocator.getBufferSize();
-        int bufferCount = len / bufferSize;
-        int remainder = len % bufferSize;
-        if (remainder != 0) {
-            bufferCount = bufferCount + 1;
-        }
+        CompletableFuture<Void> ret = CompletableFuture.completedFuture(null);
 
-        if (bufferCount == 1) {
-            if (pooledBuffer == null) {
-                pooledBuffer = allocator.allocateBuffer();
-            }
-            pooledBuffer.writeBytes(b, 0, len);
-        } else {
-            for (int i = 0; i < bufferCount - 1; i++) {
-                int bufferIndex = i;
-                ret = ret.thenCompose(v -> {
-                    ByteBuf tmpBuf = null;
-                    if ((bufferIndex == 0) && ((pooledBuffer != null))) {
-                        tmpBuf = pooledBuffer;
-                    }
-                    if (tmpBuf == null) {
-                        tmpBuf = allocator.allocateBuffer();
-                    }
-                    tmpBuf.writeBytes(b, bufferIndex * bufferSize, bufferSize);
-                    return response.writeNonBlocking(tmpBuf, false);
-                });
-            }
+        ByteBuf wrappedBuffer = Unpooled.wrappedBuffer(b, off, len);
+        if (pooledBuffer == null) {
             pooledBuffer = allocator.allocateBuffer();
-            pooledBuffer.writeBytes(b, (bufferCount - 1) * bufferSize, remainder);
+        }
+        pooledBuffer.writeBytes(wrappedBuffer, Math.min(pooledBuffer.writableBytes(), wrappedBuffer.readableBytes()));
+        if (pooledBuffer.writableBytes() == 0) {
+            CompletableFuture<Void> cf = new CompletableFuture<>();
+            ret = cf;
+            ByteBuf filled = pooledBuffer;
+            pooledBuffer = null;
+            response.writeNonBlocking(filled, false).whenComplete(new BiConsumer<Void, Throwable>() {
+                @Override
+                public void accept(Void unused, Throwable throwable) {
+                    if (throwable != null) {
+                        cf.completeExceptionally(throwable);
+                        return;
+                    }
+                    pooledBuffer = allocator.allocateBuffer();
+                    pooledBuffer.writeBytes(wrappedBuffer,
+                            Math.min(pooledBuffer.writableBytes(), wrappedBuffer.readableBytes()));
+
+                    if (pooledBuffer.writableBytes() == 0) {
+                        ByteBuf filled = pooledBuffer;
+                        pooledBuffer = null;
+                        response.writeNonBlocking(filled, false).whenComplete(this);
+                    } else {
+                        cf.complete(null);
+                    }
+                }
+            });
         }
 
         return ret.thenCompose(v -> asyncUpdateWritten(len));

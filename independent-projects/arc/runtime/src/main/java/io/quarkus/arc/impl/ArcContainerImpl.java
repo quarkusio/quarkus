@@ -6,6 +6,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableDecorator;
@@ -46,6 +47,7 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.NormalScope;
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Any;
@@ -72,8 +74,8 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final AtomicBoolean running;
 
-    private final ArrayList<InjectableBean<?>> beans;
-    private final ArrayList<RemovedBean> removedBeans;
+    private final List<InjectableBean<?>> beans;
+    private final List<RemovedBean> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableDecorator<?>> decorators;
     private final List<InjectableObserverMethod<?>> observers;
@@ -95,20 +97,24 @@ public class ArcContainerImpl implements ArcContainer {
 
     private volatile ExecutorService executorService;
 
-    public ArcContainerImpl() {
+    private final CurrentContextFactory currentContextFactory;
+
+    public ArcContainerImpl(CurrentContextFactory currentContextFactory) {
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
-        beans = new ArrayList<>();
-        removedBeans = new ArrayList<>();
-        interceptors = new ArrayList<>();
-        decorators = new ArrayList<>();
-        observers = new ArrayList<>();
-        transitiveInterceptorBindings = new HashMap<>();
-        qualifierNonbindingMembers = new HashMap<>();
+        List<InjectableBean<?>> beans = new ArrayList<>();
+        List<RemovedBean> removedBeans = new ArrayList<>();
+        List<InjectableInterceptor<?>> interceptors = new ArrayList<>();
+        List<InjectableDecorator<?>> decorators = new ArrayList<>();
+        List<InjectableObserverMethod<?>> observers = new ArrayList<>();
+        Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
+        Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
+        this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
+                : currentContextFactory;
 
         applicationContext = new ApplicationContext();
         singletonContext = new SingletonContext();
-        requestContext = new RequestContext();
+        requestContext = new RequestContext(this.currentContextFactory.create(RequestScoped.class));
         contexts = new HashMap<>();
         putContext(requestContext);
         putContext(applicationContext);
@@ -126,7 +132,6 @@ public class ArcContainerImpl implements ArcContainer {
                 }
             }
             removedBeans.addAll(components.getRemovedBeans());
-            removedBeans.trimToSize();
             observers.addAll(components.getObservers());
             // Add custom contexts
             for (InjectableContext context : components.getContexts()) {
@@ -145,7 +150,6 @@ public class ArcContainerImpl implements ArcContainer {
         }
         // register built-in beans
         addBuiltInBeans(beans);
-        beans.trimToSize();
 
         interceptors.sort((i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
 
@@ -159,6 +163,14 @@ public class ArcContainerImpl implements ArcContainer {
         resourceProviders.trimToSize();
 
         instance = InstanceImpl.of(Object.class, Collections.emptySet());
+
+        this.beans = List.copyOf(beans);
+        this.interceptors = List.copyOf(interceptors);
+        this.decorators = List.copyOf(decorators);
+        this.observers = List.copyOf(observers);
+        this.removedBeans = List.copyOf(removedBeans);
+        this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
+        this.qualifierNonbindingMembers = Map.copyOf(qualifierNonbindingMembers);
     }
 
     private void putContext(InjectableContext context) {
@@ -299,6 +311,13 @@ public class ArcContainerImpl implements ArcContainer {
         return (InjectableBean<T>) beansById.getValue(beanIdentifier);
     }
 
+    @Override
+    public InjectableBean<?> namedBean(String name) {
+        Objects.requireNonNull(name);
+        Set<InjectableBean<?>> found = beansByName.getValue(name);
+        return found.size() == 1 ? found.iterator().next() : null;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> InstanceHandle<T> instance(String name) {
@@ -327,6 +346,11 @@ public class ArcContainerImpl implements ArcContainer {
 
     public void setExecutor(ExecutorService executor) {
         this.executorService = executor;
+    }
+
+    @Override
+    public CurrentContextFactory getCurrentContextFactory() {
+        return currentContextFactory;
     }
 
     @Override
@@ -371,10 +395,7 @@ public class ArcContainerImpl implements ArcContainer {
             // Clear caches
             Reflections.clearCaches();
             contexts.clear();
-            beans.clear();
-            removedBeans.clear();
             resolved.clear();
-            observers.clear();
             running.set(false);
             InterceptedStaticMethods.clear();
 
@@ -383,19 +404,23 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     public List<InjectableBean<?>> getBeans() {
-        return new ArrayList<>(beans);
+        return beans;
     }
 
     public List<RemovedBean> getRemovedBeans() {
-        return Collections.unmodifiableList(removedBeans);
+        return removedBeans;
     }
 
     public List<InjectableInterceptor<?>> getInterceptors() {
-        return new ArrayList<>(interceptors);
+        return interceptors;
+    }
+
+    public List<InjectableDecorator<?>> getDecorators() {
+        return decorators;
     }
 
     public List<InjectableObserverMethod<?>> getObservers() {
-        return new ArrayList<>(observers);
+        return observers;
     }
 
     InstanceHandle<Object> getResource(Type type, Set<Annotation> annotations) {
@@ -580,7 +605,7 @@ public class ArcContainerImpl implements ArcContainer {
         } else if (priorityBeans.size() == 1) {
             return Set.of(priorityBeans.get(0));
         } else {
-            // Keep only the highest priorities 
+            // Keep only the highest priorities
             priorityBeans.sort(ArcContainerImpl::compareAlternativeBeans);
             Integer highest = getAlternativePriority(priorityBeans.get(0));
             priorityBeans.removeIf(bean -> !highest.equals(getAlternativePriority(bean)));
@@ -697,7 +722,7 @@ public class ArcContainerImpl implements ArcContainer {
         Set<Type> eventTypes = new HierarchyDiscovery(eventType).getTypeClosure();
         List<InjectableObserverMethod<? super T>> resolvedObservers = new ArrayList<>();
         for (InjectableObserverMethod<?> observer : observers) {
-            if (EventTypeAssignabilityRules.matches(observer.getObservedType(), eventTypes)) {
+            if (EventTypeAssignabilityRules.instance().matches(observer.getObservedType(), eventTypes)) {
                 if (observer.getObservedQualifiers().isEmpty()
                         || Qualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers, qualifierNonbindingMembers)) {
                     resolvedObservers.add((InjectableObserverMethod<? super T>) observer);
@@ -742,7 +767,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
         List<Decorator<?>> decorators = new ArrayList<>();
         for (InjectableDecorator<?> decorator : this.decorators) {
-            if (matches(types, Set.of(qualifiers), decorator.getDelegateType(),
+            if (decoratorMatches(types, Set.of(qualifiers), decorator.getDelegateType(),
                     decorator.getDelegateQualifiers().toArray(new Annotation[] {}))) {
                 decorators.add(decorator);
             }
@@ -780,10 +805,18 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     private boolean matches(Set<Type> beanTypes, Set<Annotation> beanQualifiers, Type requiredType, Annotation... qualifiers) {
-        if (!BeanTypeAssignabilityRules.matches(requiredType, beanTypes)) {
+        if (!BeanTypeAssignabilityRules.instance().matches(requiredType, beanTypes)) {
             return false;
         }
         return Qualifiers.hasQualifiers(beanQualifiers, qualifierNonbindingMembers, qualifiers);
+    }
+
+    private boolean decoratorMatches(Set<Type> beanTypes, Set<Annotation> beanQualifiers, Type delegateType,
+            Annotation... delegateQualifiers) {
+        if (!DelegateInjectionPointAssignabilityRules.instance().matches(delegateType, beanTypes)) {
+            return false;
+        }
+        return Qualifiers.hasQualifiers(beanQualifiers, qualifierNonbindingMembers, delegateQualifiers);
     }
 
     static ArcContainerImpl unwrap(ArcContainer container) {

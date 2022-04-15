@@ -276,6 +276,22 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 
+        //Never append on existing scripts:
+        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_CREATE_APPEND, "false");
+
+        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_ACTION,
+                persistenceUnitConfig.scripts.generation.generation);
+
+        if (persistenceUnitConfig.scripts.generation.createTarget.isPresent()) {
+            runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_CREATE_TARGET,
+                    persistenceUnitConfig.scripts.generation.createTarget.get());
+        }
+
+        if (persistenceUnitConfig.scripts.generation.dropTarget.isPresent()) {
+            runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_DROP_TARGET,
+                    persistenceUnitConfig.scripts.generation.dropTarget.get());
+        }
+
         persistenceUnitConfig.database.defaultCatalog.ifPresent(
                 catalog -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_CATALOG, catalog));
 
@@ -294,6 +310,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         if (persistenceUnitConfig.log.jdbcWarnings.isPresent()) {
             runtimeSettingsBuilder.put(AvailableSettings.LOG_JDBC_WARNINGS,
                     persistenceUnitConfig.log.jdbcWarnings.get().toString());
+        }
+
+        if (persistenceUnitConfig.log.queriesSlowerThanMs.isPresent()) {
+            runtimeSettingsBuilder.put(AvailableSettings.LOG_SLOW_QUERY,
+                    persistenceUnitConfig.log.queriesSlowerThanMs.get());
         }
     }
 

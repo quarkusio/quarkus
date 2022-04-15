@@ -3,6 +3,8 @@ package io.quarkus.registry.config;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.registry.json.JsonBuilder;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -18,16 +20,24 @@ import java.util.Objects;
 public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersionsConfig {
 
     private final String recognizedVersionsExpression;
+    private final Collection<String> recognizedGroupIds;
     private final boolean exclusiveProvider;
 
-    private RegistryQuarkusVersionsConfigImpl(String recognizedVersionsExpression, boolean exclusiveProvider) {
+    private RegistryQuarkusVersionsConfigImpl(String recognizedVersionsExpression, Collection<String> recognizedGroupIds,
+            boolean exclusiveProvider) {
         this.exclusiveProvider = exclusiveProvider;
         this.recognizedVersionsExpression = recognizedVersionsExpression;
+        this.recognizedGroupIds = recognizedGroupIds;
     }
 
     @Override
     public String getRecognizedVersionsExpression() {
         return recognizedVersionsExpression;
+    }
+
+    @Override
+    public Collection<String> getRecognizedGroupIds() {
+        return recognizedGroupIds;
     }
 
     @Override
@@ -56,6 +66,7 @@ public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersion
     public static class Builder implements RegistryQuarkusVersionsConfig.Mutable {
         protected String recognizedVersionsExpression;
         protected boolean exclusiveProvider;
+        protected Collection<String> recognizedGroupIds = new ArrayList<>(0);
 
         public Builder() {
         }
@@ -68,7 +79,7 @@ public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersion
 
         @Override
         public RegistryQuarkusVersionsConfigImpl build() {
-            return new RegistryQuarkusVersionsConfigImpl(recognizedVersionsExpression, exclusiveProvider);
+            return new RegistryQuarkusVersionsConfigImpl(recognizedVersionsExpression, recognizedGroupIds, exclusiveProvider);
         }
 
         @Override
@@ -76,9 +87,27 @@ public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersion
             return recognizedVersionsExpression;
         }
 
+        @Override
         public Mutable setRecognizedVersionsExpression(String recognizedVersionsExpression) {
             this.recognizedVersionsExpression = recognizedVersionsExpression;
             return this;
+        }
+
+        @Override
+        public Mutable addRecognizedGroupId(String recognizedGropuId) {
+            this.recognizedGroupIds.add(recognizedGropuId);
+            return this;
+        }
+
+        @Override
+        public Mutable setRecognizedGroupIds(Collection<String> recognizedGroupIds) {
+            this.recognizedGroupIds = recognizedGroupIds;
+            return this;
+        }
+
+        @Override
+        public Collection<String> getRecognizedGroupIds() {
+            return recognizedGroupIds;
         }
 
         @Override
@@ -86,6 +115,7 @@ public class RegistryQuarkusVersionsConfigImpl implements RegistryQuarkusVersion
             return exclusiveProvider;
         }
 
+        @Override
         public Mutable setExclusiveProvider(boolean exclusiveProvider) {
             this.exclusiveProvider = exclusiveProvider;
             return this;

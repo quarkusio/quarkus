@@ -14,12 +14,18 @@ import java.util.Set;
  * @author Jozef Hartinger
  * @author Matus Abaffy
  */
-final class BeanTypeAssignabilityRules {
+class BeanTypeAssignabilityRules {
 
-    private BeanTypeAssignabilityRules() {
+    private static final BeanTypeAssignabilityRules INSTANCE = new BeanTypeAssignabilityRules();
+
+    public static BeanTypeAssignabilityRules instance() {
+        return INSTANCE;
     }
 
-    static boolean matches(Type requiredType, Set<? extends Type> beanTypes) {
+    protected BeanTypeAssignabilityRules() {
+    }
+
+    public boolean matches(Type requiredType, Set<? extends Type> beanTypes) {
         for (Type beanType : beanTypes) {
             if (matches(requiredType, beanType)) {
                 return true;
@@ -28,11 +34,11 @@ final class BeanTypeAssignabilityRules {
         return false;
     }
 
-    private static boolean matches(Type requiredType, Type beanType) {
+    protected boolean matches(Type requiredType, Type beanType) {
         return matchesNoBoxing(Types.boxedType(requiredType), Types.boxedType(beanType));
     }
 
-    private static boolean matchesNoBoxing(Type requiredType, Type beanType) {
+    private boolean matchesNoBoxing(Type requiredType, Type beanType) {
         if (requiredType instanceof Class<?>) {
             if (beanType instanceof Class<?>) {
                 return matches((Class<?>) requiredType, (Class<?>) beanType);
@@ -51,7 +57,7 @@ final class BeanTypeAssignabilityRules {
         return false;
     }
 
-    private static boolean matches(Class<?> requiredType, Class<?> beanType) {
+    private boolean matches(Class<?> requiredType, Class<?> beanType) {
         return requiredType.equals(beanType);
     }
 
@@ -65,7 +71,7 @@ final class BeanTypeAssignabilityRules {
      * either unbounded type variables or java.lang.Object.
      *
      */
-    private static boolean matches(Class<?> type1, ParameterizedType type2) {
+    private boolean matches(Class<?> type1, ParameterizedType type2) {
         if (!type1.equals(Types.getRawType(type2))) {
             return false;
         }
@@ -76,7 +82,7 @@ final class BeanTypeAssignabilityRules {
      * A parameterized bean type is considered assignable to a parameterized required type if they have identical raw type and
      * for each parameter:
      */
-    private static boolean matches(ParameterizedType requiredType, ParameterizedType beanType) {
+    private boolean matches(ParameterizedType requiredType, ParameterizedType beanType) {
         if (!requiredType.getRawType().equals(beanType.getRawType())) {
             return false;
         }
@@ -95,7 +101,7 @@ final class BeanTypeAssignabilityRules {
      * Actual type parameters
      */
 
-    private static boolean parametersMatch(Type requiredParameter, Type beanParameter) {
+    protected boolean parametersMatch(Type requiredParameter, Type beanParameter) {
         if (Types.isActualType(requiredParameter) && Types.isActualType(beanParameter)) {
             /*
              * the required type parameter and the bean type parameter are actual types with identical raw type, and, if the
@@ -140,12 +146,12 @@ final class BeanTypeAssignabilityRules {
         return false;
     }
 
-    private static boolean parametersMatch(WildcardType requiredParameter, Type beanParameter) {
+    private boolean parametersMatch(WildcardType requiredParameter, Type beanParameter) {
         return (lowerBoundsOfWildcardMatch(beanParameter, requiredParameter)
                 && upperBoundsOfWildcardMatch(requiredParameter, beanParameter));
     }
 
-    private static boolean parametersMatch(WildcardType requiredParameter, TypeVariable<?> beanParameter) {
+    protected boolean parametersMatch(WildcardType requiredParameter, TypeVariable<?> beanParameter) {
         Type[] beanParameterBounds = getUppermostTypeVariableBounds(beanParameter);
         if (!lowerBoundsOfWildcardMatch(beanParameterBounds, requiredParameter)) {
             return false;
@@ -156,7 +162,7 @@ final class BeanTypeAssignabilityRules {
         return (boundsMatch(requiredUpperBounds, beanParameterBounds) || boundsMatch(beanParameterBounds, requiredUpperBounds));
     }
 
-    private static boolean parametersMatch(Type requiredParameter, TypeVariable<?> beanParameter) {
+    private boolean parametersMatch(Type requiredParameter, TypeVariable<?> beanParameter) {
         for (Type bound : getUppermostTypeVariableBounds(beanParameter)) {
             if (!CovariantTypes.isAssignableFrom(bound, requiredParameter)) {
                 return false;
@@ -165,7 +171,7 @@ final class BeanTypeAssignabilityRules {
         return true;
     }
 
-    private static boolean parametersMatch(TypeVariable<?> requiredParameter, TypeVariable<?> beanParameter) {
+    protected boolean parametersMatch(TypeVariable<?> requiredParameter, TypeVariable<?> beanParameter) {
         return boundsMatch(getUppermostTypeVariableBounds(beanParameter), getUppermostTypeVariableBounds(requiredParameter));
     }
 
@@ -174,14 +180,14 @@ final class BeanTypeAssignabilityRules {
      * Standard Java covariant assignability rules are applied to all other types of bounds.
      * This is not explicitly mentioned in the specification but is implied.
      */
-    static Type[] getUppermostTypeVariableBounds(TypeVariable<?> bound) {
+    Type[] getUppermostTypeVariableBounds(TypeVariable<?> bound) {
         if (bound.getBounds()[0] instanceof TypeVariable<?>) {
             return getUppermostTypeVariableBounds((TypeVariable<?>) bound.getBounds()[0]);
         }
         return bound.getBounds();
     }
 
-    private static Type[] getUppermostBounds(Type[] bounds) {
+    private Type[] getUppermostBounds(Type[] bounds) {
         // if a type variable (or wildcard) declares a bound which is a type variable, it can declare no other bound
         if (bounds[0] instanceof TypeVariable<?>) {
             return getUppermostTypeVariableBounds((TypeVariable<?>) bounds[0]);
@@ -196,7 +202,7 @@ final class BeanTypeAssignabilityRules {
      * Arguments passed to this method must be legal java bounds, i.e. bounds returned by {@link TypeVariable#getBounds()},
      * {@link WildcardType#getUpperBounds()} or {@link WildcardType#getLowerBounds()}.
      */
-    private static boolean boundsMatch(Type[] upperBounds, Type[] stricterUpperBounds) {
+    protected boolean boundsMatch(Type[] upperBounds, Type[] stricterUpperBounds) {
         // getUppermostBounds to make sure that both arrays of bounds contain ONLY ACTUAL TYPES! otherwise, the CovariantTypes
         // assignability rules do not reflect our needs
         upperBounds = getUppermostBounds(upperBounds);
@@ -209,11 +215,11 @@ final class BeanTypeAssignabilityRules {
         return true;
     }
 
-    static boolean lowerBoundsOfWildcardMatch(Type parameter, WildcardType requiredParameter) {
+    boolean lowerBoundsOfWildcardMatch(Type parameter, WildcardType requiredParameter) {
         return lowerBoundsOfWildcardMatch(new Type[] { parameter }, requiredParameter);
     }
 
-    static boolean lowerBoundsOfWildcardMatch(Type[] beanParameterBounds, WildcardType requiredParameter) {
+    boolean lowerBoundsOfWildcardMatch(Type[] beanParameterBounds, WildcardType requiredParameter) {
         if (requiredParameter.getLowerBounds().length > 0) {
             Type[] lowerBounds = requiredParameter.getLowerBounds();
             if (!boundsMatch(beanParameterBounds, lowerBounds)) {
@@ -223,7 +229,7 @@ final class BeanTypeAssignabilityRules {
         return true;
     }
 
-    static boolean upperBoundsOfWildcardMatch(WildcardType requiredParameter, Type parameter) {
+    boolean upperBoundsOfWildcardMatch(WildcardType requiredParameter, Type parameter) {
         return boundsMatch(requiredParameter.getUpperBounds(), new Type[] { parameter });
     }
 }

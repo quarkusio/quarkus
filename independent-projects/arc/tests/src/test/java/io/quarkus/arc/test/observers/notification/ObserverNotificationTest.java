@@ -19,7 +19,7 @@ public class ObserverNotificationTest {
     public void testContextualInstanceIsUsed() {
         assertEquals(0, StringObserver.CONSTRUCTED.get());
         assertEquals(0, StringObserver.NOTIFIED.get());
-        Arc.container().beanManager().fireEvent("hello");
+        Arc.container().beanManager().getEvent().fire("hello");
         assertEquals(1, StringObserver.CONSTRUCTED.get());
         assertEquals(1, StringObserver.NOTIFIED.get());
     }

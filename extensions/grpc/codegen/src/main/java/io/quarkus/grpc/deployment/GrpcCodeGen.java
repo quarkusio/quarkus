@@ -2,7 +2,6 @@ package io.quarkus.grpc.deployment;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
-import static org.codehaus.plexus.util.FileUtils.copyStreamToFile;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -18,12 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codehaus.plexus.util.io.RawInputStreamFacade;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
@@ -51,6 +46,9 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String PROTOC = "protoc";
     private static final String PROTOC_GROUPID = "com.google.protobuf";
 
+    private static final String SCAN_DEPENDENCIES_FOR_PROTO = "quarkus.generate-code.grpc.scan-for-proto";
+    private static final String SCAN_FOR_IMPORTS = "quarkus.generate-code.grpc.scan-for-imports";
+
     private Executables executables;
 
     @Override
@@ -77,58 +75,116 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
         Path outDir = context.outDir();
         Path workDir = context.workDir();
-        Path protoDir = context.inputDir();
+        Set<String> protoDirs = new HashSet<>();
 
         try {
-            if (Files.isDirectory(protoDir)) {
-                try (Stream<Path> protoFilesPaths = Files.walk(protoDir)) {
-                    List<String> protoFiles = protoFilesPaths
+            List<String> protoFiles = new ArrayList<>();
+            if (Files.isDirectory(context.inputDir())) {
+                try (Stream<Path> protoFilesPaths = Files.walk(context.inputDir())) {
+                    protoFilesPaths
                             .filter(Files::isRegularFile)
+                            .filter(s -> s.toString().endsWith(PROTO))
+                            .map(Path::normalize)
+                            .map(Path::toAbsolutePath)
                             .map(Path::toString)
-                            .filter(s -> s.endsWith(PROTO))
-                            .map(this::escapeWhitespace)
-                            .collect(Collectors.toList());
-                    if (!protoFiles.isEmpty()) {
-                        initExecutables(workDir, context.applicationModel());
-
-                        Collection<String> protosToImport = gatherImports(workDir.resolve("protoc-dependencies"), context);
-
-                        List<String> command = new ArrayList<>();
-                        command.add(executables.protoc.toString());
-                        for (String protoImportDir : protosToImport) {
-                            command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
-                        }
-
-                        command.addAll(asList("-I=" + escapeWhitespace(protoDir.toString()),
-                                "--plugin=protoc-gen-grpc=" + executables.grpc,
-                                "--plugin=protoc-gen-q-grpc=" + executables.quarkusGrpc,
-                                "--q-grpc_out=" + outDir,
-                                "--grpc_out=" + outDir,
-                                "--java_out=" + outDir));
-                        command.addAll(protoFiles);
-
-                        ProcessBuilder processBuilder = new ProcessBuilder(command);
-
-                        final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
-                        int resultCode = process.waitFor();
-                        if (resultCode != 0) {
-                            throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
-                                    " to " + outDir.toAbsolutePath());
-                        }
-                        return true;
-                    }
+                            .forEach(protoFiles::add);
+                    protoDirs.add(context.inputDir().normalize().toAbsolutePath().toString());
                 }
             }
+            Path dirWithProtosFromDependencies = workDir.resolve("protoc-protos-from-dependencies");
+            Collection<Path> protoFilesFromDependencies = gatherProtosFromDependencies(dirWithProtosFromDependencies, protoDirs,
+                    context);
+            if (!protoFilesFromDependencies.isEmpty()) {
+                protoFilesFromDependencies.stream()
+                        .map(Path::normalize)
+                        .map(Path::toAbsolutePath)
+                        .map(Path::toString)
+                        .forEach(protoFiles::add);
+            }
+
+            if (!protoFiles.isEmpty()) {
+                initExecutables(workDir, context.applicationModel());
+
+                Collection<String> protosToImport = gatherDirectoriesWithImports(workDir.resolve("protoc-dependencies"),
+                        context);
+
+                List<String> command = new ArrayList<>();
+                command.add(executables.protoc.toString());
+                for (String protoImportDir : protosToImport) {
+                    command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
+                }
+                for (String protoDir : protoDirs) {
+                    command.add(String.format("-I=%s", escapeWhitespace(protoDir)));
+                }
+
+                command.addAll(asList("--plugin=protoc-gen-grpc=" + executables.grpc,
+                        "--plugin=protoc-gen-q-grpc=" + executables.quarkusGrpc,
+                        "--q-grpc_out=" + outDir,
+                        "--grpc_out=" + outDir,
+                        "--java_out=" + outDir));
+                command.addAll(protoFiles);
+
+                ProcessBuilder processBuilder = new ProcessBuilder(command);
+
+                final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
+                int resultCode = process.waitFor();
+                if (resultCode != 0) {
+                    throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
+                            " to " + outDir.toAbsolutePath() + " with command " + String.join(" ", command));
+                }
+                return true;
+            }
         } catch (IOException | InterruptedException e) {
-            throw new CodeGenException("Failed to generate java files from proto file in " + protoDir.toAbsolutePath(), e);
+            throw new CodeGenException(
+                    "Failed to generate java files from proto file in " + context.inputDir().toAbsolutePath(), e);
         }
+
         return false;
     }
 
-    private Collection<String> gatherImports(Path workDir, CodeGenContext context) throws CodeGenException {
+    private Collection<Path> gatherProtosFromDependencies(Path workDir, Set<String> protoDirectories,
+            CodeGenContext context) throws CodeGenException {
+        if (context.test()) {
+            return Collections.emptyList();
+        }
+        Config properties = context.config();
+        String scanDependencies = properties.getOptionalValue(SCAN_DEPENDENCIES_FOR_PROTO, String.class)
+                .orElse("none");
+
+        if ("none".equalsIgnoreCase(scanDependencies)) {
+            return Collections.emptyList();
+        }
+        boolean scanAll = "all".equalsIgnoreCase(scanDependencies);
+
+        List<String> dependenciesToScan = asList(scanDependencies.split(","));
+
+        ApplicationModel appModel = context.applicationModel();
+        List<Path> protoFilesFromDependencies = new ArrayList<>();
+        for (ResolvedDependency artifact : appModel.getRuntimeDependencies()) {
+            if (scanAll
+                    || dependenciesToScan.contains(
+                            String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
+                extractProtosFromArtifact(workDir, protoFilesFromDependencies, protoDirectories, artifact);
+            }
+        }
+        return protoFilesFromDependencies;
+    }
+
+    @Override
+    public boolean shouldRun(Path sourceDir, Config config) {
+        return CodeGenProvider.super.shouldRun(sourceDir, config)
+                || isGeneratingFromAppDependenciesEnabled(config);
+    }
+
+    private boolean isGeneratingFromAppDependenciesEnabled(Config config) {
+        return config.getOptionalValue(SCAN_DEPENDENCIES_FOR_PROTO, String.class)
+                .filter(value -> !"none".equals(value)).isPresent();
+    }
+
+    private Collection<String> gatherDirectoriesWithImports(Path workDir, CodeGenContext context) throws CodeGenException {
         Config properties = context.config();
 
-        String scanForImports = properties.getOptionalValue("quarkus.generate-code.grpc.scan-for-imports", String.class)
+        String scanForImports = properties.getOptionalValue(SCAN_FOR_IMPORTS, String.class)
                 .orElse("com.google.protobuf:protobuf-java");
 
         if ("none".equals(scanForImports.toLowerCase(Locale.getDefault()))) {
@@ -144,47 +200,53 @@ public class GrpcCodeGen implements CodeGenProvider {
             if (scanAll
                     || dependenciesToScan.contains(
                             String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
-                for (Path path : artifact.getResolvedPaths()) {
-                    Path jarName = path.getFileName();
-                    if (jarName.toString().endsWith(".jar")) {
-                        final JarFile jar;
-                        try {
-                            jar = new JarFile(path.toFile());
-                        } catch (final IOException e) {
-                            throw new CodeGenException("Failed to read Jar: " + path.normalize().toAbsolutePath(), e);
-                        }
-
-                        for (JarEntry jarEntry : jar.stream().collect(Collectors.toList())) {
-                            String jarEntryName = jarEntry.getName();
-                            if (jarEntryName.endsWith(PROTO)) {
-                                Path protoUnzipDir = workDir.resolve(HashUtil.sha1(jar.getName())).normalize().toAbsolutePath();
-                                try {
-                                    Files.createDirectories(protoUnzipDir);
-                                    importDirectories.add(protoUnzipDir.toString());
-                                } catch (IOException e) {
-                                    throw new CodeGenException(
-                                            "Failed to create directory: " + protoUnzipDir, e);
-                                }
-                                // checking for https://snyk.io/research/zip-slip-vulnerability
-                                Path unzippedProto = protoUnzipDir.resolve(jarEntryName);
-                                if (!unzippedProto.normalize().toAbsolutePath().startsWith(workDir.toAbsolutePath())) {
-                                    throw new CodeGenException("Attempted to unzip " + jarEntryName
-                                            + " to a location outside the working directory");
-                                }
-                                try {
-                                    copyStreamToFile(new RawInputStreamFacade(jar.getInputStream(jarEntry)),
-                                            unzippedProto.toFile());
-                                } catch (IOException e) {
-                                    throw new CodeGenException("Failed to create input stream for reading " + jarEntryName
-                                            + " from " + jar.getName(), e);
-                                }
-                            }
-                        }
-                    }
-                }
+                extractProtosFromArtifact(workDir, new ArrayList<>(), importDirectories, artifact);
             }
         }
         return importDirectories;
+    }
+
+    private void extractProtosFromArtifact(Path workDir, Collection<Path> protoFiles,
+            Set<String> protoDirectories, ResolvedDependency artifact) throws CodeGenException {
+
+        try {
+            artifact.getContentTree().walk(
+                    pathVisit -> {
+                        Path path = pathVisit.getPath();
+                        if (Files.isRegularFile(path) && path.getFileName().toString().endsWith(PROTO)) {
+                            Path root = pathVisit.getRoot();
+                            if (Files.isDirectory(root)) {
+                                protoFiles.add(path);
+                                protoDirectories.add(path.getParent().normalize().toAbsolutePath().toString());
+                            } else { // archive
+                                Path relativePath = path.getRoot().relativize(path);
+                                Path protoUnzipDir = workDir
+                                        .resolve(HashUtil.sha1(root.normalize().toAbsolutePath().toString()))
+                                        .normalize().toAbsolutePath();
+                                try {
+                                    Files.createDirectories(protoUnzipDir);
+                                    protoDirectories.add(protoUnzipDir.toString());
+                                } catch (IOException e) {
+                                    throw new GrpcCodeGenException("Failed to create directory: " + protoUnzipDir, e);
+                                }
+                                Path outPath = protoUnzipDir;
+                                for (Path part : relativePath) {
+                                    outPath = outPath.resolve(part.toString());
+                                }
+                                try {
+                                    Files.createDirectories(outPath.getParent());
+                                    Files.copy(path, outPath, StandardCopyOption.REPLACE_EXISTING);
+                                    protoFiles.add(outPath);
+                                } catch (IOException e) {
+                                    throw new GrpcCodeGenException("Failed to extract proto file" + path + " to target: "
+                                            + outPath, e);
+                                }
+                            }
+                        }
+                    });
+        } catch (GrpcCodeGenException e) {
+            throw new CodeGenException(e.getMessage(), e);
+        }
     }
 
     private String escapeWhitespace(String path) {
@@ -323,6 +385,12 @@ public class GrpcCodeGen implements CodeGenProvider {
             this.protoc = protoc;
             this.grpc = grpc;
             this.quarkusGrpc = quarkusGrpc;
+        }
+    }
+
+    private static class GrpcCodeGenException extends RuntimeException {
+        private GrpcCodeGenException(String message, Exception cause) {
+            super(message, cause);
         }
     }
 }

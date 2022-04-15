@@ -21,7 +21,7 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
 /**
  * Creates a database connection based on the data sources in the configuration file.
  * The tenant identifier is used as the data source name.
- * 
+ *
  * @author Michael Schnell
  *
  */

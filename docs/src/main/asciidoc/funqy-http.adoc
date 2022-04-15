@@ -20,13 +20,9 @@ than these alternatives (except Vert.x which is still super fast).
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
+:prerequisites-no-graalvm:
+include::includes/devtools/prerequisites.adoc[]
 * Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
 
 == The Quickstart
 

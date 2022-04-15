@@ -9,6 +9,8 @@ import java.util.Set;
 
 public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
+    private static final long serialVersionUID = -3878782344578748234L;
+
     private final ResolvedDependency appArtifact;
     private final List<ResolvedDependency> dependencies;
     private final PlatformImports platformImports;

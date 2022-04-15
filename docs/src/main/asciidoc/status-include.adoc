@@ -16,5 +16,5 @@ ifeval::["{extension-status}" == "stable"]
 Being _stable_, backward compatibility and presence in the ecosystem are taken very seriously.
 endif::[]
 
-For a full list of possible extension statuses, check our https://quarkus.io/faq/#extension-status[FAQ entry].
+For a full list of possible statuses, check our https://quarkus.io/faq/#extension-status[FAQ entry].
 ====

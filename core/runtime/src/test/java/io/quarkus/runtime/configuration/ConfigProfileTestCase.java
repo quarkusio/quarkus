@@ -11,9 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.smallrye.config.ExpressionConfigSourceInterceptor;
@@ -24,24 +21,6 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class ConfigProfileTestCase {
 
-    static ClassLoader classLoader;
-    static ConfigProviderResolver cpr;
-
-    @BeforeAll
-    public static void initConfig() {
-        classLoader = Thread.currentThread().getContextClassLoader();
-        cpr = ConfigProviderResolver.instance();
-    }
-
-    @AfterEach
-    public void doAfter() {
-        try {
-            cpr.releaseConfig(cpr.getConfig());
-        } catch (IllegalStateException ignored) {
-            // just means no config was installed, which is fine
-        }
-    }
-
     private SmallRyeConfigBuilder configBuilder(String... keyValues) {
         return new SmallRyeConfigBuilder()
                 .addDefaultInterceptors()
@@ -51,7 +30,6 @@ public class ConfigProfileTestCase {
 
     private SmallRyeConfig buildConfig(String... keyValues) {
         final SmallRyeConfig config = configBuilder(keyValues).build();
-        cpr.registerConfig(config, classLoader);
         return config;
     }
 

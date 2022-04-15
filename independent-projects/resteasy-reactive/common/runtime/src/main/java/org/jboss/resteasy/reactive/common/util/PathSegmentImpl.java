@@ -53,7 +53,7 @@ public class PathSegmentImpl implements PathSegment {
 
     /**
      * NOTE: Used for optimization in ResteasyUriInfo
-     * 
+     *
      * @return true if path segment contains matrix parameters
      */
     public boolean hasMatrixParams() {

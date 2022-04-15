@@ -44,7 +44,12 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices-common</artifactId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-spi</artifactId>
         </dependency>
 
         <dependency>

@@ -20,13 +20,8 @@ Please read the xref:security-openid-connect-multitenancy.adoc[Using OpenID Conn
 
 === Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker
+:prerequisites-docker:
+include::includes/devtools/prerequisites.adoc[]
 
 === Architecture
 
@@ -49,32 +44,31 @@ The solution is located in the `security-openid-connect-web-authentication-quick
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-openid-connect-web-authentication-quickstart \
-    -Dextensions="resteasy,oidc" \
-    -DnoExamples
-cd security-openid-connect-web-authentication-quickstart
-----
+:create-app-artifact-id: security-openid-connect-web-authentication-quickstart
+:create-app-extensions: resteasy-reactive,oidc
+include::includes/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `oidc` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="oidc"
-----
+:add-extension-extensions: oidc
+include::includes/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-oidc</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-oidc")
 ----
 
 === Writing the application
@@ -88,6 +82,7 @@ package org.acme.security.openid.connect.web.authentication;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -120,9 +115,10 @@ public class TokenResource {
      * Returns the tokens available to the application. This endpoint exists only for demonstration purposes, you should not
      * expose these tokens in a real application.
      *
-     * @return a map containing the tokens available to the application
+     * @return a HTML page containing the tokens available to the application
      */
     @GET
+    @Produces("text/html")
     public String getTokens() {
         StringBuilder response = new StringBuilder().append("<html>")
                 .append("<body>")
@@ -159,7 +155,7 @@ The OpenID Connect extension allows you to define the configuration using the `a
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=frontend
 quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
@@ -182,10 +178,12 @@ To start a Keycloak Server you can use Docker and just run the following command
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak version}
+docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
+where `keycloak.version` should be set to `17.0.0` or higher.
+
+You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
 
 Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
@@ -193,16 +191,15 @@ Import the {quickstarts-tree-url}/security-openid-connect-web-authentication-qui
 
 === Running the Application in Dev and JVM modes
 
-To run the application in a dev mode, use `./mvnw clean compile quarkus:dev`.
+To run the application in a dev mode, use:
 
-When you're done playing with the `dev` mode you can run it as a standard Java application.
+include::includes/devtools/dev.adoc[]
+
+When you're done playing with dev mode you can run it as a standard Java application.
 
 First compile it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::includes/devtools/build.adoc[]
 
 Then run it:
 
@@ -220,12 +217,9 @@ production environment, as the runtime technology is included in
 the produced binary, and optimized to run with minimal resource overhead.
 
 Compilation will take a bit longer, so this step is disabled by default;
-let's build again by enabling the `native` profile:
+let's build again by enabling the native build:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::includes/devtools/build-native.adoc[]
 
 After getting a cup of coffee, you'll be able to run this binary directly:
 
@@ -428,7 +422,7 @@ Here is an example of how to configure an RP initiated logout flow:
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=frontend
 quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
@@ -473,6 +467,25 @@ quarkus.oidc.logout.post-logout-uri-param=returnTo
 # For example, if 'client_id' is provided then a valid logout URI should be set as Auth0 Application property, without it - as Auth0 Tenant property.
 quarkus.oidc.logout.extra-params.client_id=${quarkus.oidc.client-id}
 ----
+
+[[back-channel-logout]]
+==== Back-Channel Logout
+
+link:https://openid.net/specs/openid-connect-backchannel-1_0.html[Back-Channel Logout] is used by OpenId Connect providers to logout the current user from all the applications this user is currently logged in, bypassing the user agent.
+
+You can configure Quarkus to support `Back-Channel Logout` as follows:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+quarkus.oidc.client-id=frontend
+quarkus.oidc.credentials.secret=secret
+quarkus.oidc.application-type=web-app
+
+quarkus.oidc.logout.backchannel.path=/back-channel-logout
+----
+
+Absolute `Back-Channel Logout` URL is calculated by adding `quarkus.oidc.back-channel-logout.path` to the current endpoint URL, for example, `http://localhost:8080/back-channel-logout`. You will need to configure this URL in the Admin Console of your OpenId Connect Provider.
 
 [[local-logout]]
 ==== Local Logout
@@ -528,6 +541,7 @@ Note this user session can not be extended forever - the returning user with the
 
 `io.quarkus.oidc.OidcSession` is a wrapper around the current `IdToken`. It can help to perform a <<local-logout, Local Logout>>, retrieve the current session's tenant identifier and check when the session will expire. More useful methods will be added to it over time.
 
+[[token-state-manager]]
 ==== TokenStateManager
 
 OIDC `CodeAuthenticationMechanism` is using the default `io.quarkus.oidc.TokenStateManager` interface implementation to keep the ID, access and refresh tokens returned in the authorization code or refresh grant responses in a session cookie. It makes Quarkus OIDC endpoints completely stateless.
@@ -536,6 +550,23 @@ Note that some endpoints do not require the access token. An access token is onl
 
 If the ID, access and refresh tokens are JWT tokens then combining all of them (if the strategy is the default `keep-all-tokens`) or only ID and refresh tokens (if the strategy is `id-refresh-token`) may produce a session cookie value larger than 4KB and the browsers may not be able to keep this cookie.
 In such cases, you can use `quarkus.oidc.token-state-manager.split-tokens=true` to have a unique session token per each of these tokens.
+
+You can also configure the default `TokenStateManager` to encrypt the tokens before storing them as cookie values which may be necessary if the tokens contain sensitive claim values.
+For example, here is how you configure it to split the tokens and encrypt them:
+
+[source, properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.secret=secret
+quarkus.oidc.application-type=web-app
+quarkus.oidc.token-state-manager.split-tokens=true
+quarkus.oidc.token-state-manager.encryption-required=true
+quarkus.oidc.token-state-manager.encryption-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
+----
+
+The token encryption secret must be 32 characters long. Note that you only have to set `quarkus.oidc.token-state-manager.encryption-secret` if you prefer not to use
+`quarkus.oidc.credentials.secret` for encrypting the tokens or if `quarkus.oidc.credentials.secret` length is less than 32 characters.
 
 Register your own `io.quarkus.oidc.TokenStateManager' implementation as an `@ApplicationScoped` CDI bean if you need to customize the way the tokens are associated with the session cookie. For example, you may want to keep the tokens in a database and have only a database pointer stored in a session cookie. Note though that it may present some challenges in making the tokens available across multiple microservices nodes.
 
@@ -591,6 +622,24 @@ public class CustomTokenStateManager implements TokenStateManager {
     }
 }
 ----
+
+=== Proof Of Key for Code Exchange (PKCE)
+
+link:https://datatracker.ietf.org/doc/html/rfc7636[Proof Of Key for Code Exchange] (PKCE) minimizes the risk of the authorization code interception.
+
+While `PKCE` is of primary importance to the public OpenId Connect clients (such as the SPA scripts running in a browser), it can also provide an extra level of protection to Quarkus OIDC `web-app` applications which are confidential OpenId Connect clients capable of securely storing the client secret and using it to exchange the code for the tokens.
+
+If can enable `PKCE` for your OIDC `web-app` endpoint with a `quarkus.oidc.authentication.pkce-required` property and a 32 characters long secret, for example:
+
+[source, properties]
+----
+quarkus.oidc.authentication.pkce-required=true
+quarkus.oidc.authentication.pkce-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
+----
+
+If you already have a 32 character long client secret then `quarkus.oidc.authentication.pkce-secret` does not have to be set unless you prefer to use a different secret key.
+
+The secret key is required for encrypting a randomly generated `PKCE` `code_verifier` while the user is being redirected with the `code_challenge` query parameter to OpenId Connect Provider to authenticate. The `code_verifier` will be decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret and other parameters to complete the code exchange. The provider will fail the code exchange if a `SHA256` digest of the `code_verifier` does not match the `code_challenge` provided during the authentication request.
 
 === Listening to important authentication events
 
@@ -666,7 +715,9 @@ If the `OAuth2` provider supports the introspection endpoint then you may be abl
 
 Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quarkus-oidc` can be integrated with the providers such as `GitHib`.
 
-Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want tp consider caching `UserInfo` data, see <<token-introspection-userinfo-cache,Token Introspection and UserInfo Cache> for more details.
+Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see <<token-introspection-userinfo-cache,Token Introspection and UserInfo Cache> for more details.
+
+Alternatively, you may want to request that `UserInfo` is embedded into the internal generated `IdToken`with the `quarkus.oidc.cache-user-info-in-idtoken=true` property - the advantage of this approach is that by default no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie. You may also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data, please see <<token-state-manager,Encrypt Tokens With TokenStateManager>> for more information.
 
 Also, OAuth2 servers may not support a well-known configuration endpoint in which case the discovery has to be disabled and the authorization, token, and introspection and/or userinfo endpoint paths have to be configured manually.
 
@@ -674,29 +725,19 @@ Here is how you can integrate `quarkus-oidc` with `GitHub` after you have link:h
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=https://github.com/login/oauth
-quarkus.oidc.discovery-enabled=false
-quarkus.oidc.authorization-path=authorize
-quarkus.oidc.token-path=access_token
-quarkus.oidc.user-info-path=https://api.github.com/user
+quarkus.oidc.provider=github
+quarkus.oidc.client-id=github_app_clientid
+quarkus.oidc.credentials.secret=github_app_clientsecret
 
-# See https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps
-quarkus.oidc.authentication.scopes=user:email
-
-# Make sure a user info is required
-quarkus.oidc.authentication.user-info-required=true
+# user:email scope is requested by default, use 'quarkus.oidc.authentication.scopes' to request differrent scopes such as `read:user`.
+# See https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps for more information.
 
 # Consider enabling UserInfo Cache 
 # quarkus.oidc.token-cache.max-size=1000
 # quarkus.oidc.token-cache.time-to-live=5M
-
-# Allow the code flow responses without ID tokens
-quarkus.oidc.authentication.id-token-required=false
-
-quarkus.oidc.application-type=web-app
-
-quarkus.oidc.client-id=github_app_clientid
-quarkus.oidc.credentials.secret=github_app_clientsecret
+#
+# Or having UserInfo cached inside IdToken itself
+# quarkus.oidc.cache-user-info-in-idtoken=true
 ----
 
 This is all what is needed for an endpoint like this one to return the currently authenticated user's profile with `GET http://localhost:8080/github/userinfo` and access it as the individual `UserInfo` properties:
@@ -818,21 +859,27 @@ You can have Quarkus OIDC `web-app` applications access **Google Cloud services*
 It is super easy to do with https://github.com/quarkiverse[Quarkiverse] https://github.com/quarkiverse/quarkiverse-google-cloud-services[Google Cloud Services], only add
 the https://github.com/quarkiverse/quarkiverse-google-cloud-services/releases/latest[latest tag] service dependency, for example:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkiverse.googlecloudservices</groupId>
-  <artifactId>quarkus-google-cloud-bigquery</artifactId>
-  <version>${quarkiverse.googlecloudservices.version}</version>
+    <groupId>io.quarkiverse.googlecloudservices</groupId>
+    <artifactId>quarkus-google-cloud-bigquery</artifactId>
+    <version>${quarkiverse.googlecloudservices.version}</version>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkiverse.googlecloudservices:quarkus-google-cloud-bigquery:${quarkiverse.googlecloudservices.version}")
 ----
 
 and configure Google OIDC properties:
 
 [source, properties]
 ----
-quarkus.oidc.auth-server-url=https://accounts.google.com
-quarkus.oidc.application-type=web-app
+quarkus.oidc.provider=google
 quarkus.oidc.client-id={GOOGLE_CLIENT_ID}
 quarkus.oidc.credentials.secret={GOOGLE_CLIENT_SECRET}
 quarkus.oidc.token.issuer=https://accounts.google.com
@@ -848,19 +895,19 @@ Alternatively, if the discovery endpoint is not available or you would like to s
 
 [source, properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.discovery-enabled=false
-# Authorization endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/auth
+# Authorization endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/auth
 quarkus.oidc.authorization-path=/protocol/openid-connect/auth
-# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token
+# Token endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/token
 quarkus.oidc.token-path=/protocol/openid-connect/token
-# JWK set endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/certs
+# JWK set endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/certs
 quarkus.oidc.jwks-path=/protocol/openid-connect/certs
-# UserInfo endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/userinfo
+# UserInfo endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/userinfo
 quarkus.oidc.user-info-path=/protocol/openid-connect/userinfo
-# Token Introspection endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token/introspect
+# Token Introspection endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/token/introspect
 quarkus.oidc.introspection-path=/protocol/openid-connect/token/introspect
-# End session endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/logout
+# End session endpoint: http://localhost:8180/realms/quarkus/protocol/openid-connect/logout
 quarkus.oidc.end-session-path=/protocol/openid-connect/logout
 ----
 
@@ -878,7 +925,7 @@ All the https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthenticati
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.secret=mysecret
 ----
@@ -887,7 +934,7 @@ or
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.client-secret.value=mysecret
 ----
@@ -896,7 +943,7 @@ or with the secret retrieved from a xref:credentials-provider.adoc[CredentialsPr
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 
 # This is a key which will be used to retrieve a secret from the map of credentials returned from CredentialsProvider
@@ -909,7 +956,7 @@ quarkus.oidc.credentials.client-secret.provider.name=oidc-credentials-provider
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.client-secret.value=mysecret
 quarkus.oidc.credentials.client-secret.method=post
@@ -919,7 +966,7 @@ quarkus.oidc.credentials.client-secret.method=post
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
 ----
@@ -928,7 +975,7 @@ or with the secret retrieved from a xref:credentials-provider.adoc[CredentialsPr
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 
 # This is a key which will be used to retrieve a secret from the map of credentials returned from CredentialsProvider
@@ -941,7 +988,7 @@ quarkus.oidc.credentials.jwt.secret-provider.name=oidc-credentials-provider
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.key-file=privateKey.pem
 ----
@@ -950,7 +997,7 @@ quarkus.oidc.credentials.jwt.key-file=privateKey.pem
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.key-store-file=keystore.jks
 quarkus.oidc.credentials.jwt.key-store-password=mypassword
@@ -970,7 +1017,7 @@ If `client_secret_jwt`, `private_key_jwt` authentication methods are used or an 
 ----
 # private_key_jwt client authentication
 
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.jwt.key-file=privateKey.pem
 
@@ -992,7 +1039,6 @@ quarkus.oidc.credentials.jwt.subject=custom-subject
 quarkus.oidc.credentials.jwt.issuer=custom-issuer
 ----
 
-
 ==== Apple POST JWT
 
 Apple OpenID Connect Provider uses a `client_secret_post` method where a secret is a JWT produced with a `private_key_jwt` authentication method but with Apple account specific issuer and subject claims.
@@ -1001,14 +1047,41 @@ Apple OpenID Connect Provider uses a `client_secret_post` method where a secret 
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=${apple.url}
-quarkus.oidc.client-id=${apple.client-id}
-quarkus.oidc.credentials.client-secret.method=post-jwt
+# Apple provider configuration sets a 'client_secret_post_jwt' authentication method
+quarkus.oidc.provider=apple
 
+quarkus.oidc.client-id=${apple.client-id}
 quarkus.oidc.credentials.jwt.key-file=ecPrivateKey.pem
-quarkus.oidc.credentials.jwt.signature-algorithm=ES256
+quarkus.oidc.credentials.jwt.token-key-id=${apple.key-id}
+# Apple provider configuration sets ES256 signature algorithm
+
 quarkus.oidc.credentials.jwt.subject=${apple.subject}
 quarkus.oidc.credentials.jwt.issuer=${apple.issuer}
+----
+
+==== Mutual TLS
+
+Some OpenID Connect Providers may require that a client is authenticated as part of the `Mutual TLS` (`mTLS`) authentication process.
+
+`quarkus-oidc` can be configured as follows to support `mTLS`:
+
+[source,properties]
+----
+quarkus.oidc.tls.verification=certificate-validation
+
+# Keystore configuration
+quarkus.oidc.tls.key-store-file=client-keystore.jks
+quarkus.oidc.tls.key-store-password=${key-store-password}
+
+# Add more keystore properties if needed:
+#quarkus.oidc.tls.key-store-alias=keyAlias
+#quarkus.oidc.tls.key-store-alias-password=keyAliasPassword
+
+# Truststore configuration
+quarkus.oidc.tls.trust-store-file=client-truststore.jks
+quarkus.oidc.tls.trust-store-password=${trust-store-password}
+# Add more truststore properties if needed:
+#quarkus.oidc.tls.trust-store-alias=certAlias
 ----
 
 [[integration-testing]]
@@ -1016,7 +1089,8 @@ quarkus.oidc.credentials.jwt.issuer=${apple.issuer}
 
 Start by adding the following dependencies to your test project:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>net.sourceforge.htmlunit</groupId>
@@ -1036,18 +1110,32 @@ Start by adding the following dependencies to your test project:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("net.sourceforge.htmlunit:htmlunit")
+testImplementation("io.quarkus:quarkus-junit5")
+----
+
 [[integration-testing-wiremock]]
 ==== Wiremock
 
 Add the following dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-oidc-server</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-oidc-server")
 ----
 
 Prepare the REST test endpoints, set `application.properties`, for example:
@@ -1125,14 +1213,14 @@ But if you already have all the required `quarkus-oidc` properties configured th
 
 [source,properties]
 ----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 ----
 
 If a custom realm file has to be imported into Keycloak before running the tests then you can configure `Dev Services for Keycloak` as follows:
 
 [source,properties]
 ----
-%prod.quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
@@ -1154,7 +1242,8 @@ Use `KeycloakTestResourceLifecycleManager` for your tests only if there is a goo
 
 Start with adding the following dependency:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -1163,9 +1252,15 @@ Start with adding the following dependency:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-keycloak-server")
+----
+
 which provides `io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager` - an implementation of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which starts a Keycloak container.
 
-And configure `maven.surefire.plugin` as follows:
+And configure the Maven Surefire plugin as follows:
 
 [source,xml]
 ----
@@ -1184,7 +1279,7 @@ And configure `maven.surefire.plugin` as follows:
 </plugin>
 ----
 
-(and similarly `maven.failsafe.plugin` when testing in native image).
+(and similarly the Maven Failsafe plugin when testing in native image).
 
 And now set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section above.
 The only difference is the name of `QuarkusTestResource`:
@@ -1265,6 +1360,21 @@ You can add more properties to it with `quarkus.oidc.authentication.extra-params
 ----
 quarkus.oidc.authentication.extra-params.response_mode=query
 ----
+
+=== Customize authentication error response
+
+If the user authentication has failed at the OpenId Connect Authorization endpoint, for example, due to an invalid scope or other invalid parameters included in the redirect to the provider, then the provider will redirect the user back to Quarkus not with the `code` but `error` and `error_description` parameters.
+
+In such cases HTTP `401` will be returned by default. However, you can instead request that a custom public error endpoint is called in order to return a user friendly HTML error page. Use `quarkus.oidc.authentication.error-path`, for example:
+
+[source,properties]
+----
+quarkus.oidc.authentication.error-path=/error
+----
+
+It has to start fron a forward slash and be relative to the current endpoint's base URI. For example, if it is set as '/error' and the current request URI is `https://localhost:8080/callback?error=invalid_scope` then a final redirect will be made to `https://localhost:8080/error?error=invalid_scope`.
+
+It is important that this error endpoint is a public resource to avoid the user redirected to this page be authenticated again.
 
 == Configuration Reference
 

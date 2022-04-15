@@ -8,6 +8,7 @@ import org.infinispan.commons.test.TestResourceTracker;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.EmbeddedCacheManager;
+import org.infinispan.server.core.admin.embeddedserver.EmbeddedServerAdminOperationHandler;
 import org.infinispan.server.hotrod.HotRodServer;
 import org.infinispan.server.hotrod.configuration.HotRodServerConfigurationBuilder;
 import org.infinispan.server.hotrod.test.HotRodTestingUtil;
@@ -34,6 +35,7 @@ public class InfinispanServerTestResource implements QuarkusTestResourceLifecycl
 
         // Client connects to a non default port
         final HotRodServerConfigurationBuilder hotRodServerConfigurationBuilder = new HotRodServerConfigurationBuilder();
+        hotRodServerConfigurationBuilder.adminOperationsHandler(new EmbeddedServerAdminOperationHandler());
         hotRodServerConfigurationBuilder
                 .ssl()
                 .enabled(true)

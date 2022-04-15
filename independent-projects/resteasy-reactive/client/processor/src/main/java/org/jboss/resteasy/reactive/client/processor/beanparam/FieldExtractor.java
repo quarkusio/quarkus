@@ -21,7 +21,7 @@ public class FieldExtractor extends ValueExtractor {
     ResultHandle extract(BytecodeCreator bytecodeCreator, ResultHandle containingObject) {
         MethodDescriptor readField = MethodDescriptor.ofMethod(ReflectionUtil.class, "readField", Object.class, Object.class,
                 Class.class, String.class);
-        return bytecodeCreator.invokeStaticMethod(readField, containingObject, bytecodeCreator.loadClass(className),
+        return bytecodeCreator.invokeStaticMethod(readField, containingObject, bytecodeCreator.loadClassFromTCCL(className),
                 bytecodeCreator.load(fieldName));
     }
 }

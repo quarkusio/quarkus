@@ -13,7 +13,7 @@ import io.vertx.core.http.HttpServerRequest;
  * <p>
  * The parameter type must be {@link String}, {@code java.util.Optional<String>} or {@code java.util.List<String>}, otherwise
  * the build fails.
- * 
+ *
  * @see HttpServerRequest#getParam(String)
  */
 @Retention(RetentionPolicy.RUNTIME)

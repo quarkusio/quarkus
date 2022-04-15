@@ -70,8 +70,8 @@
             <artifactId>smallrye-fault-tolerance-context-propagation</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-converter-mutiny</artifactId>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-fault-tolerance-mutiny</artifactId>
         </dependency>
 
     </dependencies>

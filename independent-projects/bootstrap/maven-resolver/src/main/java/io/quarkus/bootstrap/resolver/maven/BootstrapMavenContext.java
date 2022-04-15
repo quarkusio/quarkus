@@ -1,11 +1,12 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +29,7 @@ import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.path.DefaultPathTranslator;
+import org.apache.maven.model.path.PathTranslator;
 import org.apache.maven.model.profile.DefaultProfileActivationContext;
 import org.apache.maven.model.profile.DefaultProfileSelector;
 import org.apache.maven.model.profile.activation.FileProfileActivator;
@@ -92,9 +94,6 @@ public class BootstrapMavenContext {
     private static final String MAVEN_SETTINGS = "maven.settings";
     private static final String MAVEN_TOP_LEVEL_PROJECT_BASEDIR = "maven.top-level-basedir";
     private static final String SETTINGS_XML = "settings.xml";
-
-    private static final String userHome = PropertyUtils.getUserHome();
-    private static final File userMavenConfigurationHome = new File(userHome, ".m2");
 
     private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
 
@@ -180,7 +179,7 @@ public class BootstrapMavenContext {
         }
     }
 
-    public AppArtifact getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
+    public ArtifactCoords getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
         if (currentProject != null) {
             return currentProject.getAppArtifact(extension);
         }
@@ -188,7 +187,7 @@ public class BootstrapMavenContext {
         if (model == null) {
             return null;
         }
-        return new AppArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", extension,
+        return new GACTV(ModelUtils.getGroupId(model), model.getArtifactId(), "", extension,
                 ModelUtils.getVersion(model));
     }
 
@@ -210,10 +209,14 @@ public class BootstrapMavenContext {
                         getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
                         () -> {
                             final String quarkusMavenSettings = getProperty(MAVEN_SETTINGS);
-                            return quarkusMavenSettings == null ? new File(userMavenConfigurationHome, SETTINGS_XML)
+                            return quarkusMavenSettings == null ? new File(getUserMavenConfigurationHome(), SETTINGS_XML)
                                     : new File(quarkusMavenSettings);
                         })
                 : userSettings;
+    }
+
+    private static File getUserMavenConfigurationHome() {
+        return new File(PropertyUtils.getUserHome(), ".m2");
     }
 
     private String getProperty(String name) {
@@ -325,7 +328,7 @@ public class BootstrapMavenContext {
             return localRepo;
         }
         localRepo = settings.getLocalRepository();
-        return localRepo == null ? new File(userMavenConfigurationHome, "repository").getAbsolutePath() : localRepo;
+        return localRepo == null ? new File(getUserMavenConfigurationHome(), "repository").getAbsolutePath() : localRepo;
     }
 
     private File resolveSettingsFile(String settingsArg, Supplier<File> supplier) {
@@ -396,12 +399,17 @@ public class BootstrapMavenContext {
     private DefaultRepositorySystemSession newRepositorySystemSession() throws BootstrapMavenException {
         final DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         final Settings settings = getEffectiveSettings();
-
         final List<Mirror> mirrors = settings.getMirrors();
         if (mirrors != null && !mirrors.isEmpty()) {
+            final boolean isBlockedMethodAvailable = mirrorIsBlockedMethodAvailable();
             final DefaultMirrorSelector ms = new DefaultMirrorSelector();
             for (Mirror m : mirrors) {
-                ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.isBlocked(), m.getMirrorOf(), m.getMirrorOfLayouts());
+                if (isBlockedMethodAvailable) {
+                    ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.isBlocked(), m.getMirrorOf(), m.getMirrorOfLayouts());
+                } else {
+                    // Maven pre-3.8.x
+                    ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.getMirrorOf(), m.getMirrorOfLayouts());
+                }
             }
             session.setMirrorSelector(ms);
         }
@@ -609,7 +617,7 @@ public class BootstrapMavenContext {
                 .addProfileActivator(new PropertyProfileActivator())
                 .addProfileActivator(new JdkVersionProfileActivator())
                 .addProfileActivator(new OperatingSystemProfileActivator())
-                .addProfileActivator(new FileProfileActivator().setPathTranslator(new DefaultPathTranslator()));
+                .addProfileActivator(createFileProfileActivator());
         modelProfiles = profileSelector.getActiveProfiles(modelProfiles, context, new ModelProblemCollector() {
             public void add(ModelProblemCollectorRequest req) {
                 log.error("Failed to activate a Maven profile: " + req.getMessage());
@@ -944,5 +952,37 @@ public class BootstrapMavenContext {
     private static boolean isMavenRepoEnvVarOption(String varName, String repoId, String option) {
         return varName.length() == BOOTSTRAP_MAVEN_REPO_PREFIX.length() + repoId.length() + option.length()
                 && varName.endsWith(option);
+    }
+
+    private static boolean mirrorIsBlockedMethodAvailable() {
+        try {
+            Mirror.class.getMethod("isBlocked");
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static FileProfileActivator createFileProfileActivator() throws BootstrapMavenException {
+        var activator = new FileProfileActivator();
+        var translator = new DefaultPathTranslator();
+        try {
+            activator.setPathTranslator(translator);
+        } catch (LinkageError e) {
+            // setPathTranslator() not found; Maven >= 3.8.5 (https://github.com/apache/maven/pull/649)
+            try {
+                var interpolatorClass = Thread.currentThread().getContextClassLoader()
+                        .loadClass("org.apache.maven.model.path.ProfileActivationFilePathInterpolator");
+                var interpolator = interpolatorClass.getDeclaredConstructor().newInstance();
+                interpolatorClass.getMethod("setPathTranslator", PathTranslator.class)
+                        .invoke(interpolator, translator);
+                activator.getClass().getMethod("setProfileActivationFilePathInterpolator", interpolatorClass)
+                        .invoke(activator, interpolator);
+            } catch (ReflectiveOperationException reflectionExc) {
+                throw new BootstrapMavenException("Failed to set up Maven 3.8.5+ ProfileActivationFilePathInterpolator",
+                        reflectionExc);
+            }
+        }
+        return activator;
     }
 }

@@ -35,17 +35,17 @@ class JaxRsResourceImplementor {
 
     private final List<MethodImplementor> methodImplementors;
 
-    JaxRsResourceImplementor(boolean withValidation, boolean isResteasyClassic) {
+    JaxRsResourceImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
         this.methodImplementors = Arrays.asList(
-                new GetMethodImplementor(isResteasyClassic),
-                new GetHalMethodImplementor(isResteasyClassic),
-                new ListMethodImplementor(isResteasyClassic),
-                new ListHalMethodImplementor(isResteasyClassic),
-                new AddMethodImplementor(withValidation, isResteasyClassic),
-                new AddHalMethodImplementor(withValidation, isResteasyClassic),
-                new UpdateMethodImplementor(withValidation, isResteasyClassic),
-                new UpdateHalMethodImplementor(withValidation, isResteasyClassic),
-                new DeleteMethodImplementor(isResteasyClassic));
+                new GetMethodImplementor(isResteasyClassic, isReactivePanache),
+                new GetHalMethodImplementor(isResteasyClassic, isReactivePanache),
+                new ListMethodImplementor(isResteasyClassic, isReactivePanache),
+                new ListHalMethodImplementor(isResteasyClassic, isReactivePanache),
+                new AddMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
+                new AddHalMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
+                new UpdateMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
+                new UpdateHalMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
+                new DeleteMethodImplementor(isResteasyClassic, isReactivePanache));
     }
 
     /**

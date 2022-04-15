@@ -9,7 +9,6 @@ import java.util.OptionalInt;
 
 import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
 import org.hibernate.search.engine.cfg.spi.ParseUtils;
-import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategyNames;
 import org.hibernate.search.mapper.orm.schema.management.SchemaManagementStrategyName;
 import org.hibernate.search.mapper.orm.search.loading.EntityLoadingCacheLookupStrategy;
 import org.hibernate.search.util.common.SearchException;
@@ -26,7 +25,7 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      * Whether Hibernate Search is enabled.
      */
     @ConfigItem(defaultValue = "true")
-    boolean enabled;
+    public boolean enabled;
 
     /**
      * Default backend
@@ -60,6 +59,12 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      */
     @ConfigItem
     AutomaticIndexingConfig automaticIndexing;
+
+    /**
+     * Configuration for multi-tenancy.
+     */
+    @ConfigItem
+    MultiTenancyConfig multiTenancy;
 
     @ConfigGroup
     public static class ElasticsearchNamedBackendsRuntimeConfig {
@@ -261,6 +266,15 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * Defines how complete indexing should be before resuming the application thread
          * after a database transaction is committed.
          *
+         * [WARNING]
+         * ====
+         * Indexing synchronization is only relevant when coordination is disabled (which is the default).
+         *
+         * With the <<coordination,`outbox-polling` coordination strategy>>,
+         * indexing happens in background threads and is always asynchronous;
+         * the behavior is equivalent to the `write-sync` synchronization strategy.
+         * ====
+         *
          * Available values:
          *
          * [cols=5]
@@ -308,8 +322,8 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigItem(defaultValue = AutomaticIndexingSynchronizationStrategyNames.WRITE_SYNC)
-        String strategy;
+        @ConfigItem(defaultValueDocumentation = "write-sync")
+        Optional<String> strategy;
     }
 
     @ConfigGroup
@@ -495,5 +509,19 @@ public class HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "100")
         OptionalInt maxBulkSize;
+    }
+
+    @ConfigGroup
+    public static class MultiTenancyConfig {
+
+        /**
+         * An exhaustive list of all tenant identifiers that may be used by the application when multi-tenancy is enabled.
+         * <p>
+         * Mainly useful when using the {@code outbox-polling} coordination strategy,
+         * since it involves setting up one background processor per tenant.
+         */
+        @ConfigItem
+        Optional<List<String>> tenantIds;
+
     }
 }

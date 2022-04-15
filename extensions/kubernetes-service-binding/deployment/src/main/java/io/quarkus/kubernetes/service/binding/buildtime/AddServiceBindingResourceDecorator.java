@@ -1,13 +1,13 @@
 
 package io.quarkus.kubernetes.service.binding.buildtime;
 
-import java.util.List;
 import java.util.Optional;
 
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.dekorate.servicebinding.model.ServiceBindingBuilder;
 import io.dekorate.servicebinding.model.ServiceBindingSpecBuilder;
 import io.fabric8.kubernetes.api.model.KubernetesListFluent;
+import io.quarkus.kubernetes.service.binding.spi.ServiceBindingRequirementBuildItem;
 
 public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorator<KubernetesListFluent<?>> {
 
@@ -16,22 +16,21 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
     private final String kind;
     private final String name;
     private final KubernetesServiceBindingConfig config;
-    private final List<KubernetesServiceBindingBuildItem> services;
+    private final ServiceBindingRequirementBuildItem service;
 
     public AddServiceBindingResourceDecorator(String group, String version, String kind, String name,
-            KubernetesServiceBindingConfig config,
-            List<KubernetesServiceBindingBuildItem> services) {
+            KubernetesServiceBindingConfig config, ServiceBindingRequirementBuildItem service) {
         this.group = group;
         this.version = version;
         this.kind = kind;
         this.name = name;
         this.config = config;
-        this.services = services;
+        this.service = service;
     }
 
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        if (services.isEmpty()) {
+        if (service == null) {
             return;
         }
 
@@ -45,25 +44,23 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
                 .withBindAsFiles(config.bindAsFiles)
                 .withMountPath(config.mountPath.orElse(null));
 
-        for (KubernetesServiceBindingBuildItem service : services) {
-            String group = service.getApiVersion().contains("/")
-                    ? Optional.ofNullable(service.getApiVersion()).map(a -> a.split("/")[0]).orElse(null)
-                    : "";
-            String version = service.getApiVersion().contains("/")
-                    ? Optional.ofNullable(service.getApiVersion()).map(a -> a.split("/")[1]).orElse(null)
-                    : service.getApiVersion();
+        String group = service.getApiVersion().contains("/")
+                ? Optional.ofNullable(service.getApiVersion()).map(a -> a.split("/")[0]).orElse(null)
+                : "";
+        String version = service.getApiVersion().contains("/")
+                ? Optional.ofNullable(service.getApiVersion()).map(a -> a.split("/")[1]).orElse(null)
+                : service.getApiVersion();
 
-            spec = spec.addNewService()
-                    .withGroup(group)
-                    .withVersion(version)
-                    .withKind(service.getKind())
-                    .withName(service.getName())
-                    .endService();
-        }
+        spec = spec.addNewService()
+                .withGroup(group)
+                .withVersion(version)
+                .withKind(service.getKind())
+                .withName(service.getName())
+                .endService();
 
         ServiceBindingBuilder binding = new ServiceBindingBuilder()
                 .withNewMetadata()
-                .withName(name)
+                .withName(service.getBinding())
                 .endMetadata()
                 .withSpec(spec.build());
 

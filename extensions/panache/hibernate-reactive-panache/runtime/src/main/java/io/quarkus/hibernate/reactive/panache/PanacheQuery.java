@@ -44,7 +44,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Sets the current page.
-     * 
+     *
      * @param page the new page
      * @return this query, modified
      * @see #page(int, int)
@@ -54,7 +54,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Sets the current page.
-     * 
+     *
      * @param pageIndex the page index
      * @param pageSize the page size
      * @return this query, modified
@@ -65,7 +65,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Sets the current page to the next page
-     * 
+     *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #previousPage()
@@ -74,7 +74,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Sets the current page to the previous page (or the first page if there is no previous page)
-     * 
+     *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #nextPage()
@@ -83,7 +83,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Sets the current page to the first page
-     * 
+     *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #lastPage()
@@ -92,7 +92,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Sets the current page to the last page. This will cause reading of the entity count.
-     * 
+     *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #firstPage()
@@ -104,7 +104,7 @@ public interface PanacheQuery<Entity> {
     /**
      * Returns true if there is another page to read after the current one.
      * This will cause reading of the entity count.
-     * 
+     *
      * @return true if there is another page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #hasPreviousPage()
@@ -115,7 +115,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Returns true if there is a page to read before the current one.
-     * 
+     *
      * @return true if there is a previous page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #hasNextPage()
@@ -125,7 +125,7 @@ public interface PanacheQuery<Entity> {
     /**
      * Returns the total number of pages to be read using the current page size.
      * This will cause reading of the entity count.
-     * 
+     *
      * @return the total number of pages to be read using the current page size.
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      */
@@ -134,7 +134,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Returns the current page.
-     * 
+     *
      * @return the current page
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
      * @see #page(Page)
@@ -178,7 +178,7 @@ public interface PanacheQuery<Entity> {
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
      * preserve filters enabled on the session outside of this API.
-     * 
+     *
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
      * @return this query, modified
@@ -194,7 +194,7 @@ public interface PanacheQuery<Entity> {
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
      * preserve filters enabled on the session outside of this API.
-     * 
+     *
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
      * @return this query, modified
@@ -210,7 +210,7 @@ public interface PanacheQuery<Entity> {
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
      * preserve filters enabled on the session outside of this API.
-     * 
+     *
      * @param filterName The name of the filter to enable
      * @return this query, modified
      */
@@ -222,7 +222,7 @@ public interface PanacheQuery<Entity> {
      * Reads and caches the total number of entities this query operates on. This causes a database
      * query with <code>SELECT COUNT(*)</code> and a query equivalent to the current query, minus
      * ordering.
-     * 
+     *
      * @return the total number of entities this query operates on, cached.
      */
     @CheckReturnValue
@@ -230,7 +230,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Returns the current page of results as a {@link List}.
-     * 
+     *
      * @return the current page of results as a {@link List}.
      * @see #stream()
      * @see #page(Page)
@@ -241,7 +241,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Returns the current page of results as a {@link Stream}.
-     * 
+     *
      * @return the current page of results as a {@link Stream}.
      * @see #list()
      * @see #page(Page)
@@ -253,7 +253,7 @@ public interface PanacheQuery<Entity> {
     /**
      * Returns the first result of the current page index. This ignores the current page size to fetch
      * a single result.
-     * 
+     *
      * @return the first result of the current page index, or null if there are no results.
      * @see #singleResult()
      */
@@ -262,7 +262,7 @@ public interface PanacheQuery<Entity> {
 
     /**
      * Executes this query for the current page and return a single result.
-     * 
+     *
      * @return the single result (throws if there is not exactly one)
      * @throws NoResultException if there is no result
      * @throws NonUniqueResultException if there are more than one result

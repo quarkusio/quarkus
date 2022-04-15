@@ -30,6 +30,7 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
 /**
@@ -37,6 +38,7 @@ import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
  */
 public class StaticResourcesProcessor {
 
+    @Deprecated
     public static final class StaticResourcesBuildItem extends SimpleBuildItem {
 
         private final Set<Entry> entries;
@@ -95,37 +97,48 @@ public class StaticResourcesProcessor {
     @BuildStep
     void collectStaticResources(Capabilities capabilities, ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<AdditionalStaticResourceBuildItem> additionalStaticResources,
-            BuildProducer<StaticResourcesBuildItem> staticResources) throws Exception {
+            Optional<StaticResourcesBuildItem> deprecatedStaticResources,
+            BuildProducer<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem> staticResources) throws Exception {
         if (capabilities.isPresent(Capability.SERVLET)) {
             // Servlet container handles static resources
             return;
         }
-        Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources(applicationArchivesBuildItem);
+        // Copy deprecated build item
+        Set<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry> paths = getClasspathResources(
+                applicationArchivesBuildItem);
+        if (deprecatedStaticResources.isPresent()) {
+            Set<StaticResourcesBuildItem.Entry> deprecatedEntries = deprecatedStaticResources.get().getEntries();
+            for (StaticResourcesBuildItem.Entry deprecatedEntry : deprecatedEntries) {
+                paths.add(new io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry(deprecatedEntry.getPath(),
+                        deprecatedEntry.isDirectory()));
+            }
+        }
         for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
-            paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
+            paths.add(new io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
         }
         if (!paths.isEmpty()) {
-            staticResources.produce(new StaticResourcesBuildItem(paths));
+            staticResources.produce(new io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem(paths));
         }
     }
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void runtimeInit(Optional<StaticResourcesBuildItem> staticResources, StaticResourcesRecorder recorder,
-            CoreVertxBuildItem vertx, BeanContainerBuildItem beanContainer, BuildProducer<DefaultRouteBuildItem> defaultRoutes)
-            throws Exception {
+    public void runtimeInit(Optional<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem> staticResources,
+            StaticResourcesRecorder recorder, CoreVertxBuildItem vertx, BeanContainerBuildItem beanContainer,
+            BuildProducer<DefaultRouteBuildItem> defaultRoutes, HttpConfiguration config) {
         if (staticResources.isPresent()) {
             defaultRoutes.produce(new DefaultRouteBuildItem(recorder.start(staticResources.get().getPaths())));
         }
     }
 
     @BuildStep(onlyIf = NativeBuild.class)
-    public void nativeImageResource(Optional<StaticResourcesBuildItem> staticResources,
+    public void nativeImageResource(Optional<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem> staticResources,
             BuildProducer<NativeImageResourceBuildItem> producer) {
         if (staticResources.isPresent()) {
-            Set<StaticResourcesBuildItem.Entry> entries = staticResources.get().getEntries();
+            Set<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry> entries = staticResources.get()
+                    .getEntries();
             List<String> metaInfResources = new ArrayList<>(entries.size());
-            for (StaticResourcesBuildItem.Entry entry : entries) {
+            for (io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry entry : entries) {
                 if (entry.isDirectory()) {
                     // TODO: do we perhaps want to register the whole directory?
                     continue;
@@ -144,9 +157,10 @@ public class StaticResourcesProcessor {
      * @return the set of static resources
      * @throws Exception
      */
-    private Set<StaticResourcesBuildItem.Entry> getClasspathResources(ApplicationArchivesBuildItem applicationArchivesBuildItem)
+    private Set<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry> getClasspathResources(
+            ApplicationArchivesBuildItem applicationArchivesBuildItem)
             throws Exception {
-        Set<StaticResourcesBuildItem.Entry> knownPaths = new HashSet<>();
+        Set<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry> knownPaths = new HashSet<>();
 
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
             i.accept(tree -> {
@@ -164,7 +178,8 @@ public class StaticResourcesProcessor {
         return knownPaths;
     }
 
-    private void collectKnownPaths(Path resource, Set<StaticResourcesBuildItem.Entry> knownPaths) {
+    private void collectKnownPaths(Path resource,
+            Set<io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry> knownPaths) {
         try {
             Files.walkFileTree(resource, new SimpleFileVisitor<Path>() {
                 @Override
@@ -175,13 +190,14 @@ public class StaticResourcesProcessor {
                     if (simpleName.equals("index.html") || simpleName.equals("index.htm")) {
                         Path parent = resource.relativize(p).getParent();
                         if (parent == null) {
-                            knownPaths.add(new StaticResourcesBuildItem.Entry("/", true));
+                            knownPaths.add(new io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry("/", true));
                         } else {
                             String parentString = parent.toString();
                             if (!parentString.startsWith("/")) {
                                 parentString = "/" + parentString;
                             }
-                            knownPaths.add(new StaticResourcesBuildItem.Entry(parentString + "/", true));
+                            knownPaths.add(new io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry(
+                                    parentString + "/", true));
                         }
                     }
                     if (!file.startsWith("/")) {
@@ -189,7 +205,7 @@ public class StaticResourcesProcessor {
                     }
                     // Windows has a backslash
                     file = file.replace('\\', '/');
-                    knownPaths.add(new StaticResourcesBuildItem.Entry(file, false));
+                    knownPaths.add(new io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem.Entry(file, false));
                     return FileVisitResult.CONTINUE;
                 }
             });

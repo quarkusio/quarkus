@@ -3,15 +3,19 @@ package io.quarkus.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.function.Consumer;
@@ -39,6 +44,9 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestInstantiationException;
@@ -74,7 +82,7 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
  */
 public class QuarkusUnitTest
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback,
-        InvocationInterceptor {
+        InvocationInterceptor, ParameterResolver {
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
     private static final String APP_ROOT = "app-root";
@@ -120,6 +128,8 @@ public class QuarkusUnitTest
     private boolean allowTestClassOutsideDeployment;
     private boolean flatClassPath;
     private List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
+
+    private List<Object> testMethodInvokers;
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return setExpectedException(expectedException, false);
@@ -169,7 +179,7 @@ public class QuarkusUnitTest
     }
 
     /**
-     * 
+     *
      * @param archiveProducer
      * @return self
      * @see #withApplicationRoot(Consumer)
@@ -181,7 +191,7 @@ public class QuarkusUnitTest
 
     /**
      * Customize the application root.
-     * 
+     *
      * @param applicationRootConsumer
      * @return self
      */
@@ -211,7 +221,7 @@ public class QuarkusUnitTest
     /**
      * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
      * would not otherwise be one.
-     * 
+     *
      * @param archive
      * @return self
      */
@@ -223,7 +233,7 @@ public class QuarkusUnitTest
     /**
      * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
      * would not otherwise be one.
-     * 
+     *
      * @param dependencyConsumer
      * @return self
      */
@@ -350,14 +360,14 @@ public class QuarkusUnitTest
     @Override
     public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        runExtensionMethod(invocationContext);
+        runExtensionMethod(invocationContext, extensionContext, false);
         invocation.skip();
     }
 
     @Override
     public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        runExtensionMethod(invocationContext);
+        runExtensionMethod(invocationContext, extensionContext, true);
         invocation.skip();
     }
 
@@ -365,7 +375,7 @@ public class QuarkusUnitTest
     public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
-            runExtensionMethod(invocationContext);
+            runExtensionMethod(invocationContext, extensionContext, true);
             invocation.skip();
         } else {
             invocation.proceed();
@@ -376,7 +386,7 @@ public class QuarkusUnitTest
     public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
-            runExtensionMethod(invocationContext);
+            runExtensionMethod(invocationContext, extensionContext, false);
         }
         invocation.skip();
     }
@@ -385,7 +395,7 @@ public class QuarkusUnitTest
     public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
-            runExtensionMethod(invocationContext);
+            runExtensionMethod(invocationContext, extensionContext, true);
         }
         invocation.skip();
     }
@@ -394,30 +404,85 @@ public class QuarkusUnitTest
     public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
-            runExtensionMethod(invocationContext);
+            runExtensionMethod(invocationContext, extensionContext, false);
         }
         invocation.skip();
     }
 
-    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext) throws Throwable {
+    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
+            boolean testMethodInvokersAllowed) throws Throwable {
         Method newMethod = null;
         Class<?> c = actualTestClass;
-        while (c != Object.class) {
-            try {
-                newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
-                        invocationContext.getExecutable().getParameterTypes());
-                break;
-            } catch (NoSuchMethodException e) {
-                //ignore
+        while ((c != Object.class) && newMethod == null) {
+            Method[] declaredMethods = c.getDeclaredMethods();
+            for (Method declaredMethod : declaredMethods) {
+                if (!declaredMethod.getName().equals(invocationContext.getExecutable().getName())) {
+                    continue;
+                }
+                boolean parametersMatch = true;
+                for (Class<?> declaredMethodParameterType : declaredMethod.getParameterTypes()) {
+                    boolean parameterTypeFound = false;
+                    for (Class<?> executionContextParameterType : invocationContext.getExecutable().getParameterTypes()) {
+                        if (declaredMethodParameterType.getName().equals(executionContextParameterType.getName())) {
+                            parameterTypeFound = true;
+                            break;
+                        }
+                    }
+                    if (!parameterTypeFound) {
+                        parametersMatch = false;
+                        break;
+                    }
+                }
+                if (parametersMatch) {
+                    newMethod = declaredMethod;
+                    break;
+                }
             }
             c = c.getSuperclass();
         }
         if (newMethod == null) {
             throw new RuntimeException("Could not find method " + invocationContext.getExecutable() + " on test class");
         }
+
+        Object testMethodInvokerToUse = null;
+        if (testMethodInvokersAllowed) {
+            for (Object testMethodInvoker : testMethodInvokers) {
+                boolean supportsMethod = (boolean) testMethodInvoker.getClass()
+                        .getMethod("supportsMethod", Class.class, Method.class).invoke(testMethodInvoker,
+                                extensionContext.getRequiredTestClass(), invocationContext.getExecutable());
+                if (supportsMethod) {
+                    testMethodInvokerToUse = testMethodInvoker;
+                    break;
+                }
+            }
+        }
+
         try {
             newMethod.setAccessible(true);
-            newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+            if (testMethodInvokerToUse != null) {
+                List<Object> effectiveArguments = new ArrayList<>(invocationContext.getArguments().size());
+                Class<?>[] parameterTypes = newMethod.getParameterTypes();
+                if (parameterTypes.length != invocationContext.getArguments().size()) {
+                    throw new IllegalStateException(
+                            "Improper integration of '" + testMethodInvokerToUse.getClass() + "' detected");
+                }
+                for (int i = 0; i < invocationContext.getArguments().size(); i++) {
+                    Object originalValue = invocationContext.getArguments().get(i);
+                    if ((originalValue == null)
+                            && (testMethodInvokerHandlesParamType(testMethodInvokerToUse, parameterTypes[i].getName()))) {
+                        effectiveArguments
+                                .add(testMethodInvokerParamInstance(testMethodInvokerToUse, parameterTypes[i].getName()));
+                    } else {
+                        effectiveArguments.add(originalValue);
+                    }
+                }
+                testMethodInvokerToUse.getClass()
+                        .getMethod("invoke", Object.class, Method.class, List.class, String.class)
+                        .invoke(testMethodInvokerToUse, actualTestInstance, newMethod, effectiveArguments,
+                                extensionContext.getRequiredTestClass().getName());
+            } else {
+                newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+            }
         } catch (InvocationTargetException e) {
             throw e.getCause();
         } catch (IllegalAccessException e) {
@@ -540,6 +605,8 @@ public class QuarkusUnitTest
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
                         .setProjectRoot(testLocation)
+                        .setTargetDirectory(
+                                PathTestHelper.getProjectBuildDir(Paths.get("").normalize().toAbsolutePath(), testLocation))
                         .setFlatClassPath(flatClassPath)
                         .setForcedDependencies(forcedDependencies);
                 for (JavaArchive dependency : additionalDependencies) {
@@ -581,6 +648,9 @@ public class QuarkusUnitTest
                     Class<?> resM = runningQuarkusApplication.getClassLoader()
                             .loadClass(TestHTTPResourceManager.class.getName());
                     resM.getDeclaredMethod("inject", Object.class).invoke(null, actualTestInstance);
+
+                    populateTestMethodInvokers(startupAction.getClassLoader());
+
                 } catch (Exception e) {
                     throw new TestInstantiationException("Failed to create test instance", e);
                 }
@@ -724,12 +794,16 @@ public class QuarkusUnitTest
             customApplicationProperties = new Properties();
         }
         try {
-            try (InputStream in = ClassLoader.getSystemResourceAsStream(resourceName)) {
+            URL systemResource = ClassLoader.getSystemResource(resourceName);
+            if (systemResource == null) {
+                throw new FileNotFoundException("Resource '" + resourceName + "' not found");
+            }
+            try (InputStream in = systemResource.openStream()) {
                 customApplicationProperties.load(in);
             }
             return this;
         } catch (IOException e) {
-            throw new RuntimeException("Could not load resource: '" + resourceName + "'");
+            throw new UncheckedIOException("Could not load resource: '" + resourceName + "'", e);
         }
     }
 
@@ -739,5 +813,99 @@ public class QuarkusUnitTest
         }
         customApplicationProperties.put(propertyKey, propertyValue);
         return this;
+    }
+
+    @Override
+    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        boolean isConstructor = parameterContext.getDeclaringExecutable() instanceof Constructor;
+        if (isConstructor) {
+            return true;
+        }
+        if (!(parameterContext.getDeclaringExecutable() instanceof Method)) {
+            return false;
+        }
+        if (testMethodInvokers == null) {
+            return false;
+        }
+        for (Object testMethodInvoker : testMethodInvokers) {
+            boolean handlesMethodParamType = testMethodInvokerHandlesParamType(testMethodInvoker,
+                    parameterContext.getParameter().getType().getName());
+            if (handlesMethodParamType) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * We don't actually have to resolve the parameter (thus the default values in the implementation)
+     * since the class instance that is passed to JUnit isn't really used.
+     * The actual test instance that is used is the one that is pulled from Arc, which of course will already have its
+     * constructor parameters properly resolved
+     */
+    @Override
+    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        if ((parameterContext.getDeclaringExecutable() instanceof Method) && (testMethodInvokers != null)) {
+            for (Object testMethodInvoker : testMethodInvokers) {
+                if (testMethodInvokerHandlesParamType(testMethodInvoker,
+                        parameterContext.getParameter().getType().getName())) {
+                    return null; // don't return the actual value since it leads to class loading issues
+                }
+            }
+        }
+        String className = parameterContext.getParameter().getType().getName();
+        switch (className) {
+            case "boolean":
+                return false;
+            case "byte":
+            case "short":
+            case "int":
+                return 0;
+            case "long":
+                return 0L;
+            case "float":
+                return 0.0f;
+            case "double":
+                return 0.0d;
+            case "char":
+                return '\u0000';
+            default:
+                return null;
+        }
+    }
+
+    // we need to use reflection because the instances of TestMethodInvoker are loaded from the QuarkusClassLoader
+    private boolean testMethodInvokerHandlesParamType(Object testMethodInvoker, String parameterTypeName) {
+        try {
+            return (boolean) testMethodInvoker.getClass().getMethod("handlesMethodParamType", String.class)
+                    .invoke(testMethodInvoker, parameterTypeName);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new IllegalStateException("Unable to determine if TestMethodInvoker supports parameter", e);
+        }
+    }
+
+    // we need to use reflection because the instances of TestMethodInvoker are loaded from the QuarkusClassLoader
+    private Object testMethodInvokerParamInstance(Object testMethodInvoker, String parameterTypeName) {
+        try {
+            return testMethodInvoker.getClass().getMethod("methodParamInstance", String.class)
+                    .invoke(testMethodInvoker, parameterTypeName);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new IllegalStateException("Unable to obtain instance of parameter using TestMethodInvoker", e);
+        }
+    }
+
+    private void populateTestMethodInvokers(ClassLoader quarkusClassLoader) {
+        testMethodInvokers = new ArrayList<>();
+        try {
+            ServiceLoader<?> loader = ServiceLoader.load(quarkusClassLoader.loadClass(TestMethodInvoker.class.getName()),
+                    quarkusClassLoader);
+            for (Object testMethodInvoker : loader) {
+                testMethodInvokers.add(testMethodInvoker);
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -42,7 +42,7 @@ public class ValidationSupport {
 
     /**
      * Generates a JSON response following https://opensource.zalando.com/problem/constraint-violation/
-     * 
+     *
      * @param violations the violations
      * @return the json object
      */

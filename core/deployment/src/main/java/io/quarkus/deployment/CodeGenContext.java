@@ -13,14 +13,17 @@ public class CodeGenContext {
     private final Path inputDir;
     private final boolean redirectIO;
     private final Config config;
+    private final boolean test;
 
-    public CodeGenContext(ApplicationModel model, Path outDir, Path workDir, Path inputDir, boolean redirectIO, Config config) {
+    public CodeGenContext(ApplicationModel model, Path outDir, Path workDir, Path inputDir, boolean redirectIO,
+            Config config, boolean test) {
         this.model = model;
         this.outDir = outDir;
         this.workDir = workDir;
         this.inputDir = inputDir;
         this.redirectIO = redirectIO;
         this.config = config;
+        this.test = test;
     }
 
     public ApplicationModel applicationModel() {
@@ -45,5 +48,9 @@ public class CodeGenContext {
 
     public Config config() {
         return config;
+    }
+
+    public boolean test() {
+        return test;
     }
 }

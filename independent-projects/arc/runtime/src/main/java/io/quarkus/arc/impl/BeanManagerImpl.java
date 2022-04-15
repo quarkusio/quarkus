@@ -115,7 +115,8 @@ public class BeanManagerImpl implements BeanManager {
         throw new UnsupportedOperationException();
     }
 
-    @Override
+    // Deprecated method which can be safely removed once we use CDI 4.0+
+    @Deprecated
     public void fireEvent(Object event, Annotation... qualifiers) {
         Set<Annotation> eventQualifiers = new HashSet<>();
         Collections.addAll(eventQualifiers, qualifiers);
@@ -149,7 +150,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public boolean isNormalScope(Class<? extends Annotation> annotationType) {
-        // Note that it's possible to register a custom context with a scope annotation that is not annotated with @Scope or @NormalScope 
+        // Note that it's possible to register a custom context with a scope annotation that is not annotated with @Scope or @NormalScope
         return ArcContainerImpl.instance().isNormalScope(annotationType);
     }
 
@@ -235,7 +236,8 @@ public class BeanManagerImpl implements BeanManager {
         throw new UnsupportedOperationException();
     }
 
-    @Override
+    // Deprecated method which can be safely removed once we use CDI 4.0+
+    @Deprecated
     public <T> InjectionTarget<T> createInjectionTarget(AnnotatedType<T> type) {
         throw new UnsupportedOperationException();
     }

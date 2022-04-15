@@ -77,7 +77,7 @@ public final class ContextConfigurator {
      * <p>
      * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
      * implementation of {@link InjectableContext#isNormal()}.
-     * 
+     *
      * @return self
      */
     public ContextConfigurator normal() {
@@ -89,7 +89,7 @@ public final class ContextConfigurator {
      * <p>
      * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
      * implementation of {@link InjectableContext#isNormal()}.
-     * 
+     *
      * @return self
      */
     public ContextConfigurator normal(boolean value) {

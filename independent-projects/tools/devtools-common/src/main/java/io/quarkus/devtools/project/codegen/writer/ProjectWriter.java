@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package io.quarkus.devtools.project.codegen.writer;
 

@@ -3,17 +3,20 @@ package io.quarkus.kafka.client.runtime.graal;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 import javax.security.auth.AuthPermission;
 import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
+
+import org.graalvm.home.Version;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "javax.security.auth.Subject")
+@TargetClass(className = "javax.security.auth.Subject", onlyWith = Target_javax_security_auth_Subject.Graal22_0OrEarlier.class)
 final class Target_javax_security_auth_Subject {
 
     @Substitute
@@ -95,5 +98,17 @@ final class Target_javax_security_auth_Subject {
                 .expireAfterWrite(1, TimeUnit.MINUTES)
                 .expireAfterAccess(1, TimeUnit.SECONDS)
                 .build();
+    }
+
+    /**
+     * 22.1.0 => false
+     * 22.0.0.2 => true
+     * 21.3.0 => true
+     */
+    public static final class Graal22_0OrEarlier implements BooleanSupplier {
+        @Override
+        public boolean getAsBoolean() {
+            return Version.getCurrent().compareTo(22, 1) < 0;
+        }
     }
 }

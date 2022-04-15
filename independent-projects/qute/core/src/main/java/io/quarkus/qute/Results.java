@@ -21,7 +21,7 @@ public final class Results {
     }
 
     /**
-     * 
+     *
      * @param result
      * @return {@code true} if the value represents a "not found" result
      */
@@ -42,7 +42,7 @@ public final class Results {
     }
 
     static CompletionStage<ResultNode> process(List<CompletionStage<ResultNode>> results) {
-        // Collect async results first 
+        // Collect async results first
         @SuppressWarnings("unchecked")
         Supplier<ResultNode>[] allResults = new Supplier[results.size()];
         List<CompletableFuture<ResultNode>> asyncResults = null;
@@ -108,7 +108,7 @@ public final class Results {
         }
 
         /**
-         * 
+         *
          * @return the base object or empty
          */
         public Optional<Object> getBase() {
@@ -116,7 +116,7 @@ public final class Results {
         }
 
         /**
-         * 
+         *
          * @return the name of the virtual property/function
          */
         public Optional<String> getName() {
@@ -150,7 +150,7 @@ public final class Results {
                 builder.append("\"").append(name);
                 if (!params.isEmpty()) {
                     builder.append("(");
-                    builder.append(getParams().stream().map(Expression::toOriginalString).collect(Collectors.joining(",")));
+                    builder.append(params.stream().map(Expression::toOriginalString).collect(Collectors.joining(",")));
                     builder.append(")");
                 }
                 builder.append("\" not found");

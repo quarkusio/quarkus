@@ -37,7 +37,7 @@ public class ListInjectionTest {
 
     @Test
     public void testInjection() {
-        // The list is prefetched eagerly, the container attempts to resolve ambiguities 
+        // The list is prefetched eagerly, the container attempts to resolve ambiguities
         assertEquals(2, foo.services.size());
         // The list is immutable
         assertThatExceptionOfType(UnsupportedOperationException.class)

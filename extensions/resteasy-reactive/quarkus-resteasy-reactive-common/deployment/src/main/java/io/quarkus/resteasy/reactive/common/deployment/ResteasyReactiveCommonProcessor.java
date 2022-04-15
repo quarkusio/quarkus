@@ -79,7 +79,7 @@ public class ResteasyReactiveCommonProcessor {
         Optional<List<String>> defaultRolesAllowedConfig = config
                 .getOptionalValues("quarkus.security.jaxrs.default-roles-allowed", String.class);
 
-        if (rrConfig.denyJaxRs.orElse(denyUnannotatedEndpointsConfig.orElse(false)) && resteasyDeployment.isPresent()) {
+        if (denyUnannotatedEndpointsConfig.orElse(false) && resteasyDeployment.isPresent()) {
             final List<ClassInfo> classes = new ArrayList<>();
 
             Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
@@ -327,7 +327,7 @@ public class ResteasyReactiveCommonProcessor {
      * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
      * @return the set of classes that have been annotated with unsuccessful build time conditions.
      */
-    private static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
+    public static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
         return buildTimeConditions.stream()
                 .filter(item -> !item.isEnabled())
                 .map(BuildTimeConditionBuildItem::getTarget)

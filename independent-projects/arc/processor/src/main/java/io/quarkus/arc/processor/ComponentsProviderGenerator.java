@@ -9,12 +9,16 @@ import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,7 +80,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         MethodCreator getComponents = componentsProvider.getMethodCreator("getComponents", Components.class)
                 .setModifiers(ACC_PUBLIC);
 
-        // Maps a bean to all injection points it is resolved to 
+        // Maps a bean to all injection points it is resolved to
         // Bar -> Foo, Baz
         // Foo -> Baz
         // Interceptor -> Baz
@@ -120,8 +124,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         // Break removed beans processing into multiple addRemovedBeans() methods
         ResultHandle removedBeansHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+        ResultHandle typeCacheHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
         if (detectUnusedFalsePositives) {
-            processRemovedBeans(componentsProvider, getComponents, removedBeansHandle, beanDeployment, classOutput);
+            processRemovedBeans(componentsProvider, getComponents, removedBeansHandle, typeCacheHandle, beanDeployment,
+                    classOutput);
         }
 
         // Qualifier non-binding members
@@ -232,9 +238,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     }
 
     private void processRemovedBeans(ClassCreator componentsProvider, MethodCreator getComponents,
-            ResultHandle removedBeansHandle, BeanDeployment beanDeployment, ClassOutput classOutput) {
+            ResultHandle removedBeansHandle, ResultHandle typeCacheHandle, BeanDeployment beanDeployment,
+            ClassOutput classOutput) {
         try (RemovedBeanAdder removedBeanAdder = new RemovedBeanAdder(componentsProvider, getComponents, removedBeansHandle,
-                classOutput)) {
+                typeCacheHandle, classOutput)) {
             for (BeanInfo remnovedBean : beanDeployment.getRemovedBeans()) {
                 removedBeanAdder.addComponent(remnovedBean);
             }
@@ -289,7 +296,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 }
             }
         }
-        // Note that we do not have to process observer injection points because observers are always processed after all beans are ready 
+        // Note that we do not have to process observer injection points because observers are always processed after all beans are ready
         return beanToInjections;
     }
 
@@ -385,34 +392,45 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     class RemovedBeanAdder extends ComponentAdder<BeanInfo> {
 
         private final ResultHandle removedBeansHandle;
+        private final ResultHandle typeCacheHandle;
         private final ClassOutput classOutput;
         private ResultHandle tccl;
         // Shared annotation literals for an individual addRemovedBeansX() method
         private final Map<AnnotationInstanceKey, ResultHandle> sharedQualifers;
-        // Shared java.lang.reflect.Type instances for an individual addRemovedBeansX() method
-        private final Map<org.jboss.jandex.Type, ResultHandle> sharedTypes;
+
+        private final MapTypeCache typeCache;
 
         public RemovedBeanAdder(ClassCreator componentsProvider, MethodCreator getComponentsMethod,
-                ResultHandle removedBeansHandle, ClassOutput classOutput) {
+                ResultHandle removedBeansHandle, ResultHandle typeCacheHandle, ClassOutput classOutput) {
             super(getComponentsMethod, componentsProvider);
             this.removedBeansHandle = removedBeansHandle;
+            this.typeCacheHandle = typeCacheHandle;
             this.classOutput = classOutput;
             this.sharedQualifers = new HashMap<>();
-            this.sharedTypes = new HashMap<>();
+            this.typeCache = new MapTypeCache();
+        }
+
+        @Override
+        protected int groupLimit() {
+            return 5;
         }
 
         @Override
         MethodCreator newAddMethod() {
             // Clear the shared maps for each addRemovedBeansX() method
             sharedQualifers.clear();
-            sharedTypes.clear();
 
-            MethodCreator addMethod = componentsProvider.getMethodCreator(ADD_REMOVED_BEANS + group++, void.class, List.class)
+            // private void addRemovedBeans1(List removedBeans, List typeCache)
+            MethodCreator addMethod = componentsProvider
+                    .getMethodCreator(ADD_REMOVED_BEANS + group++, void.class, List.class, Map.class)
                     .setModifiers(ACC_PRIVATE);
             // Get the TCCL - we will use it later
             ResultHandle currentThread = addMethod
                     .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
             tccl = addMethod.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
+
+            typeCache.initialize(addMethod);
+
             return addMethod;
         }
 
@@ -420,8 +438,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         void invokeAddMethod() {
             getComponentsMethod.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(componentsProvider.getClassName(),
-                            addMethod.getMethodDescriptor().getName(), void.class, List.class),
-                    getComponentsMethod.getThis(), removedBeansHandle);
+                            addMethod.getMethodDescriptor().getName(), void.class, List.class, Map.class),
+                    getComponentsMethod.getThis(), removedBeansHandle, typeCacheHandle);
         }
 
         @Override
@@ -436,14 +454,20 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     // Skip java.lang.Object
                     continue;
                 }
-                ResultHandle typeHandle;
+
+                TryBlock tryBlock = addMethod.tryBlock();
+                CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+                catchBlock.invokeStaticInterfaceMethod(
+                        MethodDescriptors.COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE,
+                        catchBlock.load(type.toString()), catchBlock.getCaughtException());
+                AssignableResultHandle typeHandle = tryBlock.createVariable(Object.class);
                 try {
-                    typeHandle = Types.getTypeHandle(addMethod, type, tccl, sharedTypes);
+                    Types.getTypeHandle(typeHandle, tryBlock, type, tccl, typeCache);
                 } catch (IllegalArgumentException e) {
                     throw new IllegalStateException(
                             "Unable to construct the type handle for " + removedBean + ": " + e.getMessage());
                 }
-                addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, typesHandle, typeHandle);
+                tryBlock.invokeInterfaceMethod(MethodDescriptors.SET_ADD, typesHandle, typeHandle);
             }
 
             // Qualifiers
@@ -509,6 +533,27 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     typesHandle,
                     qualifiersHandle);
             addMethod.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, removedBeansHandle, removedBeanHandle);
+        }
+
+    }
+
+    static class MapTypeCache implements Types.TypeCache {
+
+        private ResultHandle mapHandle;
+
+        @Override
+        public void initialize(MethodCreator method) {
+            this.mapHandle = method.getMethodParam(1);
+        }
+
+        @Override
+        public ResultHandle get(org.jboss.jandex.Type type, BytecodeCreator bytecode) {
+            return bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_GET, mapHandle, bytecode.load(type.toString()));
+        }
+
+        @Override
+        public void put(org.jboss.jandex.Type type, ResultHandle value, BytecodeCreator bytecode) {
+            bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, mapHandle, bytecode.load(type.toString()), value);
         }
 
     }
@@ -647,7 +692,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         void addComponent(T component) {
 
-            if (addMethod == null || componentsAdded >= GROUP_LIMIT) {
+            if (addMethod == null || componentsAdded >= groupLimit()) {
                 if (addMethod != null) {
                     addMethod.returnValue(null);
                 }
@@ -668,6 +713,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         abstract void invokeAddMethod();
 
         abstract void addComponentInternal(T component);
+
+        protected int groupLimit() {
+            return GROUP_LIMIT;
+        }
 
     }
 

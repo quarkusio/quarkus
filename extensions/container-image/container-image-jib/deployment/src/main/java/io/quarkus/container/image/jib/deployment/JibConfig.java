@@ -12,12 +12,13 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class JibConfig {
 
+    public static final String DEFAULT_WORKING_DIR = "/home/jboss";
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.10}
+     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.11}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.10} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.11} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;
@@ -32,10 +33,16 @@ public class JibConfig {
     public String baseNativeImage;
 
     /**
-     * Additional JVM arguments to pass to the JVM when starting the application
+     * The JVM arguments to pass to the JVM when starting the application
      */
     @ConfigItem(defaultValue = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
+
+    /**
+     * Additional JVM arguments to pass to the JVM when starting the application
+     */
+    @ConfigItem
+    public Optional<List<String>> jvmAdditionalArguments;
 
     /**
      * Additional arguments to pass when starting the native application
@@ -92,7 +99,7 @@ public class JibConfig {
 
     /**
      * Custom labels to add to the generated image
-     * 
+     *
      * @deprecated Use 'quarkus.container-image.labels' instead
      */
     @ConfigItem
@@ -124,6 +131,13 @@ public class JibConfig {
     public Optional<String> user;
 
     /**
+     * The working directory to use in the generated image.
+     * The default value is chosen to work in accordance with the default base image.
+     */
+    @ConfigItem(defaultValue = DEFAULT_WORKING_DIR)
+    public String workingDirectory;
+
+    /**
      * Controls the optimization which skips downloading base image layers that exist in a target
      * registry. If the user does not set this property, then read as false.
      *
@@ -135,8 +149,19 @@ public class JibConfig {
     public boolean alwaysCacheBaseImage;
 
     /**
-     * List of target platforms. Each platform is defined using the pattern: \<os\>|\<arch\>[/variant]|\<os\>/\<arch\>[/variant]
-     * ex: linux/amd64,linux/arm64/v8. If not specified, OS default is linux and architecture default is amd64
+     * List of target platforms. Each platform is defined using the pattern:
+     *
+     * <pre>
+     *  {@literal <os>|<arch>[/variant]|<os>/<arch>[/variant]}
+     * </pre>
+     *
+     * for example:
+     *
+     * <pre>
+     * {@literal linux/amd64,linux/arm64/v8}
+     * </pre>
+     *
+     * If not specified, OS default is linux and architecture default is amd64
      *
      * If more than one platform is configured, it is important to note that the base image has to be a Docker manifest or an
      * OCI image index containing a version of each chosen platform
@@ -176,4 +201,13 @@ public class JibConfig {
      */
     @ConfigItem
     public Optional<String> dockerExecutableName;
+
+    /**
+     * Whether to set the creation time to the actual build time. Otherwise, the creation time
+     * will be set to the Unix epoch (00:00:00, January 1st, 1970 in UTC). See <a href=
+     * "https://github.com/GoogleContainerTools/jib/blob/master/docs/faq.md#why-is-my-image-created-48-years-ago">Jib
+     * FAQ</a> for more information
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useCurrentTimestamp;
 }

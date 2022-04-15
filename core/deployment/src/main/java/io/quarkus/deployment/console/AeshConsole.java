@@ -70,6 +70,7 @@ public class AeshConsole extends QuarkusConsole {
     private final StatusLine prompt;
 
     private volatile boolean pauseOutput;
+    private volatile boolean firstConsoleRun = true;
     private DelegateConnection delegateConnection;
     private ReadlineConsole aeshConsole;
 
@@ -85,6 +86,7 @@ public class AeshConsole extends QuarkusConsole {
             }
         }, "Console Shutdown Hook"));
         prompt = registerStatusLine(0);
+
     }
 
     private void updatePromptOnChange(StringBuilder buffer, int newLines) {
@@ -221,6 +223,30 @@ public class AeshConsole extends QuarkusConsole {
             });
             // Keyboard handling
             conn.setStdinHandler(keys -> {
+
+                QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
+                // redirectIn might have not been initialized yet
+                if (redirectIn == null) {
+                    return;
+                }
+                //see if the users application wants to read the keystrokes:
+                int pos = 0;
+                while (pos < keys.length) {
+                    if (!redirectIn.acceptInput(keys[pos])) {
+                        break;
+                    }
+                    ++pos;
+                }
+                if (pos > 0) {
+                    if (pos == keys.length) {
+                        return;
+                    }
+                    //the app only consumed some keys
+                    //stick the rest in a new array
+                    int[] newKeys = new int[keys.length - pos];
+                    System.arraycopy(keys, pos, newKeys, 0, newKeys.length);
+                    keys = newKeys;
+                }
                 try {
                     if (delegateConnection != null) {
                         //console mode
@@ -528,8 +554,14 @@ public class AeshConsole extends QuarkusConsole {
             pauseOutput = true;
             delegateConnection = new DelegateConnection(connection);
             connection.write(ALTERNATE_SCREEN_BUFFER);
+            if (firstConsoleRun) {
+                connection.write(
+                        "You are now in Quarkus Terminal. Your app is still running. Use `help` or tab completion to explore, `quit` or `q` to return to your application.\n");
+                firstConsoleRun = false;
+            }
             AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
             ConsoleCliManager.commands.forEach(commandBuilder::command);
+
             CommandRegistry registry = commandBuilder
                     .create();
             Settings settings = SettingsBuilder

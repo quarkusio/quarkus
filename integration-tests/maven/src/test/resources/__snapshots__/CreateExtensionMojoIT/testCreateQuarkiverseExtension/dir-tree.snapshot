@@ -65,8 +65,8 @@ quarkus-my-quarki-ext/integration-tests/src/test/java/io/quarkiverse/my/
 quarkus-my-quarki-ext/integration-tests/src/test/java/io/quarkiverse/my/quarki/
 quarkus-my-quarki-ext/integration-tests/src/test/java/io/quarkiverse/my/quarki/ext/
 quarkus-my-quarki-ext/integration-tests/src/test/java/io/quarkiverse/my/quarki/ext/it/
+quarkus-my-quarki-ext/integration-tests/src/test/java/io/quarkiverse/my/quarki/ext/it/MyQuarkiExtResourceIT.java
 quarkus-my-quarki-ext/integration-tests/src/test/java/io/quarkiverse/my/quarki/ext/it/MyQuarkiExtResourceTest.java
-quarkus-my-quarki-ext/integration-tests/src/test/java/io/quarkiverse/my/quarki/ext/it/NativeMyQuarkiExtResourceIT.java
 quarkus-my-quarki-ext/pom.xml
 quarkus-my-quarki-ext/runtime/
 quarkus-my-quarki-ext/runtime/pom.xml

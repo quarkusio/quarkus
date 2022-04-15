@@ -130,8 +130,8 @@ public class ImageDecodersTest {
     "weird_488-1.tif        █OK", // Affects sun.awt.image.*Raster
     "test_hyperstack.tiff   █OK", // Affects tiff plugin
     "test_lut_3c_fiji.tiff  █OK", // Life sciences imagery, Fiji used to edit colour Lookup Table (LUT)
-    "test_jpeg.tiff         █NOK█.*test_jpeg.tiff.*Unsupported Image Type.*", // JPEG compression TIFF by GIMP*/
-    "weird_230.bmp          █NOK█.*weird_230.bmp.*New BMP version not implemented yet.*" // Currently, fails, no iio-plugin.properties.
+    "test_jpeg.tiff         █NOK█.*test_jpeg.tiff.*Unsupported Image Type.*", // JPEG compression TIFF by GIMP
+    "weird_230.bmp          █NOK█.*weird_230.bmp.*New BMP version not implemented yet.*" // Tested with a custom iio-plugin.properties too
     })
     // @formatter:on
     public void testComplexImages(String testData) throws IOException {

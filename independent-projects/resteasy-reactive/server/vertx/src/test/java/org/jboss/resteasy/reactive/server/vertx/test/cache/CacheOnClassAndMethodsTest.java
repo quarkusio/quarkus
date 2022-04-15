@@ -26,7 +26,7 @@ public class CacheOnClassAndMethodsTest {
                     scanStep.addMethodScanner(new CacheControlScanner());
                 }
             })
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

@@ -1,6 +1,8 @@
 package io.quarkus.oidc.runtime;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -8,11 +10,16 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
+
+import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
+import org.jose4j.jwa.AlgorithmConstraints;
+import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
@@ -25,12 +32,20 @@ import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
+import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -79,6 +94,10 @@ public final class OidcUtils {
         if (tokens.countTokens() != 1) {
             return null;
         }
+        return decodeAsJsonObject(encodedContent);
+    }
+
+    private static JsonObject decodeAsJsonObject(String encodedContent) {
         try {
             return new JsonObject(new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8));
         } catch (IllegalArgumentException ex) {
@@ -86,10 +105,19 @@ public final class OidcUtils {
         }
     }
 
+    public static JsonObject decodeJwtHeaders(String jwt) {
+        StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        return decodeAsJsonObject(tokens.nextToken());
+    }
+
     public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {
-        // If the user configured a specific path - check and enforce a claim at this path exists
+        // If the user configured specific paths - check and enforce the claims at these paths exist
         if (rolesConfig.getRoleClaimPath().isPresent()) {
-            return findClaimWithRoles(rolesConfig, rolesConfig.getRoleClaimPath().get(), json);
+            List<String> roles = new LinkedList<>();
+            for (String roleClaimPath : rolesConfig.getRoleClaimPath().get()) {
+                roles.addAll(findClaimWithRoles(rolesConfig, roleClaimPath, json));
+            }
+            return roles;
         }
 
         // Check 'groups' next
@@ -281,5 +309,154 @@ public final class OidcUtils {
         } else {
             cookie.setPath(auth.getCookiePath());
         }
+    }
+
+    /**
+     * Merge the current tenant and well-known OpenId Connect provider configurations.
+     * Initialized properties take priority over uninitialized properties.
+     *
+     * Initialized properties in the current tenant configuration take priority
+     * over the same initialized properties in the well-known OpenId Connect provider configuration.
+     *
+     * Tenant id property of the current tenant must be set before the merge operation.
+     *
+     * @param tenant current tenant configuration
+     * @param provider well-known OpenId Connect provider configuration
+     * @return merged configuration
+     */
+    static OidcTenantConfig mergeTenantConfig(OidcTenantConfig tenant, OidcTenantConfig provider) {
+        if (tenant.tenantId.isEmpty()) {
+            // OidcRecorder sets it before the merge operation
+            throw new IllegalStateException();
+        }
+        // root properties
+        if (tenant.authServerUrl.isEmpty()) {
+            tenant.authServerUrl = provider.authServerUrl;
+        }
+        if (tenant.applicationType.isEmpty()) {
+            tenant.applicationType = provider.applicationType;
+        }
+        if (tenant.discoveryEnabled.isEmpty()) {
+            tenant.discoveryEnabled = provider.discoveryEnabled;
+        }
+        if (tenant.authorizationPath.isEmpty()) {
+            tenant.authorizationPath = provider.authorizationPath;
+        }
+        if (tenant.jwksPath.isEmpty()) {
+            tenant.jwksPath = provider.jwksPath;
+        }
+        if (tenant.tokenPath.isEmpty()) {
+            tenant.tokenPath = provider.tokenPath;
+        }
+        if (tenant.userInfoPath.isEmpty()) {
+            tenant.userInfoPath = provider.userInfoPath;
+        }
+
+        // authentication
+        if (tenant.authentication.idTokenRequired.isEmpty()) {
+            tenant.authentication.idTokenRequired = provider.authentication.idTokenRequired;
+        }
+        if (tenant.authentication.userInfoRequired.isEmpty()) {
+            tenant.authentication.userInfoRequired = provider.authentication.userInfoRequired;
+        }
+        if (tenant.authentication.pkceRequired.isEmpty()) {
+            tenant.authentication.pkceRequired = provider.authentication.pkceRequired;
+        }
+        if (tenant.authentication.scopes.isEmpty()) {
+            tenant.authentication.scopes = provider.authentication.scopes;
+        }
+        if (tenant.authentication.addOpenidScope.isEmpty()) {
+            tenant.authentication.addOpenidScope = provider.authentication.addOpenidScope;
+        }
+        if (tenant.authentication.forceRedirectHttpsScheme.isEmpty()) {
+            tenant.authentication.forceRedirectHttpsScheme = provider.authentication.forceRedirectHttpsScheme;
+        }
+        if (tenant.authentication.responseMode.isEmpty()) {
+            tenant.authentication.responseMode = provider.authentication.responseMode;
+        }
+
+        // credentials
+        if (tenant.credentials.clientSecret.method.isEmpty()) {
+            tenant.credentials.clientSecret.method = provider.credentials.clientSecret.method;
+        }
+        if (tenant.credentials.jwt.audience.isEmpty()) {
+            tenant.credentials.jwt.audience = provider.credentials.jwt.audience;
+        }
+        if (tenant.credentials.jwt.signatureAlgorithm.isEmpty()) {
+            tenant.credentials.jwt.signatureAlgorithm = provider.credentials.jwt.signatureAlgorithm;
+        }
+
+        // token
+        if (tenant.token.issuer.isEmpty()) {
+            tenant.token.issuer = provider.token.issuer;
+        }
+
+        return tenant;
+    }
+
+    static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {
+        if (oidcTenantConfig != null && oidcTenantConfig.provider.isPresent()) {
+            return OidcUtils.mergeTenantConfig(oidcTenantConfig,
+                    KnownOidcProviders.provider(oidcTenantConfig.provider.get()));
+        } else {
+            return oidcTenantConfig;
+        }
+
+    }
+
+    public static byte[] getSha256Digest(byte[] value) throws NoSuchAlgorithmException {
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        sha256.update(value);
+        return sha256.digest();
+    }
+
+    public static String encryptJson(JsonObject json, SecretKey key) throws Exception {
+        return encryptString(json.encode(), key);
+    }
+
+    public static String encryptString(String jweString, SecretKey key) throws Exception {
+        JsonWebEncryption jwe = new JsonWebEncryption();
+        jwe.setAlgorithmHeaderValue(KeyEncryptionAlgorithm.A256KW.getAlgorithm());
+        jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithm.A256GCM.getAlgorithm());
+        jwe.setKey(key);
+        jwe.setPlaintext(jweString);
+        return jwe.getCompactSerialization();
+    }
+
+    public static JsonObject decryptJson(String jweString, SecretKey key) throws Exception {
+        return new JsonObject(decryptString(jweString, key));
+    }
+
+    public static String decryptString(String jweString, SecretKey key) throws Exception {
+        JsonWebEncryption jwe = new JsonWebEncryption();
+        jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
+                KeyEncryptionAlgorithm.A256KW.getAlgorithm()));
+        jwe.setKey(key);
+        jwe.setCompactSerialization(jweString);
+        return jwe.getPlaintextString();
+    }
+
+    public static boolean isFormUrlEncodedRequest(RoutingContext context) {
+        String contentType = context.request().getHeader("Content-Type");
+        return context.request().method() == HttpMethod.POST
+                && contentType != null
+                && (contentType.equals(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString())
+                        || contentType.startsWith(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString() + ";"));
+    }
+
+    public static Uni<MultiMap> getFormUrlEncodedData(RoutingContext context) {
+        context.request().setExpectMultipart(true);
+        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super MultiMap>>() {
+            @Override
+            public void accept(UniEmitter<? super MultiMap> t) {
+                context.request().endHandler(new Handler<Void>() {
+                    @Override
+                    public void handle(Void event) {
+                        t.complete(context.request().formAttributes());
+                    }
+                });
+                context.request().resume();
+            }
+        });
     }
 }

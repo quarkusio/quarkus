@@ -48,7 +48,6 @@ updates:
       - dependency-name: com.ibm.db2:jcc
       # Kafka
       - dependency-name: org.apache.kafka:*
-      - dependency-name: org.apache.zookeeper:zookeeper
       - dependency-name: io.strimzi:kafka-oauth-client
       - dependency-name: com.nimbusds:nimbus-jose-jwt
       - dependency-name: io.apicurio:*
@@ -95,7 +94,7 @@ updates:
       - dependency-name: org.jboss:jandex
       - dependency-name: org.jboss.jandex:jandex-maven-plugin
       # WireMock
-      - dependency-name: com.github.tomakehurst:wiremock-jre8
+      - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
       # Picocli
       - dependency-name: info.picocli:*
@@ -108,7 +107,6 @@ updates:
       - dependency-name: org.eclipse:yasson
       # AWS
       - dependency-name: com.amazonaws:*
-      - dependency-name: com.amazonaws.serverless:*
       # Azure
       - dependency-name: com.microsoft.azure.functions:*
       # Apache Commons
@@ -157,6 +155,7 @@ updates:
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*
+      - dependency-name: com.google.code.gson:gson
       - dependency-name: com.google.errorprone:*
       - dependency-name: com.google.http-client:*
       - dependency-name: io.dekorate:servicebinding-annotations

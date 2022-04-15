@@ -5,7 +5,9 @@ import static io.quarkus.grpc.runtime.GrpcSslUtils.applySslOptions;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.BindException;
 import java.time.Duration;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +47,7 @@ import io.quarkus.grpc.runtime.reflection.ReflectionService;
 import io.quarkus.grpc.runtime.supports.CompressionInterceptor;
 import io.quarkus.grpc.runtime.supports.blocking.BlockingServerInterceptor;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.QuarkusBindException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -84,8 +87,7 @@ public class GrpcServerRecorder {
         }
         Vertx vertx = vertxSupplier.getValue();
         if (hasNoServices(grpcContainer.getServices()) && LaunchMode.current() != LaunchMode.DEVELOPMENT) {
-            throw new IllegalStateException(
-                    "Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
+            LOGGER.error("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
 
         this.blockingMethodsPerService = blockingMethodsPerServiceImplementationClass;
@@ -164,13 +166,20 @@ public class GrpcServerRecorder {
 
         devModeWrapper = new DevModeWrapper(Thread.currentThread().getContextClassLoader());
 
-        VertxServer vertxServer = buildServer(vertx, configuration, grpcContainer, launchMode)
-                .start(new Handler<AsyncResult<Void>>() { // NOSONAR
+        Map.Entry<Integer, VertxServer> portToServer = buildServer(vertx, configuration, grpcContainer, launchMode);
+
+        VertxServer vertxServer = portToServer.getValue()
+                .start(new Handler<>() { // NOSONAR
                     @Override
                     public void handle(AsyncResult<Void> ar) {
                         if (ar.failed()) {
-                            LOGGER.error("Unable to start the gRPC server", ar.cause());
-                            future.completeExceptionally(ar.cause());
+                            Throwable effectiveCause = getEffectiveThrowable(ar, portToServer);
+                            if (effectiveCause instanceof QuarkusBindException) {
+                                LOGGER.error("Unable to start the gRPC server");
+                            } else {
+                                LOGGER.error("Unable to start the gRPC server", effectiveCause);
+                            }
+                            future.completeExceptionally(effectiveCause);
                         } else {
                             postStartup(configuration, false);
                             future.complete(true);
@@ -250,6 +259,17 @@ public class GrpcServerRecorder {
         return definitions;
     }
 
+    private Throwable getEffectiveThrowable(AsyncResult<Void> ar, Map.Entry<Integer, VertxServer> portToServer) {
+        Throwable effectiveCause = ar.cause();
+        while (effectiveCause.getCause() != null) {
+            effectiveCause = effectiveCause.getCause();
+        }
+        if (effectiveCause instanceof BindException) {
+            effectiveCause = new QuarkusBindException(portToServer.getKey());
+        }
+        return effectiveCause;
+    }
+
     public static final class GrpcServiceDefinition {
 
         public final BindableService service;
@@ -262,7 +282,7 @@ public class GrpcServerRecorder {
 
         public String getImplementationClassName() {
             if (service instanceof Subclass) {
-                // All intercepted services are represented by a generated subclass 
+                // All intercepted services are represented by a generated subclass
                 return service.getClass().getSuperclass().getName();
             }
             return service.getClass().getName();
@@ -320,11 +340,10 @@ public class GrpcServerRecorder {
         return new RuntimeValue<>(new ServerInterceptorStorage(perServiceInterceptors, globalInterceptors));
     }
 
-    private VertxServer buildServer(Vertx vertx, GrpcServerConfiguration configuration,
+    private Map.Entry<Integer, VertxServer> buildServer(Vertx vertx, GrpcServerConfiguration configuration,
             GrpcContainer grpcContainer, LaunchMode launchMode) {
-        VertxServerBuilder builder = VertxServerBuilder
-                .forAddress(vertx, configuration.host,
-                        launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port);
+        int port = launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port;
+        VertxServerBuilder builder = VertxServerBuilder.forAddress(vertx, configuration.host, port);
 
         AtomicBoolean usePlainText = new AtomicBoolean();
         builder.useSsl(new Handler<HttpServerOptions>() { // NOSONAR
@@ -401,15 +420,15 @@ public class GrpcServerRecorder {
         }
 
         LOGGER.debugf("Starting gRPC Server on %s:%d  [SSL enabled: %s]...",
-                configuration.host, launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port,
+                configuration.host, port,
                 !usePlainText.get());
 
-        return builder.build();
+        return new AbstractMap.SimpleEntry<>(port, builder.build());
     }
 
     /**
      * Compression interceptor if needed, null otherwise
-     * 
+     *
      * @param configuration gRPC server configuration
      * @return interceptor or null
      */
@@ -460,13 +479,19 @@ public class GrpcServerRecorder {
                         "Unable to find bean exposing the `BindableService` interface - not starting the gRPC server");
                 return;
             }
-            grpcServer = buildServer(getVertx(), configuration, grpcContainer, launchMode)
-                    .start(new Handler<AsyncResult<Void>>() { // NOSONAR
+            Map.Entry<Integer, VertxServer> portToServer = buildServer(getVertx(), configuration, grpcContainer, launchMode);
+            grpcServer = portToServer.getValue()
+                    .start(new Handler<>() { // NOSONAR
                         @Override
                         public void handle(AsyncResult<Void> ar) {
                             if (ar.failed()) {
-                                LOGGER.error("Unable to start the gRPC server", ar.cause());
-                                startPromise.fail(ar.cause());
+                                Throwable effectiveCause = getEffectiveThrowable(ar, portToServer);
+                                if (effectiveCause instanceof QuarkusBindException) {
+                                    LOGGER.error("Unable to start the gRPC server");
+                                } else {
+                                    LOGGER.error("Unable to start the gRPC server", effectiveCause);
+                                }
+                                startPromise.fail(effectiveCause);
                             } else {
                                 startPromise.complete();
                                 grpcVerticleCount.incrementAndGet();

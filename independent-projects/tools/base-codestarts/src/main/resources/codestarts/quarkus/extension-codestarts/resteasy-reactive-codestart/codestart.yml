@@ -10,9 +10,9 @@ language:
   base:
     data:
       resource:
-        class-name: ReactiveGreetingResource
+        class-name: GreetingResource
         path: "/hello"
-        response: "Hello RESTEasy Reactive"
+        response: "Hello from RESTEasy Reactive"
     dependencies:
       - io.quarkus:quarkus-resteasy-reactive
     test-dependencies:

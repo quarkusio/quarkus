@@ -54,7 +54,7 @@ public class OidcClientFilterDevModeTest {
         test.modifyResourceFile("application.properties", s -> s.replace("#quarkus.oidc-client.auth-server-url",
                 "quarkus.oidc-client.auth-server-url"));
 
-        // token lifespan (3 secs) is less than the auto-refresh interval so the token should be refreshed immediately 
+        // token lifespan (3 secs) is less than the auto-refresh interval so the token should be refreshed immediately
         RestAssured.when().get("/frontend/user-after-registering-provider")
                 .then()
                 .statusCode(200)

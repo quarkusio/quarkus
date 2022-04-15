@@ -58,7 +58,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
 
         // We need to check if the method is annotated with @Blocking.
         // Unfortunately, we can't have the Java method object, we can only have the gRPC full method name.
-        // We extract the method name, and check if the name if is the list.
+        // We extract the method name, and check if the name is in the list.
         // This makes the following assumptions:
         // 1. the code generator does not change the method name (which makes sense)
         // 2. the method name is unique, which is a constraint of gRPC
@@ -121,7 +121,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         /**
          * Must be called from within the event loop context
          * If there are deferred events will start executing them in the shared worker context
-         * 
+         *
          * @param delegate
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {
@@ -145,7 +145,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         /**
          * Will execute the consumer in a worker context
          * Once complete will enqueue the next consumer for execution.
-         * This guarantees ordered execution per request.
+         * This method guarantees ordered execution per request.
          *
          * @param consumer
          */

@@ -11,7 +11,7 @@ public class PolicyMappingConfig {
 
     /**
      * Determines whether the entire permission set is enabled, or not.
-     * 
+     *
      * By default, if the permission set is defined, it is enabled.
      */
     @ConfigItem

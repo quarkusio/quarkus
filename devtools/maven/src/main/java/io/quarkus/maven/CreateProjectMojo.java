@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -50,8 +49,6 @@ import io.quarkus.platform.tools.maven.MojoMessageWriter;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.config.RegistriesConfigLocator;
-import io.quarkus.registry.config.RegistryConfig;
 
 /**
  * This goal helps in setting up Quarkus Maven project with quarkus-maven-plugin, with sensible defaults
@@ -340,14 +337,8 @@ public class CreateProjectMojo extends AbstractMojo {
                                 new ArtifactCoords(getPlatformGroupId(mojo, groupId), getPlatformArtifactId(artifactId), "pom",
                                         getPlatformVersion(mojo, version))));
             } catch (RegistryResolutionException e) {
-                final StringBuilder buf = new StringBuilder();
-                buf.append("Failed to resolve the extension catalog");
-                Throwable cause = e.getCause();
-                while (cause != null) {
-                    buf.append(": ").append(cause.getLocalizedMessage());
-                    cause = cause.getCause();
-                }
-                log.warn(buf.toString());
+                log.warn(e.getLocalizedMessage());
+                mojo.getLog().debug(e);
             }
         }
         return resolveExtensionCatalogDirectly(mojo, groupId, artifactId, version, catalogResolver, artifactResolver, log);
@@ -359,29 +350,18 @@ public class CreateProjectMojo extends AbstractMojo {
         groupId = getPlatformGroupId(mojo, groupId);
         artifactId = getPlatformArtifactId(artifactId);
         version = getPlatformVersion(mojo, version);
+        final ExtensionCatalog catalog = ToolsUtils.resolvePlatformDescriptorDirectly(groupId, artifactId, version,
+                artifactResolver, log);
+
         final StringBuilder buf = new StringBuilder();
         buf.append("The extension catalog will be narrowed to the ").append(groupId).append(":").append(artifactId)
                 .append(":").append(version).append(" platform release.");
-        buf.append(
-                " To enable the complete Quarkiverse extension catalog along with the latest recommended platform releases, please, make sure ");
-        if (QuarkusProjectHelper.isRegistryClientEnabled()) {
-            buf.append("the following registries are accessible from your environment: ");
-            final Iterator<RegistryConfig> iterator = RegistriesConfigLocator.resolveConfig().getRegistries().iterator();
-            int i = 0;
-            while (iterator.hasNext()) {
-                final RegistryConfig r = iterator.next();
-                if (r.isEnabled()) {
-                    if (i++ > 0) {
-                        buf.append(", ");
-                    }
-                    buf.append(r.getId());
-                }
-            }
-        } else {
-            buf.append("the extension registry client is enabled.");
+        if (!QuarkusProjectHelper.isRegistryClientEnabled()) {
+            buf.append(
+                    " To enable the complete Quarkiverse extension catalog along with the latest recommended platform releases, please, make sure the extension registry client is enabled.");
         }
         log.warn(buf.toString());
-        return ToolsUtils.resolvePlatformDescriptorDirectly(groupId, artifactId, version, artifactResolver, log);
+        return catalog;
     }
 
     private void askTheUserForMissingValues() throws MojoExecutionException {

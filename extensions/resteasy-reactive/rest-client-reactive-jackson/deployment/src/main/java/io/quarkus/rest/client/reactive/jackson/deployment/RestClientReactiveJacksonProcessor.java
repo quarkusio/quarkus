@@ -1,6 +1,8 @@
 package io.quarkus.rest.client.reactive.jackson.deployment;
 
 import static io.quarkus.deployment.Feature.REST_CLIENT_REACTIVE_JACKSON;
+import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_NDJSON;
+import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_STREAM_JSON;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +28,10 @@ import io.vertx.core.json.JsonObject;
 
 public class RestClientReactiveJacksonProcessor {
 
+    private static final List<String> HANDLED_WRITE_MEDIA_TYPES = Collections.singletonList(MediaType.APPLICATION_JSON);
+    private static final List<String> HANDLED_READ_MEDIA_TYPES = List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON,
+            APPLICATION_STREAM_JSON);
+
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> features) {
         features.produce(new FeatureBuildItem(REST_CLIENT_REACTIVE_JACKSON));
@@ -47,26 +53,46 @@ public class RestClientReactiveJacksonProcessor {
                 .setUnremovable().build());
 
         additionalReaders
-                .produce(new MessageBodyReaderBuildItem(JacksonBasicMessageBodyReader.class.getName(), Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                .produce(
+                        new MessageBodyReaderBuildItem.Builder(JacksonBasicMessageBodyReader.class.getName(),
+                                Object.class.getName())
+                                        .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
+                                        .setBuiltin(true)
+                                        .build());
         additionalReaders
-                .produce(new MessageBodyReaderBuildItem(VertxJsonArrayBasicMessageBodyReader.class.getName(),
-                        JsonArray.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                .produce(
+                        new MessageBodyReaderBuildItem.Builder(VertxJsonArrayBasicMessageBodyReader.class.getName(),
+                                JsonArray.class.getName())
+                                        .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
+                                        .setBuiltin(true)
+                                        .build());
         additionalReaders
-                .produce(new MessageBodyReaderBuildItem(VertxJsonObjectBasicMessageBodyReader.class.getName(),
-                        JsonObject.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                .produce(
+                        new MessageBodyReaderBuildItem.Builder(VertxJsonObjectBasicMessageBodyReader.class.getName(),
+                                JsonObject.class.getName())
+                                        .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
+                                        .setBuiltin(true)
+                                        .build());
         additionalWriters
-                .produce(new MessageBodyWriterBuildItem(ClientJacksonMessageBodyWriter.class.getName(), Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                .produce(
+                        new MessageBodyWriterBuildItem.Builder(ClientJacksonMessageBodyWriter.class.getName(),
+                                Object.class.getName())
+                                        .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
+                                        .setBuiltin(true)
+                                        .build());
         additionalWriters
-                .produce(new MessageBodyWriterBuildItem(VertxJsonArrayBasicMessageBodyWriter.class.getName(),
-                        JsonArray.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                .produce(
+                        new MessageBodyWriterBuildItem.Builder(VertxJsonArrayBasicMessageBodyWriter.class.getName(),
+                                JsonArray.class.getName())
+                                        .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
+                                        .setBuiltin(true)
+                                        .build());
         additionalWriters
-                .produce(new MessageBodyWriterBuildItem(VertxJsonObjectBasicMessageBodyWriter.class.getName(),
-                        JsonObject.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON)));
+                .produce(
+                        new MessageBodyWriterBuildItem.Builder(VertxJsonObjectBasicMessageBodyWriter.class.getName(),
+                                JsonObject.class.getName())
+                                        .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
+                                        .setBuiltin(true)
+                                        .build());
     }
 }

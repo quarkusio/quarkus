@@ -14,10 +14,12 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Validates a bearer token according to the MP-JWT rules
@@ -49,6 +51,9 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
+        if (!(request.getToken() instanceof JsonWebTokenCredential)) {
+            return Uni.createFrom().nullItem();
+        }
         if (!blockingAuthentication) {
             return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
                 @Override
@@ -69,10 +74,15 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     private SecurityIdentity createSecurityIdentity(TokenAuthenticationRequest request) {
         try {
             JsonWebToken jwtPrincipal = parser.parse(request.getToken().getToken());
-            return QuarkusSecurityIdentity.builder().setPrincipal(jwtPrincipal)
+            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder().setPrincipal(jwtPrincipal)
                     .addCredential(request.getToken())
                     .addRoles(jwtPrincipal.getGroups())
-                    .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwtPrincipal).build();
+                    .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwtPrincipal);
+            RoutingContext routingContext = HttpSecurityUtils.getRoutingContextAttribute(request);
+            if (routingContext != null) {
+                builder.addAttribute(RoutingContext.class.getName(), routingContext);
+            }
+            return builder.build();
         } catch (ParseException e) {
             log.debug("Authentication failed", e);
             throw new AuthenticationFailedException(e);

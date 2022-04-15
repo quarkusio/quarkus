@@ -50,7 +50,7 @@ public class DevConsoleUnaryMethodTest {
             });
 
             await().atMost(5, TimeUnit.SECONDS)
-                    .until(() -> incomingMessages.size() > 0);
+                    .until(() -> incomingMessages.size() > 1);
 
             assertThat(incomingMessages).hasSize(2);
 

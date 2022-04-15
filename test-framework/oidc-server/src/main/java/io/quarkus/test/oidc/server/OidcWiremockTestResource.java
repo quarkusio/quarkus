@@ -17,6 +17,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+
 import org.jboss.logging.Logger;
 import org.jose4j.keys.X509Util;
 
@@ -104,6 +107,21 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "}")));
 
         server.stubFor(
+                get(urlEqualTo("/auth/realms/quarkus/single-key-without-kid-thumbprint"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"keys\" : [\n" +
+                                        "    {\n" +
+                                        "      \"kty\":\"RSA\",\n" +
+                                        "      \"n\":\"iJw33l1eVAsGoRlSyo-FCimeOc-AaZbzQ2iESA3Nkuo3TFb1zIkmt0kzlnWVGt48dkaIl13Vdefh9hqw_r9yNF8xZqX1fp0PnCWc5M_TX_ht5fm9y0TpbiVmsjeRMWZn4jr3DsFouxQ9aBXUJiu26V0vd2vrECeeAreFT4mtoHY13D2WVeJvboc5mEJcp50JNhxRCJ5UkY8jR_wfUk2Tzz4-fAj5xQaBccXnqJMu_1C6MjoCEiB7G1d13bVPReIeAGRKVJIF6ogoCN8JbrOhc_48lT4uyjbgnd24beatuKWodmWYhactFobRGYo5551cgMe8BoxpVQ4to30cGA0qjQ\",\n"
+                                        +
+                                        "      \"e\":\"AQAB\"\n" +
+                                        "    }" +
+                                        "  ]\n" +
+                                        "}")));
+
+        server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/userinfo"))
                         .willReturn(aResponse()
                                 .withHeader("Content-Type", "application/json")
@@ -143,6 +161,26 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "</html> ")
                                 .withTransformers("response-template")));
 
+        // Login Page, form_post response mode
+        server.stubFor(
+                get(urlPathMatching("/auth/realms/quarkus-form-post[/]?"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "text/html")
+                                .withBody("<html>\n" +
+                                        "<body>\n" +
+                                        " <form action=\"/login-form-post\" name=\"form\">\n" +
+                                        "  <input type=\"text\" id=\"username\" name=\"username\"/>\n" +
+                                        "  <input type=\"password\" id=\"password\" name=\"password\"/>\n" +
+                                        "  <input type=\"hidden\" id=\"state\" name=\"state\" value=\"{{request.query.state}}\"/>\n"
+                                        +
+                                        "  <input type=\"hidden\" id=\"redirect_uri\" name=\"redirect_uri\" value=\"{{request.query.redirect_uri}}\"/>\n"
+                                        +
+                                        "  <input type=\"submit\" id=\"login\" value=\"login\"/>\n" +
+                                        "</form>\n" +
+                                        "</body>\n" +
+                                        "</html> ")
+                                .withTransformers("response-template")));
+
         // Login Request
         server.stubFor(
                 get(urlPathMatching("/login"))
@@ -150,6 +188,25 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                 .withHeader("Location",
                                         "{{request.query.redirect_uri}}?state={{request.query.state}}&code=58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc")
                                 .withStatus(302)
+                                .withTransformers("response-template")));
+
+        // Login Request, form_post response mode
+        server.stubFor(
+                get(urlPathMatching("/login-form-post"))
+                        .willReturn(aResponse()
+                                .withBody("<html>\n" +
+                                        "   <head><title>Submit This Form</title></head>\n" +
+                                        "   <body onload=\"javascript:document.forms[0].submit()\">\n" +
+                                        "    <form method=\"post\" action=\"{{request.query.redirect_uri}}\">\n" +
+                                        "      <input type=\"hidden\" name=\"state\"\n" +
+                                        "       value=\"{{request.query.state}}\"/>\n" +
+                                        "      <input type=\"hidden\" name=\"code\"\n" +
+                                        "       value=\"58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc\"/>\n"
+                                        +
+                                        "    </form>\n" +
+                                        "   </body>\n" +
+                                        "  </html>\n" +
+                                        "")
                                 .withTransformers("response-template")));
 
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
@@ -227,9 +284,25 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
                 .audience(TOKEN_AUDIENCE)
+                .subject("123456")
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");
+    }
+
+    public static String getLogoutToken() {
+        return Jwt.issuer(TOKEN_ISSUER)
+                .audience(TOKEN_AUDIENCE)
+                .subject("123456")
+                .claim("events", createEventsClaim())
+                .jws()
+                .keyId("1")
+                .sign("privateKey.jwk");
+    }
+
+    private static JsonObject createEventsClaim() {
+        return Json.createObjectBuilder().add("http://schemas.openid.net/event/backchannel-logout",
+                Json.createObjectBuilder().build()).build();
     }
 
     @Override

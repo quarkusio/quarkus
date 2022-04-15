@@ -10,14 +10,16 @@ import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 class AddRoleResourceDecorator extends ResourceProvidingDecorator<KubernetesListBuilder> {
+    private final String deploymentName;
     private final KubernetesRoleBuildItem spec;
 
-    public AddRoleResourceDecorator(KubernetesRoleBuildItem buildItem) {
+    public AddRoleResourceDecorator(String deploymentName, KubernetesRoleBuildItem buildItem) {
+        this.deploymentName = deploymentName;
         this.spec = buildItem;
     }
 
     public void visit(KubernetesListBuilder list) {
-        ObjectMeta meta = getMandatoryDeploymentMetadata(list);
+        ObjectMeta meta = getMandatoryDeploymentMetadata(list, deploymentName);
 
         if (contains(list, "rbac.authorization.k8s.io/v1", "Role", spec.getName())) {
             return;

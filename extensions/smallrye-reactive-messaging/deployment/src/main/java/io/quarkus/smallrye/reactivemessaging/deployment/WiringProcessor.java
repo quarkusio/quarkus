@@ -201,7 +201,7 @@ public class WiringProcessor {
         }
         if (outgoing != null) {
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                    "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", String.class, null,
+                    "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", null,
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));
 
             produceOutgoingChannel(appChannels, outgoing.value().asString());
@@ -219,7 +219,7 @@ public class WiringProcessor {
                             new DeploymentException("Empty @Incoming annotation on method " + method)));
                 }
                 configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                        "mp.messaging.incoming." + instance.value().asString() + ".connector", String.class, null,
+                        "mp.messaging.incoming." + instance.value().asString() + ".connector", null,
                         "The connector to use", null, null, ConfigPhase.BUILD_TIME));
                 produceIncomingChannel(appChannels, instance.value().asString());
             }
@@ -236,7 +236,7 @@ public class WiringProcessor {
         }
         if (incoming != null) {
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                    "mp.messaging.incoming." + incoming.value().asString() + ".connector", String.class, null,
+                    "mp.messaging.incoming." + incoming.value().asString() + ".connector", null,
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));
             produceIncomingChannel(appChannels, incoming.value().asString());
         }
@@ -278,8 +278,7 @@ public class WiringProcessor {
 
     @BuildStep
     void generateDocumentationItem(BuildProducer<ConfigDescriptionBuildItem> config,
-            List<ConnectorManagedChannelBuildItem> channels, List<ConnectorBuildItem> connectors)
-            throws ClassNotFoundException {
+            List<ConnectorManagedChannelBuildItem> channels, List<ConnectorBuildItem> connectors) {
         Parser markdownParser = Parser.builder().build();
         HtmlRenderer renderer = HtmlRenderer.builder().build();
         for (ConnectorManagedChannelBuildItem channel : channels) {
@@ -289,8 +288,8 @@ public class WiringProcessor {
                     + channel.getName() + ".";
             if (connector != null) {
                 for (ConnectorAttribute attribute : connector.getAttributes()) {
-                    ConfigDescriptionBuildItem cfg = new ConfigDescriptionBuildItem(prefix + attribute.name(),
-                            WiringHelper.toType(attribute.type()),
+                    ConfigDescriptionBuildItem cfg = new ConfigDescriptionBuildItem(
+                            prefix + attribute.name(),
                             attribute.defaultValue().equalsIgnoreCase(ConnectorAttribute.NO_VALUE) ? null
                                     : attribute.defaultValue(),
                             renderer.render(markdownParser.parse(attribute.description())),

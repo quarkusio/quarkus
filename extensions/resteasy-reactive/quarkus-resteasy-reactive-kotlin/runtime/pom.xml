@@ -46,6 +46,10 @@
                     <dependencyCondition>
                         <artifact>io.quarkus:quarkus-kotlin</artifact>
                     </dependencyCondition>
+                    <capabilities>
+                        <provides>io.quarkus.rest.kotlinx-serialization</provides>
+                        <provides>io.quarkus.resteasy.reactive.json.kotlinx-serialization</provides>
+                    </capabilities>
                 </configuration>
             </plugin>
             <plugin>

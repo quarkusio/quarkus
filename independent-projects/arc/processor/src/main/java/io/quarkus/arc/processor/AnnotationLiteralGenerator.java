@@ -71,7 +71,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
     void createSharedAnnotationLiteral(ClassOutput classOutput, Key key, Literal literal, Set<String> existingClasses) {
         // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyQualifier;>;Lcom/foo/MyQualifier;
-        String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
+        String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
+                AnnotationLiteral.class.getName().replace('.', '/'),
                 key.annotationName.toString().replace('.', '/'));
         String generatedName = literal.className.replace('.', '/');
         if (existingClasses.contains(generatedName)) {
@@ -122,7 +123,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                 .collect(Collectors.toMap(AnnotationValue::name, Function.identity()));
 
         // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyQualifier;>;Lcom/foo/MyQualifier;
-        String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
+        String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
+                AnnotationLiteral.class.getName().replace('.', '/'),
                 annotationClass.name().toString().replace('.', '/'));
         String generatedName = literalName.replace('.', '/');
 

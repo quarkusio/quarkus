@@ -41,7 +41,7 @@ class TestEndpointRunner {
         }
         con.close()
 
-        Assertions.assertEquals("VARCHAR", schema["PERSON2"]?.get("STATUS"), schema.toString())
+        Assertions.assertEquals("CHARACTER VARYING", schema["PERSON2"]?.get("STATUS"), schema.toString())
 
         endpoint.testModelDao()
         endpoint.testModel()

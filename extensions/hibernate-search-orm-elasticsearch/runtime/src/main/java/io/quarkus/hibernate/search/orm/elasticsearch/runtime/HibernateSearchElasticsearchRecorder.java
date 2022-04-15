@@ -44,8 +44,9 @@ import io.quarkus.runtime.annotations.Recorder;
 public class HibernateSearchElasticsearchRecorder {
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
-            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig) {
-        return new HibernateSearchIntegrationStaticInitListener(buildTimeConfig);
+            HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
+            List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
+        return new HibernateSearchIntegrationStaticInitListener(buildTimeConfig, integrationStaticInitListeners);
     }
 
     public HibernateOrmIntegrationStaticInitListener createDisabledStaticInitListener() {
@@ -55,10 +56,7 @@ public class HibernateSearchElasticsearchRecorder {
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName,
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
-        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
-                .isDefaultPersistenceUnit(persistenceUnitName)
-                        ? runtimeConfig.defaultPersistenceUnit
-                        : runtimeConfig.persistenceUnits.get(persistenceUnitName);
+        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimePuConfig(runtimeConfig, persistenceUnitName);
         return new HibernateSearchIntegrationRuntimeInitListener(puConfig, integrationRuntimeInitListeners);
     }
 
@@ -66,10 +64,17 @@ public class HibernateSearchElasticsearchRecorder {
         return new HibernateSearchIntegrationRuntimeInitListener(null, Collections.emptyList());
     }
 
-    public Supplier<SearchMapping> searchMappingSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+    public Supplier<SearchMapping> searchMappingSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
+            String persistenceUnitName, boolean isDefaultPersistenceUnit) {
         return new Supplier<SearchMapping>() {
             @Override
             public SearchMapping get() {
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimePuConfig(runtimeConfig,
+                        persistenceUnitName);
+                if (config != null && !config.enabled) {
+                    throw new IllegalStateException(
+                            "Cannot retrieve the SearchMapping: Hibernate Search was disabled through configuration properties");
+                }
                 SessionFactory sessionFactory;
                 if (isDefaultPersistenceUnit) {
                     sessionFactory = Arc.container().instance(SessionFactory.class).get();
@@ -82,10 +87,17 @@ public class HibernateSearchElasticsearchRecorder {
         };
     }
 
-    public Supplier<SearchSession> searchSessionSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+    public Supplier<SearchSession> searchSessionSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
+            String persistenceUnitName, boolean isDefaultPersistenceUnit) {
         return new Supplier<SearchSession>() {
             @Override
             public SearchSession get() {
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit config = runtimePuConfig(runtimeConfig,
+                        persistenceUnitName);
+                if (config != null && !config.enabled) {
+                    throw new IllegalStateException(
+                            "Cannot retrieve the SearchSession: Hibernate Search was disabled through configuration properties");
+                }
                 Session session;
                 if (isDefaultPersistenceUnit) {
                     session = Arc.container().instance(Session.class).get();
@@ -96,6 +108,13 @@ public class HibernateSearchElasticsearchRecorder {
                 return Search.session(session);
             }
         };
+    }
+
+    private HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimePuConfig(
+            HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName) {
+        return PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)
+                ? runtimeConfig.defaultPersistenceUnit
+                : runtimeConfig.persistenceUnits.get(persistenceUnitName);
     }
 
     private static final class HibernateSearchIntegrationDisabledListener
@@ -118,10 +137,13 @@ public class HibernateSearchElasticsearchRecorder {
             implements HibernateOrmIntegrationStaticInitListener {
 
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
+        private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
 
         private HibernateSearchIntegrationStaticInitListener(
-                HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig) {
+                HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
+                List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
             this.buildTimeConfig = buildTimeConfig;
+            this.integrationStaticInitListeners = integrationStaticInitListeners;
         }
 
         @Override
@@ -130,11 +152,19 @@ public class HibernateSearchElasticsearchRecorder {
                     EngineSettings.BACKGROUND_FAILURE_HANDLER,
                     buildTimeConfig.backgroundFailureHandler);
 
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.COORDINATION_STRATEGY,
+                    buildTimeConfig.coordination.strategy);
+
             contributeBackendBuildTimeProperties(propertyCollector, null, buildTimeConfig.defaultBackend);
 
             for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.namedBackends.backends
                     .entrySet()) {
                 contributeBackendBuildTimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
+            }
+
+            for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
+                listener.contributeBootProperties(propertyCollector);
             }
         }
 
@@ -146,6 +176,10 @@ public class HibernateSearchElasticsearchRecorder {
                     .valueReadHandleFactory(ValueReadHandleFactory.usingJavaLangReflect())
                     .build();
             booter.preBoot(propertyCollector);
+
+            for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
+                listener.onMetadataInitialized(metadata, bootstrapContext, propertyCollector);
+            }
         }
 
         private void contributeBackendBuildTimeProperties(BiConsumer<String, Object> propertyCollector, String backendName,
@@ -173,6 +207,12 @@ public class HibernateSearchElasticsearchRecorder {
 
         private void contributeBackendIndexBuildTimeProperties(BiConsumer<String, Object> propertyCollector,
                 String backendName, String indexName, ElasticsearchIndexBuildTimeConfig indexConfig) {
+            addBackendIndexConfig(propertyCollector, backendName, indexName,
+                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_SETTINGS_FILE,
+                    indexConfig.schemaManagement.settingsFile);
+            addBackendIndexConfig(propertyCollector, backendName, indexName,
+                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MAPPING_FILE,
+                    indexConfig.schemaManagement.mappingFile);
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.ANALYSIS_CONFIGURER,
                     indexConfig.analysis.configurer);
@@ -218,6 +258,9 @@ public class HibernateSearchElasticsearchRecorder {
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.QUERY_LOADING_FETCH_SIZE,
                     runtimeConfig.queryLoading.fetchSize);
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.MULTI_TENANCY_TENANT_IDS,
+                    runtimeConfig.multiTenancy.tenantIds);
 
             contributeBackendRuntimeProperties(propertyCollector, null,
                     runtimeConfig.defaultBackend);

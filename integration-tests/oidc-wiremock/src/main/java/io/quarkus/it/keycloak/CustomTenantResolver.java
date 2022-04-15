@@ -17,14 +17,26 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.endsWith("code-flow") || path.endsWith("code-flow/logout")) {
             return "code-flow";
         }
-        if (path.endsWith("code-flow-user-info")) {
+        if (path.endsWith("code-flow-form-post")) {
+            return "code-flow-form-post";
+        }
+        if (path.endsWith("code-flow-user-info-only")) {
             return "code-flow-user-info-only";
+        }
+        if (path.endsWith("code-flow-user-info-github")) {
+            return "code-flow-user-info-github";
+        }
+        if (path.endsWith("code-flow-user-info-github-cached-in-idtoken")) {
+            return "code-flow-user-info-github-cached-in-idtoken";
         }
         if (path.endsWith("bearer")) {
             return "bearer";
         }
         if (path.endsWith("bearer-no-introspection")) {
             return "bearer-no-introspection";
+        }
+        if (path.endsWith("bearer-key-without-kid-thumbprint")) {
+            return "bearer-key-without-kid-thumbprint";
         }
         if (path.endsWith("bearer-wrong-role-path")) {
             return "bearer-wrong-role-path";

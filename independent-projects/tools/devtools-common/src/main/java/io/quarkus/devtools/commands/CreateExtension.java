@@ -17,10 +17,11 @@ import io.quarkus.maven.utilities.MojoUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Stack;
 import java.util.stream.Collectors;
 import javax.lang.model.SourceVersion;
 import org.apache.commons.lang3.StringUtils;
@@ -377,7 +378,7 @@ public class CreateExtension {
     }
 
     static String resolveExtensionPackage(String groupId, String artifactId) {
-        final Stack<String> segments = new Stack<>();
+        final Deque<String> segments = new ArrayDeque<>();
         for (String segment : groupId.split("[.\\-]+")) {
             if (segments.isEmpty() || !segments.peek().equals(segment)) {
                 segments.add(segment);

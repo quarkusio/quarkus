@@ -1,5 +1,9 @@
 package io.quarkus.deployment;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.eclipse.microprofile.config.Config;
 import org.wildfly.common.annotation.NotNull;
 
 import io.quarkus.bootstrap.prebuild.CodeGenException;
@@ -34,10 +38,13 @@ public interface CodeGenProvider {
 
     /**
      * Trigger code generation
-     * 
+     *
      * @param context code generation context
      * @return true if files were generated/modified
      */
     boolean trigger(CodeGenContext context) throws CodeGenException;
 
+    default boolean shouldRun(Path sourceDir, Config config) {
+        return Files.isDirectory(sourceDir);
+    }
 }

@@ -879,12 +879,32 @@ public class UriBuilderImpl extends UriBuilder {
             throw new IllegalArgumentException("Name parameter is null");
         if (values == null)
             throw new IllegalArgumentException("Values parameter is null");
+
+        if (queryParamMode == MultiQueryParamMode.COMMA_SEPARATED) {
+            sb.append(Encode.encodeQueryParamAsIs(name)).append("=");
+        }
         for (Object value : values) {
             if (value == null)
                 throw new IllegalArgumentException("Value is null");
+
             sb.append(prefix);
-            prefix = "&";
-            sb.append(Encode.encodeQueryParamAsIs(name)).append("=").append(Encode.encodeQueryParamAsIs(value.toString()));
+            switch (queryParamMode) {
+                case MULTI_PAIRS:
+                    prefix = "&";
+                    sb.append(Encode.encodeQueryParamAsIs(name)).append("=")
+                            .append(Encode.encodeQueryParamAsIs(value.toString()));
+                    break;
+                case COMMA_SEPARATED:
+                    prefix = ",";
+                    sb.append(Encode.encodeQueryParamAsIs(value.toString()));
+                    break;
+                case ARRAY_PAIRS:
+                    prefix = "&";
+                    String queryParamConnector = arrayPairsConnector(values);
+                    sb.append(Encode.encodeQueryParamAsIs(name)).append(queryParamConnector)
+                            .append(Encode.encodeQueryParamAsIs(value.toString()));
+                    break;
+            }
         }
 
         query = sb.toString();
@@ -924,13 +944,19 @@ public class UriBuilderImpl extends UriBuilder {
                     break;
                 case ARRAY_PAIRS:
                     prefix = "&";
-                    sb.append(Encode.encodeQueryParam(name)).append("[]=").append(Encode.encodeQueryParam(value.toString()));
+                    String queryParamConnector = arrayPairsConnector(values);
+                    sb.append(Encode.encodeQueryParam(name)).append(queryParamConnector)
+                            .append(Encode.encodeQueryParam(value.toString()));
                     break;
             }
         }
 
         query = sb.toString();
         return this;
+    }
+
+    private String arrayPairsConnector(Object[] values) {
+        return values.length == 1 ? "=" : "[]=";
     }
 
     public UriBuilder replaceQueryParam(String name, Object... values) throws IllegalArgumentException {

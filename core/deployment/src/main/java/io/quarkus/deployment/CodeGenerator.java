@@ -27,11 +27,11 @@ public class CodeGenerator {
     public static void initAndRun(ClassLoader classLoader,
             PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
-            String launchMode) throws CodeGenException {
+            String launchMode, boolean test) throws CodeGenException {
         List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir, sourceRegistrar);
         for (CodeGenData generator : generators) {
             generator.setRedirectIO(true);
-            trigger(classLoader, generator, appModel, properties, LaunchMode.valueOf(launchMode));
+            trigger(classLoader, generator, appModel, properties, LaunchMode.valueOf(launchMode), test);
         }
     }
 
@@ -80,6 +80,7 @@ public class CodeGenerator {
      * @param data code gen
      * @param appModel app model
      * @param properties custom code generation properties
+     * @param test whether the sources are generated for production code or tests
      * @return true if sources have been created
      * @throws CodeGenException on failure
      */
@@ -87,20 +88,26 @@ public class CodeGenerator {
             CodeGenData data,
             ApplicationModel appModel,
             Properties properties,
-            LaunchMode launchMode) throws CodeGenException {
+            LaunchMode launchMode,
+            boolean test) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
 
             final PropertiesConfigSource pcs = new PropertiesConfigSource(properties, "Build system");
 
+            // Discovered Config classes may cause issues here, because this goal runs before compile
             final SmallRyeConfig config = ConfigUtils.configBuilder(false, false, launchMode)
+                    .setAddDiscoveredSources(false)
+                    .setAddDiscoveredInterceptors(false)
+                    .setAddDiscoveredConverters(false)
                     .withProfile(launchMode.getDefaultProfile())
                     .withSources(pcs)
                     .build();
 
             CodeGenProvider provider = data.provider;
-            return Files.isDirectory(data.sourceDir)
+            return provider.shouldRun(data.sourceDir, config)
                     && provider.trigger(
-                            new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO, config));
+                            new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO, config,
+                                    test));
         });
     }
 

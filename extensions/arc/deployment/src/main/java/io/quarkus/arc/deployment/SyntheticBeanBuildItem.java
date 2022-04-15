@@ -17,14 +17,14 @@ import io.quarkus.runtime.RuntimeValue;
  * <p>
  * Bean instances can be easily produced through a recorder and set via {@link ExtendedBeanConfigurator#supplier(Supplier)} and
  * {@link ExtendedBeanConfigurator#runtimeValue(RuntimeValue)}.
- * 
+ *
  * @see ExtendedBeanConfigurator
  * @see BeanRegistrar
  */
 public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
     /**
-     * 
+     *
      * @param implClazz
      * @return a new configurator instance
      * @see ExtendedBeanConfigurator#done()
@@ -34,7 +34,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @param implClazz
      * @return a new configurator instance
      * @see ExtendedBeanConfigurator#done()
@@ -77,7 +77,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
         /**
          * Finish the configurator.
-         * 
+         *
          * @return a new build item
          */
         public SyntheticBeanBuildItem done() {
@@ -112,7 +112,7 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
          * <p>
          * {@link ExecutionTime#RUNTIME_INIT} build steps that access a runtime-init synthetic bean should consume the
          * {@link SyntheticBeansRuntimeInitBuildItem}.
-         * 
+         *
          * @return self
          * @see SyntheticBeansRuntimeInitBuildItem
          */

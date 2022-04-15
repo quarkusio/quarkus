@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.devmode;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,8 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class ArcDevRecorder {
 
-    public Handler<RoutingContext> createSummaryHandler(Map<String, String> configProperties) {
+    public Handler<RoutingContext> createSummaryHandler(Map<String, String> configProperties, String rootPath,
+            int removedInterceptorsDecorators) {
         return new Handler<RoutingContext>() {
 
             @Override
@@ -37,7 +39,7 @@ public class ArcDevRecorder {
                 ArcContainerImpl container = ArcContainerImpl.instance();
                 JsonObjectBuilder summary = Json.object();
                 summary.put("beans", container.getBeans().size());
-                summary.put("removedBeans", container.getRemovedBeans().size());
+                summary.put("removedBeans", container.getRemovedBeans().size() + removedInterceptorsDecorators);
                 summary.put("observers", container.getObservers().size());
                 summary.put("interceptors", container.getInterceptors().size());
                 JsonArrayBuilder scopes = Json.array();
@@ -53,9 +55,9 @@ public class ArcDevRecorder {
                 }
                 summary.put("config", config);
                 JsonObjectBuilder links = Json.object();
-                links.put("beans", "/quarkus/arc/beans");
-                links.put("observers", "/quarkus/arc/observers");
-                links.put("removed-beans", "/quarkus/arc/removed-beans");
+                links.put("beans", rootPath + "arc/beans");
+                links.put("observers", rootPath + "arc/observers");
+                links.put("removed-beans", rootPath + "arc/removed-beans");
                 summary.put("links", links);
                 ctx.response().end(summary.build());
             }
@@ -70,8 +72,10 @@ public class ArcDevRecorder {
                 ctx.response().putHeader("Content-Type", "application/json");
 
                 ArcContainerImpl container = ArcContainerImpl.instance();
-                List<InjectableBean<?>> beans = container.getBeans();
+                List<InjectableBean<?>> beans = new ArrayList<>();
+                beans.addAll(container.getBeans());
                 beans.addAll(container.getInterceptors());
+                beans.addAll(container.getDecorators());
 
                 String kindParam = ctx.request().getParam("kind");
                 InjectableBean.Kind kind = kindParam != null ? InjectableBean.Kind.from(kindParam.toUpperCase()) : null;
@@ -170,7 +174,7 @@ public class ArcDevRecorder {
         };
     }
 
-    public Handler<RoutingContext> createRemovedBeansHandler() {
+    public Handler<RoutingContext> createRemovedBeansHandler(List<String[]> removedInterceptorsDecorators) {
         return new Handler<RoutingContext>() {
 
             @Override
@@ -198,6 +202,12 @@ public class ArcDevRecorder {
                         }
                     }
                     bean.put("qualifiers", qualifiers);
+                    removed.add(bean);
+                }
+                for (String[] interceptorDecorator : removedInterceptorsDecorators) {
+                    JsonObjectBuilder bean = Json.object();
+                    bean.put("kind", interceptorDecorator[0]);
+                    bean.put("description", interceptorDecorator[1]);
                     removed.add(bean);
                 }
                 ctx.response().end(removed.build());

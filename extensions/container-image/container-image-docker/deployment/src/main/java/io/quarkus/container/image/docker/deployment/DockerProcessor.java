@@ -1,6 +1,8 @@
 
 package io.quarkus.container.image.docker.deployment;
 
+import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
+import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 
 import java.io.BufferedReader;
@@ -25,6 +27,7 @@ import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.IsDockerWorking;
@@ -34,6 +37,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -63,20 +67,19 @@ public class DockerProcessor {
             ContainerImageConfig containerImageConfig,
             OutputTargetBuildItem out,
             ContainerImageInfoBuildItem containerImageInfo,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             @SuppressWarnings("unused") Optional<AppCDSResultBuildItem> appCDSResult, // ensure docker build will be performed after AppCDS creation
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
             @SuppressWarnings("unused") // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled()) {
-            return;
-        }
-
-        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
-                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        boolean buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
+        boolean pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -84,17 +87,31 @@ public class DockerProcessor {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 
-        log.info("Building docker image for jar.");
+        var dockerfilePaths = getDockerfilePaths(dockerConfig, false, packageConfig, out);
+        var dockerFileBaseInformationProvider = DockerFileBaseInformationProvider.impl();
+        var dockerFileBaseInformation = dockerFileBaseInformationProvider.determine(dockerfilePaths.getDockerfilePath());
+
+        if ((compiledJavaVersion.getJavaVersion().isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE)
+                && dockerFileBaseInformation.isPresent() && (dockerFileBaseInformation.get().getJavaVersion() < 17)) {
+            throw new IllegalStateException(
+                    String.format(
+                            "The project is built with Java 17 or higher, but the selected Dockerfile (%s) is using a lower Java version in the base image (%s). Please ensure you are using the proper base image in the Dockerfile.",
+                            dockerfilePaths.getDockerfilePath().toAbsolutePath(),
+                            dockerFileBaseInformation.get().getBaseImage()));
+        }
+
+        log.info("Starting (local) container image build for jar using docker.");
 
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out, reader,
                 false,
-                pushRequest.isPresent(), packageConfig);
+                pushContainerImage, packageConfig);
 
         // a pull is not required when using this image locally because the docker strategy always builds the container image
         // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
                 Map.of("container-image", builtContainerImage, "pull-required", "false")));
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(DOCKER));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
@@ -106,16 +123,14 @@ public class DockerProcessor {
             OutputTargetBuildItem out,
             Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
 
-        if (containerImageConfig.isBuildExplicitlyDisabled()) {
-            return;
-        }
-
-        if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()
-                && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        boolean buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
+        boolean pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
+        if (!buildContainerImage && !pushContainerImage) {
             return;
         }
 
@@ -128,16 +143,18 @@ public class DockerProcessor {
                     "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
         }
 
-        log.info("Starting docker image build");
+        log.info("Starting (local) container image build for native binary using docker.");
 
         ImageIdReader reader = new ImageIdReader();
         String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
-                pushRequest.isPresent(), packageConfig);
+                pushContainerImage, packageConfig);
 
         // a pull is not required when using this image locally because the docker strategy always builds the container image
         // locally before pushing it to the registry
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
                 Map.of("container-image", builtContainerImage, "pull-required", "false")));
+
+        containerImageBuilder.produce(new ContainerImageBuilderBuildItem(DOCKER));
     }
 
     private String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,

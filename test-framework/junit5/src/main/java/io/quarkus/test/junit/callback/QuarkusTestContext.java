@@ -1,23 +1,25 @@
 package io.quarkus.test.junit.callback;
 
+import java.util.List;
+
 /**
  * Context object passed to {@link QuarkusTestAfterAllCallback}
  */
 public class QuarkusTestContext {
 
     private final Object testInstance;
-    private final Object outerInstance;
+    private final List<Object> outerInstances;
 
-    public QuarkusTestContext(Object testInstance, Object outerInstance) {
+    public QuarkusTestContext(Object testInstance, List<Object> outerInstances) {
         this.testInstance = testInstance;
-        this.outerInstance = outerInstance;
+        this.outerInstances = outerInstances;
     }
 
     public Object getTestInstance() {
         return testInstance;
     }
 
-    public Object getOuterInstance() {
-        return outerInstance;
+    public List<Object> getOuterInstances() {
+        return outerInstances;
     }
 }

@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-
 import org.jboss.logging.Logger;
 
 /**
@@ -46,6 +45,16 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     + QuarkusClassLoader.class.getName() + " but " + ccl.getClass().getName());
         }
         return ((QuarkusClassLoader) ccl).getElementsWithResource(resourceName, localOnly);
+    }
+
+    /**
+     * Indicates if a given class is present at runtime.
+     *
+     * @param resourceName the path of the resource, for instance {@code path/to/my-resources.properties} for a properties file
+     *        or {@code my/package/MyClass.class} for a class.
+     */
+    public static boolean isClassPresentAtRuntime(String className) {
+        return isResourcePresentAtRuntime(className.replace('.', '/') + ".class");
     }
 
     /**

@@ -17,6 +17,7 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -107,59 +108,49 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
 
-        try {
-            Class.forName("io.netty.handler.codec.http.HttpObjectEncoder");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http.HttpObjectEncoder")) {
             builder
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty HTTP classes as they were not found");
         }
 
-        try {
-            Class.forName("io.netty.handler.codec.http2.Http2CodecUtil");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http2.Http2CodecUtil")) {
             builder
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ClientUpgradeCodec")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.DefaultHttp2FrameWriter")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty HTTP2 classes as they were not found");
         }
 
-        try {
-            Class.forName("io.netty.channel.unix.UnixChannel");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.unix.UnixChannel")) {
             builder.addRuntimeInitializedClass("io.netty.channel.unix.Errors")
                     .addRuntimeInitializedClass("io.netty.channel.unix.FileDescriptor")
                     .addRuntimeInitializedClass("io.netty.channel.unix.IovArray")
                     .addRuntimeInitializedClass("io.netty.channel.unix.Limits");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty native unix classes as they were not found");
         }
 
-        try {
-            Class.forName("io.netty.channel.epoll.EpollMode");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
             builder.addRuntimeInitializedClass("io.netty.channel.epoll.Epoll")
                     .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventArray")
                     .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventLoop")
                     .addRuntimeInitializedClass("io.netty.channel.epoll.Native");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty native epoll classes as they were not found");
         }
 
-        try {
-            Class.forName("io.netty.channel.kqueue.AcceptFilter");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
             builder.addRuntimeInitializedClass("io.netty.channel.kqueue.KQueue")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventArray")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventLoop")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.Native");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
 

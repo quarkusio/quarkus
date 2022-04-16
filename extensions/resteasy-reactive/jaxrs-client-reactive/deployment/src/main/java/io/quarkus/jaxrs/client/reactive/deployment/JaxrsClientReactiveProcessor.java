@@ -116,6 +116,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.MethodDescriptors;
 import io.quarkus.arc.processor.Types;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -1853,9 +1854,7 @@ public class JaxrsClientReactiveProcessor {
                     continuationIndex = parameters.size() - 1;
                     returnCategory = ReturnCategory.COROUTINE;
 
-                    try {
-                        Thread.currentThread().getContextClassLoader().loadClass(UNI_KT.toString());
-                    } catch (ClassNotFoundException e) {
+                    if (!QuarkusClassLoader.isClassPresentAtRuntime(UNI_KT.toString())) {
                         //TODO: make this automatic somehow
                         throw new RuntimeException("Suspendable rest client method" + jandexMethod + " is present on class "
                                 + jandexMethod.declaringClass()

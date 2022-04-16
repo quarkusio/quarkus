@@ -45,6 +45,14 @@ public class OracleDevServicesProcessor {
                 container.withUsername(username.orElse(DEFAULT_DATABASE_USER))
                         .withPassword(password.orElse(DEFAULT_DATABASE_PASSWORD))
                         .withDatabaseName(datasourceName.orElse(DEFAULT_DATABASE_NAME));
+
+                // We need to limit the maximum amount of CPUs being used by the container;
+                // otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot it.
+                // See https://github.com/gvenzl/oci-oracle-xe/issues/64
+                // I choose to limit it to "2 cpus": should be more than enough for any local testing needs,
+                // and keeps things simple.
+                container.withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withNanoCPUs(2_000_000_000l));
+
                 additionalJdbcUrlProperties.forEach(container::withUrlParam);
                 container.start();
 

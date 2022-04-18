@@ -8,8 +8,8 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -50,14 +50,12 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
     }
 
     private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry) {
-        EventBusAttributesExtractor eventBusAttributesExtractor = new EventBusAttributesExtractor(RECEIVE);
-
         InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(
                 openTelemetry,
-                INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(eventBusAttributesExtractor));
+                INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, RECEIVE));
 
         return serverBuilder
-                .addAttributesExtractor(eventBusAttributesExtractor)
+                .addAttributesExtractor(MessagingAttributesExtractor.create(EventBusAttributesGetter.INSTANCE, RECEIVE))
                 .newConsumerInstrumenter(new TextMapGetter<>() {
                     @Override
                     public Iterable<String> keys(final Message message) {
@@ -75,14 +73,12 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
     }
 
     private static Instrumenter<Message, Message> getProducerInstrumenter(final OpenTelemetry openTelemetry) {
-        EventBusAttributesExtractor eventBusAttributesExtractor = new EventBusAttributesExtractor(SEND);
-
         InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(
                 openTelemetry,
-                INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(eventBusAttributesExtractor));
+                INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, SEND));
 
         return serverBuilder
-                .addAttributesExtractor(eventBusAttributesExtractor)
+                .addAttributesExtractor(MessagingAttributesExtractor.create(EventBusAttributesGetter.INSTANCE, SEND))
                 .newProducerInstrumenter((message, key, value) -> {
                     if (message != null) {
                         message.headers().set(key, value);
@@ -90,70 +86,61 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
                 });
     }
 
-    private static class EventBusAttributesExtractor extends MessagingAttributesExtractor<Message, Message> {
-        private final MessageOperation operation;
-
-        public EventBusAttributesExtractor(final MessageOperation operation) {
-            this.operation = operation;
-        }
+    private enum EventBusAttributesGetter implements MessagingAttributesGetter<Message, Message> {
+        INSTANCE;
 
         @Override
-        public MessageOperation operation() {
-            return operation;
-        }
-
-        @Override
-        protected String system(final Message message) {
+        public String system(final Message message) {
             return "vert.x";
         }
 
         @Override
-        protected String destinationKind(final Message message) {
+        public String destinationKind(final Message message) {
             return message.isSend() ? "queue" : "topic";
         }
 
         @Override
-        protected String destination(final Message message) {
+        public String destination(final Message message) {
             return message.address();
         }
 
         @Override
-        protected boolean temporaryDestination(final Message message) {
+        public boolean temporaryDestination(final Message message) {
             return false;
         }
 
         @Override
-        protected String protocol(final Message message) {
+        public String protocol(final Message message) {
             return null;
         }
 
         @Override
-        protected String protocolVersion(final Message message) {
+        public String protocolVersion(final Message message) {
             return "4.0";
         }
 
         @Override
-        protected String url(final Message message) {
+        public String url(final Message message) {
             return null;
         }
 
         @Override
-        protected String conversationId(final Message message) {
+        public String conversationId(final Message message) {
             return message.replyAddress();
         }
 
         @Override
-        protected Long messagePayloadSize(final Message message) {
+        public Long messagePayloadSize(final Message message) {
             return null;
         }
 
         @Override
-        protected Long messagePayloadCompressedSize(final Message message) {
+        public Long messagePayloadCompressedSize(final Message message) {
             return null;
         }
 
         @Override
-        protected String messageId(final Message message, final Message message2) {
+        public String messageId(final Message message, final Message message2) {
             return null;
         }
     }

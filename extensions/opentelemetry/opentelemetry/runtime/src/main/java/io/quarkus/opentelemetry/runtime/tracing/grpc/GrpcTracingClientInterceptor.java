@@ -19,6 +19,7 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcClientAttributesExtractor;
 import io.quarkus.grpc.GlobalInterceptor;
 
 @Singleton
@@ -35,7 +36,7 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
                 INSTRUMENTATION_NAME,
                 new GrpcSpanNameExtractor());
 
-        builder.addAttributesExtractor(new GrpcAttributesExtractor())
+        builder.addAttributesExtractor(RpcClientAttributesExtractor.create(GrpcAttributesGetter.INSTANCE))
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 

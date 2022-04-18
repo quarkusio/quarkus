@@ -337,7 +337,7 @@ public class VertxHttpRecorder {
             defaultRouteHandler.accept(httpRouteRouter.route().order(DEFAULT_ROUTE_ORDER));
         }
 
-        if (httpConfiguration.enableCompression) {
+        if (httpBuildTimeConfig.enableCompression) {
             httpRouteRouter.route().order(0).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext ctx) {
@@ -565,8 +565,10 @@ public class VertxHttpRecorder {
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
             Supplier<Integer> eventLoops, List<String> websocketSubProtocols, boolean auxiliaryApplication) throws IOException {
         // Http server configuration
-        HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
-        HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
+        HttpServerOptions httpServerOptions = createHttpServerOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
+                websocketSubProtocols);
+        HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpBuildTimeConfig, httpConfiguration,
+                websocketSubProtocols);
         HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
                 websocketSubProtocols);
 
@@ -774,12 +776,14 @@ public class VertxHttpRecorder {
         serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
 
-        applyCommonOptions(serverOptions, httpConfiguration, websocketSubProtocols);
+        applyCommonOptions(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
         return serverOptions;
     }
 
-    private static void applyCommonOptions(HttpServerOptions httpServerOptions, HttpConfiguration httpConfiguration,
+    private static void applyCommonOptions(HttpServerOptions httpServerOptions,
+            HttpBuildTimeConfig buildTimeConfig,
+            HttpConfiguration httpConfiguration,
             List<String> websocketSubProtocols) {
         httpServerOptions.setHost(httpConfiguration.host);
         setIdleTimeout(httpConfiguration, httpServerOptions);
@@ -792,11 +796,11 @@ public class VertxHttpRecorder {
         httpServerOptions.setTcpCork(httpConfiguration.tcpCork);
         httpServerOptions.setAcceptBacklog(httpConfiguration.acceptBacklog);
         httpServerOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
-        httpServerOptions.setCompressionSupported(httpConfiguration.enableCompression);
-        if (httpConfiguration.compressionLevel.isPresent()) {
-            httpServerOptions.setCompressionLevel(httpConfiguration.compressionLevel.getAsInt());
+        httpServerOptions.setCompressionSupported(buildTimeConfig.enableCompression);
+        if (buildTimeConfig.compressionLevel.isPresent()) {
+            httpServerOptions.setCompressionLevel(buildTimeConfig.compressionLevel.getAsInt());
         }
-        httpServerOptions.setDecompressionSupported(httpConfiguration.enableDecompression);
+        httpServerOptions.setDecompressionSupported(buildTimeConfig.enableDecompression);
         httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
     }
 
@@ -883,7 +887,8 @@ public class VertxHttpRecorder {
         return out.toByteArray();
     }
 
-    private static HttpServerOptions createHttpServerOptions(HttpConfiguration httpConfiguration,
+    private static HttpServerOptions createHttpServerOptions(
+            HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
             LaunchMode launchMode, List<String> websocketSubProtocols) {
         if (!httpConfiguration.hostEnabled) {
             return null;
@@ -893,19 +898,20 @@ public class VertxHttpRecorder {
         int port = httpConfiguration.determinePort(launchMode);
         options.setPort(port == 0 ? -1 : port);
 
-        applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+        applyCommonOptions(options, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
         return options;
     }
 
-    private static HttpServerOptions createDomainSocketOptions(HttpConfiguration httpConfiguration,
+    private static HttpServerOptions createDomainSocketOptions(
+            HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
             List<String> websocketSubProtocols) {
         if (!httpConfiguration.domainSocketEnabled) {
             return null;
         }
         HttpServerOptions options = new HttpServerOptions();
 
-        applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+        applyCommonOptions(options, buildTimeConfig, httpConfiguration, websocketSubProtocols);
         // Override the host (0.0.0.0 by default) with the configured domain socket.
         options.setHost(httpConfiguration.domainSocket);
 

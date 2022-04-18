@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 
@@ -35,6 +36,7 @@ public class AmazonLambdaRecorder {
     private static BeanContainer beanContainer;
     private static LambdaInputReader objectReader;
     private static LambdaOutputWriter objectWriter;
+    private static Set<Class<?>> expectedExceptionClasses;
 
     private final LambdaConfig config;
 
@@ -45,6 +47,10 @@ public class AmazonLambdaRecorder {
     public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler, BeanContainer container) {
         streamHandlerClass = handler;
         beanContainer = container;
+    }
+
+    public void setExpectedExceptionClasses(Set<Class<?>> classes) {
+        expectedExceptionClasses = classes;
     }
 
     public void setHandlerClass(Class<? extends RequestHandler<?, ?>> handler, BeanContainer container) {
@@ -185,6 +191,11 @@ public class AmazonLambdaRecorder {
                 RequestStreamHandler handler = beanContainer.instance(streamHandlerClass);
                 handler.handleRequest(input, output, context);
 
+            }
+
+            @Override
+            protected boolean shouldLog(Exception e) {
+                return expectedExceptionClasses.stream().noneMatch(clazz -> clazz.isAssignableFrom(e.getClass()));
             }
         };
         loop.startPollLoop(context);

@@ -35,6 +35,10 @@ public abstract class AbstractLambdaPollLoop {
         this.launchMode = launchMode;
     }
 
+    protected boolean shouldLog(Exception e) {
+        return true;
+    }
+
     protected abstract boolean isStream();
 
     protected HttpURLConnection requestConnection = null;
@@ -131,7 +135,9 @@ public abstract class AbstractLambdaPollLoop {
                                 if (abortGracefully(e)) {
                                     return;
                                 }
-                                log.error("Failed to run lambda (" + launchMode + ")", e);
+                                if (shouldLog(e)) {
+                                    log.error("Failed to run lambda (" + launchMode + ")", e);
+                                }
 
                                 postError(AmazonLambdaApi.invocationError(baseUrl, requestId),
                                         new FunctionError(e.getClass().getName(), e.getMessage()));

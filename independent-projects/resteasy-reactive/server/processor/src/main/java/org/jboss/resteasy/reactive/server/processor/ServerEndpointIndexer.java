@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.processor;
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INSTANT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_NUMBER;
@@ -57,6 +58,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ArrayConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.CharParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.CharacterParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.InstantParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ListConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
@@ -401,6 +403,16 @@ public class ServerEndpointIndexer
             if (dateTimeFormatterProviderValue != null) {
                 dateTimeFormatterProviderClassName = dateTimeFormatterProviderValue.asClass().name().toString();
             }
+        }
+
+        if (INSTANT.equals(paramType)) {
+            if (dateFormatInstance != null) {
+                throw new RuntimeException(contextualizeErrorMessage(
+                        "'java.time.Instant' types must not be annotated with '@DateFormat'",
+                        currentMethodInfo));
+            }
+            builder.setConverter(new InstantParamConverter.Supplier());
+            return;
         }
 
         if ((format != null) && (dateTimeFormatterProviderClassName != null)) {

@@ -2,7 +2,6 @@ package io.quarkus.resteasy.reactive.server.runtime;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.spi.DefaultRuntimeConfiguration;
@@ -34,8 +33,7 @@ public class ResteasyReactiveRuntimeRecorder {
         RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpConf.readTimeout,
                 httpConf.body.deleteUploadedFilesOnEnd, httpConf.body.uploadsDirectory,
                 runtimeConf.multipart.inputPart.defaultCharset, maxBodySize,
-                httpConf.limits.maxFormAttributeSize.asLongValue(), httpConf.enableCompression,
-                Set.copyOf(httpConf.compressMediaTypes.orElse(List.of())));
+                httpConf.limits.maxFormAttributeSize.asLongValue());
 
         List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();

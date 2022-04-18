@@ -23,9 +23,12 @@ public class StaticResourcesRecorder {
     private static volatile List<Path> hotDeploymentResourcePaths;
 
     final RuntimeValue<HttpConfiguration> httpConfiguration;
+    final HttpBuildTimeConfig httpBuildTimeConfig;
 
-    public StaticResourcesRecorder(RuntimeValue<HttpConfiguration> httpConfiguration) {
+    public StaticResourcesRecorder(RuntimeValue<HttpConfiguration> httpConfiguration,
+            HttpBuildTimeConfig httpBuildTimeConfig) {
         this.httpConfiguration = httpConfiguration;
+        this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
 
     public static void setHotDeploymentResources(List<Path> resources) {
@@ -70,7 +73,7 @@ public class StaticResourcesRecorder {
                                     ctx.mountPoint().endsWith("/") ? ctx.mountPoint().length() - 1 : ctx.mountPoint().length());
                     if (knownPaths.contains(rel)) {
                         staticHandler.handle(ctx);
-                        if (httpConfiguration.getValue().enableCompression && isCompressed(rel)) {
+                        if (httpBuildTimeConfig.enableCompression && isCompressed(rel)) {
                             // Remove the "Content-Encoding: identity" header and enable compression
                             ctx.response().headers().remove(HttpHeaders.CONTENT_ENCODING);
                         }
@@ -103,7 +106,7 @@ public class StaticResourcesRecorder {
             suffix = null;
         }
         String contentType = MimeMapping.getMimeTypeForExtension(suffix);
-        return httpConfiguration.getValue().compressMediaTypes.orElse(List.of()).contains(contentType);
+        return httpBuildTimeConfig.compressMediaTypes.orElse(List.of()).contains(contentType);
     }
 
 }

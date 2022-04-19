@@ -42,6 +42,7 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
                 .withName(name)
                 .endApplication()
                 .withBindAsFiles(config.bindAsFiles)
+                .withDetectBindingResources(config.detectBindingResources)
                 .withMountPath(config.mountPath.orElse(null));
 
         String group = service.getApiVersion().contains("/")

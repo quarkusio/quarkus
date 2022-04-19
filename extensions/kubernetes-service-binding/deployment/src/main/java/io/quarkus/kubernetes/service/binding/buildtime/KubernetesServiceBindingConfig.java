@@ -30,4 +30,10 @@ public class KubernetesServiceBindingConfig {
      */
     @ConfigItem(defaultValue = "true")
     public Boolean bindAsFiles;
+
+    /**
+     * Detects the binding data from resources owned by the backing service.
+     */
+    @ConfigItem(defaultValue = "false")
+    public Boolean detectBindingResources;
 }

@@ -629,7 +629,7 @@ public class CodeFlowTest {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app2/callback-before-redirect?tenantId=tenant-2");
             assertNotNull(getStateCookieStateParam(webClient, "tenant-2"));
-            assertNull(getStateCookieSavedPath(webClient, "tenant-2"));
+            assertEquals("?tenantId=tenant-2", getStateCookieSavedPath(webClient, "tenant-2"));
 
             assertEquals("Sign in to quarkus", page.getTitleText());
 

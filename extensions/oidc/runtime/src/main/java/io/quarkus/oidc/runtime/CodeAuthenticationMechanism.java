@@ -481,7 +481,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             String restorePath = stateBean.getRestorePath();
             int userQueryIndex = restorePath.indexOf("?");
             if (userQueryIndex >= 0) {
-                userPath = restorePath.substring(0, userQueryIndex);
+                userPath = isRestorePath(configContext.oidcConfig.authentication) ? restorePath.substring(0, userQueryIndex)
+                        : null;
                 if (userQueryIndex + 1 < restorePath.length()) {
                     userQuery = restorePath.substring(userQueryIndex + 1);
                 }
@@ -691,8 +692,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         String uuid = UUID.randomUUID().toString();
         String cookieValue = uuid;
 
-        Authentication auth = configContext.oidcConfig.getAuthentication();
-        boolean restorePath = auth.isRestorePathAfterRedirect() || !auth.redirectPath.isPresent();
+        boolean restorePath = isRestorePath(configContext.oidcConfig.getAuthentication());
         if (restorePath || pkceCodeVerifier != null) {
             CodeAuthenticationStateBean extraStateValue = new CodeAuthenticationStateBean();
             if (restorePath) {
@@ -711,9 +711,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             if (!extraStateValue.isEmpty()) {
                 cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
             }
+        } else if (context.request().query() != null) {
+            CodeAuthenticationStateBean extraStateValue = new CodeAuthenticationStateBean();
+            extraStateValue.setRestorePath("?" + context.request().query());
+            cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
         }
         createCookie(context, configContext.oidcConfig, getStateCookieName(configContext.oidcConfig), cookieValue, 60 * 30);
         return uuid;
+    }
+
+    private boolean isRestorePath(Authentication auth) {
+        return auth.isRestorePathAfterRedirect() || !auth.redirectPath.isPresent();
     }
 
     private String encodeExtraStateValue(CodeAuthenticationStateBean extraStateValue, TenantConfigContext configContext) {

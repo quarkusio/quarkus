@@ -56,7 +56,6 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -184,10 +183,8 @@ public class ResteasyServerCommonProcessor {
 
     @BuildStep
     NativeImageResourceBundleBuildItem optionalResourceBundle() {
-        for (ClassPathElement cpe : QuarkusClassLoader.getElements(MESSAGES_RESOURCE_BUNDLE, false)) {
-            if (cpe.isRuntime()) {
-                return new NativeImageResourceBundleBuildItem(MESSAGES_RESOURCE_BUNDLE);
-            }
+        if (QuarkusClassLoader.isResourcePresentAtRuntime(MESSAGES_RESOURCE_BUNDLE)) {
+            return new NativeImageResourceBundleBuildItem(MESSAGES_RESOURCE_BUNDLE);
         }
 
         return null;

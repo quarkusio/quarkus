@@ -32,6 +32,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -231,10 +232,8 @@ public class JacksonProcessor {
 
     private void registerModuleIfOnClassPath(String moduleClassName,
             BuildProducer<ClassPathJacksonModuleBuildItem> classPathJacksonModules) {
-        try {
-            Class.forName(moduleClassName, false, Thread.currentThread().getContextClassLoader());
+        if (QuarkusClassLoader.isClassPresentAtRuntime(moduleClassName)) {
             classPathJacksonModules.produce(new ClassPathJacksonModuleBuildItem(moduleClassName));
-        } catch (Exception ignored) {
         }
     }
 

@@ -52,6 +52,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanLookupSupplier;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -601,15 +602,13 @@ public class SchedulerProcessor {
 
     @BuildStep
     void produceCoroutineScope(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer) {
-        try {
-            Thread.currentThread().getContextClassLoader().loadClass("kotlinx.coroutines.CoroutineScope");
-            buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClass("io.quarkus.scheduler.kotlin.runtime.ApplicationCoroutineScope")
-                    .setUnremovable().build());
-        } catch (ClassNotFoundException e) {
-            // ignore
+        if (!QuarkusClassLoader.isClassPresentAtRuntime("kotlinx.coroutines.CoroutineScope")) {
+            return;
         }
 
+        buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass("io.quarkus.scheduler.kotlin.runtime.ApplicationCoroutineScope")
+                .setUnremovable().build());
     }
 
 }

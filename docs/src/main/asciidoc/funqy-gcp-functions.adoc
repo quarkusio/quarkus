@@ -166,8 +166,16 @@ gcloud functions deploy quarkus-example-funky-pubsub \
   --source=target/deployment
 ----
 
+[IMPORTANT]
+====
 The entry point always needs to be `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction` as it will be this class
 that will bootstrap Quarkus.
+====
+
+[NOTE]
+====
+You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
+====
 
 The `--trigger-resource` option defines the name of the PubSub topic, and the `--trigger-event google.pubsub.topic.publish` option
 define that this function will be triggered by all message publication inside the topic.
@@ -200,8 +208,16 @@ gcloud functions deploy quarkus-example-funky-storage \
   --source=target/deployment
 ----
 
+[IMPORTANT]
+====
 The entry point always needs to be `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction` as it will be this class
 that will bootstrap Quarkus.
+====
+
+[NOTE]
+====
+You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
+====
 
 The `--trigger-resource` option defines the name of the Cloud Storage bucket, and the `--trigger-event google.storage.object.finalize` option
 define that this function will be triggered by all new file inside this bucket.
@@ -237,8 +253,16 @@ gcloud beta functions deploy quarkus-example-cloud-event --gen2 \
   --runtime=java11 --trigger-bucket=example-cloud-event --source=target/deployment
 ----
 
+[IMPORTANT]
+====
 The entry point always needs to be `io.quarkus.funqy.gcp.functions.FunqyCloudEventsFunction` as it will be this class
 that will bootstrap Quarkus.
+====
+
+[NOTE]
+====
+You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
+====
 
 The `--trigger-bucket=` option defines the name of the Cloud Storage bucket.
 

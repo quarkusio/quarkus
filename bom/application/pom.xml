@@ -411,7 +411,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>org.jetbrains</groupId>
+                <artifactId>annotations</artifactId>
+                <version>17.0.0</version>
+            </dependency>
             <!-- Kotlin Coroutines BOM -->
             <dependency>
                 <groupId>org.jetbrains.kotlinx</groupId>
@@ -1018,6 +1022,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-reactive-panache-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-reactive-panache-kotlin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-reactive-panache-kotlin-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

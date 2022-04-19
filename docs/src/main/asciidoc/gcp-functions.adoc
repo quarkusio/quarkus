@@ -270,6 +270,11 @@ gcloud functions deploy quarkus-example-http \
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusHttpFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
 
+[NOTE]
+====
+You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
+====
+
 This command will give you as output a `httpsTrigger.url` that points to your function.
 
 === The BackgroundFunction
@@ -295,6 +300,11 @@ gcloud functions deploy quarkus-example-storage \
 [IMPORTANT]
 ====
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
+====
+
+[NOTE]
+====
+You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 To trigger the event, you can send a file to the GCS `quarkus-hello` bucket or you can use gcloud to simulate one:
@@ -323,6 +333,11 @@ gcloud functions deploy quarkus-example-pubsub \
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
 
+[NOTE]
+====
+You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
+====
+
 To trigger the event, you can send a file to the `hello_topic` topic or you can use gcloud to simulate one:
 
 [source,bash]
@@ -347,6 +362,11 @@ gcloud beta functions deploy quarkus-example-cloud-event --gen2 \
 [IMPORTANT]
 ====
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusCloudEventsFunction` as this is the class that integrates Cloud Functions with Quarkus.
+====
+
+[NOTE]
+====
+You can also use the new Java 17 runtime by using `--runtime=java17` in the gcloud command line.
 ====
 
 To trigger the event, you can send a file to the GCS `example-cloud-event` bucket.

@@ -50,7 +50,7 @@
         <smallrye-context-propagation.version>1.2.2</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>2.7.0</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>2.19.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>2.21.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>3.15.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>1.1.0</smallrye-stork.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
@@ -107,20 +107,14 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.19.0.Final</wildfly-elytron.version>
         <jboss-threads.version>3.4.2.Final</jboss-threads.version>
-        <vertx.version>4.2.5</vertx.version>
-        <!--
-        Temporary fix, the client 4.2.5 does not work in the context of Quarkus (bug in the client)
-        The fix is shipped with this path release.
-        This property needs to be removed when we will update to Vert.x 4.2.6 or Vert.x 4.3.0
-        -->
-        <vertx.oracle-client.version>4.2.5.1</vertx.oracle-client.version>
+        <vertx.version>4.2.7</vertx.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.15</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
         <cronutils.version>9.1.6</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
-        <postgresql-jdbc.version>42.3.3</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.3.4</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.0.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.28</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
@@ -157,7 +151,7 @@
         <maven-invoker.version>3.1.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
-        <flyway.version>8.5.7</flyway.version>
+        <flyway.version>8.5.8</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.9.0</liquibase.version>
         <snakeyaml.version>1.30</snakeyaml.version>
@@ -286,13 +280,6 @@
                 <version>${vertx.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <!-- Temporarily override the version of the Oracle client, as a bug prevents the usage of the 4.2.5
-                version in Quarkus, instead, use 4.2.5.1. -->
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-oracle-client</artifactId>
-                <version>${vertx.oracle-client.version}</version>
             </dependency>
 
             <!-- gRPC dependencies, imported as a BOM -->

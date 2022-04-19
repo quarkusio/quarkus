@@ -510,11 +510,14 @@ public class VertxCoreRecorder {
     public ThreadFactory createThreadFactory(LaunchMode launchMode) {
         Optional<ClassLoader> nonDevModeTccl = setupThreadFactoryTccl(launchMode);
         AtomicInteger threadCount = new AtomicInteger(0);
-        return runnable -> {
-            VertxThread thread = createVertxThread(runnable,
-                    "executor-thread-" + threadCount.getAndIncrement(), true, 0, null, launchMode, nonDevModeTccl);
-            thread.setDaemon(true);
-            return thread;
+        return new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable runnable) {
+                VertxThread thread = createVertxThread(runnable,
+                        "executor-thread-" + threadCount.getAndIncrement(), true, 0, null, launchMode, nonDevModeTccl);
+                thread.setDaemon(true);
+                return thread;
+            }
         };
     }
 

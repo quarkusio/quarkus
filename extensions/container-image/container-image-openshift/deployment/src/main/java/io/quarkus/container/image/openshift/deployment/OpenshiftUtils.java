@@ -98,27 +98,27 @@ public class OpenshiftUtils {
                 .filter(s -> s.startsWith("quarkus.s2i.") || s.startsWith("quarkus.openshift."))
                 .collect(Collectors.toSet());
 
-        boolean hasS2iBaseJvmImage = properties.contains("quarkus.s2i.base-jvm-image");
-        boolean hasS2iBaseNativeImage = properties.contains("quarkus.s2i.base-native-image");
-        boolean hasS2iJvmArguments = properties.contains("quarkus.s2i.jvm-arguments");
-        boolean hasS2iJvmAdditionalArguments = properties.contains("quarkus.s2i.jvm-additional-arguments");
-        boolean hasS2iNativeArguments = properties.contains("quarkus.s2i.native-arguments");
-        boolean hasS2iJarDirectory = properties.contains("quarkus.s2i.jar-directory");
-        boolean hasS2iJarFileName = properties.contains("quarkus.s2i.jar-file-name");
-        boolean hasS2iNativeBinaryDirectory = properties.contains("quarkus.s2i.native-binary-directory");
-        boolean hasS2iNativeBinaryFileName = properties.contains("quarkus.s2i.native-binary-file-name");
-        boolean hasS2iBuildTimeout = properties.contains("quarkus.s2i.native-binary-file-name");
+        boolean hasS2iBaseJvmImage = hasProperty("quarkus.s2i.base-jvm-image", properties);
+        boolean hasS2iBaseNativeImage = hasProperty("quarkus.s2i.base-native-image", properties);
+        boolean hasS2iJvmArguments = hasProperty("quarkus.s2i.jvm-arguments", properties);
+        boolean hasS2iJvmAdditionalArguments = hasProperty("quarkus.s2i.jvm-additional-arguments", properties);
+        boolean hasS2iNativeArguments = hasProperty("quarkus.s2i.native-arguments", properties);
+        boolean hasS2iJarDirectory = hasProperty("quarkus.s2i.jar-directory", properties);
+        boolean hasS2iJarFileName = hasProperty("quarkus.s2i.jar-file-name", properties);
+        boolean hasS2iNativeBinaryDirectory = hasProperty("quarkus.s2i.native-binary-directory", properties);
+        boolean hasS2iNativeBinaryFileName = hasProperty("quarkus.s2i.native-binary-file-name", properties);
+        boolean hasS2iBuildTimeout = hasProperty("quarkus.s2i.native-binary-file-name", properties);
 
-        boolean hasOpenshiftBaseJvmImage = properties.contains("quarkus.openshift.base-jvm-image");
-        boolean hasOpenshiftBaseNativeImage = properties.contains("quarkus.openshift.base-native-image");
-        boolean hasOpenshiftJvmArguments = properties.contains("quarkus.openshift.jvm-arguments");
-        boolean hasOpenshiftJvmAdditionalArguments = properties.contains("quarkus.openshift.jvm-additional-arguments");
-        boolean hasOpenshiftNativeArguments = properties.contains("quarkus.openshift.native-arguments");
-        boolean hasOpenshiftJarDirectory = properties.contains("quarkus.openshift.jar-directory");
-        boolean hasOpenshiftJarFileName = properties.contains("quarkus.openshift.jar-file-name");
-        boolean hasOpenshiftNativeBinaryDirectory = properties.contains("quarkus.openshift.native-binary-directory");
-        boolean hasOpenshiftNativeBinaryFileName = properties.contains("quarkus.openshift.native-binary-file-name");
-        boolean hasOpenshiftBuildTimeout = properties.contains("quarkus.openshift.native-binary-file-name");
+        boolean hasOpenshiftBaseJvmImage = hasProperty("quarkus.openshift.base-jvm-image", properties);
+        boolean hasOpenshiftBaseNativeImage = hasProperty("quarkus.openshift.base-native-image", properties);
+        boolean hasOpenshiftJvmArguments = hasProperty("quarkus.openshift.jvm-arguments", properties);
+        boolean hasOpenshiftJvmAdditionalArguments = hasProperty("quarkus.openshift.jvm-additional-arguments", properties);
+        boolean hasOpenshiftNativeArguments = hasProperty("quarkus.openshift.native-arguments", properties);
+        boolean hasOpenshiftJarDirectory = hasProperty("quarkus.openshift.jar-directory", properties);
+        boolean hasOpenshiftJarFileName = hasProperty("quarkus.openshift.jar-file-name", properties);
+        boolean hasOpenshiftNativeBinaryDirectory = hasProperty("quarkus.openshift.native-binary-directory", properties);
+        boolean hasOpenshiftNativeBinaryFileName = hasProperty("quarkus.openshift.native-binary-file-name", properties);
+        boolean hasOpenshiftBuildTimeout = hasProperty("quarkus.openshift.native-binary-file-name", properties);
 
         result.baseJvmImage = hasS2iBaseJvmImage && !hasOpenshiftBaseJvmImage ? s2iConfig.baseJvmImage
                 : openshiftConfig.baseJvmImage;
@@ -146,5 +146,9 @@ public class OpenshiftUtils {
         result.buildStrategy = openshiftConfig.buildStrategy;
 
         return result;
+    }
+
+    private static boolean hasProperty(String name, Set<String> names) {
+        return names.contains(name) || System.getProperties().containsKey(name);
     }
 }

@@ -26,7 +26,7 @@ public class OpenApiWithResteasyPathHttpRootDefaultPathTestCase {
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("openapi", Matchers.startsWith("3.0"))
-                .body("info.title", Matchers.equalTo("Generated API"))
+                .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/http-root-path/resteasy-path/resource"));
     }
 }

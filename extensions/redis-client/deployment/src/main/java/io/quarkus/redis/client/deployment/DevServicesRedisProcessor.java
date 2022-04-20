@@ -20,13 +20,13 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDockerWorking.IsDockerRunningSilent;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -59,10 +59,10 @@ public class DevServicesRedisProcessor {
     private static volatile List<RunningDevService> devServices;
     private static volatile Map<String, DevServiceConfiguration> capturedDevServicesConfiguration;
     private static volatile boolean first = true;
-    private static volatile Boolean dockerRunning = null;
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
     public List<DevServicesResultBuildItem> startRedisContainers(LaunchModeBuildItem launchMode,
+            DockerStatusBuildItem dockerStatusBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             RedisBuildTimeConfig config,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -100,7 +100,8 @@ public class DevServicesRedisProcessor {
         try {
             for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
                 String connectionName = entry.getKey();
-                RunningDevService devService = startContainer(connectionName, entry.getValue().devservices,
+                RunningDevService devService = startContainer(dockerStatusBuildItem, connectionName,
+                        entry.getValue().devservices,
                         launchMode.getLaunchMode(),
                         !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
                 if (devService == null) {
@@ -126,7 +127,6 @@ public class DevServicesRedisProcessor {
         if (first) {
             first = false;
             Runnable closeTask = () -> {
-                dockerRunning = null;
                 if (devServices != null) {
                     for (Closeable closeable : devServices) {
                         try {
@@ -145,7 +145,8 @@ public class DevServicesRedisProcessor {
         return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
     }
 
-    private RunningDevService startContainer(String connectionName, DevServicesConfig devServicesConfig, LaunchMode launchMode,
+    private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem, String connectionName,
+            DevServicesConfig devServicesConfig, LaunchMode launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
@@ -163,11 +164,7 @@ public class DevServicesRedisProcessor {
             return null;
         }
 
-        if (dockerRunning == null) {
-            dockerRunning = new IsDockerRunningSilent().getAsBoolean();
-        }
-
-        if (!dockerRunning) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn("Please configure quarkus.redis.hosts for "
                     + (isDefault(connectionName) ? "default redis client" : connectionName)
                     + " or get a working docker instance");

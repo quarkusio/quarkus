@@ -16,12 +16,12 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -52,10 +52,9 @@ public class DevServicesElasticsearchProcessor {
     static volatile ElasticsearchDevServicesBuildTimeConfig cfg;
     static volatile boolean first = true;
 
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
-
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem startElasticsearchDevService(
+            DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
             ElasticsearchDevServicesBuildTimeConfig configuration,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
@@ -86,7 +85,7 @@ public class DevServicesElasticsearchProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Elasticsearch Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-            devService = startElasticsearch(configuration, buildItemsConfig, launchMode,
+            devService = startElasticsearch(dockerStatusBuildItem, configuration, buildItemsConfig, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
                     devServicesConfig.timeout);
             if (devService == null) {
@@ -145,7 +144,9 @@ public class DevServicesElasticsearchProcessor {
         }
     }
 
-    private DevServicesResultBuildItem.RunningDevService startElasticsearch(ElasticsearchDevServicesBuildTimeConfig config,
+    private DevServicesResultBuildItem.RunningDevService startElasticsearch(
+            DockerStatusBuildItem dockerStatusBuildItem,
+            ElasticsearchDevServicesBuildTimeConfig config,
             DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) throws BuildException {
         if (!config.enabled.orElse(true)) {
@@ -162,7 +163,7 @@ public class DevServicesElasticsearchProcessor {
             }
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warnf("Docker isn't working, please configure the Elasticsearch hosts property (%s).",
                     displayProperties(buildItemConfig.hostsConfigProperties));
             return null;

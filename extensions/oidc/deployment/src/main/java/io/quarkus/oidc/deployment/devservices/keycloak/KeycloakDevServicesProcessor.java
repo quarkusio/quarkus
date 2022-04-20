@@ -41,7 +41,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -49,6 +48,7 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -123,10 +123,10 @@ public class KeycloakDevServicesProcessor {
     static volatile DevServicesConfig capturedDevServicesConfiguration;
     private static volatile boolean first = true;
     private static volatile FileTime capturedRealmFileLastModifiedDate;
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { IsEnabled.class, GlobalDevServicesConfig.Enabled.class })
     public DevServicesResultBuildItem startKeycloakContainer(
+            DockerStatusBuildItem dockerStatusBuildItem,
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<OidcDevServicesBuildItem> oidcProviderBuildItem,
@@ -182,7 +182,7 @@ public class KeycloakDevServicesProcessor {
             vertxInstance = Vertx.vertx();
         }
         try {
-            RunningDevService newDevService = startContainer(keycloakBuildItemBuildProducer,
+            RunningDevService newDevService = startContainer(dockerStatusBuildItem, keycloakBuildItemBuildProducer,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
                     devServicesConfig.timeout);
             if (newDevService == null) {
@@ -287,7 +287,8 @@ public class KeycloakDevServicesProcessor {
         return capturedDevServicesConfiguration.realmName.orElse("quarkus");
     }
 
-    private RunningDevService startContainer(BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
+    private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem,
+            BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!capturedDevServicesConfiguration.enabled) {
             // explicitly disabled
@@ -307,7 +308,7 @@ public class KeycloakDevServicesProcessor {
             return null;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             LOG.warn("Please configure 'quarkus.oidc.auth-server-url' or get a working docker instance");
             return null;
         }

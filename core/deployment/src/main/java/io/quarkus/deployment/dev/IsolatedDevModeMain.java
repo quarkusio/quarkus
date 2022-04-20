@@ -54,6 +54,7 @@ import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.deployment.util.FSWatchUtil;
+import io.quarkus.dev.appstate.ApplicationStartException;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
 import io.quarkus.dev.spi.DevModeType;
@@ -183,7 +184,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 }
                                 RuntimeUpdatesProcessor.INSTANCE.startupFailed();
                                 //try and wait till logging is setup
-                                log.error("Failed to start quarkus", t);
+
+                                //this exception has already been logged, so don't log it again
+                                if (!(t instanceof ApplicationStartException)) {
+                                    log.error("Failed to start quarkus", t);
+                                }
                             } catch (Exception e) {
                                 close();
                                 log.error("Failed to start quarkus", t);

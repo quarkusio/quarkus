@@ -147,7 +147,8 @@
         <kotlin.version>1.6.20</kotlin.version>
         <kotlin.coroutine.version>1.6.1</kotlin.coroutine.version>
         <kotlin-serialization.version>1.3.2</kotlin-serialization.version>
-        <dekorate.version>2.9.2</dekorate.version>
+        <kubernetes-client.version>5.12.2</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>2.9.2</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.1.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
@@ -161,7 +162,6 @@
         <proton-j.version>0.33.10</proton-j.version>
         <okhttp.version>3.14.9</okhttp.version>
         <hibernate-quarkus-local-cache.version>0.1.1</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>5.12.2</kubernetes-client.version>
         <flapdoodle.mongo.version>3.3.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP6</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>

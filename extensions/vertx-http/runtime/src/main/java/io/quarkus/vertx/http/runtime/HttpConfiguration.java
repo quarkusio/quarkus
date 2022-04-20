@@ -235,6 +235,12 @@ public class HttpConfiguration {
     @ConfigItem
     public Map<String, HeaderConfig> header;
 
+    /**
+     * Additional HTTP configuration per path
+     */
+    @ConfigItem
+    public Map<String, FilterConfig> filter;
+
     public ProxyConfig proxy;
 
     public int determinePort(LaunchMode launchMode) {

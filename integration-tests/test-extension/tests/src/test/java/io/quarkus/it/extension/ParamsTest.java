@@ -3,6 +3,7 @@ package io.quarkus.it.extension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -117,6 +118,15 @@ public class ParamsTest {
 
     static List<Arguments> testDataListArguments() {
         return Arrays.asList(Arguments.of(new TestData(), "foo"), Arguments.of(new TestData(), "foo"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testStreamOfMapEntryArguments")
+    public void methodList(Map.Entry<String, String> ignore) {
+    }
+
+    static Stream<Map.Entry<String, String>> testStreamOfMapEntryArguments() {
+        return Map.of("a", "b").entrySet().stream();
     }
 
     @SuppressWarnings("unused")

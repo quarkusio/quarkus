@@ -20,6 +20,7 @@ class XStreamDeepClone implements DeepClone {
             result.registerConverter(new CustomListConverter(result.getMapper()));
             result.registerConverter(new CustomSetConverter(result.getMapper()));
             result.registerConverter(new CustomMapConverter(result.getMapper()));
+            result.registerConverter(new CustomMapEntryConverter(result.getMapper()));
             return result;
         };
     }

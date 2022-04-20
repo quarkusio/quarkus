@@ -11,6 +11,8 @@ import org.jboss.resteasy.reactive.common.util.URIDecoder;
 
 public class RequestMapper<T> {
 
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
     private final PathMatcher<List<RequestPath<T>>> requestPaths;
     private final PathMatcher.Builder<List<RequestPath<T>>> pathMatcherBuilder;
     private final List<RequestPath<T>> templates;
@@ -59,7 +61,7 @@ public class RequestMapper<T> {
         List<RequestPath<T>> value = initialMatch.getValue();
         for (int index = 0; index < value.size(); index++) {
             RequestPath<T> potentialMatch = value.get(index);
-            String[] params = new String[maxParams];
+            String[] params = (maxParams > 0) ? new String[maxParams] : EMPTY_STRING_ARRAY;
             int paramCount = 0;
             boolean matched = true;
             boolean prefixAllowed = potentialMatch.prefixTemplate;

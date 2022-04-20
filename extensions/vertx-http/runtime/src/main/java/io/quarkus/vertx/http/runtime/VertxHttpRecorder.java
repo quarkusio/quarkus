@@ -655,15 +655,18 @@ public class VertxHttpRecorder {
                 if (event.failed()) {
                     Throwable effectiveCause = event.cause();
                     if (effectiveCause instanceof BindException) {
+                        List<Integer> portsUsed = Collections.emptyList();
+
                         if ((sslConfig == null) && (httpServerOptions != null)) {
-                            effectiveCause = new QuarkusBindException(httpServerOptions.getPort());
+                            portsUsed = List.of(httpServerOptions.getPort());
                         } else if ((httpConfiguration.insecureRequests == InsecureRequests.DISABLED) && (sslConfig != null)) {
-                            effectiveCause = new QuarkusBindException(sslConfig.getPort());
+                            portsUsed = List.of(sslConfig.getPort());
                         } else if ((sslConfig != null) && (httpConfiguration.insecureRequests == InsecureRequests.ENABLED)
                                 && (httpServerOptions != null)) {
-                            effectiveCause = new QuarkusBindException(
-                                    List.of(httpServerOptions.getPort(), sslConfig.getPort()));
+                            portsUsed = List.of(httpServerOptions.getPort(), sslConfig.getPort());
                         }
+
+                        effectiveCause = new QuarkusBindException((BindException) effectiveCause, portsUsed);
                     }
                     futureResult.completeExceptionally(effectiveCause);
                 } else {
@@ -672,7 +675,6 @@ public class VertxHttpRecorder {
             }
         });
         try {
-
             String deploymentId = futureResult.get();
             VertxCoreRecorder.setWebDeploymentId(deploymentId);
             closeTask = new Runnable() {
@@ -690,7 +692,7 @@ public class VertxHttpRecorder {
                                     }
                                 });
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                LOGGER.warn("Failed to undeploy deployment ", e);
                             }
                             try {
                                 latch.await();

@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole;
 
+import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
+
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -70,7 +72,7 @@ public class HibernateSearchSupplier implements Supplier<HibernateSearchSupplier
         if (name != null) {
             return name;
         }
-        Object persistenceUnitName = sessionFactory.getProperties().get("hibernate.ejb.persistenceUnitName");
+        Object persistenceUnitName = sessionFactory.getProperties().get(PERSISTENCE_UNIT_NAME);
         if (persistenceUnitName != null) {
             return persistenceUnitName.toString();
         }

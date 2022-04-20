@@ -32,17 +32,20 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
             // This should never happen.
             LOGGER.warn(INTERCEPTOR_BINDINGS_ERROR_MSG);
             return invocationContext.proceed();
-        } else if (isUniReturnType(invocationContext)) {
-            return invalidateNonBlocking(invocationContext, interceptionContext);
-        } else {
+        }
+        ReturnType returnType = determineReturnType(invocationContext.getMethod().getReturnType());
+        if (returnType == ReturnType.NonAsync) {
             return invalidateBlocking(invocationContext, interceptionContext);
+        } else {
+            return invalidateNonBlocking(invocationContext, interceptionContext, returnType);
         }
     }
 
     private Object invalidateNonBlocking(InvocationContext invocationContext,
-            CacheInterceptionContext<CacheInvalidate> interceptionContext) {
+            CacheInterceptionContext<CacheInvalidate> interceptionContext,
+            ReturnType returnType) {
         LOGGER.trace("Invalidating cache entries in a non-blocking way");
-        return Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
+        var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
                 .onItem().transformToUniAndMerge(new Function<CacheInvalidate, Uni<? extends Void>>() {
                     @Override
                     public Uni<Void> apply(CacheInvalidate binding) {
@@ -55,12 +58,13 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
                     @Override
                     public Uni<?> apply(Object ignored) {
                         try {
-                            return (Uni<Object>) invocationContext.proceed();
+                            return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
                         } catch (Exception e) {
                             throw new CacheException(e);
                         }
                     }
                 });
+        return createAsyncResult(uni, returnType);
     }
 
     private Object invalidateBlocking(InvocationContext invocationContext,

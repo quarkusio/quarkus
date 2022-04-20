@@ -2,12 +2,18 @@ package io.quarkus.devtools.project.codegen;
 
 import static java.util.Objects.requireNonNull;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.paths.PathTree;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.lang.model.SourceVersion;
+import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class CreateProjectHelper {
 
@@ -34,6 +41,82 @@ public class CreateProjectHelper {
     public static final String DEFAULT_VERSION = "1.0.0-SNAPSHOT";
 
     private CreateProjectHelper() {
+    }
+
+    /**
+     * This method checks whether extensions to be added are specified using complete artifact coordinates,
+     * in which case they are resolved and added to the catalog so that their codestarts are picked up by the code generator.
+     *
+     * @param catalog original extension catalog
+     * @param extensions extra extensions to add to the catalog
+     * @param mvn Maven artifact resolver
+     * @return complete extension catalog
+     * @throws BootstrapMavenException in case of a failure to resolve extensions requested by the user
+     */
+    public static ExtensionCatalog completeCatalog(ExtensionCatalog catalog, Collection<String> extensions,
+            MavenArtifactResolver mvn) {
+        ExtensionCatalog.Mutable mutableCatalog = null;
+        for (String extArg : extensions) {
+            if (isFullArtifactCoords(extArg)) {
+                var coords = ArtifactCoords.fromString(extArg.trim());
+                final Path extJar;
+                try {
+                    extJar = mvn.resolve(new DefaultArtifact(coords.getGroupId(), coords.getArtifactId(),
+                            coords.getClassifier(), coords.getType(), coords.getVersion())).getArtifact().getFile().toPath();
+                } catch (BootstrapMavenException e) {
+                    throw new RuntimeException("Failed to resolve extension " + coords, e);
+                }
+                final Extension ext = PathTree.ofDirectoryOrArchive(extJar)
+                        .apply(BootstrapConstants.EXTENSION_METADATA_PATH, visit -> {
+                            if (visit == null) {
+                                return null;
+                            }
+                            try {
+                                return Extension.fromFile(visit.getPath());
+                            } catch (IOException e) {
+                                throw new IllegalStateException(
+                                        "Failed to parse Quarkus extension metadata " + visit.getPath());
+                            }
+                        });
+                if (ext != null) {
+                    if (mutableCatalog == null) {
+                        mutableCatalog = catalog.mutable();
+                    }
+                    var i = mutableCatalog.getExtensions().iterator();
+                    boolean add = true;
+                    while (i.hasNext()) {
+                        final ArtifactCoords catalogCoords = i.next().getArtifact();
+                        if (catalogCoords.getKey().equals(ext.getArtifact().getKey())) {
+                            if (catalogCoords.getVersion().equals(ext.getArtifact().getVersion())) {
+                                add = false;
+                            } else {
+                                i.remove();
+                            }
+                            break;
+                        }
+                    }
+                    if (add) {
+                        mutableCatalog.addExtension(ext);
+                    }
+                }
+            }
+        }
+        if (mutableCatalog != null) {
+            catalog = mutableCatalog.build();
+        }
+        return catalog;
+    }
+
+    private static boolean isFullArtifactCoords(String s) {
+        if (s == null) {
+            return false;
+        }
+        var firstColon = s.indexOf(':');
+        if (firstColon > 0) {
+            var lastColon = s.lastIndexOf(':');
+            return lastColon > 0 && firstColon != lastColon;
+        }
+        return false;
     }
 
     public static String checkClassName(String name) {
@@ -126,7 +209,7 @@ public class CreateProjectHelper {
 
     public static Set<String> sanitizeExtensions(Set<String> extensions) {
         if (extensions == null) {
-            return extensions = new HashSet<>();
+            return extensions = Set.of();
         }
         return extensions.stream().filter(Objects::nonNull).map(String::trim).collect(Collectors.toSet());
     }

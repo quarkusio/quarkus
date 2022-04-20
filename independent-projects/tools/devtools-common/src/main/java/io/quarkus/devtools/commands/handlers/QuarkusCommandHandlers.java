@@ -15,7 +15,6 @@ import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,12 +50,12 @@ final class QuarkusCommandHandlers {
                 final ArtifactKey key = ArtifactKey.fromString(query);
                 for (Extension ext : extensionCatalog) {
                     if (ext.getArtifact().getKey().equals(key)) {
-                        result = new SelectionResult(Collections.singletonList(ext), true);
+                        result = new SelectionResult(List.of(ext), true);
                         break;
                     }
                 }
                 if (result == null) {
-                    result = new SelectionResult(Collections.emptyList(), false);
+                    result = new SelectionResult(List.of(), false);
                 }
             } else {
                 result = select(query, extensionCatalog, false);

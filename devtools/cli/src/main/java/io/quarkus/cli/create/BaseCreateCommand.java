@@ -1,6 +1,7 @@
 package io.quarkus.cli.create;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -197,17 +198,16 @@ public class BaseCreateCommand implements Callable<Integer> {
      * @param buildTool The build tool the project should use (maven, gradle, jbang)
      * @param targetVersion The target quarkus version
      * @param properties Additional properties that should be used whiel creating the properties
+     * @param extensions requested extensions
      * @return Quarkus command invocation that can be printed (dry-run) or run to create the project
      * @throws RegistryResolutionException
      */
     public QuarkusCommandInvocation build(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion,
-            Map<String, String> properties)
+            Map<String, String> properties, Collection<String> extensions)
             throws RegistryResolutionException {
 
         CreateProjectHelper.handleSpringConfiguration(values);
         output.debug("Creating an app using the following settings: %s", values);
-
-        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, output);
 
         // TODO: knock on effect with properties.. here?
         properties.entrySet().forEach(x -> {
@@ -219,6 +219,9 @@ public class BaseCreateCommand implements Callable<Integer> {
                 output.info("property: %s", x.getKey());
             }
         });
+
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, output, extensions);
+
         return new QuarkusCommandInvocation(qp, values);
     }
 

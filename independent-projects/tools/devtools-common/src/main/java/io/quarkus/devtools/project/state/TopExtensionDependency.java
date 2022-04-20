@@ -46,7 +46,7 @@ public class TopExtensionDependency {
         public TopExtensionDependency build() {
             if (catalogMetadata == null) {
                 catalogMetadata = resolvedDep.getContentTree()
-                        .apply("META-INF/" + BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME, visit -> {
+                        .apply(BootstrapConstants.EXTENSION_METADATA_PATH, visit -> {
                             if (visit == null) {
                                 return null;
                             }

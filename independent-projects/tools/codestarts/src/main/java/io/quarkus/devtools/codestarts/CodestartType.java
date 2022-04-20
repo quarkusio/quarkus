@@ -33,5 +33,4 @@ public enum CodestartType {
     public int getProcessingOrder() {
         return processingOrder;
     }
-
 }

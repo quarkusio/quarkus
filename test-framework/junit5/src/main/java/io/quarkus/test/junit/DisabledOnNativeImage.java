@@ -26,11 +26,14 @@ import java.lang.annotation.Target;
  * {@code @BeforeEach} methods, {@code @AfterEach} methods, and corresponding
  * extension APIs.
  *
+ * @deprecated Use {@link @DisabledOnIntegrationTest} instead.
+ *
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
+@Deprecated(since = "2.9.0.Final", forRemoval = true)
 public @interface DisabledOnNativeImage {
     /**
      * Reason for disabling this test

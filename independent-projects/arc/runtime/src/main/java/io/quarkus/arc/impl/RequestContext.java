@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
@@ -168,7 +167,7 @@ class RequestContext implements ManagedContext {
         }
         if (state instanceof RequestContextState) {
             RequestContextState reqState = ((RequestContextState) state);
-            reqState.isValid.set(false);
+            reqState.isValid = false;
             synchronized (state) {
                 Map<Contextual<?>, ContextInstanceHandle<?>> map = ((RequestContextState) state).map;
                 // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
@@ -228,11 +227,12 @@ class RequestContext implements ManagedContext {
     static class RequestContextState implements ContextState {
 
         private final Map<Contextual<?>, ContextInstanceHandle<?>> map;
-        private final AtomicBoolean isValid;
+
+        private volatile boolean isValid;
 
         RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
             this.map = Objects.requireNonNull(value);
-            this.isValid = new AtomicBoolean(true);
+            this.isValid = true;
         }
 
         @Override
@@ -243,7 +243,7 @@ class RequestContext implements ManagedContext {
 
         @Override
         public boolean isValid() {
-            return isValid.get();
+            return isValid;
         }
 
     }

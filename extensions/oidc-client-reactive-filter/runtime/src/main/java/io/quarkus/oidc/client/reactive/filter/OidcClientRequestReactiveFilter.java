@@ -41,7 +41,8 @@ public class OidcClientRequestReactiveFilter extends AbstractTokensProducer impl
         super.getTokens().subscribe().with(new Consumer<Tokens>() {
             @Override
             public void accept(Tokens tokens) {
-                requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + tokens.getAccessToken());
+                requestContext.getHeaders().putSingle(HttpHeaders.AUTHORIZATION,
+                        BEARER_SCHEME_WITH_SPACE + tokens.getAccessToken());
                 requestContext.resume();
             }
         }, new Consumer<Throwable>() {

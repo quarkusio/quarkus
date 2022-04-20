@@ -1,8 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.boot;
 
 import static org.hibernate.cfg.AvailableSettings.DRIVER;
-import static org.hibernate.cfg.AvailableSettings.JACC_ENABLED;
-import static org.hibernate.cfg.AvailableSettings.JACC_PREFIX;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_PASSWORD;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_URL;
@@ -12,7 +10,6 @@ import static org.hibernate.cfg.AvailableSettings.PASS;
 import static org.hibernate.cfg.AvailableSettings.TRANSACTION_COORDINATOR_STRATEGY;
 import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.cfg.AvailableSettings.USER;
-import static org.hibernate.cfg.AvailableSettings.WRAP_RESULT_SETS;
 import static org.hibernate.cfg.AvailableSettings.XML_MAPPING_ENABLED;
 import static org.hibernate.internal.HEMLogging.messageLogger;
 import static org.hibernate.jpa.AvailableSettings.CLASS_CACHE_PREFIX;
@@ -91,6 +88,16 @@ import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionPro
  * is created, which configuration properties are supportable, custom overrides, etc...
  */
 public class FastBootMetadataBuilder {
+
+    /**
+     * Old deprecated constants:
+     */
+    @Deprecated
+    private static final String JACC_PREFIX = "hibernate.jacc";
+    @Deprecated
+    private static final String JACC_ENABLED = "hibernate.jacc.enabled";
+    @Deprecated
+    private static final String WRAP_RESULT_SETS = "hibernate.jdbc.wrap_result_sets";
 
     private static final EntityManagerMessageLogger LOG = messageLogger(FastBootMetadataBuilder.class);
 
@@ -267,7 +274,8 @@ public class FastBootMetadataBuilder {
                 PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
 
         if (readBooleanConfigurationValue(cfg, WRAP_RESULT_SETS)) {
-            LOG.warn("Wrapping result sets is not supported. Setting " + WRAP_RESULT_SETS + " to false.");
+            LOG.warn("Wrapping result sets is no longer supported by Hibernate ORM. Setting " + WRAP_RESULT_SETS
+                    + " is being ignored.");
         }
         cfg.put(WRAP_RESULT_SETS, "false");
 
@@ -300,7 +308,7 @@ public class FastBootMetadataBuilder {
 
         // Note: this one is not a boolean, just having the property enables it
         if (cfg.containsKey(JACC_ENABLED)) {
-            LOG.warn("JACC is not supported. Disabling it.");
+            LOG.warn("JACC integration is no longer supported by Hibernate ORM. Option ignored.");
             cfg.remove(JACC_ENABLED);
         }
 
@@ -324,7 +332,7 @@ public class FastBootMetadataBuilder {
 
                 if (keyString.startsWith(JACC_PREFIX)) {
                     LOG.warn(
-                            "Found JACC permission grant [%s] in properties, but JACC is not compatible with the FastBootMetadataBuilder; ignoring!");
+                            "Found JACC permission grant [%s] in properties, but JACC is no longer supported by Hibernate ORM: ignoring!");
                 } else if (keyString.startsWith(CLASS_CACHE_PREFIX)) {
                     mergedSettings.addCacheRegionDefinition(
                             parseCacheRegionDefinitionEntry(keyString.substring(CLASS_CACHE_PREFIX.length() + 1),

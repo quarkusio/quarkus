@@ -101,7 +101,11 @@ public class AmqpDevServicesProcessor {
                             config.get(AMQP_PASSWORD_PROP));
                 }
             }
-            compressor.close();
+            if (devService == null) {
+                compressor.closeAndDumpCaptured();
+            } else {
+                compressor.close();
+            }
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);

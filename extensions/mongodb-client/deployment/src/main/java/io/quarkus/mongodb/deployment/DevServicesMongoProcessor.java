@@ -103,7 +103,11 @@ public class DevServicesMongoProcessor {
         try {
             devService = startMongo(connectionName, currentCapturedProperties.get(connectionName),
                     !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout);
-            compressor.close();
+            if (devService == null) {
+                compressor.closeAndDumpCaptured();
+            } else {
+                compressor.close();
+            }
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);

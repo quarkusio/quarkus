@@ -121,9 +121,10 @@ public class SecurityProcessor {
      */
     @BuildStep
     void registerJCAProvidersForReflection(BuildProducer<ReflectiveClassBuildItem> classes,
-            List<JCAProviderBuildItem> jcaProviders) throws IOException, URISyntaxException {
+            List<JCAProviderBuildItem> jcaProviders,
+            BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) throws IOException, URISyntaxException {
         for (JCAProviderBuildItem provider : jcaProviders) {
-            List<String> providerClasses = registerProvider(provider.getProviderName());
+            List<String> providerClasses = registerProvider(provider.getProviderName(), additionalProviders);
             for (String className : providerClasses) {
                 classes.produce(new ReflectiveClassBuildItem(true, true, className));
                 log.debugf("Register JCA class: %s", className);
@@ -352,7 +353,8 @@ public class SecurityProcessor {
      * @param providerName - JCA provider name
      * @return class names that make up the provider and its services
      */
-    private List<String> registerProvider(String providerName) {
+    private List<String> registerProvider(String providerName,
+            BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) {
         List<String> providerClasses = new ArrayList<>();
         Provider provider = Security.getProvider(providerName);
         if (provider != null) {
@@ -365,6 +367,11 @@ public class SecurityProcessor {
                     providerClasses.addAll(Arrays.asList(supportedKeyClasses.split("\\|")));
                 }
             }
+        }
+
+        if (SecurityProviderUtils.SUN_PROVIDERS.containsKey(providerName)) {
+            additionalProviders.produce(
+                    new NativeImageSecurityProviderBuildItem(SecurityProviderUtils.SUN_PROVIDERS.get(providerName)));
         }
         return providerClasses;
     }

@@ -22,13 +22,13 @@ import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.message.Bas
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.net.URLEncodedUtils;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -46,10 +46,9 @@ public class DevServicesMongoProcessor {
     static volatile Map<String, CapturedProperties> capturedProperties;
     static volatile boolean first = true;
 
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
-
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public List<DevServicesResultBuildItem> startMongo(List<MongoConnectionNameBuildItem> mongoConnections,
+            DockerStatusBuildItem dockerStatusBuildItem,
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -101,7 +100,7 @@ public class DevServicesMongoProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Mongo Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            devService = startMongo(connectionName, currentCapturedProperties.get(connectionName),
+            devService = startMongo(dockerStatusBuildItem, connectionName, currentCapturedProperties.get(connectionName),
                     !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout);
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
@@ -142,8 +141,8 @@ public class DevServicesMongoProcessor {
         return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
     }
 
-    private RunningDevService startMongo(String connectionName, CapturedProperties capturedProperties, boolean useSharedNetwork,
-            Optional<Duration> timeout) {
+    private RunningDevService startMongo(DockerStatusBuildItem dockerStatusBuildItem, String connectionName,
+            CapturedProperties capturedProperties, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!capturedProperties.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
@@ -162,7 +161,7 @@ public class DevServicesMongoProcessor {
             return null;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn("Please configure datasource URL for "
                     + (isDefault(connectionName) ? "default datasource" : connectionName)
                     + " or get a working docker instance");

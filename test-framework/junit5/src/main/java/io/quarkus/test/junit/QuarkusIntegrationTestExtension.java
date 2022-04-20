@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
@@ -7,6 +8,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.findProfile;
 import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
+import static io.quarkus.test.junit.IntegrationTestUtil.getArtifactType;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
@@ -132,12 +134,9 @@ public class QuarkusIntegrationTestExtension
     private IntegrationTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
             Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
             throws Throwable {
-        String artifactType = quarkusArtifactProperties.getProperty("type");
-        if (artifactType == null) {
-            throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");
-        }
+        String artifactType = getArtifactType(quarkusArtifactProperties);
 
-        boolean isDockerLaunch = "jar-container".equals(artifactType) || "native-container".equals(artifactType);
+        boolean isDockerLaunch = isContainer(artifactType);
 
         ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
                 isDockerLaunch);

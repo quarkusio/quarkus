@@ -1,5 +1,6 @@
 package io.quarkus.test.junit.launcher;
 
+import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
 
@@ -22,7 +23,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
 
     @Override
     public boolean supportsArtifactType(String type) {
-        return "jar-container".equals(type) || "native-container".equals(type);
+        return isContainer(type);
     }
 
     @Override

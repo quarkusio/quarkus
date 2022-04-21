@@ -33,7 +33,6 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
-import org.jboss.logmanager.handlers.PeriodicRotatingFileHandler;
 import org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler;
 import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
@@ -470,26 +469,20 @@ public class LoggingSetupRecorder {
 
     private static Handler configureFileHandler(final FileConfig config, final ErrorManager errorManager,
             final LogCleanupFilter cleanupFilter) {
-        FileHandler handler = new FileHandler();
+        FileHandler handler;
         FileConfig.RotationConfig rotationConfig = config.rotation;
-        if ((rotationConfig.maxFileSize.isPresent() || rotationConfig.rotateOnBoot)
-                && rotationConfig.fileSuffix.isPresent()) {
+        if (rotationConfig.fileSuffix.isPresent()) {
             PeriodicSizeRotatingFileHandler periodicSizeRotatingFileHandler = new PeriodicSizeRotatingFileHandler();
             periodicSizeRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
-            rotationConfig.maxFileSize
-                    .ifPresent(memorySize -> periodicSizeRotatingFileHandler.setRotateSize(memorySize.asLongValue()));
+            periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize.asLongValue());
             periodicSizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
             periodicSizeRotatingFileHandler.setMaxBackupIndex(rotationConfig.maxBackupIndex);
             handler = periodicSizeRotatingFileHandler;
-        } else if (rotationConfig.maxFileSize.isPresent()) {
+        } else {
             SizeRotatingFileHandler sizeRotatingFileHandler = new SizeRotatingFileHandler(
-                    rotationConfig.maxFileSize.get().asLongValue(), rotationConfig.maxBackupIndex);
+                    rotationConfig.maxFileSize.asLongValue(), rotationConfig.maxBackupIndex);
             sizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
             handler = sizeRotatingFileHandler;
-        } else if (rotationConfig.fileSuffix.isPresent()) {
-            PeriodicRotatingFileHandler periodicRotatingFileHandler = new PeriodicRotatingFileHandler();
-            periodicRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
-            handler = periodicRotatingFileHandler;
         }
 
         final PatternFormatter formatter = new PatternFormatter(config.format);

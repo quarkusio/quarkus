@@ -111,7 +111,11 @@ public class DevServicesRedisProcessor {
                 log.infof("The %s redis server is ready to accept connections on %s", connectionName,
                         devService.getConfig().get(configKey));
             }
-            compressor.close();
+            if (newDevServices.isEmpty()) {
+                compressor.closeAndDumpCaptured();
+            } else {
+                compressor.close();
+            }
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);

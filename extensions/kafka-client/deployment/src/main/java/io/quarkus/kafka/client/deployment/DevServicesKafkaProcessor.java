@@ -94,7 +94,11 @@ public class DevServicesKafkaProcessor {
             devService = startKafka(configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
                     devServicesConfig.timeout);
-            compressor.close();
+            if (devService == null) {
+                compressor.closeAndDumpCaptured();
+            } else {
+                compressor.close();
+            }
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);

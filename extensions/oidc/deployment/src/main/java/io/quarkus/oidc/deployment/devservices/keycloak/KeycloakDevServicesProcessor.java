@@ -222,7 +222,11 @@ public class KeycloakDevServicesProcessor {
             }
 
             capturedRealmFileLastModifiedDate = getRealmFileLastModifiedDate(capturedDevServicesConfiguration.realmPath);
-            compressor.close();
+            if (devService == null) {
+                compressor.closeAndDumpCaptured();
+            } else {
+                compressor.close();
+            }
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);

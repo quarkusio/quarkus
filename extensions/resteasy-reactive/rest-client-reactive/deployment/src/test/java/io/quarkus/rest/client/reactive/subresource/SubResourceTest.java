@@ -54,10 +54,10 @@ public class SubResourceTest {
 
     @Test
     void shouldPassParamsToSubSubResource() {
-        // should result in sending GET /path/rt/mthd/sub/sub/simple
+        // should result in sending GET /path/rt/mthd/sub/simple
         RootClient rootClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(RootClient.class);
         String result = rootClient.sub("rt", "mthd").sub().simpleSub();
-        assertThat(result).isEqualTo("rt/mthd/sub/sub/simple");
+        assertThat(result).isEqualTo("rt/mthd/sub/subSimple");
     }
 
     @Test
@@ -84,14 +84,14 @@ public class SubResourceTest {
         SubSubClient sub = rootClient.sub("rt", "mthd").sub();
 
         Response result = sub.postWithQueryParam("prm", "ent1t1");
-        assertThat(result.readEntity(String.class)).isEqualTo("rt/mthd:ent1t1:prm");
+        assertThat(result.readEntity(String.class)).isEqualTo("rt/mthd/sub:ent1t1:prm");
         MultivaluedMap<String, Object> headers = result.getHeaders();
         assertThat(headers.get("overridable").get(0)).isEqualTo("SubSubClient");
         assertThat(headers.get("fromSubMethod").get(0)).isEqualTo("SubSubClientComputed");
 
         // check that a second usage of the sub stub works
         result = sub.postWithQueryParam("prm", "ent1t1");
-        assertThat(result.readEntity(String.class)).isEqualTo("rt/mthd:ent1t1:prm");
+        assertThat(result.readEntity(String.class)).isEqualTo("rt/mthd/sub:ent1t1:prm");
     }
 
     @Path("/path/{rootParam}")
@@ -136,7 +136,7 @@ public class SubResourceTest {
     @Produces("text/plain")
     interface SubSubClient {
         @GET
-        @Path("/simple")
+        @Path("/subSimple")
         String simpleSub();
 
         @POST

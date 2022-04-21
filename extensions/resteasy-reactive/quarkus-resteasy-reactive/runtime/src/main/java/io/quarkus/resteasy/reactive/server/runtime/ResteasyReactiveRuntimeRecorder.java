@@ -38,8 +38,8 @@ public class ResteasyReactiveRuntimeRecorder {
         List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();
         deployment.getValue().setRuntimeConfiguration(runtimeConfiguration);
-        for (RuntimeConfigurableServerRestHandler handler : runtimeConfigurableServerRestHandlers) {
-            handler.configure(runtimeConfiguration);
+        for (int i = 0; i < runtimeConfigurableServerRestHandlers.size(); i++) {
+            runtimeConfigurableServerRestHandlers.get(i).configure(runtimeConfiguration);
         }
     }
 }

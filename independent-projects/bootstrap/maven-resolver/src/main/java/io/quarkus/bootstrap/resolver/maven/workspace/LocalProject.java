@@ -339,6 +339,7 @@ public class LocalProject {
                 .setBuildDir(getOutputDir());
 
         final Build build = (modelBuildingResult == null ? getRawModel() : modelBuildingResult.getEffectiveModel()).getBuild();
+        boolean addedNonTestSourceSets = false;
         if (build != null && !build.getPlugins().isEmpty()) {
             for (Plugin plugin : build.getPlugins()) {
                 if (!plugin.getArtifactId().equals("maven-jar-plugin")) {
@@ -347,6 +348,7 @@ public class LocalProject {
                 if (plugin.getExecutions().isEmpty()) {
                     final DefaultArtifactSources src = processJarPluginExecutionConfig(plugin.getConfiguration(), false);
                     if (src != null) {
+                        addedNonTestSourceSets = true;
                         moduleBuilder.addArtifactSources(src);
                     }
                 } else {
@@ -354,6 +356,7 @@ public class LocalProject {
                         DefaultArtifactSources src = null;
                         if (e.getGoals().contains(ArtifactCoords.TYPE_JAR)) {
                             src = processJarPluginExecutionConfig(e.getConfiguration(), false);
+                            addedNonTestSourceSets |= src != null;
                         } else if (e.getGoals().contains("test-jar")) {
                             src = processJarPluginExecutionConfig(e.getConfiguration(), true);
                         }
@@ -365,7 +368,7 @@ public class LocalProject {
             }
         }
 
-        if (!moduleBuilder.hasNonTestSources()) {
+        if (!addedNonTestSourceSets) {
             moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.MAIN,
                     Collections.singletonList(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir())),
                     collectMainResources(null)));

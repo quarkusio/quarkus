@@ -34,6 +34,14 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
     static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Object.class, Collections.emptySet(), null, null,
             null, -1);
 
+    static final Supplier<InjectionPoint> EMPTY_SUPPLIER = new Supplier<InjectionPoint>() {
+
+        @Override
+        public InjectionPoint get() {
+            return CurrentInjectionPointProvider.EMPTY;
+        }
+    };
+
     private final Supplier<InjectableReferenceProvider<T>> delegateSupplier;
 
     private final InjectionPoint injectionPoint;

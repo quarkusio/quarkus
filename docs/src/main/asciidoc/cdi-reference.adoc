@@ -931,7 +931,7 @@ public class Processor {
 <1> The injected instance is an _immutable list_ of the contextual references of the _disambiguated_ beans.
 <2> For this injection point the required type is `Service` and no additional qualifiers are declared.
 
-TIP: By default, the list of beans is sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first. In general, the `@javax.annotation.Priority` and `@io.quarkus.arc.Priority` annotations can be used to assign the priority to a class bean, producer method or producer field.
+TIP: The list is sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first. In general, the `@javax.annotation.Priority` and `@io.quarkus.arc.Priority` annotations can be used to assign the priority to a class bean, producer method or producer field.
 
 If an injection point declares no other qualifier than `@All` then `@Any` is used, i.e. the behavior is equivalent to `@Inject @Any Instance<Service>`.
 
@@ -959,6 +959,8 @@ public class Processor {
 ----
 
 NOTE: Neither a type variable nor a wildcard is a legal type parameter for an `@All List<>` injection point, i.e. `@Inject @All List<?> all` is not supported and results in a deployment error.
+
+TIP: It is also possible to obtain the list of all bean instance handles programmatically via the `Arc.container().listAll()` methods.
 
 === Ignoring Class-Level Interceptor Bindings for Methods and Constructors
 

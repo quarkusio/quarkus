@@ -11,7 +11,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.common.providers.serialisers.JsonMessageBodyWriterUtil;
-import org.jboss.resteasy.reactive.server.providers.serialisers.json.JsonMessageServerBodyWriterUtil;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
@@ -38,7 +37,6 @@ public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteable
     @Override
     public void writeResponse(Object o, Type genericType, ServerRequestContext context)
             throws WebApplicationException, IOException {
-        JsonMessageServerBodyWriterUtil.setContentTypeIfNecessary(context);
         OutputStream originalStream = context.getOrCreateOutputStream();
         OutputStream stream = new NoopCloseAndFlushOutputStream(originalStream);
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...

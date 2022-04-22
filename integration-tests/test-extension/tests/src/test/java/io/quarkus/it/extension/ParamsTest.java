@@ -133,4 +133,36 @@ public class ParamsTest {
     static class TestData {
         final List<String> foo = Arrays.asList("one", "two", "three");
     }
+
+    static Stream<Arguments> arguments() {
+        return Stream.of(
+                Arguments.of(new TestObject1()),
+                Arguments.of(new TestObject2()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("arguments")
+    void map(Object o) {
+
+    }
+
+    static class TestObject1 {
+
+        private final Map<String, String> map = Collections.emptyMap();
+
+        Map<String, String> getMap() {
+            return map;
+        }
+
+    }
+
+    static class TestObject2 {
+
+        private final Map<String, String> map = Map.of();
+
+        Map<String, String> getMap() {
+            return map;
+        }
+
+    }
 }

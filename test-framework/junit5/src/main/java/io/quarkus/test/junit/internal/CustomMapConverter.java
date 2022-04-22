@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.thoughtworks.xstream.converters.collections.CollectionConverter;
+import com.thoughtworks.xstream.converters.collections.MapConverter;
 import com.thoughtworks.xstream.mapper.Mapper;
 
 /**
@@ -16,7 +16,7 @@ import com.thoughtworks.xstream.mapper.Mapper;
  * The reason for doing this is to avoid XStream causing illegal access issues
  * for internal JDK maps
  */
-public class CustomMapConverter extends CollectionConverter {
+public class CustomMapConverter extends MapConverter {
 
     // if we wanted to be 100% sure, we'd list all the Set.of methods, but I think it's pretty safe to say
     // that the JDK won't add custom implementations for the other classes

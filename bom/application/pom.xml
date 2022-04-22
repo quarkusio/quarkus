@@ -151,7 +151,7 @@
         <dekorate.version>2.9.2</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.1.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <jboss-logmanager.version>1.0.9</jboss-logmanager.version>
+        <jboss-logmanager.version>1.1.0</jboss-logmanager.version>
         <flyway.version>8.5.9</flyway.version>
         <yasson.version>1.0.11</yasson.version>
         <liquibase.version>4.9.1</liquibase.version>

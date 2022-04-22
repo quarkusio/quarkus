@@ -179,20 +179,22 @@ public class BootstrapAppModelResolver implements AppModelResolver {
      */
     public ApplicationModel resolveModel(WorkspaceModule module)
             throws AppModelResolverException {
-        if (!module.getMainSources().isOutputAvailable()) {
-            throw new AppModelResolverException("");
-        }
         final PathList.Builder resolvedPaths = PathList.builder();
-        module.getMainSources().getSourceDirs().forEach(s -> {
-            if (!resolvedPaths.contains(s.getOutputDir())) {
-                resolvedPaths.add(s.getOutputDir());
+        if (module.hasMainSources()) {
+            if (!module.getMainSources().isOutputAvailable()) {
+                throw new AppModelResolverException("The application module hasn't been built yet");
             }
-        });
-        module.getMainSources().getResourceDirs().forEach(s -> {
-            if (!resolvedPaths.contains(s.getOutputDir())) {
-                resolvedPaths.add(s.getOutputDir());
-            }
-        });
+            module.getMainSources().getSourceDirs().forEach(s -> {
+                if (!resolvedPaths.contains(s.getOutputDir())) {
+                    resolvedPaths.add(s.getOutputDir());
+                }
+            });
+            module.getMainSources().getResourceDirs().forEach(s -> {
+                if (!resolvedPaths.contains(s.getOutputDir())) {
+                    resolvedPaths.add(s.getOutputDir());
+                }
+            });
+        }
         final Artifact mainArtifact = new DefaultArtifact(module.getId().getGroupId(), module.getId().getArtifactId(), null,
                 ArtifactCoords.TYPE_JAR,
                 module.getId().getVersion());

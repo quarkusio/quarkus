@@ -12,7 +12,6 @@ import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -94,7 +93,7 @@ public class SecurityProcessor {
     void produceJcaSecurityProviders(BuildProducer<JCAProviderBuildItem> jcaProviders,
             BuildProducer<BouncyCastleProviderBuildItem> bouncyCastleProvider,
             BuildProducer<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProvider) {
-        Set<String> providers = new HashSet<>(security.securityProviders.orElse(Collections.emptyList()));
+        Set<String> providers = security.securityProviders.orElse(Set.of());
         for (String providerName : providers) {
             if (SecurityProviderUtils.BOUNCYCASTLE_PROVIDER_NAME.equals(providerName)) {
                 bouncyCastleProvider.produce(new BouncyCastleProviderBuildItem());
@@ -105,7 +104,7 @@ public class SecurityProcessor {
             } else if (SecurityProviderUtils.BOUNCYCASTLE_FIPS_JSSE_PROVIDER_NAME.equals(providerName)) {
                 bouncyCastleJsseProvider.produce(new BouncyCastleJsseProviderBuildItem(true));
             } else {
-                jcaProviders.produce(new JCAProviderBuildItem(providerName));
+                jcaProviders.produce(new JCAProviderBuildItem(providerName, security.securityProviderConfig.get(providerName)));
             }
             log.debugf("Added providerName: %s", providerName);
         }
@@ -124,7 +123,8 @@ public class SecurityProcessor {
             List<JCAProviderBuildItem> jcaProviders,
             BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) throws IOException, URISyntaxException {
         for (JCAProviderBuildItem provider : jcaProviders) {
-            List<String> providerClasses = registerProvider(provider.getProviderName(), additionalProviders);
+            List<String> providerClasses = registerProvider(provider.getProviderName(), provider.getProviderConfig(),
+                    additionalProviders);
             for (String className : providerClasses) {
                 classes.produce(new ReflectiveClassBuildItem(true, true, className));
                 log.debugf("Register JCA class: %s", className);
@@ -354,6 +354,7 @@ public class SecurityProcessor {
      * @return class names that make up the provider and its services
      */
     private List<String> registerProvider(String providerName,
+            String providerConfig,
             BuildProducer<NativeImageSecurityProviderBuildItem> additionalProviders) {
         List<String> providerClasses = new ArrayList<>();
         Provider provider = Security.getProvider(providerName);
@@ -365,6 +366,14 @@ public class SecurityProcessor {
                 String supportedKeyClasses = service.getAttribute("SupportedKeyClasses");
                 if (supportedKeyClasses != null) {
                     providerClasses.addAll(Arrays.asList(supportedKeyClasses.split("\\|")));
+                }
+            }
+
+            if (providerConfig != null) {
+                Provider configuredProvider = provider.configure(providerConfig);
+                if (configuredProvider != null) {
+                    Security.addProvider(configuredProvider);
+                    providerClasses.add(configuredProvider.getClass().getName());
                 }
             }
         }

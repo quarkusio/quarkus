@@ -1,7 +1,8 @@
 package io.quarkus.security.deployment;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -20,8 +21,14 @@ public final class SecurityConfig {
     public boolean authorizationEnabledInDevMode;
 
     /**
-     * List of security providers to enable for reflection
+     * List of security providers to register
      */
     @ConfigItem
-    public Optional<List<String>> securityProviders;
+    public Optional<Set<String>> securityProviders;
+
+    /**
+     * Security provider configuration
+     */
+    @ConfigItem
+    public Map<String, String> securityProviderConfig;
 }

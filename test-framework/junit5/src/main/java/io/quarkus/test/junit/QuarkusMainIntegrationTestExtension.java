@@ -135,6 +135,8 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
                 }
                 additionalProperties.putAll(resourceManagerProps);
 
+                testResourceManager.inject(context.getRequiredTestInstance());
+
                 ArtifactLauncher<?> launcher = null;
                 ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                 for (ArtifactLauncherProvider launcherProvider : loader) {

@@ -128,6 +128,23 @@ public interface QuarkusTestResourceLifecycleManager {
         }
 
         /**
+         * Returns {@code true} if the field can be assigned to the supplied type.
+         */
+        class MatchesType implements Predicate<Field> {
+
+            private final Class<?> expectedFieldType;
+
+            public MatchesType(Class<?> expectedFieldType) {
+                this.expectedFieldType = expectedFieldType;
+            }
+
+            @Override
+            public boolean test(Field field) {
+                return field.getType().isAssignableFrom(expectedFieldType);
+            }
+        }
+
+        /**
          * Returns {@code true} if the field is annotated with the supplied annotation and can also be assigned
          * to the supplied type.
          */

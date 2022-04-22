@@ -99,7 +99,7 @@
         <module>kafka-streams</module>
         <module>mongodb-client</module>
         <module>avro</module>
-        <module>apicurio-registry-avro</module>
+        <module>schema-registry</module>
         <module>devservices</module>
 
         <!-- Spring -->

@@ -368,6 +368,8 @@ public class ProtectedResource {
 }
 ----
 
+Note: If you want to use the `AuthzClient` directly make sure to to set `quarkus.keycloak.policy-enforcer.enable=true` otherwise there is no Bean available for injection.
+
 == Mapping Protected Resources
 
 By default, the extension is going to fetch resources on-demand from Keycloak where their `URI` are used to map the resources in your application that should be protected.

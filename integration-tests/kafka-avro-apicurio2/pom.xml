@@ -21,10 +21,6 @@
       - the tests for Confluent schema registry.
       -->
 
-    <properties>
-        <apicurio.version>2.2.1.Final</apicurio.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

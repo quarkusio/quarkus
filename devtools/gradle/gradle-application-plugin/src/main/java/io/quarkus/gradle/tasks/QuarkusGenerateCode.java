@@ -16,11 +16,11 @@ import java.util.function.Consumer;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
 
 import io.quarkus.bootstrap.BootstrapException;
@@ -108,42 +108,39 @@ public class QuarkusGenerateCode extends QuarkusTask {
                 .setIsolateDeployment(true)
                 .build().bootstrap()) {
 
-            final JavaPluginConvention javaConvention = getProject().getConvention().findPlugin(JavaPluginConvention.class);
-            if (javaConvention != null) {
-                final String generateSourcesDir = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
-                final SourceSet generatedSources = javaConvention.getSourceSets().findByName(generateSourcesDir);
-                List<Path> paths = new ArrayList<>();
-                generatedSources.getOutput()
-                        .filter(f -> f.getName().equals(generateSourcesDir))
-                        .forEach(f -> paths.add(f.toPath()));
-                if (paths.isEmpty()) {
-                    throw new GradleException("Failed to create quarkus-generated-sources");
-                }
-
-                getLogger().debug("Will trigger preparing sources for source directory: {} buildDir: {}",
-                        sourcesDirectories, getProject().getBuildDir().getAbsolutePath());
-
-                QuarkusClassLoader deploymentClassLoader = appCreationContext.createDeploymentClassLoader();
-                Class<?> codeGenerator = deploymentClassLoader.loadClass(CodeGenerator.class.getName());
-
-                Optional<Method> initAndRun = Arrays.stream(codeGenerator.getMethods())
-                        .filter(m -> m.getName().equals(INIT_AND_RUN))
-                        .findAny();
-                if (initAndRun.isEmpty()) {
-                    throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
-                }
-
-                initAndRun.get().invoke(null, deploymentClassLoader,
-                        PathList.from(sourcesDirectories),
-                        paths.get(0),
-                        buildDir,
-                        sourceRegistrar,
-                        appCreationContext.getApplicationModel(),
-                        realProperties,
-                        launchMode.name(),
-                        test);
-
+            SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
+            final String generateSourcesDir = test ? QUARKUS_TEST_GENERATED_SOURCES : QUARKUS_GENERATED_SOURCES;
+            final SourceSet generatedSources = sourceSets.getByName(generateSourcesDir);
+            List<Path> paths = new ArrayList<>();
+            generatedSources.getOutput()
+                    .filter(f -> f.getName().equals(generateSourcesDir))
+                    .forEach(f -> paths.add(f.toPath()));
+            if (paths.isEmpty()) {
+                throw new GradleException("Failed to create quarkus-generated-sources");
             }
+
+            getLogger().debug("Will trigger preparing sources for source directory: {} buildDir: {}",
+                    sourcesDirectories, getProject().getBuildDir().getAbsolutePath());
+
+            QuarkusClassLoader deploymentClassLoader = appCreationContext.createDeploymentClassLoader();
+            Class<?> codeGenerator = deploymentClassLoader.loadClass(CodeGenerator.class.getName());
+
+            Optional<Method> initAndRun = Arrays.stream(codeGenerator.getMethods())
+                    .filter(m -> m.getName().equals(INIT_AND_RUN))
+                    .findAny();
+            if (initAndRun.isEmpty()) {
+                throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
+            }
+
+            initAndRun.get().invoke(null, deploymentClassLoader,
+                    PathList.from(sourcesDirectories),
+                    paths.get(0),
+                    buildDir,
+                    sourceRegistrar,
+                    appCreationContext.getApplicationModel(),
+                    realProperties,
+                    launchMode.name(),
+                    test);
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
             throw new GradleException("Failed to generate sources in the QuarkusPrepare task", e);
         }

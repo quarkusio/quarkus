@@ -22,8 +22,8 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.capabilities.Capability;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.util.BootstrapUtils;
@@ -80,10 +80,10 @@ public class DependencyUtils {
         if (artifact.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
             final Project projectDep = project.getRootProject().findProject(
                     ((ProjectComponentIdentifier) artifact.getId().getComponentIdentifier()).getProjectPath());
-            final JavaPluginConvention javaExtension = projectDep == null ? null
-                    : projectDep.getConvention().findPlugin(JavaPluginConvention.class);
-            if (javaExtension != null) {
-                SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            SourceSetContainer sourceSets = projectDep == null ? null
+                    : projectDep.getExtensions().findByType(SourceSetContainer.class);
+            if (sourceSets != null) {
+                SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
                 File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
                 Path descriptorPath = resourcesDir.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH);
                 if (Files.exists(descriptorPath)) {

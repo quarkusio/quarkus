@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
@@ -24,8 +25,8 @@ import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.IncludedBuild;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.compile.AbstractCompile;
 import org.gradle.language.jvm.tasks.ProcessResources;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
@@ -124,20 +125,17 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 .setArtifactId(project.getName())
                 .setVersion(project.getVersion().toString());
 
-        final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
-        if (javaConvention == null) {
-            throw new GradleException("Failed to locate Java plugin extension in " + project.getPath());
-        }
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
         final WorkspaceModule.Mutable mainModule = WorkspaceModule.builder()
                 .setModuleId(new GAV(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()))
                 .setModuleDir(project.getProjectDir().toPath())
                 .setBuildDir(project.getBuildDir().toPath())
                 .setBuildFile(project.getBuildFile().toPath());
 
-        initProjectModule(project, mainModule, javaConvention.getSourceSets().findByName(SourceSet.MAIN_SOURCE_SET_NAME),
+        initProjectModule(project, mainModule, sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME),
                 SourceSet.MAIN_SOURCE_SET_NAME, ArtifactSources.MAIN);
         if (workspaceDiscovery) {
-            initProjectModule(project, mainModule, javaConvention.getSourceSets().findByName(SourceSet.TEST_SOURCE_SET_NAME),
+            initProjectModule(project, mainModule, sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME),
                     SourceSet.TEST_SOURCE_SET_NAME, ArtifactSources.TEST);
         }
 
@@ -167,11 +165,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         final ResolvedConfiguration rc = deploymentConfiguration.getResolvedConfiguration();
         for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
             if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
-                final Project projectDep = project.getRootProject().findProject(
-                        ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
-                final JavaPluginConvention javaExtension = projectDep == null ? null
-                        : projectDep.getConvention().findPlugin(JavaPluginConvention.class);
-                SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                ProjectComponentIdentifier projectComponentIdentifier = (ProjectComponentIdentifier) a.getId()
+                        .getComponentIdentifier();
+                final Project projectDep = project.getRootProject().findProject(projectComponentIdentifier.getProjectPath());
+                Objects.requireNonNull(projectDep, "project " + projectComponentIdentifier.getProjectPath() + " should exist");
+                SourceSetContainer sourceSets = projectDep.getExtensions().getByType(SourceSetContainer.class);
+
+                SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
                 ResolvedDependencyBuilder dep = modelBuilder.getDependency(
                         toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()));
                 if (dep == null) {
@@ -276,8 +276,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
                 final Project projectDep = project.getRootProject().findProject(
                         ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
-                final JavaPluginConvention javaExtension = projectDep == null ? null
-                        : projectDep.getConvention().findPlugin(JavaPluginConvention.class);
+                SourceSetContainer sourceSets = projectDep == null ? null
+                        : projectDep.getExtensions().findByType(SourceSetContainer.class);
 
                 final String classifier = a.getClassifier();
                 if (classifier == null || classifier.isEmpty()) {
@@ -286,22 +286,22 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                         final PathList.Builder pathBuilder = PathList.builder();
                         addSubstitutedProject(pathBuilder, includedBuild.getProjectDir());
                         paths = pathBuilder.build();
-                    } else if (javaExtension != null) {
+                    } else if (sourceSets != null) {
                         final PathList.Builder pathBuilder = PathList.builder();
                         projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
-                                javaExtension, pathBuilder, SourceSet.MAIN_SOURCE_SET_NAME, false);
+                                pathBuilder, SourceSet.MAIN_SOURCE_SET_NAME, false);
                         paths = pathBuilder.build();
                     }
-                } else if (javaExtension != null) {
+                } else if (sourceSets != null) {
                     if ("test".equals(classifier)) {
                         final PathList.Builder pathBuilder = PathList.builder();
                         projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
-                                javaExtension, pathBuilder, SourceSet.TEST_SOURCE_SET_NAME, true);
+                                pathBuilder, SourceSet.TEST_SOURCE_SET_NAME, true);
                         paths = pathBuilder.build();
                     } else if ("test-fixtures".equals(classifier)) {
                         final PathList.Builder pathBuilder = PathList.builder();
                         projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
-                                javaExtension, pathBuilder, "testFixtures", true);
+                                pathBuilder, "testFixtures", true);
                         paths = pathBuilder.build();
                     }
                 }
@@ -341,7 +341,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private WorkspaceModule.Mutable initProjectModuleAndBuildPaths(final Project project,
             ResolvedArtifact resolvedArtifact, ApplicationModelBuilder appModel, final ResolvedDependencyBuilder appDep,
-            final JavaPluginConvention javaExt, PathList.Builder buildPaths, String sourceName, boolean test) {
+            PathList.Builder buildPaths, String sourceName, boolean test) {
 
         appDep.setWorkspaceModule().setReloadable();
 
@@ -353,7 +353,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 .setBuildFile(project.getBuildFile().toPath());
 
         final String classifier = toNonNullClassifier(resolvedArtifact.getClassifier());
-        initProjectModule(project, projectModule, javaExt.getSourceSets().findByName(sourceName), sourceName, classifier);
+        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        initProjectModule(project, projectModule, sourceSets.findByName(sourceName), sourceName, classifier);
 
         collectDestinationDirs(projectModule.getSources(classifier).getSourceDirs(), buildPaths);
         collectDestinationDirs(projectModule.getSources(classifier).getResourceDirs(), buildPaths);

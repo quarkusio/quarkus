@@ -141,15 +141,22 @@ public class VertxHttpRecorder {
 
     public static final String GET = "GET";
     private static final Handler<HttpServerRequest> ACTUAL_ROOT = new Handler<HttpServerRequest>() {
+
+        /** JVM system property that disables URI validation, don't use this in production. */
+        private static final String DISABLE_URI_VALIDATION_PROP_NAME = "vertx.disableURIValidation";
+
+        /**
+         * Disables HTTP headers validation, so we can save some processing and save some allocations.
+         */
+        private final boolean DISABLE_URI_VALIDATION = Boolean.getBoolean(DISABLE_URI_VALIDATION_PROP_NAME);
+
         @Override
         public void handle(HttpServerRequest httpServerRequest) {
-            try {
-                // we simply need to know if the URI is valid
-                new URI(httpServerRequest.uri());
-            } catch (URISyntaxException e) {
+            if (!uriValid(httpServerRequest)) {
                 httpServerRequest.response().setStatusCode(400).end();
                 return;
             }
+
             //we need to pause the request to make sure that data does
             //not arrive before handlers have a chance to install a read handler
             //as it is possible filters such as the auth filter can do blocking tasks
@@ -163,6 +170,19 @@ public class VertxHttpRecorder {
                 //very rare race condition, that can happen when dev mode is shutting down
                 httpServerRequest.resume();
                 httpServerRequest.response().setStatusCode(503).end();
+            }
+        }
+
+        private boolean uriValid(HttpServerRequest httpServerRequest) {
+            if (DISABLE_URI_VALIDATION) {
+                return true;
+            }
+            try {
+                // we simply need to know if the URI is valid
+                new URI(httpServerRequest.uri());
+                return true;
+            } catch (URISyntaxException e) {
+                return false;
             }
         }
     };

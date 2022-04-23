@@ -73,8 +73,12 @@ public class HttpConfiguration {
     public Optional<Boolean> proxyAddressForwarding;
 
     /**
-     * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used,
-     * rather than the more common but not standard {@code X-Forwarded-For}.
+     * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used.
+     * In case the not standard {@code X-Forwarded-For} header is enabled and detected on HTTP requests, the standard header has
+     * the precedence.
+     * Activating this together with {@code quarkus.http.proxy.allow-x-forwarded} has security implications as clients can forge
+     * requests with a forwarded header that is not overwritten by the proxy. Therefore proxies should strip unexpected
+     * `X-Forwarded` or `X-Forwarded-*` headers from the client.
      *
      * @deprecated use quarkus.http.proxy.allow-forwarded instead.
      */

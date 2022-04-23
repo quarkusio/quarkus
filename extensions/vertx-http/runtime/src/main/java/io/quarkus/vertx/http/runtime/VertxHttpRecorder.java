@@ -478,6 +478,7 @@ public class VertxHttpRecorder {
         }
 
         warnIfDeprecatedHttpConfigPropertiesPresent(httpConfiguration);
+        warnIfProxyAddressForwardingAllowedWithMultipleHeaders(httpConfiguration);
         ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(httpConfiguration);
         if (forwardingProxyOptions.proxyAddressForwarding) {
             Handler<HttpServerRequest> delegate = root;
@@ -578,6 +579,22 @@ public class VertxHttpRecorder {
             LOGGER.warn(
                     "`quarkus.http.allow-forwarded` is deprecated and will be removed in a future version - it is "
                             + "recommended to switch to `quarkus.http.proxy.allow-forwarded`");
+        }
+    }
+
+    private void warnIfProxyAddressForwardingAllowedWithMultipleHeaders(HttpConfiguration httpConfiguration) {
+        ProxyConfig proxyConfig = httpConfiguration.proxy;
+        boolean proxyAddressForwardingActivated = httpConfiguration.proxyAddressForwarding
+                .orElse(proxyConfig.proxyAddressForwarding);
+        boolean forwardedActivated = httpConfiguration.allowForwarded.orElse(proxyConfig.allowForwarded);
+        boolean xForwardedActivated = httpConfiguration.proxy.allowXForwarded.orElse(!forwardedActivated);
+
+        if (proxyAddressForwardingActivated && forwardedActivated && xForwardedActivated) {
+            LOGGER.warn(
+                    "The X-Forwarded-* and Forwarded headers will be considered when determining the proxy address. " +
+                            "This configuration can cause a security issue as clients can forge requests and send a " +
+                            "forwarded header that is not overwritten by the proxy. " +
+                            "Please consider use one of these headers just to forward the proxy address in requests.");
         }
     }
 

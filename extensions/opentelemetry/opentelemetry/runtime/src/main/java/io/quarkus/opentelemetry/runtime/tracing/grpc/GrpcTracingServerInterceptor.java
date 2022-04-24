@@ -24,6 +24,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.net.InetSocketAddressNetServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcServerAttributesExtractor;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.quarkus.grpc.GlobalInterceptor;
 
@@ -38,7 +39,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 INSTRUMENTATION_NAME,
                 new GrpcSpanNameExtractor());
 
-        builder.addAttributesExtractor(new GrpcAttributesExtractor())
+        builder.addAttributesExtractor(RpcServerAttributesExtractor.create(GrpcAttributesGetter.INSTANCE))
                 .addAttributesExtractor(NetServerAttributesExtractor.create(new GrpcServerNetServerAttributesGetter()))
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());

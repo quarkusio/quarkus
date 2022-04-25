@@ -106,7 +106,7 @@ public class ConfigBuildStep {
             AnnotationInstance configProperty = injectionPoint.getRequiredQualifier(MP_CONFIG_PROPERTY_NAME);
             if (configProperty != null) {
                 // Register a custom bean for injection points that are not handled by ConfigProducer
-                Type injectedType = injectionPoint.getType();
+                Type injectedType = injectionPoint.getRequiredType();
                 if (!isHandledByProducers(injectedType)) {
                     customBeanTypes.add(injectedType);
                 }

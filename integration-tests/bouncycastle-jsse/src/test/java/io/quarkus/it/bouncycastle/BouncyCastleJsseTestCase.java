@@ -2,6 +2,7 @@ package io.quarkus.it.bouncycastle;
 
 import static org.awaitility.Awaitility.given;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
@@ -52,7 +53,7 @@ public class BouncyCastleJsseTestCase {
                 .get("/jsse/listProviders")
                 .then()
                 .statusCode(200)
-                .body(containsString("BC,BCJSSE,SunJSSE"));
+                .body(startsWith("Identity: CN=client"), containsString("BC,BCJSSE,SunJSSE"));
     }
 
     protected void checkLog(boolean serverOnly) {

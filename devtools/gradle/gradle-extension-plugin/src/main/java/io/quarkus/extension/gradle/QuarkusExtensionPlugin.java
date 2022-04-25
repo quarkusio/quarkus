@@ -38,6 +38,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
     public void apply(Project project) {
         final QuarkusExtensionConfiguration quarkusExt = project.getExtensions().create(EXTENSION_CONFIGURATION_NAME,
                 QuarkusExtensionConfiguration.class);
+        project.getPluginManager().apply(JavaPlugin.class);
         registerTasks(project, quarkusExt);
     }
 

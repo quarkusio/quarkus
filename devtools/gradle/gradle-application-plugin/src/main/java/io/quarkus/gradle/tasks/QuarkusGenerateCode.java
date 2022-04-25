@@ -92,8 +92,6 @@ public class QuarkusGenerateCode extends QuarkusTask {
 
     @TaskAction
     public void prepareQuarkus() {
-        getLogger().lifecycle("preparing quarkus application");
-
         LaunchMode launchMode = test ? LaunchMode.TEST : devMode ? LaunchMode.DEVELOPMENT : LaunchMode.NORMAL;
         final ApplicationModel appModel = extension().getApplicationModel(launchMode);
         final Properties realProperties = getBuildSystemProperties(appModel.getAppArtifact());

@@ -77,6 +77,13 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <!-- we let quarkus-jsonp bring the appropriate impl -->
+                <exclusion>
+                    <groupId>org.glassfish</groupId>
+                    <artifactId>jakarta.json</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

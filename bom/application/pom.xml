@@ -5830,6 +5830,7 @@
                                 <recipe>io.quarkus.smallrye</recipe>
                                 <recipe>io.quarkus.bom.resteasy-microprofile</recipe>
                                 <recipe>io.quarkus.bom.resteasy-spring-web</recipe>
+                                <recipe>io.quarkus.jakarta-json</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>
@@ -5857,6 +5858,7 @@
                             <activeRecipes>
                                 <recipe>io.quarkus.jakarta-jaxrs-jaxb-cleanup</recipe>
                                 <recipe>io.quarkus.jakarta-security-cleanup</recipe>
+                                <recipe>io.quarkus.jakarta-json-cleanup</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

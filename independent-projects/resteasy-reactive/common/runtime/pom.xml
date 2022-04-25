@@ -69,6 +69,7 @@
                         <configuration>
                             <activeRecipes>
                                 <recipe>io.quarkus.jakarta-jaxrs-switch</recipe>
+                                <recipe>io.quarkus.jakarta-json-switch</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

@@ -46,10 +46,7 @@ recipeList:
       key: resteasy.version
       newValue: 6.0.0.Final
   # JAXB - See below
-  # JSON
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: jakarta.json.version
-      newValue: 2.0.0
+  # JSON - See below
   # JSON Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.json.bind-api.version
@@ -215,6 +212,39 @@ recipeList:
   - org.openrewrite.maven.RemoveExclusion:
       groupId: jakarta.xml.bind
       artifactId: jakarta.xml.bind-api
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-json-cleanup
+displayName: Clean up Jakarta JSON dependencies
+recipeList:
+  - org.openrewrite.maven.RemoveManagedDependency:
+      groupId: org.glassfish
+      artifactId: jakarta.json
+  - org.openrewrite.maven.RemoveProperty:
+      propertyName: jakarta.json.version
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-json
+displayName: Adjust Jakarta JSON dependencies
+recipeList:
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: org.eclipse.parsson
+      artifactId: jakarta.json
+      version: "${parsson.version}"
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: parsson.version
+      newValue: 1.0.0
+      addIfMissing: true
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-json-switch
+displayName: Switch Jakarta JSON version
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.glassfish
+      oldArtifactId: jakarta.json
+      newGroupId: org.eclipse.parsson
+      newArtifactId: jakarta.json
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.build-parent

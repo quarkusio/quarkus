@@ -177,6 +177,16 @@ quarkus.http.auth.permission.permit1.methods=GET,HEAD
 
 and enabled at runtime with a system property or environment variable, for example: `-Dquarkus.http.auth.permission.permit1.enabled=true`.
 
+=== Referring to Endpoint Context Path
+
+If you use `quarkus.http.root-path` to xref:http-reference.adoc#context-path[Configure Endpoint Context Path] then it needs to be referred to as follows:
+
+[source,properties]
+----
+quarkus.http.root-path=/root
+quarkus.http.auth.permission.authenticated.paths=${quarkus.http.root-path}/service/*
+----
+
 [#standard-security-annotations]
 == Authorization using Annotations
 

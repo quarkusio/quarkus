@@ -78,7 +78,7 @@ TIP: By default, the following list of media types is compressed: `text/html`, `
 
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
 
-
+[[context-path]]
 == Configuring the Context path
 
 By default Quarkus will serve content from under the root context. If you want to change this you can use the

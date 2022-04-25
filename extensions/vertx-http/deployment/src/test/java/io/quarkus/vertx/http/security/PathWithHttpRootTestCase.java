@@ -25,7 +25,7 @@ public class PathWithHttpRootTestCase {
     private static final String APP_PROPS = "" +
             "# Add your application.properties here, if applicable.\n" +
             "quarkus.http.root-path=/root\n" +
-            "quarkus.http.auth.permission.authenticated.paths=/admin\n" +
+            "quarkus.http.auth.permission.authenticated.paths=${quarkus.http.root-path}/admin\n" +
             "quarkus.http.auth.permission.authenticated.policy=authenticated\n";
 
     @RegisterExtension

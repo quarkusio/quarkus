@@ -96,11 +96,9 @@ public class EntryCommand {
 
 === Packaging
 
-Picocli provides different ways
+Picocli provides different ways to package your application in such a way that end users can invoke it by its command name.
 
-> to package your application in such a way that end users can invoke it by its command name. https://picocli.info/#_packaging_your_application[Source]
-
-If you want to distribute a single executable file that runs without installing a JDK see <<Native mode support>>. Notice that this executable will be platform specific.
+If you want to distribute a single executable file that runs without installing a JDK see <<#native-mode,Native mode support>>. Notice that this executable will be platform specific.
 
 If you want a platform independent solution you can create an executable uber-jar. This uber-jar will contain all dependencies of your app, but still requires an installed JDK to work. You can create an uber-jar via a single property in your `pom.xml`. With the https://github.com/brianm/really-executable-jars-maven-plugin[really-executable-jar-maven-plugin] you can make the uber-jar executable.
 
@@ -141,7 +139,8 @@ If you want a platform independent solution you can create an executable uber-ja
 
 === Executing the command
 
-Add the *my-command* file to your PATH, so you can run it directly from the command line. For instance on Linux run
+Add the `my-command` file to your PATH, so you can run it directly from the command line. For instance on Linux run:
+
 [source,text,subs=attributes+]
 ----
 # update PATH. This change is only temporary for the current terminal session
@@ -151,7 +150,7 @@ my-command -n Quarkus
 # will print: Hello Quarkus
 ----
 
-Remember this requires a suitable JDK version to be installed. For a single executable file that runs without installing a JDK see <<Native mode support>>. For even more packaging options check the https://picocli.info/#_packaging_your_application[official Picocli documentation].
+Remember this requires a suitable JDK version to be installed. For a single executable file that runs without installing a JDK see <<#native-mode,Native mode support>>. For even more packaging options check the https://picocli.info/#_packaging_your_application[official Picocli documentation].
 
 == Advanced command line application
 
@@ -330,6 +329,7 @@ public class ExampleApp implements Runnable, QuarkusApplication {
 ----
 <1> Quarkus-compatible `CommandLine.IFactory` bean created by `picocli` extension.
 
+[#native-mode]
 == Native mode support
 
 This extension uses the Quarkus standard build steps mechanism to support GraalVM Native images. In the exceptional case that incompatible changes in a future picocli release cause any issue, the following configuration can be used to fall back to the annotation processor from the picocli project as a temporary workaround:

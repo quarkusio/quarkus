@@ -1593,17 +1593,8 @@ public class BeanGenerator extends AbstractGenerator {
             // We can optimize if:
             // 1) class bean - has no @PreDestroy interceptor and there is no @PreDestroy callback
             // 2) producer - there is no disposal method
-            boolean canBeOptimized = false;
-            if (bean.isClassBean()) {
-                canBeOptimized = bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                        && Beans.getCallbacks(bean.getTarget().get().asClass(),
-                                DotNames.PRE_DESTROY,
-                                bean.getDeployment().getBeanArchiveIndex()).isEmpty();
-            } else if (bean.isProducerMethod() || bean.isProducerField()) {
-                canBeOptimized = bean.getDisposer() == null;
-            }
-
-            if (canBeOptimized) {
+            // 3) synthetic bean - has no destruction logic
+            if (!bean.hasDestroyLogic()) {
                 // If there is no dependency in the creational context we don't have to store the instance in the CreationalContext
                 ResultHandle creationalContext = get.checkCast(get.getMethodParam(0), CreationalContextImpl.class);
                 get.ifNonZero(

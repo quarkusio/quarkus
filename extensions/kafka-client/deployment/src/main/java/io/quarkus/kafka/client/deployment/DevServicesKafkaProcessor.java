@@ -72,6 +72,7 @@ public class DevServicesKafkaProcessor {
             LaunchModeBuildItem launchMode,
             KafkaBuildTimeConfig kafkaClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            List<DevServiceKafkaAdditionalBuildItem> additionalBuildItems,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
@@ -93,7 +94,7 @@ public class DevServicesKafkaProcessor {
         try {
             devService = startKafka(configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(),
-                    devServicesConfig.timeout);
+                    devServicesConfig.timeout, additionalBuildItems);
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -193,7 +194,8 @@ public class DevServicesKafkaProcessor {
     }
 
     private RunningDevService startKafka(KafkaDevServiceCfg config,
-            LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
+            LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout,
+            List<DevServiceKafkaAdditionalBuildItem> additions) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting dev services for Kafka, as it has been disabled in the config.");
@@ -242,7 +244,7 @@ public class DevServicesKafkaProcessor {
                 return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
                         container.getContainerId(),
                         container::close,
-                        KAFKA_BOOTSTRAP_SERVERS, container.getBootstrapServers());
+                        getConfigs(container.getBootstrapServers(), additions));
             } else {
                 RedPandaKafkaContainer container = new RedPandaKafkaContainer(
                         DockerImageName.parse(config.imageName),
@@ -255,7 +257,7 @@ public class DevServicesKafkaProcessor {
                 return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
                         container.getContainerId(),
                         container::close,
-                        KAFKA_BOOTSTRAP_SERVERS, container.getBootstrapServers());
+                        getConfigs(container.getBootstrapServers(), additions));
             }
         };
 
@@ -263,8 +265,18 @@ public class DevServicesKafkaProcessor {
                 .map(containerAddress -> new RunningDevService(Feature.KAFKA_CLIENT.getName(),
                         containerAddress.getId(),
                         null,
-                        KAFKA_BOOTSTRAP_SERVERS, containerAddress.getUrl()))
+                        getConfigs(containerAddress.getUrl(), additions)))
                 .orElseGet(defaultKafkaBrokerSupplier);
+    }
+
+    private Map<String, String> getConfigs(String address, List<DevServiceKafkaAdditionalBuildItem> additions) {
+        HashMap<String, String> configs = new HashMap<>();
+        configs.put(KAFKA_BOOTSTRAP_SERVERS, address);
+        additions.forEach(c -> {
+            configs.put(c.getConfig(), address);
+        });
+
+        return configs;
     }
 
     private boolean hasKafkaChannelWithoutBootstrapServers() {

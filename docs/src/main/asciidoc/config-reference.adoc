@@ -332,6 +332,11 @@ In this style, the configuration names in the profile aware file do not need to 
 Properties in the profile aware file have priority over profile aware properties defined in the main file.
 ====
 
+[WARNING]
+====
+The profile aware file must be present in the exact same location as the main `application.properties` file.
+====
+
 === Parent Profile
 
 A Parent Profile adds one level of hierarchy to the current profile. The configuration `quarkus.config.profile.parent`

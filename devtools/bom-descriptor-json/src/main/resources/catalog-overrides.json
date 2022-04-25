@@ -52,7 +52,7 @@
     {
       "name": "Messaging",
       "id": "messaging",
-      "description": "Send and receives message to various messaging systems (AMQP, KAfka etc)",
+      "description": "Send and receives message to various messaging systems (AMQP, Kafka etc)",
       "metadata": {
         "pinned": [
           "io.quarkus:quarkus-smallrye-reactive-messaging",

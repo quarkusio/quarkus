@@ -95,7 +95,7 @@ public class InfinispanDevServiceProcessor {
                     launchMode.getLaunchMode(),
                     !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
             if (devService == null) {
-                compressor.close();
+                compressor.closeAndDumpCaptured();
                 return null;
             }
             newDevServices.add(devService);

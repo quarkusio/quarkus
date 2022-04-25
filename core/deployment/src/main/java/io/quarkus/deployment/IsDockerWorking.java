@@ -81,6 +81,9 @@ public class IsDockerWorking implements BooleanSupplier {
                 Object dockerClientFactoryInstance = dockerClientFactoryClass.getMethod("instance").invoke(null);
                 boolean isAvailable = (boolean) dockerClientFactoryClass.getMethod("isDockerAvailable")
                         .invoke(dockerClientFactoryInstance);
+                if (!isAvailable) {
+                    compressor.closeAndDumpCaptured();
+                }
                 return isAvailable ? Result.AVAILABLE : Result.UNAVAILABLE;
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 if (!silent) {
@@ -117,7 +120,7 @@ public class IsDockerWorking implements BooleanSupplier {
                                 "Unable to connect to DOCKER_HOST URI %s, make sure docker is running on the specified host",
                                 dockerHost);
                     }
-                } catch (URISyntaxException e) {
+                } catch (URISyntaxException | IllegalArgumentException e) {
                     LOGGER.warnf("Unable to parse DOCKER_HOST URI %s, it will be ignored for working docker detection",
                             dockerHost);
                 }

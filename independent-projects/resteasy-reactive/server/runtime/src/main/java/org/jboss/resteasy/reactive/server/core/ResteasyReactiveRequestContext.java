@@ -175,7 +175,7 @@ public abstract class ResteasyReactiveRequestContext
     public void restart(RuntimeResource target, boolean setLocatorTarget) {
         this.handlers = target.getHandlerChain();
         position = 0;
-        parameters = new Object[target.getParameterTypes().length];
+        parameters = target.getParameterTypes().length == 0 ? EMPTY_ARRAY : new Object[target.getParameterTypes().length];
         if (setLocatorTarget) {
             previousResource = new PreviousResource(this.target, pathParamValues, previousResource);
         }
@@ -646,7 +646,7 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     protected void restarted(boolean keepTarget) {
-        parameters = new Object[0];
+        parameters = EMPTY_ARRAY;
         if (!keepTarget) {
             target = null;
         }

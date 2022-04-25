@@ -124,8 +124,6 @@ public class QuarkusBuild extends QuarkusTask {
 
     @TaskAction
     public void buildQuarkus() {
-        getLogger().lifecycle("building quarkus jar");
-
         final ApplicationModel appModel;
         try {
             appModel = extension().getAppModelResolver().resolveModel(new GACTV(getProject().getGroup().toString(),

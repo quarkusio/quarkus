@@ -7,11 +7,14 @@ import java.util.Collections;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import io.quarkus.deployment.pkg.NativeConfig;
 
 class NativeImageBuildContainerRunnerTest {
 
+    // This will default to false in the maven build and true in the IDE, so this will still run if invoked explicitly
+    @DisabledIfSystemProperty(named = "avoid-containers", matches = "true")
     @Test
     void testBuilderImageBeingPickedUp() {
         NativeConfig nativeConfig = new NativeConfig();

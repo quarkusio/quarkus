@@ -5831,6 +5831,7 @@
                                 <recipe>io.quarkus.bom.resteasy-microprofile</recipe>
                                 <recipe>io.quarkus.bom.resteasy-spring-web</recipe>
                                 <recipe>io.quarkus.jakarta-json</recipe>
+                                <recipe>io.quarkus.keycloak-admin-client</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

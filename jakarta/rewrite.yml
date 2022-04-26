@@ -591,3 +591,19 @@ recipeList:
       oldArtifactId: resteasy-client-microprofile
       newGroupId: org.jboss.resteasy.microprofile
       newArtifactId: microprofile-rest-client
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.keycloak-admin-client
+displayName: Adjust Keycloak Admin Client
+recipeList:
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.keycloak
+      oldArtifactId: keycloak-admin-client
+      newGroupId: org.keycloak
+      newArtifactId: keycloak-admin-client-jakarta
+      newVersion: 999-SNAPSHOT
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.keycloak
+      oldArtifactId: keycloak-admin-client
+      newGroupId: org.keycloak
+      newArtifactId: keycloak-admin-client-jakarta

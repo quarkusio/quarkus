@@ -59,6 +59,13 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   mvn -B clean install -DskipTests -DskipITs
   popd
 
+  # Build Keycloak (temporary)
+  rm -rf target/keycloak
+  git clone -b jakarta --depth 1 https://github.com/gsmet/keycloak.git target/keycloak
+  pushd target/keycloak
+  mvn -B -pl ':keycloak-admin-client-jakarta' -am clean install -DskipTests -DskipITs
+  popd
+
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
   rm -rf target/kotlin
@@ -437,14 +444,12 @@ build_module "test-framework/junit5-mockito-config"
 build_module "test-framework/junit5-mockito"
 build_module "extensions/kafka-streams"
 build_module "test-framework/keycloak-server"
-# TODO we need a keycloak-admin-client-jakarta
-#build_module "extensions/keycloak-admin-client"
-#build_module "extensions/keycloak-admin-client-reactive"
+build_module "extensions/keycloak-admin-client"
+build_module "extensions/keycloak-admin-client-reactive"
 build_module "extensions/smallrye-jwt-build"
 build_module "extensions/oidc-common"
 build_module "extensions/oidc"
-# TODO we need the quarkus-keycloak-admin-client extension
-#build_module "extensions/keycloak-authorization"
+build_module "extensions/keycloak-authorization"
 build_module "extensions/kubernetes"
 build_module "extensions/kubernetes-config"
 build_module "extensions/liquibase"

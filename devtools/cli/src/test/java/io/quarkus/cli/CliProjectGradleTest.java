@@ -106,11 +106,36 @@ public class CliProjectGradleTest {
 
         Assertions.assertTrue(project.resolve("gradlew").toFile().exists(),
                 "Wrapper should exist by default");
-        String buildGradleContent = validateBasicIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
+        String buildGradleContent = validateBasicGradleGroovyIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
         Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy"),
                 "build/gradle should contain quarkus-resteasy:\n" + buildGradleContent);
+
+        CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
+
+        CliDriver.invokeValidateBuild(project);
+    }
+
+    @Test
+    public void testCreateAppDefaultsWithKotlinDSL() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle-kotlin-dsl", "--verbose", "-e",
+                "-B");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+
+        Assertions.assertTrue(project.resolve("gradlew").toFile().exists(),
+                "Wrapper should exist by default");
+        String buildGradleContent = validateBasicGradleKotlinIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
+                CreateProjectHelper.DEFAULT_ARTIFACT_ID,
+                CreateProjectHelper.DEFAULT_VERSION);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy"),
+                "build/gradle should contain quarkus-resteasy:\n" + buildGradleContent);
+
+        Path packagePath = wrapperRoot.resolve("src/main/java/");
+        Assertions.assertTrue(packagePath.toFile().isDirectory(),
+                "Java Source directory should exist: " + packagePath.toAbsolutePath());
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
@@ -140,7 +165,7 @@ public class CliProjectGradleTest {
 
         Assertions.assertTrue(project.resolve("gradlew").toFile().exists(),
                 "Wrapper should exist by default");
-        String buildGradleContent = validateBasicIdentifiers(project, "silly", "my-project", "0.1.0");
+        String buildGradleContent = validateBasicGradleGroovyIdentifiers(project, "silly", "my-project", "0.1.0");
         Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy-reactive"),
                 "build.gradle should contain quarkus-resteasy-reactive:\n" + buildGradleContent);
 
@@ -163,7 +188,7 @@ public class CliProjectGradleTest {
 
         Assertions.assertTrue(project.resolve("gradlew").toFile().exists(),
                 "Wrapper should exist by default");
-        String buildGradleContent = validateBasicIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
+        String buildGradleContent = validateBasicGradleGroovyIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
         Assertions.assertFalse(buildGradleContent.contains("quarkus-resteasy"),
@@ -374,7 +399,7 @@ public class CliProjectGradleTest {
                 "Java 17 should be used when specified. Found:\n" + buildGradleContent);
     }
 
-    String validateBasicIdentifiers(Path project, String group, String artifact, String version) throws Exception {
+    String validateBasicGradleGroovyIdentifiers(Path project, String group, String artifact, String version) throws Exception {
         Path buildGradle = project.resolve("build.gradle");
         Assertions.assertTrue(buildGradle.toFile().exists(),
                 "build.gradle should exist: " + buildGradle.toAbsolutePath().toString());
@@ -391,6 +416,27 @@ public class CliProjectGradleTest {
         String settingsContent = CliDriver.readFileAsString(project, settings);
         Assertions.assertTrue(settingsContent.contains(artifact),
                 "settings.gradle should include the artifact id:\n" + settingsContent);
+
+        return buildContent;
+    }
+
+    String validateBasicGradleKotlinIdentifiers(Path project, String group, String artifact, String version) throws Exception {
+        Path buildGradle = project.resolve("build.gradle.kts");
+        Assertions.assertTrue(buildGradle.toFile().exists(),
+                "build.gradle.kts should exist: " + buildGradle.toAbsolutePath().toString());
+
+        String buildContent = CliDriver.readFileAsString(project, buildGradle);
+        Assertions.assertTrue(buildContent.contains("group = \"" + group + "\""),
+                "build.gradle.kts should include the group id:\n" + buildContent);
+        Assertions.assertTrue(buildContent.contains("version = \"" + version + "\""),
+                "build.gradle.kts should include the version:\n" + buildContent);
+
+        Path settings = project.resolve("settings.gradle.kts");
+        Assertions.assertTrue(settings.toFile().exists(),
+                "settings.gradle.kts should exist: " + settings.toAbsolutePath().toString());
+        String settingsContent = CliDriver.readFileAsString(project, settings);
+        Assertions.assertTrue(settingsContent.contains(artifact),
+                "settings.gradle.kts should include the artifact id:\n" + settingsContent);
 
         return buildContent;
     }

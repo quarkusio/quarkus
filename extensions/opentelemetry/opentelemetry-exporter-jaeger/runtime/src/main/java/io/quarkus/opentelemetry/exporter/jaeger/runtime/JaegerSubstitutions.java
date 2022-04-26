@@ -14,11 +14,12 @@ import io.grpc.netty.NettyChannelBuilder;
 import io.opentelemetry.exporter.internal.grpc.ManagedChannelUtil;
 
 /**
- * Replace the {@link ManagedChannelUtil#setTrustedCertificatesPem(ManagedChannelBuilder, byte[])} method in native
+ * Replace the {@link ManagedChannelUtil#setClientKeysAndTrustedCertificatesPem(ManagedChannelBuilder, byte[], byte[], byte[])}
+ * method in native
  * because the method implementation tries to look for grpc-netty-shaded dependencies, which we don't support.
  *
  * Check:
- * https://github.com/open-telemetry/opentelemetry-java/blob/v1.9.1/exporters/otlp/common/src/main/java/io/opentelemetry/exporter/otlp/internal/grpc/ManagedChannelUtil.java#L56-L89
+ * https://github.com/open-telemetry/opentelemetry-java/blob/v1.11.0/exporters/otlp/common/src/main/java/io/opentelemetry/exporter/internal/grpc/ManagedChannelUtil.java#L47-L91
  */
 final class JaegerSubstitutions {
     @TargetClass(ManagedChannelUtil.class)

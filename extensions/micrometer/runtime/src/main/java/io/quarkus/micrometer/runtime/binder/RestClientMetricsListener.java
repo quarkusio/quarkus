@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.arc.Arc;
+import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 /**
  * This is initialized via ServiceFactory (static/non-CDI initialization)
@@ -35,6 +36,10 @@ public class RestClientMetricsListener implements RestClientListener {
 
     @Override
     public void onNewClient(Class<?> serviceInterface, RestClientBuilder builder) {
+        MicrometerConfig micrometerConfig = Arc.container().instance(MicrometerConfig.class).get();
+        if (!micrometerConfig.enabled) {
+            return;
+        }
         if (prepClientMetrics()) {
             // This must run AFTER the OpenTelmetry client request filter
             builder.register(this.clientRequestFilter, Priorities.HEADER_DECORATOR + 1);

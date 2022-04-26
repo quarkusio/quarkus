@@ -3,6 +3,7 @@ package io.quarkus.security.runtime;
 import java.lang.reflect.Constructor;
 import java.security.Provider;
 import java.security.Security;
+import java.util.Map;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -18,8 +19,14 @@ public final class SecurityProviderUtils {
     public static final String BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME = "org.bouncycastle.jsse.provider.BouncyCastleJsseProvider";
     public static final String BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME = "org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider";
 
+    public static final Map<String, String> SUN_PROVIDERS = Map.of("SunPKCS11", "sun.security.pkcs11.SunPKCS11");
+
     private SecurityProviderUtils() {
 
+    }
+
+    public static void addProvider(String provider) {
+        addProvider(loadProvider(provider));
     }
 
     public static void addProvider(Provider provider) {

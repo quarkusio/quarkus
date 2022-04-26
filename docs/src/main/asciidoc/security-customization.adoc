@@ -484,6 +484,40 @@ keytool -genkey -alias server -keyalg RSA -keystore server-keystore.jks -keysize
 `BCFIPSJSSE` provider option is currently not supported in native image.
 ====
 
+[[sun-pkcs11]]
+=== SunPKCS11
+
+`SunPKCS11` provider provides a bridge to specific `PKCS#11` implementations such as cryptographic smartcards and other Hardware Security Modules, Network Security Services in FIPS mode, etc.
+
+Typically, in order to work with `SunPKCS11`, one needs to install a `PKCS#11` implementation, generate a configuration which usually refers to a shared library, token slot, etc and write the following Java code:
+
+[source,java]
+----
+import java.security.Provider;
+import java.security.Security;
+
+String configuration = "pkcs11.cfg"
+
+Provider sunPkcs11 = Security.getProvider("SunPKCS11");
+Provider pkcsImplementation = sunPkcs11.configure(configuration);
+// or prepare configuration in the code or read it from the file such as "pkcs11.cfg" and do
+// sunPkcs11.configure("--" + configuration);
+Security.addProvider(pkcsImplementation);
+----
+
+In Quarkus you can achieve the same at the configuration level only without having to modify the code, for example:
+
+[source,properties]
+----
+quarkus.security.security-providers=SunPKCS11
+quarkus.security.security-provider-config.SunPKCS11=pkcs11.cfg
+----
+
+[NOTE]
+====
+Note that while accessing the `SunPKCS11` bridge provider is supported in native image, configuring `SunPKCS11` is currently not supported in native image at the Quarkus level.
+====
+
 == Reactive Security
 
 If you are going to use security in a reactive environment, you will likely need SmallRye Context Propagation:

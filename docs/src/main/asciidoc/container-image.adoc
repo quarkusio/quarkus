@@ -123,6 +123,22 @@ include::includes/devtools/build.adoc[]
 
 NOTE: If you ever want to build a native container image and already have an existing native image you can set `-Dquarkus.native.reuse-existing=true` and the native image build will not be re-run.
 
+== Using @QuarkusIntegrationTest
+
+To run tests on the resulting image, `quarkus.container-image.build=true` needs to be set using any of the ways that Quarkus supports.
+
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+./mvnw verify -Dquarkus.container-image.build=true
+----
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew quarkusIntTest -Dquarkus.container-image.build=true
+----
+
+
 == Pushing
 
 To push a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.

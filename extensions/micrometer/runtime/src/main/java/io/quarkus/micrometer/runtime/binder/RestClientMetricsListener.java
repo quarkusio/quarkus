@@ -26,13 +26,12 @@ public class RestClientMetricsListener implements RestClientListener {
 
     private final static String REQUEST_METRIC_PROPERTY = "restClientMetrics";
 
-    final MeterRegistry registry = Metrics.globalRegistry;
-    boolean initialized = false;
-    boolean clientMetricsEnabled = false;
+    private final MeterRegistry registry = Metrics.globalRegistry;
+    private boolean initialized = false;
+    private boolean clientMetricsEnabled = false;
 
-    HttpBinderConfiguration httpMetricsConfig;
-    MetricsClientRequestFilter clientRequestFilter;
-    MetricsClientResponseFilter clientResponseFilter;
+    private MetricsClientRequestFilter clientRequestFilter;
+    private MetricsClientResponseFilter clientResponseFilter;
 
     @Override
     public void onNewClient(Class<?> serviceInterface, RestClientBuilder builder) {
@@ -51,11 +50,11 @@ public class RestClientMetricsListener implements RestClientListener {
     boolean prepClientMetrics() {
         boolean clientMetricsEnabled = this.clientMetricsEnabled;
         if (!this.initialized) {
-            this.httpMetricsConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
+            HttpBinderConfiguration httpMetricsConfig = Arc.container().instance(HttpBinderConfiguration.class).get();
             clientMetricsEnabled = httpMetricsConfig.isClientEnabled();
             if (clientMetricsEnabled) {
-                this.clientRequestFilter = new MetricsClientRequestFilter(httpMetricsConfig);
-                this.clientResponseFilter = new MetricsClientResponseFilter();
+                this.clientRequestFilter = new MetricsClientRequestFilter(registry);
+                this.clientResponseFilter = new MetricsClientResponseFilter(registry, httpMetricsConfig);
             }
             this.clientMetricsEnabled = clientMetricsEnabled;
             this.initialized = true;
@@ -63,11 +62,11 @@ public class RestClientMetricsListener implements RestClientListener {
         return clientMetricsEnabled;
     }
 
-    class MetricsClientRequestFilter implements ClientRequestFilter {
-        HttpBinderConfiguration binderConfiguration;
+    static class MetricsClientRequestFilter implements ClientRequestFilter {
+        private final MeterRegistry registry;
 
-        MetricsClientRequestFilter(HttpBinderConfiguration binderConfiguration) {
-            this.binderConfiguration = binderConfiguration;
+        MetricsClientRequestFilter(MeterRegistry registry) {
+            this.registry = registry;
         }
 
         @Override
@@ -78,7 +77,16 @@ public class RestClientMetricsListener implements RestClientListener {
         }
     }
 
-    class MetricsClientResponseFilter implements ClientResponseFilter {
+    static class MetricsClientResponseFilter implements ClientResponseFilter {
+        private final MeterRegistry registry;
+        private final HttpBinderConfiguration httpMetricsConfig;
+
+        MetricsClientResponseFilter(MeterRegistry registry,
+                HttpBinderConfiguration httpMetricsConfig) {
+            this.registry = registry;
+            this.httpMetricsConfig = httpMetricsConfig;
+        }
+
         @Override
         public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
             RequestMetricInfo requestMetric = getRequestMetric(requestContext);
@@ -120,7 +128,7 @@ public class RestClientMetricsListener implements RestClientListener {
         }
     }
 
-    class RestClientMetricInfo extends RequestMetricInfo {
+    static class RestClientMetricInfo extends RequestMetricInfo {
         ClientRequestContext requestContext;
 
         RestClientMetricInfo(ClientRequestContext requestContext) {

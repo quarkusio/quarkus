@@ -44,7 +44,7 @@ public class TargetLanguageGroup {
                 if (kotlin || scala) {
                     output.warn("JBang only supports Java. Using Java as the target language.");
                 }
-            } else if (kotlin || BuildTool.GRADLE_KOTLIN_DSL == buildTool) {
+            } else if (kotlin) {
                 sourceType = SourceType.KOTLIN;
             } else if (scala) {
                 sourceType = SourceType.SCALA;

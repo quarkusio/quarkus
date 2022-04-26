@@ -235,6 +235,9 @@ recipeList:
       key: parsson.version
       newValue: 1.0.0
       addIfMissing: true
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: jboss-logmanager.version
+      newValue: 1.1.0
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-json-switch

@@ -3577,7 +3577,7 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-graphql-client-implementation</artifactId>
+                <artifactId>smallrye-graphql-client</artifactId>
                 <version>${smallrye-graphql.version}</version>
             </dependency>
             <dependency>

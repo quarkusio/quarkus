@@ -99,6 +99,9 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
             if (entry.getValue().enabled.orElse(Boolean.TRUE)) {
                 for (String path : entry.getValue().paths.orElse(Collections.emptyList())) {
                     path = path.trim();
+                    if (!path.startsWith("/")) {
+                        path = config.rootPath + path;
+                    }
                     if (tempMap.containsKey(path)) {
                         HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
                                 new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),

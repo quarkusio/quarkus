@@ -24,6 +24,7 @@ public class RestLinksHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext context) {
+        context.requireCDIRequestScope();
         Response response = context.getResponse().get();
         for (Link link : getLinks(response)) {
             response.getHeaders().add("Link", link);

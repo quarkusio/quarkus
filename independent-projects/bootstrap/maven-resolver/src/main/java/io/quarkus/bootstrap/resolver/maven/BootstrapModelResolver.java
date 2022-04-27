@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -203,7 +204,7 @@ public class BootstrapModelResolver implements ModelResolver {
             throws UnresolvableModelException {
         try {
             final Artifact artifact = new DefaultArtifact(dependency.getGroupId(), dependency.getArtifactId(), "",
-                    "pom", dependency.getVersion());
+                    ArtifactCoords.TYPE_POM, dependency.getVersion());
 
             final VersionRangeRequest versionRangeRequest = new VersionRangeRequest(artifact, repositories, context);
             versionRangeRequest.setTrace(trace);

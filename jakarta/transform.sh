@@ -106,6 +106,15 @@ transform_kotlin_module () {
   done
 }
 
+transform_documentation () {
+  local transformationTemp="JAKARTA_TEMP"
+  rm -Rf $transformationTemp
+  mkdir $transformationTemp
+  jbang transform -tf jakarta/jakarta-text-adoc.properties -o docs/ $transformationTemp
+  rm -Rf "docs/"
+  mv "$transformationTemp" "docs"
+}
+
 update_scope_in_test_properties () {
   sed -i "s@javax.enterprise@jakarta.enterprise@g" $1
 }
@@ -513,6 +522,8 @@ build_module "extensions/websockets"
 
 transform_module "devtools"
 transform_module "integration-tests"
+
+transform_documentation
 
 exit 0
 

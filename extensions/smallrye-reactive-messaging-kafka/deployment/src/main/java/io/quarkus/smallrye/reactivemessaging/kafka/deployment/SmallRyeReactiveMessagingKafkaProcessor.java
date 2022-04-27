@@ -653,11 +653,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             if (clazz == null) {
                 clazz = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
-                result = Result.of(clazz);
                 // Deserializers are access by reflection.
                 reflection.produce(new ReflectiveClassBuildItem(true, true, false, clazz));
                 alreadyGeneratedSerializers.put(type.toString(), clazz);
             }
+            result = Result.of(clazz);
         }
         return result;
     }
@@ -679,11 +679,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             if (clazz == null) {
                 clazz = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
-                result = Result.of(clazz);
                 // Serializers are access by reflection.
                 reflection.produce(new ReflectiveClassBuildItem(true, true, false, clazz));
                 alreadyGeneratedSerializers.put(type.toString(), clazz);
             }
+            result = Result.of(clazz);
         }
 
         return result;

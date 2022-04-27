@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.resolver.maven;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -40,7 +41,7 @@ public class MavenModelBuilder implements ModelBuilder {
             final Model requestModel = getModel(request);
             if (requestModel != null) {
                 final Artifact artifact = new DefaultArtifact(ModelUtils.getGroupId(requestModel), requestModel.getArtifactId(),
-                        null, "pom",
+                        null, ArtifactCoords.TYPE_POM,
                         ModelUtils.getVersion(requestModel));
                 if (workspace.findArtifact(artifact) != null) {
                     final ModelBuildingResult result = workspace

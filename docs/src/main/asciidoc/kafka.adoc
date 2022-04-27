@@ -2762,6 +2762,47 @@ To allow your Quarkus application to use that secret, add the following line to 
 %prod.quarkus.openshift.env.secrets=kafka-credentials
 ----
 
+==== Red Hat OpenShift Service Registry
+
+https://www.redhat.com/en/technologies/cloud-computing/openshift/openshift-service-registry[Red Hat OpenShift Service Registry]
+provides fully managed service registry for handling Kafka schemas.
+
+You can follow the instructions from
+https://access.redhat.com/documentation/en-us/red_hat_openshift_service_registry/1/guide/ab1894d1-cae0-4d11-b185-81d62b4aabc7#_60472331-fa00-48ec-a621-bbd039500c7d[Getting started with Red Hat OpenShift Service Registry],
+or use the `rhoas` CLI to create a new service registry instance:
+
+[source, shell]
+----
+rhoas service-registry create --name my-schema-registry
+----
+
+Make sure to note the _Registry URL_ of the instance created.
+For authentication, you can use the same _ServiceAccount_ you created previously.
+You need to make sure that it has the necessary permissions to access the service registry.
+
+For example, using the `rhoas` CLI, you can grant the `MANAGER` role to the service account:
+
+[source, shell]
+----
+rhoas service-registry role add --role manager --service-account [SERVICE_ACCOUNT_CLIENT_ID]
+----
+
+Then, you can configure the Quarkus application to connect to the schema registry as follows:
+
+[source, properties]
+----
+mp.messaging.connector.smallrye-kafka.apicurio.registry.url=${RHOAS_SERVICE_REGISTRY_URL} <1>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.service.token.endpoint=${RHOAS_OAUTH_TOKEN_ENDPOINT} <2>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.client.id=${RHOAS_CLIENT_ID} <3>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.client.secret=${RHOAS_CLIENT_ID} <4>
+----
+<1> The service registry URL, given on the admin console, such as `https://bu98.serviceregistry.rhcloud.com/t/0e95af2c-6e11-475e-82ee-f13bd782df24/apis/registry/v2`
+<2> The OAuth token endpoint URL, such as `https://identity.api.openshift.com/auth/realms/rhoas/protocol/openid-connect/token`
+<3> The client id (from the service account)
+<4> The client secret (from the service account)
+
+You will need to include additional configuration
+
 == Going further
 
 This guide has shown how you can interact with Kafka using Quarkus.

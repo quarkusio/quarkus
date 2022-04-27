@@ -956,7 +956,6 @@ public class DevMojo extends AbstractMojo {
             bootstrapProvider.close();
         } else {
             final MavenArtifactResolver.Builder resolverBuilder = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
                     .setRemoteRepositories(repos)
                     .setRemoteRepositoryManager(remoteRepositoryManager)
                     .setWorkspaceDiscovery(true)
@@ -968,16 +967,18 @@ public class DevMojo extends AbstractMojo {
             boolean reinitializeMavenSession = Files.exists(appModelLocation);
             if (reinitializeMavenSession) {
                 Files.delete(appModelLocation);
+                // we can't re-use the repo system because we want to use our interpolating model builder
+                // a use-case where it fails with the original repo system is when dev mode is launched with -Dquarkus.platform.version=xxx
+                // overriding the version of the quarkus-bom in the pom.xml
             } else {
                 // we can re-use the original Maven session
-                resolverBuilder.setRepositorySystemSession(repoSession);
+                resolverBuilder.setRepositorySystemSession(repoSession).setRepositorySystem(repoSystem);
             }
 
             appModel = new BootstrapAppModelResolver(resolverBuilder.build())
                     .setDevMode(true)
                     .setCollectReloadableDependencies(!noDeps)
-                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR,
-                            project.getVersion()));
+                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), project.getVersion()));
         }
 
         // serialize the app model to avoid re-resolving it in the dev process

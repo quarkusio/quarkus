@@ -386,6 +386,7 @@ Now all methods and classes carrying `@HrTenant` will be authenticated using the
 `quarkus.oidc.hr.auth-server-url`, while all other classes and methods will still be authenticated using the default
 OIDC provider.
 
+[[tenant-config-resolver]]
 == Programmatically Resolving Tenants Configuration
 
 If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple

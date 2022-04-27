@@ -201,6 +201,7 @@
                 <module>elytron-resteasy</module>
                 <module>elytron-resteasy-reactive</module>
                 <module>elytron-undertow</module>
+                <module>security-webauthn</module>
                 <module>flyway</module>
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>

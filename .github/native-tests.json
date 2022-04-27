@@ -81,7 +81,7 @@
         {
             "category": "Security3",
             "timeout": 50,
-            "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation",
+            "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation, security-webauthn",
             "os-name": "ubuntu-latest"
         },
         {

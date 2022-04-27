@@ -177,6 +177,35 @@ quarkus.http.auth.permission.permit1.methods=GET,HEAD
 
 and enabled at runtime with a system property or environment variable, for example: `-Dquarkus.http.auth.permission.permit1.enabled=true`.
 
+== Permission paths and http root path
+
+The `quarkus.http.root-path` configuration property is used to change the xref:http-reference.adoc#context-path[http endpoint context path].
+
+By default, `quarkus.http.root-path` is prepended automatically to configured permission paths then do not use a forward slash, for example:
+
+[source,properties]
+----
+quarkus.http.auth.permission.permit1.paths=public/*,css/*,js/*,robots.txt
+----
+
+This configuration is equivalent to the following: 
+
+[source,properties]
+----
+quarkus.http.auth.permission.permit1.paths=${quarkus.http.root-path}/public/*,${quarkus.http.root-path}/css/*,${quarkus.http.root-path}/js/*,${quarkus.http.root-path}/robots.txt
+----
+
+A leading slash will change how the configured permission path is interpreted. The configured URL will be used as-is, and paths will not be adjusted if the value of `quarkus.http.root-path` is changed. For example: 
+
+[source,properties]
+----
+quarkus.http.auth.permission.permit1.paths=/public/*,css/*,js/*,robots.txt
+----
+
+This configuration will only impact resources served from the fixed/static URL `/public`, which may not match your application resources if `quarkus.http.root-path` has been set to something other than `/`.
+
+See link:https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus] for more information.
+
 [#standard-security-annotations]
 == Authorization using Annotations
 

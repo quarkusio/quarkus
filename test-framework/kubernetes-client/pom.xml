@@ -68,7 +68,7 @@
                         <artifactId>rewrite-maven-plugin</artifactId>
                         <configuration>
                             <activeRecipes>
-                                <recipe>io.quarkus.jakarta-jaxrs-switch</recipe>
+                                <recipe>io.quarkus.jakarta-jaxb-switch</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

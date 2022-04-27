@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.devtools.codestarts.core.CodestartSpec;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -32,6 +33,13 @@ public final class CodestartCatalogLoader {
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
 
     private CodestartCatalogLoader() {
+    }
+
+    public static void persist(CodestartSpec codestart, Path path) throws IOException {
+        Files.createDirectories(path.getParent());
+        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+            YAML_MAPPER.writerFor(CodestartSpec.class).writeValue(writer, codestart);
+        }
     }
 
     public static CodestartCatalog<CodestartProjectInput> loadDefaultCatalog(CodestartPathLoader pathLoader,

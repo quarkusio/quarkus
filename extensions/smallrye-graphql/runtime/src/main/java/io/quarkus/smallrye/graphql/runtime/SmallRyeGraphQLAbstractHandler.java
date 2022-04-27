@@ -24,6 +24,7 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
 
     private final CurrentIdentityAssociation currentIdentityAssociation;
     private final CurrentVertxRequest currentVertxRequest;
+    private ManagedContext currentManagedContext;
 
     private volatile ExecutionService executionService;
 
@@ -39,15 +40,15 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
 
     @Override
     public void handle(final RoutingContext ctx) {
-        ManagedContext requestContext = Arc.container().requestContext();
-        if (requestContext.isActive()) {
+        currentManagedContext = Arc.container().requestContext();
+        if (currentManagedContext.isActive()) {
             handleWithIdentity(ctx);
         } else {
             try {
-                requestContext.activate();
+                currentManagedContext.activate();
                 handleWithIdentity(ctx);
             } finally {
-                requestContext.terminate();
+                currentManagedContext.terminate();
             }
         }
     }
@@ -79,5 +80,13 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
             this.executionService = Arc.container().instance(ExecutionService.class).get();
         }
         return this.executionService;
+    }
+
+    protected CurrentIdentityAssociation getCurrentIdentityAssociation() {
+        return currentIdentityAssociation;
+    }
+
+    protected ManagedContext getCurrentManagedContext() {
+        return currentManagedContext;
     }
 }

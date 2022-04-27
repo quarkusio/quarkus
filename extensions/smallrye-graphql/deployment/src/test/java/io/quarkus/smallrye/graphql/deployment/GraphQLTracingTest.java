@@ -28,7 +28,7 @@ public class GraphQLTracingTest extends AbstractGraphQLTest {
     static MockTracer mockTracer = new MockTracer();
 
     static {
-        GlobalTracer.register(mockTracer);
+        GlobalTracer.registerIfAbsent(mockTracer);
     }
 
     @BeforeEach

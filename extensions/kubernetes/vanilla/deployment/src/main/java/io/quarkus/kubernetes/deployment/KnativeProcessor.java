@@ -24,11 +24,14 @@ import io.dekorate.knative.decorator.ApplyGlobalRequestsPerSecondTargetDecorator
 import io.dekorate.knative.decorator.ApplyGlobalTargetUtilizationDecorator;
 import io.dekorate.knative.decorator.ApplyLocalContainerConcurrencyDecorator;
 import io.dekorate.knative.decorator.ApplyRevisionNameDecorator;
+import io.dekorate.knative.decorator.ApplyServiceAccountToRevisionSpecDecorator;
 import io.dekorate.knative.decorator.ApplyTrafficDecorator;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.decorator.AddConfigMapDataDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
+import io.dekorate.kubernetes.decorator.AddImagePullSecretToServiceAccountDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
+import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.project.Project;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
@@ -136,17 +139,20 @@ public class KnativeProcessor {
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
             List<KubernetesRoleBuildItem> roles,
             List<KubernetesRoleBindingBuildItem> roleBindings,
-            Optional<CustomProjectRootBuildItem> customProjectRoot) {
+            Optional<CustomProjectRootBuildItem> customProjectRoot,
+            List<KubernetesDeploymentTargetBuildItem> targets) {
 
         List<DecoratorBuildItem> result = new ArrayList<>();
-        String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        if (!targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
+                .anyMatch(t -> KNATIVE.equals(t.getName()))) {
+            return result;
+        }
 
+        String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config,
-                metricsConfiguration, annotations,
-                labels, command,
-                ports, livenessPath, readinessPath, roles, roleBindings));
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config, metricsConfiguration, annotations,
+                labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
 
         image.ifPresent(i -> {
             result.add(new DecoratorBuildItem(KNATIVE, new ApplyContainerImageDecorator(name, i.getImage())));
@@ -296,6 +302,16 @@ public class KnativeProcessor {
         if (!roleBindings.isEmpty()) {
             result.add(new DecoratorBuildItem(new ApplyServiceAccountNameToRevisionSpecDecorator()));
         }
+
+        //Handle Image Pull Secrets
+        config.getImagePullSecrets().ifPresent(imagePullSecrets -> {
+            String serviceAccountName = config.getServiceAccount().orElse(name);
+            result.add(new DecoratorBuildItem(KNATIVE, new AddServiceAccountResourceDecorator(name)));
+            result.add(
+                    new DecoratorBuildItem(KNATIVE, new ApplyServiceAccountToRevisionSpecDecorator(name, serviceAccountName)));
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddImagePullSecretToServiceAccountDecorator(serviceAccountName, imagePullSecrets)));
+        });
 
         return result;
     }

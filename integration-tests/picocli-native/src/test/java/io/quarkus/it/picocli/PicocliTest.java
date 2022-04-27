@@ -3,16 +3,23 @@ package io.quarkus.it.picocli;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import io.quarkus.test.junit.main.QuarkusMainTest;
 
 @QuarkusMainTest
+@QuarkusTestResource(PicocliTest.TestResource.class)
 public class PicocliTest {
+
+    private String value;
 
     @Test
     @Launch({ "test-command", "-f", "test.txt", "-f", "test2.txt", "-f", "test3.txt", "-s", "ERROR", "-h", "SOCKS=5.5.5.5",
@@ -23,6 +30,8 @@ public class PicocliTest {
                 .contains("-p:privateValue")
                 .contains("-p:privateValue")
                 .contains("positional:[pos1, pos2]");
+
+        assertThat(value).isNotNull();
     }
 
     @Test
@@ -57,6 +66,8 @@ public class PicocliTest {
     @Launch({ "command-used-as-parent", "-p", "testValue", "child" })
     public void testParentCommand(LaunchResult result) {
         assertThat(result.getOutput()).isEqualTo("testValue");
+
+        assertThat(value).isNotNull();
     }
 
     @Test
@@ -66,18 +77,24 @@ public class PicocliTest {
                 .contains("-a:0")
                 .contains("-b:150")
                 .contains("-c:0");
+
+        assertThat(value).isNotNull();
     }
 
     @Test
     @Launch({ "dynamic-proxy" })
     public void testDynamicProxy(LaunchResult result) {
         assertThat(result.getOutput()).isEqualTo("2007-12-03T10:15:30");
+
+        assertThat(value).isNotNull();
     }
 
     @Test
     @Launch("quarkus")
     public void testDynamicVersionProvider(LaunchResult launchResult) {
         assertThat(launchResult.getOutput()).contains("quarkus version 1.0");
+
+        assertThat(value).isNotNull();
     }
 
     @Test
@@ -88,6 +105,8 @@ public class PicocliTest {
                 .contains("-b:null")
                 .contains("remainder:[More]")
                 .contains("unmatched[-x]");
+
+        assertThat(value).isNotNull();
     }
 
     @Test
@@ -110,5 +129,26 @@ public class PicocliTest {
     @Launch("default-value-provider")
     public void testDefaultValueProvider(LaunchResult result) {
         assertThat(result.getOutput()).isEqualTo("default:default-value");
+
+        assertThat(value).isNotNull();
     }
+
+    public static class TestResource implements QuarkusTestResourceLifecycleManager {
+
+        @Override
+        public Map<String, String> start() {
+            return Collections.emptyMap();
+        }
+
+        @Override
+        public void inject(TestInjector testInjector) {
+            testInjector.injectIntoFields("dummy", f -> f.getName().equals("value"));
+        }
+
+        @Override
+        public void stop() {
+
+        }
+    }
+
 }

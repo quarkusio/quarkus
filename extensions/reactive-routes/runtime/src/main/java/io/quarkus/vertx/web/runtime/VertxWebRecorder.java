@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompression;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.vertx.core.Handler;
@@ -18,9 +19,12 @@ import io.vertx.ext.web.RoutingContext;
 public class VertxWebRecorder {
 
     final RuntimeValue<HttpConfiguration> httpConfiguration;
+    final HttpBuildTimeConfig httpBuildTimeConfig;
 
-    public VertxWebRecorder(RuntimeValue<HttpConfiguration> httpConfiguration) {
+    public VertxWebRecorder(RuntimeValue<HttpConfiguration> httpConfiguration,
+            HttpBuildTimeConfig httpBuildTimeConfig) {
         this.httpConfiguration = httpConfiguration;
+        this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
 
     @SuppressWarnings("unchecked")
@@ -41,10 +45,10 @@ public class VertxWebRecorder {
     }
 
     public Handler<RoutingContext> compressRouteHandler(Handler<RoutingContext> routeHandler, HttpCompression compression) {
-        if (httpConfiguration.getValue().enableCompression) {
+        if (httpBuildTimeConfig.enableCompression) {
             return new HttpCompressionHandler(routeHandler, compression,
                     compression == HttpCompression.UNDEFINED
-                            ? Set.copyOf(httpConfiguration.getValue().compressMediaTypes.orElse(List.of()))
+                            ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes.orElse(List.of()))
                             : Set.of());
         } else {
             return routeHandler;

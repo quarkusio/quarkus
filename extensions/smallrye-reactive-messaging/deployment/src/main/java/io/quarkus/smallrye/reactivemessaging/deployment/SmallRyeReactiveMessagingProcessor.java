@@ -37,6 +37,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExc
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -448,10 +449,9 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     CoroutineConfigurationBuildItem producesCoroutineConfiguration() {
-        try {
-            Class.forName("kotlinx.coroutines.future.FutureKt", false, getClass().getClassLoader());
+        if (QuarkusClassLoader.isClassPresentAtRuntime("kotlinx.coroutines.future.FutureKt")) {
             return new CoroutineConfigurationBuildItem(true);
-        } catch (ClassNotFoundException e) {
+        } else {
             return new CoroutineConfigurationBuildItem(false);
         }
     }

@@ -13,6 +13,7 @@ import io.grpc.stub.StreamObserver;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
+import io.smallrye.mutiny.subscription.Cancellable;
 
 public class ServerCalls {
     private static final Logger log = Logger.getLogger(ServerCalls.class);
@@ -64,7 +65,7 @@ public class ServerCalls {
                 response.onError(Status.fromCode(Status.Code.INTERNAL).asException());
                 return;
             }
-            returnValue.subscribe().with(
+            handleSubscription(returnValue.subscribe().with(
                     new Consumer<O>() {
                         @Override
                         public void accept(O v) {
@@ -82,7 +83,7 @@ public class ServerCalls {
                         public void run() {
                             onCompleted(response);
                         }
-                    });
+                    }), response);
         } catch (Throwable throwable) {
             onError(response, toStatusFailure(throwable));
         }
@@ -124,6 +125,22 @@ public class ServerCalls {
         }
     }
 
+    private static <O> void handleSubscription(Cancellable cancellable, StreamObserver<O> response) {
+        if (response instanceof ServerCallStreamObserver) {
+            ServerCallStreamObserver<O> serverCallResponse = (ServerCallStreamObserver<O>) response;
+
+            Runnable cancel = new Runnable() {
+                @Override
+                public void run() {
+                    cancellable.cancel();
+                }
+            };
+
+            serverCallResponse.setOnCloseHandler(cancel);
+            serverCallResponse.setOnCancelHandler(cancel);
+        }
+    }
+
     public static <I, O> StreamObserver<I> manyToMany(StreamObserver<O> response,
             Function<Multi<I>, Multi<O>> implementation) {
         try {
@@ -137,7 +154,7 @@ public class ServerCalls {
                 response.onError(Status.fromCode(Status.Code.INTERNAL).asException());
                 return null;
             }
-            multi.subscribe().with(
+            handleSubscription(multi.subscribe().with(
                     new Consumer<O>() {
                         @Override
                         public void accept(O v) {
@@ -155,7 +172,8 @@ public class ServerCalls {
                         public void run() {
                             onCompleted(response);
                         }
-                    });
+                    }), response);
+
             return pump;
         } catch (Throwable throwable) {
             onError(response, toStatusFailure(throwable));

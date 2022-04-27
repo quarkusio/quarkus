@@ -64,7 +64,48 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.persistence-api.version
       newValue: 3.0.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: hibernate-reactive.version
+      newValue: 1.1.5.Beta1
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: hibernate-core
+      newGroupId: org.hibernate
+      newArtifactId: hibernate-core-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: hibernate-envers
+      newGroupId: org.hibernate
+      newArtifactId: hibernate-envers-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: hibernate-jpamodelgen
+      newGroupId: org.hibernate
+      newArtifactId: hibernate-jpamodelgen-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate.search
+      oldArtifactId: hibernate-search-mapper-orm-coordination-outbox-polling
+      newGroupId: org.hibernate.search
+      newArtifactId: hibernate-search-mapper-orm-coordination-outbox-polling-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate.search
+      oldArtifactId: hibernate-search-mapper-orm
+      newGroupId: org.hibernate.search
+      newArtifactId: hibernate-search-mapper-orm-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate.reactive
+      oldArtifactId: hibernate-reactive-core
+      newGroupId: org.hibernate.reactive
+      newArtifactId: hibernate-reactive-core-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: quarkus-local-cache
+      newGroupId: org.hibernate
+      newArtifactId: quarkus-local-cache-jakarta
   # Security - See below
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: quarkus-security.version
+      newValue: 2.0.0-SNAPSHOT
   # Servlet
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.servlet-api.version
@@ -79,6 +120,24 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.transaction-api.version
       newValue: 2.0.0
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.narayana.jta
+      oldArtifactId: narayana-jta
+      newGroupId: org.jboss.narayana.jta
+      newArtifactId: narayana-jta-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.narayana.jts
+      oldArtifactId: narayana-jts-integration
+      newGroupId: org.jboss.narayana.jts
+      newArtifactId: narayana-jts-integration-jakarta
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: io.agroal
+      oldArtifactId: agroal-narayana
+      newGroupId: io.agroal
+      newArtifactId: agroal-narayana-jakarta
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: agroal.version
+      newValue: 1.17-SNAPSHOT
   # Validation
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.validation-api.version
@@ -158,6 +217,14 @@ recipeList:
       artifactId: jakarta.xml.bind-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.build-parent
+displayName: Adjust build-parent
+recipeList:
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: subethasmtp.version
+      newValue: 6.0.1
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-security
 displayName: Adjust Javax security dependencies
 recipeList:
@@ -209,6 +276,96 @@ recipeList:
       newArtifactId: jakarta.authentication-api
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.hibernate-orm-narayana-switch
+displayName: Switch Hibernate ORM/Narayana dependencies
+recipeList:
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.hibernate
+      artifactId: hibernate-core
+      exclusionGroupId: javax.persistence
+      exclusionArtifactId: javax.persistence-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.hibernate
+      artifactId: hibernate-core
+      exclusionGroupId: org.jboss.spec.javax.transaction
+      exclusionArtifactId: jboss-transaction-api_1.2_spec
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.hibernate
+      artifactId: hibernate-core
+      exclusionGroupId: javax.xml.bind
+      exclusionArtifactId: jaxb-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.hibernate
+      artifactId: hibernate-core
+      exclusionGroupId: javax.activation
+      exclusionArtifactId: javax.activation-api
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.narayana.jta
+      oldArtifactId: narayana-jta
+      newGroupId: org.jboss.narayana.jta
+      newArtifactId: narayana-jta-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.narayana.jts
+      oldArtifactId: narayana-jts-integration
+      newGroupId: org.jboss.narayana.jts
+      newArtifactId: narayana-jts-integration-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: hibernate-core
+      newGroupId: org.hibernate
+      newArtifactId: hibernate-core-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: hibernate-envers
+      newGroupId: org.hibernate
+      newArtifactId: hibernate-envers-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: hibernate-jpamodelgen
+      newGroupId: org.hibernate
+      newArtifactId: hibernate-jpamodelgen-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: io.agroal
+      oldArtifactId: agroal-narayana
+      newGroupId: io.agroal
+      newArtifactId: agroal-narayana-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate.reactive
+      oldArtifactId: hibernate-reactive-core
+      newGroupId: org.hibernate.reactive
+      newArtifactId: hibernate-reactive-core-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate
+      oldArtifactId: quarkus-local-cache
+      newGroupId: org.hibernate
+      newArtifactId: quarkus-local-cache-jakarta
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.hibernate-search-switch
+displayName: Switch Hibernate Search dependencies
+recipeList:
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.hibernate.search
+      artifactId: hibernate-search-mapper-orm-coordination-outbox-polling
+      exclusionGroupId: javax.persistence
+      exclusionArtifactId: javax.persistence-api
+  - org.openrewrite.maven.RemoveExclusion:
+      groupId: org.hibernate.search
+      artifactId: hibernate-search-mapper-orm
+      exclusionGroupId: javax.persistence
+      exclusionArtifactId: javax.persistence-api
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate.search
+      oldArtifactId: hibernate-search-mapper-orm-coordination-outbox-polling
+      newGroupId: org.hibernate.search
+      newArtifactId: hibernate-search-mapper-orm-coordination-outbox-polling-jakarta
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.hibernate.search
+      oldArtifactId: hibernate-search-mapper-orm
+      newGroupId: org.hibernate.search
+      newArtifactId: hibernate-search-mapper-orm-jakarta
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.smallrye
 displayName: Adjust SmallRye dependencies
 recipeList:
@@ -234,6 +391,12 @@ recipeList:
       key: smallrye-health.version
       newValue: 4.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-jwt.version
+      newValue: 2.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-jwt.version
+      newValue: 4.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-api.version
       newValue: 4.0.1
   - org.openrewrite.maven.ChangePropertyValue:
@@ -243,16 +406,18 @@ recipeList:
       key: smallrye-open-api.version
       newValue: 3.0.0-RC1
   - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-opentracing-api.version
+      newValue: 3.0
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-opentracing.version
+      newValue: 3.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: 3.0
 # In progress, these ones need a change:
-#        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
 #        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
-#        <microprofile-jwt.version>1.2</microprofile-jwt.version>
 #        <microprofile-lra.version>1.0</microprofile-lra.version>
 #        <smallrye-graphql.version>1.4.3</smallrye-graphql.version>
-#        <smallrye-opentracing.version>2.1.0</smallrye-opentracing.version>
-#        <smallrye-jwt.version>3.3.3</smallrye-jwt.version>
 #        <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
 #        <smallrye-reactive-types-converter.version>2.6.0</smallrye-reactive-types-converter.version>
 #        <smallrye-mutiny-vertx-binding.version>2.19.0</smallrye-mutiny-vertx-binding.version>
@@ -361,6 +526,31 @@ recipeList:
   - org.openrewrite.maven.AddDependencyNoQuestionsAsked:
       groupId: org.jboss.resteasy.microprofile
       artifactId: microprofile-config
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.bom.resteasy-spring-web
+displayName: Add RESTEasy Spring Web to BOM
+recipeList:
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.resteasy
+      oldArtifactId: resteasy-spring-web
+      newGroupId: org.jboss.resteasy.spring
+      newArtifactId: resteasy-spring-web
+      newVersion: "${resteasy-spring-web.version}"
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: resteasy-spring-web.version
+      newValue: 3.0.0.Alpha2
+      addIfMissing: true
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.resteasy-spring-web
+displayName: Adjust RESTEasy Spring Web
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.jboss.resteasy
+      oldArtifactId: resteasy-spring-web
+      newGroupId: org.jboss.resteasy.spring
+      newArtifactId: resteasy-spring-web
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.rest-client

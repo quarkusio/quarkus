@@ -105,6 +105,9 @@ public class QuarkusPlugin implements Plugin<Project> {
         // register extension
         final QuarkusPluginExtension quarkusExt = project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class,
                 project);
+        // register plugin
+        project.getPluginManager().apply(JavaPlugin.class);
+
         registerTasks(project, quarkusExt);
     }
 

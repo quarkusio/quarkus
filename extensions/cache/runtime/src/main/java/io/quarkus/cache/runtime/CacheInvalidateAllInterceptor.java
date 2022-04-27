@@ -27,21 +27,26 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
     public Object intercept(InvocationContext invocationContext) throws Exception {
         CacheInterceptionContext<CacheInvalidateAll> interceptionContext = getInterceptionContext(invocationContext,
                 CacheInvalidateAll.class, false);
+
         if (interceptionContext.getInterceptorBindings().isEmpty()) {
             // This should never happen.
             LOGGER.warn(INTERCEPTOR_BINDINGS_ERROR_MSG);
             return invocationContext.proceed();
-        } else if (isUniReturnType(invocationContext)) {
-            return invalidateAllNonBlocking(invocationContext, interceptionContext);
-        } else {
+        }
+        ReturnType returnType = determineReturnType(invocationContext.getMethod().getReturnType());
+        if (returnType == ReturnType.NonAsync) {
             return invalidateAllBlocking(invocationContext, interceptionContext);
+
+        } else {
+            return invalidateAllNonBlocking(invocationContext, interceptionContext, returnType);
         }
     }
 
     private Object invalidateAllNonBlocking(InvocationContext invocationContext,
-            CacheInterceptionContext<CacheInvalidateAll> interceptionContext) {
+            CacheInterceptionContext<CacheInvalidateAll> interceptionContext,
+            ReturnType returnType) {
         LOGGER.trace("Invalidating all cache entries in a non-blocking way");
-        return Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
+        var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
                 .onItem().transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
                     @Override
                     public Uni<Void> apply(CacheInvalidateAll binding) {
@@ -53,12 +58,13 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
                     @Override
                     public Uni<?> apply(Object ignored) {
                         try {
-                            return (Uni<Object>) invocationContext.proceed();
+                            return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
                         } catch (Exception e) {
                             throw new CacheException(e);
                         }
                     }
                 });
+        return createAsyncResult(uni, returnType);
     }
 
     private Object invalidateAllBlocking(InvocationContext invocationContext,

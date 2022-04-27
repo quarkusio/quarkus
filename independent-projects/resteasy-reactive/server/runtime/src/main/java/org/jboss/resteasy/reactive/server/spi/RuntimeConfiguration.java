@@ -3,7 +3,6 @@ package org.jboss.resteasy.reactive.server.spi;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.Set;
 
 public interface RuntimeConfiguration {
 
@@ -12,10 +11,6 @@ public interface RuntimeConfiguration {
     Body body();
 
     Limits limits();
-
-    boolean enableCompression();
-
-    Set<String> compressMediaTypes();
 
     interface Body {
 

@@ -154,18 +154,6 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         public Collection<Dependency> getDirectDependencies() {
             return DefaultWorkspaceModule.this.getDirectDependencies();
         }
-
-        @Override
-        public boolean hasNonTestSources() {
-            final int srcTotal = DefaultWorkspaceModule.this.sourcesSets.size();
-            if (srcTotal == 0) {
-                return false;
-            }
-            if (srcTotal > 1) {
-                return true;
-            }
-            return !hasTestSources();
-        }
     }
 
     private WorkspaceModuleId id;

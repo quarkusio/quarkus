@@ -65,6 +65,11 @@ runtime: java11
 
 This will create a default service for your App Engine application.
 
+[NOTE]
+====
+You can also use the new Java 17 runtime by defining `runtime: java17` instead.
+====
+
 App Engine Standard does not support the default Quarkus' specific packaging layout, therefore, you must set up your application to be packaged as an uber-jar via your `application.properties` file:
 
 [source, properties]
@@ -160,7 +165,7 @@ It uses Cloud Build to build your Docker image and deploy it to Google Container
 When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
 NOTE: App Engine Flexible custom runtimes support link:https://cloud.google.com/appengine/docs/flexible/custom-runtimes/configuring-your-app-with-app-yaml#updated_health_checks[health checks],
-it is strongly advised to provide them thanks to Quarkus xref:microprofile-health.adoc[Microprofile Health] support.
+it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
 
 == Deploying to Google Cloud Run
 

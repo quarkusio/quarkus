@@ -141,15 +141,22 @@ public class VertxHttpRecorder {
 
     public static final String GET = "GET";
     private static final Handler<HttpServerRequest> ACTUAL_ROOT = new Handler<HttpServerRequest>() {
+
+        /** JVM system property that disables URI validation, don't use this in production. */
+        private static final String DISABLE_URI_VALIDATION_PROP_NAME = "vertx.disableURIValidation";
+
+        /**
+         * Disables HTTP headers validation, so we can save some processing and save some allocations.
+         */
+        private final boolean DISABLE_URI_VALIDATION = Boolean.getBoolean(DISABLE_URI_VALIDATION_PROP_NAME);
+
         @Override
         public void handle(HttpServerRequest httpServerRequest) {
-            try {
-                // we simply need to know if the URI is valid
-                new URI(httpServerRequest.uri());
-            } catch (URISyntaxException e) {
+            if (!uriValid(httpServerRequest)) {
                 httpServerRequest.response().setStatusCode(400).end();
                 return;
             }
+
             //we need to pause the request to make sure that data does
             //not arrive before handlers have a chance to install a read handler
             //as it is possible filters such as the auth filter can do blocking tasks
@@ -163,6 +170,19 @@ public class VertxHttpRecorder {
                 //very rare race condition, that can happen when dev mode is shutting down
                 httpServerRequest.resume();
                 httpServerRequest.response().setStatusCode(503).end();
+            }
+        }
+
+        private boolean uriValid(HttpServerRequest httpServerRequest) {
+            if (DISABLE_URI_VALIDATION) {
+                return true;
+            }
+            try {
+                // we simply need to know if the URI is valid
+                new URI(httpServerRequest.uri());
+                return true;
+            } catch (URISyntaxException e) {
+                return false;
             }
         }
     };
@@ -337,7 +357,7 @@ public class VertxHttpRecorder {
             defaultRouteHandler.accept(httpRouteRouter.route().order(DEFAULT_ROUTE_ORDER));
         }
 
-        if (httpConfiguration.enableCompression) {
+        if (httpBuildTimeConfig.enableCompression) {
             httpRouteRouter.route().order(0).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext ctx) {
@@ -393,6 +413,40 @@ public class VertxHttpRecorder {
                 }
             });
         }
+        // Filter Configuration per path
+        var filtersInConfig = httpConfiguration.filter;
+        if (!filtersInConfig.isEmpty()) {
+            for (var entry : filtersInConfig.entrySet()) {
+                var filterConfig = entry.getValue();
+                var matches = filterConfig.matches;
+                var order = filterConfig.order.orElse(Integer.MIN_VALUE);
+                var methods = filterConfig.methods;
+                var headers = filterConfig.header;
+                if (methods.isEmpty()) {
+                    httpRouteRouter.routeWithRegex(matches)
+                            .order(order)
+                            .handler(new Handler<RoutingContext>() {
+                                @Override
+                                public void handle(RoutingContext event) {
+                                    event.response().headers().setAll(headers);
+                                    event.next();
+                                }
+                            });
+                } else {
+                    for (var method : methods.get()) {
+                        httpRouteRouter.routeWithRegex(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), matches)
+                                .order(order)
+                                .handler(new Handler<RoutingContext>() {
+                                    @Override
+                                    public void handle(RoutingContext event) {
+                                        event.response().headers().setAll(headers);
+                                        event.next();
+                                    }
+                                });
+                    }
+                }
+            }
+        }
         // Headers sent on any request, regardless of the response
         Map<String, HeaderConfig> headers = httpConfiguration.header;
         if (!headers.isEmpty()) {
@@ -406,7 +460,7 @@ public class VertxHttpRecorder {
                             .handler(new Handler<RoutingContext>() {
                                 @Override
                                 public void handle(RoutingContext event) {
-                                    event.response().headers().add(name, config.value);
+                                    event.response().headers().set(name, config.value);
                                     event.next();
                                 }
                             });
@@ -565,8 +619,10 @@ public class VertxHttpRecorder {
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
             Supplier<Integer> eventLoops, List<String> websocketSubProtocols, boolean auxiliaryApplication) throws IOException {
         // Http server configuration
-        HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
-        HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
+        HttpServerOptions httpServerOptions = createHttpServerOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
+                websocketSubProtocols);
+        HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpBuildTimeConfig, httpConfiguration,
+                websocketSubProtocols);
         HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode,
                 websocketSubProtocols);
 
@@ -774,12 +830,14 @@ public class VertxHttpRecorder {
         serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
 
-        applyCommonOptions(serverOptions, httpConfiguration, websocketSubProtocols);
+        applyCommonOptions(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
         return serverOptions;
     }
 
-    private static void applyCommonOptions(HttpServerOptions httpServerOptions, HttpConfiguration httpConfiguration,
+    private static void applyCommonOptions(HttpServerOptions httpServerOptions,
+            HttpBuildTimeConfig buildTimeConfig,
+            HttpConfiguration httpConfiguration,
             List<String> websocketSubProtocols) {
         httpServerOptions.setHost(httpConfiguration.host);
         setIdleTimeout(httpConfiguration, httpServerOptions);
@@ -792,11 +850,11 @@ public class VertxHttpRecorder {
         httpServerOptions.setTcpCork(httpConfiguration.tcpCork);
         httpServerOptions.setAcceptBacklog(httpConfiguration.acceptBacklog);
         httpServerOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
-        httpServerOptions.setCompressionSupported(httpConfiguration.enableCompression);
-        if (httpConfiguration.compressionLevel.isPresent()) {
-            httpServerOptions.setCompressionLevel(httpConfiguration.compressionLevel.getAsInt());
+        httpServerOptions.setCompressionSupported(buildTimeConfig.enableCompression);
+        if (buildTimeConfig.compressionLevel.isPresent()) {
+            httpServerOptions.setCompressionLevel(buildTimeConfig.compressionLevel.getAsInt());
         }
-        httpServerOptions.setDecompressionSupported(httpConfiguration.enableDecompression);
+        httpServerOptions.setDecompressionSupported(buildTimeConfig.enableDecompression);
         httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
     }
 
@@ -883,7 +941,8 @@ public class VertxHttpRecorder {
         return out.toByteArray();
     }
 
-    private static HttpServerOptions createHttpServerOptions(HttpConfiguration httpConfiguration,
+    private static HttpServerOptions createHttpServerOptions(
+            HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
             LaunchMode launchMode, List<String> websocketSubProtocols) {
         if (!httpConfiguration.hostEnabled) {
             return null;
@@ -893,19 +952,22 @@ public class VertxHttpRecorder {
         int port = httpConfiguration.determinePort(launchMode);
         options.setPort(port == 0 ? -1 : port);
 
-        applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+        applyCommonOptions(options, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
         return options;
     }
 
-    private static HttpServerOptions createDomainSocketOptions(HttpConfiguration httpConfiguration,
+    private static HttpServerOptions createDomainSocketOptions(
+            HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
             List<String> websocketSubProtocols) {
         if (!httpConfiguration.domainSocketEnabled) {
             return null;
         }
         HttpServerOptions options = new HttpServerOptions();
 
-        applyCommonOptions(options, httpConfiguration, websocketSubProtocols);
+        applyCommonOptions(options, buildTimeConfig, httpConfiguration, websocketSubProtocols);
+        // Override the host (0.0.0.0 by default) with the configured domain socket.
+        options.setHost(httpConfiguration.domainSocket);
 
         return options;
     }
@@ -914,14 +976,6 @@ public class VertxHttpRecorder {
         int idleTimeout = (int) httpConfiguration.idleTimeout.toMillis();
         options.setIdleTimeout(idleTimeout);
         options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
-    }
-
-    public void warnIfPortChanged(HttpConfiguration config, int port) {
-        if (config.port != port) {
-            LOGGER.errorf(
-                    "quarkus.http.port was specified at build time as %s however run time value is %s, Kubernetes metadata will be incorrect.",
-                    port, config.port);
-        }
     }
 
     public void addRoute(RuntimeValue<Router> router, Function<Router, Route> route, Handler<RoutingContext> handler,

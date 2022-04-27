@@ -5,7 +5,10 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import javax.json.Json;
@@ -14,8 +17,13 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.smallrye.graphql.runtime.spi.datafetcher.ContextHelper;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.smallrye.graphql.execution.ExecutionResponse;
+import io.smallrye.graphql.execution.ExecutionResponseWriter;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -90,7 +98,6 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private void handlePost(HttpServerResponse response, RoutingContext ctx, String requestedCharset) {
         try {
             JsonObject jsonObjectFromBody = getJsonObjectFromBody(ctx);
-            String postResponse;
             if (hasQueryParameters(ctx) && allowPostWithQueryParameters) {
                 JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
                 JsonObject mergedJsonObject;
@@ -104,15 +111,14 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                     response.setStatusCode(400).end(MISSING_OPERATION);
                     return;
                 }
-                postResponse = doRequest(mergedJsonObject);
+                doRequest(mergedJsonObject, response, ctx, requestedCharset);
             } else {
                 if (jsonObjectFromBody == null) {
                     response.setStatusCode(400).end(MISSING_OPERATION);
                     return;
                 }
-                postResponse = doRequest(jsonObjectFromBody);
+                doRequest(jsonObjectFromBody, response, ctx, requestedCharset);
             }
-            response.setStatusCode(200).setStatusMessage(OK).end(Buffer.buffer(postResponse, requestedCharset));
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -124,11 +130,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 JsonObject input = getJsonObjectFromQueryParameters(ctx);
 
                 if (input.containsKey(QUERY)) {
-                    String getResponse = doRequest(input);
-                    response.setStatusCode(200)
-                            .setStatusMessage(OK)
-                            .end(Buffer.buffer(getResponse, requestedCharset));
-
+                    doRequest(input, response, ctx, requestedCharset);
                 } else {
                     response.setStatusCode(400).end(MISSING_OPERATION);
                 }
@@ -281,10 +283,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
     private boolean hasQueryParameter(RoutingContext ctx, String parameterName) {
         List<String> all = ctx.queryParam(parameterName);
-        if (all != null && !all.isEmpty()) {
-            return true;
-        }
-        return false;
+        return all != null && !all.isEmpty();
     }
 
     private String getAllowedMethods() {
@@ -295,12 +294,32 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         }
     }
 
-    private String doRequest(JsonObject jsonInput) {
-        ExecutionResponse executionResponse = getExecutionService().execute(jsonInput);
-        if (executionResponse != null) {
-            return executionResponse.getExecutionResultAsString();
+    private void doRequest(JsonObject jsonInput, HttpServerResponse response, RoutingContext ctx,
+            String requestedCharset) {
+        VertxExecutionResponseWrtiter writer = new VertxExecutionResponseWrtiter(response, ctx, requestedCharset);
+
+        Uni<SecurityIdentity> deferredIdentity = Uni.createFrom().nothing();
+        CurrentIdentityAssociation currentIdentityAssociation = getCurrentIdentityAssociation();
+        if (currentIdentityAssociation != null) {
+            deferredIdentity = getCurrentIdentityAssociation().getDeferredIdentity();
         }
-        return null;
+
+        // Add some context to dfe
+        Map<String, Object> metaData = new ConcurrentHashMap<>();
+        ContextHelper.storeActiveState(metaData,
+                getCurrentManagedContext().getState(),
+                deferredIdentity,
+                getHeaders(ctx));
+        getExecutionService().executeAsync(jsonInput, metaData, writer);
+    }
+
+    private Map<String, List<String>> getHeaders(RoutingContext ctx) {
+        Map<String, List<String>> h = new HashMap<>();
+        MultiMap headers = ctx.request().headers();
+        for (String header : headers.names()) {
+            h.put(header, headers.getAll(header));
+        }
+        return h;
     }
 
     private static JsonObject toJsonObject(String jsonString) {
@@ -311,5 +330,31 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         try (JsonReader jsonReader = jsonReaderFactory.createReader(new StringReader(jsonString))) {
             return jsonReader.readObject();
         }
+    }
+
+    class VertxExecutionResponseWrtiter implements ExecutionResponseWriter {
+
+        HttpServerResponse response;
+        String requestedCharset;
+        RoutingContext ctx;
+
+        VertxExecutionResponseWrtiter(HttpServerResponse response, RoutingContext ctx, String requestedCharset) {
+            this.response = response;
+            this.ctx = ctx;
+            this.requestedCharset = requestedCharset;
+        }
+
+        @Override
+        public void write(ExecutionResponse er) {
+            response.setStatusCode(200)
+                    .setStatusMessage(OK)
+                    .end(Buffer.buffer(er.getExecutionResultAsString(), requestedCharset));
+        }
+
+        @Override
+        public void fail(Throwable t) {
+            ctx.fail(t);
+        }
+
     }
 }

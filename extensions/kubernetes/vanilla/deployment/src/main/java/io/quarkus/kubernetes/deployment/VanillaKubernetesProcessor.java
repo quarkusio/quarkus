@@ -20,7 +20,8 @@ import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
-import io.dekorate.kubernetes.decorator.ApplyReplicasDecorator;
+import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
+import io.dekorate.kubernetes.decorator.ApplyReplicasToStatefulSetDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
 import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
@@ -120,15 +121,19 @@ public class VanillaKubernetesProcessor {
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
             List<KubernetesPortBuildItem> ports, Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath, List<KubernetesRoleBuildItem> roles,
-            List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot) {
+            List<KubernetesRoleBindingBuildItem> roleBindings, Optional<CustomProjectRootBuildItem> customProjectRoot,
+            List<KubernetesDeploymentTargetBuildItem> targets) {
 
         final List<DecoratorBuildItem> result = new ArrayList<>();
+        if (!targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
+                .anyMatch(t -> KUBERNETES.equals(t.getName()))) {
+            return result;
+        }
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
 
         Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
                 packageConfig);
-        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config,
-                metricsConfiguration,
+        result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config, metricsConfiguration,
                 annotations, labels, command, ports, livenessPath, readinessPath, roles, roleBindings));
 
         if (config.deploymentKind == KubernetesConfig.DeploymentResourceKind.StatefulSet) {
@@ -138,7 +143,7 @@ public class VanillaKubernetesProcessor {
 
         if (config.getReplicas() != 1) {
             // This only affects Deployment
-            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasDecorator(name, config.getReplicas())));
+            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToDeploymentDecorator(name, config.getReplicas())));
             // This only affects StatefulSet
             result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToStatefulSetDecorator(name, config.getReplicas())));
         }

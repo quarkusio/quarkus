@@ -17,7 +17,7 @@ public class BouncyCastleTestCase {
                 .get("/jca/listProviders")
                 .then()
                 .statusCode(200)
-                .body(equalTo("BC"));
+                .body(equalTo("SunPKCS11,BC"));
     }
 
     @Test

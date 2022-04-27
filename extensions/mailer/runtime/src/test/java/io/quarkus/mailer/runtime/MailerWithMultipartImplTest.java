@@ -5,7 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Scanner;
+import java.util.UUID;
 
 import javax.mail.BodyPart;
 import javax.mail.MessagingException;
@@ -41,8 +46,7 @@ class MailerWithMultipartImplTest {
 
     @BeforeAll
     static void startWiser() {
-        wiser = new Wiser();
-        wiser.setPort(0);
+        wiser = Wiser.port(SocketUtil.findAvailablePort());
         wiser.start();
 
         vertx = Vertx.vertx();

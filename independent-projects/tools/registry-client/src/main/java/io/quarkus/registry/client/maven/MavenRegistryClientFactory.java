@@ -159,7 +159,6 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         } else {
             platformsResolver = new MavenPlatformsResolver(platformsConfig, defaultResolver, log);
         }
-
         return new RegistryClientDispatcher(config, platformsResolver,
                 Boolean.TRUE.equals(platformsConfig == null ? Boolean.FALSE : platformsConfig.getExtensionCatalogsIncluded())
                         ? new MavenPlatformExtensionsResolver(defaultResolver, log)
@@ -179,7 +178,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         return new MavenRegistryArtifactResolverWithCleanup(resolver, cleanupTimestampedArtifacts);
     }
 
-    private static RegistryConfig.Mutable completeRegistryConfig(RegistryConfig original, RegistryConfig descriptor) {
+    static RegistryConfig.Mutable completeRegistryConfig(RegistryConfig original, RegistryConfig descriptor) {
         RegistryConfig.Mutable complete = RegistryConfig.builder();
 
         complete.setId(original.getId() == null ? descriptor.getId() : original.getId());
@@ -226,7 +225,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         if (client == null) {
             return descriptor;
         }
-        if (isComplete(client)) {
+        if (isComplete(client, descriptor)) {
             return client;
         }
 

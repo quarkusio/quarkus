@@ -51,6 +51,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfig;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfigMapping;
+import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLLocaleResolver;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
@@ -65,7 +66,6 @@ import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
-import io.smallrye.graphql.cdi.producer.SmallRyeContextAccessorProxy;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -146,7 +146,7 @@ public class SmallRyeGraphQLProcessor {
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(GraphQLProducer.class)
-                .addBeanClass(SmallRyeContextAccessorProxy.class)
+                .addBeanClass(SmallRyeGraphQLLocaleResolver.class)
                 .setUnremovable().build());
     }
 
@@ -249,7 +249,6 @@ public class SmallRyeGraphQLProcessor {
                 .nestedRoute(graphQLConfig.rootPath, SCHEMA_PATH)
                 .handler(schemaHandler)
                 .displayOnNotFoundPage("MicroProfile GraphQL Schema")
-                .blockingRoute()
                 .build());
 
     }
@@ -317,7 +316,6 @@ public class SmallRyeGraphQLProcessor {
                 .handler(executionHandler)
                 .routeConfigKey("quarkus.smallrye-graphql.root-path")
                 .displayOnNotFoundPage("MicroProfile GraphQL Endpoint")
-                .blockingRoute()
                 .build());
 
     }
@@ -338,7 +336,7 @@ public class SmallRyeGraphQLProcessor {
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
 
-        return classes.toArray(new String[] {});
+        return classes.toArray(String[]::new);
     }
 
     private Class[] getGraphQLJavaClasses() {
@@ -361,7 +359,7 @@ public class SmallRyeGraphQLProcessor {
         classes.add(graphql.schema.GraphQLTypeReference.class);
         classes.add(List.class);
         classes.add(Collection.class);
-        return classes.toArray(new Class[] {});
+        return classes.toArray(Class[]::new);
     }
 
     private Set<String> getOperationClassNames(Set<Operation> operations) {

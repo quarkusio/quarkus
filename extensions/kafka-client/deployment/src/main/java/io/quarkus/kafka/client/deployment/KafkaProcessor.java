@@ -56,6 +56,7 @@ import org.xerial.snappy.OSInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -177,13 +178,11 @@ public class KafkaProcessor {
         // If elytron is on the classpath and the Kafka connection uses SASL, the Elytron client SASL implementation
         // is stricter than what Kafka expects. In this case, configure the SASL client to relax some constraints.
         // See https://github.com/quarkusio/quarkus/issues/20088.
-        try {
-            Class.forName("org.wildfly.security.sasl.gssapi.AbstractGssapiMechanism", false,
-                    Thread.currentThread().getContextClassLoader());
-            config.produce(new RunTimeConfigurationDefaultBuildItem("kafka.wildfly.sasl.relax-compliance", "true"));
-        } catch (Exception e) {
-            // AbstractGssapiMechanism is not on the classpath, do not set wildfly.sasl.relax-compliance
+        if (!QuarkusClassLoader.isClassPresentAtRuntime("org.wildfly.security.sasl.gssapi.AbstractGssapiMechanism")) {
+            return;
         }
+
+        config.produce(new RunTimeConfigurationDefaultBuildItem("kafka.wildfly.sasl.relax-compliance", "true"));
     }
 
     @BuildStep
@@ -299,41 +298,35 @@ public class KafkaProcessor {
 
     private void handleOpenTracing(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, Capabilities capabilities) {
         //opentracing contrib kafka interceptors: https://github.com/opentracing-contrib/java-kafka-client
-        if (capabilities.isPresent(Capability.OPENTRACING)) {
-            try {
-                Class.forName("io.opentracing.contrib.kafka.TracingProducerInterceptor", false,
-                        Thread.currentThread().getContextClassLoader());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
-                        "io.opentracing.contrib.kafka.TracingProducerInterceptor",
-                        "io.opentracing.contrib.kafka.TracingConsumerInterceptor"));
-            } catch (ClassNotFoundException e) {
-                //ignore, opentracing contrib kafka is not in the classpath
-            }
+        if (!capabilities.isPresent(Capability.OPENTRACING)
+                || !QuarkusClassLoader.isClassPresentAtRuntime("io.opentracing.contrib.kafka.TracingProducerInterceptor")) {
+            return;
         }
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
+                "io.opentracing.contrib.kafka.TracingProducerInterceptor",
+                "io.opentracing.contrib.kafka.TracingConsumerInterceptor"));
     }
 
     private void handleStrimziOAuth(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        try {
-            Class.forName("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler", false,
-                    Thread.currentThread().getContextClassLoader());
-
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
-                    "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"));
-
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
-                    "org.keycloak.jose.jws.JWSHeader",
-                    "org.keycloak.representations.AccessToken",
-                    "org.keycloak.representations.AccessToken$Access",
-                    "org.keycloak.representations.AccessTokenResponse",
-                    "org.keycloak.representations.IDToken",
-                    "org.keycloak.representations.JsonWebToken",
-                    "org.keycloak.jose.jwk.JSONWebKeySet",
-                    "org.keycloak.jose.jwk.JWK",
-                    "org.keycloak.json.StringOrArrayDeserializer",
-                    "org.keycloak.json.StringListMapDeserializer"));
-        } catch (ClassNotFoundException e) {
-            //ignore, Strimzi OAuth Client is not on the classpath
+        if (!QuarkusClassLoader.isClassPresentAtRuntime("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")) {
+            return;
         }
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
+                "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler"));
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true,
+                "org.keycloak.jose.jws.JWSHeader",
+                "org.keycloak.representations.AccessToken",
+                "org.keycloak.representations.AccessToken$Access",
+                "org.keycloak.representations.AccessTokenResponse",
+                "org.keycloak.representations.IDToken",
+                "org.keycloak.representations.JsonWebToken",
+                "org.keycloak.jose.jwk.JSONWebKeySet",
+                "org.keycloak.jose.jwk.JWK",
+                "org.keycloak.json.StringOrArrayDeserializer",
+                "org.keycloak.json.StringListMapDeserializer"));
     }
 
     private void handleAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -344,64 +337,14 @@ public class KafkaProcessor {
         // Avro - for both Confluent and Apicurio
 
         // --- Confluent ---
-        try {
-            Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer", false,
-                    Thread.currentThread().getContextClassLoader());
-            reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, false,
-                            "io.confluent.kafka.serializers.KafkaAvroDeserializer",
-                            "io.confluent.kafka.serializers.KafkaAvroSerializer"));
-
-            reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, false, false,
-                            "io.confluent.kafka.serializers.context.NullContextNameStrategy"));
-
-            reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, true, false,
-                            "io.confluent.kafka.serializers.subject.TopicNameStrategy",
-                            "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy",
-                            "io.confluent.kafka.serializers.subject.RecordNameStrategy"));
-
-            reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, true, false,
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.ErrorMessage",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.Schema",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.Config",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.SchemaReference",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.SchemaString",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.SchemaTypeConverter",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.ServerClusterId",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.SujectVersion"));
-
-            reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, true, false,
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.CompatibilityCheckResponse",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.ConfigUpdateRequest",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.ModeGetResponse",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.ModeUpdateRequest",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.RegisterSchemaRequest",
-                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.RegisterSchemaResponse"));
-        } catch (ClassNotFoundException e) {
-            //ignore, Confluent Avro is not in the classpath
-        }
-
-        try {
-            Class.forName("io.confluent.kafka.schemaregistry.client.security.basicauth.BasicAuthCredentialProvider", false,
-                    Thread.currentThread().getContextClassLoader());
-            serviceProviders
-                    .produce(new ServiceProviderBuildItem(
-                            "io.confluent.kafka.schemaregistry.client.security.basicauth.BasicAuthCredentialProvider",
-                            "io.confluent.kafka.schemaregistry.client.security.basicauth.SaslBasicAuthCredentialProvider",
-                            "io.confluent.kafka.schemaregistry.client.security.basicauth.UrlBasicAuthCredentialProvider",
-                            "io.confluent.kafka.schemaregistry.client.security.basicauth.UserInfoCredentialProvider"));
-        } catch (ClassNotFoundException e) {
-            // ignore, Confluent schema registry client not in the classpath
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.confluent.kafka.serializers.KafkaAvroDeserializer")
+                && !capabilities.isPresent(Capability.CONFLUENT_REGISTRY_AVRO)) {
+            throw new RuntimeException(
+                    "Confluent Avro classes detected, please use the quarkus-confluent-registry-avro extension");
         }
 
         // --- Apicurio Registry 1.x ---
-        try {
-            Class.forName("io.apicurio.registry.utils.serde.AvroKafkaDeserializer", false,
-                    Thread.currentThread().getContextClassLoader());
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.utils.serde.AvroKafkaDeserializer")) {
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(true, true, false,
                             "io.apicurio.registry.utils.serde.AvroKafkaDeserializer",
@@ -423,22 +366,13 @@ public class KafkaProcessor {
             // Apicurio uses dynamic proxies, register them
             proxies.produce(new NativeImageProxyDefinitionBuildItem("io.apicurio.registry.client.RegistryService",
                     "java.lang.AutoCloseable"));
-
-        } catch (ClassNotFoundException e) {
-            // ignore, Apicurio Avro is not in the classpath
         }
 
         // --- Apicurio Registry 2.x ---
-        try {
-            Class.forName("io.apicurio.registry.serde.avro.AvroKafkaDeserializer", false,
-                    Thread.currentThread().getContextClassLoader());
-
-            if (!capabilities.isPresent(Capability.APICURIO_REGISTRY_AVRO)) {
-                throw new RuntimeException(
-                        "Apicurio Registry 2.x Avro classes detected, please use the quarkus-apicurio-registry-avro extension");
-            }
-        } catch (ClassNotFoundException e) {
-            // ignore, Apicurio Avro is not in the classpath
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
+                && !capabilities.isPresent(Capability.APICURIO_REGISTRY_AVRO)) {
+            throw new RuntimeException(
+                    "Apicurio Registry 2.x Avro classes detected, please use the quarkus-apicurio-registry-avro extension");
         }
     }
 

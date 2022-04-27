@@ -5,10 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.BeanCreator;
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.impl.InstanceImpl;
+import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.util.Map;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
+import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
@@ -18,8 +23,19 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class DependentCreationalContextTest {
 
     @RegisterExtension
-    ArcTestContainer container = new ArcTestContainer(NoPreDestroy.class, HasDestroy.class, HasDependency.class,
-            ProducerNoDisposer.class, ProducerWithDisposer.class, String.class, Boolean.class);
+    ArcTestContainer container = ArcTestContainer.builder()
+            .beanClasses(NoPreDestroy.class, HasDestroy.class, HasDependency.class,
+                    ProducerNoDisposer.class, ProducerWithDisposer.class, String.class, Boolean.class)
+            .beanRegistrars(new BeanRegistrar() {
+
+                @Override
+                public void register(RegistrationContext context) {
+                    context.configure(SyntheticOne.class).addType(SyntheticOne.class).creator(SyntheticOne.class).done();
+                    context.configure(SyntheticTwo.class).addType(SyntheticTwo.class).creator(SyntheticTwo.class)
+                            .destroyer(SyntheticTwo.class).done();
+                }
+            })
+            .build();
 
     @Test
     public void testCreationalContextOptimization() {
@@ -31,6 +47,10 @@ public class DependentCreationalContextTest {
         assertBeanType(instance, boolean.class, false);
         // ProducerWithDisposer
         assertBeanType(instance, String.class, true);
+        // Synthetic bean
+        assertBeanType(instance, SyntheticOne.class, false);
+        // Synthetic bean with destruction logic
+        assertBeanType(instance, SyntheticTwo.class, true);
     }
 
     <T> void assertBeanType(InstanceImpl<Object> instance, Class<T> beanType, boolean shouldBeStored) {
@@ -85,6 +105,29 @@ public class DependentCreationalContextTest {
         }
 
         void dispose(@Disposes String ping) {
+        }
+
+    }
+
+    public static class SyntheticOne implements BeanCreator<SyntheticOne> {
+
+        @Override
+        public SyntheticOne create(CreationalContext<SyntheticOne> creationalContext, Map<String, Object> params) {
+            return new SyntheticOne();
+        }
+
+    }
+
+    public static class SyntheticTwo implements BeanCreator<SyntheticTwo>, BeanDestroyer<SyntheticTwo> {
+
+        @Override
+        public SyntheticTwo create(CreationalContext<SyntheticTwo> creationalContext, Map<String, Object> params) {
+            return new SyntheticTwo();
+        }
+
+        @Override
+        public void destroy(SyntheticTwo instance, CreationalContext<SyntheticTwo> creationalContext,
+                Map<String, Object> params) {
         }
 
     }

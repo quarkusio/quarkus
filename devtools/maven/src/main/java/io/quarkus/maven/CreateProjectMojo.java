@@ -218,8 +218,7 @@ public class CreateProjectMojo extends AbstractMojo {
             // fall back to the default platform
             catalogResolver = ExtensionCatalogResolver.empty();
         }
-
-        final ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, catalogResolver,
+        ExtensionCatalog catalog = resolveExtensionsCatalog(this, bomGroupId, bomArtifactId, bomVersion, catalogResolver,
                 mvn, log);
 
         File projectRoot = outputDirectory;
@@ -273,6 +272,7 @@ public class CreateProjectMojo extends AbstractMojo {
         final Path projectDirPath = projectRoot.toPath();
         try {
             extensions = CreateProjectHelper.sanitizeExtensions(extensions);
+            catalog = CreateProjectHelper.completeCatalog(catalog, extensions, mvn);
             final SourceType sourceType = CreateProjectHelper.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 

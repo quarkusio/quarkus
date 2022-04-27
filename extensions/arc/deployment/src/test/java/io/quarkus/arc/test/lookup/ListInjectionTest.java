@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.All;
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Priority;
 import io.quarkus.test.QuarkusUnitTest;
@@ -68,6 +69,22 @@ public class ListInjectionTest {
         assertEquals(1, handle.get().count());
         handle.destroy();
         assertTrue(CounterAlpha.DESTROYED.get());
+    }
+
+    @Test
+    public void testListAll() {
+        List<InstanceHandle<Service>> services = Arc.container().listAll(Service.class);
+        assertEquals(2, services.size());
+        assertThatExceptionOfType(UnsupportedOperationException.class)
+                .isThrownBy(() -> services.remove(0));
+        // ServiceBravo has higher priority
+        InstanceHandle<Service> bravoHandle = services.get(0);
+        Service bravo = bravoHandle.get();
+        assertEquals("bravo", bravo.ping());
+        assertEquals(Dependent.class, bravoHandle.getBean().getScope());
+        assertTrue(bravo.getInjectionPoint().isPresent());
+        // Empty injection point
+        assertEquals(Object.class, bravo.getInjectionPoint().get().getType());
     }
 
     @Singleton

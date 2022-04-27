@@ -122,13 +122,18 @@ public class TestTracingProcessor {
         for (ClassInfo clazz : combinedIndexBuildItem.getIndex().getKnownClasses()) {
             String theClassName = clazz.name().toString();
             if (isAppClass(theClassName)) {
-                transformerProducer.produce(new BytecodeTransformerBuildItem(false, theClassName,
-                        new BiFunction<String, ClassVisitor, ClassVisitor>() {
-                            @Override
-                            public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-                                return new TracingClassVisitor(classVisitor, theClassName);
-                            }
-                        }, true));
+                transformerProducer.produce(new BytecodeTransformerBuildItem.Builder().setEager(false)
+                        .setClassToTransform(theClassName)
+                        .setVisitorFunction(
+                                new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                                    @Override
+                                    public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                                        return new TracingClassVisitor(classVisitor, theClassName);
+                                    }
+                                })
+                        .setCacheable(true)
+                        .setContinueOnFailure(true)
+                        .build());
             }
         }
 

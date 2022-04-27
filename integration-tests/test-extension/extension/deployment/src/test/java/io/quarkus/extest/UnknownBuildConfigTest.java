@@ -29,7 +29,8 @@ public class UnknownBuildConfigTest {
         List<LogRecord> logRecords = prodModeTestResults.getRetainedBuildLogRecords();
 
         Optional<LogRecord> unknownBuildKey = logRecords.stream()
-                .filter(logRecord -> asList(logRecord.getParameters()).contains("quarkus.build.unknown.prop"))
+                .filter(logRecord -> asList(Optional.ofNullable(logRecord.getParameters()).orElse(new Object[0]))
+                        .contains("quarkus.build.unknown.prop"))
                 .findFirst();
         assertTrue(unknownBuildKey.isPresent());
         assertTrue(unknownBuildKey.get().getMessage().startsWith("Unrecognized configuration key"));

@@ -53,6 +53,11 @@
             <artifactId>quarkus-smallrye-context-propagation-deployment</artifactId>
         </dependency>
         
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+        </dependency>
+        
         <!--  Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

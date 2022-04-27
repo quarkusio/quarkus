@@ -207,6 +207,9 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             hasPerTestResources = (boolean) testResourceManager.getClass().getMethod("hasPerTestResources")
                     .invoke(testResourceManager);
 
+            testResourceManager.getClass().getMethod("inject", Object.class)
+                    .invoke(testResourceManager, context.getRequiredTestInstance());
+
             var result = startupAction.runMainClassBlocking(arguments);
             flushAllLoggers();
             return result;

@@ -64,7 +64,7 @@ public class CreateApp extends BaseCreateCommand {
             setCodegenOptions(codeGeneration);
 
             QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
-                    propertiesOptions.properties);
+                    propertiesOptions.properties, extensions);
 
             boolean success = true;
 

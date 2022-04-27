@@ -125,6 +125,9 @@ public class ClassTransformingBuildStep {
                 if (classTransformers == null) {
                     return originalBytes;
                 }
+                boolean continueOnFailure = classTransformers.stream()
+                        .filter(a -> !a.isContinueOnFailure())
+                        .findAny().isEmpty();
                 List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = classTransformers.stream()
                         .map(BytecodeTransformerBuildItem::getVisitorFunction).filter(Objects::nonNull)
                         .collect(Collectors.toList());
@@ -153,6 +156,17 @@ public class ClassTransformingBuildStep {
                         return transformedClass.getData();
                     } else {
                         return originalBytes;
+                    }
+                } catch (Throwable e) {
+                    if (continueOnFailure) {
+                        if (log.isDebugEnabled()) {
+                            log.errorf(e, "Failed to transform %s", className);
+                        } else {
+                            log.errorf("Failed to transform %s", className);
+                        }
+                        return originalBytes;
+                    } else {
+                        throw e;
                     }
                 } finally {
                     Thread.currentThread().setContextClassLoader(old);
@@ -184,6 +198,10 @@ public class ClassTransformingBuildStep {
                                 entry.getKey());
                         continue;
                     }
+
+                    boolean continueOnFailure = entry.getValue().stream()
+                            .filter(a -> !a.isContinueOnFailure())
+                            .findAny().isEmpty();
                     List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue().stream()
                             .map(BytecodeTransformerBuildItem::getVisitorFunction).filter(Objects::nonNull)
                             .collect(Collectors.toList());
@@ -196,9 +214,9 @@ public class ClassTransformingBuildStep {
                         public TransformedClassesBuildItem.TransformedClass call() throws Exception {
                             ClassLoader old = Thread.currentThread().getContextClassLoader();
                             try {
+                                byte[] classData = classPathElement.getResource(classFileName).getData();
                                 Thread.currentThread().setContextClassLoader(transformCl);
                                 Set<String> constValues = constScanning.get(className);
-                                byte[] classData = classPathElement.getResource(classFileName).getData();
                                 if (constValues != null && !noConstScanning.contains(className)) {
                                     if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
                                         return null;
@@ -214,6 +232,17 @@ public class ClassTransformingBuildStep {
                                     transformedClassesCache.put(className, transformedClass);
                                 }
                                 return transformedClass;
+                            } catch (Throwable e) {
+                                if (continueOnFailure) {
+                                    if (log.isDebugEnabled()) {
+                                        log.errorf(e, "Failed to transform %s", className);
+                                    } else {
+                                        log.errorf("Failed to transform %s", className);
+                                    }
+                                    return null;
+                                } else {
+                                    throw e;
+                                }
                             } finally {
                                 Thread.currentThread().setContextClassLoader(old);
                             }

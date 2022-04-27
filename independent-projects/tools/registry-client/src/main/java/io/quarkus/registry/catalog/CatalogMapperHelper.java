@@ -49,8 +49,9 @@ public class CatalogMapperHelper {
     }
 
     public static void serialize(ObjectMapper mapper, Object catalog, Path p) throws IOException {
-        if (!Files.exists(p.getParent())) {
-            Files.createDirectories(p.getParent());
+        final Path parent = p.getParent();
+        if (parent != null && !Files.exists(parent)) {
+            Files.createDirectories(parent);
         }
         try (BufferedWriter writer = Files.newBufferedWriter(p)) {
             serialize(mapper, catalog, writer);

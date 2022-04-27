@@ -395,25 +395,36 @@ Serialization.yamlMapper().registerModule(KotlinModule())
 
 _Please test this carefully on compilation to native images and fallback to Java-compatible Jackson bindings if you experience problems._
 
-== Kotlin coroutines and Mutiny
+== Coroutines support
 
-Kotlin coroutines provide a imperative programming model that actually gets executed in an asynchronous, reactive manner.
-To simplify the interoperation between Mutiny and Kotlin there is the module `io.smallrye.reactive:mutiny-kotlin`, described link:https://smallrye.io/smallrye-mutiny/guides/kotlin[here].
+=== Extensions
 
-== RESTEasy Reactive and Coroutines
+The following extensions provide support for Kotlin Coroutines by allowing the use of Kotlin's `suspend` keyword on method signatures.
 
-The `quarkus-resteasy-reactive` extension supports Kotlin `suspend fun` ctions in combination with `quarkus-kotlin` as well:
+|===
+|Extension |Comments
 
-[source,kotlin]
-----
-@Path("/hello")
-class ReactiveGreetingResource {
+|`quarkus-resteasy-reactive`
+|Support is provided for JAX-RS Resource Methods
 
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    suspend fun hello() = "Hello RESTEasy Reactive with Coroutines"
-}
-----
+|`quarkus-rest-client-reactive`
+|Support is provided for REST Client interface methods
+
+|`quarkus-smallrye-reactive-messaging`
+|Support is provided for Reactive messaging methods
+
+|`quarkus-scheduler`
+|Support is provided for scheduler methods
+
+|`quarkus-smallrye-fault-tolerance`
+|Support is provided for the declarative annotation-based API
+
+|===
+
+=== Kotlin coroutines and Mutiny
+
+Kotlin coroutines provide an imperative programming model that actually gets executed in an asynchronous, reactive manner.
+To simplify the interoperability between Mutiny and Kotlin there is the module `io.smallrye.reactive:mutiny-kotlin`, described link:https://smallrye.io/smallrye-mutiny/guides/kotlin[here].
 
 == CDI @Inject with Kotlin
 

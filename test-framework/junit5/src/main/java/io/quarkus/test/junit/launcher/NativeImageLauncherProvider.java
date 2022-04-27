@@ -1,5 +1,6 @@
 package io.quarkus.test.junit.launcher;
 
+import static io.quarkus.test.junit.ArtifactTypeUtil.isNativeBinary;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
 
@@ -19,7 +20,7 @@ import io.quarkus.test.common.NativeImageLauncher;
 public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
     @Override
     public boolean supportsArtifactType(String type) {
-        return "native".equals(type);
+        return isNativeBinary(type);
     }
 
     @Override

@@ -439,6 +439,14 @@ public final class IntegrationTestUtil {
         }
     }
 
+    static String getArtifactType(Properties quarkusArtifactProperties) {
+        String artifactType = quarkusArtifactProperties.getProperty("type");
+        if (artifactType == null) {
+            throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");
+        }
+        return artifactType;
+    }
+
     private static TestLauncher determineTestLauncher() {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         int i = stackTrace.length - 1;

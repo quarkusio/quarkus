@@ -38,8 +38,7 @@ class MailerImplTest {
 
     @BeforeAll
     static void startWiser() {
-        wiser = new Wiser();
-        wiser.setPort(0);
+        wiser = Wiser.port(SocketUtil.findAvailablePort());
         wiser.start();
 
         vertx = Vertx.vertx();

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import javax.inject.Inject;
+import javax.ws.rs.core.PathSegment;
 
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.MetricRegistry;
@@ -98,7 +99,7 @@ public class JaxRsMetricsTestCase {
                 .statusCode(200);
         SimpleTimer metric = metricRegistry.simpleTimer("REST.request",
                 new Tag("class", METRIC_RESOURCE_CLASS_NAME),
-                new Tag("method", "array_javax.ws.rs.core.PathSegment[]"));
+                new Tag("method", "array_" + PathSegment.class.getName() + "[]"));
         assertEquals(1, metric.getCount());
         assertTrue(metric.getElapsedTime().toNanos() > 0);
     }
@@ -111,7 +112,7 @@ public class JaxRsMetricsTestCase {
                 .statusCode(200);
         SimpleTimer metric = metricRegistry.simpleTimer("REST.request",
                 new Tag("class", METRIC_RESOURCE_CLASS_NAME),
-                new Tag("method", "varargs_javax.ws.rs.core.PathSegment[]"));
+                new Tag("method", "varargs_" + PathSegment.class.getName() + "[]"));
         assertEquals(1, metric.getCount());
         assertTrue(metric.getElapsedTime().toNanos() > 0);
     }

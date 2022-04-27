@@ -63,15 +63,10 @@ public final class Instances {
         return List.copyOf(list);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> List<InstanceHandle<T>> listOfHandles(InjectableBean<?> targetBean, Type injectionPointType,
             Type requiredType,
             Set<Annotation> requiredQualifiers,
             CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
-        List<InjectableBean<?>> beans = resolveBeans(requiredType, requiredQualifiers);
-        if (beans.isEmpty()) {
-            return Collections.emptyList();
-        }
         Supplier<InjectionPoint> supplier = new Supplier<InjectionPoint>() {
             @Override
             public InjectionPoint get() {
@@ -79,9 +74,20 @@ public final class Instances {
                         annotations, javaMember, position);
             }
         };
+        return listOfHandles(supplier, requiredType, requiredQualifiers, creationalContext);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> List<InstanceHandle<T>> listOfHandles(Supplier<InjectionPoint> injectionPoint, Type requiredType,
+            Set<Annotation> requiredQualifiers,
+            CreationalContextImpl<?> creationalContext) {
+        List<InjectableBean<?>> beans = resolveBeans(requiredType, requiredQualifiers);
+        if (beans.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<InstanceHandle<T>> list = new ArrayList<>(beans.size());
         for (InjectableBean<?> bean : beans) {
-            list.add(getHandle((CreationalContextImpl<T>) creationalContext, (InjectableBean<T>) bean, supplier));
+            list.add(getHandle((CreationalContextImpl<T>) creationalContext, (InjectableBean<T>) bean, injectionPoint));
         }
         return List.copyOf(list);
     }

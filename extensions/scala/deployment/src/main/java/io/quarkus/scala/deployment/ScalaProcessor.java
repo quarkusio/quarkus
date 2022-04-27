@@ -1,5 +1,6 @@
 package io.quarkus.scala.deployment;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -22,10 +23,10 @@ public class ScalaProcessor {
      */
     @BuildStep
     void registerScalaJacksonModule(BuildProducer<ClassPathJacksonModuleBuildItem> classPathJacksonModules) {
-        try {
-            Class.forName(SCALA_JACKSON_MODULE, false, Thread.currentThread().getContextClassLoader());
-            classPathJacksonModules.produce(new ClassPathJacksonModuleBuildItem(SCALA_JACKSON_MODULE));
-        } catch (Exception ignored) {
+        if (!QuarkusClassLoader.isClassPresentAtRuntime(SCALA_JACKSON_MODULE)) {
+            return;
         }
+
+        classPathJacksonModules.produce(new ClassPathJacksonModuleBuildItem(SCALA_JACKSON_MODULE));
     }
 }

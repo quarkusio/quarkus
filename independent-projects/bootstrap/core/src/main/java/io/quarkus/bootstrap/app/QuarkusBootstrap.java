@@ -102,7 +102,7 @@ public class QuarkusBootstrap implements Serializable {
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
         this.excludeFromClassPath = new ArrayList<>(builder.excludeFromClassPath);
         this.projectRoot = builder.projectRoot != null ? builder.projectRoot.normalize() : null;
-        this.buildSystemProperties = builder.buildSystemProperties;
+        this.buildSystemProperties = builder.buildSystemProperties != null ? builder.buildSystemProperties : new Properties();
         this.mode = builder.mode;
         this.offline = builder.offline;
         this.test = builder.test;
@@ -159,7 +159,19 @@ public class QuarkusBootstrap implements Serializable {
                 appModelFactory.setEnableClasspathCache(true);
             }
         }
-        return new CuratedApplication(this, appModelFactory.resolveAppModel(), classLoadingConfig);
+        CurationResult curationResult = appModelFactory.resolveAppModel();
+        if (curationResult.getApplicationModel().getAppArtifact() != null) {
+            if (curationResult.getApplicationModel().getAppArtifact().getArtifactId() != null) {
+                buildSystemProperties.putIfAbsent("quarkus.application.name",
+                        curationResult.getApplicationModel().getAppArtifact().getArtifactId());
+            }
+            if (curationResult.getApplicationModel().getAppArtifact().getVersion() != null) {
+                buildSystemProperties.putIfAbsent("quarkus.application.version",
+                        curationResult.getApplicationModel().getAppArtifact().getVersion());
+            }
+        }
+
+        return new CuratedApplication(this, curationResult, classLoadingConfig);
     }
 
     public static ConfiguredClassLoading createClassLoadingConfig(PathCollection applicationRoot, Mode mode,

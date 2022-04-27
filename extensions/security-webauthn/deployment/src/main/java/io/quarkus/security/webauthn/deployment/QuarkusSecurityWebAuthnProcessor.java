@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.security.webauthn.WebAuthnAuthenticationMechanism;
 import io.quarkus.security.webauthn.WebAuthnAuthenticatorStorage;
 import io.quarkus.security.webauthn.WebAuthnBuildTimeConfig;
@@ -23,6 +24,7 @@ import io.quarkus.security.webauthn.WebAuthnTrustedIdentityProvider;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
+import io.vertx.ext.auth.webauthn.impl.attestation.Attestation;
 
 class QuarkusSecurityWebAuthnProcessor {
 
@@ -51,6 +53,11 @@ class QuarkusSecurityWebAuthnProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter(),
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath());
+    }
+
+    @BuildStep(onlyIf = IsEnabled.class)
+    public ServiceProviderBuildItem serviceLoader() {
+        return ServiceProviderBuildItem.allProvidersFromClassPath(Attestation.class.getName());
     }
 
     @BuildStep(onlyIf = IsEnabled.class)

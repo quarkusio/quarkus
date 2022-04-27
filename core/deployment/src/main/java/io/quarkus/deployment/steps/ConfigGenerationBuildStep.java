@@ -200,9 +200,7 @@ public class ConfigGenerationBuildStep {
         // So it only reports during the build, because it is very likely that the property is available in runtime
         // and, it will be caught by the RuntimeConfig and log double warnings
         if (!launchMode.isDevOrTest()) {
-            for (String unknownProperty : unknownBuildProperties) {
-                ConfigDiagnostic.unknown(unknownProperty);
-            }
+            ConfigDiagnostic.unknownProperties(new ArrayList<>(unknownBuildProperties));
         }
     }
 

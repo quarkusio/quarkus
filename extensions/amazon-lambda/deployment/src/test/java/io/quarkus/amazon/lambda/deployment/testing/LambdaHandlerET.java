@@ -12,7 +12,7 @@ class LambdaHandlerET {
 
     @Test
     public void testSimpleLambdaSuccess() throws Exception {
-        // you test your lambas by invoking on http://localhost:8081
+        // you test your lambdas by invoking on http://localhost:8081
         // this works in dev mode too
 
         Person in = new Person();

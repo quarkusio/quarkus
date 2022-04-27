@@ -2,6 +2,18 @@ package io.quarkus.maven.dependency;
 
 public interface ArtifactCoords {
 
+    static ArtifactCoords fromString(String str) {
+        return new GACTV(GACTV.split(str, new String[5]));
+    }
+
+    static ArtifactCoords pom(String groupId, String artifactId, String version) {
+        return new GACTV(groupId, artifactId, null, TYPE_POM, version);
+    }
+
+    static ArtifactCoords jar(String groupId, String artifactId, String version) {
+        return new GACTV(groupId, artifactId, null, TYPE_JAR, version);
+    }
+
     String TYPE_JAR = "jar";
     String TYPE_POM = "pom";
     String DEFAULT_CLASSIFIER = "";

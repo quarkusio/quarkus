@@ -135,6 +135,36 @@ public interface ArcContainer {
     <T> InjectableInstance<T> select(TypeLiteral<T> type, Annotation... qualifiers);
 
     /**
+     * List all beans matching the required type and qualifiers.
+     * <p>
+     * Instances of dependent scoped beans should be explicitly destroyed with {@link InstanceHandle#destroy()}.
+     * <p>
+     * The list is sorted by {@link InjectableBean#getPriority()}. Higher priority goes first.
+     *
+     * @param <T>
+     * @param type
+     * @param qualifiers
+     * @return the list of handles for the disambiguated beans
+     * @see All
+     */
+    <T> List<InstanceHandle<T>> listAll(Class<T> type, Annotation... qualifiers);
+
+    /**
+     * List all beans matching the required type and qualifiers.
+     * <p>
+     * Instances of dependent scoped beans should be explicitly destroyed with {@link InstanceHandle#destroy()}.
+     * <p>
+     * The list of is sorted by {@link InjectableBean#getPriority()}. Higher priority goes first.
+     *
+     * @param <T>
+     * @param type
+     * @param qualifiers
+     * @return the list of handles for the disambiguated beans
+     * @see All
+     */
+    <T> List<InstanceHandle<T>> listAll(TypeLiteral<T> type, Annotation... qualifiers);
+
+    /**
      * Returns true if Arc container is running.
      * This can be used as a quick check to determine CDI availability in Quarkus.
      *
@@ -179,4 +209,11 @@ public interface ArcContainer {
      * @return the default executor service
      */
     ExecutorService getExecutorService();
+
+    /**
+     *
+     * @return the factory
+     * @see CurrentContext
+     */
+    CurrentContextFactory getCurrentContextFactory();
 }

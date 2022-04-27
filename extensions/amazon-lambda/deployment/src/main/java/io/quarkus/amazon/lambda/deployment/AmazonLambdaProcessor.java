@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.inject.Named;
 
@@ -24,6 +25,7 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
+import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.BuildException;
@@ -256,6 +258,17 @@ public final class AmazonLambdaProcessor {
         if (mode.isDevOrTest()) {
             recorder.startPollLoop(shutdownContextBuildItem, mode);
         }
+    }
+
+    @BuildStep
+    @Record(value = ExecutionTime.RUNTIME_INIT)
+    void recordExpectedExceptions(LambdaBuildTimeConfig config,
+            BuildProducer<ReflectiveClassBuildItem> registerForReflection,
+            AmazonLambdaRecorder recorder) {
+        Set<Class<?>> classes = config.expectedExceptions.map(Set::copyOf).orElseGet(Set::of);
+        classes.stream().map(clazz -> new ReflectiveClassBuildItem(false, false, false, clazz))
+                .forEach(registerForReflection::produce);
+        recorder.setExpectedExceptionClasses(classes);
     }
 
 }

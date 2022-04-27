@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
-import javax.enterprise.event.Event;
 import javax.ws.rs.core.SecurityContext;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -9,7 +8,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
@@ -45,10 +43,6 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
                 association.setIdentity(QuarkusHttpUser.getSecurityIdentity(context, null));
             }
         }
-    }
-
-    private static Event<SecurityIdentity> createEvent() {
-        return Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
     }
 
     protected SecurityContext createSecurityContext() {

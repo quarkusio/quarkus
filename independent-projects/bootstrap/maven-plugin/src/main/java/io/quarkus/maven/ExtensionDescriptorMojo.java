@@ -25,6 +25,7 @@ import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.capabilities.CapabilitiesConfig;
 import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -317,8 +318,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         // extension.json
         if (extensionFile == null) {
-            extensionFile = new File(outputDirectory,
-                    "META-INF" + File.separator + BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME);
+            extensionFile = output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME).toFile();
         }
 
         ObjectNode extObject;
@@ -457,17 +457,27 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
 
         String codestartArtifact = getCodestartArtifact(mvalue.asText(), project.getVersion());
-        final AppArtifactCoords codestartArtifactCoords = AppArtifactCoords.fromString(codestartArtifact);
+        final ArtifactCoords codestartArtifactCoords = GACTV.fromString(codestartArtifact);
         codestartObject.put("artifact", codestartArtifactCoords.toString());
         if (!skipCodestartValidation) {
             // first we look for it in the workspace, if it's in there we don't need to actually resolve the artifact, because it might not have been built yet
             if (workspaceProvider.getProject(codestartArtifactCoords.getGroupId(),
-                    codestartArtifactCoords.getArtifactId()) == null) {
-                try {
-                    resolve(new DefaultArtifact(codestartArtifact));
-                } catch (MojoExecutionException e) {
-                    throw new MojoExecutionException("Failed to resolve codestart artifact " + codestartArtifactCoords, e);
+                    codestartArtifactCoords.getArtifactId()) != null) {
+                return;
+            }
+            for (Artifact attached : project.getAttachedArtifacts()) {
+                if (codestartArtifactCoords.getArtifactId().equals(attached.getArtifactId()) &&
+                        codestartArtifactCoords.getClassifier().equals(attached.getClassifier()) &&
+                        codestartArtifactCoords.getType().equals(attached.getType()) &&
+                        codestartArtifactCoords.getVersion().equals(attached.getVersion()) &&
+                        codestartArtifactCoords.getGroupId().equals(attached.getGroupId())) {
+                    return;
                 }
+            }
+            try {
+                resolve(new DefaultArtifact(codestartArtifact));
+            } catch (MojoExecutionException e) {
+                throw new MojoExecutionException("Failed to resolve codestart artifact " + codestartArtifactCoords, e);
             }
         }
     }

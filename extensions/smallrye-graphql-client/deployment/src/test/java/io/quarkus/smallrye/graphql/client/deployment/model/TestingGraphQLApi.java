@@ -1,13 +1,12 @@
 package io.quarkus.smallrye.graphql.client.deployment.model;
 
 import java.util.List;
-
-import javax.inject.Inject;
+import java.util.Map;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
 
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.smallrye.graphql.runtime.spi.datafetcher.ContextHelper;
 
 @GraphQLApi
 public class TestingGraphQLApi {
@@ -25,15 +24,17 @@ public class TestingGraphQLApi {
         return List.of(person1, person2);
     }
 
-    @Inject
-    CurrentVertxRequest request;
-
     /**
      * Returns the value of the HTTP header denoted by 'key'.
      */
     @Query
     public String returnHeader(String key) {
-        return request.getCurrent().request().getHeader(key);
+        Map<String, List<String>> httpHeaders = ContextHelper.getHeaders();
+        List<String> allvalues = httpHeaders.get(key);
+        if (allvalues.size() == 1) {
+            return allvalues.get(0);
+        }
+        throw new RuntimeException("Unexpected number of value for header [" + key + "]: " + allvalues.size());
     }
 
 }

@@ -28,7 +28,8 @@ Normally we would link to a Git repository to clone but in this case there is no
 [source,java,subs=attributes+]
 ----
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus:quarkus-resteasy-reactive:{quarkus-version}
+//DEPS io.quarkus.platform:quarkus-bom:{quarkus-version}@pom
+//DEPS io.quarkus:quarkus-resteasy-reactive
 //JAVAC_OPTIONS -parameters
 //JAVA_OPTIONS -Djava.util.logging.manager=org.jboss.logmanager.LogManager
 
@@ -105,20 +106,21 @@ You will find at the top a line looking like this:
 
 This line is what on Linux and macOS allows you to run it as a script. On Windows this line is ignored.
 
-The next line
+The next lines
 
 [source,java]
 ----
 // //DEPS <dependency1> <dependency2>
 ----
 
-Is illustrating how you add dependencies to this script. This is a feature of JBang.
+illustrate how you add dependencies to this script. This is a feature of JBang.
 
-Go ahead and update this line to include the `quarkus-resteasy-reactive` dependency like so:
+Go ahead and update this line to include the `quarkus-bom` and the `quarkus-resteasy-reactive` dependency like so:
 
 [source,java,subs=attributes+]
 ----
-//DEPS io.quarkus:quarkus-resteasy-reactive:{quarkus-version}
+//DEPS io.quarkus.platform:quarkus-bom:{quarkus-version}@pom
+//DEPS io.quarkus:quarkus-resteasy-reactive
 ----
 
 Now, run `jbang quarkusapp.java` and you will see JBang resolving this dependency and building the jar with help from Quarkus' JBang integration.

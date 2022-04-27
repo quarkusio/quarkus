@@ -1455,6 +1455,8 @@ The full set of types supported by the serializer/deserializer autodetection is:
 * `io.vertx.core.buffer.Buffer`
 * `io.vertx.core.json.JsonObject`
 * `io.vertx.core.json.JsonArray`
+* classes for which a direct implementation of `org.apache.kafka.common.serialization.Serializer<T>` / `org.apache.kafka.common.serialization.Deserializer<T>` is present.
+** the implementation needs to specify the type argument `T` as the (de-)serialized type.
 * classes generated from Avro schemas, as well as Avro `GenericRecord`, if Confluent or Apicurio Registry _serde_ is present
 ** in case multiple Avro serdes are present, serializer/deserializer must be configured manually for Avro-generated classes, because autodetection is impossible
 ** see xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio Registry libraries
@@ -2399,6 +2401,103 @@ You can override the configuration by adding the following lines to the `applica
 quarkus.log.category."org.apache.kafka.clients".level=INFO
 quarkus.log.category."org.apache.kafka.common.utils".level=INFO
 quarkus.log.category."org.apache.kafka.common.metrics".level=INFO
+----
+
+== Connecting to Managed Kafka clusters
+
+This section explains how to connect to notorious Kafka Cloud Services.
+
+=== Azure Event Hub
+
+https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-for-kafka-ecosystem-overview[Azure Event Hub] provides an endpoint compatible with Apache Kafka.
+
+NOTE: Azure Event Hubs for Kafka is not available in the _basic_ tier.
+You need at least the _standard_ tier to use Kafka.
+See https://azure.microsoft.com/en-us/pricing/details/event-hubs/[Azure Event Hubs Pricing] to see the other options.
+
+To connect to Azure Event Hub, using the Kafka protocol with TLS, you need the following configuration:
+
+[source, properties]
+----
+kafka.bootstrap.servers=my-event-hub.servicebus.windows.net:9093 # <1>
+kafka.security.protocol=SASL_SSL
+kafka.sasl.mechanism=PLAIN
+kafka.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \ # <2>
+    username="$ConnectionString" \ # <3>
+    password="<YOUR.EVENTHUBS.CONNECTION.STRING>"; # <4>
+----
+<1> The port is `9093`.
+<2> You need to use the JAAS `PlainLoginModule`.
+<3> The username is the `$ConnectionString` string.
+<4> The Event Hub connection string given by Azure.
+
+Replace `<YOUR.EVENTHUBS.CONNECTION.STRING>` with the connection string for your Event Hubs namespace.
+For instructions on getting the connection string, see https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-get-connection-string[Get an Event Hubs connection string].
+The result would be something like:
+
+[source, properties]
+----
+kafka.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
+    username="$ConnectionString" \
+    password="Endpoint=sb://my-event-hub.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=XXXXXXXXXXXXXXXX";
+----
+
+This configuration can be global (as above), or set in the channel configuration:
+
+[source, properties]
+----
+mp.messaging.incoming.$channel.bootstrap.servers=my-event-hub.servicebus.windows.net:9093
+mp.messaging.incoming.$channel.security.protocol=SASL_SSL
+mp.messaging.incoming.$channel.sasl.mechanism=PLAIN
+mp.messaging.incoming.$channel.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
+    username="$ConnectionString" \
+    password="Endpoint=sb://my-event-hub.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=...";
+----
+
+=== Red Hat OpenShift Streams for Apache Kafka
+
+https://cloud.redhat.com/[Red Hat OpenShift Streams for Apache Kafka] provides managed Kafka brokers.
+First, follow the instructions from https://access.redhat.com/documentation/en-us/red_hat_openshift_streams_for_apache_kafka/1/guide/88e1487a-2a14-4b35-85b9-a7a2d67a37f3[Getting started with the `rhoas` CLI for Red Hat OpenShift Streams for Apache Kafka] to create your Kafka broker instance.
+Make sure you copied the client id and client secret associated with the _ServiceAccount_ you created.
+
+Then, you can configure the Quarkus application to connect to the broker as follows:
+
+[source, properties]
+----
+kafka.bootstrap.servers=<connection url> # <1>
+kafka.security.protocol=SASL_SSL
+kafka.sasl.mechanism=PLAIN
+kafka.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
+  username="${KAFKA_USERNAME}" \ # <2>
+  password="${KAFKA_PASSWORD}"; # <3>
+----
+<1> The connection string, given on the admin console, such as `demo-c--bjsv-ldd-cvavkc-a.bf2.kafka.rhcloud.com:443`
+<2> The kafka username (the client id from the service account)
+<3> the kafka password (the client secret from the service account)
+
+NOTE: In general, these properties are prefixed using `%prod` to enable them only when running in production mode.
+
+IMPORTANT: As explained in https://access.redhat.com/documentation/en-us/red_hat_openshift_streams_for_apache_kafka/1/guide/88e1487a-2a14-4b35-85b9-a7a2d67a37f3[Getting started with the rhoas CLI for Red Hat OpenShift Streams for Apache Kafka], to use Red Hat OpenShift Streams for Apache Kafka, you must create the topic beforehand, create a _Service Account_, and provide permissions to read and write to your topic from that service account.
+The authentication data (client id and secret) relates to the service account, which means you can implement fine-grain permissions and restrict access to the topic.
+
+When using Kubernetes, it is recommended to set the client id and secret in a Kubernetes secret:
+
+[source, yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kafka-credentials
+stringData:
+  KAFKA_USERNAME: "..."
+  KAFKA_PASSWORD: "..."
+----
+
+To allow your Quarkus application to use that secret, add the following line to the `application.properties` file:
+
+[source, properties]
+----
+%prod.quarkus.openshift.env.secrets=kafka-credentials
 ----
 
 == Going further

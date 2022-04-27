@@ -2,7 +2,6 @@ package io.quarkus.devtools.codestarts;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -93,7 +92,7 @@ public interface CodestartResource {
         @Override
         public String read(String codestartRelativePath) {
             try {
-                return new String(Files.readAllBytes(codestartDir.resolve(codestartRelativePath)), StandardCharsets.UTF_8);
+                return Files.readString(codestartDir.resolve(codestartRelativePath));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

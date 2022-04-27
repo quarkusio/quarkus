@@ -1,8 +1,5 @@
 package io.quarkus.devtools.project.codegen;
 
-import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
-import java.io.IOException;
-
 public interface ProjectGenerator {
     String BOM_GROUP_ID = "bom_groupId";
     String BOM_ARTIFACT_ID = "bom_artifactId";
@@ -27,7 +24,4 @@ public interface ProjectGenerator {
     String JAVA_TARGET = "java_target";
     String APP_CONFIG = "app-config"; // codestart uses dashes
 
-    String getName();
-
-    void generate(QuarkusCommandInvocation invocation) throws IOException;
 }

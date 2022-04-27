@@ -58,13 +58,13 @@ public class FileConfig {
         /**
          * The maximum file size of the log file after which a rotation is executed.
          */
-        @ConfigItem(defaultValueDocumentation = "10")
-        Optional<MemorySize> maxFileSize;
+        @ConfigItem(defaultValue = "10M")
+        MemorySize maxFileSize;
 
         /**
          * The maximum number of backups to keep.
          */
-        @ConfigItem(defaultValue = "1")
+        @ConfigItem(defaultValue = "5")
         int maxBackupIndex;
 
         /**

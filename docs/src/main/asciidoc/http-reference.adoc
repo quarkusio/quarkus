@@ -194,6 +194,47 @@ This will apply the `Pragma` header only when the `/headers/pragma` resource is 
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-header-config.adoc[leveloffset=+1, opts=optional]
 
+=== Additional HTTP Headers per path
+
+If you need different header values depending on the path, you can use the following configuration:
+
+[source, properties]
+----
+quarkus.http.filter.index.header."Cache-Control"=none
+quarkus.http.filter.index.matches=/index.html
+----
+This will set the `Cache-Control` header to `none` when `/index.html` is called.
+
+IMPORTANT: The `index` after `quarkus.http.filter` in the key is used for grouping and (as an example) can be named as you like.
+
+You can use a regular expression in the path and also specify the HTTP methods where the HTTP header will be set:
+
+[source, properties]
+----
+quarkus.http.filter.static.header."Cache-Control"=max-age=31536000
+quarkus.http.filter.static.methods=GET,HEAD
+quarkus.http.filter.static.matches=/static/.*
+----
+
+In case of overlapping paths in the configuration, you can specify an order (higher values take precedence).
+For example, having the following configuration:
+
+[source,properties]
+----
+quarkus.http.filter.just-order.order=10
+quarkus.http.filter.just-order.header."Cache-Control"=max-age=5000
+quarkus.http.filter.just-order.matches=/paths/order
+
+quarkus.http.filter.any-order.order=11
+quarkus.http.filter.any-order.header."Cache-Control"=max-age=1
+quarkus.http.filter.any-order.matches=/paths/order.*
+----
+
+Will include the `Cache-Control: max-age=1` header when `/paths/order` is requested.
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-filter-config.adoc[leveloffset=+1, opts=optional]
+
+
 == HTTP/2 Support
 
 HTTP/2 is enabled by default, and will be used by browsers if SSL is in use on JDK11 or higher. JDK8 does not support

@@ -413,6 +413,40 @@ public class VertxHttpRecorder {
                 }
             });
         }
+        // Filter Configuration per path
+        var filtersInConfig = httpConfiguration.filter;
+        if (!filtersInConfig.isEmpty()) {
+            for (var entry : filtersInConfig.entrySet()) {
+                var filterConfig = entry.getValue();
+                var matches = filterConfig.matches;
+                var order = filterConfig.order.orElse(Integer.MIN_VALUE);
+                var methods = filterConfig.methods;
+                var headers = filterConfig.header;
+                if (methods.isEmpty()) {
+                    httpRouteRouter.routeWithRegex(matches)
+                            .order(order)
+                            .handler(new Handler<RoutingContext>() {
+                                @Override
+                                public void handle(RoutingContext event) {
+                                    event.response().headers().setAll(headers);
+                                    event.next();
+                                }
+                            });
+                } else {
+                    for (var method : methods.get()) {
+                        httpRouteRouter.routeWithRegex(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), matches)
+                                .order(order)
+                                .handler(new Handler<RoutingContext>() {
+                                    @Override
+                                    public void handle(RoutingContext event) {
+                                        event.response().headers().setAll(headers);
+                                        event.next();
+                                    }
+                                });
+                    }
+                }
+            }
+        }
         // Headers sent on any request, regardless of the response
         Map<String, HeaderConfig> headers = httpConfiguration.header;
         if (!headers.isEmpty()) {
@@ -426,7 +460,7 @@ public class VertxHttpRecorder {
                             .handler(new Handler<RoutingContext>() {
                                 @Override
                                 public void handle(RoutingContext event) {
-                                    event.response().headers().add(name, config.value);
+                                    event.response().headers().set(name, config.value);
                                     event.next();
                                 }
                             });

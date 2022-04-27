@@ -511,6 +511,9 @@ build_module "extensions/vertx-graphql"
 build_module "extensions/webjars-locator"
 build_module "extensions/websockets"
 
+transform_module "devtools"
+transform_module "integration-tests"
+
 exit 0
 
 # These ones require ArC and Mutiny extensions

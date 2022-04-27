@@ -408,7 +408,9 @@ public class LocalProject {
         if (elementValue == null || elementValue.isEmpty() || !(elementValue.startsWith("${") && elementValue.endsWith("}"))) {
             return elementValue;
         }
-        return rawModel.getProperties().getProperty(elementValue.substring(2, elementValue.length() - 1), elementValue);
+        final String propName = elementValue.substring(2, elementValue.length() - 1);
+        String v = System.getProperty(propName);
+        return v == null ? rawModel.getProperties().getProperty(propName, elementValue) : v;
     }
 
     private DefaultArtifactSources processJarPluginExecutionConfig(Object config, boolean test) {

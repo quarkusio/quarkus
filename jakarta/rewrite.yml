@@ -127,14 +127,9 @@ recipeList:
       oldArtifactId: narayana-jts-integration
       newGroupId: org.jboss.narayana.jts
       newArtifactId: narayana-jts-integration-jakarta
-  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
-      oldGroupId: io.agroal
-      oldArtifactId: agroal-narayana
-      newGroupId: io.agroal
-      newArtifactId: agroal-narayana-jakarta
   - org.openrewrite.maven.ChangePropertyValue:
       key: agroal.version
-      newValue: 1.17-SNAPSHOT
+      newValue: 2.0
   # Validation
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.validation-api.version
@@ -357,11 +352,6 @@ recipeList:
       oldArtifactId: hibernate-jpamodelgen
       newGroupId: org.hibernate
       newArtifactId: hibernate-jpamodelgen-jakarta
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: io.agroal
-      oldArtifactId: agroal-narayana
-      newGroupId: io.agroal
-      newArtifactId: agroal-narayana-jakarta
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.hibernate.reactive
       oldArtifactId: hibernate-reactive-core

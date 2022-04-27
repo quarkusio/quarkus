@@ -38,13 +38,6 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   #mvn clean install -DskipTests -DskipITs
   #popd
 
-  # Build Agroal (temporary)
-  rm -rf target/agroal
-  git clone -b jakarta --depth 1 https://github.com/gsmet/agroal.git target/agroal
-  pushd target/agroal
-  mvn clean install -DskipTests -DskipITs
-  popd
-
   # Build Quarkus HTTP (temporary)
   rm -rf target/quarkus-http
   git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-http.git target/quarkus-http

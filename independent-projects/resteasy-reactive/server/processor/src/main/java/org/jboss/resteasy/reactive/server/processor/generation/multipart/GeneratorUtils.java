@@ -31,7 +31,7 @@ public final class GeneratorUtils {
 
     public static ResultHandle unwrapObject(MethodCreator m, ResultHandle qrReqCtxHandle, DotName classType) {
         return m.invokeVirtualMethod(ofMethod(ResteasyReactiveRequestContext.class, "unwrap", Object.class, Class.class),
-                qrReqCtxHandle, m.loadClassFromTCCL(classType.toString()));
+                qrReqCtxHandle, m.loadClass(classType.toString()));
     }
 
     public static ResultHandle runtimeResourceHandle(MethodCreator filterMethod, ResultHandle qrReqCtxHandle) {

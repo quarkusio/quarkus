@@ -103,6 +103,8 @@ public class CacheResultInterceptor extends CacheInterceptor {
                     @Override
                     public Object apply(Object k) {
                         try {
+                            LOGGER.debugf("Adding entry with key [%s] into cache [%s]",
+                                    key, binding.cacheName());
                             return invocationContext.proceed();
                         } catch (CacheException e) {
                             throw e;

@@ -34,8 +34,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
             <version>${project.version}</version>
-            <type>json</type>
-            <classifier>${project.version}</classifier>
+            <type>pom</type>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>

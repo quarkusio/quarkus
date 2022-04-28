@@ -110,19 +110,18 @@ class ForwardedParser {
 
         String forwarded = delegate.getHeader(FORWARDED);
         if (forwardingProxyOptions.allowForwarded && forwarded != null) {
-            String forwardedToUse = forwarded.split(",")[0];
-            Matcher matcher = FORWARDED_PROTO_PATTERN.matcher(forwardedToUse);
+            Matcher matcher = FORWARDED_PROTO_PATTERN.matcher(forwarded);
             if (matcher.find()) {
                 scheme = (matcher.group(1).trim());
                 port = -1;
             }
 
-            matcher = FORWARDED_HOST_PATTERN.matcher(forwardedToUse);
+            matcher = FORWARDED_HOST_PATTERN.matcher(forwarded);
             if (matcher.find()) {
                 setHostAndPort(matcher.group(1).trim(), port);
             }
 
-            matcher = FORWARDED_FOR_PATTERN.matcher(forwardedToUse);
+            matcher = FORWARDED_FOR_PATTERN.matcher(forwarded);
             if (matcher.find()) {
                 remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress.port());
             }

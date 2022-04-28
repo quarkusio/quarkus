@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.links.deployment;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 import io.quarkus.resteasy.reactive.links.InjectRestLinks;
 import io.quarkus.resteasy.reactive.links.RestLink;
 import io.quarkus.resteasy.reactive.links.RestLinkType;
+import io.smallrye.mutiny.Uni;
 
 @Path("/records")
 public class TestResource {
@@ -29,8 +31,8 @@ public class TestResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RestLink(entityType = TestRecord.class, rel = "list")
     @InjectRestLinks
-    public List<TestRecord> getAll() {
-        return RECORDS;
+    public Uni<List<TestRecord>> getAll() {
+        return Uni.createFrom().item(RECORDS).onItem().delayIt().by(Duration.ofMillis(100));
     }
 
     @GET

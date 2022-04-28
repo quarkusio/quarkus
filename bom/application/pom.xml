@@ -132,7 +132,7 @@
         <caffeine.version>2.9.3</caffeine.version>
         <netty.version>4.1.74.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
-        <jboss-logging.version>3.4.3.Final</jboss-logging.version>
+        <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <mutiny.version>1.4.0</mutiny.version>
         <kafka3.version>3.1.0</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overriden by other imported BOMs in the platform -->

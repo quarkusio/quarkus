@@ -349,7 +349,7 @@ image::oidc-spotify-1.png[role="thumb"]
 
 Don't forget to add `http://localhost:8080` as a redirect URI for testing during development purposes. You should get a client id and secret generated once a Spotify application setup has been complete, for example:
 
-image::oidc-spotify-1.png[role="thumb"]
+image::oidc-spotify-2.png[role="thumb"]
 
 You can now configure your `application.properties`:
 

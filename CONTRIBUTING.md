@@ -307,10 +307,29 @@ export MAVEN_OPTS="-Xmx4g"
 This build skipped all the tests, native-image builds, documentation generation etc. and used the Maven goals `clean install` by default.
 For more details about `-Dquickly` have a look at the `quick-build` profile in `quarkus-parent` (root `pom.xml`).
 
-Adding `-DskipTests=false -DskipITs=false` enables the tests.
-It will take much longer to build but will give you more guarantees on your code.
+When contributing to Quarkus, it is recommended to respect the following rules.
 
-You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
+**Contributing to an extension**
+
+When you contribute to an extension, after having applied your changes, run:
+
+* `./mvnw -Dquickly` from the root directory to make sure you haven't broken anything obvious
+* `./mvnw -f extensions/<your-extension> clean install` to run a full build of your extension including the tests
+* `./mvnw -f integration-tests/<your-extension-its> clean install` to make sure ITs are still passing
+* `./mvnw -f integration-tests/<your-extension-its> clean install -Dnative` to test the native build (for small changes, it might not be useful, use your own judgement)
+
+**Contributing to a core artifact**
+
+Obviously, when you contribute to a core artifact of Quarkus, a change may impact any part of Quarkus.
+So the rule of thumb would be to run the full test suite locally but this is clearly impractical as it takes a lot of time/resources.
+
+Thus it is recommended to use the following approach:
+
+* run `./mvnw -Dquickly` from the root directory to make sure you haven't broken anything obvious
+* run any build that might be useful to test the behavior you changed actually fixes the issue you had (might be an extension build, an integration test build...)
+* push your work to your own fork of Quarkus to trigger CI there
+* you can create a draft pull request to keep track of your work
+* wait until the build is green in your fork (use your own judgement if it's not fully green) before marking your pull request as ready for review (which will trigger Quarkus CI)
 
 ### Workflow tips
 

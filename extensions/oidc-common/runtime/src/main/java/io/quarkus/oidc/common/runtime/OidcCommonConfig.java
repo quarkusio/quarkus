@@ -440,6 +440,14 @@ public class OidcCommonConfig {
         public Optional<String> keyStoreFileType = Optional.empty();
 
         /**
+         * An optional parameter to specify a provider of the key store file. If not given, the provider is automatically
+         * detected
+         * based on the key store file type.
+         */
+        @ConfigItem
+        public Optional<String> keyStoreProvider;
+
+        /**
          * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
          */
         @ConfigItem(defaultValue = "password")
@@ -484,6 +492,14 @@ public class OidcCommonConfig {
         @ConfigItem
         public Optional<String> trustStoreFileType = Optional.empty();
 
+        /**
+         * An optional parameter to specify a provider of the trust store file. If not given, the provider is automatically
+         * detected
+         * based on the trust store file type.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreProvider;
+
         public Optional<Verification> getVerification() {
             return verification;
         }
@@ -514,6 +530,22 @@ public class OidcCommonConfig {
 
         public void setTrustStoreCertAlias(String trustStoreCertAlias) {
             this.trustStoreCertAlias = Optional.of(trustStoreCertAlias);
+        }
+
+        public Optional<String> getKeyStoreProvider() {
+            return keyStoreProvider;
+        }
+
+        public void setKeyStoreProvider(String keyStoreProvider) {
+            this.keyStoreProvider = Optional.of(keyStoreProvider);
+        }
+
+        public Optional<String> getTrustStoreProvider() {
+            return trustStoreProvider;
+        }
+
+        public void setTrustStoreProvider(String trustStoreProvider) {
+            this.trustStoreProvider = Optional.of(trustStoreProvider);
         }
 
     }

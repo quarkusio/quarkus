@@ -482,12 +482,14 @@ class Parser implements Function<String, Expression>, ParserHelper {
             // Parameter declaration
             // {@org.acme.Foo foo}
             Scope currentScope = scopeStack.peek();
-            String[] parts = content.substring(1).trim().split("[ ]{1,}");
-            if (parts.length != 2) {
+            // "@org.acme.Foo foo " -> "org.acme.Foo foo" and split
+            List<String> parts = Expressions.splitParts(content.substring(1).trim(),
+                    Expressions.PARAM_DECLARATION_SPLIT_CONFIG);
+            if (parts.size() != 2) {
                 throw parserError("invalid parameter declaration " + START_DELIMITER + buffer.toString() + END_DELIMITER);
             }
-            String value = parts[0];
-            String key = parts[1];
+            String value = parts.get(0);
+            String key = parts.get(1);
             currentScope.putBinding(key, Expressions.typeInfoFrom(value));
             sectionStack.peek().currentBlock().addNode(new ParameterDeclarationNode(content, origin(0)));
         } else {

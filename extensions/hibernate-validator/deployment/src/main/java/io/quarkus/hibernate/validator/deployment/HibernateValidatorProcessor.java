@@ -71,8 +71,10 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.hibernate.validator.runtime.HibernateBeanValidationConfigValidator;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
@@ -86,6 +88,7 @@ import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
+import io.smallrye.config.ConfigValidator;
 
 class HibernateValidatorProcessor {
 
@@ -377,6 +380,12 @@ class HibernateValidatorProcessor {
         reflectiveClassProducer.produce(
                 new ReflectiveClassBuildItem(true, true, ViolationReport.class,
                         ViolationReport.Violation.class));
+    }
+
+    @BuildStep
+    ServiceProviderBuildItem smallryeConfigIntegration() {
+        return new ServiceProviderBuildItem(ConfigValidator.class.getName(),
+                HibernateBeanValidationConfigValidator.class.getName());
     }
 
     private static void contributeBuiltinConstraints(Set<String> builtinConstraints,

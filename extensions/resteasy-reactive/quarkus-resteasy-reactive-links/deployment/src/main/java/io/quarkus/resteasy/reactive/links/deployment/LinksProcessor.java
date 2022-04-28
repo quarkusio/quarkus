@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.links.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT_NAME;
 
 import java.util.HashSet;
 import java.util.List;
@@ -97,7 +98,7 @@ final class LinksProcessor {
                 String entityType = linkInfo.getEntityType();
                 for (String parameterName : linkInfo.getPathParameters()) {
                     // We implement a getter inside a class that has the required field.
-                    // We later map that getter's accessor with a entity type.
+                    // We later map that getter's accessor with an entity type.
                     // If a field is inside a parent class, the getter accessor will be mapped to each subclass which
                     // has REST links that need access to that field.
                     FieldInfo fieldInfo = getFieldInfo(index, DotName.createSimple(entityType), parameterName);
@@ -140,7 +141,7 @@ final class LinksProcessor {
         if (fieldInfo != null) {
             return fieldInfo;
         }
-        if (classInfo.superName() != null) {
+        if (classInfo.superName() != null && !classInfo.superName().equals(OBJECT_NAME)) {
             return getFieldInfo(index, classInfo.superName(), fieldName);
         }
         throw new RuntimeException(String.format("Class '%s' field '%s' was not found", className, fieldName));

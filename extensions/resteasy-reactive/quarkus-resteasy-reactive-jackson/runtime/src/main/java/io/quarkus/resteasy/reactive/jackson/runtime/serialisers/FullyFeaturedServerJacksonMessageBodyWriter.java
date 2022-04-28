@@ -3,7 +3,6 @@ package io.quarkus.resteasy.reactive.jackson.runtime.serialisers;
 import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.createDefaultWriter;
 import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.doLegacyWrite;
 import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.setNecessaryJsonFactoryConfig;
-import static org.jboss.resteasy.reactive.server.providers.serialisers.json.JsonMessageServerBodyWriterUtil.setContentTypeIfNecessary;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,7 +43,6 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
     @Override
     public void writeResponse(Object o, Type genericType, ServerRequestContext context)
             throws WebApplicationException, IOException {
-        setContentTypeIfNecessary(context);
         OutputStream stream = context.getOrCreateOutputStream();
         if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
             stream.write(((String) o).getBytes(StandardCharsets.UTF_8));

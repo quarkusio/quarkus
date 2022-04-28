@@ -5,7 +5,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
 import kotlinx.serialization.serializer
 import org.jboss.resteasy.reactive.common.providers.serialisers.JsonMessageBodyWriterUtil
-import org.jboss.resteasy.reactive.server.providers.serialisers.json.JsonMessageServerBodyWriterUtil
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter.AllWriteableMessageBodyWriter
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext
 import java.io.OutputStream
@@ -32,7 +31,6 @@ class KotlinSerializationMessageBodyWriter(private val json: Json) : AllWriteabl
     }
 
     override fun writeResponse(o: Any, genericType: Type, context: ServerRequestContext) {
-        JsonMessageServerBodyWriterUtil.setContentTypeIfNecessary(context)
         val originalStream = context.orCreateOutputStream
         val stream: OutputStream = NoopCloseAndFlushOutputStream(originalStream)
 

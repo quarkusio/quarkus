@@ -377,6 +377,13 @@ public class ParserTest {
                 "Parser error on line 1: invalid parameter declaration {@}", 1);
         assertParserError("{@\n}",
                 "Parser error on line 1: invalid parameter declaration {@\n}", 1);
+        assertParserError("{@com.foo.Bar<String baz}",
+                "Parser error on line 1: invalid parameter declaration {@com.foo.Bar<String baz}", 1);
+
+        Engine engine = Engine.builder().addDefaultSectionHelpers().build();
+        Template template = engine.parse("{@com.foo.Bar<? extends org.acme.Baz, String> bar} {bar.name}");
+        Expression bar = find(template.getExpressions(), "bar.name");
+        assertEquals("|com.foo.Bar<org.acme.Baz, String>|", bar.getParts().get(0).getTypeInfo());
     }
 
     @Test

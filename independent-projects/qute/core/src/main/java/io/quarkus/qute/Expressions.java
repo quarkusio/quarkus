@@ -196,6 +196,24 @@ public final class Expressions {
 
     };
 
+    static final SplitConfig PARAM_DECLARATION_SPLIT_CONFIG = new SplitConfig() {
+
+        @Override
+        public boolean isSeparator(char candidate) {
+            return ' ' == candidate;
+        }
+
+        public boolean isInfixNotationSupported() {
+            return false;
+        }
+
+        @Override
+        public boolean isLiteralSeparator(char candidate) {
+            return candidate == '<' || candidate == '>';
+        }
+
+    };
+
     private static final SplitConfig TYPE_INFO_SPLIT_CONFIG = new DefaultSplitConfig() {
 
         @Override

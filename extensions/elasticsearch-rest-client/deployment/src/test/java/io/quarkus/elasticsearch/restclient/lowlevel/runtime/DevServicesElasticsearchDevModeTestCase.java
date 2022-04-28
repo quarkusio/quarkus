@@ -3,14 +3,11 @@ package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-@DisabledOnOs(OS.WINDOWS)
 public class DevServicesElasticsearchDevModeTestCase {
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()

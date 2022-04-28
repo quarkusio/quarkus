@@ -31,9 +31,10 @@ public interface Trigger {
     /**
      * The grace period is configurable with {@link Scheduled#overdueGracePeriod()}.
      * <p>
-     * This method returns {@code false} if the last execution has been skipped.
+     * Skipped executions are not considered as overdue.
      *
-     * @return {@code true} if the last execution of the trigger is overdue, {@code false} otherwise
+     * @return {@code false} if the last execution took place between the expected execution time and the end of the grace
+     *         period, {@code true} otherwise
      * @see Scheduled#overdueGracePeriod()
      */
     boolean isOverdue();

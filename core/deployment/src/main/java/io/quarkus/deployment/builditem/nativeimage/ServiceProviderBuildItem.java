@@ -154,6 +154,10 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
         return providers;
     }
 
+    public String getServiceInterface() {
+        return serviceInterface;
+    }
+
     /**
      * @return the resource path for the service descriptor file
      */

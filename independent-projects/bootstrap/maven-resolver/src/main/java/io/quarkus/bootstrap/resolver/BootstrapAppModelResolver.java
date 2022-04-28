@@ -259,8 +259,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
         final Artifact mvnArtifact = toAetherArtifact(coords);
 
-        List<Dependency> managedDeps = Collections.emptyList();
-        List<RemoteRepository> managedRepos = Collections.emptyList();
+        List<Dependency> managedDeps = List.of();
+        List<RemoteRepository> managedRepos = List.of();
         if (managingProject != null) {
             final ArtifactDescriptorResult managingDescr = mvn.resolveDescriptor(toAetherArtifact(managingProject));
             managedDeps = managingDescr.getManagedDependencies();
@@ -271,14 +271,14 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         final List<String> excludedScopes;
         if (test) {
-            excludedScopes = Collections.emptyList();
+            excludedScopes = List.of();
         } else if (devmode) {
-            excludedScopes = Collections.singletonList("test");
+            excludedScopes = List.of("test");
         } else {
             excludedScopes = List.of("provided", "test");
         }
 
-        DependencyNode resolvedDeps = mvn.resolveManagedDependencies(mvnArtifact,
+        final DependencyNode resolvedDeps = mvn.resolveManagedDependencies(mvnArtifact,
                 directMvnDeps, managedDeps, managedRepos, excludedScopes.toArray(new String[0])).getRoot();
 
         ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));

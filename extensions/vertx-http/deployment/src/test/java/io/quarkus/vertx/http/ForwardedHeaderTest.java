@@ -23,7 +23,6 @@ public class ForwardedHeaderTest {
     @Test
     public void test() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
-
         RestAssured.given()
                 .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
                 .get("/forward")

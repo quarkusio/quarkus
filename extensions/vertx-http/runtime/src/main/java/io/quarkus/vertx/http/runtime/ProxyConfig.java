@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -16,11 +18,27 @@ public class ProxyConfig {
     public boolean proxyAddressForwarding;
 
     /**
-     * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used,
-     * rather than the more common but not standard {@code X-Forwarded-For}.
+     * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used.
+     * In case the not standard {@code X-Forwarded-For} header is enabled and detected on HTTP requests, the standard header has
+     * the precedence.
+     * Activating this together with {@code quarkus.http.proxy.allow-x-forwarded} has security implications as clients can forge
+     * requests with a forwarded header that is not overwritten by the proxy. Therefore proxies should strip unexpected
+     * `X-Forwarded` or `X-Forwarded-*` headers from the client.
      */
     @ConfigItem
     public boolean allowForwarded;
+
+    /**
+     * If either this or {@code allow-forwarded} are true and proxy address forwarding is enabled then the not standard
+     * {@code Forwarded} header will be used.
+     * In case the standard {@code Forwarded} header is enabled and detected on HTTP requests, the standard header has the
+     * precedence.
+     * Activating this together with {@code quarkus.http.proxy.allow-x-forwarded} has security implications as clients can forge
+     * requests with a forwarded header that is not overwritten by the proxy. Therefore proxies should strip unexpected
+     * `X-Forwarded` or `X-Forwarded-*` headers from the client.
+     */
+    @ConfigItem
+    public Optional<Boolean> allowXForwarded;
 
     /**
      * Enable override the received request's host through a forwarded host header.

@@ -379,11 +379,12 @@ To consider only non-standard headers, please include the following lines instea
 [source,properties]
 ----
 quarkus.http.proxy.proxy-address-forwarding=true
+quarkus.http.proxy.allow-x-forwarded=true
 quarkus.http.proxy.enable-forwarded-host=true
 quarkus.http.proxy.enable-forwarded-prefix=true
 ----
 
-Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence.
+Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore proxies should strip unexpected `X-Forwarded` or `X-Forwarded-*` headers from the client.
 
 Supported forwarding address headers are:
 

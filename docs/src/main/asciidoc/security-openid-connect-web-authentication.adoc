@@ -232,7 +232,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 To test the application, you should open your browser and access the following URL:
 
-* http://localhost:8080[http://localhost:8080]
+* http://localhost:8080/tokens[http://localhost:8080/tokens]
 
 If everything is working as expected, you should be redirected to the Keycloak server to authenticate.
 

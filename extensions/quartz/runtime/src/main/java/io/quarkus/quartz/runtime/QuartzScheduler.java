@@ -73,7 +73,9 @@ import io.quarkus.scheduler.common.runtime.SkipPredicateInvoker;
 import io.quarkus.scheduler.common.runtime.StatusEmitterInvoker;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
@@ -555,20 +557,22 @@ public class QuartzScheduler implements Scheduler {
         }
 
         @Override
-        public void execute(JobExecutionContext context) throws JobExecutionException {
+        public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
             if (trigger.invoker != null) { // could be null from previous runs
                 if (trigger.invoker.isBlocking()) {
                     try {
-                        trigger.invoker.invoke(new QuartzScheduledExecution(trigger, context));
+                        trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
                     } catch (Exception e) {
                         throw new JobExecutionException(e);
                     }
                 } else {
-                    VertxContext.getOrCreateDuplicatedContext(vertx).runOnContext(new Handler<Void>() {
+                    Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
+                    VertxContextSafetyToggle.setContextSafe(context, true);
+                    context.runOnContext(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {
                             try {
-                                trigger.invoker.invoke(new QuartzScheduledExecution(trigger, context));
+                                trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
                             } catch (Exception e) {
                                 // already logged by the StatusEmitterInvoker
                             }

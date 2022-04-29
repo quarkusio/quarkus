@@ -318,7 +318,7 @@ nQIDAQAB
 
 Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see xref:smallrye-jwt-build.adoc[Generate JWT tokens with SmallRye JWT] for more information).
 
-Take the code from the following listing and place into `security-jwt-quickstart/src/main/java/org/acme/security/jwt/GenerateToken.java`:
+Take the code from the following listing and place into `security-jwt-quickstart/src/test/java/org/acme/security/jwt/GenerateToken.java`:
 
 .GenerateToken main Driver Class
 [source, java]

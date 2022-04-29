@@ -65,4 +65,6 @@ public final class OidcConstants {
     public static final String BACK_CHANNEL_EVENTS_CLAIM = "events";
     public static final String BACK_CHANNEL_EVENT_NAME = "http://schemas.openid.net/event/backchannel-logout";
     public static final String BACK_CHANNEL_LOGOUT_SID_CLAIM = "sid";
+    public static final String FRONT_CHANNEL_LOGOUT_SID_PARAM = "sid";
+    public static final String ID_TOKEN_SID_CLAIM = "sid";
 }

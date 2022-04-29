@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import com.gargoylesoftware.htmlunit.util.Cookie;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -97,8 +99,7 @@ public class CodeFlowAuthorizationTest {
         }
     }
 
-    @Test
-    public void testCodeFlowFormPost() throws IOException {
+    public void testCodeFlowFormPostAndBackChannelLogout() throws IOException {
         defineCodeFlowLogoutStub();
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
@@ -130,6 +131,56 @@ public class CodeFlowAuthorizationTest {
             // Confirm 302 is returned and the session cookie is null
             webClient.getOptions().setRedirectEnabled(false);
             WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/code-flow-form-post").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+
+            assertNull(getSessionCookie(webClient, "code-flow-form-post"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowFormPostAndFrontChannelLogout() throws IOException {
+        defineCodeFlowLogoutStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-form-post");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            page = form.getInputByValue("login").click();
+
+            assertEquals("alice", page.getBody().asText());
+
+            assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
+
+            page = webClient.getPage("http://localhost:8081/code-flow-form-post");
+            assertEquals("alice", page.getBody().asText());
+
+            // Session is still active
+            Cookie sessionCookie = getSessionCookie(webClient, "code-flow-form-post");
+            assertNotNull(sessionCookie);
+            JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+
+            webClient.getOptions().setRedirectEnabled(false);
+
+            // Confirm 302 is returned and the session cookie is null when the frontchannel logout URL is called
+            URL frontchannelUrl = URI.create("http://localhost:8081/code-flow-form-post/front-channel-logout"
+                    + "?sid=" + idTokenClaims.getString("sid") + "&iss="
+                    + OidcCommonUtils.urlEncode(idTokenClaims.getString("iss"))).toURL();
+            WebResponse webResponse = webClient.loadWebResponse(new WebRequest(frontchannelUrl));
+            assertEquals(302, webResponse.getStatusCode());
+
+            assertNull(getSessionCookie(webClient, "code-flow-form-post"));
+
+            // remove the state cookie for Quarkus not to treat the next call as an expected redirect from OIDC
+            webClient.getCookieManager().clearCookies();
+
+            // Confirm 302 is returned and the session cookie is null when the endpoint is called
+            webResponse = webClient
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/code-flow-form-post").toURL()));
             assertEquals(302, webResponse.getStatusCode());
 

@@ -84,6 +84,7 @@ import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
+import io.quarkus.smallrye.openapi.runtime.OpenApiConfigMapping;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;

@@ -48,6 +48,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-spi</artifactId>
         </dependency>
+        <!-- Needed for the JSON meter registry -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp-deployment</artifactId>
+        </dependency>
 
         <!-- test -->
 

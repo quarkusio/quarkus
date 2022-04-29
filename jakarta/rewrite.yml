@@ -46,10 +46,7 @@ recipeList:
       key: resteasy.version
       newValue: 6.0.0.Final
   # JAXB - See below
-  # JSON
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: jakarta.json.version
-      newValue: 2.0.0
+  # JSON - See below
   # JSON Bind
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.json.bind-api.version
@@ -130,14 +127,9 @@ recipeList:
       oldArtifactId: narayana-jts-integration
       newGroupId: org.jboss.narayana.jts
       newArtifactId: narayana-jts-integration-jakarta
-  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
-      oldGroupId: io.agroal
-      oldArtifactId: agroal-narayana
-      newGroupId: io.agroal
-      newArtifactId: agroal-narayana-jakarta
   - org.openrewrite.maven.ChangePropertyValue:
       key: agroal.version
-      newValue: 1.17-SNAPSHOT
+      newValue: 2.0
   # Validation
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.validation-api.version
@@ -215,6 +207,42 @@ recipeList:
   - org.openrewrite.maven.RemoveExclusion:
       groupId: jakarta.xml.bind
       artifactId: jakarta.xml.bind-api
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-json-cleanup
+displayName: Clean up Jakarta JSON dependencies
+recipeList:
+  - org.openrewrite.maven.RemoveManagedDependency:
+      groupId: org.glassfish
+      artifactId: jakarta.json
+  - org.openrewrite.maven.RemoveProperty:
+      propertyName: jakarta.json.version
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-json
+displayName: Adjust Jakarta JSON dependencies
+recipeList:
+  - org.openrewrite.maven.AddManagedDependency:
+      groupId: org.eclipse.parsson
+      artifactId: jakarta.json
+      version: "${parsson.version}"
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: parsson.version
+      newValue: 1.0.0
+      addIfMissing: true
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: jboss-logmanager.version
+      newValue: 1.1.0
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.jakarta-json-switch
+displayName: Switch Jakarta JSON version
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.glassfish
+      oldArtifactId: jakarta.json
+      newGroupId: org.eclipse.parsson
+      newArtifactId: jakarta.json
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.build-parent
@@ -324,11 +352,6 @@ recipeList:
       oldArtifactId: hibernate-jpamodelgen
       newGroupId: org.hibernate
       newArtifactId: hibernate-jpamodelgen-jakarta
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: io.agroal
-      oldArtifactId: agroal-narayana
-      newGroupId: io.agroal
-      newArtifactId: agroal-narayana-jakarta
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: org.hibernate.reactive
       oldArtifactId: hibernate-reactive-core
@@ -561,3 +584,19 @@ recipeList:
       oldArtifactId: resteasy-client-microprofile
       newGroupId: org.jboss.resteasy.microprofile
       newArtifactId: microprofile-rest-client
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.keycloak-admin-client
+displayName: Adjust Keycloak Admin Client
+recipeList:
+  - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
+      oldGroupId: org.keycloak
+      oldArtifactId: keycloak-admin-client
+      newGroupId: org.keycloak
+      newArtifactId: keycloak-admin-client-jakarta
+      newVersion: 999-SNAPSHOT
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: org.keycloak
+      oldArtifactId: keycloak-admin-client
+      newGroupId: org.keycloak
+      newArtifactId: keycloak-admin-client-jakarta

@@ -38,13 +38,6 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   #mvn clean install -DskipTests -DskipITs
   #popd
 
-  # Build Agroal (temporary)
-  rm -rf target/agroal
-  git clone -b jakarta --depth 1 https://github.com/gsmet/agroal.git target/agroal
-  pushd target/agroal
-  mvn clean install -DskipTests -DskipITs
-  popd
-
   # Build Quarkus HTTP (temporary)
   rm -rf target/quarkus-http
   git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-http.git target/quarkus-http
@@ -57,6 +50,13 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-security.git target/quarkus-security
   pushd target/quarkus-security
   mvn -B clean install -DskipTests -DskipITs
+  popd
+
+  # Build Keycloak (temporary)
+  rm -rf target/keycloak
+  git clone -b jakarta --depth 1 https://github.com/gsmet/keycloak.git target/keycloak
+  pushd target/keycloak
+  mvn -B -pl ':keycloak-admin-client-jakarta' -am clean install -DskipTests -DskipITs
   popd
 
   # Build Kotlin Maven Plugin to allow skipping main compilation
@@ -104,6 +104,15 @@ transform_kotlin_module () {
     local newPackage=${package/javax/jakarta}
     find $1 -name '*.kt' | xargs sed -i "s@import ${package}@import ${newPackage}@g"
   done
+}
+
+transform_documentation () {
+  local transformationTemp="JAKARTA_TEMP"
+  rm -Rf $transformationTemp
+  mkdir $transformationTemp
+  jbang transform -tf jakarta/jakarta-text-adoc.properties -o docs/ $transformationTemp
+  rm -Rf "docs/"
+  mv "$transformationTemp" "docs"
 }
 
 update_scope_in_test_properties () {
@@ -194,22 +203,24 @@ clean_maven_repository
 clean_project
 
 ## let's build what's required to be able to run the rewrite
-./mvnw -B -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -am clean install -DskipTests -DskipITs -Dinvoker.skip
+./mvnw -B -pl :quarkus-platform-descriptor-json-plugin -pl :quarkus-bootstrap-maven-plugin -pl :quarkus-enforcer-rules -pl :quarkus-maven-plugin -pl :quarkus-bom-test -am clean install -DskipTests -DskipITs -Dinvoker.skip
 
 ## we cannot rewrite some of the modules for various reasons but we rewrite most of them
-./mvnw -B -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -Dinvoker.skip -pl '!:quarkus-bom-quarkus-platform-descriptor' -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-cli' -pl '!:quarkus-documentation' -pl '!:quarkus-integration-tests-parent' -Dno-test-modules -Drewrite.pomCacheEnabled=false -Djakarta-rewrite
+./mvnw -B -e rewrite:run -Denforcer.skip -Dprotoc.skip -Dmaven.main.skip -Dmaven.test.skip -Dforbiddenapis.skip -Dinvoker.skip -Dquarkus.generate-code.skip -Dquarkus.build.skip -DskipExtensionValidation -DskipCodestartValidation -Pbom-descriptor-json-hollow -pl '!:io.quarkus.gradle.plugin' -pl '!:io.quarkus.extension.gradle.plugin' -pl '!:quarkus-integration-test-gradle-plugin' -pl '!:quarkus-documentation' -Drewrite.pomCacheEnabled=false -Djakarta-rewrite
 
 ## remove banned dependencies
 remove_banned_dependency "independent-projects/bootstrap" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/bootstrap" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 remove_banned_dependency "independent-projects/tools" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "independent-projects/tools" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
+update_banned_dependency "independent-projects/resteasy-reactive" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
 remove_banned_dependency "build-parent" 'javax.inject:javax.inject' 'we allow javax.inject for Maven'
 remove_banned_dependency "build-parent" 'javax.annotation:javax.annotation-api' 'we allow javax.annotation-api for Maven'
 update_banned_dependency "build-parent" 'jakarta.xml.bind:jakarta.xml.bind-api' 'org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec'
 # TODO: due to an issue in the MicroProfile REST Client, we cannot exclude jakarta.ws.rs:jakarta.ws.rs-api yet
 #update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
 update_banned_dependency_advanced "build-parent" '<exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>' "<!-- exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude -->\n                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>"
+update_banned_dependency_advanced "build-parent" '<exclude>jakarta.json:jakarta.json-api</exclude>' "<exclude>jakarta.json:jakarta.json-api</exclude>\n                                            <exclude>org.glassfish:jakarta.json</exclude>"
 
 ## some additional wild changes to clean up at some point
 sed -i 's@FilterConfigSourceImpl@FilterConfigSource@g' extensions/resteasy-classic/resteasy-common/deployment/src/main/java/io/quarkus/resteasy/common/deployment/ResteasyCommonProcessor.java
@@ -220,8 +231,14 @@ sed -i 's@ServletContextConfigSourceImpl@ServletContextConfigSource@g' extension
 # For now, this will have to do
 cp "jakarta/overrides/rest-client/QuarkusRestClientBuilder.java" "extensions/resteasy-classic/rest-client/runtime/src/main/java/io/quarkus/restclient/runtime/"
 
+## JSON-P implementation switch
+sed -i 's@<runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>@<runnerParentFirstArtifact>org.eclipse.parsson:jakarta.json</runnerParentFirstArtifact>@g' extensions/logging-json/runtime/pom.xml
+sed -i 's@<parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>@<parentFirstArtifact>org.eclipse.parsson:jakarta.json</parentFirstArtifact>@g' extensions/jsonp/runtime/pom.xml
+sed -i 's@import org.glassfish.json.JsonProviderImpl;@import org.eclipse.parsson.JsonProviderImpl;@g' extensions/jsonp/deployment/src/main/java/io/quarkus/jsonp/deployment/JsonpProcessor.java
+
 ## cleanup phase - needs to be done once everything has been rewritten
 rewrite_module_cleanup "bom/application"
+rewrite_module_cleanup "independent-projects/resteasy-reactive"
 
 ## we get rid of everything that has been built previously, we want to start clean
 clean_maven_repository
@@ -429,14 +446,12 @@ build_module "test-framework/junit5-mockito-config"
 build_module "test-framework/junit5-mockito"
 build_module "extensions/kafka-streams"
 build_module "test-framework/keycloak-server"
-# TODO we need a keycloak-admin-client-jakarta
-#build_module "extensions/keycloak-admin-client"
-#build_module "extensions/keycloak-admin-client-reactive"
+build_module "extensions/keycloak-admin-client"
+build_module "extensions/keycloak-admin-client-reactive"
 build_module "extensions/smallrye-jwt-build"
 build_module "extensions/oidc-common"
 build_module "extensions/oidc"
-# TODO we need the quarkus-keycloak-admin-client extension
-#build_module "extensions/keycloak-authorization"
+build_module "extensions/keycloak-authorization"
 build_module "extensions/kubernetes"
 build_module "extensions/kubernetes-config"
 build_module "extensions/liquibase"
@@ -445,8 +460,7 @@ build_module "extensions/smallrye-opentracing"
 build_module "extensions/mongodb-client"
 build_module "extensions/liquibase-mongodb"
 build_module "extensions/logging-gelf"
-# we need a Jakarta version of jboss-logmanager-embedded
-#build_module "extensions/logging-json"
+build_module "extensions/logging-json"
 build_module "extensions/mailer"
 build_module "extensions/micrometer"
 build_module "extensions/micrometer-registry-prometheus"
@@ -505,6 +519,11 @@ build_module "extensions/spring-security"
 build_module "extensions/vertx-graphql"
 build_module "extensions/webjars-locator"
 build_module "extensions/websockets"
+
+transform_module "devtools"
+transform_module "integration-tests"
+
+transform_documentation
 
 exit 0
 

@@ -30,6 +30,12 @@
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
 
+        <!-- Needed for the JSON meter registry -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
@@ -38,13 +44,6 @@
             <groupId>org.jboss.slf4j</groupId>
             <artifactId>slf4j-jboss-logmanager</artifactId>
         </dependency>
-
-        <!-- Needed for the JSON meter registry -->
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>jakarta.json</artifactId>
-        </dependency>
-
 
         <!-- Registry providers (optional) -->
 

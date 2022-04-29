@@ -1,6 +1,5 @@
 package io.quarkus.it.mailer;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -12,6 +11,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import com.google.common.reflect.TypeToken;
 
@@ -21,6 +22,7 @@ import io.restassured.RestAssured;
 import io.restassured.config.ObjectMapperConfig;
 import io.restassured.mapper.ObjectMapperType;
 
+@DisabledOnOs(OS.WINDOWS)
 @QuarkusTest
 @QuarkusTestResource(FakeMailerTestResource.class)
 public class MailerTest {
@@ -55,6 +57,30 @@ public class MailerTest {
         assertThat(email.subject).isEqualTo("simple test email");
         assertThat(email.text).contains("This is a simple test email.");
         assertThat(email.to.text).contains("nobody@quarkus.io");
+    }
+
+    @Test
+    public void checkAttachmentCache() {
+        String body = RestAssured.get("/mail/attachments/cache").then().extract().asString();
+        assertThat(body).isEqualTo("true");
+    }
+
+    @Test
+    public void sendTextEmailWithDkimSignature() {
+        RestAssured.get("/mail/dkim");
+
+        await().until(() -> getLastEmail() != null);
+
+        TextEmail email = getLastEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.subject).isEqualTo("simple test email");
+        assertThat(email.text).contains("This is a simple test email.");
+        assertThat(email.to.text).contains("nobody@quarkus.io");
+
+        String signature = email.headerLines.stream().filter(h -> h.key.equalsIgnoreCase("DKIM-Signature")).findAny()
+                .get().line;
+        assertThat(signature).contains(
+                "DKIM-Signature: v=1; a=rsa-sha256; c=simple/relaxed; d=quarkus.io; i=roger-the-robot@quarkus.io; s=exampleUser; h=From:To; l=5000; bh=A6TE38YlUzdJNIgFMcUU43Wde0+0vzij4DoME0Gtnqk=; b=FWVms0SnIyX9F5pgdUHgIy+aJnjBNrcToJzBdBiKb6fYZ7cbrUhqmrUkYI2MsIXk4D2DvCig+eU8eqES65Slwc6pMo6ZWKEmqDQcr/2fAx0x30p/tbCemivcRmInaeoxit0cSsoAnnvv+XRuWc9rAAajuI1DCo+Pw7pZBUkKz0M=");
     }
 
     @Test

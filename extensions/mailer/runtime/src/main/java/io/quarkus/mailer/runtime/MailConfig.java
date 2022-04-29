@@ -117,6 +117,12 @@ public class MailConfig {
     public String startTLS;
 
     /**
+     * Configures DKIM signature verification.
+     */
+    @ConfigItem
+    public DkimSignOptionsConfig dkim;
+
+    /**
      * Sets the login mode for the connection.
      * Either {@code NONE}, @{code DISABLED}, {@code OPTIONAL}, {@code REQUIRED} or {@code XOAUTH2}.
      * <ul>

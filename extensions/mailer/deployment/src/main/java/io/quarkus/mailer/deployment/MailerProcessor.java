@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
@@ -18,10 +19,12 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.runtime.BlockingMailerImpl;
+import io.quarkus.mailer.runtime.MailBuildTimeConfig;
 import io.quarkus.mailer.runtime.MailClientProducer;
 import io.quarkus.mailer.runtime.MailTemplateProducer;
 import io.quarkus.mailer.runtime.MailerSupportProducer;
@@ -34,6 +37,14 @@ import io.quarkus.qute.deployment.TemplatePathBuildItem;
 public class MailerProcessor {
 
     private static final DotName MAIL_TEMPLATE = DotName.createSimple(MailTemplate.class.getName());
+
+    public static class CacheAttachmentsEnabled implements BooleanSupplier {
+        MailBuildTimeConfig config;
+
+        public boolean getAsBoolean() {
+            return config.cacheAttachments;
+        }
+    }
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
@@ -78,6 +89,11 @@ public class MailerProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.MAILER);
+    }
+
+    @BuildStep(onlyIf = CacheAttachmentsEnabled.class)
+    SystemPropertyBuildItem cacheAttachmentBuildItem() {
+        return new SystemPropertyBuildItem("vertx.mail.attachment.cache.file", "true");
     }
 
     @BuildStep

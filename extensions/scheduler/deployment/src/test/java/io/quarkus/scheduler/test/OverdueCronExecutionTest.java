@@ -17,12 +17,11 @@ import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class OverdueExecutionTest {
+public class OverdueCronExecutionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
+            .withApplicationRoot(root -> root.addClasses(Jobs.class)
                     .addAsResource(new StringAsset("quarkus.scheduler.overdue-grace-period=2H\njob.gracePeriod=2H"),
                             "application.properties"));
 
@@ -38,12 +37,11 @@ public class OverdueExecutionTest {
             Trigger defaultGracePeriodJob = scheduler.getScheduledJob("defaultGracePeriodJob");
             assertTrue(Jobs.LATCH.await(5, TimeUnit.SECONDS));
             scheduler.pause();
-            Thread.sleep(250);
+            Thread.sleep(1250);
             assertTrue(overdueJob.isOverdue());
             assertFalse(tolerantJob.isOverdue());
             assertFalse(gracePeriodFromConfigJob.isOverdue());
             assertFalse(defaultGracePeriodJob.isOverdue());
-
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
@@ -52,23 +50,25 @@ public class OverdueExecutionTest {
 
     static class Jobs {
 
+        static final String CRON = "0/1 * * * * ?";
+
         static final CountDownLatch LATCH = new CountDownLatch(1);
 
-        @Scheduled(identity = "overdueJob", every = "0.1s", overdueGracePeriod = "0.1s")
-        void overdueJob() throws InterruptedException {
+        @Scheduled(identity = "overdueJob", cron = CRON, overdueGracePeriod = "0.1s")
+        void overdueJob() {
             LATCH.countDown();
         }
 
-        @Scheduled(identity = "tolerantJob", every = "0.1s", overdueGracePeriod = "2H")
-        void tolerantJob() throws InterruptedException {
+        @Scheduled(identity = "tolerantJob", cron = CRON, overdueGracePeriod = "2H")
+        void tolerantJob() {
         }
 
-        @Scheduled(identity = "gracePeriodFromConfigJob", every = "0.1s", overdueGracePeriod = "{job.gracePeriod}")
-        void gracePeriodFromConfigJob() throws InterruptedException {
+        @Scheduled(identity = "gracePeriodFromConfigJob", cron = CRON, overdueGracePeriod = "{job.gracePeriod}")
+        void gracePeriodFromConfigJob() {
         }
 
-        @Scheduled(identity = "defaultGracePeriodJob", every = "0.1s")
-        void defaultGracePeriodJob() throws InterruptedException {
+        @Scheduled(identity = "defaultGracePeriodJob", cron = CRON)
+        void defaultGracePeriodJob() {
         }
     }
 }

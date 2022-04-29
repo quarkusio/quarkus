@@ -358,6 +358,12 @@ public class SimpleScheduler implements Scheduler {
          */
         abstract ZonedDateTime evaluate(ZonedDateTime now);
 
+        @Override
+        public Instant getPreviousFireTime() {
+            ZonedDateTime last = lastFireTime;
+            return last != null ? lastFireTime.toInstant() : null;
+        }
+
         public String getId() {
             return id;
         }
@@ -406,12 +412,11 @@ public class SimpleScheduler implements Scheduler {
 
         @Override
         public Instant getNextFireTime() {
-            return lastFireTime.plus(Duration.ofMillis(interval)).toInstant();
-        }
-
-        @Override
-        public Instant getPreviousFireTime() {
-            return lastFireTime.toInstant();
+            ZonedDateTime last = lastFireTime;
+            if (last == null) {
+                last = start;
+            }
+            return last.plus(Duration.ofMillis(interval)).toInstant();
         }
 
         @Override
@@ -443,20 +448,14 @@ public class SimpleScheduler implements Scheduler {
             super(id, start);
             this.cron = cron;
             this.executionTime = ExecutionTime.forCron(cron);
-            this.lastFireTime = ZonedDateTime.now();
+            this.lastFireTime = start;
             this.gracePeriod = gracePeriod;
         }
 
         @Override
         public Instant getNextFireTime() {
-            Optional<ZonedDateTime> nextFireTime = executionTime.nextExecution(ZonedDateTime.now());
+            Optional<ZonedDateTime> nextFireTime = executionTime.nextExecution(lastFireTime);
             return nextFireTime.isPresent() ? nextFireTime.get().toInstant() : null;
-        }
-
-        @Override
-        public Instant getPreviousFireTime() {
-            Optional<ZonedDateTime> prevFireTime = executionTime.lastExecution(ZonedDateTime.now());
-            return prevFireTime.isPresent() ? prevFireTime.get().toInstant() : null;
         }
 
         ZonedDateTime evaluate(ZonedDateTime now) {
@@ -481,7 +480,7 @@ public class SimpleScheduler implements Scheduler {
             if (now.isBefore(start)) {
                 return false;
             }
-            Optional<ZonedDateTime> nextFireTime = executionTime.nextExecution(ZonedDateTime.now());
+            Optional<ZonedDateTime> nextFireTime = executionTime.nextExecution(lastFireTime);
             return nextFireTime.isEmpty() || nextFireTime.get().plus(gracePeriod).isBefore(now);
         }
 

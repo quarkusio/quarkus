@@ -51,6 +51,7 @@ import io.quarkus.scheduler.common.runtime.SkipConcurrentExecutionInvoker;
 import io.quarkus.scheduler.common.runtime.SkipPredicateInvoker;
 import io.quarkus.scheduler.common.runtime.StatusEmitterInvoker;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -319,6 +320,7 @@ public class SimpleScheduler implements Scheduler {
                     }
                 } else {
                     Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
+                    VertxContextSafetyToggle.setContextSafe(context, true);
                     context.runOnContext(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {

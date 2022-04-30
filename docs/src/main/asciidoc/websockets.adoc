@@ -237,6 +237,6 @@ public class ChatTest {
 
 == More WebSocket Information
 
-The Quarkus WebSocket implementation is an implementation of link:https://eclipse-ee4j.github.io/websocket-api/[Jakarta Websockets].
+The Quarkus WebSocket implementation is an implementation of link:https://jakarta.ee/specifications/websocket/[Jakarta Websockets].
 
 

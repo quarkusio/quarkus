@@ -239,13 +239,18 @@ public final class Types {
     }
 
     private static ResultHandle doLoadClass(BytecodeCreator creator, String className, ResultHandle tccl) {
-        //we need to use Class.forName as the class may be package private
-        if (tccl == null) {
-            ResultHandle currentThread = creator
-                    .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
-            tccl = creator.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
+        if (className.startsWith("java.")) {
+            return creator.loadClass(className);
+        } else {
+            //we need to use Class.forName as the class may be package private
+            if (tccl == null) {
+                ResultHandle currentThread = creator
+                        .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
+                tccl = creator.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
+            }
+            return creator.invokeStaticMethod(MethodDescriptors.CL_FOR_NAME, creator.load(className), creator.load(false),
+                    tccl);
         }
-        return creator.invokeStaticMethod(MethodDescriptors.CL_FOR_NAME, creator.load(className), creator.load(false), tccl);
     }
 
     static Type getProviderType(ClassInfo classInfo) {

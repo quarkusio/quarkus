@@ -5,6 +5,7 @@ import java.util.Set;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -15,6 +16,8 @@ public class ResteasyReactiveCompressionHandler implements ServerRestHandler {
 
     private HttpCompression compression;
     private Set<String> compressMediaTypes;
+    private String produces;
+    private volatile EncodedMediaType encodedProduces;
 
     public ResteasyReactiveCompressionHandler() {
     }
@@ -39,6 +42,14 @@ public class ResteasyReactiveCompressionHandler implements ServerRestHandler {
         this.compressMediaTypes = compressMediaTypes;
     }
 
+    public String getProduces() {
+        return produces;
+    }
+
+    public void setProduces(String produces) {
+        this.produces = produces;
+    }
+
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         ServerHttpResponse response = requestContext.serverResponse();
@@ -49,10 +60,23 @@ public class ResteasyReactiveCompressionHandler implements ServerRestHandler {
                     response.removeResponseHeader(HttpHeaders.CONTENT_ENCODING);
                     break;
                 case UNDEFINED:
-                    MediaType contentType = requestContext.getResponseContentType().getMediaType();
-                    if (contentType != null
-                            && compressMediaTypes.contains(contentType.getType() + '/' + contentType.getSubtype())) {
-                        response.removeResponseHeader(HttpHeaders.CONTENT_ENCODING);
+                    EncodedMediaType responseContentType = requestContext.getResponseContentType();
+                    if ((responseContentType == null) && (produces != null)) {
+                        if (encodedProduces == null) {
+                            synchronized (this) {
+                                if (encodedProduces == null) {
+                                    encodedProduces = new EncodedMediaType(MediaType.valueOf(produces));
+                                }
+                            }
+                        }
+                        responseContentType = encodedProduces;
+                    }
+                    if (responseContentType != null) {
+                        MediaType contentType = responseContentType.getMediaType();
+                        if (contentType != null
+                                && compressMediaTypes.contains(contentType.getType() + '/' + contentType.getSubtype())) {
+                            response.removeResponseHeader(HttpHeaders.CONTENT_ENCODING);
+                        }
                     }
                     break;
                 default:

@@ -60,6 +60,12 @@ public class CompressionScanner implements MethodScanner {
         ResteasyReactiveCompressionHandler handler = new ResteasyReactiveCompressionHandler(
                 Set.copyOf(httpBuildTimeConfig.compressMediaTypes.orElse(Collections.emptyList())));
         handler.setCompression(compression);
+        String[] produces = (String[]) methodContext.get(EndpointIndexer.METHOD_PRODUCES);
+        if ((produces != null) && (produces.length > 0)) {
+            handler.setProduces(produces[0]);
+        } else {
+            handler.setProduces(null);
+        }
         return List.of(new FixedHandlerChainCustomizer(handler, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
     }
 

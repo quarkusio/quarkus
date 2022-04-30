@@ -17,6 +17,7 @@
         <quarkus-plugin.version>{quarkus.maven-plugin.version}</quarkus-plugin.version>
         {/if}
         <compiler-plugin.version>{maven-compiler-plugin.version}</compiler-plugin.version>
+        <skipITs>true</skipITs>
         <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
         <failsafe.useModulePath>false</failsafe.useModulePath>
         {#if uberjar}
@@ -160,6 +161,27 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+            <!-- Run the tests with the executable produced by the build (could be native, jvm, or container image) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>$\{surefire-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <maven.home>$\{maven.home}</maven.home>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
     <profiles>
@@ -173,32 +195,8 @@
             </activation>
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
+                <skipITs>false</skipITs>
             </properties>
-            <build>
-                <plugins>
-                    <!-- Run the tests with the native executable -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>$\{surefire-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
-                                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                        <maven.home>$\{maven.home}</maven.home>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>

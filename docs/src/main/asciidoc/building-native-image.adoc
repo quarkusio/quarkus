@@ -229,55 +229,7 @@ You can do so by prepending the flag with `-J` and passing it as additional nati
 
 == Testing the native executable
 
-Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file.
-
-In the `pom.xml` file, the `native` profile contains:
-
-[source, xml]
-----
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-failsafe-plugin</artifactId>
-    <version>${surefire-plugin.version}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>integration-test</goal>
-                <goal>verify</goal>
-            </goals>
-            <configuration>
-                <systemPropertyVariables>
-                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    <maven.home>${maven.home}</maven.home>
-                </systemPropertyVariables>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
-----
-
-This instructs the failsafe-maven-plugin to run integration-test and indicates the location of the produced native executable.
-
-Then, open the `src/test/java/org/acme/quickstart/GreetingResourceIT.java`. It contains:
-
-[source,java]
-----
-package org.acme.quickstart;
-
-
-import io.quarkus.test.junit.QuarkusIntegrationTest;
-
-@QuarkusIntegrationTest // <1>
-public class GreetingResourceIT extends GreetingResourceTest { // <2>
-
-    // Run the same tests
-
-}
-----
-<1> Use another test runner that starts the application from the native file before the tests.
-The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
-<2> We extend our previous tests, but you can also implement your tests
+Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file. The reasoning is explained in the link:getting-started-testing#quarkus-integration-test[Testing Guide].
 
 To see the `GreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
 [source,shell]
@@ -342,14 +294,18 @@ you can only test via HTTP calls. Your test code does not actually run natively,
 that does not call your HTTP endpoints, it's probably not a good idea to run them as part of native tests.
 
 If you share your test class between JVM and native executions like we advise above, you can mark certain tests
-with the `@DisabledOnNativeImage` annotation in order to only run them on the JVM.
+with the `@DisabledOnIntegrationTest` annotation in order to skip them when testing against a native image.
 
+[NOTE]
+====
+Using `@DisabledOnIntegrationTest` will also disable the test in all integration test instances, including
+testing the application in JVM mode, in a container image, and native image.
+====
 
 === Testing an existing native executable
 
 It is also possible to re-run the tests against a native executable that has already been built. To do this run
-`./mvnw test-compile failsafe:integration-test`. This will discover the existing native image and run the tests against it using
-failsafe.
+`./mvnw test-compile failsafe:integration-test -Pnative`. This will discover the existing native image and run the tests against it using failsafe.
 
 If the process cannot find the native image for some reason, or you want to test a native image that is no longer in the
 target directory you can specify the executable with the `-Dnative.image.path=` system property.

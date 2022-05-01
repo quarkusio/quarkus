@@ -46,6 +46,7 @@ You can set the port by configuring the `quarkus.kafka.devservices.port` propert
 
 Note that the Kafka advertised address is automatically configured with the chosen port.
 
+[[configuring-the-image]]
 == Configuring the image
 
 Dev Services for Kafka supports https://redpanda.com[Redpanda] and https://strimzi.io[Strimzi] (in https://github.com/apache/kafka/blob/trunk/config/kraft/README.md[Kraft] mode).
@@ -83,6 +84,7 @@ without trying to re-partition the existing topic to a different number of parti
 
 You can configure timeout for Kafka admin client calls used in topic creation using `quarkus.kafka.devservices.topic-partitions-timeout`, it defaults to 2 seconds.
 
+[[redpanda-enabling-transactions]]
 == Enabling transactions
 
 By default, the Red Panda broker does not act as a transaction coordinator.

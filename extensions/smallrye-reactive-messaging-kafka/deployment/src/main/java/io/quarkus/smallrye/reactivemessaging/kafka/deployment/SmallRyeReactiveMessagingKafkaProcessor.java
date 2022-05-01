@@ -167,6 +167,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             processIncomingType(discovery, config, incomingType, channelName, generatedClass, reflection,
                     alreadyGeneratedDeserializers);
 
+            processKafkaTransactions(discovery, config, channelName, injectionPointType);
+
             Type outgoingType = getOutgoingTypeFromChannelInjectionPoint(injectionPointType);
             processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
@@ -177,6 +179,23 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 handleAdditionalProperties("mp.messaging.outgoing." + channelName + ".", discovery,
                         config, keySerializer, valueSerializer);
             }, generatedClass, reflection, alreadyGeneratedSerializers);
+        }
+    }
+
+    private void processKafkaTransactions(DefaultSerdeDiscoveryState discovery,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config, String channelName, Type injectionPointType) {
+        if (injectionPointType != null && isKafkaEmitter(injectionPointType)) {
+            LOGGER.infof("Transactional producer detected for channel '%s', setting following default config values: "
+                    + "'mp.messaging.outgoing.%s.transactional.id=${quarkus.application.name}-${channelName}', "
+                    + "'mp.messaging.outgoing.%s.enable.idempotence=true', "
+                    + "'mp.messaging.outgoing.%s.acks=all'", channelName, channelName, channelName, channelName);
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                    "mp.messaging.outgoing." + channelName + ".transactional.id",
+                    "${quarkus.application.name}-" + channelName);
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                    "mp.messaging.outgoing." + channelName + ".enable.idempotence", "true");
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                    "mp.messaging.outgoing." + channelName + ".acks", "all");
         }
     }
 
@@ -352,7 +371,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             return null;
         }
 
-        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType)) {
+        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType) || isKafkaEmitter(injectionPointType)) {
             return injectionPointType.asParameterizedType().arguments().get(0);
         } else {
             return null;
@@ -478,6 +497,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private static boolean isMutinyEmitter(Type type) {
         // raw type MutinyEmitter is wrong, must be MutinyEmitter<Something>
         return DotNames.MUTINY_EMITTER.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isKafkaEmitter(Type type) {
+        // raw type KafkaTransactions is wrong, must be KafkaTransactions<Something>
+        return DotNames.KAFKA_EMITTER.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 1;
     }
@@ -627,11 +653,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             if (clazz == null) {
                 clazz = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
-                result = Result.of(clazz);
                 // Deserializers are access by reflection.
                 reflection.produce(new ReflectiveClassBuildItem(true, true, false, clazz));
                 alreadyGeneratedSerializers.put(type.toString(), clazz);
             }
+            result = Result.of(clazz);
         }
         return result;
     }
@@ -653,11 +679,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             if (clazz == null) {
                 clazz = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
-                result = Result.of(clazz);
                 // Serializers are access by reflection.
                 reflection.produce(new ReflectiveClassBuildItem(true, true, false, clazz));
                 alreadyGeneratedSerializers.put(type.toString(), clazz);
             }
+            result = Result.of(clazz);
         }
 
         return result;

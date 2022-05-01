@@ -1052,6 +1052,80 @@ Reciprocally, multiple producers on the same channel can be merged by setting `m
 On the `@Incoming` methods, you can control how multiple channels are merged using the `@Merge` annotation.
 ====
 
+=== Kafka Transactions
+
+Kafka transactions enable atomic writes to multiple Kafka topics and partitions.
+The Kafka connector provides `KafkaTransactions` custom emitter for writing Kafka records inside a transaction.
+It can be injected as a regular emitter `@Channel`:
+
+[source, java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@ApplicationScoped
+public class KafkaTransactionalProducer {
+
+    @Channel("tx-out-example")
+    KafkaTransactions<String> txProducer;
+
+    public Uni<Void> emitInTransaction() {
+        return txProducer.withTransaction(emitter -> {
+            emitter.send(KafkaRecord.of(1, "a"));
+            emitter.send(KafkaRecord.of(2, "b"));
+            emitter.send(KafkaRecord.of(3, "c"));
+            return Uni.createFrom().voidItem();
+        });
+    }
+
+}
+----
+
+The function given to the `withTransaction` method receives a `TransactionalEmitter` for producing records, and returns a `Uni` that provides the result of the transaction.
+
+* If the processing completes successfully, the producer is flushed and the transaction is committed.
+* If the processing throws an exception, returns a failing `Uni`, or marks the `TransactionalEmitter` for abort, the transaction is aborted.
+
+Kafka transactional producers require configuring `acks=all` client property, and a unique id for `transactional.id`, which implies `enable.idempotence=true`.
+When Quarkus detects the use of `KafkaTransactions` for an outgoing channel it configures these properties on the channel,
+providing a default value of `"${quarkus.application.name}-${channelName}"` for `transactional.id` property.
+
+Note that for production use the `transactional.id` must be unique across all application instances.
+
+
+[IMPORTANT]
+====
+While a normal message emitter would support concurrent calls to `send` methods and consequently queues outgoing messages to be written to Kafka,
+a `KafkaTransactions` emitter only supports one transaction at a time.
+A transaction is considered in progress from the call to the `withTransaction` until the returned `Uni` results in success or failure.
+While a transaction is in progress, subsequent calls to the `withTransaction`, including nested ones inside the given function, will throw `IllegalStateException`.
+
+Note that in Reactive Messaging, the execution of processing methods, is already serialized, unless `@Blocking(ordered = false)` is used.
+If `withTransaction` can be called concurrently, for example from a REST endpoint, it is recommended to limit the concurrency of the execution.
+This can be done using the `@Bulkhead` annotation from link:https://quarkus.io/guides/smallrye-fault-tolerance[_Microprofile Fault Tolerance_].
+
+An example usage can be found in <<chaining-kafka-transactions-with-hibernate-reactive-transactions>>.
+====
+
+==== Transaction-aware consumers
+
+If you'd like to consume records only written and committed inside a Kafka transaction you need to configure the `isolation.level` property on the incoming channel as such:
+
+[source, properties]
+----
+mp.messaging.incoming.prices-in.isolation.level=read_committed
+----
+
+[NOTE]
+====
+If you are using Dev Services for Kafka using Redpanda, you need to <<kafka-dev-services.adoc#redpanda-enabling-transactions, enable transactions>>.
+====
+
 == Processing Messages
 
 Applications streaming data often need to consume some events from a topic, process them and publish the result to a different topic.
@@ -1115,6 +1189,82 @@ record key propagation produces the outgoing record with the same _key_ as the i
 
 If the outgoing record already contains a _key_, it *won't be overridden* by the incoming record key.
 If the incoming record does have a _null_ key, the `mp.messaging.outgoing.$channel.key` property is used.
+
+=== Exactly-Once Processing
+
+Kafka Transactions allows managing consumer offsets inside a transaction, together with produced messages.
+This enables coupling a consumer with a transactional producer in a _consume-transform-produce_ pattern, also known as *exactly-once processing*.
+
+The `KafkaTransactions` custom emitter provides a way to apply exactly-once processing to an incoming Kafka message inside a transaction.
+
+The following example includes a batch of Kafka records inside a transaction.
+
+[source, java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@ApplicationScoped
+public class KafkaExactlyOnceProcessor {
+
+    @Channel("prices-out")
+    @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 500) // <3>
+    KafkaTransactions<Integer> txProducer;
+
+    @Incoming("prices-in")
+    public Uni<Void> emitInTransaction(KafkaRecordBatch<String, Integer> batch) { // <1>
+        return txProducer.withTransactionAndAck(batch, emitter -> { // <2>
+            for (KafkaRecord<String, Integer> record : batch) {
+                emitter.send(KafkaRecord.of(record.getKey(), record.getPayload() + 1)); // <3>
+            }
+            return Uni.createFrom().voidItem();
+        });
+    }
+
+}
+----
+
+<1> It is recommended to use exactly-once processing along with the batch consumption mode.
+While it is possible to use it with a single Kafka message, it'll have a significant performance impact.
+<2> The consumed `KafkaRecordBatch` message is passed to the `KafkaTransactions#withTransactionAndAck` in order to handle the offset commits and message acks.
+<3> The `send` method writes records to Kafka inside the transaction, without waiting for send receipt from the broker.
+Messages pending to be written to Kafka will be buffered, and flushed before committing the transaction.
+It is therefore recommended configuring the `@OnOverflow` `bufferSize` in order to fit enough messages, for example the `max.poll.records`, maximum amount of records returned in a batch.
+
+- If the processing completes successfully, _before committing the transaction_, the topic partition offsets of the given batch message will be committed to the transaction.
+- If the processing needs to abort, _after aborting the transaction_, the consumer's position is reset to the last committed offset, effectively resuming the consumption from that offset. If no consumer offset has been committed to a topic-partition, the consumer's position is reset to the beginning of the topic-partition, _even if the offset reset policy is `latest`_.
+
+When using exactly-once processing, consumed message offset commits are handled by the transaction and therefore the application should not commit offsets through other means.
+The consumer should have `enable.auto.commit=false` (the default) and set explicitly `commit-strategy=ignore`:
+
+[source, properties]
+----
+mp.messaging.incoming.prices-in.commit-strategy=ignore
+mp.messaging.incoming.prices-in.failure-strategy=ignore
+----
+
+==== Error handling for the exactly-once processing
+
+The `Uni` returned from the `KafkaTransactions#withTransaction` will yield a failure if the transaction fails and is aborted.
+The application can choose to handle the error case, but if a failing `Uni` is returned from the `@Incoming` method, the incoming channel will effectively fail and stop the reactive stream.
+
+The `KafkaTransactions#withTransactionAndAck` method acks and nacks the message but will *not* return a failing `Uni`.
+Nacked messages will be handled by the failure strategy of the incoming channel, (see <<error-handling>>).
+Configuring `failure-strategy=ignore` simply resets the Kafka consumer to the last committed offsets and resumes the consumption from there.
+
+[NOTE]
+====
+Redpanda does not yet support link:https://github.com/redpanda-data/redpanda/issues/3279[producer scalability for exactly-once processing].
+In order to use Kafka exactly-once processing with Quarkus you can configure Dev Services for Kafka to <<kafka-dev-services#configuring-the-image, use Strimzi images instead of Redpanda>>.
+====
 
 [[kafka-bare-clients]]
 == Accessing Kafka clients directly
@@ -2386,6 +2536,118 @@ private String toJson(Fruit f) {
 The workaround is a bit more complex as besides sending the fruits coming from Kafka, we need to send pings periodically.
 To achieve this we merge the stream coming from Kafka and a periodic stream emitting `{}` every 10 seconds.
 
+[[chaining-kafka-transactions-with-hibernate-reactive-transactions]]
+=== Chaining Kafka Transactions with Hibernate Reactive transactions
+
+By chaining a Kafka transaction with a Hibernate Reactive transaction you can send records to a Kafka transaction,
+perform database updates and commit the Kafka transaction only if the database transaction is successful.
+
+The following example demonstrates:
+
+* Receive a payload by serving HTTP requests using RESTEasy Reactive,
+* Limit concurrency of that HTTP endpoint using Smallrye Fault Tolerance,
+* Start a Kafka transaction and send the payload to Kafka record,
+* Store the payload in the database using Hibernate Reactive with Panache,
+* Commit the Kafka transaction only if the entity is persisted successfully.
+
+[source, java]
+----
+package org.acme;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.faulttolerance.Bulkhead;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.hibernate.reactive.mutiny.Mutiny;
+
+import io.quarkus.hibernate.reactive.panache.Panache;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@Path("/")
+public class FruitProducer {
+
+    @Channel("kafka") KafkaTransactions<Fruit> kafkaTx; // <1>
+
+    @POST
+    @Path("/fruits")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(1) // <2>
+    public Uni<Void> post(Fruit fruit) { // <3>
+        return kafkaTx.withTransaction(emitter -> { // <4>
+            emitter.send(fruit); // <5>
+            return Panache.withTransaction(() -> { // <6>
+                return fruit.<Fruit>persist(); // <7>
+            });
+        }).replaceWithVoid();
+    }
+}
+
+----
+<1> Inject a `KafkaTransactions` which exposes a Mutiny API. It allows the integration with the Mutiny API exposed by Hibernate Reactive with Panache.
+<2> Limit the concurrency of the HTTP endpoint to "1", preventing starting multiple transactions at a given time.
+<3> The HTTP method receiving the payload returns a `Uni<Void>`. The HTTP response is written when the operation completes (the entity is persisted and Kafka transaction is committed).
+<4> Begin a Kafka transaction.
+<5> Send the payload to Kafka inside the Kafka transaction.
+<6> Persist the entity into the database in a Hibernate Reactive transaction.
+<7> Once the persist operation completes, and there is no errors, the Kafka transaction is committed.
+The result is omitted and returned as the HTTP response.
+
+In the previous example the database transaction (inner) will commit followed by the Kafka transaction (outer).
+If you wish to commit the Kafka transaction first and the database transaction second, you need to nest them in the reverse order.
+
+The next example demostrates that using the Hibernate Reactive API (without Panache):
+
+[source, java]
+----
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.faulttolerance.Bulkhead;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.hibernate.reactive.mutiny.Mutiny;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+import io.vertx.mutiny.core.Context;
+import io.vertx.mutiny.core.Vertx;
+
+@Path("/")
+public class FruitProducer {
+
+    @Channel("kafka") KafkaTransactions<Fruit> kafkaTx;
+
+    @Inject Mutiny.SessionFactory sf; // <1>
+
+    @POST
+    @Path("/fruits")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(1)
+    public Uni<Void> post(Fruit fruit) {
+        Context context = Vertx.currentContext(); // <2>
+        return sf.withTransaction(session -> // <3>
+                kafkaTx.withTransaction(emitter -> // <4>
+                        session.persist(fruit).invoke(() -> emitter.send(fruit)) // <5>
+                ).emitOn(context::runOnContext) // <6>
+        );
+    }
+}
+----
+
+<1> Inject the Hibernate Reactive `SessionFactory`.
+<2> Capture the caller Vert.x context.
+<3> Begin a Hibernate Reactive transaction.
+<4> Begin a Kafka transaction.
+<5> Persist the payload and send the entity to Kafka.
+<6> The Kafka transaction terminates on the Kafka producer sender thread.
+We need to switch to the Vert.x context previously captured in order to terminate the Hibernate Reactive transaction on the same context we started it.
+
 == Logging
 
 To reduce the amount of log written by the Kafka client, Quarkus sets the level of the following log categories to `WARNING`:
@@ -2499,6 +2761,47 @@ To allow your Quarkus application to use that secret, add the following line to 
 ----
 %prod.quarkus.openshift.env.secrets=kafka-credentials
 ----
+
+==== Red Hat OpenShift Service Registry
+
+https://www.redhat.com/en/technologies/cloud-computing/openshift/openshift-service-registry[Red Hat OpenShift Service Registry]
+provides fully managed service registry for handling Kafka schemas.
+
+You can follow the instructions from
+https://access.redhat.com/documentation/en-us/red_hat_openshift_service_registry/1/guide/ab1894d1-cae0-4d11-b185-81d62b4aabc7#_60472331-fa00-48ec-a621-bbd039500c7d[Getting started with Red Hat OpenShift Service Registry],
+or use the `rhoas` CLI to create a new service registry instance:
+
+[source, shell]
+----
+rhoas service-registry create --name my-schema-registry
+----
+
+Make sure to note the _Registry URL_ of the instance created.
+For authentication, you can use the same _ServiceAccount_ you created previously.
+You need to make sure that it has the necessary permissions to access the service registry.
+
+For example, using the `rhoas` CLI, you can grant the `MANAGER` role to the service account:
+
+[source, shell]
+----
+rhoas service-registry role add --role manager --service-account [SERVICE_ACCOUNT_CLIENT_ID]
+----
+
+Then, you can configure the Quarkus application to connect to the schema registry as follows:
+
+[source, properties]
+----
+mp.messaging.connector.smallrye-kafka.apicurio.registry.url=${RHOAS_SERVICE_REGISTRY_URL} <1>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.service.token.endpoint=${RHOAS_OAUTH_TOKEN_ENDPOINT} <2>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.client.id=${RHOAS_CLIENT_ID} <3>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.client.secret=${RHOAS_CLIENT_ID} <4>
+----
+<1> The service registry URL, given on the admin console, such as `https://bu98.serviceregistry.rhcloud.com/t/0e95af2c-6e11-475e-82ee-f13bd782df24/apis/registry/v2`
+<2> The OAuth token endpoint URL, such as `https://identity.api.openshift.com/auth/realms/rhoas/protocol/openid-connect/token`
+<3> The client id (from the service account)
+<4> The client secret (from the service account)
+
+You will need to include additional configuration
 
 == Going further
 

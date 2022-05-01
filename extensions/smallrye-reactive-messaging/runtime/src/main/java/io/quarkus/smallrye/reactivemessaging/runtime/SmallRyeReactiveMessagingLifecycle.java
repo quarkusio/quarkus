@@ -11,8 +11,8 @@ import javax.inject.Inject;
 import javax.interceptor.Interceptor;
 
 import io.quarkus.runtime.StartupEvent;
+import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
-import io.smallrye.reactive.messaging.providers.extension.EmitterConfiguration;
 import io.smallrye.reactive.messaging.providers.extension.MediatorManager;
 
 @Dependent

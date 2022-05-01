@@ -51,4 +51,12 @@ public class DevServicesBuildTimeConfig {
     @ConfigItem
     public OptionalInt port;
 
+    /**
+     * The container start command to use, for container based DevServices providers.
+     *
+     * If the provider is not container based (e.g. a H2 Database) then this has no effect.
+     */
+    @ConfigItem
+    public Optional<String> command;
+
 }

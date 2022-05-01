@@ -38,6 +38,8 @@ public class MSSQLDevServicesProcessor {
                 container.withPassword(password.orElse("Quarkuspassword1"))
                         .withReuse(true);
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
+
                 container.start();
 
                 LOG.info("Dev Services for Microsoft SQL Server started.");

@@ -18,6 +18,8 @@ import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.core.net.TrustOptions;
+import io.vertx.ext.mail.CanonicalizationAlgorithm;
+import io.vertx.ext.mail.DKIMSignOptions;
 import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailClient;
 import io.vertx.ext.mail.StartTLSOptions;
@@ -60,6 +62,68 @@ public class MailClientProducer {
         return MailClient.createShared(vertx, cfg);
     }
 
+    private io.vertx.ext.mail.DKIMSignOptions toVertxDkimSignOptions(DkimSignOptionsConfig optionsConfig) {
+        DKIMSignOptions vertxDkimOptions = new io.vertx.ext.mail.DKIMSignOptions();
+
+        String sdid = optionsConfig.sdid
+                .orElseThrow(() -> {
+                    throw new ConfigurationException("Must provide the Signing Domain Identifier (sdid).");
+                });
+        vertxDkimOptions.setSdid(sdid);
+
+        String selector = optionsConfig.selector
+                .orElseThrow(() -> {
+                    throw new ConfigurationException("Must provide the selector.");
+                });
+        vertxDkimOptions.setSelector(selector);
+
+        if (optionsConfig.auid.isPresent()) {
+            vertxDkimOptions.setAuid(optionsConfig.auid.get());
+        }
+
+        if (optionsConfig.bodyLimit.isPresent()) {
+            int bodyLimit = optionsConfig.bodyLimit.getAsInt();
+            vertxDkimOptions.setBodyLimit(bodyLimit);
+        }
+
+        if (optionsConfig.expireTime.isPresent()) {
+            long expireTime = optionsConfig.expireTime.getAsLong();
+            vertxDkimOptions.setExpireTime(expireTime);
+        }
+
+        if (optionsConfig.bodyCanonAlgo.isPresent()) {
+            vertxDkimOptions.setBodyCanonAlgo(CanonicalizationAlgorithm.valueOf(optionsConfig.bodyCanonAlgo.get().toString()));
+        }
+
+        if (optionsConfig.headerCanonAlgo.isPresent()) {
+            vertxDkimOptions
+                    .setHeaderCanonAlgo(CanonicalizationAlgorithm.valueOf(optionsConfig.headerCanonAlgo.get().toString()));
+        }
+
+        if (optionsConfig.privateKey.isPresent()) {
+            vertxDkimOptions.setPrivateKey(optionsConfig.privateKey.get());
+        } else if (optionsConfig.privateKeyPath.isPresent()) {
+            vertxDkimOptions.setPrivateKeyPath(optionsConfig.privateKeyPath.get());
+        }
+
+        if (optionsConfig.signatureTimestamp.isPresent()) {
+            vertxDkimOptions.setSignatureTimestamp(optionsConfig.signatureTimestamp.get());
+        }
+
+        if (optionsConfig.signedHeaders.isPresent()) {
+            List<String> headers = optionsConfig.signedHeaders.get();
+
+            if (headers.stream().noneMatch(header -> header.equalsIgnoreCase("from"))) {
+                throw new ConfigurationException(
+                        "The \"From\" header must always be included to the list of headers to sign.");
+            }
+
+            vertxDkimOptions.setSignedHeaders(headers);
+        }
+
+        return vertxDkimOptions;
+    }
+
     private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailConfig config, TlsConfig tlsConfig) {
         io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
         if (config.authMethods.isPresent()) {
@@ -84,6 +148,11 @@ public class MailClientProducer {
 
         if (config.port.isPresent()) {
             cfg.setPort(config.port.getAsInt());
+        }
+
+        if (config.dkim != null && config.dkim.enabled) {
+            cfg.setEnableDKIM(true);
+            cfg.addDKIMSignOption(toVertxDkimSignOptions(config.dkim));
         }
 
         cfg.setSsl(config.ssl);

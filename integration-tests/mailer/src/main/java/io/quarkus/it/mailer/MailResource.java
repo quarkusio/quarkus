@@ -82,6 +82,28 @@ public class MailResource {
     }
 
     /**
+     * Send a simple text email with DKIM signature.
+     */
+    @GET
+    @Path("/dkim")
+    public String sendSimpleEmailWithDkimSignature() {
+        mailer.send(Mail.withText("nobody@quarkus.io",
+                "simple test email",
+                "This is a simple test email.\nRegards,\nRoger the robot")
+                .addTo("nobody@example.com"));
+        return System.getProperty("vertx.mail.attachment.cache.file");
+    }
+
+    /**
+     * Confirm attachment caching has been enabled successfully.
+     */
+    @GET
+    @Path("/attachments/cache")
+    public String checkAttachmentCache() {
+        return System.getProperty("vertx.mail.attachment.cache.file", "false");
+    }
+
+    /**
      * Send a text email from template.
      */
     @GET

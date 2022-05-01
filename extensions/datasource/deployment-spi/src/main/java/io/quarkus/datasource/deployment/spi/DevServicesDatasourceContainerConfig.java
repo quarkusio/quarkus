@@ -10,15 +10,18 @@ public class DevServicesDatasourceContainerConfig {
     private final Map<String, String> containerProperties;
     private final Map<String, String> additionalJdbcUrlProperties;
     private final OptionalInt fixedExposedPort;
+    private final Optional<String> command;
 
     public DevServicesDatasourceContainerConfig(Optional<String> imageName,
             Map<String, String> containerProperties,
             Map<String, String> additionalJdbcUrlProperties,
-            OptionalInt port) {
+            OptionalInt port,
+            Optional<String> command) {
         this.imageName = imageName;
         this.containerProperties = containerProperties;
         this.additionalJdbcUrlProperties = additionalJdbcUrlProperties;
         this.fixedExposedPort = port;
+        this.command = command;
     }
 
     public Optional<String> getImageName() {
@@ -35,5 +38,9 @@ public class DevServicesDatasourceContainerConfig {
 
     public OptionalInt getFixedExposedPort() {
         return fixedExposedPort;
+    }
+
+    public Optional<String> getCommand() {
+        return command;
     }
 }

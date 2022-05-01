@@ -54,6 +54,8 @@ public class OracleDevServicesProcessor {
                 container.withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withNanoCPUs(2_000_000_000l));
 
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
+
                 container.start();
 
                 LOG.info("Dev Services for Oracle started.");

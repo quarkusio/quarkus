@@ -1,5 +1,9 @@
 package io.quarkus.devservices.h2.deployment;
 
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
@@ -50,13 +54,13 @@ public class H2DevServicesProcessor {
                     LOG.info("Dev Services for H2 started.");
 
                     String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
-                            + datasourceName.orElse("default")
+                            + datasourceName.orElse(DEFAULT_DATABASE_NAME)
                             + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
                     return new RunningDevServicesDatasource(null,
                             connectionUrl,
                             null,
-                            "sa",
-                            "sa",
+                            DEFAULT_DATABASE_USERNAME,
+                            DEFAULT_DATABASE_PASSWORD,
                             new Closeable() {
                                 @Override
                                 public void close() throws IOException {
@@ -66,8 +70,8 @@ public class H2DevServicesProcessor {
                                         //make sure the DB is removed on close
                                         try (Connection connection = DriverManager.getConnection(
                                                 connectionUrl,
-                                                "sa",
-                                                "sa")) {
+                                                DEFAULT_DATABASE_USERNAME,
+                                                DEFAULT_DATABASE_PASSWORD)) {
                                             try (Statement statement = connection.createStatement()) {
                                                 statement.execute("SET DB_CLOSE_DELAY 0");
                                             }

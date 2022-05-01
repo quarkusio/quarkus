@@ -1,5 +1,9 @@
 package io.quarkus.devservices.oracle.deployment;
 
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -24,9 +28,6 @@ public class OracleDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(OracleDevServicesProcessor.class);
 
     public static final String IMAGE = "gvenzl/oracle-xe";
-    public static final String DEFAULT_DATABASE_USER = "quarkus";
-    public static final String DEFAULT_DATABASE_PASSWORD = "quarkus";
-    public static final String DEFAULT_DATABASE_NAME = "quarkusdb";
     public static final int PORT = 1521;
 
     @BuildStep
@@ -41,7 +42,7 @@ public class OracleDevServicesProcessor {
                         containerConfig.getFixedExposedPort(),
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withUsername(username.orElse(DEFAULT_DATABASE_USER))
+                container.withUsername(username.orElse(DEFAULT_DATABASE_USERNAME))
                         .withPassword(password.orElse(DEFAULT_DATABASE_PASSWORD))
                         .withDatabaseName(datasourceName.orElse(DEFAULT_DATABASE_NAME))
                         .withReuse(true);

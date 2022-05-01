@@ -1,5 +1,9 @@
 package io.quarkus.devservices.mysql.deployment;
 
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -37,9 +41,9 @@ public class MySQLDevServicesProcessor {
                         containerConfig.getFixedExposedPort(),
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withPassword(password.orElse("quarkus"))
-                        .withUsername(username.orElse("quarkus"))
-                        .withDatabaseName(datasourceName.orElse("default"))
+                container.withUsername(username.orElse(DEFAULT_DATABASE_USERNAME))
+                        .withPassword(password.orElse(DEFAULT_DATABASE_PASSWORD))
+                        .withDatabaseName(datasourceName.orElse(DEFAULT_DATABASE_NAME))
                         .withReuse(true);
 
                 if (containerConfig.getContainerProperties().containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {

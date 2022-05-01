@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ExceptionSorter;
+import io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DevServicesH2DatasourceTestCase {
@@ -40,7 +41,8 @@ public class DevServicesH2DatasourceTestCase {
     public void testDatasource() throws Exception {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:h2:"));
-        assertEquals("sa", configuration.connectionFactoryConfiguration().principal().getName());
+        assertEquals(DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME,
+                configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(20, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(ExceptionSorter.emptyExceptionSorter().getClass());
 

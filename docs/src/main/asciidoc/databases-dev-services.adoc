@@ -75,6 +75,44 @@ quarkus.datasource.devservices.container-properties.TC_MY_CNF=testcontainers/mys
 
 This support is database specific and needs to be implemented in each dev service specifically.
 
+== Connect To Dev Service Database
+
+You can connect to a database running as Dev Service like you would do with any dockerized database.
+The login credentials are:
+
+|===
+|Database |Username |Password |Database name
+
+|PostgreSQL, MariaDB, MySQL, DB2, H2
+|quarkus
+|quarkus
+|quarkus
+
+|MSSQL
+|SA
+|Quarkuspassword1
+|
+
+|===
+
+Keep in mind that a Dev Service runs on a random port.
+For instance, when you run PostgreSQL as Dev Service and have `psql` installed on the host, you can connect via:
+
+```
+psql -h localhost -p <random port> -U quarkus
+```
+
+The random port can be found with `docker ps`
+
+```
+docker ps
+
+# returns something like this:
+
+CONTAINER ID   IMAGE           [..]    PORTS                                         [..]
+b826e3a168c4   postgres:14.2   [..]    0.0.0.0:49174->5432/tcp, :::49174->5432/tcp   [..]
+```
+
 == Configuration Reference
 
 Datasource Dev Services support the following config options:

@@ -100,7 +100,7 @@ public class SqlClientTest {
         assertEquals("h2", spans.get(1).getAttributes().get(DB_SYSTEM));
         assertEquals("SELECT", spans.get(1).getAttributes().get(DB_OPERATION));
         assertEquals("SELECT * FROM USERS", spans.get(1).getAttributes().get(DB_STATEMENT));
-        assertEquals("sa", spans.get(1).getAttributes().get(DB_USER));
+        assertEquals("quarkus", spans.get(1).getAttributes().get(DB_USER));
         assertNotNull(spans.get(1).getAttributes().get(DB_CONNECTION_STRING));
         //noinspection ConstantConditions
         assertTrue(spans.get(1).getAttributes().get(DB_CONNECTION_STRING).startsWith("jdbc:h2:tcp://localhost"));

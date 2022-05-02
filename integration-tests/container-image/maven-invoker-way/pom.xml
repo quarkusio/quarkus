@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -9,9 +10,6 @@
     </parent>
     <artifactId>quarkus-integration-test-container-image-invoker</artifactId>
     <name>Quarkus - Integration Tests - Container Image - Invoker</name>
-    <properties>
-        <skipTests>true</skipTests>
-    </properties>
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -57,7 +55,7 @@
                 <exclusion>
                     <groupId>org.codehaus.groovy</groupId>
                     <artifactId>groovy-xml</artifactId>
-                 </exclusion>
+                </exclusion>
             </exclusions>
             <scope>test</scope>
         </dependency>
@@ -116,7 +114,7 @@
                     <preBuildHookScript>setup</preBuildHookScript>
                     <postBuildHookScript>verify</postBuildHookScript>
                     <addTestClassPath>true</addTestClassPath>
-                    <skipInvocation>${skipTests}</skipInvocation>
+                    <skipInvocation>true</skipInvocation> <!-- activated by the test containers profile -->
                     <streamLogs>true</streamLogs>
                     <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
                 </configuration>
@@ -132,7 +130,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <skip>${skipTests}</skip>
+                    <skip>${skipITs}</skip>
                 </configuration>
             </plugin>
         </plugins>
@@ -145,13 +143,29 @@
                 <property>
                     <name>start-containers</name>
                 </property>
-                <os>
-                    <family>linux</family>
-                </os>
             </activation>
-            <properties>
-                <skipTests>false</skipTests>
-            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <skipInvocation>${skipTests}</skipInvocation>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>${skipTests}</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skip>${skipITs}</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

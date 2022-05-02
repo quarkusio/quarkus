@@ -156,6 +156,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     public static final String METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY = "METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY";
     public static final String METHOD_CONTEXT_ANNOTATION_STORE = "ANNOTATION_STORE";
+    public static final String METHOD_PRODUCES = "METHOD_PRODUCES";
 
     static {
         Map<String, String> prims = new HashMap<>();
@@ -629,6 +630,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                 + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
             }
 
+            methodContext.put(METHOD_PRODUCES, produces);
             ResourceMethod method = createResourceMethod(currentMethodInfo, actualEndpointInfo, methodContext)
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(sanitizePath(methodPath))

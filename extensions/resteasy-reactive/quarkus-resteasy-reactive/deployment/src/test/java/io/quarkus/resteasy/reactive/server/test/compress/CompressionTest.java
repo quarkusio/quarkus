@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -37,6 +38,8 @@ public class CompressionTest {
         assertCompressed("/endpoint/content-type-implicitly-compressed");
         assertCompressed("/endpoint/content-type-with-param-implicitly-compressed");
         assertUncompressed("/endpoint/content-type-implicitly-uncompressed");
+        assertCompressed("/endpoint/content-type-in-produces-compressed");
+        assertUncompressed("/endpoint/content-type-in-produces-uncompressed");
 
         assertCompressed("/file.txt");
         assertUncompressed("/my.doc");
@@ -105,6 +108,19 @@ public class CompressionTest {
             return RestResponse.ResponseBuilder.ok().entity(MESSAGE).header("Content-type", "foo/bar").build();
         }
 
+        // uses 'text/plain' as the default type
+        @GET
+        @Path("content-type-in-produces-compressed")
+        public String contentTypeInProducesCompressed() {
+            return MESSAGE;
+        }
+
+        @Produces("foo/bar")
+        @GET
+        @Path("content-type-in-produces-uncompressed")
+        public String contentTypeInProducesUncompressed() {
+            return MESSAGE;
+        }
     }
 
 }

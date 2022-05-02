@@ -236,6 +236,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (providers != null) {
             for (ClassPathElement element : providers) {
                 ClassPathResource res = element.getResource(name);
+                // If resource was not found, ignore
+                if (res == null) {
+                    continue;
+                }
                 //if the requested name ends with a trailing / we make sure
                 //that the resource is a directory, and return a URL that ends with a /
                 //this matches the behaviour of URLClassLoader

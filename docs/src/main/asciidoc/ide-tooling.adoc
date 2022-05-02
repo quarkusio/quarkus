@@ -85,7 +85,7 @@ https://download.jboss.org/jbosstools/intellij/snapshots/intellij-quarkus/[Devel
 |Wizards w/code.quarkus.io
 |icon:check[]
 |icon:check[]
-|https://issues.jboss.org/browse/JBIDE-26950[icon:times[]]
+|icon:check[]
 |icon:check[]
 |icon:check[]
 
@@ -141,7 +141,7 @@ https://download.jboss.org/jbosstools/intellij/snapshots/intellij-quarkus/[Devel
 |Easy Launch debug/dev:mode
 |icon:check[]
 |icon:check[]
-|icon:times[]
+|icon:check[]
 |icon:check[]
 |icon:check[]
 

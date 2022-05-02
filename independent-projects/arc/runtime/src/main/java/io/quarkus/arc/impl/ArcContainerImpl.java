@@ -186,10 +186,11 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
-        // BeanManager, Event<?>, Instance<?>
+        // BeanManager, Event<?>, Instance<?>, InjectionPoint
         beans.add(new BeanManagerBean());
         beans.add(new EventBean());
         beans.add(InstanceBean.INSTANCE);
+        beans.add(new InjectionPointBean());
     }
 
     public void init() {
@@ -882,10 +883,11 @@ public class ArcContainerImpl implements ArcContainer {
         final Annotation[] qualifiers;
 
         Resolvable(Type requiredType, Annotation[] qualifiers) {
-            // if the type is Event or Instance (the built-in types), the resolution simplifies type to raw type and ignores qualifiers
+            // if the type is Event, Instance or InjectionPoint (the built-in types), the resolution simplifies
+            // type to raw type and ignores qualifiers
             // this is so that every injection point matches the bean we provide for that type
             Type rawType = Reflections.getRawType(requiredType);
-            if (Event.class.equals(rawType) || Instance.class.equals(rawType)) {
+            if (Event.class.equals(rawType) || Instance.class.equals(rawType) || InjectionPoint.class.equals(rawType)) {
                 this.requiredType = rawType;
                 this.qualifiers = ANY_QUALIFIER;
             } else {

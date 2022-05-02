@@ -28,6 +28,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.logging.LateBoundMDCProvider;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -44,6 +45,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo.Gizmo;
@@ -67,8 +69,11 @@ class VertxCoreProcessor {
     );
 
     @BuildStep
-    NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, VertxLogDelegateFactory.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, LateBoundMDCProvider.class.getName()));
+        nativeImageResources.produce(new NativeImageResourceBuildItem("META-INF/services/org.jboss.logmanager.MDCProvider"));
         return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("io.vertx.core.buffer.impl.VertxByteBufAllocator")
                 .addRuntimeInitializedClass("io.vertx.core.buffer.impl.PartialPooledByteBufAllocator")

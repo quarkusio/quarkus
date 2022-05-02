@@ -246,6 +246,34 @@ clean_maven_repository
 
 # Tranformation phase
 
+transform_module "independent-projects/arc"
+transform_module "independent-projects/resteasy-reactive"
+convert_service_file independent-projects/resteasy-reactive/common/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.RuntimeDelegate
+convert_service_file 'independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.sse.SseEventSource$Builder'
+convert_service_file independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.client.ClientBuilder
+transform_module "core"
+transform_module "test-framework"
+transform_module "extensions"
+convert_service_file "extensions/resteasy-classic/resteasy-multipart/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.Providers"
+transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin"
+transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization"
+transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization-common"
+transform_kotlin_module "extensions/resteasy-reactive/rest-client-reactive-kotlin-serialization"
+update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-configkey-scope-test-application.properties"
+update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-classname-scope-test-application.properties"
+update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-global-scope-test-application.properties"
+transform_kotlin_module "extensions/panache/hibernate-orm-panache-kotlin"
+transform_kotlin_module "extensions/panache/mongodb-panache-kotlin"
+sed -i "s@javax/xml/bind/annotation/@jakarta/xml/bind/annotation/@g" ./extensions/panache/panache-common/deployment/src/main/java/io/quarkus/panache/common/deployment/PanacheConstants.java
+transform_kotlin_module "extensions/scheduler/kotlin"
+transform_kotlin_module "extensions/smallrye-reactive-messaging/kotlin"
+transform_module "devtools"
+transform_module "integration-tests"
+
+transform_documentation
+
+# Build phase
+
 ## Install root parent
 ./mvnw clean install -N
 
@@ -256,7 +284,6 @@ build_module_no_tests "independent-projects/revapi"
 
 ## ArC
 start_module "ArC"
-transform_module "independent-projects/arc"
 build_module "independent-projects/arc"
 
 ## Bootstrap
@@ -272,12 +299,8 @@ start_module "Tools"
 build_module "independent-projects/tools"
 
 ## RESTEasy Reactive
-start_module "Tools"
-transform_module "independent-projects/resteasy-reactive"
+start_module "RESTEasy Reactive"
 # TODO: probably something we need to push back to the Eclipse Transformer
-convert_service_file independent-projects/resteasy-reactive/common/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.RuntimeDelegate
-convert_service_file 'independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.sse.SseEventSource$Builder'
-convert_service_file independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.client.ClientBuilder
 build_module "independent-projects/resteasy-reactive"
 
 # BOM
@@ -298,12 +321,10 @@ build_module_no_tests "devtools/platform-descriptor-json-plugin"
 build_module_no_tests "devtools/platform-properties"
 
 ## Core
-transform_module "core"
 build_module_no_tests "core"
 
 # Test framework
 start_module "Test framework"
-transform_module "test-framework"
 build_module_only_no_tests "test-framework"
 build_module "test-framework/common"
 build_module "test-framework/devmode-test-utils"
@@ -314,7 +335,6 @@ build_module "test-framework/maven"
 
 # Extensions
 start_module "Extensions"
-transform_module "extensions"
 build_module_only_no_tests "extensions"
 build_module_only_no_tests "extensions/vertx-http"
 build_module "extensions/vertx-http/dev-console-runtime-spi"
@@ -359,19 +379,11 @@ build_module_only_no_tests "extensions/panache"
 build_module "extensions/panache/panache-common"
 build_module "extensions/qute"
 build_module "extensions/smallrye-fault-tolerance"
-convert_service_file "extensions/resteasy-classic/resteasy-multipart/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.Providers"
 build_module "extensions/resteasy-classic"
 
 # RESTEasy Reactive
 build_module "extensions/smallrye-stork"
 build_module "extensions/kotlin"
-transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin"
-transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization"
-transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization-common"
-transform_kotlin_module "extensions/resteasy-reactive/rest-client-reactive-kotlin-serialization"
-update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-configkey-scope-test-application.properties"
-update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-classname-scope-test-application.properties"
-update_scope_in_test_properties "extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/resources/mp-global-scope-test-application.properties"
 build_module "extensions/resteasy-reactive"
 
 # Lambda
@@ -476,12 +488,8 @@ build_module "extensions/oidc-token-propagation-reactive"
 build_module "extensions/openshift-client"
 build_module "extensions/opentelemetry"
 build_module "extensions/reactive-datasource"
-transform_kotlin_module "extensions/panache/hibernate-orm-panache-kotlin"
-transform_kotlin_module "extensions/panache/mongodb-panache-kotlin"
-sed -i "s@javax/xml/bind/annotation/@jakarta/xml/bind/annotation/@g" ./extensions/panache/panache-common/deployment/src/main/java/io/quarkus/panache/common/deployment/PanacheConstants.java
 build_module "extensions/panache"
 build_module "extensions/picocli"
-transform_kotlin_module "extensions/scheduler/kotlin"
 build_module "extensions/scheduler"
 build_module "extensions/quartz"
 build_module "extensions/reactive-db2-client"
@@ -500,7 +508,6 @@ build_module "extensions/security-webauthn"
 #build_module "extensions/smallrye-graphql"
 #build_module "extensions/smallrye-graphql-client"
 build_module "extensions/smallrye-jwt"
-transform_kotlin_module "extensions/smallrye-reactive-messaging/kotlin"
 build_module "extensions/smallrye-reactive-messaging"
 build_module "extensions/smallrye-reactive-messaging-amqp"
 # TODO we need quarkus-apicurio-registry-avro
@@ -520,19 +527,10 @@ build_module "extensions/vertx-graphql"
 build_module "extensions/webjars-locator"
 build_module "extensions/websockets"
 
-transform_module "devtools"
-transform_module "integration-tests"
-
-transform_documentation
+build_module "test-framework"
 
 exit 0
 
-# These ones require ArC and Mutiny extensions
-#build_module "test-framework/junit5-mockito-config"
-#build_module "test-framework/junit5-mockito"
-
-
 # Dev Tools - needs to be done after all the extensions have been built and before we run the ITs
-#transform_module "devtools"
 #build_module_no_tests "devtools"
 

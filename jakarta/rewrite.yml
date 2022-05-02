@@ -411,6 +411,9 @@ recipeList:
       key: smallrye-fault-tolerance.version
       newValue: 6.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-graphql.version
+      newValue: 2.0.0.RC1
+  - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
       newValue: 4.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
@@ -434,6 +437,9 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-opentracing.version
       newValue: 3.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-reactive-messaging.version
+      newValue: 4.0.0.RC1
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: 3.0

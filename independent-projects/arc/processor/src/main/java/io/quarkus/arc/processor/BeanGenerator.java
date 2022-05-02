@@ -743,8 +743,7 @@ public class BeanGenerator extends AbstractGenerator {
                     // Create the annotation literal first
                     ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifierAnnotation.name());
                     constructor.writeArrayValue(qualifiersArray, constructor.load(qualifierIndex++),
-                            annotationLiterals.process(constructor, classOutput,
-                                    qualifierClass, qualifierAnnotation, Types.getPackageName(beanCreator.getClassName())));
+                            annotationLiterals.create(constructor, qualifierClass, qualifierAnnotation));
                 }
             }
             constructor.writeInstanceField(
@@ -1405,8 +1404,7 @@ public class BeanGenerator extends AbstractGenerator {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
                 create.writeArrayValue(bindingsArray, bindingsIndex++,
-                        annotationLiterals.process(create, classOutput, bindingClass, binding,
-                                Types.getPackageName(beanCreator.getClassName())));
+                        annotationLiterals.create(create, bindingClass, binding));
             }
 
             ResultHandle invocationContextHandle = create.invokeStaticMethod(
@@ -1536,8 +1534,7 @@ public class BeanGenerator extends AbstractGenerator {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
                 create.writeArrayValue(bindingsArray, bindingsIndex++,
-                        annotationLiterals.process(create, classOutput, bindingClass, binding,
-                                Types.getPackageName(beanCreator.getClassName())));
+                        annotationLiterals.create(create, bindingClass, binding));
 
             }
 
@@ -1910,9 +1907,7 @@ public class BeanGenerator extends AbstractGenerator {
             } else {
                 // Create annotation literal if needed
                 ClassInfo literalClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
-                annotationHandle = annotationLiterals.process(constructor,
-                        classOutput, literalClass, annotation,
-                        beanCreator != null ? Types.getPackageName(beanCreator.getClassName()) : null);
+                annotationHandle = annotationLiterals.create(constructor, literalClass, annotation);
             }
             constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
                     annotationHandle);
@@ -1942,9 +1937,8 @@ public class BeanGenerator extends AbstractGenerator {
                     qualifierHandle = qualifier.getLiteralInstance(constructor);
                 } else {
                     // Create annotation literal if needed
-                    qualifierHandle = annotationLiterals.process(constructor,
-                            classOutput, beanDeployment.getQualifier(qualifierAnnotation.name()), qualifierAnnotation,
-                            beanCreator != null ? Types.getPackageName(beanCreator.getClassName()) : null);
+                    qualifierHandle = annotationLiterals.create(constructor,
+                            beanDeployment.getQualifier(qualifierAnnotation.name()), qualifierAnnotation);
                 }
                 constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
                         qualifierHandle);

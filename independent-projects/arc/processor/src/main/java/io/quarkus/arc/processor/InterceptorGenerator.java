@@ -136,8 +136,7 @@ public class InterceptorGenerator extends BeanGenerator {
             // Create annotation literal first
             ClassInfo bindingClass = interceptor.getDeployment().getInterceptorBinding(bindingAnnotation.name());
             constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                    annotationLiterals.process(constructor, classOutput, bindingClass, bindingAnnotation,
-                            Types.getPackageName(creator.getClassName())));
+                    annotationLiterals.create(constructor, bindingClass, bindingAnnotation));
         }
         constructor.writeInstanceField(bindings, constructor.getThis(), bindingsHandle);
         constructor.returnValue(null);

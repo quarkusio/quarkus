@@ -111,8 +111,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 // Create annotation literals first
                 ClassInfo bindingClass = beanDeployment.getInterceptorBinding(binding.name());
                 getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                        annotationLiterals.process(getComponents, classOutput, bindingClass, binding,
-                                SETUP_PACKAGE));
+                        annotationLiterals.create(getComponents, bindingClass, binding));
             }
             getComponents.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, transitiveBindingsHandle,
                     getComponents.loadClass(entry.getKey().toString()), bindingsHandle);
@@ -493,9 +492,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                         if (sharedQualifier == null) {
                             // Create annotation literal first
                             ClassInfo qualifierClass = removedBean.getDeployment().getQualifier(qualifierAnnotation.name());
-                            ResultHandle qualifierHandle = annotationLiterals.process(addMethod, classOutput,
-                                    qualifierClass, qualifierAnnotation,
-                                    Types.getPackageName(componentsProvider.getClassName()));
+                            ResultHandle qualifierHandle = annotationLiterals.create(addMethod, qualifierClass,
+                                    qualifierAnnotation);
                             addMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
                                     qualifierHandle);
                             sharedQualifers.put(new AnnotationInstanceKey(qualifierAnnotation), qualifierHandle);

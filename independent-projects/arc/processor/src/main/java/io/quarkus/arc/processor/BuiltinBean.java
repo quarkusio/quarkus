@@ -230,9 +230,7 @@ enum BuiltinBean {
                     // Create annotation literal first
                     ClassInfo qualifierClass = ctx.beanDeployment.getQualifier(qualifierAnnotation.name());
                     ctx.constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
-                            ctx.annotationLiterals.process(ctx.constructor, ctx.classOutput,
-                                    qualifierClass, qualifierAnnotation,
-                                    Types.getPackageName(ctx.clazzCreator.getClassName())));
+                            ctx.annotationLiterals.create(ctx.constructor, qualifierClass, qualifierAnnotation));
                 }
             }
         }
@@ -315,9 +313,7 @@ enum BuiltinBean {
                 // Create annotation literal first
                 ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getBeanArchiveIndex(), annotation.name());
                 ctx.constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
-                        ctx.annotationLiterals.process(ctx.constructor, ctx.classOutput,
-                                annotationClass, annotation,
-                                Types.getPackageName(ctx.clazzCreator.getClassName())));
+                        ctx.annotationLiterals.create(ctx.constructor, annotationClass, annotation));
             }
         }
         ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());

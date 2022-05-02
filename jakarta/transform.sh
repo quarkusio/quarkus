@@ -70,7 +70,7 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
 fi
 
 # Set up jbang alias, we are using latest released transformer version
-jbang alias add --name transform org.eclipse.transformer:org.eclipse.transformer.cli:0.2.0
+jbang alias add --name transform org.eclipse.transformer:org.eclipse.transformer.cli:0.4.0
 
 start_module () {
   echo "# $1"
@@ -248,13 +248,13 @@ clean_maven_repository
 
 transform_module "independent-projects/arc"
 transform_module "independent-projects/resteasy-reactive"
-convert_service_file independent-projects/resteasy-reactive/common/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.RuntimeDelegate
-convert_service_file 'independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.sse.SseEventSource$Builder'
-convert_service_file independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.client.ClientBuilder
+#convert_service_file independent-projects/resteasy-reactive/common/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.RuntimeDelegate
+#convert_service_file 'independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.sse.SseEventSource$Builder'
+#convert_service_file independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.client.ClientBuilder
 transform_module "core"
 transform_module "test-framework"
 transform_module "extensions"
-convert_service_file "extensions/resteasy-classic/resteasy-multipart/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.Providers"
+#convert_service_file "extensions/resteasy-classic/resteasy-multipart/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.Providers"
 transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin"
 transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization"
 transform_kotlin_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-kotlin-serialization-common"

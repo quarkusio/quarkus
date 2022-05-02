@@ -32,6 +32,7 @@ public class DynamicEntityWriter implements EntityWriter {
     public void write(ResteasyReactiveRequestContext context, Object entity) throws IOException {
         EncodedMediaType producesMediaType = context.getResponseContentType();
         MessageBodyWriter<?>[] writers = null;
+        MediaType serverSerializersMediaType = null;
         if (producesMediaType == null) {
             MediaType selectedMediaType = null;
             boolean mediaTypeComesFromClient = false;
@@ -87,6 +88,7 @@ public class DynamicEntityWriter implements EntityWriter {
                     httpServerResponse.end();
                     return;
                 } else {
+                    serverSerializersMediaType = selectedMediaType;
                     context.setResponseContentType(selectedMediaType);
                     // this will be used as the fallback if Response does NOT contain a type
                     context.serverResponse().addResponseHeader(HttpHeaders.CONTENT_TYPE, selectedMediaType.toString());
@@ -99,7 +101,7 @@ public class DynamicEntityWriter implements EntityWriter {
                     .toArray(ServerSerialisers.NO_WRITER);
         }
         for (MessageBodyWriter<?> w : writers) {
-            if (ServerSerialisers.invokeWriter(context, entity, w, serialisers)) {
+            if (ServerSerialisers.invokeWriter(context, entity, w, serialisers, serverSerializersMediaType)) {
                 return;
             }
         }

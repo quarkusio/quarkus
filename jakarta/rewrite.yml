@@ -196,6 +196,14 @@ recipeList:
       newArtifactId: jboss-jaxrs-api_3.0_spec
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.exclude-javax-jaxrs
+displayName: Exclude Javax JAX-RS version
+recipeList:
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.jboss.spec.javax.ws.rs
+      artifactId: jboss-jaxrs-api_2.1_spec
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxb-switch
 displayName: Switch JAXB version
 recipeList:

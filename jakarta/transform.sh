@@ -510,8 +510,9 @@ build_module "extensions/security-webauthn"
 build_module "extensions/smallrye-jwt"
 build_module "extensions/smallrye-reactive-messaging"
 build_module "extensions/smallrye-reactive-messaging-amqp"
-# TODO we need quarkus-apicurio-registry-avro
-#build_module "extensions/smallrye-reactive-messaging-kafka"
+# TODO: remove rewrite recipe of Apicurio extensions once we have a Jakarta version
+build_module "extensions/schema-registry"
+build_module "extensions/smallrye-reactive-messaging-kafka"
 build_module "extensions/smallrye-reactive-messaging-mqtt"
 build_module "extensions/smallrye-reactive-messaging-rabbitmq"
 build_module "extensions/spring-boot-properties"

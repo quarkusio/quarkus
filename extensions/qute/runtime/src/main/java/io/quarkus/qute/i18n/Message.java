@@ -29,6 +29,12 @@ public @interface Message {
     String ELEMENT_NAME = "<<element name>>";
 
     /**
+     * Constant value for {@link #value()} indicating that message template value specified in a localized file
+     * should be used. If localized file fails to provide value, an exception is thrown and the build fails.
+     */
+    String DEFAULT_VALUE = "<<default value>>";
+
+    /**
      * Constant value for {@link #key()} indicating that the annotated element's name should be de-camel-cased and
      * hyphenated, and then used.
      */
@@ -47,9 +53,12 @@ public @interface Message {
     String key() default DEFAULT_NAME;
 
     /**
+     * This value has higher priority over a message template specified in a localized file, and it's
+     * considered a good practice to specify it. In case the value is not provided and there is no
+     * match in the localized file too, the build fails.
      *
      * @return the message template
      */
-    String value();
+    String value() default DEFAULT_VALUE;
 
 }

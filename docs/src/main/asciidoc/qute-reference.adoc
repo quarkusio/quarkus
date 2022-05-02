@@ -2044,7 +2044,7 @@ public interface AppMessages {
 }
 ----
 <1> Denotes a message bundle interface. The bundle name is defaulted to `msg` and is used as a namespace in templates expressions, e.g. `{msg:hello_name}`.
-<2> Each method must be annotated with `@Message`. The value is a qute template.
+<2> Each method must be annotated with `@Message`. The value is a qute template. If no value is provided, then a corresponding value from a localized file is taken. If no such file exists an exception is thrown and the build fails.
 <3> The method parameters can be used in the template.
 
 ==== Bundle Name and Message Keys

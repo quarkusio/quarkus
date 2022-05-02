@@ -19,8 +19,9 @@ fi
 if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   # Prepare OpenRewrite - we temporarily build a local version as we need a patch
   rm -rf target/rewrite
-  git clone -b jakarta --depth 1 https://github.com/gsmet/rewrite.git target/rewrite
+  git clone https://github.com/gsmet/rewrite.git target/rewrite
   pushd target/rewrite
+  git checkout jakarta
   ./gradlew -x test -x javadoc publishToMavenLocal
   popd
 

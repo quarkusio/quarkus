@@ -3125,7 +3125,7 @@ Before publishing your extension to the xref:tooling.adoc[Quarkus tooling], make
 
 * The `quarkus-extension.yaml` file (in the extension's `runtime/` module) has the minimum metadata set:
 ** `name`
-** `description` (unless you have it already set in the `runtime/pom.xml`'s `<description>` element, which is the recommended approach)
+** `description` (unless you have it already set in the ``runtime/pom.xml``'s `<description>` element, which is the recommended approach)
 
 * Your extension is published in Maven Central
 

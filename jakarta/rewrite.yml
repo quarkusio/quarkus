@@ -196,6 +196,14 @@ recipeList:
       newArtifactId: jboss-jaxrs-api_3.0_spec
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: io.quarkus.exclude-javax-jaxrs
+displayName: Exclude Javax JAX-RS version
+recipeList:
+  - org.openrewrite.maven.ExcludeDependency:
+      groupId: org.jboss.spec.javax.ws.rs
+      artifactId: jboss-jaxrs-api_2.1_spec
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: io.quarkus.jakarta-jaxb-switch
 displayName: Switch JAXB version
 recipeList:
@@ -411,6 +419,9 @@ recipeList:
       key: smallrye-fault-tolerance.version
       newValue: 6.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-graphql.version
+      newValue: 2.0.0.RC1
+  - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
       newValue: 4.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
@@ -419,6 +430,9 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-jwt.version
       newValue: 4.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: microprofile-lra.version
+      newValue: 2.0-RC1
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-metrics-api.version
       newValue: 4.0.1
@@ -434,6 +448,9 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-opentracing.version
       newValue: 3.0.0-RC1
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: smallrye-reactive-messaging.version
+      newValue: 4.0.0.RC1
   - org.openrewrite.maven.ChangePropertyValue:
       key: microprofile-rest-client.version
       newValue: 3.0

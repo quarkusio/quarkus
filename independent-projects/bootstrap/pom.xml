@@ -446,6 +446,7 @@
                             <activeRecipes>
                                 <recipe>io.quarkus.jakarta-versions</recipe>
                                 <recipe>io.quarkus.maven.javax.versions</recipe>
+                                <recipe>io.quarkus.smallrye</recipe>
                             </activeRecipes>
                         </configuration>
                     </plugin>

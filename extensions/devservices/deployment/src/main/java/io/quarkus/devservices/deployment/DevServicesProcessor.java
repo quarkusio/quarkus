@@ -19,12 +19,12 @@ import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
 
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
@@ -36,20 +36,19 @@ public class DevServicesProcessor {
 
     private static final String EXEC_FORMAT = "docker exec -it %s /bin/bash";
 
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
-
     static volatile ConsoleStateManager.ConsoleContext context;
     static volatile boolean logForwardEnabled = false;
     static Map<String, ContainerLogForwarder> containerLogForwarders = new HashMap<>();
 
     @BuildStep(onlyIf = { IsDevelopment.class })
     public List<DevServiceDescriptionBuildItem> config(
+            DockerStatusBuildItem dockerStatusBuildItem,
             BuildProducer<ConsoleCommandBuildItem> commandBuildItemBuildProducer,
             LaunchModeBuildItem launchModeBuildItem,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             List<DevServicesResultBuildItem> devServicesResults) {
-        List<DevServiceDescriptionBuildItem> serviceDescriptions = buildServiceDescriptions(devServicesResults,
-                devServicesLauncherConfig);
+        List<DevServiceDescriptionBuildItem> serviceDescriptions = buildServiceDescriptions(
+                dockerStatusBuildItem, devServicesResults, devServicesLauncherConfig);
 
         for (DevServiceDescriptionBuildItem devService : serviceDescriptions) {
             if (devService.hasContainerInfo()) {
@@ -72,8 +71,8 @@ public class DevServicesProcessor {
         }
         context.reset(
                 new ConsoleCommand('c', "Show dev services containers", null, () -> {
-                    List<DevServiceDescriptionBuildItem> descriptions = buildServiceDescriptions(devServicesResults,
-                            devServicesLauncherConfig);
+                    List<DevServiceDescriptionBuildItem> descriptions = buildServiceDescriptions(
+                            dockerStatusBuildItem, devServicesResults, devServicesLauncherConfig);
                     StringBuilder builder = new StringBuilder();
                     builder.append("\n\n")
                             .append(RED + "==" + RESET + " " + UNDERLINE + "Dev Services" + NO_UNDERLINE)
@@ -91,14 +90,16 @@ public class DevServicesProcessor {
         return serviceDescriptions;
     }
 
-    private List<DevServiceDescriptionBuildItem> buildServiceDescriptions(List<DevServicesResultBuildItem> devServicesResults,
+    private List<DevServiceDescriptionBuildItem> buildServiceDescriptions(
+            DockerStatusBuildItem dockerStatusBuildItem,
+            List<DevServicesResultBuildItem> devServicesResults,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
         // Fetch container infos
         Set<String> containerIds = devServicesResults.stream()
                 .map(DevServicesResultBuildItem::getContainerId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        Map<String, Container> containerInfos = fetchContainerInfos(containerIds);
+        Map<String, Container> containerInfos = fetchContainerInfos(dockerStatusBuildItem, containerIds);
         // Build descriptions
         Set<String> configKeysFromDevServices = new HashSet<>();
         List<DevServiceDescriptionBuildItem> descriptions = new ArrayList<>();
@@ -121,8 +122,9 @@ public class DevServicesProcessor {
         return descriptions;
     }
 
-    private Map<String, Container> fetchContainerInfos(Set<String> containerIds) {
-        if (containerIds.isEmpty() || !isDockerWorking.getAsBoolean()) {
+    private Map<String, Container> fetchContainerInfos(DockerStatusBuildItem dockerStatusBuildItem,
+            Set<String> containerIds) {
+        if (containerIds.isEmpty() || !dockerStatusBuildItem.isDockerAvailable()) {
             return Collections.emptyMap();
         }
         return DockerClientFactory.lazyClient().listContainersCmd()

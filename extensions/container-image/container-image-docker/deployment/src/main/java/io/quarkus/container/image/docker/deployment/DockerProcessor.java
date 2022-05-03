@@ -30,10 +30,10 @@ import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -55,8 +55,6 @@ public class DockerProcessor {
     private static final String DOCKER_DIRECTORY_NAME = "docker";
     static final String DOCKER_CONTAINER_IMAGE_NAME = "docker";
 
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking();
-
     @BuildStep
     public AvailableContainerImageExtensionBuildItem availability() {
         return new AvailableContainerImageExtensionBuildItem(DOCKER);
@@ -64,6 +62,7 @@ public class DockerProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, DockerBuild.class }, onlyIfNot = NativeBuild.class)
     public void dockerBuildFromJar(DockerConfig dockerConfig,
+            DockerStatusBuildItem dockerStatusBuildItem,
             ContainerImageConfig containerImageConfig,
             OutputTargetBuildItem out,
             ContainerImageInfoBuildItem containerImageInfo,
@@ -83,7 +82,7 @@ public class DockerProcessor {
             return;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 
@@ -116,6 +115,7 @@ public class DockerProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
     public void dockerBuildFromNativeImage(DockerConfig dockerConfig,
+            DockerStatusBuildItem dockerStatusBuildItem,
             ContainerImageConfig containerImageConfig,
             ContainerImageInfoBuildItem containerImage,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
@@ -134,7 +134,7 @@ public class DockerProcessor {
             return;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             throw new RuntimeException("Unable to build docker image. Please check your docker installation");
         }
 

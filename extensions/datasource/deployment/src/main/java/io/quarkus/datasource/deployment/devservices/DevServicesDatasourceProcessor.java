@@ -20,13 +20,13 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildIt
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -45,10 +45,9 @@ public class DevServicesDatasourceProcessor {
 
     static volatile boolean first = true;
 
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
-
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     DevServicesDatasourceResultBuildItem launchDatabases(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            DockerStatusBuildItem dockerStatusBuildItem,
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
             List<DevServicesDatasourceProviderBuildItem> devDBProviders,
             DataSourcesBuildTimeConfig dataSourceBuildTimeConfig,
@@ -127,7 +126,8 @@ public class DevServicesDatasourceProcessor {
                 !dataSourceBuildTimeConfig.namedDataSources.isEmpty(),
                 devDBProviderMap,
                 dataSourceBuildTimeConfig.defaultDataSource,
-                configHandlersByDbType, propertiesMap, launchMode.getLaunchMode(), consoleInstalledBuildItem,
+                configHandlersByDbType, propertiesMap,
+                dockerStatusBuildItem, launchMode.getLaunchMode(), consoleInstalledBuildItem,
                 loggingSetupBuildItem, globalDevServicesConfig);
         if (defaultDevService != null) {
             runningDevServices.add(defaultDevService);
@@ -137,6 +137,7 @@ public class DevServicesDatasourceProcessor {
             RunningDevService namedDevService = startDevDb(entry.getKey(), curateOutcomeBuildItem,
                     installedDrivers, true,
                     devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap,
+                    dockerStatusBuildItem,
                     launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem, globalDevServicesConfig);
             if (namedDevService != null) {
                 runningDevServices.add(namedDevService);
@@ -187,6 +188,7 @@ public class DevServicesDatasourceProcessor {
             Map<String, DevServicesDatasourceProvider> devDBProviders, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
             Map<String, List<DevServicesDatasourceConfigurationHandlerBuildItem>> configurationHandlerBuildItems,
             Map<String, String> propertiesMap,
+            DockerStatusBuildItem dockerStatusBuildItem,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig globalDevServicesConfig) {
         boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled.orElse(true));
@@ -232,7 +234,7 @@ public class DevServicesDatasourceProcessor {
         }
 
         String prettyName = dbName == null ? "the default datasource" : " datasource '" + dbName + "'";
-        if (devDbProvider.isDockerRequired() && !isDockerWorking.getAsBoolean()) {
+        if (devDbProvider.isDockerRequired() && !dockerStatusBuildItem.isDockerAvailable()) {
             String message = "Please configure the datasource URL for "
                     + prettyName
                     + " or ensure the Docker daemon is up and running.";

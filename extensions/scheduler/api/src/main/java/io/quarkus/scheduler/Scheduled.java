@@ -55,12 +55,12 @@ public @interface Scheduled {
     /**
      * Optionally defines a unique identifier for this job.
      * <p>
-     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
-     * and use the configured value instead: {@code &#64;Scheduled(identity = "{myservice.check.identity.expr}")}.
-     *
+     * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
+     * {@code @Scheduled(identity = "${myJob.identity}")}.
+     * Additionally, the property expression can specify a default value: {@code @Scheduled(identity =
+     * "${myJob.identity:defaultIdentity}")}.
      * <p>
-     * If the value is not given, Quarkus will generate a unique id.
-     * <p>
+     * If the value is not provided then a unique id is generated.
      *
      * @return the unique identity of the schedule
      */
@@ -69,8 +69,14 @@ public @interface Scheduled {
     /**
      * Defines a cron-like expression. For example "0 15 10 * * ?" fires at 10:15am every day.
      * <p>
-     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
-     * and use the configured value instead: {@code &#64;Scheduled(cron = "{myservice.check.cron.expr}")}.
+     * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
+     * {@code @Scheduled(cron = "${myJob.cronExpression}")}.
+     * Additionally, the property expression can specify a default value: {@code @Scheduled(cron = "${myJob.cronExpression:0/2 *
+     * * * * ?}")}.
+     * <p>
+     * Furthermore, two special constants can be used to disable the scheduled method: {@code off} and {@code disabled}. For
+     * example, {@code @Scheduled(cron="${myJob.cronExpression:off}")} means that if the property is undefined then
+     * the method is never executed.
      *
      * @return the cron-like expression
      */
@@ -83,8 +89,14 @@ public @interface Scheduled {
      * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
      * Note that the absolute value of the value is always used.
      * <p>
-     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
-     * and use the configured value instead: {@code &#64;Scheduled(every = "{myservice.check.every.expr}")}.
+     * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
+     * {@code @Scheduled(every = "${myJob.everyExpression}")}.
+     * Additionally, the property expression can specify a default value: {@code @Scheduled(every =
+     * "${myJob.everyExpression:5m}")}.
+     * <p>
+     * Furthermore, two special constants can be used to disable the scheduled method: {@code off} and {@code disabled}. For
+     * example, {@code @Scheduled(every="${myJob.everyExpression:off}")} means that if the property is undefined then
+     * the method is never executed.
      *
      * @return the period expression based on the ISO-8601 duration format {@code PnDTnHnMn.nS}
      */
@@ -114,8 +126,10 @@ public @interface Scheduled {
      * is added automatically, so for example, {@code 15s} can be used instead of {@code PT15S} and is parsed as "15 seconds".
      * Note that the absolute value of the value is always used.
      * <p>
-     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
-     * and use the configured value instead: {@code &#64;Scheduled(delayed = "{myservice.delayed}")}.
+     * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
+     * {@code @Scheduled(delayed = "${myJob.delayedExpression}")}.
+     * Additionally, the property expression can specify a default value: {@code @Scheduled(delayed =
+     * "${myJob.delayedExpression:5m}")}.
      *
      * @return the period expression based on the ISO-8601 duration format {@code PnDTnHnMn.nS}
      */
@@ -147,8 +161,10 @@ public @interface Scheduled {
      * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
      * Note that the absolute value of the value is always used.
      * <p>
-     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
-     * and use the configured value instead: {@code &#64;Scheduled(every = "{myservice.check.overdue-grace-period.expr}")}.
+     * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
+     * {@code @Scheduled(overdueGracePeriod = "${myJob.overdueExpression}")}.
+     * Additionally, the property expression can specify a default value: {@code @Scheduled(overdueGracePeriod =
+     * "${myJob.overdueExpression:5m}")}.
      *
      * @return the period expression based on the ISO-8601 duration format {@code PnDTnHnMn.nS}
      */

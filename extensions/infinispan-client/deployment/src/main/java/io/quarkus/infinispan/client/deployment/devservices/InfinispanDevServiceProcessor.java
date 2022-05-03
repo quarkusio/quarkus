@@ -20,13 +20,13 @@ import org.jboss.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -56,10 +56,10 @@ public class InfinispanDevServiceProcessor {
     private static volatile List<RunningDevService> devServices;
     private static volatile InfinispanClientDevServiceBuildTimeConfig.DevServiceConfiguration capturedDevServicesConfiguration;
     private static volatile boolean first = true;
-    private static volatile Boolean dockerRunning = null;
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
     public List<DevServicesResultBuildItem> startInfinispanContainers(LaunchModeBuildItem launchMode,
+            DockerStatusBuildItem dockerStatusBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             InfinispanClientDevServiceBuildTimeConfig config,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -91,7 +91,7 @@ public class InfinispanDevServiceProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Infinispan Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            RunningDevService devService = startContainer(config.devService.devservices,
+            RunningDevService devService = startContainer(dockerStatusBuildItem, config.devService.devservices,
                     launchMode.getLaunchMode(),
                     !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
             if (devService == null) {
@@ -112,7 +112,6 @@ public class InfinispanDevServiceProcessor {
         if (first) {
             first = false;
             Runnable closeTask = () -> {
-                dockerRunning = null;
                 if (devServices != null) {
                     for (Closeable closeable : devServices) {
                         try {
@@ -131,7 +130,7 @@ public class InfinispanDevServiceProcessor {
         return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
     }
 
-    private RunningDevService startContainer(
+    private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem,
             InfinispanDevServicesConfig devServicesConfig, LaunchMode launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!devServicesConfig.enabled) {
@@ -148,11 +147,7 @@ public class InfinispanDevServiceProcessor {
             return null;
         }
 
-        if (dockerRunning == null) {
-            dockerRunning = new IsDockerWorking.IsDockerRunningSilent().getAsBoolean();
-        }
-
-        if (!dockerRunning) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn("Please configure 'quarkus.infinispan-client.server-list' or get a working docker instance");
             return null;
         }

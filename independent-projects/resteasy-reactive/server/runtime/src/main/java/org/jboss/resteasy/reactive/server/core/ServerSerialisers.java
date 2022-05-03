@@ -218,7 +218,7 @@ public class ServerSerialisers extends Serialisers {
                     }
                     if (writerInterceptors == null) {
                         writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
-                                context.getAllAnnotations(), response.getMediaType(), response.getHeaders(),
+                                context.getAllAnnotations(), context.getResponseMediaType(), response.getHeaders(),
                                 context.getOrCreateOutputStream());
                         context.getOrCreateOutputStream().close();
                     } else {

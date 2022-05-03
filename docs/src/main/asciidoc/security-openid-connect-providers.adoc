@@ -1,0 +1,366 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Configuring Well-Known OpenId Connect Providers
+
+include::./attributes.adoc[]
+
+== Introduction
+
+If you use xref:security-openid-connect-web-authentication.adoc[OpenId Connect Authorization Code Flow] to protect Quarkus endpoints then you need to configure Quarkus to tell it how to connect to OpenId Connect providers, how to authenticate to such providers, which scopes to use, etc.
+
+Sometimes you need to use the configuration to workaround the fact that some providers do not implement `OpenId Connect` completely or when they are in fact xref:security-openid-connect-web-authentication.adoc#oauth2[OAuth2 providers only].
+
+The configuration of such providers can become complex, very technical and difficult to understand.
+
+`quarkus.oidc.provider` configuration property has been introduced to refer to well-known `OpenId Connect` and `OAuth2` providers. This property can be used to refer to a provider such as `github` with only a minimum number of customizations required, typically, an account specific `client id`, `client secret` and some properties have to be set to complete the configuration.
+
+This property can be used in `application.properties`, in xref:security-openid-connect-multitenancy.adoc[multi-tenant] set-ups if more than one provider has to be configured (for example, see https://quarkiverse.github.io/quarkiverse-docs/quarkus-renarde/dev/security.html#_using_oidc_for_login[Quarkus Renarde security documentation]), in custom xref:security-openid-connect-web-multitenancy.adoc#tenant-config-resolver[TenantConfigResolvers] if the tenant configurations are created dynamically.
+
+== Well Known Providers
+
+=== Github
+
+In order to set up OIDC for Github you need to create a new OAuth application in your https://github.com/settings/applications/new[GitHub developer settings]:
+
+image::oidc-github-1.png[role="thumb"]
+
+Make sure to fill in the appropriate details, but more importantly the Authorization Callback URL, set to `http://localhost:8080/_renarde/security/github-success`
+(if you intend to test this using the Quarkus DEV mode).
+
+Now click on `Register application` and you'll be shown your application page:
+
+image::oidc-github-2.png[role="thumb"]
+
+You need to click on `Generate a new client secret`, confirm your credentials, and write down
+your Client ID and Client secret (especially that one, because you will not be able to see it again
+later from that page, but you can always recreate one, do don't worry too much):
+
+image::oidc-github-3.png[role="thumb"]
+
+Now add the following configuration to your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=github
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+----
+
+=== Google
+
+In order to set up OIDC for Google you need to create a new project in your https://console.cloud.google.com/projectcreate[Google Cloud Platform console]:
+
+Pick a project name and click on `CREATE`.
+
+image::oidc-google-1.png[role="thumb"]
+
+Now make sure you select your project in the top selector, and click on the left-hand bar menu on `APIs and Services > OAuth consent screen`:
+
+image::oidc-google-2.png[role="thumb"]
+
+Select `External` to authorise any Google user to log in to your application and press `CREATE`:
+
+image::oidc-google-3.png[role="thumb"]
+
+Now you can fill in your application name, your support email, your developer contact information and press `SAVE AND CONTINUE`:
+
+image::oidc-google-4.png[role="thumb"]
+
+Do not add any scopes on the next page, and press `SAVE AND CONTINUE`:
+
+image::oidc-google-5.png[role="thumb"]
+
+Do not add any test user on the next page, and press `SAVE AND CONTINUE`:
+
+image::oidc-google-6.png[role="thumb"]
+
+Click on the top menu `CREATE CREDENTIALS` > `OAuth client ID`:
+
+image::oidc-google-7.png[role="thumb"]
+
+Select `Web application` as `Application type`, and add `http://localhost:8080/_renarde/security/oidc-success` in
+the `Authorised redirect URIs` list, then press `CREATE`:
+
+image::oidc-google-8.png[role="thumb"]
+
+Copy your Client ID and Client Secret:
+
+image::oidc-google-9.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+----
+
+=== Microsoft
+
+In order to set up OIDC for Microsoft you need to go to your https://portal.azure.com[Microsoft Azure Portal],
+and search for `Azure Active Directory`, then click on it:
+
+image::oidc-microsoft-1.png[role="thumb"]
+
+Once there, on the left side under `Manage`, click on `App registrations` then click on `New registration`:
+
+image::oidc-microsoft-2.png[role="thumb"]
+
+Fill in your application name, select `Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)` to allow anyone to log in, and add a `Web` Redirect URI as `http://localhost:8080/_renarde/security/oidc-success`,
+then click on `Register`:
+
+image::oidc-microsoft-3.png[role="thumb"]
+
+On that resulting page, copy the `Client Id` (under `Application (client) ID`, then click on `Add a certificate or secret`:
+
+image::oidc-microsoft-4.png[role="thumb"]
+
+Now, under `Client secrets (0)`, click on `New client secret`:
+
+image::oidc-microsoft-5.png[role="thumb"]
+
+Click on `Add` in that dialog without changing anything:
+
+image::oidc-microsoft-6.png[role="thumb"]
+
+On the resulting page, copy your `Secret ID`:
+
+image::oidc-microsoft-7.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=microsoft
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+----
+
+=== Apple
+
+In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99€/year program, but you cannot test your application on `localhost` like most other OIDC providers: 
+you will need to run it over `https` and make it publicly accessible, so for development purposes
+you may want to use a service such as https://ngrok.com.
+
+Go to https://developer.apple.com/account/resources/identifiers/list[Create a new identifier] and press `+`
+
+image::oidc-apple-1.png[role="thumb"]
+
+Dont touch anything, keep `App IDs` selected, and press `Continue`:
+
+image::oidc-apple-2.png[role="thumb"]
+
+Dont touch anything, keep `App` selected, and press `Continue`:
+
+image::oidc-apple-3.png[role="thumb"]
+
+Enter a description and a Bundle ID (use your application package name):
+
+image::oidc-apple-4.png[role="thumb"]
+
+Then scroll down to find the `Sign in with Apple` Capability, select it, and press `Continue`:
+
+image::oidc-apple-5.png[role="thumb"]
+
+Write down your App ID Prefix, then press `Register`:
+
+image::oidc-apple-6.png[role="thumb"]
+
+Back on the `Identifiers` page, press `+`:
+
+image::oidc-apple-7.png[role="thumb"]
+
+Select `Service IDs` and press `Continue`:
+
+image::oidc-apple-8.png[role="thumb"]
+
+Enter a description and Bundle ID (use your application package name), then press `Continue`:
+
+image::oidc-apple-9.png[role="thumb"]
+
+Now press `Register`:
+
+image::oidc-apple-10.png[role="thumb"]
+
+Back on the service list, click on your newly created service:
+
+image::oidc-apple-11.png[role="thumb"]
+
+Enable `Sign in with Apple` and press `Configure`:
+
+image::oidc-apple-12.png[role="thumb"]
+
+Add your domain and return URL (set to `<host>/_renarde/security/oidc-success`) and press `Next`:
+
+image::oidc-apple-13.png[role="thumb"]
+
+Now press `Done`:
+
+image::oidc-apple-14.png[role="thumb"]
+
+Now press `Continue`:
+
+image::oidc-apple-15.png[role="thumb"]
+
+And now press `Save`:
+
+image::oidc-apple-16.png[role="thumb"]
+
+Go to the https://developer.apple.com/account/resources/authkeys/list[Keys] page on the left menu, and press `+`:
+
+image::oidc-apple-17.png[role="thumb"]
+
+Fill in a key name, enable `Sign in with Apple`, and press `Configure`:
+
+image::oidc-apple-18.png[role="thumb"]
+
+Select your Primary App ID and press `Save`:
+
+image::oidc-apple-19.png[role="thumb"]
+
+Back on the key page, press `Continue`:
+
+image::oidc-apple-20.png[role="thumb"]
+
+Now press `Register`:
+
+image::oidc-apple-21.png[role="thumb"]
+
+Write down your `Key ID`, download your key and save it to your Quarkus application in `src/main/resources/AuthKey_<KEYID>.p8`:
+
+image::oidc-apple-22.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=apple
+quarkus.oidc.client-id=<Bundle ID>
+quarkus.oidc.credentials.jwt.key-file=AuthKey_<Key ID>.p8
+quarkus.oidc.credentials.jwt.token-key-id=<Key ID>
+quarkus.oidc.credentials.jwt.issuer=<App ID Prefix>
+quarkus.oidc.credentials.jwt.subject=<Bundle ID}
+----
+
+=== Facebook
+
+Facebook you will not be let you test your application on `localhost` like most other OIDC providers: 
+you will need to run it over `https` and make it publicly accessible, so for development purposes
+you may want to use a service such as https://ngrok.com.
+
+In order to set up OIDC for Facebook start by https://developers.facebook.com/apps/create/[Creating an application], select `None` as an app type, and press `Next`:
+
+image::oidc-facebook-1.png[role="thumb"]
+
+Now enter an application name, and contact email, and press `Create app`:
+
+image::oidc-facebook-2.png[role="thumb"]
+
+On the app page, click `Set up` on the `Facebook login` product:
+
+image::oidc-facebook-3.png[role="thumb"]
+
+Quick the `Quickstarts` page and click on `Facebook login > Settings` on the left menu:
+
+image::oidc-facebook-4.png[role="thumb"]
+
+Enter your `Redirect URIs` (set to `<host>/_renarde/security/oidc-success`) and press `Save changes`:
+
+image::oidc-facebook-5.png[role="thumb"]
+
+Now go to `Settings > Basic` on the left hand menu, and write down your `App ID` and `App secret`:
+
+image::oidc-facebook-6.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=facebook
+quarkus.oidc.client-id=<App ID>
+quarkus.oidc.credentials.secret=<App secret>
+----
+
+=== Twitter
+
+You can use Twitter for OIDC login, but at the moment, it restricts access to the user's email, which means you
+will have to obtain it and verify it yourself.
+
+In order to set up OIDC for Twitter start by https://developer.twitter.com/en/portal/projects/new[Creating a project], enter a project name, and press `Next`:
+
+image::oidc-twitter-1.png[role="thumb"]
+
+Enter a use case, and press `Next`:
+
+image::oidc-twitter-2.png[role="thumb"]
+
+Enter a project description, and press `Next`:
+
+image::oidc-twitter-3.png[role="thumb"]
+
+Now enter an application name, and press `Next`:
+
+image::oidc-twitter-4.png[role="thumb"]
+
+Write down your keys, because they will not be displayed again, and press `App Settings`:
+
+image::oidc-twitter-5.png[role="thumb"]
+
+Navigate down to the `User authentication settings` section and press `Set up`:
+
+image::oidc-twitter-6.png[role="thumb"]
+
+Check the `OAuth 2.0` check box:
+
+image::oidc-twitter-7.png[role="thumb"]
+
+Select `Web App` as application type, then fill in your application details (use `<host>/_renarde/security/twitter-success`
+for the `Callback URI`).
+
+NOTE: Twitter doesn't require https usage in practice, but won't accept your `Website URL` without it, so
+you can still use ngrok for it.
+
+Now press `Save`:
+
+image::oidc-twitter-8.png[role="thumb"]
+
+You can now copy your `Client ID` and `Client Secret` and press `Done`:
+
+image::oidc-twitter-9.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=twitter
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Client Secret>
+----
+
+=== Spotify
+
+Create a https://developer.spotify.com/documentation/general/guides/authorization/app-settings/[Spotify application]:
+ 
+image::oidc-spotify-1.png[role="thumb"]
+
+Don't forget to add `http://localhost:8080` as a redirect URI for testing during development purposes. You should get a client id and secret generated once a Spotify application setup has been complete, for example:
+
+image::oidc-spotify-2.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=spotify
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Client Secret>
+----
+
+== References
+
+* xref:security-openid-connect-web-authentication.adoc[Using OpenID Connect to Protect Web Applications]
+* xref:security.adoc[Quarkus Security]

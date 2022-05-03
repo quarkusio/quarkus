@@ -52,7 +52,7 @@ public class OverdueExecutionTest {
 
     static class Jobs {
 
-        static final CountDownLatch LATCH = new CountDownLatch(2);
+        static final CountDownLatch LATCH = new CountDownLatch(1);
 
         @Scheduled(identity = "overdueJob", every = "0.1s", overdueGracePeriod = "0.1s")
         void overdueJob() throws InterruptedException {

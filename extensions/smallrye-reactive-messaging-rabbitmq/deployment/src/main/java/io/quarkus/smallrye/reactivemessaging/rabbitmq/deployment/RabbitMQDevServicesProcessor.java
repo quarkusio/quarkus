@@ -21,11 +21,11 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -60,10 +60,9 @@ public class RabbitMQDevServicesProcessor {
     static volatile RabbitMQDevServiceCfg cfg;
     static volatile boolean first = true;
 
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
-
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem startRabbitMQDevService(
+            DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
             RabbitMQBuildTimeConfig rabbitmqClientBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -85,7 +84,8 @@ public class RabbitMQDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "RabbitMQ Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            RunningDevService newDevService = startRabbitMQBroker(configuration, launchMode, devServicesConfig.timeout);
+            RunningDevService newDevService = startRabbitMQBroker(dockerStatusBuildItem, configuration, launchMode,
+                    devServicesConfig.timeout);
             if (newDevService != null) {
                 devService = newDevService;
 
@@ -145,7 +145,8 @@ public class RabbitMQDevServicesProcessor {
         }
     }
 
-    private RunningDevService startRabbitMQBroker(RabbitMQDevServiceCfg config, LaunchModeBuildItem launchMode,
+    private RunningDevService startRabbitMQBroker(DockerStatusBuildItem dockerStatusBuildItem,
+            RabbitMQDevServiceCfg config, LaunchModeBuildItem launchMode,
             Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
@@ -165,7 +166,7 @@ public class RabbitMQDevServicesProcessor {
             return null;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn("Docker isn't working, please configure the RabbitMQ broker location.");
             return null;
         }

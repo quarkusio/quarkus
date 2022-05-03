@@ -13,13 +13,13 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -54,10 +54,9 @@ public class DevServicesApicurioRegistryProcessor {
     static volatile ApicurioRegistryDevServiceCfg cfg;
     static volatile boolean first = true;
 
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
-
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
+            DockerStatusBuildItem dockerStatusBuildItem,
             ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -78,7 +77,7 @@ public class DevServicesApicurioRegistryProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Apicurio Registry Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
-            devService = startApicurioRegistry(configuration, launchMode,
+            devService = startApicurioRegistry(dockerStatusBuildItem, configuration, launchMode,
                     !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
             compressor.close();
         } catch (Throwable t) {
@@ -134,7 +133,8 @@ public class DevServicesApicurioRegistryProcessor {
         }
     }
 
-    private RunningDevService startApicurioRegistry(ApicurioRegistryDevServiceCfg config, LaunchModeBuildItem launchMode,
+    private RunningDevService startApicurioRegistry(DockerStatusBuildItem dockerStatusBuildItem,
+            ApicurioRegistryDevServiceCfg config, LaunchModeBuildItem launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
@@ -158,7 +158,7 @@ public class DevServicesApicurioRegistryProcessor {
             return null;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn("Docker isn't working, please run Apicurio Registry yourself.");
             return null;
         }

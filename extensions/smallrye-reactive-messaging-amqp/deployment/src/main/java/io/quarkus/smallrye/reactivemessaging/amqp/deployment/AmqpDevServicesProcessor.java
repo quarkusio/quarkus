@@ -17,12 +17,12 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDockerWorking;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
@@ -62,10 +62,9 @@ public class AmqpDevServicesProcessor {
     static volatile AmqpDevServiceCfg cfg;
     static volatile boolean first = true;
 
-    private final IsDockerWorking isDockerWorking = new IsDockerWorking(true);
-
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem startAmqpDevService(
+            DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
             AmqpBuildTimeConfig amqpClientBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -88,7 +87,8 @@ public class AmqpDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "AMQP Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            RunningDevService newDevService = startAmqpBroker(configuration, launchMode, devServicesConfig.timeout);
+            RunningDevService newDevService = startAmqpBroker(dockerStatusBuildItem, configuration, launchMode,
+                    devServicesConfig.timeout);
             if (newDevService != null) {
                 devService = newDevService;
                 Map<String, String> config = devService.getConfig();
@@ -146,8 +146,8 @@ public class AmqpDevServicesProcessor {
         }
     }
 
-    private RunningDevService startAmqpBroker(AmqpDevServiceCfg config, LaunchModeBuildItem launchMode,
-            Optional<Duration> timeout) {
+    private RunningDevService startAmqpBroker(DockerStatusBuildItem dockerStatusBuildItem, AmqpDevServiceCfg config,
+            LaunchModeBuildItem launchMode, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for AMQP, as it has been disabled in the config.");
@@ -166,7 +166,7 @@ public class AmqpDevServicesProcessor {
             return null;
         }
 
-        if (!isDockerWorking.getAsBoolean()) {
+        if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn("Docker isn't working, please configure the AMQP broker location.");
             return null;
         }

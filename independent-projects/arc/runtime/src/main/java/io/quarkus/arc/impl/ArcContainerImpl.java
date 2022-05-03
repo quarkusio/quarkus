@@ -91,7 +91,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final ComputingCache<String, InjectableBean<?>> beansById;
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
 
-    private final ArrayList<ResourceReferenceProvider> resourceProviders;
+    private final List<ResourceReferenceProvider> resourceProviders;
 
     final InstanceImpl<Object> instance;
 
@@ -120,7 +120,7 @@ public class ArcContainerImpl implements ArcContainer {
         putContext(applicationContext);
         putContext(singletonContext);
 
-        for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
+        for (ComponentsProvider componentsProvider : loadComponentsProviders()) {
             Components components = componentsProvider.getComponents();
             for (InjectableBean<?> bean : components.getBeans()) {
                 if (bean instanceof InjectableInterceptor) {
@@ -156,11 +156,7 @@ public class ArcContainerImpl implements ArcContainer {
         resolved = new ComputingCache<>(this::resolve);
         beansById = new ComputingCache<>(this::findById);
         beansByName = new ComputingCache<>(this::resolve);
-        resourceProviders = new ArrayList<>();
-        for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
-            resourceProviders.add(resourceProvider);
-        }
-        resourceProviders.trimToSize();
+        resourceProviders = loadResourceProviders();
 
         instance = InstanceImpl.of(Object.class, Collections.emptySet());
 
@@ -171,6 +167,20 @@ public class ArcContainerImpl implements ArcContainer {
         this.removedBeans = List.copyOf(removedBeans);
         this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
         this.qualifierNonbindingMembers = Map.copyOf(qualifierNonbindingMembers);
+    }
+
+    private Iterable<ComponentsProvider> loadComponentsProviders() {
+        return ServiceLoader.load(ComponentsProvider.class);
+    }
+
+    private List<ResourceReferenceProvider> loadResourceProviders() {
+        final ArrayList<ResourceReferenceProvider> resourceProviders;
+        resourceProviders = new ArrayList<>();
+        for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
+            resourceProviders.add(resourceProvider);
+        }
+        resourceProviders.trimToSize();
+        return resourceProviders;
     }
 
     private void putContext(InjectableContext context) {

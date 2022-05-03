@@ -36,6 +36,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.AsyncObserverExceptionHandler;
+import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
@@ -513,7 +514,8 @@ public class ArcProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
             List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses,
-            Optional<CurrentContextFactoryBuildItem> currentContextFactory) throws Exception {
+            Optional<CurrentContextFactoryBuildItem> currentContextFactory,
+            BuildProducer<GeneratedComponentProviderBuildItem> generatedComponentProvider) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
             for (Throwable error : validationError.getValues()) {
@@ -563,6 +565,7 @@ public class ArcProcessor {
 
         }, existingClasses.existingClasses, bytecodeTransformerConsumer,
                 config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives);
+        List<String> componentProviders = new ArrayList<>(1);
         for (ResourceOutput.Resource resource : resources) {
             switch (resource.getType()) {
                 case JAVA_CLASS:
@@ -575,6 +578,9 @@ public class ArcProcessor {
                     }
                     break;
                 case SERVICE_PROVIDER:
+                    if (ComponentsProvider.class.getName().equals(resource.getName())) {
+                        componentProviders.add(new String(resource.getData()));
+                    }
                     generatedResource.produce(
                             new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
                     break;
@@ -582,6 +588,7 @@ public class ArcProcessor {
                     break;
             }
         }
+        generatedComponentProvider.produce(new GeneratedComponentProviderBuildItem(componentProviders));
         LOGGER.debugf("Generated %s resources in %s ms", resources.size(), System.currentTimeMillis() - start);
 
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image

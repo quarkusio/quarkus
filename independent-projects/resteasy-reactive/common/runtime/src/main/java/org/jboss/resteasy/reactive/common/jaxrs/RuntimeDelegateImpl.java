@@ -32,30 +32,40 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
     static final ResponseBuilderFactory factory;
 
     static {
-        ResponseBuilderFactory result = new ResponseBuilderFactory() {
-            @Override
-            public Response.ResponseBuilder create() {
-                throw new RuntimeException("Resteasy Reactive server side components are not installed.");
-            }
+        ResponseBuilderFactory result = loadAndDetermineResponseBuilderFactory();
+        if (result == null) {
+            result = new ResponseBuilderFactory() {
+                @Override
+                public Response.ResponseBuilder create() {
+                    throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+                }
 
-            @Override
-            public int priority() {
-                return 0;
-            }
+                @Override
+                public int priority() {
+                    return 0;
+                }
 
-            @Override
-            public <T> ResponseBuilder<T> createRestResponse() {
-                throw new RuntimeException("Resteasy Reactive server side components are not installed.");
-            }
-        };
+                @Override
+                public <T> ResponseBuilder<T> createRestResponse() {
+                    throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+                }
+            };
+        }
+        factory = result;
+    }
+
+    private static ResponseBuilderFactory loadAndDetermineResponseBuilderFactory() {
+        ResponseBuilderFactory result = null;
         ServiceLoader<ResponseBuilderFactory> sl = ServiceLoader.load(ResponseBuilderFactory.class,
                 RuntimeDelegateImpl.class.getClassLoader());
         for (ResponseBuilderFactory i : sl) {
-            if (result.priority() < i.priority()) {
+            if (result == null) {
+                result = i;
+            } else if (result.priority() < i.priority()) {
                 result = i;
             }
         }
-        factory = result;
+        return result;
     }
 
     @Override

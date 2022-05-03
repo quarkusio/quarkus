@@ -75,8 +75,8 @@ public class RequestMapper<T> {
                         break;
                     }
                     matchPos = matcher.end();
-                    for (String name : segment.names) {
-                        params[paramCount++] = URIDecoder.decodeURIComponent(matcher.group(name), false);
+                    for (String group : segment.groups) {
+                        params[paramCount++] = URIDecoder.decodeURIComponent(matcher.group(group), false);
                     }
                 } else if (segment.type == URITemplate.Type.LITERAL) {
                     //make sure the literal text is the same

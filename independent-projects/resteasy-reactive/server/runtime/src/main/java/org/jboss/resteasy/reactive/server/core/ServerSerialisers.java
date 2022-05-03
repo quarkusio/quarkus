@@ -13,6 +13,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,7 +72,13 @@ public class ServerSerialisers extends Serialisers {
         }
     };
 
-    private static final String CONTENT_TYPE = "Content-Type"; // use this instead of the Vert.x constant because the TCK expects upper case
+    private static final String CONTENT = "Content";
+    private static final String CONTENT_LOWER = "content";
+    private static final String TYPE = "Type";
+    private static final String TYPE_LOWER = "type";
+    private static final String LENGTH = "Length";
+    private static final String LENGTH_LOWER = "length";
+    private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
 
     static {
         primitivesToWrappers.put(boolean.class, Boolean.class);
@@ -484,13 +491,27 @@ public class ServerSerialisers extends Serialisers {
         MultivaluedMap<String, Object> headers = response.getHeaders();
         for (Map.Entry<String, List<Object>> entry : headers.entrySet()) {
             if (entry.getValue().size() == 1) {
+                String header = entry.getKey();
+                boolean useSet = requireSingleHeader(header);
                 Object o = entry.getValue().get(0);
                 if (o == null) {
-                    vertxResponse.setResponseHeader(entry.getKey(), "");
+                    if (useSet) {
+                        vertxResponse.setResponseHeader(header, "");
+                    } else {
+                        vertxResponse.addResponseHeader(header, "");
+                    }
                 } else if (o instanceof CharSequence) {
-                    vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) o);
+                    if (useSet) {
+                        vertxResponse.setResponseHeader(header, (CharSequence) o);
+                    } else {
+                        vertxResponse.addResponseHeader(header, (CharSequence) o);
+                    }
                 } else {
-                    vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) HeaderUtil.headerToString(o));
+                    if (useSet) {
+                        vertxResponse.setResponseHeader(header, (CharSequence) HeaderUtil.headerToString(o));
+                    } else {
+                        vertxResponse.addResponseHeader(header, (CharSequence) HeaderUtil.headerToString(o));
+                    }
                 }
             } else {
                 List<CharSequence> strValues = new ArrayList<>(entry.getValue().size());
@@ -500,6 +521,17 @@ public class ServerSerialisers extends Serialisers {
                 vertxResponse.setResponseHeader(entry.getKey(), strValues);
             }
         }
+    }
+
+    private static boolean requireSingleHeader(String header) {
+        if (!(header.startsWith(CONTENT) || header.startsWith(CONTENT_LOWER))) {
+            return false;
+        }
+        if (header.length() < CONTENT.length() + 2) {
+            return false;
+        }
+        String substring = header.substring(CONTENT.length() + 1).toLowerCase(Locale.ROOT);
+        return substring.equals(TYPE_LOWER) || substring.equals(LENGTH_LOWER);
     }
 
 }

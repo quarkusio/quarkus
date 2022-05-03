@@ -80,7 +80,7 @@
         <elasticsearch.image>docker.elastic.co/elasticsearch/elasticsearch-oss:${elasticsearch-server.version}</elasticsearch.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
         <opensearch-server.version>1.2.3</opensearch-server.version>
-        <opensearch.image>opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
+        <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->

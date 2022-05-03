@@ -6,9 +6,10 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.paths.PathCollection;
@@ -16,6 +17,10 @@ import io.quarkus.paths.PathCollection;
 public interface CompilationProvider extends Closeable {
 
     Set<String> handledExtensions();
+
+    default String getProviderKey() {
+        return getClass().getName();
+    }
 
     default Set<String> handledSourcePaths() {
         return Collections.emptySet();
@@ -38,7 +43,7 @@ public interface CompilationProvider extends Closeable {
         private final File sourceDirectory;
         private final File outputDirectory;
         private final Charset sourceEncoding;
-        private final List<String> compilerOptions;
+        private final Map<String, Set<String>> compilerOptions;
         private final String releaseJavaVersion;
         private final String sourceJavaVersion;
         private final String targetJvmVersion;
@@ -52,7 +57,7 @@ public interface CompilationProvider extends Closeable {
                 File sourceDirectory,
                 File outputDirectory,
                 String sourceEncoding,
-                List<String> compilerOptions,
+                Map<String, Set<String>> compilerOptions,
                 String releaseJavaVersion,
                 String sourceJavaVersion,
                 String targetJvmVersion,
@@ -64,7 +69,7 @@ public interface CompilationProvider extends Closeable {
             this.sourceDirectory = sourceDirectory;
             this.outputDirectory = outputDirectory;
             this.sourceEncoding = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
-            this.compilerOptions = compilerOptions == null ? new ArrayList<String>() : compilerOptions;
+            this.compilerOptions = compilerOptions == null ? new HashMap<>() : compilerOptions;
             this.releaseJavaVersion = releaseJavaVersion;
             this.sourceJavaVersion = sourceJavaVersion;
             this.targetJvmVersion = targetJvmVersion;
@@ -96,8 +101,8 @@ public interface CompilationProvider extends Closeable {
             return sourceEncoding;
         }
 
-        public List<String> getCompilerOptions() {
-            return compilerOptions;
+        public Set<String> getCompilerOptions(String key) {
+            return compilerOptions.getOrDefault(key, Collections.emptySet());
         }
 
         public String getReleaseJavaVersion() {

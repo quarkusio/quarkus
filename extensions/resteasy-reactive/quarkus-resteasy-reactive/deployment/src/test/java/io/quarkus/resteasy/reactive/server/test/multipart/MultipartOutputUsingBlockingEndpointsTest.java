@@ -45,6 +45,23 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
     }
 
     @Test
+    public void testRestResponse() {
+        String response = RestAssured.get("/multipart/output/rest-response")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200)
+                .header("foo", "bar")
+                .extract().asString();
+
+        assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
+        assertContainsValue(response, "custom-surname", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_SURNAME);
+        assertContainsValue(response, "custom-status", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_STATUS);
+        assertContainsValue(response, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE);
+        assertContainsValue(response, "values", MediaType.TEXT_PLAIN, "[one, two]");
+        assertContainsValue(response, "num", MediaType.TEXT_PLAIN, "0");
+    }
+
+    @Test
     public void testString() {
         RestAssured.get("/multipart/output/string")
                 .then()

@@ -22,8 +22,7 @@ public class MyRemoteServiceTest {
         Assertions.assertEquals(1, restClientExtensions.size());
         for (MyRemoteService.Extension extension : restClientExtensions) {
             Assertions.assertEquals("io.quarkus:quarkus-rest-client", extension.id);
-            Assertions.assertEquals("REST Client", extension.name);
-            Assertions.assertEquals("REST Client", extension.shortName);
+            Assertions.assertEquals("REST Client Classic", extension.name);
             Assertions.assertTrue(extension.keywords.size() > 1);
             Assertions.assertTrue(extension.keywords.contains("rest-client"));
         }

@@ -43,10 +43,10 @@
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
         <microprofile-lra.version>1.0</microprofile-lra.version>
         <smallrye-common.version>1.10.0</smallrye-common.version>
-        <smallrye-config.version>2.9.1</smallrye-config.version>
+        <smallrye-config.version>2.9.2</smallrye-config.version>
         <smallrye-health.version>3.1.2</smallrye-health.version>
         <smallrye-metrics.version>3.0.4</smallrye-metrics.version>
-        <smallrye-open-api.version>2.1.21</smallrye-open-api.version>
+        <smallrye-open-api.version>2.1.22</smallrye-open-api.version>
         <smallrye-graphql.version>1.4.3</smallrye-graphql.version>
         <smallrye-opentracing.version>2.0.1</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>5.2.1</smallrye-fault-tolerance.version>
@@ -146,6 +146,7 @@
         <jboss-logging.version>3.4.3.Final</jboss-logging.version>
         <mutiny.version>1.4.0</mutiny.version>
         <kafka3.version>3.1.0</kafka3.version>
+        <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overriden by other imported BOMs in the platform -->
         <snappy.version>1.1.8.4</snappy.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
@@ -3655,6 +3656,11 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.lz4</groupId>
+                <artifactId>lz4-java</artifactId>
+                <version>${lz4.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.xerial.snappy</groupId>

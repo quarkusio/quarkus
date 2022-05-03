@@ -19,8 +19,7 @@ class MyRemoteServiceTest {
         Assertions.assertEquals(1, restClientExtensions.size)
         restClientExtensions.forEach {
             Assertions.assertEquals("io.quarkus:quarkus-rest-client", it.id)
-            Assertions.assertEquals("REST Client", it.name)
-            Assertions.assertEquals("REST Client", it.shortName)
+            Assertions.assertEquals("REST Client Classic", it.name)
             Assertions.assertTrue(it.keywords.size > 1)
             Assertions.assertTrue(it.keywords.contains("rest-client"))
         }

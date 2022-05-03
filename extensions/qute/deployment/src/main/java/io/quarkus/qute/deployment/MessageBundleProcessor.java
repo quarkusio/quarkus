@@ -79,6 +79,7 @@ import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.Expressions;
+import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.deployment.QuteProcessor.LookupConfig;
@@ -308,11 +309,14 @@ public class MessageBundleProcessor {
     @BuildStep
     void validateMessageBundleMethods(TemplatesAnalysisBuildItem templatesAnalysis,
             List<MessageBundleMethodBuildItem> messageBundleMethods,
+            List<TemplateGlobalBuildItem> templateGlobals,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
 
         Map<String, MessageBundleMethodBuildItem> bundleMethods = messageBundleMethods.stream()
                 .filter(MessageBundleMethodBuildItem::isValidatable)
                 .collect(Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId, Function.identity()));
+        Set<String> globals = templateGlobals.stream().map(TemplateGlobalBuildItem::getName)
+                .collect(Collectors.toUnmodifiableSet());
 
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
             MessageBundleMethodBuildItem messageBundleMethod = bundleMethods.get(analysis.id);
@@ -322,7 +326,8 @@ public class MessageBundleProcessor {
                 Set<String> paramNames = IntStream.range(0, messageBundleMethod.getMethod().parameters().size())
                         .mapToObj(idx -> getParameterName(messageBundleMethod.getMethod(), idx)).collect(Collectors.toSet());
                 for (Expression expression : analysis.expressions) {
-                    validateExpression(incorrectExpressions, messageBundleMethod, expression, paramNames, usedParamNames);
+                    validateExpression(incorrectExpressions, messageBundleMethod, expression, paramNames, usedParamNames,
+                            globals);
                 }
                 // Log a warning if a parameter is not used in the template
                 for (String paramName : paramNames) {
@@ -338,31 +343,38 @@ public class MessageBundleProcessor {
 
     private void validateExpression(BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             MessageBundleMethodBuildItem messageBundleMethod, Expression expression, Set<String> paramNames,
-            Set<String> usedParamNames) {
+            Set<String> usedParamNames, Set<String> globals) {
         if (expression.isLiteral()) {
             return;
         }
         if (!expression.hasNamespace()) {
             Expression.Part firstPart = expression.getParts().get(0);
             String name = firstPart.getName();
-            // Skip expressions that have type info derived from a parent section, e.g "it<loop#3>" and "foo<set#3>"
-            if (firstPart.getTypeInfo() == null || (firstPart.getTypeInfo().startsWith("" + Expressions.TYPE_INFO_SEPARATOR)
-                    && !paramNames.contains(name))) {
-                // Expression has no type info or type info that does not match a method parameter
-                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                        name + " is not a parameter of the message bundle method "
-                                + messageBundleMethod.getMethod().declaringClass().name() + "#"
-                                + messageBundleMethod.getMethod().name() + "()",
-                        expression.getOrigin()));
-            } else {
-                usedParamNames.add(name);
+            String typeInfo = firstPart.getTypeInfo();
+            boolean isGlobal = globals.contains(name);
+            boolean isLoopMetadata = typeInfo != null && typeInfo.endsWith(LoopSectionHelper.Factory.HINT_METADATA);
+            // Type info derived from a parent section, e.g "it<loop#3>" and "foo<set#3>"
+            boolean hasDerivedTypeInfo = typeInfo != null && !typeInfo.startsWith("" + Expressions.TYPE_INFO_SEPARATOR);
+
+            if (!isGlobal && !isLoopMetadata && !hasDerivedTypeInfo) {
+                if (typeInfo == null || !paramNames.contains(name)) {
+                    // Expression has no type info or type info that does not match a method parameter
+                    // expressions that have
+                    incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                            name + " is not a parameter of the message bundle method "
+                                    + messageBundleMethod.getMethod().declaringClass().name() + "#"
+                                    + messageBundleMethod.getMethod().name() + "()",
+                            expression.getOrigin()));
+                } else {
+                    usedParamNames.add(name);
+                }
             }
         }
         // Inspect method params too
         for (Part part : expression.getParts()) {
             if (part.isVirtualMethod()) {
                 for (Expression param : part.asVirtualMethod().getParameters()) {
-                    validateExpression(incorrectExpressions, messageBundleMethod, param, paramNames, usedParamNames);
+                    validateExpression(incorrectExpressions, messageBundleMethod, param, paramNames, usedParamNames, globals);
                 }
             }
         }

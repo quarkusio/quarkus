@@ -79,4 +79,45 @@ public class EventServerTest {
         Assertions.assertEquals("Hi", lambdaResponse.readEntity(String.class));
         lambdaResponse.close();
     }
+
+    @Test
+    public void testDateHeaders() throws Exception {
+        Client client = ClientBuilder.newBuilder().build();
+        WebTarget base = client.target("http://localhost:" + MockEventServer.DEFAULT_PORT);
+        Future<Response> lambdaInvoke = base.request().async()
+                .post(Entity.text("Hello World"));
+
+        Response next = base.path(MockEventServer.NEXT_INVOCATION).request().get();
+        Assertions.assertEquals(200, next.getStatus());
+        String requestId = next.getHeaderString(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+        String traceId = next.getHeaderString(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
+        Assertions.assertNotNull(requestId);
+        Assertions.assertNotNull(traceId);
+        String json = next.readEntity(String.class);
+        APIGatewayV2HTTPEvent event = eventReader.readValue(json);
+        Assertions.assertEquals("text/plain", event.getHeaders().get("Content-Type"));
+        Assertions.assertEquals("Hello World", event.getBody());
+        next.close();
+
+        APIGatewayV2HTTPResponse res = new APIGatewayV2HTTPResponse();
+        res.setStatusCode(201);
+        res.setHeaders(new HashMap());
+        res.getHeaders().put("Content-Type", "text/plain");
+        res.getHeaders().put("Last-Modified", "Tue, 26 Oct 2021 01:01:01 GMT");
+        res.getHeaders().put("Expires", "Tue, 26 Oct 2021 01:01:01 GMT");
+        res.getHeaders().put("Date", "Tue, 26 Oct 2021 01:01:01 GMT");
+        res.setBody("Hi");
+        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response")
+                .request().post(Entity.json(resWriter.writeValueAsString(res)));
+        Assertions.assertEquals(204, sendResponse.getStatus());
+        sendResponse.close();
+
+        Response lambdaResponse = lambdaInvoke.get();
+        Assertions.assertEquals(201, lambdaResponse.getStatus());
+        Assertions.assertEquals("Hi", lambdaResponse.readEntity(String.class));
+        Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Last-Modified"));
+        Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Expires"));
+        Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Date"));
+        lambdaResponse.close();
+    }
 }

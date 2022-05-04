@@ -2801,7 +2801,75 @@ mp.messaging.connector.smallrye-kafka.apicurio.auth.client.secret=${RHOAS_CLIENT
 <3> The client id (from the service account)
 <4> The client secret (from the service account)
 
-You will need to include additional configuration
+==== Binding Red Hat OpenShift managed services to Quarkus application using the Service Binding Operator
+
+If your Quarkus application is deployed on a Kubernetes or OpenShift cluster with link:https://github.com/redhat-developer/service-binding-operator[Service Binding Operator] and link:https://github.com/redhat-developer/app-services-operator/tree/main/docs[OpenShift Application Services] operators installed,
+configurations necessary to access Red Hat OpenShift Streams for Apache Kafka and Service Registry can be injected to the application using xref:deploying-to-kubernetes.adoc#service_binding[Kubernetes Service Binding].
+
+In order to setup the Service Binding, you need first to connect OpenShift managed services to your cluster.
+For an OpenShift cluster you can follow the instructions from link:https://github.com/redhat-developer/app-services-guides/tree/main/docs/registry/service-binding-registry#connecting-a-kafka-and-service-registry-instance-to-your-openshift-cluster[Connecting a Kafka and Service Registry instance to your OpenShift cluster].
+
+Once you've connected your cluster with the RHOAS Kafka and Service Registry instances, make sure you've granted necessary permissions to the newly created service account.
+
+Then, using the xref:deploying-to-kubernetes.adoc#service_binding[Kubernetes Service Binding] extension,
+you can configure the Quarkus application to generate `ServiceBinding` resources for those services:
+
+[source, properties]
+----
+quarkus.kubernetes-service-binding.detect-binding-resources=true
+
+quarkus.kubernetes-service-binding.services.kafka.api-version=rhoas.redhat.com/v1alpha1
+quarkus.kubernetes-service-binding.services.kafka.kind=KafkaConnection
+quarkus.kubernetes-service-binding.services.kafka.name=my-kafka
+
+quarkus.kubernetes-service-binding.services.serviceregistry.api-version=rhoas.redhat.com/v1alpha1
+quarkus.kubernetes-service-binding.services.serviceregistry.kind=ServiceRegistryConnection
+quarkus.kubernetes-service-binding.services.serviceregistry.name=my-schema-registry
+----
+
+For this example Quarkus build will generate the following `ServiceBinding` resources:
+
+[source, yaml]
+----
+apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: my-app-kafka
+spec:
+  application:
+    group: apps.openshift.io
+    name: my-app
+    version: v1
+    kind: DeploymentConfig
+  services:
+    - group: rhoas.redhat.com
+      version: v1alpha1
+      kind: KafkaConnection
+      name: my-kafka
+  detectBindingResources: true
+  bindAsFiles: true
+---
+apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: my-app-serviceregistry
+spec:
+  application:
+    group: apps.openshift.io
+    name: my-app
+    version: v1
+    kind: DeploymentConfig
+  services:
+    - group: rhoas.redhat.com
+      version: v1alpha1
+      kind: ServiceRegistryConnection
+      name: my-schema-registry
+  detectBindingResources: true
+  bindAsFiles: true
+----
+
+You can follow xref:deploying-to-kubernetes.adoc#openshift[Deploying to OpenShift] to deploy your application, including generated `ServiceBinding` resources.
+The configuration properties necessary to access the Kafka and Schema Registry instances will be injected to the application automatically at deployment.
 
 == Going further
 

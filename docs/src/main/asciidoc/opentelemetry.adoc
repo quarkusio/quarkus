@@ -181,6 +181,7 @@ services:
     depends_on:
       - jaeger-all-in-one
 ----
+If `jaeger-all-in-one` fails to start due to `'' has invalid keys: tls` try a fixed version, such as `0.41.0`.
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 

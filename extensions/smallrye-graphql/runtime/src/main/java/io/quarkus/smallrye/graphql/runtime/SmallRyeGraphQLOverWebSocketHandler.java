@@ -34,11 +34,11 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                     switch (subprotocol) {
                         case "graphql-transport-ws":
                             handler = new GraphQLTransportWSSubprotocolHandler(
-                                    new QuarkusVertxWebSocketSession(serverWebSocket), getExecutionService());
+                                    new QuarkusVertxWebSocketSession(serverWebSocket));
                             break;
                         case "graphql-ws":
                             handler = new GraphQLWSSubprotocolHandler(
-                                    new QuarkusVertxWebSocketSession(serverWebSocket), getExecutionService());
+                                    new QuarkusVertxWebSocketSession(serverWebSocket));
                             break;
                         default:
                             log.warn("Unknown graphql-over-websocket protocol: " + subprotocol);

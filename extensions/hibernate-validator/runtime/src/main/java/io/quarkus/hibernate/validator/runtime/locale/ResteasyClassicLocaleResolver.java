@@ -9,7 +9,7 @@ import javax.ws.rs.core.HttpHeaders;
 import org.jboss.resteasy.core.ResteasyContext;
 
 @Singleton
-public class ResteasyContextLocaleResolver extends AbstractLocaleResolver {
+public class ResteasyClassicLocaleResolver extends AbstractLocaleResolver {
 
     @Override
     protected Map<String, List<String>> getHeaders() {

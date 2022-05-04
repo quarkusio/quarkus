@@ -45,6 +45,12 @@ public class SmallRyeGraphQLConfig {
     public boolean eventsEnabled;
 
     /**
+     * Enable non-blocking support. Default is true.
+     */
+    @ConfigItem(name = "nonblocking.enabled")
+    public Optional<Boolean> nonBlockingEnabled;
+
+    /**
      * Enable GET Requests. Allow queries via HTTP GET.
      */
     @ConfigItem(name = "http.get.enabled")

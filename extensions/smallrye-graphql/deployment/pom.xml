@@ -53,6 +53,13 @@
             <artifactId>quarkus-smallrye-context-propagation-deployment</artifactId>
         </dependency>
         
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator-deployment</artifactId>
+            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+        
         <!--  Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -92,11 +99,6 @@
         <dependency>
             <groupId>io.opentracing</groupId>
             <artifactId>opentracing-mock</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-validator-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         

@@ -1,7 +1,5 @@
 package io.quarkus.devservices.postgresql.deployment;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +18,7 @@ import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.runtime.LaunchMode;
 
 public class PostgresqlDevServicesProcessor {
@@ -45,7 +44,8 @@ public class PostgresqlDevServicesProcessor {
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
-                        .withDatabaseName(datasourceName.orElse("default"));
+                        .withDatabaseName(datasourceName.orElse("default"))
+                        .withReuse(true);
                 additionalJdbcUrlProperties.forEach(container::withUrlParam);
 
                 container.start();
@@ -56,14 +56,7 @@ public class PostgresqlDevServicesProcessor {
                         container.getEffectiveJdbcUrl(),
                         container.getUsername(),
                         container.getPassword(),
-                        new Closeable() {
-                            @Override
-                            public void close() throws IOException {
-                                container.stop();
-
-                                LOG.info("Dev Services for PostgreSQL shut down.");
-                            }
-                        });
+                        new ContainerShutdownCloseable(container, "PostgreSQL"));
             }
         });
     }

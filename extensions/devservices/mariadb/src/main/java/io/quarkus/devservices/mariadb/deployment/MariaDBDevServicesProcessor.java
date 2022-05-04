@@ -1,7 +1,5 @@
 package io.quarkus.devservices.mariadb.deployment;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +16,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildIt
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.runtime.LaunchMode;
 
 public class MariaDBDevServicesProcessor {
@@ -41,7 +40,8 @@ public class MariaDBDevServicesProcessor {
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
-                        .withDatabaseName(datasourceName.orElse("default"));
+                        .withDatabaseName(datasourceName.orElse("default"))
+                        .withReuse(true);
 
                 if (containerProperties.containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {
                     container.withConfigurationOverride(containerProperties.get(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME));
@@ -56,14 +56,7 @@ public class MariaDBDevServicesProcessor {
                         container.getEffectiveJdbcUrl(),
                         container.getUsername(),
                         container.getPassword(),
-                        new Closeable() {
-                            @Override
-                            public void close() throws IOException {
-                                container.stop();
-
-                                LOG.info("Dev Services for MariaDB shut down.");
-                            }
-                        });
+                        new ContainerShutdownCloseable(container, "MariaDB"));
             }
         });
     }

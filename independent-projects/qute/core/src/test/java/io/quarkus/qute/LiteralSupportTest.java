@@ -48,4 +48,10 @@ public class LiteralSupportTest {
         assertEquals("OK", engine.parse("{#if 'foo' == false}NOK{#else}OK{/if}").render());
     }
 
+    @Test
+    public void testNonLiteral() {
+        assertEquals(Results.NotFound.EMPTY, LiteralSupport.getLiteralValue("'foo'.ping()"));
+        assertEquals(Results.NotFound.EMPTY, LiteralSupport.getLiteralValue("foo.bar"));
+    }
+
 }

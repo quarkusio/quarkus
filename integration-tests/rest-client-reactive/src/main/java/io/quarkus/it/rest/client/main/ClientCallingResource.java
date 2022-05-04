@@ -163,6 +163,8 @@ public class ClientCallingResource {
             }
             rc.end(exception);
         });
+
+        router.get("/with%20space").handler(rc -> rc.response().setStatusCode(200).end());
     }
 
     private Future<Void> success(RoutingContext rc, String body) {

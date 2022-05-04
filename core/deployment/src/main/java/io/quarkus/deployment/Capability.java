@@ -80,6 +80,7 @@ public interface Capability {
 
     String QUARTZ = QUARKUS_PREFIX + "quartz";
     String KUBERNETES_SERVICE_BINDING = QUARKUS_PREFIX + "kubernetes.service.binding";
+    String KUBERNETES_CLIENT = QUARKUS_PREFIX + "kubernetes.client";
 
     /**
      * @deprecated

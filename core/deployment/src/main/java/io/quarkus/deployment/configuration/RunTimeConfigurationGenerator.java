@@ -633,6 +633,39 @@ public final class RunTimeConfigurationGenerator {
                 // bootstrap config default values
                 readBootstrapConfig.writeArrayValue(bootstrapConfigSourcesArray, 3,
                         readBootstrapConfig.readStaticField(C_BOOTSTRAP_DEFAULTS_CONFIG_SOURCE));
+
+                // add bootstrap safe static sources
+                for (String bootstrapConfigSource : staticConfigSources) {
+                    readBootstrapConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, bootstrapBuilder,
+                            readBootstrapConfig.newInstance(RCS_NEW, readBootstrapConfig.load(bootstrapConfigSource)));
+                }
+                // add bootstrap safe static source providers
+                for (String bootstrapConfigSourceProvider : staticConfigSourceProviders) {
+                    readBootstrapConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, bootstrapBuilder,
+                            readBootstrapConfig.newInstance(RCSP_NEW, readBootstrapConfig.load(bootstrapConfigSourceProvider)));
+                }
+                // add bootstrap safe static source factories
+                for (String discoveredConfigSourceFactory : staticConfigSourceFactories) {
+                    readBootstrapConfig.invokeStaticMethod(CU_ADD_SOURCE_FACTORY_PROVIDER, bootstrapBuilder,
+                            readBootstrapConfig.newInstance(RCSF_NEW, readBootstrapConfig.load(discoveredConfigSourceFactory)));
+                }
+                // add bootstrap mappings
+                for (ConfigClassWithPrefix configMapping : staticConfigMappings) {
+                    readBootstrapConfig.invokeStaticMethod(CU_WITH_MAPPING, bootstrapBuilder,
+                            readBootstrapConfig.load(configMapping.getKlass().getName()),
+                            readBootstrapConfig.load(configMapping.getPrefix()));
+                }
+
+                // add bootstrap config builders
+                ResultHandle bootstrapConfigBuilderInstances = readBootstrapConfig.newInstance(AL_NEW);
+                for (String configBuilder : staticConfigBuilders) {
+                    ResultHandle staticConfigBuilderInstance = readBootstrapConfig
+                            .newInstance(MethodDescriptor.ofConstructor(configBuilder));
+                    readBootstrapConfig.invokeVirtualMethod(AL_ADD, bootstrapConfigBuilderInstances,
+                            staticConfigBuilderInstance);
+                }
+                readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_LIST, bootstrapBuilder,
+                        bootstrapConfigBuilderInstances);
             }
 
             // add in our custom sources

@@ -19,6 +19,7 @@ import javax.lang.model.type.TypeMirror;
 import io.quarkus.annotation.processor.Constants;
 
 public class DocGeneratorUtil {
+    private static final String NEW_LINE = "\n";
     private static final String CORE = "core";
     private static final String CONFIG = "Config";
     private static final String CONFIGURATION = "Configuration";
@@ -273,7 +274,16 @@ public class DocGeneratorUtil {
             return "";
         }
 
-        return acceptedValues.stream().collect(Collectors.joining("`, `", "`", "`"));
+        return acceptedValues.stream().collect(Collectors.joining("`, `", Constants.CODE_DELIMITER, Constants.CODE_DELIMITER));
+    }
+
+    static String joinEnumValues(List<String> enumValues) {
+        if (enumValues == null || enumValues.isEmpty()) {
+            return Constants.EMPTY;
+        }
+
+        // nested macros are only detected when cell starts with a new line, e.g. a|\n myMacro::[]
+        return NEW_LINE + String.join(", ", enumValues);
     }
 
     static String getTypeFormatInformationNote(ConfigDocKey configDocKey) {

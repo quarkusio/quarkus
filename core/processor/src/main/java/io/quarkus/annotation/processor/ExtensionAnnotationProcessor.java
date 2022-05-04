@@ -409,6 +409,13 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     }
                     break;
                 }
+                case ENUM:
+                    e
+                            .getEnclosedElements()
+                            .stream()
+                            .filter(e1 -> e1.getKind() == ElementKind.ENUM_CONSTANT)
+                            .forEach(ec -> processEnumConstant(ec, javadocProps, className));
+                    break;
                 default:
             }
         }
@@ -463,6 +470,13 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private void processFieldConfigItem(VariableElement field, Properties javadocProps, String className) {
         javadocProps.put(className + Constants.DOT + field.getSimpleName().toString(), getRequiredJavadoc(field));
+    }
+
+    private void processEnumConstant(Element field, Properties javadocProps, String className) {
+        String javaDoc = getJavadoc(field);
+        if (javaDoc != null && !javaDoc.isBlank()) {
+            javadocProps.put(className + Constants.DOT + field.getSimpleName().toString(), javaDoc);
+        }
     }
 
     private void processCtorConfigItem(ExecutableElement ctor, Properties javadocProps, String className) {
@@ -703,12 +717,21 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     private String getRequiredJavadoc(Element e) {
-        String docComment = processingEnv.getElementUtils().getDocComment(e);
+        String javaDoc = getJavadoc(e);
 
-        if (docComment == null) {
+        if (javaDoc == null) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "Unable to find javadoc for config item " + e.getEnclosingElement() + " " + e, e);
             return "";
+        }
+        return javaDoc;
+    }
+
+    private String getJavadoc(Element e) {
+        String docComment = processingEnv.getElementUtils().getDocComment(e);
+
+        if (docComment == null) {
+            return null;
         }
 
         // javax.lang.model keeps the leading space after the "*" so we need to remove it.

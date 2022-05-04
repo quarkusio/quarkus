@@ -61,6 +61,16 @@ final class JavaDocParser {
     private static final String UNDERLINE_ASCIDOC_STYLE = "[.underline]";
     private static final String LINE_THROUGH_ASCIDOC_STYLE = "[.line-through]";
 
+    private final boolean inlineMacroMode;
+
+    public JavaDocParser(boolean inlineMacroMode) {
+        this.inlineMacroMode = inlineMacroMode;
+    }
+
+    public JavaDocParser() {
+        this(false);
+    }
+
     public String parseConfigDescription(String javadocComment) {
         if (javadocComment == null || javadocComment.trim().isEmpty()) {
             return Constants.EMPTY;
@@ -268,18 +278,28 @@ final class JavaDocParser {
         }
     }
 
-    static StringBuilder appendEscapedAsciiDoc(StringBuilder sb, String text) {
+    private StringBuilder appendEscapedAsciiDoc(StringBuilder sb, String text) {
         boolean escaping = false;
         for (int i = 0; i < text.length(); i++) {
             final char ch = text.charAt(i);
             switch (ch) {
+                case ']':
+                    // don't escape closing square bracket in the attribute list of an inline element with passThrough
+                    // https://docs.asciidoctor.org/asciidoc/latest/attributes/positional-and-named-attributes/#substitutions
+                    if (inlineMacroMode) {
+                        if (escaping) {
+                            sb.append("++");
+                            escaping = false;
+                        }
+                        sb.append("&#93;");
+                        break;
+                    }
                 case '#':
                 case '*':
                 case '\\':
                 case '{':
                 case '}':
                 case '[':
-                case ']':
                 case '|':
                     if (!escaping) {
                         sb.append("++");

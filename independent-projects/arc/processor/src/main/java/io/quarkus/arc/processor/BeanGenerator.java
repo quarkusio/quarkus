@@ -44,7 +44,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -81,7 +80,6 @@ public class BeanGenerator extends AbstractGenerator {
     protected static final String FIELD_NAME_QUALIFIERS = "qualifiers";
     protected static final String FIELD_NAME_STEREOTYPES = "stereotypes";
     protected static final String FIELD_NAME_PROXY = "proxy";
-    protected static final String FIELD_NAME_PARAMS = "params";
 
     protected final AnnotationLiteralProcessor annotationLiterals;
     protected final Predicate<DotName> applicationClassPredicate;
@@ -182,39 +180,9 @@ public class BeanGenerator extends AbstractGenerator {
                 Collections.emptyMap(), Collections.emptyMap(),
                 annotationLiterals, reflectionRegistration);
 
-        FieldCreator params = beanCreator.getFieldCreator(FIELD_NAME_PARAMS, Map.class)
-                .setModifiers(ACC_PRIVATE | ACC_FINAL);
+        SyntheticComponentsUtil.addParamsFieldAndInit(beanCreator, constructor, bean.getParams(), annotationLiterals,
+                bean.getDeployment().getBeanArchiveIndex());
 
-        // If needed, store the synthetic bean parameters
-        ResultHandle paramsHandle;
-        if (bean.getParams().isEmpty()) {
-            paramsHandle = constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_EMPTY_MAP);
-        } else {
-            paramsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-            for (Entry<String, Object> entry : bean.getParams().entrySet()) {
-                ResultHandle valHandle = null;
-                if (entry.getValue() instanceof String) {
-                    valHandle = constructor.load(entry.getValue().toString());
-                } else if (entry.getValue() instanceof Integer) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Integer.class, int.class),
-                            constructor.load(((Integer) entry.getValue()).intValue()));
-                } else if (entry.getValue() instanceof Long) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Long.class, long.class),
-                            constructor.load(((Long) entry.getValue()).longValue()));
-                } else if (entry.getValue() instanceof Double) {
-                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(Double.class, double.class),
-                            constructor.load(((Double) entry.getValue()).doubleValue()));
-                } else if (entry.getValue() instanceof Class) {
-                    valHandle = constructor.loadClass((Class<?>) entry.getValue());
-                } else if (entry.getValue() instanceof Boolean) {
-                    valHandle = constructor.load((Boolean) entry.getValue());
-                }
-                // TODO other param types
-                constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, paramsHandle, constructor.load(entry.getKey()),
-                        valHandle);
-            }
-        }
-        constructor.writeInstanceField(params.getFieldDescriptor(), constructor.getThis(), paramsHandle);
         constructor.returnValue(null);
 
         implementGetIdentifier(bean, beanCreator);

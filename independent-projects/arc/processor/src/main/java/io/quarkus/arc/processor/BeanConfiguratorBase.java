@@ -10,7 +10,6 @@ import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +25,8 @@ import org.jboss.jandex.Type.Kind;
 /**
  * This construct is not thread-safe.
  */
-public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>, T> implements Consumer<AnnotationInstance> {
+public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THIS, T>, T> extends ConfiguratorBase<THIS>
+        implements Consumer<AnnotationInstance> {
 
     protected final DotName implClazz;
     protected final Set<Type> types;
@@ -38,7 +38,6 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
     protected Consumer<MethodCreator> destroyerConsumer;
     protected boolean defaultBean;
     protected boolean removable;
-    protected final Map<String, Object> params;
     protected Type providerType;
     protected boolean forceApplicationClass;
     protected String targetPackageName;
@@ -50,10 +49,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
         this.qualifiers = new HashSet<>();
         this.scope = BuiltinScope.DEPENDENT.getInfo();
         this.removable = true;
-        this.params = new HashMap<>();
     }
-
-    protected abstract B self();
 
     /**
      * Read metadata from another configurator base.
@@ -61,7 +57,8 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
      * @param base
      * @return self
      */
-    public B read(BeanConfiguratorBase<?, ?> base) {
+    public THIS read(BeanConfiguratorBase<?, ?> base) {
+        super.read(base);
         types.clear();
         types.addAll(base.types);
         qualifiers.clear();
@@ -78,66 +75,64 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
             defaultBean();
         }
         removable = base.removable;
-        params.clear();
-        params.putAll(base.params);
         providerType(base.providerType);
         return self();
     }
 
-    public B types(Class<?>... types) {
+    public THIS types(Class<?>... types) {
         for (Class<?> type : types) {
             addType(type);
         }
         return self();
     }
 
-    public B types(Type... types) {
+    public THIS types(Type... types) {
         Collections.addAll(this.types, types);
         return self();
     }
 
-    public B addType(DotName className) {
+    public THIS addType(DotName className) {
         this.types.add(Type.create(className, Kind.CLASS));
         return self();
     }
 
-    public B addType(Type type) {
+    public THIS addType(Type type) {
         this.types.add(type);
         return self();
     }
 
-    public B addType(Class<?> type) {
+    public THIS addType(Class<?> type) {
         return addType(DotName.createSimple(type.getName()));
     }
 
-    public B addQualifier(Class<? extends Annotation> annotationClass) {
+    public THIS addQualifier(Class<? extends Annotation> annotationClass) {
         return addQualifier(DotName.createSimple(annotationClass.getName()));
     }
 
-    public B addQualifier(DotName annotationName) {
+    public THIS addQualifier(DotName annotationName) {
         return addQualifier(AnnotationInstance.create(annotationName, null, new AnnotationValue[] {}));
     }
 
-    public B addQualifier(AnnotationInstance qualifier) {
+    public THIS addQualifier(AnnotationInstance qualifier) {
         this.qualifiers.add(qualifier);
         return self();
     }
 
-    public QualifierConfigurator<B> addQualifier() {
-        return new QualifierConfigurator<B>(cast(this));
+    public QualifierConfigurator<THIS> addQualifier() {
+        return new QualifierConfigurator<>(cast(this));
     }
 
-    public B qualifiers(AnnotationInstance... qualifiers) {
+    public THIS qualifiers(AnnotationInstance... qualifiers) {
         Collections.addAll(this.qualifiers, qualifiers);
         return self();
     }
 
-    public B scope(ScopeInfo scope) {
+    public THIS scope(ScopeInfo scope) {
         this.scope = scope;
         return self();
     }
 
-    public B scope(Class<? extends Annotation> scope) {
+    public THIS scope(Class<? extends Annotation> scope) {
         DotName scopeName = DotName.createSimple(scope.getName());
         BuiltinScope builtinScope = BuiltinScope.from(scopeName);
         if (builtinScope != null) {
@@ -149,7 +144,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
         return self();
     }
 
-    public B name(String name) {
+    public THIS name(String name) {
         this.name = name;
         return self();
     }
@@ -161,16 +156,16 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
      * @param name
      * @return self
      */
-    public B named(String name) {
+    public THIS named(String name) {
         return name(name).addQualifier().annotation(DotNames.NAMED).addValue("value", name).done();
     }
 
-    public B defaultBean() {
+    public THIS defaultBean() {
         this.defaultBean = true;
         return self();
     }
 
-    public B unremovable() {
+    public THIS unremovable() {
         this.removable = false;
         return self();
     }
@@ -181,54 +176,24 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
      *
      * @return self
      */
-    public B forceApplicationClass() {
+    public THIS forceApplicationClass() {
         this.forceApplicationClass = true;
         return self();
     }
 
-    public B targetPackageName(String name) {
+    public THIS targetPackageName(String name) {
         this.targetPackageName = name;
         return self();
     }
 
-    public B alternativePriority(int value) {
+    public THIS alternativePriority(int value) {
         this.alternative = true;
         this.priority = value;
         return self();
     }
 
-    public B priority(int value) {
+    public THIS priority(int value) {
         this.priority = value;
-        return self();
-    }
-
-    public B param(String name, Class<?> value) {
-        params.put(name, value);
-        return self();
-    }
-
-    public B param(String name, int value) {
-        params.put(name, value);
-        return self();
-    }
-
-    public B param(String name, long value) {
-        params.put(name, value);
-        return self();
-    }
-
-    public B param(String name, double value) {
-        params.put(name, value);
-        return self();
-    }
-
-    public B param(String name, String value) {
-        params.put(name, value);
-        return self();
-    }
-
-    public B param(String name, boolean value) {
-        params.put(name, value);
         return self();
     }
 
@@ -242,12 +207,12 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
      * @param providerType
      * @return self
      */
-    public B providerType(Type providerType) {
+    public THIS providerType(Type providerType) {
         this.providerType = providerType;
         return self();
     }
 
-    public <U extends T> B creator(Class<? extends BeanCreator<U>> creatorClazz) {
+    public <U extends T> THIS creator(Class<? extends BeanCreator<U>> creatorClazz) {
         return creator(mc -> {
             // return new FooBeanCreator().create(context, params)
             ResultHandle paramsHandle = mc.readInstanceField(
@@ -262,12 +227,12 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
         });
     }
 
-    public <U extends T> B creator(Consumer<MethodCreator> methodCreatorConsumer) {
+    public THIS creator(Consumer<MethodCreator> methodCreatorConsumer) {
         this.creatorConsumer = methodCreatorConsumer;
         return cast(this);
     }
 
-    public <U extends T> B destroyer(Class<? extends BeanDestroyer<U>> destroyerClazz) {
+    public <U extends T> THIS destroyer(Class<? extends BeanDestroyer<U>> destroyerClazz) {
         return destroyer(mc -> {
             // new FooBeanDestroyer().destroy(instance, context, params)
             ResultHandle paramsHandle = mc.readInstanceField(
@@ -283,7 +248,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
         });
     }
 
-    public <U extends T> B destroyer(Consumer<MethodCreator> methodCreatorConsumer) {
+    public THIS destroyer(Consumer<MethodCreator> methodCreatorConsumer) {
         this.destroyerConsumer = methodCreatorConsumer;
         return cast(this);
     }

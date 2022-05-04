@@ -1138,6 +1138,99 @@ Importing this module will allow HTTP message bodies to be read from XML
 and serialised to XML, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
+=== Web Links support
+
+[[links]]
+
+To enable Web Links support, add the `quarkus-resteasy-reactive-links` extension to your project.
+
+.Table Context object
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-resteasy-reactive-links`
+|https://www.w3.org/wiki/LinkHeader[Web Links support]
+
+|===
+
+Importing this module will allow injecting web links into the response HTTP headers by just annotating your endpoint resources with the `@InjectRestLinks` annotation. To declare the web links that will be returned, you need to use the `@RestLink` annotation in the linked methods. An example of this could look like:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @GET
+    @RestLink(rel = "list")
+    @InjectRestLinks
+    public List<Record> getAll() {
+        // ...
+    }
+
+    @GET
+    @Path("/{id}")
+    @RestLink(rel = "self")
+    @InjectRestLinks(RestLinkType.INSTANCE)
+    public TestRecord get(@PathParam("id") int id) {
+        // ...
+    }
+
+    @PUT
+    @Path("/{id}")
+    @RestLink
+    @InjectRestLinks(RestLinkType.INSTANCE)
+    public TestRecord update(@PathParam("id") int id) {
+        // ...
+    }
+
+    @DELETE
+    @Path("/{id}")
+    @RestLink
+    public TestRecord delete(@PathParam("id") int id) {
+        // ...
+    }
+}
+----
+
+When calling the endpoint `/records` which is defined by the method `getAll` within the above resource using curl, you would get the web links header:
+
+[source,bash]
+----
+& curl -i localhost:8080/records
+Link: <http://localhost:8080/records>; rel="list"
+----
+
+As this resource does not return a single instance of type `Record`, the links for the methods `get`, `update`, and `delete` are not injected. Now, when calling the endpoint `/records/1`, you would get the following web links:
+
+[source,bash]
+----
+& curl -i localhost:8080/records/1
+Link: <http://localhost:8080/records>; rel="list"
+Link: <http://localhost:8080/records/1>; rel="self"
+Link: <http://localhost:8080/records/1>; rel="update"
+Link: <http://localhost:8080/records/1>; rel="delete"
+----
+
+Finally, when calling the delete resource, you should not see any web links as the method `delete` is not annotated with the `@InjectRestLinks` annotation.
+
+==== Programmatically access to the web links registry
+
+You can programmatically have access to the web links registry just by injecting the `RestLinksProvider` bean:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @Inject
+    RestLinksProvider linksProvider;
+
+    // ...
+}
+----
+
+Using this injected bean of type `RestLinksProvider`, you can get the links by type using the method `RestLinksProvider.getTypeLinks` or get the links by a concrete instance using the method `RestLinksProvider.getInstanceLinks`.
+
 == CORS filter
 
 link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that

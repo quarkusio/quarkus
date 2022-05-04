@@ -32,11 +32,13 @@ public class RestLinksHandler implements ServerRestHandler {
     }
 
     private Collection<Link> getLinks(Response response) {
+        RestLinksProvider provider = getRestLinksProvider();
+
         if ((restLinkData.getRestLinkType() == RestLinkType.INSTANCE) && response.hasEntity()) {
-            return getTestLinksProvider().getInstanceLinks(response.getEntity());
+            return provider.getInstanceLinks(response.getEntity());
         }
-        return getTestLinksProvider()
-                .getTypeLinks(restLinkData.getEntityType() != null ? entityTypeClass() : response.getEntity().getClass());
+        return provider.getTypeLinks(
+                restLinkData.getEntityType() != null ? entityTypeClass() : response.getEntity().getClass());
     }
 
     private Class<?> entityTypeClass() {
@@ -47,7 +49,7 @@ public class RestLinksHandler implements ServerRestHandler {
         }
     }
 
-    private RestLinksProvider getTestLinksProvider() {
+    private RestLinksProvider getRestLinksProvider() {
         return Arc.container().instance(RestLinksProvider.class).get();
     }
 

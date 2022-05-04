@@ -39,8 +39,8 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>22.0.0.2</graal-sdk.version-for-documentation>
-        <mandrel.version-for-documentation>22.0</mandrel.version-for-documentation>
+        <graal-sdk.version-for-documentation>22.1.0</graal-sdk.version-for-documentation>
+        <mandrel.version-for-documentation>22.1</mandrel.version-for-documentation>
 
         <asciidoctorj.version>2.5.3</asciidoctorj.version>
         <htmlunit.version>2.40.0</htmlunit.version>

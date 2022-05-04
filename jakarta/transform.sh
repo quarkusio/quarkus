@@ -31,42 +31,6 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   ./mvnw -B clean install -DskipTests -DskipITs
   popd
 
-  # Build SmallRye Config (temporary)
-  #rm -rf target/smallrye-config
-  #git clone https://github.com/smallrye/smallrye-config.git target/smallrye-config
-  #pushd target/smallrye-config
-  #git checkout jakarta
-  #mvn clean install -DskipTests -DskipITs
-  #popd
-
-  # Build Quarkus HTTP (temporary)
-  rm -rf target/quarkus-http
-  git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-http.git target/quarkus-http
-  pushd target/quarkus-http
-  mvn -B clean install -DskipTests -DskipITs
-  popd
-
-  # Build Quarkus Security (temporary)
-  rm -rf target/quarkus-security
-  git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-security.git target/quarkus-security
-  pushd target/quarkus-security
-  mvn -B clean install -DskipTests -DskipITs
-  popd
-
-  # Build Keycloak (temporary)
-  rm -rf target/keycloak
-  git clone -b jakarta --depth 1 https://github.com/gsmet/keycloak.git target/keycloak
-  pushd target/keycloak
-  mvn -B -pl ':keycloak-admin-client-jakarta' -am clean install -DskipTests -DskipITs
-  popd
-
-  # Build Narayana (temporary)
-  rm -rf target/narayana
-  git clone -b JBTM-3595-martin --depth 1 https://github.com/mmusgrov/narayana.git target/narayana
-  pushd target/narayana
-  ./build.sh clean install -DskipTests -DskipITs -Pcommunity
-  popd
-
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
   rm -rf target/kotlin
@@ -75,6 +39,8 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   mvn -B clean install -DskipTests -DskipITs
   popd
 fi
+
+./jakarta/prepare.sh
 
 # Set up jbang alias, we are using latest released transformer version
 jbang alias add --name transform org.eclipse.transformer:org.eclipse.transformer.cli:0.4.0

@@ -27,8 +27,10 @@ final class GraalVM {
         static final Version VERSION_21_3_2 = new Version("GraalVM 21.3.2", "21.3.2", Distribution.ORACLE);
         static final Version VERSION_22_0_0_2 = new Version("GraalVM 22.0.0.2", "22.0.0.2", Distribution.ORACLE);
 
+        static final Version VERSION_22_1_0 = new Version("GraalVM 22.1.0", "22.1.0", Distribution.ORACLE);
+
         static final Version MINIMUM = VERSION_21_2;
-        static final Version CURRENT = VERSION_22_0_0_2;
+        static final Version CURRENT = VERSION_22_1_0;
         public static final int UNDEFINED = -1;
 
         final String fullVersion;

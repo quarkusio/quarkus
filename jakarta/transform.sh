@@ -255,5 +255,7 @@ else
   ./mvnw -B clean install -Dno-test-modules -DskipTests -DskipITs
 fi
 
+./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
+
 exit 0
 

@@ -114,7 +114,7 @@
         <cronutils.version>9.1.6</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.210</h2.version>
-        <postgresql-jdbc.version>42.3.3</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.3.5</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.0.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.29</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>

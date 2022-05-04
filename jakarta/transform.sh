@@ -60,6 +60,13 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   mvn -B -pl ':keycloak-admin-client-jakarta' -am clean install -DskipTests -DskipITs
   popd
 
+  # Build Narayana (temporary)
+  rm -rf target/narayana
+  git clone -b JBTM-3595-martin --depth 1 https://github.com/mmusgrov/narayana.git target/narayana
+  pushd target/narayana
+  ./build.sh clean install -DskipTests -DskipITs -Pcommunity
+  popd
+
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
   rm -rf target/kotlin

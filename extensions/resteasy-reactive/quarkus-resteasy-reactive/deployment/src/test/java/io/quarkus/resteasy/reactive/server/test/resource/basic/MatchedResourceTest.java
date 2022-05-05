@@ -88,7 +88,7 @@ public class MatchedResourceTest {
         WebTarget base = client.target(generateURL("/match"));
         Response response = base.request().header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                 .get();
-        Assertions.assertEquals("text/html", response.getHeaders().getFirst("Content-Type"));
+        Assertions.assertEquals("text/html;charset=UTF-8", response.getHeaders().getFirst("Content-Type"));
         String res = response.readEntity(String.class);
         Assertions.assertEquals("*/*", res, "Wrong response content");
         response.close();

@@ -142,6 +142,8 @@ public final class ConfigUtils {
                 if (profileValue != null) {
                     List<String> profiles = ProfileConfigSourceInterceptor.convertProfile(profileValue.getValue());
                     for (String profile : profiles) {
+                        relocations.put("%" + profile + "." + SMALLRYE_CONFIG_LOCATIONS,
+                                "%" + profile + "." + "quarkus.config.locations");
                         relocations.put("%" + profile + "." + SMALLRYE_CONFIG_PROFILE_PARENT,
                                 "%" + profile + "." + "quarkus.config.profile.parent");
                     }

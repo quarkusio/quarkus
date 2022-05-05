@@ -74,9 +74,25 @@ transform_module () {
 
 transform_kotlin_module () {
   # this is very ad hoc but hopefully it will be good enough
-  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.transaction.Transactional; do
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.transaction.Transactional; do
     local newPackage=${package/javax/jakarta}
-    find $1 -name '*.kt' | xargs sed -i "s@import ${package}@import ${newPackage}@g"
+    find $1 -name '*.kt' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
+  done
+}
+
+transform_java_module () {
+  # this is very ad hoc but hopefully it will be good enough
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.transaction.Transactional; do
+    local newPackage=${package/javax/jakarta}
+    find $1 -name '*.java' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
+  done
+}
+
+transform_scala_module () {
+  # this is very ad hoc but hopefully it will be good enough
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.transaction.Transactional; do
+    local newPackage=${package/javax/jakarta}
+    find $1 -name '*.scala' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
   done
 }
 
@@ -221,6 +237,19 @@ clean_maven_repository
 
 transform_module "independent-projects/arc"
 transform_module "independent-projects/resteasy-reactive"
+transform_module "independent-projects/tools"
+transform_kotlin_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_java_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_scala_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_kotlin_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_java_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_scala_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_kotlin_module "independent-projects/tools/devtools-testing/"
+transform_java_module "independent-projects/tools/devtools-testing/"
+transform_scala_module "independent-projects/tools/devtools-testing/"
+transform_kotlin_module "independent-projects/tools/codestarts"
+transform_java_module "independent-projects/tools/codestarts"
+transform_scala_module "independent-projects/tools/codestarts"
 #convert_service_file independent-projects/resteasy-reactive/common/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.RuntimeDelegate
 #convert_service_file 'independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.sse.SseEventSource$Builder'
 #convert_service_file independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.client.ClientBuilder
@@ -241,9 +270,23 @@ sed -i "s@javax/xml/bind/annotation/@jakarta/xml/bind/annotation/@g" ./extension
 transform_kotlin_module "extensions/scheduler/kotlin"
 transform_kotlin_module "extensions/smallrye-reactive-messaging/kotlin"
 transform_module "devtools"
+transform_kotlin_module "devtools/project-core-extension-codestarts/src/main/resources/codestarts/"
+transform_java_module "devtools/project-core-extension-codestarts/src/main/resources/codestarts/"
+transform_scala_module "devtools/project-core-extension-codestarts/src/main/resources/codestarts/"
 transform_module "integration-tests"
+transform_scala_module "integration-tests/scala"
+transform_kotlin_module "integration-tests"
 
 transform_documentation
+sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/2.1.1@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@/specs/jaxrs/2.1/index.html@https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+
+# Clean some Transformer issues
+git checkout -- devtools/gradle/
+git checkout -- integration-tests/gradle/gradle/wrapper/gradle-wrapper.jar
+git checkout -- independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/tooling/gradle-wrapper/base/gradle/wrapper/gradle-wrapper.jar
+git checkout -- extensions/kubernetes-service-binding/runtime/src/test/resources/k8s/test-k8s/
 
 # Build phase
 

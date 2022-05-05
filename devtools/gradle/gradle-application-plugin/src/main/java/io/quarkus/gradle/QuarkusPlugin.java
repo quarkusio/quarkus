@@ -198,9 +198,27 @@ public class QuarkusPlugin implements Plugin<Project> {
                     TaskProvider<Task> testClassesTask = tasks.named(JavaPlugin.TEST_CLASSES_TASK_NAME);
                     TaskProvider<Task> testResourcesTask = tasks.named(JavaPlugin.PROCESS_TEST_RESOURCES_TASK_NAME);
 
-                    quarkusGenerateCode.configure(task -> task.dependsOn(resourcesTask));
-                    quarkusGenerateCodeDev.configure(task -> task.dependsOn(resourcesTask));
-                    quarkusGenerateCodeTests.configure(task -> task.dependsOn(resourcesTask));
+                    quarkusGenerateCode.configure(task -> {
+                        task.dependsOn(resourcesTask);
+                        task.setCompileClasspath(
+                                project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+                    });
+                    quarkusGenerateCodeDev.configure(task -> {
+                        task.dependsOn(resourcesTask);
+
+                        Configuration devClassPath = configurations.create("quarkusDevBase")
+                                .extendsFrom(
+                                        configurations.getByName(DEV_MODE_CONFIGURATION_NAME),
+                                        configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
+                                        configurations.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+
+                        task.setCompileClasspath(devClassPath);
+                    });
+                    quarkusGenerateCodeTests.configure(task -> {
+                        task.dependsOn(resourcesTask);
+                        task.setCompileClasspath(
+                                project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+                    });
 
                     quarkusDev.configure(task -> {
                         task.dependsOn(classesTask, resourcesTask, testClassesTask, testResourcesTask,

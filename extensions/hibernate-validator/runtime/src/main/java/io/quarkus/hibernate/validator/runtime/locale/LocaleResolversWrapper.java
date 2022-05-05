@@ -18,14 +18,16 @@ import org.hibernate.validator.spi.messageinterpolation.LocaleResolverContext;
 public class LocaleResolversWrapper implements LocaleResolver {
 
     @Inject
-    Instance<AbstractLocaleResolver> resolvers;
+    Instance<LocaleResolver> resolvers;
 
     @Override
     public Locale resolve(LocaleResolverContext context) {
-        for (AbstractLocaleResolver resolver : resolvers) {
-            Locale locale = resolver.resolve(context);
-            if (locale != null) {
-                return locale;
+        for (LocaleResolver resolver : resolvers) {
+            if (!resolver.equals(this)) {
+                Locale locale = resolver.resolve(context);
+                if (locale != null) {
+                    return locale;
+                }
             }
         }
         return context.getDefaultLocale();

@@ -16,7 +16,7 @@ import io.vertx.ext.web.RoutingContext;
  * Currently used for handling GraphQL requests.
  */
 @Singleton
-public class VertxLocaleResolver extends AbstractLocaleResolver {
+public class ResteasyReactiveLocaleResolver extends AbstractLocaleResolver {
 
     @Inject
     CurrentVertxRequest currentVertxRequest;

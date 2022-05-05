@@ -12,6 +12,9 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 @GraphQLApi
 public class TestingGraphQLApi {
 
+    @Inject
+    CurrentVertxRequest request;
+
     @Query
     public List<Person> people() {
         Person person1 = new Person();
@@ -24,9 +27,6 @@ public class TestingGraphQLApi {
 
         return List.of(person1, person2);
     }
-
-    @Inject
-    CurrentVertxRequest request;
 
     /**
      * Returns the value of the HTTP header denoted by 'key'.

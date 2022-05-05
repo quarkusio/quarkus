@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
+import io.smallrye.common.annotation.NonBlocking;
 
 public class SecurityTest extends AbstractGraphQLTest {
 
@@ -59,6 +60,34 @@ public class SecurityTest extends AbstractGraphQLTest {
                 .assertThat()
                 .body("errors", nullValue())
                 .body("data.foo.bonusFoo", equalTo("bonus"));
+    }
+
+    @Test
+    public void testAuthenticatedUserBlocking() {
+        String query = getPayload("{ blockingFoo { message} }");
+        RestAssured.given()
+                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
+                .body(query)
+                .contentType(MEDIATYPE_JSON)
+                .post("/graphql/")
+                .then()
+                .assertThat()
+                .body("errors", nullValue())
+                .body("data.blockingFoo.message", equalTo("foo"));
+    }
+
+    @Test
+    public void testAuthenticatedUserWithSourceBlocking() {
+        String query = getPayload("{ blockingFoo { blockingBonusFoo } }");
+        RestAssured.given()
+                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
+                .body(query)
+                .contentType(MEDIATYPE_JSON)
+                .post("/graphql/")
+                .then()
+                .assertThat()
+                .body("errors", nullValue())
+                .body("data.blockingFoo.blockingBonusFoo", equalTo("bonus"));
     }
 
     @Test
@@ -117,13 +146,27 @@ public class SecurityTest extends AbstractGraphQLTest {
 
         @Query
         @RolesAllowed("fooRole")
+        @NonBlocking
         public Foo foo() {
             return new Foo("foo");
         }
 
         @Name("bonusFoo")
         @RolesAllowed("fooRole")
+        @NonBlocking
         public List<String> bonusFoo(@Source List<Foo> foos) {
+            return foos.stream().map(foo -> "bonus").collect(Collectors.toList());
+        }
+
+        @Query
+        @RolesAllowed("fooRole")
+        public Foo blockingFoo() {
+            return new Foo("foo");
+        }
+
+        @Name("blockingBonusFoo")
+        @RolesAllowed("fooRole")
+        public List<String> blockingBonusFoo(@Source List<Foo> foos) {
             return foos.stream().map(foo -> "bonus").collect(Collectors.toList());
         }
 

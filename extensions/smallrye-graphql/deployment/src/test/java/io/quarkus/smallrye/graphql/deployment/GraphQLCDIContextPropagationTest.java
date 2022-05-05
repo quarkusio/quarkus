@@ -149,7 +149,8 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
         @Name("duplicatedMessage")
         public List<String> duplicatedMessage(@Source List<TestPojo> pojos) {
             if (!this.injectedBean.getId().equals(this.injectedBeanId)) {
-                throw new IllegalStateException("duplicatedMessage must be executed in the same request context as getPojos");
+                throw new IllegalStateException("duplicatedMessage must be executed in the same request context as getPojos ["
+                        + this.injectedBean.getId() + " != " + this.injectedBeanId);
             }
             return pojos.stream()
                     .map(pojo -> pojo.getMessage() + pojo.getMessage())
@@ -163,7 +164,8 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
         public CompletionStage<List<String>> duplicatedMessageAsync(@Source List<TestPojo> pojos) {
             if (!this.injectedBean.getId().equals(this.injectedBeanId)) {
                 throw new IllegalStateException(
-                        "duplicatedMessageAsync must be executed in the same request context as getPojos");
+                        "duplicatedMessageAsync must be executed in the same request context as getPojos ["
+                                + this.injectedBean.getId() + " != " + this.injectedBeanId);
             }
             return CompletableFuture.completedFuture(pojos.stream()
                     .map(pojo -> pojo.getMessage() + pojo.getMessage())

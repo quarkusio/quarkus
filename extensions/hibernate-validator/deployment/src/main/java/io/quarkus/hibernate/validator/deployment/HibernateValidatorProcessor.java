@@ -141,14 +141,15 @@ class HibernateValidatorProcessor {
         // The CDI interceptor which will validate the methods annotated with @MethodValidated
         additionalBeans.produce(new AdditionalBeanBuildItem(MethodValidationInterceptor.class));
 
+        additionalBeans.produce(new AdditionalBeanBuildItem(
+                "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
+
         if (capabilities.isPresent(Capability.RESTEASY)) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
             additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
-            additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.locale.ResteasyContextLocaleResolver"));
+                    "io.quarkus.hibernate.validator.runtime.locale.ResteasyClassicLocaleResolver"));
             syntheticBeanBuildItems.produce(SyntheticBeanBuildItem.configure(ResteasyConfigSupport.class)
                     .scope(Singleton.class)
                     .unremovable()
@@ -160,15 +161,7 @@ class HibernateValidatorProcessor {
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveEndPointValidationInterceptor"));
             additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
-            additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.locale.VertxLocaleResolver"));
-        }
-        if (capabilities.isPresent(Capability.SMALLRYE_GRAPHQL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper"));
-            additionalBeans.produce(new AdditionalBeanBuildItem(
-                    "io.quarkus.hibernate.validator.runtime.locale.VertxLocaleResolver"));
+                    "io.quarkus.hibernate.validator.runtime.locale.ResteasyReactiveLocaleResolver"));
         }
 
         // A constraint validator with an injection point but no scope is added as @Dependent

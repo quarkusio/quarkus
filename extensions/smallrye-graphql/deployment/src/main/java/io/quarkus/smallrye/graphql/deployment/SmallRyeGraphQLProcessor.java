@@ -51,6 +51,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfig;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfigMapping;
+import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLLocaleResolver;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
@@ -65,7 +66,6 @@ import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
-import io.smallrye.graphql.cdi.producer.SmallRyeContextAccessorProxy;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -143,11 +143,16 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
-    void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+    void additionalBean(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(GraphQLProducer.class)
-                .addBeanClass(SmallRyeContextAccessorProxy.class)
                 .setUnremovable().build());
+        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClass(SmallRyeGraphQLLocaleResolver.class)
+                    .setUnremovable().build());
+        }
     }
 
     @BuildStep
@@ -249,7 +254,6 @@ public class SmallRyeGraphQLProcessor {
                 .nestedRoute(graphQLConfig.rootPath, SCHEMA_PATH)
                 .handler(schemaHandler)
                 .displayOnNotFoundPage("MicroProfile GraphQL Schema")
-                .blockingRoute()
                 .build());
 
     }
@@ -286,10 +290,10 @@ public class SmallRyeGraphQLProcessor {
         Handler<RoutingContext> graphqlOverWebsocketHandler = recorder
                 .graphqlOverWebsocketHandler(beanContainer.getValue(), graphQLInitializedBuildItem.getInitialized());
 
-        routeProducer.produce(httpRootPathBuildItem.routeBuilder()
+        HttpRootPathBuildItem.Builder subscriptionsBuilder = httpRootPathBuildItem.routeBuilder()
                 .orderedRoute(graphQLConfig.rootPath, Integer.MIN_VALUE)
-                .handler(graphqlOverWebsocketHandler)
-                .build());
+                .handler(graphqlOverWebsocketHandler);
+        routeProducer.produce(subscriptionsBuilder.build());
 
         // WebSocket subprotocols
         graphQLConfig.websocketSubprotocols.ifPresentOrElse(subprotocols -> {
@@ -308,18 +312,31 @@ public class SmallRyeGraphQLProcessor {
         });
 
         // Queries and Mutations
+        boolean runBlocking = shouldRunBlockingRoute(graphQLConfig);
         boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);
         boolean allowQueryParametersOnPost = getBooleanConfigValue(ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
-                allowGet, allowQueryParametersOnPost);
-        routeProducer.produce(httpRootPathBuildItem.routeBuilder()
+                allowGet, allowQueryParametersOnPost, runBlocking);
+
+        HttpRootPathBuildItem.Builder requestBuilder = httpRootPathBuildItem.routeBuilder()
                 .routeFunction(graphQLConfig.rootPath, recorder.routeFunction(bodyHandlerBuildItem.getHandler()))
                 .handler(executionHandler)
                 .routeConfigKey("quarkus.smallrye-graphql.root-path")
-                .displayOnNotFoundPage("MicroProfile GraphQL Endpoint")
-                .blockingRoute()
-                .build());
+                .displayOnNotFoundPage("MicroProfile GraphQL Endpoint");
 
+        if (runBlocking) {
+            requestBuilder = requestBuilder.blockingRoute();
+        }
+
+        routeProducer.produce(requestBuilder.build());
+
+    }
+
+    private boolean shouldRunBlockingRoute(SmallRyeGraphQLConfig graphQLConfig) {
+        if (graphQLConfig.nonBlockingEnabled.isPresent()) {
+            return !graphQLConfig.nonBlockingEnabled.get();
+        }
+        return false;
     }
 
     private boolean getBooleanConfigValue(String smallryeKey, boolean defaultValue) {
@@ -338,7 +355,7 @@ public class SmallRyeGraphQLProcessor {
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
 
-        return classes.toArray(new String[] {});
+        return classes.toArray(String[]::new);
     }
 
     private Class[] getGraphQLJavaClasses() {
@@ -361,7 +378,7 @@ public class SmallRyeGraphQLProcessor {
         classes.add(graphql.schema.GraphQLTypeReference.class);
         classes.add(List.class);
         classes.add(Collection.class);
-        return classes.toArray(new Class[] {});
+        return classes.toArray(Class[]::new);
     }
 
     private Set<String> getOperationClassNames(Set<Operation> operations) {

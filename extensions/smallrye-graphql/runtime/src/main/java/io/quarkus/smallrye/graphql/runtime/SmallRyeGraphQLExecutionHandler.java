@@ -5,7 +5,10 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import javax.json.Json;
@@ -13,9 +16,14 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
+import graphql.ErrorType;
+import graphql.ExecutionResult;
+import graphql.GraphQLError;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.smallrye.graphql.execution.ExecutionResponse;
+import io.smallrye.graphql.execution.ExecutionResponseWriter;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -28,8 +36,9 @@ import io.vertx.ext.web.RoutingContext;
  * Handler that does the execution of GraphQL Requests
  */
 public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHandler {
-    private boolean allowGet = false;
-    private boolean allowPostWithQueryParameters = false;
+    private final boolean allowGet;
+    private final boolean allowPostWithQueryParameters;
+    private final boolean runBlocking;
     private static final String QUERY = "query";
     private static final String OPERATION_NAME = "operationName";
     private static final String VARIABLES = "variables";
@@ -42,12 +51,13 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
             + StandardCharsets.UTF_8.name();
     private static final String MISSING_OPERATION = "Missing operation body";
 
-    public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters,
+    public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters, boolean runBlocking,
             CurrentIdentityAssociation currentIdentityAssociation,
             CurrentVertxRequest currentVertxRequest) {
         super(currentIdentityAssociation, currentVertxRequest);
         this.allowGet = allowGet;
         this.allowPostWithQueryParameters = allowPostWithQueryParameters;
+        this.runBlocking = runBlocking;
     }
 
     @Override
@@ -90,7 +100,6 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private void handlePost(HttpServerResponse response, RoutingContext ctx, String requestedCharset) {
         try {
             JsonObject jsonObjectFromBody = getJsonObjectFromBody(ctx);
-            String postResponse;
             if (hasQueryParameters(ctx) && allowPostWithQueryParameters) {
                 JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
                 JsonObject mergedJsonObject;
@@ -104,15 +113,14 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                     response.setStatusCode(400).end(MISSING_OPERATION);
                     return;
                 }
-                postResponse = doRequest(mergedJsonObject);
+                doRequest(mergedJsonObject, response, ctx, requestedCharset);
             } else {
                 if (jsonObjectFromBody == null) {
                     response.setStatusCode(400).end(MISSING_OPERATION);
                     return;
                 }
-                postResponse = doRequest(jsonObjectFromBody);
+                doRequest(jsonObjectFromBody, response, ctx, requestedCharset);
             }
-            response.setStatusCode(200).setStatusMessage(OK).end(Buffer.buffer(postResponse, requestedCharset));
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -124,11 +132,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 JsonObject input = getJsonObjectFromQueryParameters(ctx);
 
                 if (input.containsKey(QUERY)) {
-                    String getResponse = doRequest(input);
-                    response.setStatusCode(200)
-                            .setStatusMessage(OK)
-                            .end(Buffer.buffer(getResponse, requestedCharset));
-
+                    doRequest(input, response, ctx, requestedCharset);
                 } else {
                     response.setStatusCode(400).end(MISSING_OPERATION);
                 }
@@ -281,10 +285,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
     private boolean hasQueryParameter(RoutingContext ctx, String parameterName) {
         List<String> all = ctx.queryParam(parameterName);
-        if (all != null && !all.isEmpty()) {
-            return true;
-        }
-        return false;
+        return all != null && !all.isEmpty();
     }
 
     private String getAllowedMethods() {
@@ -295,12 +296,23 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         }
     }
 
-    private String doRequest(JsonObject jsonInput) {
-        ExecutionResponse executionResponse = getExecutionService().execute(jsonInput);
-        if (executionResponse != null) {
-            return executionResponse.getExecutionResultAsString();
+    private void doRequest(JsonObject jsonInput, HttpServerResponse response, RoutingContext ctx,
+            String requestedCharset) {
+        VertxExecutionResponseWrtiter writer = new VertxExecutionResponseWrtiter(response, ctx, requestedCharset);
+        // Add some context to dfe
+        Map<String, Object> metaData = new ConcurrentHashMap<>();
+        metaData.put("httpHeaders", getHeaders(ctx));
+        metaData.put("runBlocking", runBlocking);
+        getExecutionService().executeAsync(jsonInput, metaData, writer);
+    }
+
+    private Map<String, List<String>> getHeaders(RoutingContext ctx) {
+        Map<String, List<String>> h = new HashMap<>();
+        MultiMap headers = ctx.request().headers();
+        for (String header : headers.names()) {
+            h.put(header, headers.getAll(header));
         }
-        return null;
+        return h;
     }
 
     private static JsonObject toJsonObject(String jsonString) {
@@ -310,6 +322,51 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
         try (JsonReader jsonReader = jsonReaderFactory.createReader(new StringReader(jsonString))) {
             return jsonReader.readObject();
+        }
+    }
+
+    class VertxExecutionResponseWrtiter implements ExecutionResponseWriter {
+
+        HttpServerResponse response;
+        String requestedCharset;
+        RoutingContext ctx;
+
+        VertxExecutionResponseWrtiter(HttpServerResponse response, RoutingContext ctx, String requestedCharset) {
+            this.response = response;
+            this.ctx = ctx;
+            this.requestedCharset = requestedCharset;
+        }
+
+        @Override
+        public void write(ExecutionResponse er) {
+
+            if (shouldFail(er)) {
+                response.setStatusCode(500)
+                        .end();
+            } else {
+                response.setStatusCode(200)
+                        .setStatusMessage(OK)
+                        .end(Buffer.buffer(er.getExecutionResultAsString(), requestedCharset));
+            }
+        }
+
+        @Override
+        public void fail(Throwable t) {
+            ctx.fail(t);
+        }
+
+        private boolean shouldFail(ExecutionResponse er) {
+            ExecutionResult executionResult = er.getExecutionResult();
+
+            if (executionResult.isDataPresent() && executionResult.getErrors().size() > 0) {
+                // See if there was a httpfailure
+                for (GraphQLError error : executionResult.getErrors()) {
+                    if (error.getErrorType().equals(ErrorType.ExecutionAborted)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }

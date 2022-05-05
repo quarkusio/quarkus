@@ -1,7 +1,5 @@
 package io.quarkus.devservices.oracle.deployment;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +16,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildIt
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.runtime.LaunchMode;
 
 public class OracleDevServicesProcessor {
@@ -44,7 +43,8 @@ public class OracleDevServicesProcessor {
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withUsername(username.orElse(DEFAULT_DATABASE_USER))
                         .withPassword(password.orElse(DEFAULT_DATABASE_PASSWORD))
-                        .withDatabaseName(datasourceName.orElse(DEFAULT_DATABASE_NAME));
+                        .withDatabaseName(datasourceName.orElse(DEFAULT_DATABASE_NAME))
+                        .withReuse(true);
 
                 // We need to limit the maximum amount of CPUs being used by the container;
                 // otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot it.
@@ -62,14 +62,7 @@ public class OracleDevServicesProcessor {
                         container.getEffectiveJdbcUrl(),
                         container.getUsername(),
                         container.getPassword(),
-                        new Closeable() {
-                            @Override
-                            public void close() throws IOException {
-                                container.stop();
-
-                                LOG.info("Dev Services for Oracle shut down.");
-                            }
-                        });
+                        new ContainerShutdownCloseable(container, "Oracle"));
             }
         });
     }

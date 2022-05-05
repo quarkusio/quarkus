@@ -49,6 +49,13 @@ xref:datasource.adoc#dev-services[Datasource Guide].
 Quarkus provides Dev Services for all databases it supports. Most of these are run in a container, with the
 exception of H2 and Derby which are run in process. Dev Services are supported for both JDBC and reactive drivers.
 
+Those relational databases that are running in a container are started using Testcontainers and support "reusable instances";
+this implies that if you add the property `testcontainers.reuse.enable=true` in your Testcontainers configuration file,
+a property file named `.testcontainers.properties` in your user home, then the databases will not be stopped aggressively
+after each run, and can be reused.
+
+N.B. if you opt in for this feature, Quarkus will not reset the state of the database between runs unless you explicitly configure it to.
+
 include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
 == Kafka

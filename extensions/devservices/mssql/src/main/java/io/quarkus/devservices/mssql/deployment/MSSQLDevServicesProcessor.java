@@ -1,7 +1,5 @@
 package io.quarkus.devservices.mssql.deployment;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +16,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildIt
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.runtime.LaunchMode;
 
 public class MSSQLDevServicesProcessor {
@@ -36,7 +35,8 @@ public class MSSQLDevServicesProcessor {
                 QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(imageName, fixedExposedPort,
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withPassword(password.orElse("Quarkuspassword1"));
+                container.withPassword(password.orElse("Quarkuspassword1"))
+                        .withReuse(true);
                 additionalJdbcUrlProperties.forEach(container::withUrlParam);
                 container.start();
 
@@ -46,14 +46,7 @@ public class MSSQLDevServicesProcessor {
                         container.getEffectiveJdbcUrl(),
                         container.getUsername(),
                         container.getPassword(),
-                        new Closeable() {
-                            @Override
-                            public void close() throws IOException {
-                                container.stop();
-
-                                LOG.info("Dev Services for Microsoft SQL Server shut down.");
-                            }
-                        });
+                        new ContainerShutdownCloseable(container, "Microsoft SQL Server"));
             }
         });
     }

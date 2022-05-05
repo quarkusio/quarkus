@@ -1,7 +1,5 @@
 package io.quarkus.devservices.db2.deployment;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +16,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildIt
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.runtime.LaunchMode;
 
 public class DB2DevServicesProcessor {
@@ -38,7 +37,8 @@ public class DB2DevServicesProcessor {
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("quarkus"))
                         .withUsername(username.orElse("quarkus"))
-                        .withDatabaseName(datasourceName.orElse("default"));
+                        .withDatabaseName(datasourceName.orElse("default"))
+                        .withReuse(true);
                 additionalJdbcUrlProperties.forEach(container::withUrlParam);
                 container.start();
 
@@ -48,14 +48,7 @@ public class DB2DevServicesProcessor {
                         container.getEffectiveJdbcUrl(),
                         container.getUsername(),
                         container.getPassword(),
-                        new Closeable() {
-                            @Override
-                            public void close() throws IOException {
-                                container.stop();
-
-                                LOG.info("Dev Services for IBM Db2 shut down.");
-                            }
-                        });
+                        new ContainerShutdownCloseable(container, "IBM Db2"));
             }
         });
     }

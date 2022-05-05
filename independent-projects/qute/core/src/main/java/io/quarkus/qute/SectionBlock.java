@@ -14,7 +14,7 @@ import java.util.function.Function;
  * Each section consists of one or more blocks. The main block is always present. Additional blocks start with a label
  * definition: <code>{#label param1}</code>.
  */
-public final class SectionBlock {
+public final class SectionBlock implements WithOrigin, ErrorInitializer {
 
     public final Origin origin;
 
@@ -71,6 +71,11 @@ public final class SectionBlock {
         builder.append("SectionBlock [origin=").append(origin).append(", id=").append(id).append(", label=").append(label)
                 .append("]");
         return builder.toString();
+    }
+
+    @Override
+    public Origin getOrigin() {
+        return origin;
     }
 
     void optimizeNodes(Set<TemplateNode> nodesToRemove) {
@@ -140,7 +145,7 @@ public final class SectionBlock {
     }
 
     static SectionBlock.Builder builder(String id, Function<String, Expression> expressionFunc,
-            Function<String, TemplateException> errorFun) {
+            Function<String, TemplateException.Builder> errorFun) {
         return new Builder(id, expressionFunc, errorFun).setLabel(id);
     }
 
@@ -153,9 +158,10 @@ public final class SectionBlock {
         private final List<TemplateNode> nodes;
         private Map<String, Expression> expressions;
         private final Function<String, Expression> expressionFun;
-        private final Function<String, TemplateException> errorFun;
+        private final Function<String, TemplateException.Builder> errorFun;
 
-        public Builder(String id, Function<String, Expression> expressionFun, Function<String, TemplateException> errorFun) {
+        public Builder(String id, Function<String, Expression> expressionFun,
+                Function<String, TemplateException.Builder> errorFun) {
             this.id = id;
             this.nodes = new ArrayList<>();
             this.expressionFun = expressionFun;
@@ -204,7 +210,12 @@ public final class SectionBlock {
         }
 
         @Override
-        public TemplateException createParserError(String message) {
+        public Origin getOrigin() {
+            return origin;
+        }
+
+        @Override
+        public TemplateException.Builder error(String message) {
             return errorFun.apply(message);
         }
 

@@ -109,13 +109,15 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         return outerScope;
     }
 
-    interface ParserDelegate {
+    interface ParserDelegate extends ErrorInitializer {
 
-        TemplateException createParserError(String message);
+        default TemplateException createParserError(String message) {
+            return error(message).build();
+        }
 
     }
 
-    interface BlockInfo extends ParserDelegate {
+    interface BlockInfo extends ParserDelegate, WithOrigin {
 
         String getLabel();
 

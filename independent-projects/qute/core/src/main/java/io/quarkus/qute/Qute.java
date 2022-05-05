@@ -285,31 +285,41 @@ public final class Qute {
     public static class IndexedArgumentsParserHook implements ParserHook {
 
         private final Pattern p = Pattern.compile("\\{\\}");
+        private final String prefix;
+
+        public IndexedArgumentsParserHook() {
+            this(TEMPLATE_PREFIX);
+        }
+
+        public IndexedArgumentsParserHook(String prefix) {
+            this.prefix = prefix;
+        }
 
         @Override
         public void beforeParsing(ParserHelper parserHelper) {
-            if (parserHelper.getTemplateId().startsWith(TEMPLATE_PREFIX)) {
-                parserHelper.addContentFilter(new Function<String, String>() {
-
-                    @Override
-                    public String apply(String input) {
-                        if (!input.contains("{}")) {
-                            return input;
-                        }
-                        // Find all empty expressions and turn them into index-based expressions
-                        // e.g. "Hello {} and {}!" turns into "Hello {data.0} and {data.1}!"
-                        StringBuilder builder = new StringBuilder();
-                        Matcher m = p.matcher(input);
-                        int idx = 0;
-                        while (m.find()) {
-                            m.appendReplacement(builder, "{data." + idx + "}");
-                            idx++;
-                        }
-                        m.appendTail(builder);
-                        return builder.toString();
-                    }
-                });
+            if (prefix != null && !parserHelper.getTemplateId().startsWith(prefix)) {
+                return;
             }
+            parserHelper.addContentFilter(new Function<String, String>() {
+
+                @Override
+                public String apply(String input) {
+                    if (!input.contains("{}")) {
+                        return input;
+                    }
+                    // Find all empty expressions and turn them into index-based expressions
+                    // e.g. "Hello {} and {}!" turns into "Hello {data.0} and {data.1}!"
+                    StringBuilder builder = new StringBuilder();
+                    Matcher m = p.matcher(input);
+                    int idx = 0;
+                    while (m.find()) {
+                        m.appendReplacement(builder, "{data." + idx + "}");
+                        idx++;
+                    }
+                    m.appendTail(builder);
+                    return builder.toString();
+                }
+            });
         }
 
     }

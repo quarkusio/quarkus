@@ -28,7 +28,7 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
     @Override
     public CompletionStage<ResultNode> resolve(ResolutionContext context) {
         if (traceLevel) {
-            LOG.tracef("Resolve {%s} started: %s", expression.toOriginalString(), expression.getOrigin());
+            LOG.tracef("Resolve {%s} started:%s", expression.toOriginalString(), expression.getOrigin());
         }
         return context.evaluate(expression).thenCompose(this);
     }
@@ -36,7 +36,7 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
     @Override
     public CompletionStage<ResultNode> apply(Object result) {
         if (traceLevel) {
-            LOG.tracef("Resolve {%s} completed: %s", expression.toOriginalString(), expression.getOrigin());
+            LOG.tracef("Resolve {%s} completed:%s", expression.toOriginalString(), expression.getOrigin());
         }
         if (result instanceof ResultNode) {
             return CompletedStage.of((ResultNode) result);

@@ -72,6 +72,10 @@ public interface TemplateNode {
 
         String getTemplateGeneratedId();
 
+        default boolean hasNonGeneratedTemplateId() {
+            return !getTemplateId().equals(getTemplateGeneratedId());
+        }
+
         /**
          *
          * @return the template variant
@@ -79,10 +83,10 @@ public interface TemplateNode {
         Optional<Variant> getVariant();
 
         default void appendTo(StringBuilder builder) {
-            if (!getTemplateId().equals(getTemplateGeneratedId())) {
-                builder.append(" in template [").append(getTemplateId()).append("]");
+            // It only makes sense to append the info for a template with an explicit id
+            if (hasNonGeneratedTemplateId()) {
+                builder.append(" template [").append(getTemplateId()).append("] ").append("line ").append(getLine());
             }
-            builder.append(" on line ").append(getLine());
         }
 
     }

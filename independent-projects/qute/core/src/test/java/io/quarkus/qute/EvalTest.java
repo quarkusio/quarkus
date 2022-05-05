@@ -37,7 +37,7 @@ public class EvalTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> Engine.builder().addDefaults().build().parse("{#eval invalid /}").data("invalid", "{foo")
                         .render())
-                .withMessageContaining("Parser error in the evaluated template");
+                .withMessageContainingAll("Parser error in the evaluated template", "unterminated section");
     }
 
 }

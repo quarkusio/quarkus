@@ -29,12 +29,14 @@ public class LoopSectionHelper implements SectionHelper {
     private final String metadataPrefix;
     private final Expression iterable;
     private final SectionBlock elseBlock;
+    private final Engine engine;
 
     LoopSectionHelper(SectionInitContext context, String metadataPrefix) {
         this.alias = context.getParameterOrDefault(ALIAS, DEFAULT_ALIAS);
         this.metadataPrefix = LoopSectionHelper.Factory.prefixValue(alias, metadataPrefix);
         this.iterable = Objects.requireNonNull(context.getExpression(ITERABLE));
         this.elseBlock = context.getBlock(ELSE);
+        this.engine = context.getEngine();
     }
 
     @Override
@@ -100,18 +102,20 @@ public class LoopSectionHelper implements SectionHelper {
             }
             return elements.iterator();
         } else {
-            String msg;
+            TemplateException.Builder builder;
             if (Results.isNotFound(it)) {
-                msg = String.format(
-                        "Iteration error in template [%s] on line %s: {%s} not found, use {%<s.orEmpty} to ignore this error",
-                        iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString());
+                builder = engine.error("Iteration error - \\{{expr}} not found, use \\{{expr}.orEmpty} to ignore this error")
+                        .code(Code.ITERABLE_NOT_FOUND)
+                        .argument("expr", iterable.toOriginalString())
+                        .origin(iterable.getOrigin());
             } else {
-                msg = String.format(
-                        "Iteration error in template [%s] on line %s: {%s} resolved to [%s] which is not iterable",
-                        iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString(),
-                        it.getClass().getName());
+                builder = engine.error("Iteration error - \\{{expr}} resolved to [{clazz}] which is not iterable")
+                        .code(Code.NOT_AN_ITERABLE)
+                        .argument("expr", iterable.toOriginalString())
+                        .argument("clazz", it.getClass().getName())
+                        .origin(iterable.getOrigin());
             }
-            throw new TemplateException(msg);
+            throw builder.build();
         }
     }
 
@@ -300,4 +304,16 @@ public class LoopSectionHelper implements SectionHelper {
 
     }
 
+    enum Code implements ErrorCode {
+
+        ITERABLE_NOT_FOUND,
+        NOT_AN_ITERABLE,
+        ;
+
+        @Override
+        public String getName() {
+            return "LOOP_" + name();
+        }
+
+    }
 }

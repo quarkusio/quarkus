@@ -150,8 +150,9 @@ public class IncludeTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{#include super}{#header}1{/}{#header}2{/}{/}"))
                 .withMessage(
-                        "Multiple blocks define the content for the {#insert} section of name [header] on line 1")
-                .hasFieldOrProperty("origin");
+                        "Rendering error: multiple blocks define the content for the {#insert} section of name [header]")
+                .hasFieldOrProperty("origin")
+                .hasFieldOrProperty("code");
     }
 
     @Test
@@ -168,8 +169,21 @@ public class IncludeTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{#insert}{/}\n{#insert row /}"))
                 .withMessage(
-                        "An {#insert} section defined in the {#include} section on line 2 conflicts with an existing section/tag: row")
-                .hasFieldOrProperty("origin");
+                        "Parser error: {#insert} defined in the {#include} conflicts with an existing section/tag: row")
+                .hasFieldOrProperty("origin")
+                .hasFieldOrProperty("code");
+    }
+
+    @Test
+    public void testIncludeNotFound() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#include super}{#header}super header{/header}{/include}", null, "foo.html")
+                        .render())
+                .withMessage(
+                        "Rendering error in template [foo.html] line 1: included template [super] not found")
+                .hasFieldOrProperty("origin")
+                .hasFieldOrProperty("code");
     }
 
 }

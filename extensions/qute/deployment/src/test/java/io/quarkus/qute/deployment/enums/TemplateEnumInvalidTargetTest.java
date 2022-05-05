@@ -27,7 +27,7 @@ public class TemplateEnumInvalidTargetTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{Transactions:VAL}", null, "bar").render())
                 .withMessage(
-                        "No namespace resolver found for [Transactions] in expression {Transactions:VAL} in template bar on line 1");
+                        "Rendering error in template [bar] line 1: No namespace resolver found for [Transactions] in expression {Transactions:VAL}");
 
     }
 

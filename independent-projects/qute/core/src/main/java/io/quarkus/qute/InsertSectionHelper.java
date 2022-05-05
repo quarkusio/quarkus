@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -40,13 +39,26 @@ public class InsertSectionHelper implements SectionHelper {
         public InsertSectionHelper initialize(SectionInitContext context) {
             String name = context.getParameter("name");
             if (context.getEngine().getSectionHelperFactories().containsKey(name)) {
-                Origin origin = context.getOrigin();
-                StringBuilder msg = new StringBuilder("An {#insert} section defined in the {#include} section");
-                origin.appendTo(msg);
-                msg.append(" conflicts with an existing section/tag: ").append(name);
-                throw new TemplateException(origin, msg.toString());
+                throw context.error(
+                        "\\{#insert} defined in the \\{#include\\} conflicts with an existing section/tag: {name}")
+                        .code(Code.INSERT_SECTION_CONFLICT)
+                        .argument("name", name)
+                        .origin(context.getOrigin())
+                        .build();
             }
             return new InsertSectionHelper(name, context.getBlocks().get(0));
+        }
+
+    }
+
+    enum Code implements ErrorCode {
+
+        INSERT_SECTION_CONFLICT,
+        ;
+
+        @Override
+        public String getName() {
+            return "INSERT_" + name();
         }
 
     }

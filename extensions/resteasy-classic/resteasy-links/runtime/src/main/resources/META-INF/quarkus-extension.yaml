@@ -11,7 +11,6 @@ metadata:
   - "web"
   - "serialization"
   status: "stable"
-  unlisted: true
   codestart:
     name: "resteasy"
     languages:

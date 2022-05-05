@@ -277,8 +277,8 @@ public class QuartzScheduler implements Scheduler {
                         org.quartz.Trigger trigger = triggerBuilder.build();
                         org.quartz.Trigger oldTrigger = scheduler.getTrigger(trigger.getKey());
                         if (oldTrigger != null) {
-                            scheduler.rescheduleJob(trigger.getKey(),
-                                    triggerBuilder.startAt(oldTrigger.getNextFireTime()).build());
+                            trigger = triggerBuilder.startAt(oldTrigger.getNextFireTime()).build();
+                            scheduler.rescheduleJob(trigger.getKey(), trigger);
                             LOGGER.debugf("Rescheduled business method %s with config %s", method.getMethodDescription(),
                                     scheduled);
                         } else if (!scheduler.checkExists(jobDetail.getKey())) {
@@ -292,7 +292,8 @@ public class QuartzScheduler implements Scheduler {
                             oldTrigger = scheduler.getTrigger(new TriggerKey(identity + "_trigger", Scheduler.class.getName()));
                             if (oldTrigger != null) {
                                 scheduler.deleteJob(jobDetail.getKey());
-                                scheduler.scheduleJob(jobDetail, triggerBuilder.startAt(oldTrigger.getNextFireTime()).build());
+                                trigger = triggerBuilder.startAt(oldTrigger.getNextFireTime()).build();
+                                scheduler.scheduleJob(jobDetail, trigger);
                                 LOGGER.debugf(
                                         "Rescheduled business method %s with config %s due to Trigger '%s' record being renamed after removal of '_trigger' suffix",
                                         method.getMethodDescription(),
@@ -558,7 +559,7 @@ public class QuartzScheduler implements Scheduler {
 
         @Override
         public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-            if (trigger.invoker != null) { // could be null from previous runs
+            if (trigger != null && trigger.invoker != null) { // could be null from previous runs
                 if (trigger.invoker.isBlocking()) {
                     try {
                         trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
@@ -579,6 +580,11 @@ public class QuartzScheduler implements Scheduler {
                         }
                     });
                 }
+            } else {
+                String jobName = jobExecutionContext.getJobDetail().getKey().getName();
+                LOGGER.warnf("Unable to find corresponding Quartz trigger for job %s. " +
+                        "Update your Quartz table by removing all phantom jobs or make sure that there is a " +
+                        "Scheduled method with the identity matching the job's name", jobName);
             }
         }
     }

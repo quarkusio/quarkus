@@ -670,6 +670,41 @@ public class ResteasyReactiveProcessor {
         serverSerializersProducer.produce(new ServerSerialisersBuildItem(serialisers));
     }
 
+    @BuildStep
+    public void additionalReflection(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            SetupEndpointsResultBuildItem setupEndpointsResult, List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
+            BuildProducer<ReflectiveClassBuildItem> producer) {
+        List<ResourceClass> resourceClasses = setupEndpointsResult.getResourceClasses();
+        IndexView index = beanArchiveIndexBuildItem.getIndex();
+
+        // when user provided MessageBodyWriter classes exist that do not extend ServerMessageBodyWriter, we need to enable reflection
+        // on every resource method, because these providers will be checked first and the JAX-RS API requires
+        // the method return type and annotations to be passed to the serializers
+        boolean serializersRequireResourceReflection = false;
+        for (var writer : messageBodyWriterBuildItems) {
+            if (writer.isBuiltin()) {
+                continue;
+            }
+            if ((writer.getRuntimeType() != null) && (writer.getRuntimeType() == RuntimeType.CLIENT)) {
+                continue;
+            }
+            ClassInfo writerClassInfo = index.getClassByName(DotName.createSimple(writer.getClassName()));
+            if (writerClassInfo == null) {
+                continue;
+            }
+            List<DotName> interfaceNames = writerClassInfo.interfaceNames();
+            if (!interfaceNames.contains(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER)) {
+                serializersRequireResourceReflection = true;
+                break;
+            }
+        }
+        if (serializersRequireResourceReflection) {
+            producer.produce(ReflectiveClassBuildItem
+                    .builder(resourceClasses.stream().map(ResourceClass::getClassName).toArray(String[]::new)).fields(false)
+                    .constructors(false).methods(true).build());
+        }
+    }
+
     @SuppressWarnings("unchecked")
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)

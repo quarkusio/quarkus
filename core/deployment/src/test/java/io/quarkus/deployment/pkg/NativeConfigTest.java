@@ -23,7 +23,7 @@ class NativeConfigTest {
 
         assertThat(createConfig("mandrel").getEffectiveBuilderImage(false)).contains("ubi-quarkus-mandrel").contains("java11");
         assertThat(createConfig("mandrel").getEffectiveBuilderImage(true)).contains("ubi-quarkus-mandrel").contains("java17");
-        assertThat(createConfig("Mandrel").getEffectiveBuilderImage(true)).contains("ubi-quarkus-mandrel").contains("java17");
+        assertThat(createConfig("Mandrel").getEffectiveBuilderImage(false)).contains("ubi-quarkus-mandrel").contains("java11");
         assertThat(createConfig("Mandrel").getEffectiveBuilderImage(true)).contains("ubi-quarkus-mandrel").contains("java17");
         assertThat(createConfig("MANDREL").getEffectiveBuilderImage(false)).contains("ubi-quarkus-mandrel").contains("java11");
         assertThat(createConfig("MANDREL").getEffectiveBuilderImage(true)).contains("ubi-quarkus-mandrel").contains("java17");

@@ -46,7 +46,7 @@ public class UpxCompressionBuildStep {
 
         String effectiveBuilderImage = nativeConfig.getEffectiveBuilderImage(
                 compiledJavaVersionBuildItem.getJavaVersion()
-                        .isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE);
+                        .isExactlyJava11() == CompiledJavaVersionBuildItem.JavaVersion.Status.FALSE);
         Optional<File> upxPathFromSystem = getUpxFromSystem();
         if (upxPathFromSystem.isPresent()) {
             log.debug("Running UPX from system path");

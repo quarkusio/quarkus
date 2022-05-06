@@ -39,7 +39,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
         outputPath = outputDir == null ? null : outputDir.toAbsolutePath().toString();
         containerName = "build-native-" + RandomStringUtils.random(5, true, false);
-        this.needJava17Image = javaVersion.isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE;
+        this.needJava17Image = javaVersion.isExactlyJava11() == CompiledJavaVersionBuildItem.JavaVersion.Status.FALSE;
     }
 
     @Override

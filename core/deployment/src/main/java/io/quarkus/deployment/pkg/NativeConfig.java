@@ -16,9 +16,9 @@ import io.quarkus.runtime.util.ContainerRuntimeUtil;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class NativeConfig {
 
-    public static final String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-native-image:22.1-java11";
+    public static final String GRAALVM_BUILDER_IMAGE_JAVA_11 = "quay.io/quarkus/ubi-quarkus-native-image:22.1-java11";
     public static final String GRAALVM_BUILDER_IMAGE_JAVA_17 = "quay.io/quarkus/ubi-quarkus-native-image:22.1-java17";
-    public static final String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel:22.1-java11";
+    public static final String MANDREL_BUILDER_IMAGE_JAVA_11 = "quay.io/quarkus/ubi-quarkus-mandrel:22.1-java11";
     public static final String MANDREL_BUILDER_IMAGE_JAVA_17 = "quay.io/quarkus/ubi-quarkus-mandrel:22.1-java17";
 
     /**
@@ -218,9 +218,9 @@ public class NativeConfig {
     public String getEffectiveBuilderImage(boolean useJava17Images) {
         final String builderImageName = this.builderImage.toUpperCase();
         if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
-            return useJava17Images ? GRAALVM_BUILDER_IMAGE_JAVA_17 : DEFAULT_GRAALVM_BUILDER_IMAGE;
+            return useJava17Images ? GRAALVM_BUILDER_IMAGE_JAVA_17 : GRAALVM_BUILDER_IMAGE_JAVA_11;
         } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
-            return useJava17Images ? MANDREL_BUILDER_IMAGE_JAVA_17 : DEFAULT_MANDREL_BUILDER_IMAGE;
+            return useJava17Images ? MANDREL_BUILDER_IMAGE_JAVA_17 : MANDREL_BUILDER_IMAGE_JAVA_11;
         } else {
             return this.builderImage;
         }

@@ -18,6 +18,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.util.FileUtil;
@@ -35,6 +36,7 @@ public class UpxCompressionBuildStep {
 
     @BuildStep(onlyIf = NativeBuild.class)
     public void compress(NativeConfig nativeConfig, NativeImageBuildItem image,
+            CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
             BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
         if (nativeConfig.compression.level.isEmpty()) {
@@ -42,6 +44,9 @@ public class UpxCompressionBuildStep {
             return;
         }
 
+        String effectiveBuilderImage = nativeConfig.getEffectiveBuilderImage(
+                compiledJavaVersionBuildItem.getJavaVersion()
+                        .isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE);
         Optional<File> upxPathFromSystem = getUpxFromSystem();
         if (upxPathFromSystem.isPresent()) {
             log.debug("Running UPX from system path");
@@ -49,8 +54,8 @@ public class UpxCompressionBuildStep {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
         } else if (nativeConfig.isContainerBuild()) {
-            log.infof("Running UPX from a container using the builder image: " + nativeConfig.getEffectiveBuilderImage());
-            if (!runUpxInContainer(image, nativeConfig)) {
+            log.infof("Running UPX from a container using the builder image: " + effectiveBuilderImage);
+            if (!runUpxInContainer(image, nativeConfig, effectiveBuilderImage)) {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
         } else {
@@ -95,7 +100,8 @@ public class UpxCompressionBuildStep {
 
     }
 
-    private boolean runUpxInContainer(NativeImageBuildItem nativeImage, NativeConfig nativeConfig) {
+    private boolean runUpxInContainer(NativeImageBuildItem nativeImage, NativeConfig nativeConfig,
+            String effectiveBuilderImage) {
         String level = getCompressionLevel(nativeConfig.compression.level.getAsInt());
         List<String> extraArgs = nativeConfig.compression.additionalArgs.orElse(Collections.emptyList());
 
@@ -132,7 +138,7 @@ public class UpxCompressionBuildStep {
         Collections.addAll(commandLine, "-v",
                 volumeOutputPath + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + ":z");
 
-        commandLine.add(nativeConfig.getEffectiveBuilderImage());
+        commandLine.add(effectiveBuilderImage);
         commandLine.add(level);
         commandLine.addAll(extraArgs);
 

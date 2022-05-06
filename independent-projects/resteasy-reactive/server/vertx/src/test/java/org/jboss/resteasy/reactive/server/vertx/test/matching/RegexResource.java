@@ -8,8 +8,8 @@ import javax.ws.rs.PathParam;
 public class RegexResource {
 
     @GET
-    @Path("/{pin:[A-Z0-9]{4}}")
-    public String hello(@PathParam("pin") String name) {
+    @Path("/{  1p-_in.  :  [A-Z0-9]{4}  }")
+    public String hello(@PathParam("1p-_in.") String name) {
         return "pin " + name;
     }
 

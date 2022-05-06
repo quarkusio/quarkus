@@ -21,6 +21,7 @@
     </properties>
     <modules>
         <module>beans</module>
+        <module>intermediary</module>
         <module>hello</module>
         <module>runner</module>
     </modules>
@@ -86,6 +87,11 @@
             <dependency>
                 <groupId>org.acme</groupId>
                 <artifactId>acme-runner</artifactId>
+                <version>\${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.acme</groupId>
+                <artifactId>acme-intermediary</artifactId>
                 <version>\${project.version}</version>
             </dependency>
         </dependencies>

@@ -263,15 +263,12 @@ And the service as follows:
 ----
 package org.acme.rest.client;
 
-import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.net.URI;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 @Path("/extension")
 public class ExtensionsResource {
@@ -427,15 +424,13 @@ The `Uni` version is very similar:
 ----
 package org.acme.rest.client;
 
+import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 @Path("/extensions")
 @RegisterRestClient(configKey = "extensions-api")
@@ -454,14 +449,12 @@ The `ExtensionsResource` becomes:
 ----
 package org.acme.rest.client;
 
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 @Path("/extension")
 public class ExtensionsResource {
@@ -519,7 +512,6 @@ The code below demonstrates how to use each of these techniques:
 ----
 package org.acme.rest.client;
 
-import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -529,7 +521,6 @@ import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 @Path("/extensions")
 @RegisterRestClient
@@ -596,6 +587,8 @@ Also, there is a reactive flavor of `ClientHeadersFactory` that allows doing blo
 [source, java]
 ----
 package org.acme.rest.client;
+
+import io.smallrye.mutiny.Uni;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 

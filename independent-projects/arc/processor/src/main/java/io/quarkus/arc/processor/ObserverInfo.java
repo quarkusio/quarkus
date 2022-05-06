@@ -8,9 +8,11 @@ import io.quarkus.arc.processor.ObserverTransformer.ObserverTransformation;
 import io.quarkus.arc.processor.ObserverTransformer.TransformationContext;
 import io.quarkus.gizmo.MethodCreator;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.enterprise.event.Reception;
@@ -25,6 +27,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 
 /**
@@ -48,10 +51,20 @@ public class ObserverInfo implements InjectionTargetInfo {
         } else {
             priority = ObserverMethod.DEFAULT_PRIORITY;
         }
+
+        Type observedType = observerMethod.parameters().get(eventParameter.position());
+        if (Types.containsTypeVariable(observedType)) {
+            Map<TypeVariable, Type> resolvedTypeVariables = Types
+                    .resolvedTypeVariables(declaringBean.getImplClazz(), declaringBean.getDeployment())
+                    .getOrDefault(observerMethod.declaringClass(), Collections.emptyMap());
+            observedType = Types.resolveTypeParam(observedType, resolvedTypeVariables,
+                    declaringBean.getDeployment().getBeanArchiveIndex());
+        }
+
         return create(null, declaringBean.getDeployment(), declaringBean.getTarget().get().asClass().name(), declaringBean,
                 observerMethod, injection,
                 eventParameter,
-                observerMethod.parameters().get(eventParameter.position()),
+                observedType,
                 initQualifiers(declaringBean.getDeployment(), observerMethod, eventParameter),
                 initReception(isAsync, declaringBean.getDeployment(), observerMethod),
                 initTransactionPhase(isAsync, declaringBean.getDeployment(), observerMethod), isAsync, priority, transformers,

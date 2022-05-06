@@ -339,7 +339,7 @@ public class LocalProject {
                 .setBuildDir(getOutputDir());
 
         final Build build = (modelBuildingResult == null ? getRawModel() : modelBuildingResult.getEffectiveModel()).getBuild();
-        boolean addedNonTestSourceSets = false;
+        boolean addDefaultSourceSet = true;
         if (build != null && !build.getPlugins().isEmpty()) {
             for (Plugin plugin : build.getPlugins()) {
                 if (!plugin.getArtifactId().equals("maven-jar-plugin")) {
@@ -348,7 +348,7 @@ public class LocalProject {
                 if (plugin.getExecutions().isEmpty()) {
                     final DefaultArtifactSources src = processJarPluginExecutionConfig(plugin.getConfiguration(), false);
                     if (src != null) {
-                        addedNonTestSourceSets = true;
+                        addDefaultSourceSet = false;
                         moduleBuilder.addArtifactSources(src);
                     }
                 } else {
@@ -356,7 +356,7 @@ public class LocalProject {
                         DefaultArtifactSources src = null;
                         if (e.getGoals().contains(ArtifactCoords.TYPE_JAR)) {
                             src = processJarPluginExecutionConfig(e.getConfiguration(), false);
-                            addedNonTestSourceSets |= src != null;
+                            addDefaultSourceSet &= !e.getId().equals("default-jar");
                         } else if (e.getGoals().contains("test-jar")) {
                             src = processJarPluginExecutionConfig(e.getConfiguration(), true);
                         }
@@ -365,10 +365,11 @@ public class LocalProject {
                         }
                     }
                 }
+                break;
             }
         }
 
-        if (!addedNonTestSourceSets) {
+        if (addDefaultSourceSet) {
             moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.MAIN,
                     Collections.singletonList(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir())),
                     collectMainResources(null)));
@@ -408,7 +409,9 @@ public class LocalProject {
         if (elementValue == null || elementValue.isEmpty() || !(elementValue.startsWith("${") && elementValue.endsWith("}"))) {
             return elementValue;
         }
-        return rawModel.getProperties().getProperty(elementValue.substring(2, elementValue.length() - 1), elementValue);
+        final String propName = elementValue.substring(2, elementValue.length() - 1);
+        String v = System.getProperty(propName);
+        return v == null ? rawModel.getProperties().getProperty(propName, elementValue) : v;
     }
 
     private DefaultArtifactSources processJarPluginExecutionConfig(Object config, boolean test) {

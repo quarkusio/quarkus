@@ -94,6 +94,12 @@ Although RESTEasy Reactive provides the same spec compliant behavior as RESTEasy
 
 The most common case where the difference in providers might result in different behavior, is the included `javax.ws.rs.ext.ExceptionMapper` implementations. To see what classes are included in the application, launch the application in dev mode and navigate to http://localhost:8080/q/dev/io.quarkus.quarkus-resteasy-reactive/exception-mappers.
 
+==== Service Loading
+
+RESTEasy Classic supports determining providers at build time using Java's Service Loader. In order to ensure that all providers are determined at build time,
+RESTEasy Reactive does not support this feature. Instead, users that have providers in application dependencies are encouraged to index those dependencies
+using one of the methods described in the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
+
 === Multipart support
 
 HTTP Multipart support in RESTEasy Reactive does **not** reuse the same types or annotations as RESTEasy Classic and thus users are encouraged to read <<resteasy-reactive#multipart,this>> part of the reference documentation.

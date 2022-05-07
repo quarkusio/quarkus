@@ -79,6 +79,14 @@
                     <groupId>jakarta.ws.rs</groupId>
                     <artifactId>jakarta.ws.rs-api</artifactId>
                 </exclusion>
+                <!--
+                Versions of the EL API ends up being inconsistent.
+                A proper version is brought by ArC.
+                -->
+                <exclusion>
+                    <groupId>jakarta.el</groupId>
+                    <artifactId>jakarta.el-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <!-- Apicurio -->
@@ -121,6 +129,10 @@
                 <exclusion>
                     <groupId>com.worldturner.medeia</groupId>
                     <artifactId>medeia-validator-jackson</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                    <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -74,7 +74,7 @@ transform_module () {
 
 transform_kotlin_module () {
   # this is very ad hoc but hopefully it will be good enough
-  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.transaction.Transactional; do
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.xml.bind. javax.transaction.Transactional; do
     local newPackage=${package/javax/jakarta}
     find $1 -name '*.kt' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
   done
@@ -82,7 +82,7 @@ transform_kotlin_module () {
 
 transform_java_module () {
   # this is very ad hoc but hopefully it will be good enough
-  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.transaction.Transactional; do
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.xml.bind. javax.transaction.Transactional; do
     local newPackage=${package/javax/jakarta}
     find $1 -name '*.java' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
   done
@@ -90,7 +90,7 @@ transform_java_module () {
 
 transform_scala_module () {
   # this is very ad hoc but hopefully it will be good enough
-  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.transaction.Transactional; do
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.xml.bind. javax.transaction.Transactional; do
     local newPackage=${package/javax/jakarta}
     find $1 -name '*.scala' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
   done
@@ -298,7 +298,7 @@ else
   ./mvnw -B clean install -Dno-test-modules -DskipTests -DskipITs
 fi
 
-./mvnw -B clean install -f integration-tests -DskipTests -DskipITs
+./mvnw -B clean install -f integration-tests -DskipTests -DskipITs -pl '!:quarkus-integration-test-infinispan-client'
 
 exit 0
 

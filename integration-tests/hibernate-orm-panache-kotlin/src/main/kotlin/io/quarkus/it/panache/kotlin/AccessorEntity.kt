@@ -1,6 +1,7 @@
 package io.quarkus.it.panache.kotlin
 
 import javax.persistence.Entity
+import javax.persistence.Transient
 
 @Entity
 open class AccessorEntity : GenericEntity<Int>() {
@@ -27,9 +28,9 @@ open class AccessorEntity : GenericEntity<Int>() {
         }
     var f = 0f
     var d = 0.0
-    @javax.persistence.Transient
+    @Transient
     var trans: Any? = null
-    @javax.persistence.Transient
+    @Transient
     var trans2: Any? = null
 
     // FIXME: those appear to be mapped by hibernate

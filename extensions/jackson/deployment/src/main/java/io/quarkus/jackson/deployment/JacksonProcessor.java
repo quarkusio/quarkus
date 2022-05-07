@@ -99,6 +99,8 @@ public class JacksonProcessor {
                 new ReflectiveClassBuildItem(true, false, "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
                         "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
                         "com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer",
+                        "com.fasterxml.jackson.databind.deser.std.DateDeserializers$SqlDateDeserializer",
+                        "com.fasterxml.jackson.databind.deser.std.DateDeserializers$TimestampDeserializer",
                         "com.fasterxml.jackson.annotation.SimpleObjectIdResolver"));
 
         IndexView index = combinedIndexBuildItem.getIndex();

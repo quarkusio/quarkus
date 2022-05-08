@@ -79,6 +79,7 @@ public class CliHelpTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "dev", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
+        assertThat(result.stdout).contains("--offline");
     }
 
     @Test

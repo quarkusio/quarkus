@@ -273,9 +273,9 @@ public class CliProjectGradleTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        // 1 --clean --tests --suspend
+        // 1 --clean --tests --suspend --offline
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
-                "--clean", "--tests", "--debug", "--suspend", "--debug-mode=listen");
+                "--clean", "--tests", "--debug", "--suspend", "--debug-mode=listen", "--offline");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
@@ -293,6 +293,9 @@ public class CliProjectGradleTest {
 
         Assertions.assertTrue(result.stdout.contains("-Dsuspend"),
                 "gradle command should specify '-Dsuspend'\n" + result);
+
+        Assertions.assertTrue(result.stdout.contains("--offline"),
+                "gradle command should specify --offline\n" + result);
 
         // 2 --no-clean --no-tests --no-debug
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",

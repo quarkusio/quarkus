@@ -18,6 +18,9 @@ public class DevOptions {
             "--no-tests" }, description = "Toggle continuous testing mode. Enabled by default.", negatable = true, hidden = true)
     public boolean runTests = true; // TODO: does this make sense re: continuous test?
 
+    @CommandLine.Option(order = 5, names = { "--offline" }, description = "Work offline.", defaultValue = "false")
+    public boolean offline = false;
+
     public boolean skipTests() {
         return !runTests;
     }
@@ -28,6 +31,6 @@ public class DevOptions {
 
     @Override
     public String toString() {
-        return "DevOptions [clean=" + clean + ", tests=" + runTests + "]";
+        return "DevOptions [clean=" + clean + ", tests=" + runTests + ", offline=" + offline + "]";
     }
 }

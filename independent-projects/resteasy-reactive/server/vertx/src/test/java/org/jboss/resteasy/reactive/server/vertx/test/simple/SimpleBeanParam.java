@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import java.util.List;
+import java.util.Optional;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.HeaderParam;
@@ -62,6 +63,15 @@ public class SimpleBeanParam {
     @QueryParam("query")
     List<MyParameter> myParameterList;
 
+    @QueryParam("missing")
+    Optional<String> missingOptionalString;
+
+    @QueryParam("query")
+    Optional<String> optionalQuery;
+
+    @QueryParam("query")
+    Optional<ParameterWithFromString> optionalParameterWithFromString;
+
     public void check(String path) {
         Assertions.assertEquals("one-query", query);
         Assertions.assertEquals("one-query", privateQuery);
@@ -84,5 +94,8 @@ public class SimpleBeanParam {
         Assertions.assertEquals(42, missingPrimitiveParamWithDefaultValue);
         Assertions.assertEquals("one-queryone-query", myParameter.toString());
         Assertions.assertEquals("one-queryone-query", myParameterList.get(0).toString());
+        Assertions.assertTrue(missingOptionalString.isEmpty());
+        Assertions.assertEquals("one-query", optionalQuery.get());
+        Assertions.assertEquals("ParameterWithFromString[val=one-query]", optionalParameterWithFromString.get().toString());
     }
 }

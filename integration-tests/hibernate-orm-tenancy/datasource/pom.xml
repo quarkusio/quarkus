@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <artifactId>quarkus-integration-test-hibernate-orm-tenancy</artifactId>
@@ -12,7 +12,9 @@
 
     <artifactId>quarkus-integration-test-hibernate-orm-tenancy-datasource</artifactId>
     <name>Quarkus - Integration Tests - Hibernate - Tenancy - Datasource</name>
-    <description>Tests for Hibernate ORM Multitenancy using one datasource per tenant, running with the MariaDB database</description>
+    <description>Tests for Hibernate ORM Multitenancy using one datasource per tenant, running with the MariaDB
+        database
+    </description>
 
     <properties>
         <mariadb.base_url>jdbc:mariadb://localhost:3306</mariadb.base_url>
@@ -244,7 +246,9 @@
                                         </wait>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d:Z</volume>
+                                                <volume>
+                                                    ${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d${volume.access.modifier}
+                                                </volume>
                                             </bind>
                                         </volumes>
                                     </run>

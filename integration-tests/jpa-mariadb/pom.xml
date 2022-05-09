@@ -185,12 +185,16 @@
                                         <wait>
                                             <time>20000</time>
                                             <exec>
-                                                <postStart>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test</postStart>
+                                                <postStart>mysqladmin ping -h localhost -u hibernate_orm_test
+                                                    -phibernate_orm_test
+                                                </postStart>
                                             </exec>
                                         </wait>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d:Z</volume>
+                                                <volume>
+                                                    ${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d${volume.access.modifier}
+                                                </volume>
                                             </bind>
                                         </volumes>
                                     </run>

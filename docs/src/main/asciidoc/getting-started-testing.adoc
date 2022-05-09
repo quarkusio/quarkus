@@ -1209,7 +1209,7 @@ guide except injecting into tests (and the native executable runs in a separate 
 This is covered in the xref:building-native-image.adoc[Native Executable Guide].
 
 [#quarkus-integration-test]
-== Using @QuarkusIntegrationTest
+== Using `@QuarkusIntegrationTest`
 
 `@QuarkusIntegrationTest` should be used to launch and test the artifact produced by the Quarkus build, and supports testing a jar (of whichever type), a native image or container image.
 Put simply, this means that if the result of a Quarkus build (`mvn package` or `gradle build`) is a jar, that jar will be launched as `java -jar ...` and tests run against it.
@@ -1281,10 +1281,19 @@ When `@QuarkusIntegrationTest` results in launching a container (because the app
 This means that `@QuarkusIntegrationTest` works out of the box with containers launched via xref:dev-services.adoc[Dev Services], but it also means that it enables using <<quarkus-test-resource,QuarkusTestLifecycleManager>> resources that launch additional containers.
 This can be achieved by having your `QuarkusTestLifecycleManager` implement `io.quarkus.test.common.DevServicesContext.ContextAware`. A simple example could be the following:
 
+The container running the resource to test against, for example PostgreSQL via Testcontainers, is assigned an IP address from the container's network.
+Use the container's "public" IP from its network and the "unmapped" port number to connect to the service.
+The Testcontainers library usually return connection strings without respecting the container network, so additional code is needed to provide Quarkus the "correct" connection string using the container's IP on the container network and the _unmapped_ port number.
+
+The following example illustrates the use with PostgreSQL, but the approach is applicable to all containers.
+
 [source,java]
 ----
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -1293,6 +1302,7 @@ import java.util.Optional;
 public class CustomResource implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
 
     private Optional<String> containerNetworkId;
+    private JdbcDatabaseContainer container;
 
     @Override
     public void setIntegrationTestContext(DevServicesContext context) {
@@ -1302,9 +1312,36 @@ public class CustomResource implements QuarkusTestResourceLifecycleManager, DevS
     @Override
     public Map<String, String> start() {
         // start a container making sure to call withNetworkMode() with the value of containerNetworkId if present
+        container = new PostgreSQLContainer<>("postgres:latest").withLogConsumer(outputFrame -> {});
+
+        // apply the network to the container
+        containerNetworkId.ifPresent(container::withNetworkMode);
+
+        String jdbcUrl = container.getJdbcUrl();
+        if (containerNetworkId.isPresent()) {
+            // Replace hostname + port in the provided JDBC URL with the hostname of the Docker container
+            // running PostgreSQL and the listening port.
+            jdbcUrl = fixJdbcUrl(jdbcUrl);
+        }
 
         // return a map containing the configuration the application needs to use the service
-        return new HashMap<>();
+        return ImmutableMap.of(
+            "quarkus.datasource.username", container.getUsername(),
+            "quarkus.datasource.password", container.getPassword(),
+            "quarkus.datasource.jdbc.url", jdbcUrl);
+    }
+
+    private String fixJdbcUrl(String jdbcUrl) {
+        // Part of the JDBC URL to replace
+        String hostPort = container.getHost() + ':' + container.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT);
+
+        // Host/IP on the container network plus the unmapped port
+        String networkHostPort =
+            container.getCurrentContainerInfo().getConfig().getHostName()
+            + ':'
+            + PostgreSQLContainer.POSTGRESQL_PORT;
+
+        return jdbcUrl.replace(hostPort, networkHostPort);
     }
 
     @Override

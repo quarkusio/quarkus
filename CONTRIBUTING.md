@@ -24,7 +24,7 @@ But first, read this page (including the small print at the end).
       * [`OutOfMemoryError` while importing](#-outofmemoryerror--while-importing)
       * [`package sun.misc does not exist` while building](#-package-sunmisc-does-not-exist--while-building)
       * [Formatting](#formatting)
-  + [GitPod](#gitpod)
+  + [Gitpod](#gitpod)
 * [Build](#build)
   + [Workflow tips](#workflow-tips)
     - [Building all modules of an extension](#building-all-modules-of-an-extension)
@@ -289,9 +289,9 @@ navigate to _Editor_ -> _Code Style_ -> _Java_ -> _Imports_
 and set _Class count to use import with '\*'_ to `999`.
 Do the same with _Names count to use static import with '\*'_.
 
-### GitPod
+### Gitpod
 
-You can also use [GitPod](https://gitpod.io) to contribute without install anything on your computer. Click [here](#https://gitpod.io/https://github.com/quarkusio/quarkus/-/tree/main/) to start a workspace.
+You can also use [Gitpod](https://gitpod.io) to contribute without installing anything on your computer. Click [here](https://gitpod.io/#https://github.com/quarkusio/quarkus/-/tree/main/) to start a workspace.
 
 
 ## Build

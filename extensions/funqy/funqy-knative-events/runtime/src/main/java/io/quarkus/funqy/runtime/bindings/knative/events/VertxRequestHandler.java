@@ -261,6 +261,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             outputCloudEvent = (CloudEvent<?>) output;
                         }
 
+                        if (outputCloudEvent == null) {
+                            routingContext.response().setStatusCode(204);
+                            routingContext.response().end();
+                            return;
+                        }
+
                         String id = outputCloudEvent.id();
                         if (id == null) {
                             id = getResponseId();

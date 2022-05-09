@@ -182,7 +182,19 @@ jobs:
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
           ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          [ -f gib-impacted.log ] && GIB_IMPACTED=$(cat gib-impacted.log) || GIB_IMPACTED=''
+          if [ -f gib-impacted.log ]
+          then
+            # TODO: for now, we don't run TCKs and for the jakarta-rewrite branch
+            # we filter them here so that it cascades to all the builds
+            if [ "${GITHUB_REF_NAME}" == "jakarta-rewrite" ]
+            then
+              GIB_IMPACTED=$(cat gib-impacted.log | grep -Pv '^(tcks/|integration-tests/grpc-|integration-tests/infinispan-client|integration-tests/kafka-avro|integration-tests/opentelemetry-grpc)')
+            else
+              GIB_IMPACTED=$(cat gib-impacted.log)
+            fi
+          else
+            GIB_IMPACTED=''
+          fi
           echo "GIB_IMPACTED: ${GIB_IMPACTED}"
           echo "::set-output name=impacted_modules::${GIB_IMPACTED//$'\n'/'%0A'}"
       - name: Tar Maven Repo

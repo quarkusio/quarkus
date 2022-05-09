@@ -68,6 +68,22 @@
             </build>
         </profile>
         <profile>
+            <id>quick-build-docs</id>
+            <activation>
+                <property>
+                    <name>quicklyDocs</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
             <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
             <id>quick-build-ci</id>
             <activation>

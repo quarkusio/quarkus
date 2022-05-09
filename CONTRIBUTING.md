@@ -452,10 +452,10 @@ The Asciidoc files can be found in the [`src/main/asciidoc` directory](https://g
 
 When contributing a significant documentation change, it is highly recommended to run the build and check the output.
 
-First build the whole Quarkus repository with the documentation build enabled (`-Dquickly` skips the documentation build):
+First build the whole Quarkus repository with the documentation build enabled:
 
 ```
-./mvnw -Dquickly -DskipDocs=false clean install
+./mvnw -DquicklyDocs
 ```
 
 This will generate the configuration properties documentation includes in the root `target/asciidoc/generated/config/` directory and will avoid a lot of warnings when building the documentation module.

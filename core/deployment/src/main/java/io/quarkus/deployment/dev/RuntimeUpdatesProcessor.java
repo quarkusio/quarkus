@@ -874,6 +874,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             if (rootPaths.isEmpty() || outputPath == null) {
                 continue;
             }
+            Path outputDir = Paths.get(outputPath);
             final List<Path> roots = rootPaths.stream()
                     .filter(Files::exists)
                     .filter(Files::isReadable)
@@ -883,7 +884,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 final Set<Path> seen = new HashSet<>(moduleResources);
                 try {
                     for (Path root : roots) {
-                        Path outputDir = Paths.get(outputPath);
                         //since the stream is Closeable, use a try with resources so the underlying iterator is closed
                         try (final Stream<Path> walk = Files.walk(root)) {
                             walk.forEach(path -> {
@@ -927,11 +927,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
             }
 
-            for (Path root : roots) {
-                Path outputDir = Paths.get(outputPath);
-                for (String path : timestampSet.watchedFilePaths.keySet()) {
+            for (String path : timestampSet.watchedFilePaths.keySet()) {
+                boolean pathCurrentlyExisting = false;
+                boolean pathPreviouslyExisting = false;
+                for (Path root : roots) {
                     Path file = root.resolve(path);
                     if (file.toFile().exists()) {
+                        pathCurrentlyExisting = true;
                         try {
                             long value = Files.getLastModifiedTime(file).toMillis();
                             Long existing = timestampSet.watchedFileTimestamps.get(file);
@@ -967,13 +969,20 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             throw new UncheckedIOException(e);
                         }
                     } else {
-                        timestampSet.watchedFileTimestamps.put(file, 0L);
-                        Path target = outputDir.resolve(path);
-                        try {
-                            FileUtil.deleteDirectory(target);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
+                        Long prevValue = timestampSet.watchedFileTimestamps.put(file, 0L);
+                        pathPreviouslyExisting = pathPreviouslyExisting || (prevValue != null && prevValue > 0);
+                    }
+                }
+                if (!pathCurrentlyExisting) {
+                    if (pathPreviouslyExisting) {
+                        ret.add(path);
+                    }
+
+                    Path target = outputDir.resolve(path);
+                    try {
+                        FileUtil.deleteIfExists(target);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
                 }
             }
@@ -1011,7 +1020,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             throw new UncheckedIOException(e);
                         }
                     } else {
-                        timestampSet.watchedFileTimestamps.put(watchedFile, 0L);
+
+                        Long prevValue = timestampSet.watchedFileTimestamps.put(watchedFile, 0L);
+
+                        if (prevValue != null && prevValue > 0) {
+                            ret.add(watchedFilePath);
+                        }
                     }
                 }
             }

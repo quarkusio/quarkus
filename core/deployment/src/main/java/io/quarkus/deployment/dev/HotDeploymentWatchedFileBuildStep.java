@@ -10,10 +10,10 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.dev.testing.TestWatchedFiles;
 
-public class HotDeploymentConfigFileBuildStep {
+public class HotDeploymentWatchedFileBuildStep {
 
     @BuildStep
-    ServiceStartBuildItem setupConfigFileHotDeployment(List<HotDeploymentWatchedFileBuildItem> files,
+    ServiceStartBuildItem setupWatchedFileHotDeployment(List<HotDeploymentWatchedFileBuildItem> files,
             LaunchModeBuildItem launchModeBuildItem) {
         // TODO: this should really be an output of the RuntimeRunner
         RuntimeUpdatesProcessor processor = RuntimeUpdatesProcessor.INSTANCE;

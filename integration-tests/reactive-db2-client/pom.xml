@@ -165,6 +165,11 @@
                                 <image>
                                     <name>${db2.image}</name>
                                     <alias>quarkus-test-db2</alias>
+                                    <build>
+                                        <createImageOptions>
+                                            <platform>${db2.image.platform}</platform>
+                                        </createImageOptions>
+                                    </build>
                                     <run>
                                         <network>
                                             <mode>bridge</mode>
@@ -174,14 +179,14 @@
                                             <port>50005:50000</port>
                                         </ports>
                                         <env>
-                                        	<DB2INSTANCE>hreact</DB2INSTANCE>
-                                        	<DB2INST1_PASSWORD>hreact</DB2INST1_PASSWORD>
-                                        	<DBNAME>hreact</DBNAME>
-                                        	<LICENSE>accept</LICENSE>
-                                        	<!-- These help the DB2 container start faster -->
-                                        	<AUTOCONFIG>false</AUTOCONFIG>
-                                        	<ARCHIVE_LOGS>false</ARCHIVE_LOGS>
-                                        	<PERSISTENT_HOME>false</PERSISTENT_HOME>
+                                            <DB2INSTANCE>hreact</DB2INSTANCE>
+                                            <DB2INST1_PASSWORD>hreact</DB2INST1_PASSWORD>
+                                            <DBNAME>hreact</DBNAME>
+                                            <LICENSE>accept</LICENSE>
+                                            <!-- These help the DB2 container start faster -->
+                                            <AUTOCONFIG>false</AUTOCONFIG>
+                                            <ARCHIVE_LOGS>false</ARCHIVE_LOGS>
+                                            <PERSISTENT_HOME>false</PERSISTENT_HOME>
                                         </env>
                                         <log>
                                             <prefix>DB2:</prefix>

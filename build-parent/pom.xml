@@ -90,6 +90,7 @@
         <postgres.image>docker.io/postgres:14.2</postgres.image>
         <mariadb.image>docker.io/mariadb:10.7</mariadb.image>
         <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
+        <db2.image.platform>${os.family}/${os.arch}</db2.image.platform>
         <mssql.image>mcr.microsoft.com/mssql/server:2019-CU15-ubuntu-20.04</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-xe:21-slim</oracle.image>
@@ -1244,6 +1245,8 @@
             <properties>
                 <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
                 <volume.access.modifier></volume.access.modifier>
+                <!-- An ARM image for db2 isn't available, but if we request the amd64 one it all works fine -->
+                <db2.image.platform>linux/amd64</db2.image.platform>
             </properties>
         </profile>
 

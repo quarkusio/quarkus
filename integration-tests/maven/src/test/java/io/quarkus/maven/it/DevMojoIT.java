@@ -928,6 +928,25 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testThatConfigFileDeletionsAreDetected() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/dev-mode-file-deletion");
+        runAndCheck();
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Bonjour"));
+
+        File source = new File(testDir, "src/main/resources/application.properties");
+        FileUtils.delete(source);
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greetings").contains("Guten Morgen"));
+    }
+
+    @Test
     public void testThatMultipleResourceDirectoriesAreSupported() throws MavenInvocationException, IOException {
         testDir = initProject("projects/dev-mode-multiple-resource-dirs");
         testMultipleResourceDirectories();

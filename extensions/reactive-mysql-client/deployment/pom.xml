@@ -15,6 +15,7 @@
   ~ under the License.
   -->
 
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -148,8 +149,30 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mariadb.image}</name>
+                                    <name>${mariadb.image}-healthed</name>
                                     <alias>quarkus-test-mariadb</alias>
+                                    <build>
+                                        <from>${mariadb.image}</from>
+                                        <healthCheck>
+                                            <interval>5</interval>
+                                            <timeout>3</timeout>
+
+                                            <!--       We could also use /usr/local/bin/healthcheck.sh but it seemed complicated to get the right level</cmd>-->
+                                            <cmd>
+                                                <exec>
+                                                    <arg>mysqladmin</arg>
+                                                    <arg>ping</arg>
+                                                    <arg>-h</arg>
+                                                    <arg>localhost</arg>
+                                                    <arg>--password=hibernate_orm_test</arg>
+                                                    <arg>--verbose</arg>
+                                                    <arg>--user</arg>
+                                                    <arg>hibernate_orm_test</arg>
+
+                                                </exec>
+                                            </cmd>
+                                        </healthCheck>
+                                    </build>
                                     <run>
                                         <network>
                                             <mode>bridge</mode>
@@ -168,29 +191,34 @@
                                             <date>default</date>
                                             <color>cyan</color>
                                         </log>
-                                        <!-- Speed things up a bit by not actually flushing writes to disk -->
+                                        Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>direct</mode>
-                                                <ports>
-                                                    <port>3306</port>
-                                                </ports>
-                                            </tcp>
+                                            <!--   good docs found at: http://dmp.fabric8.io/#start-wait -->
+                                            <!-- the sqladmin check seems more reliable than a tcp check, especially with
+                                           diverse container runtimes -->
+                                            <healthy>true
+                                            </healthy>
                                             <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
+
+                                            <exec>
+                                                <postStart>echo "wahoooo!!!!"</postStart>
+                                                <breakOnError>true</breakOnError>
+                                            </exec>
                                             <time>40000</time>
                                         </wait>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d:Z</volume>
+                                                <volume>
+                                                    ${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d${volume.access.modifier}
+                                                </volume>
                                             </bind>
                                         </volumes>
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all mariadb images currently running, not just those we just started.
-                              Useful to stop processes still running from a previously failed integration test run -->
+                            Stops all mariadb images currently running, not just those we just started.
+                            Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>
                         <executions>
@@ -199,6 +227,7 @@
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>stop</goal>
+                                    <goal>build</goal>
                                     <goal>start</goal>
                                 </goals>
                             </execution>

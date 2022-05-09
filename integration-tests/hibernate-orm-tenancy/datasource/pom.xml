@@ -202,7 +202,6 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <id>docker-mariadb</id>
             <activation>
@@ -221,8 +220,24 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mariadb.image}</name>
+                                    <name>healthcheck-${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
+                                    <build>
+                                        <from>${mariadb.image}</from>
+                                        <healthCheck>
+                                            <!-- The exact values for these aren't very important, but it is important they are there -->
+                                            <!-- The exact values for these aren't very important, but it is important they are there -->
+                                            <interval>5s</interval>
+                                            <timeout>3s</timeout>
+                                            <startPeriod>5s</startPeriod>
+                                            <retries>5</retries>
+                                            <!--  We could also use /usr/local/bin/healthcheck.sh but it seemed complicated to get the right level.
+                                            Note that mysqladmin ping returns 0 even if the password is wrong so we don't need to pass in a password, but it makes the logs cleaner-->
+                                            <cmd>
+                                                <shell>mysqladmin ping -h localhost -u root -psecret|| exit 1</shell>
+                                            </cmd>
+                                        </healthCheck>
+                                    </build>
                                     <run>
                                         <ports>
                                             <port>3308:3306</port>
@@ -240,9 +255,7 @@
                                         <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
                                             <time>20000</time>
-                                            <exec>
-                                                <postStart>mysqladmin ping -h localhost -uroot -psecret</postStart>
-                                            </exec>
+                                            <healthy>true</healthy>
                                         </wait>
                                         <volumes>
                                             <bind>
@@ -255,7 +268,7 @@
                                 </image>
                             </images>
                             <!--Stops all mariadb images currently running, not just those
-                                we just started. Useful to stop processes still running from a previously 
+                                we just started. Useful to stop processes still running from a previously
                                 failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>
@@ -265,6 +278,7 @@
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>stop</goal>
+                                    <goal>build</goal>
                                     <goal>start</goal>
                                 </goals>
                             </execution>
@@ -280,7 +294,7 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
+
 
 </project>

@@ -62,7 +62,7 @@ public class LoggingApiCompletenessTest {
     private static boolean isPrivateStaticFail(Method method) {
         return Modifier.isPrivate(method.getModifiers())
                 && Modifier.isStatic(method.getModifiers())
-                && "fail".equals(method.getName());
+                && ("fail".equals(method.getName()) || "always".equals(method.getName()));
     }
 
     private static boolean areEquivalent(Method jbossLoggingMethod, Method quarkusLogMethod) {

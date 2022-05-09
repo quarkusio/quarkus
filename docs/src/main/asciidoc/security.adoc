@@ -91,7 +91,7 @@ If you need to configure Keycloak programmatically then consider using https://w
 
 `quarkus-oidc-token-propagation` extension depends on the `quarkus-oidc` extension and provides JAX-RS `TokenCredentialRequestFilter` which sets the OpenID Connect Bearer or Authorization Code Flow access token as an HTTP `Authorization` header's  `Bearer` scheme value. This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint and the Quarkus endpoint must be protected itself with the Quarkus OpenID Connect adapter. This filter can be used to propagate the access token to the downstream services.
 
-See the xref:security-openid-connect-client.adoc[Using OpenID Connect and OAuth2 Client] guide for more information.
+See the xref:security-openid-connect-client.adoc[OpenID Connect and Token Propagation Quickstart] and xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client Reference] guides for more information.
 
 [[smallrye-jwt]]
 === SmallRye JWT

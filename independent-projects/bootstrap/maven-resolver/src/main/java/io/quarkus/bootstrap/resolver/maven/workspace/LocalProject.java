@@ -374,7 +374,8 @@ public class LocalProject {
         moduleBuilder.setDependencyConstraints(getRawModel().getDependencyManagement() == null ? Collections.emptyList()
                 : toArtifactDependencies(getRawModel().getDependencyManagement().getDependencies()));
 
-        moduleBuilder.setDependencies(toArtifactDependencies(getRawModel().getDependencies()));
+        final Model model = modelBuildingResult == null ? rawModel : modelBuildingResult.getEffectiveModel();
+        moduleBuilder.setDependencies(toArtifactDependencies(model.getDependencies()));
 
         return this.module = moduleBuilder.build();
     }

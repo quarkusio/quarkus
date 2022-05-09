@@ -42,7 +42,6 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.steps.LocaleProcessor;
-import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 
@@ -313,7 +312,7 @@ public class NativeImageBuildStep {
         }
 
         for (ResolvedDependency depArtifact : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
-            if (depArtifact.getType().equals(GACTV.TYPE_JAR)) {
+            if (depArtifact.isJar()) {
                 for (Path resolvedDep : depArtifact.getResolvedPaths()) {
                     if (!Files.isDirectory(resolvedDep)) {
                         // Do we need to handle transformed classes?
@@ -665,6 +664,19 @@ public class NativeImageBuildStep {
                 //address https://github.com/quarkusio/quarkus-quickstarts/issues/993
                 nativeImageArgs.add("-J--add-opens=java.base/java.text=ALL-UNNAMED");
 
+                if (nativeConfig.enableReports) {
+                    if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_21_3_2)) {
+                        nativeImageArgs.add("-H:+PrintAnalysisCallTree");
+                    } else {
+                        nativeImageArgs.add("-H:PrintAnalysisCallTreeType=CSV");
+                    }
+                }
+
+                /*
+                 * Any parameters following this call are forced over the user provided parameters in
+                 * quarkus.native.additional-build-args. So if you need a parameter to be overridable through
+                 * quarkus.native.additional-build-args please make sure to add it before this call.
+                 */
                 handleAdditionalProperties(nativeImageArgs);
 
                 nativeImageArgs.add(
@@ -708,9 +720,6 @@ public class NativeImageBuildStep {
                     nativeImageArgs
                             .add("-J-Xrunjdwp:transport=dt_socket,address=" + debugBuildProcessHost + ":"
                                     + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
-                }
-                if (nativeConfig.enableReports) {
-                    nativeImageArgs.add("-H:+PrintAnalysisCallTree");
                 }
                 if (nativeConfig.dumpProxies) {
                     nativeImageArgs.add("-Dsun.misc.ProxyGenerator.saveGeneratedFiles=true");

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import examples.GreeterGrpc;
 import examples.HelloReply;
 import examples.HelloRequest;
+import examples.LanguageSpec;
 import examples.MutinyGreeterGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -47,6 +48,20 @@ class HelloWorldServiceTest {
                 .sayHello(HelloRequest.newBuilder().setName("neo-mutiny").build())
                 .await().atMost(Duration.ofSeconds(5));
         assertThat(reply.getMessage()).isEqualTo("Hello neo-mutiny");
+    }
+
+    @Test
+    public void testEnumSupport() {
+        GreeterGrpc.GreeterBlockingStub client = GreeterGrpc.newBlockingStub(channel);
+        HelloReply reply = client
+                .greeting(LanguageSpec.newBuilder().setSelectedLanguage(LanguageSpec.Language.FRENCH).build());
+        assertThat(reply.getMessage()).isEqualTo("Bonjour!");
+        reply = client
+                .greeting(LanguageSpec.newBuilder().setSelectedLanguage(LanguageSpec.Language.SPANISH).build());
+        assertThat(reply.getMessage()).isEqualTo("Hola!");
+        reply = client
+                .greeting(LanguageSpec.newBuilder().setSelectedLanguage(LanguageSpec.Language.ENGLISH).build());
+        assertThat(reply.getMessage()).isEqualTo("Hello!");
     }
 
 }

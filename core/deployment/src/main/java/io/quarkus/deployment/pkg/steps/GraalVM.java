@@ -24,6 +24,7 @@ final class GraalVM {
         static final Version VERSION_21_2 = new Version("GraalVM 21.2", "21.2", Distribution.ORACLE);
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.ORACLE);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.ORACLE);
+        static final Version VERSION_21_3_2 = new Version("GraalVM 21.3.2", "21.3.2", Distribution.ORACLE);
 
         static final Version MINIMUM = VERSION_21_2;
         static final Version CURRENT = VERSION_21_3;

@@ -181,7 +181,7 @@ public class DevServicesRedisProcessor {
         };
 
         return redisContainerLocator.locateContainer(devServicesConfig.serviceName, devServicesConfig.shared, launchMode)
-                .map(containerAddress -> new StartResult(containerAddress.getUrl(), null))
+                .map(containerAddress -> new StartResult(REDIS_SCHEME + containerAddress.getUrl(), null))
                 .orElseGet(defaultRedisServerSupplier);
 
     }

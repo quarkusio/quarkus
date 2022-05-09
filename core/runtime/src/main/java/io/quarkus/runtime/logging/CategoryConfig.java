@@ -30,4 +30,8 @@ public class CategoryConfig {
     @ConfigItem(defaultValue = "true")
     boolean useParentHandlers;
 
+    // for method refs
+    public InheritableLevel getLevel() {
+        return level;
+    }
 }

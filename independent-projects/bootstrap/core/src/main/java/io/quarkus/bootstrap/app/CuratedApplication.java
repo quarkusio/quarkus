@@ -8,7 +8,6 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.util.BootstrapUtils;
-import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
@@ -147,7 +146,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     }
 
     private synchronized void processCpElement(ResolvedDependency artifact, Consumer<ClassPathElement> consumer) {
-        if (!artifact.getType().equals(ArtifactCoords.TYPE_JAR)) {
+        if (!artifact.isJar()) {
             //avoid the need for this sort of check in multiple places
             consumer.accept(ClassPathElement.EMPTY);
             return;
@@ -334,8 +333,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
         }
         for (ResolvedDependency dependency : appModel.getDependencies()) {
-            if (dependency.isRuntimeCp() &&
-                    dependency.getType().equals(ArtifactCoords.TYPE_JAR) &&
+            if (dependency.isRuntimeCp() && dependency.isJar() &&
                     (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
                             configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));
@@ -372,8 +370,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
         }
         for (ResolvedDependency dependency : appModel.getDependencies()) {
-            if (dependency.isRuntimeCp() &&
-                    dependency.getType().equals(ArtifactCoords.TYPE_JAR) &&
+            if (dependency.isRuntimeCp() && dependency.isJar() &&
                     (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
                             configuredClassLoading.reloadableArtifacts.contains(dependency.getKey()))) {
                 processCpElement(dependency, element -> addCpElement(builder, dependency, element));

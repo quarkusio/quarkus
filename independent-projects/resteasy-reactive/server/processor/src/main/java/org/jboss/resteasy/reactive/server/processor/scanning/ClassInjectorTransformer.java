@@ -356,10 +356,13 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             }
             // push the parameter value
             loadParameter(injectMethod, methodName, extractor, extraSingleParameter, extraEncodedParam, encoded);
-            Label valueWasNull = new Label();
-            // dup to test it
-            injectMethod.visitInsn(Opcodes.DUP);
-            injectMethod.visitJumpInsn(Opcodes.IFNULL, valueWasNull);
+            Label valueWasNull = null;
+            if (!extractor.isOptional()) {
+                valueWasNull = new Label();
+                // dup to test it
+                injectMethod.visitInsn(Opcodes.DUP);
+                injectMethod.visitJumpInsn(Opcodes.IFNULL, valueWasNull);
+            }
             convertParameter(injectMethod, extractor, fieldInfo);
             // inject this (for the put field) before the injected value
             injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
@@ -377,8 +380,10 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             Label endLabel = new Label();
             injectMethod.visitJumpInsn(Opcodes.GOTO, endLabel);
 
-            // if the value was null, we don't set it
-            injectMethod.visitLabel(valueWasNull);
+            if (valueWasNull != null) {
+                // if the value was null, we don't set it
+                injectMethod.visitLabel(valueWasNull);
+            }
             // we have a null value for the object we wanted to inject on the stack
             injectMethod.visitInsn(Opcodes.POP);
 

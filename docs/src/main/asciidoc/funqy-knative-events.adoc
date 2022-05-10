@@ -21,7 +21,7 @@ with Knative Events.
 :prerequisites-no-graalvm:
 include::includes/devtools/prerequisites.adoc[]
 * Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
-* Have gone through the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[Knative Tutorial], specifically link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial-eventing/eventing-trigger-broker.html[Brokers and Triggers]
+* Have gone through the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[Knative Tutorial], specifically link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/eventing/eventing-trigger-broker.html[Brokers and Triggers]
 
 == Setting up Knative
 
@@ -29,7 +29,7 @@ Setting up Knative locally in a Minikube environment is beyond the scope of this
 to follow  https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[this] Knative Tutorial
 put together by Red Hat.  It walks through how to set up Knative on Minikube or OpenShift in a local environment.
 
-NOTE: Specifically you should run the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial-eventing/eventing-trigger-broker.html[Brokers and Triggers]
+NOTE: Specifically you should run the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/eventing/eventing-trigger-broker.html[Brokers and Triggers]
 tutorial as this guide requires that you can invoke on a Broker to trigger the quickstart code.
 
 == Read about Cloud Events

@@ -2,6 +2,7 @@ package io.quarkus.reactive.mssql.client.deployment;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -83,7 +84,16 @@ class ReactiveMSSQLClientProcessor {
 
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
-        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MSSQL);
+        return DevServicesDatasourceConfigurationHandlerBuildItem.reactive(DatabaseKind.MSSQL, new Function<String, String>() {
+            @Override
+            public String apply(String url) {
+                url = url.replaceFirst("jdbc:", "vertx-reactive:");
+                if (url.endsWith(";encrypt=false")) {
+                    return url.substring(0, url.length() - ";encrypt=false".length());
+                }
+                return url;
+            }
+        });
     }
 
     @BuildStep

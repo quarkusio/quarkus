@@ -90,7 +90,7 @@ public final class BuildStepBuilder {
     public BuildStepBuilder produces(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
         if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce an empty build item");
+            throw new IllegalArgumentException("Cannot produce an empty build item, use @Produce(class) instead");
         }
         addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.NONE);
         return this;
@@ -109,7 +109,7 @@ public final class BuildStepBuilder {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("flag", flag);
         if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce an empty build item");
+            throw new IllegalArgumentException("Cannot produce an empty build item, use @Produce(class) instead");
         }
         addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.of(flag));
         return this;
@@ -129,7 +129,7 @@ public final class BuildStepBuilder {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("flag", flag1);
         if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce an empty build item");
+            throw new IllegalArgumentException("Cannot produce an empty build item, use @Produce(class) instead");
         }
         addProduces(new ItemId(type), Constraint.REAL, ProduceFlags.of(flag1).with(flag2));
         return this;
@@ -148,7 +148,7 @@ public final class BuildStepBuilder {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("flag", flags);
         if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce an empty build item");
+            throw new IllegalArgumentException("Cannot produce an empty build item, use @Produce(class) instead");
         }
         addProduces(new ItemId(type), Constraint.REAL, flags);
         return this;
@@ -164,7 +164,7 @@ public final class BuildStepBuilder {
     public BuildStepBuilder consumes(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
         if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot consume an empty build item");
+            throw new IllegalArgumentException("Cannot consume an empty build item, use @Consume(class) instead");
         }
         addConsumes(new ItemId(type), Constraint.REAL, ConsumeFlags.NONE);
         return this;
@@ -181,7 +181,7 @@ public final class BuildStepBuilder {
     public BuildStepBuilder consumes(Class<? extends BuildItem> type, ConsumeFlags flags) {
         Assert.checkNotNullParam("type", type);
         if (EmptyBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot consume an empty build item");
+            throw new IllegalArgumentException("Cannot consume an empty build item, use @Consume(class) instead");
         }
         addConsumes(new ItemId(type), Constraint.REAL, flags);
         return this;

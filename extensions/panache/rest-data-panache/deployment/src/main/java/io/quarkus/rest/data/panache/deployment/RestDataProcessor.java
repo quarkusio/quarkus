@@ -1,10 +1,8 @@
 package io.quarkus.rest.data.panache.deployment;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.Capabilities;
@@ -12,25 +10,11 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.jackson.spi.JacksonModuleBuildItem;
-import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesBuildItem;
 import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesProvider;
-import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapper;
-import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapperJacksonSerializer;
-import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapperJsonbSerializer;
-import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapper;
-import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapperJacksonSerializer;
-import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapperJsonbSerializer;
-import io.quarkus.rest.data.panache.runtime.hal.HalLink;
-import io.quarkus.rest.data.panache.runtime.hal.HalLinkJacksonSerializer;
-import io.quarkus.rest.data.panache.runtime.hal.HalLinkJsonbSerializer;
-import io.quarkus.rest.data.panache.runtime.resource.RESTEasyClassicResourceLinksProvider;
-import io.quarkus.rest.data.panache.runtime.resource.RESTEasyReactiveResourceLinksProvider;
 import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamFilter;
 import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamValidator;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
@@ -41,13 +25,7 @@ import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceGizmoAdaptor;
 public class RestDataProcessor {
 
     @BuildStep
-    ReflectiveClassBuildItem registerReflection() {
-        return new ReflectiveClassBuildItem(true, true, HalLink.class);
-    }
-
-    @BuildStep
     void supportingBuildItems(Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItemBuildProducer,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer,
             BuildProducer<ContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer) {
@@ -56,13 +34,8 @@ public class RestDataProcessor {
 
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
-                    "REST Data Panache can only work if 'quarkus-resteasy' or 'quarkus-resteasy-reactive-links' is present");
+                    "REST Data Panache can only work if 'quarkus-resteasy' or 'quarkus-resteasy-reactive' is present");
         }
-
-        String className = isResteasyClassicAvailable ? RESTEasyClassicResourceLinksProvider.class.getName()
-                : RESTEasyReactiveResourceLinksProvider.class.getName();
-        additionalBeanBuildItemBuildProducer
-                .produce(AdditionalBeanBuildItem.builder().addBeanClass(className).setUnremovable().build());
 
         if (isResteasyClassicAvailable) {
             runtimeInitializedClassBuildItemBuildProducer
@@ -100,32 +73,20 @@ public class RestDataProcessor {
             ResourceMetadata resourceMetadata = resourceBuildItem.getResourceMetadata();
             ResourceProperties resourceProperties = getResourceProperties(resourcePropertiesProvider,
                     resourceMetadata, resourcePropertiesBuildItems);
-            if (resourceProperties.isHal() && !hasHalCapability(capabilities)) {
-                throw new IllegalStateException(
-                        "Cannot generate HAL endpoints without a RESTEasy JSON-B or Jackson capability");
+            if (resourceProperties.isHal()) {
+                if (isResteasyClassic && !hasAnyJsonCapabilityForResteasyClassic(capabilities)) {
+                    throw new IllegalStateException("Cannot generate HAL endpoints without "
+                            + "either 'quarkus-resteasy-jsonb' or 'quarkus-resteasy-jackson'");
+                } else if (!isResteasyClassic && !hasAnyJsonCapabilityForResteasyReactive(capabilities)) {
+                    throw new IllegalStateException("Cannot generate HAL endpoints without "
+                            + "either 'quarkus-resteasy-reactive-jsonb' or 'quarkus-resteasy-reactive-jackson'");
+                }
+
             }
             if (resourceProperties.isExposed()) {
                 jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties);
             }
         }
-    }
-
-    @BuildStep
-    JacksonModuleBuildItem registerJacksonSerializers() {
-        return new JacksonModuleBuildItem.Builder("hal-wrappers")
-                .addSerializer(HalEntityWrapperJacksonSerializer.class.getName(), HalEntityWrapper.class.getName())
-                .addSerializer(HalCollectionWrapperJacksonSerializer.class.getName(),
-                        HalCollectionWrapper.class.getName())
-                .addSerializer(HalLinkJacksonSerializer.class.getName(), HalLink.class.getName())
-                .build();
-    }
-
-    @BuildStep
-    JsonbSerializerBuildItem registerJsonbSerializers() {
-        return new JsonbSerializerBuildItem(Arrays.asList(
-                HalEntityWrapperJsonbSerializer.class.getName(),
-                HalCollectionWrapperJsonbSerializer.class.getName(),
-                HalLinkJsonbSerializer.class.getName()));
     }
 
     private ResourceProperties getResourceProperties(ResourcePropertiesProvider resourcePropertiesProvider,
@@ -143,10 +104,13 @@ public class RestDataProcessor {
         return capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
     }
 
-    private boolean hasHalCapability(Capabilities capabilities) {
+    private boolean hasAnyJsonCapabilityForResteasyClassic(Capabilities capabilities) {
         return capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
-                || capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON)
-                || capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB)
+                || capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON);
+    }
+
+    private boolean hasAnyJsonCapabilityForResteasyReactive(Capabilities capabilities) {
+        return capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB)
                 || capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JACKSON);
     }
 }

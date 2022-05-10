@@ -13,7 +13,6 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
-import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.smallrye.mutiny.Uni;
 
@@ -109,7 +108,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addPostAnnotation(methodCreator);
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
-        addProducesAnnotation(methodCreator, APPLICATION_JSON);
+        addProducesJsonAnnotation(methodCreator, resourceProperties);
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
         // Add parameter annotations
         if (withValidation) {
@@ -124,7 +123,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
             ResultHandle entity = tryBlock.invokeVirtualMethod(
                     ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Object.class, Object.class),
                     resource, entityToSave);
-            tryBlock.returnValue(ResponseImplementor.created(tryBlock, entity));
+            tryBlock.returnValue(responseImplementor.created(tryBlock, entity));
             tryBlock.close();
         } else {
             ResultHandle uniEntity = methodCreator.invokeVirtualMethod(
@@ -132,7 +131,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
                     resource, entityToSave);
 
             methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntity, EXCEPTION_MESSAGE,
-                    (body, item) -> body.returnValue(ResponseImplementor.created(body, item))));
+                    (body, item) -> body.returnValue(responseImplementor.created(body, item))));
         }
 
         methodCreator.close();

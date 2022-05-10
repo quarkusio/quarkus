@@ -33,6 +33,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hal</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

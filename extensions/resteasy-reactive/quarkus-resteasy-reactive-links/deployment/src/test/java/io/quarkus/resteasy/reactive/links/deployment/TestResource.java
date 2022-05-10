@@ -13,6 +13,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
+
 import io.quarkus.resteasy.reactive.links.InjectRestLinks;
 import io.quarkus.resteasy.reactive.links.RestLink;
 import io.quarkus.resteasy.reactive.links.RestLinkType;
@@ -28,7 +30,7 @@ public class TestResource {
             new TestRecord(ID_COUNTER.incrementAndGet(), "second", "Second value")));
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
     @RestLink(entityType = TestRecord.class, rel = "list")
     @InjectRestLinks
     public Uni<List<TestRecord>> getAll() {
@@ -45,7 +47,7 @@ public class TestResource {
 
     @GET
     @Path("/{id: \\d+}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
     @RestLink(entityType = TestRecord.class, rel = "self")
     @InjectRestLinks(RestLinkType.INSTANCE)
     public TestRecord getById(@PathParam("id") int id) {

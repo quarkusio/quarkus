@@ -13,7 +13,6 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
-import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.smallrye.mutiny.Uni;
 
@@ -93,7 +92,8 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
         // Add method annotations
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));
         addGetAnnotation(methodCreator);
-        addProducesAnnotation(methodCreator, APPLICATION_JSON);
+        addProducesJsonAnnotation(methodCreator, resourceProperties);
+
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
 
@@ -108,8 +108,8 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
 
             // Return response
             BranchResult wasNotFound = tryBlock.ifNull(entity);
-            wasNotFound.trueBranch().returnValue(ResponseImplementor.notFound(wasNotFound.trueBranch()));
-            wasNotFound.falseBranch().returnValue(ResponseImplementor.ok(wasNotFound.falseBranch(), entity));
+            wasNotFound.trueBranch().returnValue(responseImplementor.notFound(wasNotFound.trueBranch()));
+            wasNotFound.falseBranch().returnValue(responseImplementor.ok(wasNotFound.falseBranch(), entity));
 
             tryBlock.close();
         } else {
@@ -121,9 +121,9 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
                     (body, entity) -> {
                         BranchResult entityWasNotFound = body.ifNull(entity);
                         entityWasNotFound.trueBranch()
-                                .returnValue(ResponseImplementor.notFound(entityWasNotFound.trueBranch()));
+                                .returnValue(responseImplementor.notFound(entityWasNotFound.trueBranch()));
                         entityWasNotFound.falseBranch()
-                                .returnValue(ResponseImplementor.ok(entityWasNotFound.falseBranch(), entity));
+                                .returnValue(responseImplementor.ok(entityWasNotFound.falseBranch(), entity));
                     }));
         }
 

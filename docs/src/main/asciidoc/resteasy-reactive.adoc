@@ -1231,6 +1231,147 @@ public class RecordsResource {
 
 Using this injected bean of type `RestLinksProvider`, you can get the links by type using the method `RestLinksProvider.getTypeLinks` or get the links by a concrete instance using the method `RestLinksProvider.getInstanceLinks`.
 
+==== JSON Hypertext Application Language (HAL) support
+
+The https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL] standard is a simple format to represent web links. 
+
+To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-resteasy-reactive-jsonb` or the `quarkus-resteasy-reactive-jackson` extension.
+
+.Table Context object
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-hal`
+|https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL]
+
+|===
+
+After adding the extensions, we can now annotate the REST resources to produce the media type `application/hal+json` (or use RestMediaType.APPLICATION_HAL_JSON). For example:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @RestLink(rel = "list")
+    @InjectRestLinks
+    public List<Record> getAll() {
+        // ...
+    }
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @Path("/{id}")
+    @RestLink(rel = "self")
+    @InjectRestLinks(RestLinkType.INSTANCE)
+    public TestRecord get(@PathParam("id") int id) {
+        // ...
+    }
+}
+----
+
+Now, the endpoints `/records` and `/records/{id}` will accept the media type both `json` and `hal+json` to print the records in Hal format. 
+
+For example, if we invoke the `/records` endpoint using curl to return a list of records, the HAL format will look like as follows:
+
+[source,bash]
+----
+& curl -H "Accept:application/hal+json" -i localhost:8080/records
+{
+    "_embedded": {
+        "items": [
+            {
+                "id": 1,
+                "slug": "first",
+                "value": "First value",
+                "_links": {
+                    "self": {
+                        "href": "http://localhost:8081/records/1"
+                    },
+                    "list": {
+                        "href": "http://localhost:8081/records"
+                    }
+                }
+            },
+            {
+                "id": 2,
+                "slug": "second",
+                "value": "Second value",
+                "_links": {
+                    "self": {
+                        "href": "http://localhost:8081/records/2"
+                    },
+                    "list": {
+                        "href": "http://localhost:8081/records"
+                    }
+                }
+            }
+        ]
+    },
+    "_links": {
+        "list": {
+            "href": "http://localhost:8081/records"
+        }
+    }
+}
+----
+
+When we call a resource `/records/1` that returns only one instance, then the output is:
+
+[source,bash]
+----
+& curl -H "Accept:application/hal+json" -i localhost:8080/records/1
+{
+    "id": 1,
+    "slug": "first",
+    "value": "First value",
+    "_links": {
+        "self": {
+            "href": "http://localhost:8081/records/1"
+        },
+        "list": {
+            "href": "http://localhost:8081/records"
+        }
+    }
+}
+----
+
+Finally, you can also provide additional HAL links programmatically in your resource just by returning either `HalCollectionWrapper` (to return a list of entities) or `HalEntityWrapper` (to return a single object) as described in the following example:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @Inject
+    RestLinksProvider linksProvider;
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @RestLink(rel = "list")
+    public HalCollectionWrapper getAll() {
+        List<Record> list = // ...
+        HalCollectionWrapper halCollection = new HalCollectionWrapper(list, "collectionName", linksProvider.getTypeLinks(Record.class));
+        halCollection.addLinks(Link.fromPath("/records/1").rel("first-record").build());
+        return halCollection;
+    }
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @Path("/{id}")
+    @RestLink(rel = "self")
+    @InjectRestLinks(RestLinkType.INSTANCE)
+    public HalEntityWrapper get(@PathParam("id") int id) {
+        Record entity = // ... 
+        HalEntityWrapper halEntity = new HalEntityWrapper(entity, linksProvider.getInstanceLinks(entity));
+        halEntity.addLinks(Link.fromPath("/records/1/parent").rel("parent-record").build());
+        return halEntity;
+    }
+}
+----
+
 == CORS filter
 
 link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that

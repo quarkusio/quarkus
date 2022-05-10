@@ -13,10 +13,29 @@ import java.util.regex.Pattern;
 
 public class FileUtil {
 
+    public static void deleteIfExists(final Path path) throws IOException {
+        BasicFileAttributes attributes;
+        try {
+            attributes = Files.readAttributes(path, BasicFileAttributes.class);
+        } catch (IOException ignored) {
+            // Files.isDirectory is also simply returning when any IOException occurs, same behaviour is fine
+            return;
+        }
+        if (attributes.isDirectory()) {
+            deleteDirectoryIfExists(path);
+        } else if (attributes.isRegularFile()) {
+            Files.deleteIfExists(path);
+        }
+    }
+
     public static void deleteDirectory(final Path directory) throws IOException {
         if (!Files.isDirectory(directory)) {
             return;
         }
+        deleteDirectoryIfExists(directory);
+    }
+
+    private static void deleteDirectoryIfExists(final Path directory) throws IOException {
         Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {

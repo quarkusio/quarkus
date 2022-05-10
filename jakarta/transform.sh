@@ -31,35 +31,6 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   ./mvnw -B clean install -DskipTests -DskipITs
   popd
 
-  # Build SmallRye Config (temporary)
-  #rm -rf target/smallrye-config
-  #git clone https://github.com/smallrye/smallrye-config.git target/smallrye-config
-  #pushd target/smallrye-config
-  #git checkout jakarta
-  #mvn clean install -DskipTests -DskipITs
-  #popd
-
-  # Build Quarkus HTTP (temporary)
-  rm -rf target/quarkus-http
-  git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-http.git target/quarkus-http
-  pushd target/quarkus-http
-  mvn -B clean install -DskipTests -DskipITs
-  popd
-
-  # Build Quarkus Security (temporary)
-  rm -rf target/quarkus-security
-  git clone -b jakarta-rewrite --depth 1 https://github.com/quarkusio/quarkus-security.git target/quarkus-security
-  pushd target/quarkus-security
-  mvn -B clean install -DskipTests -DskipITs
-  popd
-
-  # Build Keycloak (temporary)
-  rm -rf target/keycloak
-  git clone -b jakarta --depth 1 https://github.com/gsmet/keycloak.git target/keycloak
-  pushd target/keycloak
-  mvn -B -pl ':keycloak-admin-client-jakarta' -am clean install -DskipTests -DskipITs
-  popd
-
   # Build Kotlin Maven Plugin to allow skipping main compilation
   # (skipping test compilation is supported but not main)
   rm -rf target/kotlin
@@ -68,6 +39,8 @@ if [ "${REWRITE_OFFLINE-false}" != "true" ]; then
   mvn -B clean install -DskipTests -DskipITs
   popd
 fi
+
+./jakarta/prepare.sh
 
 # Set up jbang alias, we are using latest released transformer version
 jbang alias add --name transform org.eclipse.transformer:org.eclipse.transformer.cli:0.4.0
@@ -101,9 +74,25 @@ transform_module () {
 
 transform_kotlin_module () {
   # this is very ad hoc but hopefully it will be good enough
-  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.transaction.Transactional; do
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.xml.bind. javax.transaction.Transactional; do
     local newPackage=${package/javax/jakarta}
-    find $1 -name '*.kt' | xargs sed -i "s@import ${package}@import ${newPackage}@g"
+    find $1 -name '*.kt' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
+  done
+}
+
+transform_java_module () {
+  # this is very ad hoc but hopefully it will be good enough
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.xml.bind. javax.transaction.Transactional; do
+    local newPackage=${package/javax/jakarta}
+    find $1 -name '*.java' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
+  done
+}
+
+transform_scala_module () {
+  # this is very ad hoc but hopefully it will be good enough
+  for package in javax.inject. javax.enterprise. javax.ws.rs. javax.annotation. javax.persistence. javax.json. javax.websocket. javax.xml.bind. javax.transaction.Transactional; do
+    local newPackage=${package/javax/jakarta}
+    find $1 -name '*.scala' | xargs --no-run-if-empty sed -i "s@import ${package}@import ${newPackage}@g"
   done
 }
 
@@ -248,6 +237,19 @@ clean_maven_repository
 
 transform_module "independent-projects/arc"
 transform_module "independent-projects/resteasy-reactive"
+transform_module "independent-projects/tools"
+transform_kotlin_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_java_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_scala_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_kotlin_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_java_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_scala_module "independent-projects/tools/base-codestarts/src/main/resources/codestarts"
+transform_kotlin_module "independent-projects/tools/devtools-testing/"
+transform_java_module "independent-projects/tools/devtools-testing/"
+transform_scala_module "independent-projects/tools/devtools-testing/"
+transform_kotlin_module "independent-projects/tools/codestarts"
+transform_java_module "independent-projects/tools/codestarts"
+transform_scala_module "independent-projects/tools/codestarts"
 #convert_service_file independent-projects/resteasy-reactive/common/runtime/src/main/resources/META-INF/services/javax.ws.rs.ext.RuntimeDelegate
 #convert_service_file 'independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.sse.SseEventSource$Builder'
 #convert_service_file independent-projects/resteasy-reactive/client/runtime/src/main/resources/META-INF/services/javax.ws.rs.client.ClientBuilder
@@ -268,270 +270,40 @@ sed -i "s@javax/xml/bind/annotation/@jakarta/xml/bind/annotation/@g" ./extension
 transform_kotlin_module "extensions/scheduler/kotlin"
 transform_kotlin_module "extensions/smallrye-reactive-messaging/kotlin"
 transform_module "devtools"
+transform_kotlin_module "devtools/project-core-extension-codestarts/src/main/resources/codestarts/"
+transform_java_module "devtools/project-core-extension-codestarts/src/main/resources/codestarts/"
+transform_scala_module "devtools/project-core-extension-codestarts/src/main/resources/codestarts/"
 transform_module "integration-tests"
+transform_scala_module "integration-tests/scala"
+transform_kotlin_module "integration-tests"
+
+sed -i 's/@javax.annotation.Generated/@jakarta.annotation.Generated/g' extensions/grpc/protoc/src/main/resources/*.mustache
 
 transform_documentation
+sed -i 's@javax/ws/rs@jakarta/ws/rs@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/2.1.1@https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+sed -i 's@/specs/jaxrs/2.1/index.html@https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html@g' docs/src/main/asciidoc/resteasy-reactive.adoc
+
+# Clean some Transformer issues
+git checkout -- devtools/gradle/
+git checkout -- integration-tests/gradle/gradle/wrapper/gradle-wrapper.jar
+git checkout -- independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/tooling/gradle-wrapper/base/gradle/wrapper/gradle-wrapper.jar
+git checkout -- extensions/kubernetes-service-binding/runtime/src/test/resources/k8s/test-k8s/
 
 # Build phase
 
-## Install root parent
-./mvnw clean install -N
+if [ "${REWRITE_TESTS_CONTAINERS-false}" == "true" ]; then
+  ./mvnw -B clean install -Dno-test-modules -Dstart-containers -Dtest-containers
+elif [ "${REWRITE_NO_TESTS-false}" != "true" ]; then
+  ./mvnw -B clean install -Dno-test-modules
+else
+  ./mvnw -B clean install -Dno-test-modules -DskipTests -DskipITs
+fi
 
-## Install utility projects
-build_module_no_tests "independent-projects/ide-config"
-build_module_no_tests "independent-projects/enforcer-rules"
-build_module_no_tests "independent-projects/revapi"
-
-## ArC
-start_module "ArC"
-build_module "independent-projects/arc"
-
-## Bootstrap
-start_module "Bootstrap"
-build_module "independent-projects/bootstrap"
-
-## Qute
-start_module "Qute"
-build_module_no_tests "independent-projects/qute"
-
-## Tools
-start_module "Tools"
-build_module "independent-projects/tools"
-
-## RESTEasy Reactive
-start_module "RESTEasy Reactive"
-# TODO: probably something we need to push back to the Eclipse Transformer
-build_module "independent-projects/resteasy-reactive"
-
-# BOM
-start_module "BOM"
-build_module "bom/application"
-build_module "bom/test"
-
-# Build parent
-start_module "Build parent"
-build_module "build-parent"
-
-# Core
-start_module "Core"
-
-## Needed for core
-build_module_only_no_tests devtools
-build_module_no_tests "devtools/platform-descriptor-json-plugin"
-build_module_no_tests "devtools/platform-properties"
-
-## Core
-build_module_no_tests "core"
-
-# Test framework
-start_module "Test framework"
-build_module_only_no_tests "test-framework"
-build_module "test-framework/common"
-build_module "test-framework/devmode-test-utils"
-build_module "test-framework/junit5-properties"
-build_module "test-framework/junit5"
-build_module "test-framework/junit5-internal"
-build_module "test-framework/maven"
-
-# Extensions
-start_module "Extensions"
-build_module_only_no_tests "extensions"
-build_module_only_no_tests "extensions/vertx-http"
-build_module "extensions/vertx-http/dev-console-runtime-spi"
-build_module "extensions/vertx-http/dev-console-spi"
-build_module "extensions/arc"
-build_module "extensions/smallrye-context-propagation"
-build_module "extensions/mutiny"
-build_module "extensions/netty"
-build_module "extensions/vertx"
-build_module "extensions/security"
-build_module_only_no_tests "extensions/kubernetes"
-build_module "extensions/kubernetes/spi"
-build_module "extensions/vertx-http"
-build_module "extensions/jsonp"
-build_module "extensions/jaxrs-spi"
-build_module "extensions/undertow"
-build_module "extensions/jsonb"
-build_module "extensions/jackson"
-build_module "extensions/jaxp"
-build_module "extensions/jaxb"
-build_module "extensions/apache-httpclient"
-
-# Some RESTEasy Reactive bits required for Hibernate Validator
-# We will build RESTEasy Reactive properly later
-build_module_only_no_tests "extensions/resteasy-reactive"
-build_module_only_no_tests "extensions/resteasy-reactive/quarkus-resteasy-reactive-common"
-build_module "extensions/resteasy-reactive/quarkus-resteasy-reactive-common/spi-deployment"
-
-# Everything that is needed for RESTEasy Classic
-build_module "extensions/elytron-security-common"
-build_module "extensions/elytron-security"
-# we need part of RESTEasy for elytron-security-properties-file, we will rebuild them properly later
-build_module_only_no_tests "extensions/resteasy-classic"
-build_module_no_tests "extensions/resteasy-classic/resteasy-common"
-build_module_no_tests "extensions/resteasy-classic/resteasy-server-common"
-build_module_no_tests "extensions/resteasy-classic/resteasy"
-build_module_no_tests "extensions/resteasy-classic/resteasy-jsonb"
-build_module "extensions/elytron-security-properties-file"
-build_module "extensions/hibernate-validator"
-build_module "extensions/reactive-routes"
-build_module_only_no_tests "extensions/panache"
-build_module "extensions/panache/panache-common"
-build_module "extensions/qute"
-build_module "extensions/smallrye-fault-tolerance"
-build_module "extensions/resteasy-classic"
-
-# RESTEasy Reactive
-build_module "extensions/smallrye-stork"
-build_module "extensions/kotlin"
-build_module "extensions/resteasy-reactive"
-
-# Lambda
-build_module "extensions/amazon-lambda"
-build_module "extensions/amazon-lambda-http"
-build_module "extensions/amazon-lambda-rest"
-build_module "extensions/amazon-lambda-xray"
-
-# More SmallRye
-build_module "extensions/smallrye-openapi-common"
-build_module "extensions/swagger-ui"
-build_module "extensions/smallrye-openapi"
-build_module "extensions/smallrye-health"
-build_module "extensions/smallrye-metrics"
-
-# Persistence
-build_module "extensions/credentials"
-build_module "extensions/kubernetes-service-binding"
-build_module_only_no_tests "extensions/datasource"
-build_module_no_tests "extensions/datasource/common"
-build_module_no_tests "extensions/datasource/deployment-spi/"
-build_module "extensions/devservices"
-build_module "extensions/datasource"
-build_module "extensions/transaction-annotations"
-build_module "extensions/narayana-jta"
-build_module "test-framework/h2"
-# we only build H2 as the others need Agroal for testing
-build_module_only_no_tests "extensions/agroal"
-build_module_only_no_tests "extensions/agroal/spi"
-# this one needs particular care but we will rebuild it properly after
-./mvnw clean install -f "extensions/agroal/runtime" -DskipExtensionValidation
-build_module_only_no_tests "extensions/jdbc"
-build_module "extensions/jdbc/jdbc-h2"
-build_module "extensions/agroal"
-build_module "extensions/jdbc"
-build_module "extensions/caffeine"
-build_module "extensions/panache/panache-hibernate-common"
-build_module "extensions/hibernate-orm"
-build_module "extensions/elasticsearch-rest-client-common"
-build_module "extensions/elasticsearch-rest-client"
-build_module "extensions/elasticsearch-rest-high-level-client"
-build_module "extensions/hibernate-search-orm-elasticsearch"
-build_module "extensions/avro"
-build_module "extensions/hibernate-search-orm-coordination-outbox-polling"
-build_module "extensions/reactive-datasource"
-build_module "extensions/reactive-pg-client"
-build_module "test-framework/vertx"
-build_module "extensions/hibernate-reactive"
-
-# And now in alphabetical order (dependency aside)...
-# TODO apicurio-registry-avro depends on old JAX-RS spec
-build_module "extensions/awt"
-build_module "extensions/azure-functions-http"
-build_module "extensions/cache"
-build_module "extensions/config-yaml"
-build_module "extensions/kubernetes-client"
-build_module "extensions/container-image"
-build_module "extensions/elytron-security-jdbc"
-build_module "test-framework/ldap"
-build_module "extensions/elytron-security-ldap"
-build_module "extensions/elytron-security-oauth2"
-build_module "extensions/flyway"
-build_module "extensions/funqy"
-build_module "extensions/google-cloud-functions"
-build_module "extensions/google-cloud-functions-http"
-build_module "extensions/grpc-common"
-build_module "extensions/grpc"
-build_module "extensions/hibernate-envers"
-build_module "extensions/infinispan-client"
-build_module "extensions/jaeger"
-build_module "extensions/kafka-client"
-build_module "test-framework/junit5-mockito-config"
-build_module "test-framework/junit5-mockito"
-build_module "extensions/kafka-streams"
-build_module "test-framework/keycloak-server"
-build_module "extensions/keycloak-admin-client"
-build_module "extensions/keycloak-admin-client-reactive"
-build_module "extensions/smallrye-jwt-build"
-build_module "extensions/oidc-common"
-build_module "extensions/oidc"
-build_module "extensions/keycloak-authorization"
-build_module "extensions/kubernetes"
-build_module "extensions/kubernetes-config"
-build_module "extensions/liquibase"
-build_module "extensions/reactive-streams-operators"
-build_module "extensions/smallrye-opentracing"
-build_module "extensions/mongodb-client"
-build_module "extensions/liquibase-mongodb"
-build_module "extensions/logging-gelf"
-build_module "extensions/logging-json"
-build_module "extensions/mailer"
-build_module "extensions/micrometer"
-build_module "extensions/micrometer-registry-prometheus"
-# TODO we need a narayana-lra Jakarta extension (dependency of MP spec and CDI spec)
-#build_module "extensions/narayana-lra"
-build_module "extensions/narayana-stm"
-build_module "extensions/oidc-client"
-build_module "extensions/oidc-client-filter"
-build_module "extensions/oidc-client-reactive-filter"
-build_module "extensions/oidc-token-propagation"
-build_module "extensions/oidc-token-propagation-reactive"
-build_module "extensions/openshift-client"
-build_module "extensions/opentelemetry"
-build_module "extensions/reactive-datasource"
-build_module "extensions/panache"
-build_module "extensions/picocli"
-build_module "extensions/scheduler"
-build_module "extensions/quartz"
-build_module "extensions/reactive-db2-client"
-build_module "extensions/reactive-mssql-client"
-build_module "extensions/reactive-mysql-client"
-build_module "extensions/reactive-oracle-client"
-build_module "extensions/reactive-pg-client"
-build_module "extensions/redis-client"
-build_module "extensions/scala"
-build_module "extensions/security-jpa"
-build_module_only_no_tests "extensions/security-webauthn"
-./mvnw clean install -f "extensions/security-webauthn/runtime" -DskipExtensionValidation
-build_module "test-framework/security-webauthn"
-build_module "extensions/security-webauthn"
-# TODO we need a Jakarta version of SmallRye GraphQL
-#build_module "extensions/smallrye-graphql"
-#build_module "extensions/smallrye-graphql-client"
-build_module "extensions/smallrye-jwt"
-build_module "extensions/smallrye-reactive-messaging"
-build_module "extensions/smallrye-reactive-messaging-amqp"
-# TODO: remove rewrite recipe of Apicurio extensions once we have a Jakarta version
-build_module "extensions/schema-registry"
-build_module "extensions/smallrye-reactive-messaging-kafka"
-build_module "extensions/smallrye-reactive-messaging-mqtt"
-build_module "extensions/smallrye-reactive-messaging-rabbitmq"
-build_module "extensions/spring-boot-properties"
-build_module "extensions/spring-cache"
-build_module "extensions/spring-cloud-config-client"
-build_module "extensions/spring-di"
-build_module "extensions/spring-data-jpa"
-build_module "extensions/spring-data-rest"
-build_module "extensions/spring-scheduled"
-build_module "extensions/spring-web"
-build_module "extensions/spring-security"
-build_module "extensions/vertx-graphql"
-build_module "extensions/webjars-locator"
-build_module "extensions/websockets"
-
-build_module "test-framework"
+# - Infinispan uses the @javax.annotation.Generated annotation in code generation and it's not available
+# - Confluent registry client doesn't have a version supporting Jakarta packages
+# - gRPC protoc plugin generates classes with @javax.annotation.Generated
+./mvnw -B clean install -f integration-tests -DskipTests -DskipITs -pl '!:quarkus-integration-test-infinispan-client' -pl '!:quarkus-integration-test-kafka-avro' -pl '!:quarkus-integration-test-opentelemetry-grpc' -pl '!:quarkus-integration-test-grpc-tls' -pl '!:quarkus-integration-test-grpc-plain-text-gzip' -pl '!:quarkus-integration-test-grpc-plain-text-mutiny' -pl '!:quarkus-integration-test-grpc-mutual-auth' -pl '!:quarkus-integration-test-grpc-streaming' -pl '!:quarkus-integration-test-grpc-interceptors' -pl '!:quarkus-integration-test-grpc-proto-v2' -pl '!:quarkus-integration-test-grpc-hibernate' -pl '!:quarkus-integration-test-grpc-hibernate-reactive' -pl '!:quarkus-integration-test-grpc-external-proto-test' -pl '!:quarkus-integration-test-grpc-stork-response-time'
 
 exit 0
-
-# Dev Tools - needs to be done after all the extensions have been built and before we run the ITs
-#build_module_no_tests "devtools"
 

@@ -4,7 +4,6 @@ on:
   push:
     branches-ignore:
       - 'dependabot/**'
-      - 'jakarta-rewrite'
     # paths-ignore in ci-fork-mvn-cache.yml should match
     paths-ignore:
       - '.gitignore'
@@ -70,6 +69,21 @@ jobs:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
           retention-days: 1
+  attach-report-issue-number:
+    runs-on: ubuntu-latest
+    name: Attach report issue number
+    if: github.ref_name == 'jakarta-rewrite'
+    steps:
+      - name: Create file
+        shell: bash
+        run: |
+          echo -n 25363 > report-issue-number
+      - name: Upload report issue number
+        uses: actions/upload-artifact@v2
+        with:
+          name: report-issue-number-25363
+          path: report-issue-number
+          retention-days: 1
   ci-sanity-check:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
@@ -130,6 +144,10 @@ jobs:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
           key: q2maven-${{ steps.get-date.outputs.date }}
+      - name: Prepare Jakarta artifacts
+        if: github.ref_name == 'jakarta-rewrite'
+        shell: bash
+        run: ./jakarta/prepare.sh
       - name: Build
         run: |
           ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
@@ -164,7 +182,19 @@ jobs:
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
           ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          [ -f gib-impacted.log ] && GIB_IMPACTED=$(cat gib-impacted.log) || GIB_IMPACTED=''
+          if [ -f gib-impacted.log ]
+          then
+            # TODO: for now, we don't run TCKs and for the jakarta-rewrite branch
+            # we filter them here so that it cascades to all the builds
+            if [ "${GITHUB_REF_NAME}" == "jakarta-rewrite" ]
+            then
+              GIB_IMPACTED=$(cat gib-impacted.log | grep -Pv '^(tcks/|integration-tests/grpc-|integration-tests/infinispan-client|integration-tests/kafka-avro|integration-tests/opentelemetry-grpc)')
+            else
+              GIB_IMPACTED=$(cat gib-impacted.log)
+            fi
+          else
+            GIB_IMPACTED=''
+          fi
           echo "GIB_IMPACTED: ${GIB_IMPACTED}"
           echo "::set-output name=impacted_modules::${GIB_IMPACTED//$'\n'/'%0A'}"
       - name: Tar Maven Repo

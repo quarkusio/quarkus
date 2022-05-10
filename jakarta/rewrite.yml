@@ -127,6 +127,10 @@ recipeList:
       oldArtifactId: narayana-jts-integration
       newGroupId: org.jboss.narayana.jts
       newArtifactId: narayana-jts-integration-jakarta
+  # TODO remove this one
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: narayana.version
+      newValue: 5.12.7.Final-SNAPSHOT
   - org.openrewrite.maven.ChangePropertyValue:
       key: agroal.version
       newValue: 2.0
@@ -420,7 +424,7 @@ recipeList:
       newValue: 6.0.0-RC2
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-graphql.version
-      newValue: 2.0.0.RC1
+      newValue: 2.0.0.RC3
   - org.openrewrite.maven.ChangePropertyValue:
       key: smallrye-health.version
       newValue: 4.0.0-RC2

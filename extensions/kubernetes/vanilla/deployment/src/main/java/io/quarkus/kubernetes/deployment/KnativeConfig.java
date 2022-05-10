@@ -388,6 +388,7 @@ public class KnativeConfig implements PlatformConfiguration {
     /**
      * Whether or not this service is cluster-local.
      * Cluster local services are not exposed to the outside world.
+     * More information in <a href="https://knative.dev/docs/serving/services/private-services/">this link</a>.
      */
     @ConfigItem
     public boolean clusterLocal;

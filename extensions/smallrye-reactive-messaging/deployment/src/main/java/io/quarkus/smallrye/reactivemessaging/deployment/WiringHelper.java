@@ -49,24 +49,28 @@ public class WiringHelper {
     }
 
     static void produceIncomingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
-        Optional<String> managingConnector = getManagingConnector(ChannelDirection.INCOMING, name);
+        String channelName = normalizeChannelName(name);
+
+        Optional<String> managingConnector = getManagingConnector(ChannelDirection.INCOMING, channelName);
         if (managingConnector.isPresent()) {
-            if (isChannelEnabled(ChannelDirection.INCOMING, name)) {
-                producer.produce(ChannelBuildItem.incoming(name, managingConnector.get()));
+            if (isChannelEnabled(ChannelDirection.INCOMING, channelName)) {
+                producer.produce(ChannelBuildItem.incoming(channelName, managingConnector.get()));
             }
         } else {
-            producer.produce(ChannelBuildItem.incoming(name, null));
+            producer.produce(ChannelBuildItem.incoming(channelName, null));
         }
     }
 
     static void produceOutgoingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
-        Optional<String> managingConnector = getManagingConnector(ChannelDirection.OUTGOING, name);
+        String channelName = normalizeChannelName(name);
+
+        Optional<String> managingConnector = getManagingConnector(ChannelDirection.OUTGOING, channelName);
         if (managingConnector.isPresent()) {
-            if (isChannelEnabled(ChannelDirection.OUTGOING, name)) {
-                producer.produce(ChannelBuildItem.outgoing(name, managingConnector.get()));
+            if (isChannelEnabled(ChannelDirection.OUTGOING, channelName)) {
+                producer.produce(ChannelBuildItem.outgoing(channelName, managingConnector.get()));
             }
         } else {
-            producer.produce(ChannelBuildItem.outgoing(name, null));
+            producer.produce(ChannelBuildItem.outgoing(channelName, null));
         }
     }
 
@@ -80,7 +84,7 @@ public class WiringHelper {
      */
     static Optional<String> getManagingConnector(ChannelDirection direction, String channel) {
         return ConfigProvider.getConfig().getOptionalValue(
-                "mp.messaging." + direction.name().toLowerCase() + "." + channel + ".connector",
+                "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".connector",
                 String.class);
     }
 
@@ -93,7 +97,8 @@ public class WiringHelper {
      */
     static boolean isChannelEnabled(ChannelDirection direction, String channel) {
         return ConfigProvider.getConfig()
-                .getOptionalValue("mp.messaging." + direction.name().toLowerCase() + "." + channel + ".enabled",
+                .getOptionalValue(
+                        "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".enabled",
                         Boolean.class)
                 .orElse(true);
     }
@@ -190,6 +195,21 @@ public class WiringHelper {
             return value.asBoolean();
         }
         return false;
+    }
+
+    /**
+     * Normalize the name of a given channel.
+     *
+     * Concatenate the channel name with double quotes when it contains dots.
+     * <p>
+     * Otherwise, the SmallRye Reactive Messaging only considers the
+     * text up to the first occurrence of a dot as the channel name.
+     *
+     * @param name the channel name.
+     * @return normalized channel name.
+     */
+    private static String normalizeChannelName(String name) {
+        return name != null && !name.startsWith("\"") && name.contains(".") ? "\"" + name + "\"" : name;
     }
 
     /**

@@ -19,6 +19,7 @@ import javax.inject.Singleton;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.pojo.PropertyCodecProvider;
 import org.bson.codecs.pojo.annotations.BsonDiscriminator;
+import org.bson.types.ObjectId;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -52,6 +53,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
@@ -408,5 +410,10 @@ public class MongoClientProcessor {
                     new ServiceProviderBuildItem(SERVICE_BINDING_INTERFACE_NAME,
                             MongoServiceBindingConverter.class.getName()));
         }
+    }
+
+    @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem(ObjectId.class.getName()));
     }
 }

@@ -1365,6 +1365,19 @@ Note that sections can override names that would otherwise match a parameter dec
 <1> Validated against `org.acme.Foo`.
 <2> Not validated - `foo` is overridden in the loop section.
 
+A paramater declaration may specify the _default value_ after the key.
+The key and the default value are separated by an equals sign: `{@int age=10}`.
+The default value is used in the template if the parameter key resolves to `null` or is not found.
+
+For example, if there's a parameter declaration `{@String foo="Ping"}` and `foo` is not found then you can use `{foo}` and the output will be `Ping`.
+On the other hand, if the value is set (e.g. via `TemplateInstance.data("foo", "Pong")`) then the output of `{foo}` will be `Pong`.
+
+The type of a default value must be assignable to the type of the parameter declaration, i.e. the following parameter declaration is incorrect and results in a build failure: `{@org.acme.Foo foo=1}`.
+
+TIP: The default value is actually an <<expressions,expression>>. So the default value does not have to be a literal (such as `42` or `true`). For example, you can leverage the `@TemplateEnum` and specify an enum constant as a default value of a parameter declaration: `{@org.acme.MyEnum myEnum=MyEnum:FOO}`. However, the infix notation is not supported in default values.
+
+IMPORTANT: The type of a default value is not validated in <<standalone, Qute standalone>>.
+
 .More Parameter Declarations Examples 
 [source]
 ----
@@ -1372,11 +1385,13 @@ Note that sections can override names that would otherwise match a parameter dec
 {@java.util.List<String> strings} <2>
 {@java.util.Map<String,? extends Number> numbers} <3>
 {@java.util.Optional<?> param} <4>
+{@String name="Quarkus"} <5>
 ----
 <1> A primitive type.
 <2> `String` is replaced with `java.lang.String`: `{@java.util.List<java.lang.String> strings}`
 <3> The wildcard is ignored and the upper bound is used instead: `{@java.util.Map<String,Number>}`
 <4> The wildcard is ignored and the `java.lang.Object` is used instead: `{@java.util.Optional<java.lang.Object>}`
+<5> The type is `java.lang.String`, the key is `name` and the default value is `Quarkus`. 
  
 [[typesafe_templates]]
 === Type-safe Templates

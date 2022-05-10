@@ -94,6 +94,7 @@ import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
 import io.quarkus.qute.LoopSectionHelper;
+import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.ParserHelper;
 import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.ResultNode;
@@ -477,7 +478,8 @@ public class QuteProcessor {
         for (TemplatePathBuildItem path : templatePaths) {
             Template template = dummyEngine.getTemplate(path.getPath());
             if (template != null) {
-                analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(), path.getPath()));
+                analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(),
+                        template.getParameterDeclarations(), path.getPath()));
             }
         }
 
@@ -485,7 +487,7 @@ public class QuteProcessor {
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             Template template = dummyEngine.parse(messageBundleMethod.getTemplate(), null, messageBundleMethod.getTemplateId());
             analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template.getGeneratedId(),
-                    template.getExpressions(),
+                    template.getExpressions(), template.getParameterDeclarations(),
                     messageBundleMethod.getMethod().declaringClass().name() + "#" + messageBundleMethod.getMethod().name()
                             + "()"));
         }
@@ -557,6 +559,41 @@ public class QuteProcessor {
                         namespaceExtensionMethods);
                 generatedIdsToMatches.put(expression.getGeneratedId(), match);
             }
+
+            // Validate default values of parameter declarations
+            for (ParameterDeclaration parameterDeclaration : templateAnalysis.parameterDeclarations) {
+                Expression defaultValue = parameterDeclaration.getDefaultValue();
+                if (defaultValue != null) {
+                    Match match;
+                    if (defaultValue.isLiteral()) {
+                        match = new Match(index);
+                        setMatchValues(match, defaultValue, generatedIdsToMatches, index);
+                    } else {
+                        match = generatedIdsToMatches.get(defaultValue.getGeneratedId());
+                        if (match == null) {
+                            LOGGER.debugf(
+                                    "No type info available - unable to validate the default value of a parameter declaration ["
+                                            + parameterDeclaration.getKey() + "] in " + defaultValue.getOrigin());
+                            continue;
+                        }
+                    }
+                    Info info = TypeInfos.create(parameterDeclaration.getTypeInfo(), null, index, templateIdToPathFun,
+                            parameterDeclaration.getDefaultValue().getOrigin());
+                    if (!info.isTypeInfo()) {
+                        throw new IllegalStateException("Invalid type info [" + info + "] of parameter declaration ["
+                                + parameterDeclaration.getKey() + "] in "
+                                + defaultValue.getOrigin().toString());
+                    }
+                    if (!Types.isAssignableFrom(info.asTypeInfo().resolvedType, match.type(), index)) {
+                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(defaultValue.toOriginalString(),
+                                "The type of the default value [" + match.type()
+                                        + "] does not match the type of the parameter declaration ["
+                                        + info.asTypeInfo().resolvedType + "]",
+                                defaultValue.getOrigin()));
+                    }
+                }
+            }
+
             expressionMatches
                     .produce(new TemplateExpressionMatchesBuildItem(templateAnalysis.generatedId, generatedIdsToMatches));
         }

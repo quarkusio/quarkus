@@ -79,6 +79,9 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
     private final List<Function<String, String>> contentFilters;
     private boolean hasLineSeparator;
 
+    // The number of param declarations with default values for which a synthetic {#let} section was added
+    private int paramDeclarationDefaults;
+
     public Parser(EngineImpl engine, Reader reader, String templateId, String generatedId, Optional<Variant> variant) {
         this.engine = engine;
         this.templateId = templateId;
@@ -161,6 +164,14 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
                                     .argument("buffer", buffer)
                                     .build();
                 }
+            }
+
+            // Param declarations with default values - a synthetic {#let} section has no end tag, i.e. {/let} so we need to handle this specially
+            for (int i = 0; i < paramDeclarationDefaults; i++) {
+                SectionNode.Builder section = sectionStack.pop();
+                sectionStack.peek().currentBlock().addNode(section.build());
+                // Remove the last type info map from the stack
+                scopeStack.pop();
             }
 
             SectionNode.Builder root = sectionStack.peek();
@@ -397,132 +408,211 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
         if (content.charAt(0) == Tag.SECTION.command) {
             // It's a section/block start
             // {#if}, {#else}, etc.
-            boolean isEmptySection = false;
-            if (content.charAt(content.length() - 1) == Tag.SECTION_END.command) {
-                content = content.substring(0, content.length() - 1);
-                isEmptySection = true;
-            }
-
-            Iterator<String> iter = splitSectionParams(content, this);
-            if (!iter.hasNext()) {
-                throw error(ParserError.NO_SECTION_NAME, "no section name declared for {tag}").argument("tag", tag).build();
-            }
-            String sectionName = iter.next();
-            sectionName = sectionName.substring(1, sectionName.length());
-
-            if (sectionName.isBlank()) {
-                throw error(ParserError.NO_SECTION_NAME, "no section name declared for {tag}").argument("tag", tag).build();
-            }
-
-            SectionNode.Builder lastSection = sectionStack.peek();
-            // Add a section block if the section name matches a section block label
-            // or does not map to any section helper and the last section treats unknown subsections as blocks
-            if (lastSection != null && lastSection.factory.getBlockLabels().contains(sectionName)
-                    || (lastSection.factory.treatUnknownSectionsAsBlocks()
-                            && !engine.getSectionHelperFactories().containsKey(sectionName))) {
-
-                // => New section block
-                SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this::error)
-                        .setOrigin(origin(0)).setLabel(sectionName);
-                lastSection.addBlock(block);
-
-                processParams(tag, sectionName, iter, block);
-
-                // Initialize the block
-                Scope currentScope = scopeStack.peek();
-                Scope newScope = lastSection.factory.initializeBlock(currentScope, block);
-                scopeStack.addFirst(newScope);
-
-            } else {
-                // => New section
-                SectionHelperFactory<?> factory = engine.getSectionHelperFactory(sectionName);
-                if (factory == null) {
-                    throw error(ParserError.NO_SECTION_HELPER_FOUND, "no section helper found for {tag}")
-                            .argument("tag", tag)
-                            .build();
-                }
-                SectionNode.Builder sectionNode = SectionNode
-                        .builder(sectionName, origin(0), this, this::error)
-                        .setEngine(engine)
-                        .setHelperFactory(factory);
-
-                paramsStack.addFirst(factory.getParameters());
-                processParams(tag, SectionHelperFactory.MAIN_BLOCK_NAME, iter, sectionNode.currentBlock());
-
-                // Init section block
-                Scope currentScope = scopeStack.peek();
-                Scope newScope = factory.initializeBlock(currentScope, sectionNode.currentBlock());
-
-                if (isEmptySection) {
-                    // Remove params from the stack
-                    paramsStack.pop();
-                    // Add node to the parent block
-                    sectionStack.peek().currentBlock().addNode(sectionNode.build());
-                } else {
-                    scopeStack.addFirst(newScope);
-                    sectionStack.addFirst(sectionNode);
-                }
-            }
+            sectionStart(content, tag);
         } else if (content.charAt(0) == Tag.SECTION_END.command) {
             // It's a section/block end
-            SectionNode.Builder section = sectionStack.peek();
-            SectionBlock.Builder block = section.currentBlock();
-            String name = content.substring(1, content.length());
-            if (block != null && !block.getLabel().equals(SectionHelperFactory.MAIN_BLOCK_NAME)
-                    && !section.helperName.equals(name)) {
-                // Non-main block end, e.g. {/else}
-                if (!name.isEmpty() && !block.getLabel().equals(name)) {
-                    throw error(ParserError.SECTION_BLOCK_END_DOES_NOT_MATCH_START,
-                            "section block end tag [{name}] does not match the start tag [{tagName}]")
-                                    .argument("name", name)
-                                    .argument("tagName", block.getLabel()).build();
-                }
-                section.endBlock();
-            } else {
-                // Section end, e.g. {/if}
-                if (section.helperName.equals(ROOT_HELPER_NAME)) {
-                    throw error(ParserError.SECTION_START_NOT_FOUND, "section start tag found for {tag}")
-                            .argument("tag", tag)
-                            .build();
-                }
-                if (!name.isEmpty() && !section.helperName.equals(name)) {
-                    throw error(ParserError.SECTION_END_DOES_NOT_MATCH_START,
-                            "section end tag [{name}] does not match the start tag [{tag}]")
-                                    .argument("name", name)
-                                    .argument("tag", section.helperName)
-                                    .build();
-                }
-                // Pop the section and its main block
-                section = sectionStack.pop();
-                sectionStack.peek().currentBlock().addNode(section.build());
-            }
-
-            // Remove the last type info map from the stack
-            scopeStack.pop();
-
+            sectionEnd(content, tag);
         } else if (content.charAt(0) == Tag.PARAM.command) {
             // Parameter declaration
             // {@org.acme.Foo foo}
-            Scope currentScope = scopeStack.peek();
-            // "@org.acme.Foo foo " -> "org.acme.Foo foo" and split
-            List<String> parts = Expressions.splitParts(content.substring(1).trim(),
-                    Expressions.PARAM_DECLARATION_SPLIT_CONFIG);
-            if (parts.size() != 2) {
-                throw error(ParserError.INVALID_PARAM_DECLARATION, "invalid parameter declaration {param}")
-                        .argument("param", START_DELIMITER + buffer.toString() + END_DELIMITER)
-                        .origin(origin(0))
-                        .build();
-            }
-            String value = parts.get(0);
-            String key = parts.get(1);
-            currentScope.putBinding(key, Expressions.typeInfoFrom(value));
-            sectionStack.peek().currentBlock().addNode(new ParameterDeclarationNode(content, origin(0)));
+            parameterDeclaration(content, tag);
         } else {
             // Expression
             sectionStack.peek().currentBlock()
-                    .addNode(new ExpressionNode(apply(content), engine, origin(content.length() + 1)));
+                    .addNode(new ExpressionNode(apply(content), engine));
         }
         this.buffer = new StringBuilder();
+    }
+
+    private void sectionStart(String content, String tag) {
+        boolean isEmptySection = false;
+        if (content.charAt(content.length() - 1) == Tag.SECTION_END.command) {
+            content = content.substring(0, content.length() - 1);
+            isEmptySection = true;
+        }
+
+        Iterator<String> iter = splitSectionParams(content, this);
+        if (!iter.hasNext()) {
+            throw error(ParserError.NO_SECTION_NAME, "no section name declared for {tag}").argument("tag", tag).build();
+        }
+        String sectionName = iter.next();
+        sectionName = sectionName.substring(1, sectionName.length());
+
+        if (sectionName.isBlank()) {
+            throw error(ParserError.NO_SECTION_NAME, "no section name declared for {tag}").argument("tag", tag).build();
+        }
+
+        SectionNode.Builder lastSection = sectionStack.peek();
+        // Add a section block if the section name matches a section block label
+        // or does not map to any section helper and the last section treats unknown subsections as blocks
+        if (lastSection != null && lastSection.factory.getBlockLabels().contains(sectionName)
+                || (lastSection.factory.treatUnknownSectionsAsBlocks()
+                        && !engine.getSectionHelperFactories().containsKey(sectionName))) {
+
+            // => New section block
+            SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this::error)
+                    .setOrigin(origin(0)).setLabel(sectionName);
+            lastSection.addBlock(block);
+
+            processParams(tag, sectionName, iter, block);
+
+            // Initialize the block
+            Scope currentScope = scopeStack.peek();
+            Scope newScope = lastSection.factory.initializeBlock(currentScope, block);
+            scopeStack.addFirst(newScope);
+
+        } else {
+            // => New section
+            SectionHelperFactory<?> factory = engine.getSectionHelperFactory(sectionName);
+            if (factory == null) {
+                throw error(ParserError.NO_SECTION_HELPER_FOUND, "no section helper found for {tag}")
+                        .argument("tag", tag)
+                        .build();
+            }
+            SectionNode.Builder sectionNode = SectionNode
+                    .builder(sectionName, origin(0), this, this::error)
+                    .setEngine(engine)
+                    .setHelperFactory(factory);
+
+            paramsStack.addFirst(factory.getParameters());
+            processParams(tag, SectionHelperFactory.MAIN_BLOCK_NAME, iter, sectionNode.currentBlock());
+
+            // Init section block
+            Scope currentScope = scopeStack.peek();
+            Scope newScope = factory.initializeBlock(currentScope, sectionNode.currentBlock());
+
+            if (isEmptySection) {
+                // Remove params from the stack
+                paramsStack.pop();
+                // Add node to the parent block
+                sectionStack.peek().currentBlock().addNode(sectionNode.build());
+            } else {
+                scopeStack.addFirst(newScope);
+                sectionStack.addFirst(sectionNode);
+            }
+        }
+    }
+
+    private void sectionEnd(String content, String tag) {
+        SectionNode.Builder section = sectionStack.peek();
+        SectionBlock.Builder block = section.currentBlock();
+        String name = content.substring(1, content.length());
+        if (block != null && !block.getLabel().equals(SectionHelperFactory.MAIN_BLOCK_NAME)
+                && !section.helperName.equals(name)) {
+            // Non-main block end, e.g. {/else}
+            if (!name.isEmpty() && !block.getLabel().equals(name)) {
+                throw error(ParserError.SECTION_BLOCK_END_DOES_NOT_MATCH_START,
+                        "section block end tag [{name}] does not match the start tag [{tagName}]")
+                                .argument("name", name)
+                                .argument("tagName", block.getLabel()).build();
+            }
+            section.endBlock();
+        } else {
+            // Section end, e.g. {/if}
+            if (section.helperName.equals(ROOT_HELPER_NAME)) {
+                throw error(ParserError.SECTION_START_NOT_FOUND, "section start tag found for {tag}")
+                        .argument("tag", tag)
+                        .build();
+            }
+            if (!name.isEmpty() && !section.helperName.equals(name)) {
+                throw error(ParserError.SECTION_END_DOES_NOT_MATCH_START,
+                        "section end tag [{name}] does not match the start tag [{tag}]")
+                                .argument("name", name)
+                                .argument("tag", section.helperName)
+                                .build();
+            }
+            // Pop the section and its main block
+            section = sectionStack.pop();
+            sectionStack.peek().currentBlock().addNode(section.build());
+        }
+
+        // Remove the last type info map from the stack
+        scopeStack.pop();
+    }
+
+    private void parameterDeclaration(String content, String tag) {
+
+        Scope currentScope = scopeStack.peek();
+        // "@org.acme.Foo foo " -> "org.acme.Foo foo" and split
+        List<String> parts = Expressions.splitParts(content.substring(1).trim(),
+                Expressions.PARAM_DECLARATION_SPLIT_CONFIG);
+
+        String value = null;
+        String key = null;
+        String defaultValue = null;
+
+        if (parts.size() >= 2 && parts.size() <= 4) {
+            // [typeInfo][name]
+            value = parts.get(0);
+            key = parts.get(1);
+
+            if (parts.size() == 4 && "=".equals(parts.get(2))) {
+                // [typeInfo][name][=][defaultValue]
+                defaultValue = parts.get(3);
+            } else if (parts.size() == 2) {
+                // [typeInfo][name=defaultValue]
+                int eqIdx = key.indexOf('=');
+                if (eqIdx != -1) {
+                    defaultValue = key.substring(eqIdx + 1);
+                    key = key.substring(0, eqIdx);
+                }
+            } else if (parts.size() == 3) {
+                // [typeInfo][name][=defaultValue]
+                // [typeInfo][name=][defaultValue]
+                String defValPart = parts.get(2);
+                int eqIdx = defValPart.indexOf('=');
+                if (eqIdx != -1) {
+                    defaultValue = defValPart.substring(eqIdx + 1);
+                } else {
+                    eqIdx = key.indexOf('=');
+                    if (eqIdx != -1) {
+                        defaultValue = defValPart;
+                        key = key.substring(0, eqIdx);
+                    }
+                }
+            }
+        }
+
+        if (key == null || value == null || (parts.size() > 2 && defaultValue == null)) {
+            throw error(ParserError.INVALID_PARAM_DECLARATION, "invalid parameter declaration {param}")
+                    .argument("param", START_DELIMITER + buffer.toString() + END_DELIMITER)
+                    .origin(origin(0))
+                    .build();
+        }
+
+        String typeInfo = Expressions.typeInfoFrom(value);
+        currentScope.putBinding(key, typeInfo);
+        sectionStack.peek().currentBlock().addNode(
+                new ParameterDeclarationNode(typeInfo, key, defaultValue != null ? apply(defaultValue) : null, origin(0)));
+
+        // If a default value is set we add a synthetic {#let} section to define local variables with default values
+        if (defaultValue != null) {
+            SectionHelperFactory<?> factory = engine.getSectionHelperFactory("let");
+            if (factory == null) {
+                throw error(ParserError.NO_SECTION_HELPER_FOUND,
+                        "Parameter declaration with a default value requires a \\{#let} section helper to be present: {tag}")
+                                .argument("tag", tag)
+                                .build();
+            }
+            SectionNode.Builder sectionNode = SectionNode
+                    .builder("let", origin(0), this, this::error)
+                    .setEngine(engine)
+                    .setHelperFactory(factory);
+
+            paramsStack.addFirst(factory.getParameters());
+            processParams(tag, SectionHelperFactory.MAIN_BLOCK_NAME,
+                    List.of(key + "?=" + defaultValue).iterator(),
+                    sectionNode.currentBlock());
+
+            // Init section block
+            currentScope = scopeStack.peek();
+            Scope newScope = factory.initializeBlock(currentScope, sectionNode.currentBlock());
+            scopeStack.addFirst(newScope);
+            sectionStack.addFirst(sectionNode);
+
+            // A synthetic {#let} section has no end tag, i.e. {/let} so we need to handle this specially
+            paramDeclarationDefaults++;
+        }
     }
 
     public TemplateException.Builder error(String message) {

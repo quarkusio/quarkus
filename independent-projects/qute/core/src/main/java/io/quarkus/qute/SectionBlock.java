@@ -65,6 +65,20 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
         return expressions;
     }
 
+    List<ParameterDeclaration> getParamDeclarations() {
+        List<ParameterDeclaration> declarations = null;
+        for (TemplateNode node : nodes) {
+            List<ParameterDeclaration> nodeDeclarations = node.getParameterDeclarations();
+            if (!nodeDeclarations.isEmpty()) {
+                if (declarations == null) {
+                    declarations = new ArrayList<>();
+                }
+                declarations.addAll(nodeDeclarations);
+            }
+        }
+        return declarations != null ? declarations : Collections.emptyList();
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -86,9 +100,8 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
             if (node instanceof SectionNode) {
                 effectiveNodes.add(node);
                 ((SectionNode) node).optimizeNodes(nodesToRemove);
-            } else if (node == Parser.COMMENT_NODE || (node instanceof ParameterDeclarationNode)
-                    || nodesToRemove.contains(node)) {
-                // Ignore comments, param declarations and nodes for removal
+            } else if (node == Parser.COMMENT_NODE || nodesToRemove.contains(node)) {
+                // Ignore comments and nodes for removal
                 nodeIgnored = true;
             } else {
                 effectiveNodes.add(node);

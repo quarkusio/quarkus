@@ -27,6 +27,14 @@ public interface TemplateNode {
 
     /**
      *
+     * @return a list of param declarations
+     */
+    default List<ParameterDeclaration> getParameterDeclarations() {
+        return Collections.emptyList();
+    }
+
+    /**
+     *
      * @return the origin of the node
      */
     Origin getOrigin();

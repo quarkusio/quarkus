@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.ParameterDeclaration;
 
 /**
  * Represents the result of analysis of all templates.
@@ -34,13 +35,17 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
 
         public final List<Expression> expressions;
 
+        public final List<ParameterDeclaration> parameterDeclarations;
+
         // File path, e.g. hello.html or ItemResource/items.html
         public final String path;
 
-        public TemplateAnalysis(String id, String generatedId, List<Expression> expressions, String path) {
+        public TemplateAnalysis(String id, String generatedId, List<Expression> expressions,
+                List<ParameterDeclaration> parameterDeclarations, String path) {
             this.id = id;
             this.generatedId = generatedId;
             this.expressions = expressions;
+            this.parameterDeclarations = parameterDeclarations;
             this.path = path;
         }
 

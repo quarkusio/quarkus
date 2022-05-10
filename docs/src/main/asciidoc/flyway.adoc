@@ -15,7 +15,7 @@ Quarkus provides first class support for using Flyway as will be explained in th
 
 == Setting up support for Flyway
 
-To start using Flyway with your project, you just need to:
+As shown in the <<developing-with-flyway>> section, to start using Flyway with your project, you just need to:
 
 * add your migrations to the `{migrations-path}` folder as you usually do with Flyway
 * activate the `migrate-at-start` option to migrate the schema automatically or inject the `Flyway` object and run
@@ -77,6 +77,7 @@ Also, you can customize the Flyway behaviour by using the following properties:
 
 include::{generated-dir}/config/quarkus-flyway.adoc[opts=optional, leveloffset=+1]
 
+== Developing with Flyway
 
 The following is an example for the `{config-file}` file:
 
@@ -88,10 +89,10 @@ quarkus.datasource.username=sarah
 quarkus.datasource.password=connor
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/mydatabase
 
-# Flyway minimal config properties
+# Run Flyway migrations automatically
 quarkus.flyway.migrate-at-start=true
 
-# Flyway optional config properties
+# More Flyway configuration options
 # quarkus.flyway.baseline-on-migrate=true
 # quarkus.flyway.baseline-version=1.0.0
 # quarkus.flyway.baseline-description=Initial version
@@ -116,7 +117,12 @@ INSERT INTO quarkus(id, name)
 VALUES (1, 'QUARKED');
 ----
 
-Now you can start your application and Quarkus will run the Flyway's migrate method according to your config:
+Now you can start your application and Quarkus will run the Flyway's
+migrate method according to your config.
+
+NOTE: With `quarkus.flyway.migrate-at-start=true`, as in the example
+above, Quarkus will execute the Flyway migration as part of the
+xref:lifecycle.adoc[application startup].
 
 [source,java]
 ----
@@ -132,8 +138,13 @@ public class MigrationService {
     }
 }
 ----
-
 <1> Inject the Flyway object if you want to use it directly
+
+TIP: In dev-mode Quarkus will automatically restart the application if
+any of the existing migration scripts get modified. If you want to take
+advantage of this while developing and testing new migration scripts,
+you will want to set `%dev.quarkus.flyway.clean-at-start=true`, so that
+Flyway actually runs the modified migration.
 
 == Multiple datasources
 
@@ -181,9 +192,6 @@ NOTE: Without configuration, Flyway is set up for every datasource using the def
 == Using the Flyway object
 
 In case you are interested in using the `Flyway` object directly, you can inject it as follows:
-
-NOTE: If you enabled the `quarkus.flyway.migrate-at-start` property, by the time you use the Flyway instance,
-Quarkus will already have run the migrate operation
 
 [source,java]
 ----

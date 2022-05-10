@@ -45,6 +45,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -81,6 +82,7 @@ class FlywayProcessor {
     MigrationStateBuildItem build(BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentProducer,
             FlywayRecorder recorder,
             RecorderContext context,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -107,6 +109,9 @@ class FlywayProcessor {
 
         Collection<String> applicationMigrations = applicationMigrationsToDs.values().stream().collect(HashSet::new,
                 AbstractCollection::addAll, HashSet::addAll);
+        for (String applicationMigration : applicationMigrations) {
+            hotDeploymentProducer.produce(new HotDeploymentWatchedFileBuildItem(applicationMigration));
+        }
         recorder.setApplicationMigrationFiles(applicationMigrations);
 
         Set<Class<? extends JavaMigration>> javaMigrationClasses = new HashSet<>();

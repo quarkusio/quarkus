@@ -18,6 +18,7 @@ import io.smallrye.openapi.api.OpenApiConfig;
  */
 public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final Map<String, String> RELOCATIONS = relocations();
+    @SuppressWarnings("unchecked")
     private final HyphenateEnumConverter enumConverter = new HyphenateEnumConverter(OpenApiConfig.OperationIdStrategy.class);
 
     public OpenApiConfigMapping() {

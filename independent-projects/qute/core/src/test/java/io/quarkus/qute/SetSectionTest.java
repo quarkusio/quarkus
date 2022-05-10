@@ -32,4 +32,13 @@ public class SetSectionTest {
                         .render());
     }
 
+    @Test
+    public void testDefaultValues() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("1", engine.parse("{#let foo?=1}{foo}{/let}").render());
+        assertEquals("2", engine.parse("{#let foo?=1}{foo}{/let}").data("foo", 2).render());
+        assertEquals("true::1::no", engine.parse("{#set foo?=true bar=1 baz?='yes'}{foo}::{bar}::{baz}{/set}")
+                .data("bar", "42", "baz", "no").render());
+    }
+
 }

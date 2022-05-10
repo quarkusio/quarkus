@@ -555,7 +555,7 @@ link in the Flyway pane. Hit the `Create Initial Migration` button and the follo
 - A `db/migration/V1.0.0__\{appname\}.sql` file will be created, containing the SQL Hibernate is running to generate the schema
 - `quarkus.flyway.baseline-on-migrate` will be set, telling Flyway to automatically create its baseline tables
 - `quarkus.flyway.migrate-at-start` will be set, telling Flyway to automatically apply migrations on application startup
-- `%dev.quarkus.flyway.clean-at-start` and ``%test.quarkus.flyway.clean-at-start` will be set, to clean the DB after reload in dev/test mode
+- `%dev.quarkus.flyway.clean-at-start` and `%test.quarkus.flyway.clean-at-start` will be set, to clean the DB after reload in dev/test mode
 
 WARNING: This button is simply a convenience to quickly get you started with Flyway, it is up to you to determine how you want to
 manage your database schemas in production. In particular the `migrate-at-start` setting may not be right for all environments.

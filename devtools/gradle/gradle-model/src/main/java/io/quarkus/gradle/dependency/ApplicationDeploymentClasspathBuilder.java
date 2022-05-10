@@ -2,24 +2,35 @@ package io.quarkus.gradle.dependency;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.plugins.JavaPlugin;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.PlatformImports;
+import io.quarkus.bootstrap.model.PlatformImportsImpl;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.LocalExtensionDependency;
-import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runtime.LaunchMode;
 
 public class ApplicationDeploymentClasspathBuilder {
@@ -88,70 +99,163 @@ public class ApplicationDeploymentClasspathBuilder {
     }
 
     private final Project project;
-    private final Collection<org.gradle.api.artifacts.Dependency> enforcedPlatforms;
     private final LaunchMode mode;
-    private ConditionalDependenciesEnabler cdEnabler;
-    private Configuration runtimeConfig;
 
-    public ApplicationDeploymentClasspathBuilder(Project project, LaunchMode mode,
-            Collection<org.gradle.api.artifacts.Dependency> enforcedPlatforms) {
+    private final String runtimeConfigurationName;
+    private final String platformConfigurationName;
+    private final String deploymentConfigurationName;
+    /**
+     * The platform configuration updates the PlatformImports, but since the PlatformImports don't
+     * have a place to be stored in the project, they're stored here. The way that extensions are
+     * tracked and conditional dependencies needs some attention, which will likely resolve this.
+     */
+    private static final HashMap<String, PlatformImportsImpl> platformImports = new HashMap<>();
+    /**
+     * The key used to look up the correct PlatformImports that matches the platformConfigurationName
+     */
+    private final String platformImportName;
+
+    public ApplicationDeploymentClasspathBuilder(Project project, LaunchMode mode) {
         this.project = project;
         this.mode = mode;
-        this.enforcedPlatforms = enforcedPlatforms;
+        this.runtimeConfigurationName = getFinalRuntimeConfigName(mode);
+        this.platformConfigurationName = ToolingUtils.toPlatformConfigurationName(this.runtimeConfigurationName);
+        this.deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(this.runtimeConfigurationName);
+        this.platformImportName = project.getPath() + ":" + this.platformConfigurationName;
+
+        setUpPlatformConfiguration();
+        setUpRuntimeConfiguration();
+        setUpDeploymentConfiguration();
     }
 
-    public Configuration getRuntimeConfiguration() {
-        if (runtimeConfig == null) {
-            final String configName = getFinalRuntimeConfigName(mode);
-            runtimeConfig = project.getConfigurations().findByName(configName);
-            if (runtimeConfig == null) {
-                runtimeConfig = DependencyUtils.duplicateConfiguration(project, configName,
-                        getConditionalDependenciesEnabler().getBaseRuntimeConfiguration());
-            }
+    private void setUpPlatformConfiguration() {
+        if (project.getConfigurations().findByName(this.platformConfigurationName) == null) {
+            PlatformImportsImpl platformImports = ApplicationDeploymentClasspathBuilder.platformImports
+                    .computeIfAbsent(this.platformImportName, (ignored) -> new PlatformImportsImpl());
+
+            project.getConfigurations().create(this.platformConfigurationName, configuration -> {
+                // Platform configuration is just implementation, filtered to platform dependencies
+                configuration.getDependencies().addAllLater(project.provider(() -> project.getConfigurations()
+                        .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+                        .getAllDependencies()
+                        .stream()
+                        .filter(dependency -> dependency instanceof ModuleDependency &&
+                                ToolingUtils.isEnforcedPlatform((ModuleDependency) dependency))
+                        .collect(Collectors.toList())));
+                // Configures PlatformImportsImpl once the platform configuration is resolved
+                configuration.getResolutionStrategy().eachDependency(d -> {
+                    ModuleIdentifier identifier = d.getTarget().getModule();
+                    final String group = identifier.getGroup();
+                    final String name = identifier.getName();
+                    if (name.endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)) {
+                        platformImports.addPlatformDescriptor(group, name, d.getTarget().getVersion(), "json",
+                                d.getTarget().getVersion());
+                    } else if (name.endsWith(BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX)) {
+                        final DefaultDependencyArtifact dep = new DefaultDependencyArtifact();
+                        dep.setExtension("properties");
+                        dep.setType("properties");
+                        dep.setName(name);
+
+                        final DefaultExternalModuleDependency gradleDep = new DefaultExternalModuleDependency(
+                                group, name, d.getTarget().getVersion(), null);
+                        gradleDep.addArtifact(dep);
+
+                        for (ResolvedArtifact a : project.getConfigurations().detachedConfiguration(gradleDep)
+                                .getResolvedConfiguration().getResolvedArtifacts()) {
+                            if (a.getName().equals(name)) {
+                                try {
+                                    platformImports.addPlatformProperties(group, name, null, "properties",
+                                            d.getTarget().getVersion(),
+                                            a.getFile().toPath());
+                                } catch (AppModelResolverException e) {
+                                    throw new GradleException("Failed to import platform properties " + a.getFile(), e);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                });
+            });
         }
-        return runtimeConfig;
+    }
+
+    private void setUpRuntimeConfiguration() {
+        if (project.getConfigurations().findByName(this.runtimeConfigurationName) == null) {
+            project.getConfigurations().create(this.runtimeConfigurationName, configuration -> configuration.extendsFrom(
+                    project.getConfigurations()
+                            .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode))));
+        }
+    }
+
+    private void setUpDeploymentConfiguration() {
+        if (project.getConfigurations().findByName(this.deploymentConfigurationName) == null) {
+            project.getConfigurations().create(this.deploymentConfigurationName, configuration -> {
+                Configuration enforcedPlatforms = this.getPlatformConfiguration();
+                configuration.extendsFrom(enforcedPlatforms);
+                configuration.getDependencies().addAllLater(project.provider(() -> {
+                    ConditionalDependenciesEnabler cdEnabler = new ConditionalDependenciesEnabler(project, mode,
+                            enforcedPlatforms);
+                    final Collection<ExtensionDependency> allExtensions = cdEnabler.getAllExtensions();
+                    Set<ExtensionDependency> extensions = collectFirstMetQuarkusExtensions(getRawRuntimeConfiguration(),
+                            allExtensions);
+                    // Add conditional extensions
+                    for (ExtensionDependency knownExtension : allExtensions) {
+                        if (knownExtension.isConditional()) {
+                            extensions.add(knownExtension);
+                        }
+                    }
+
+                    final Set<ModuleVersionIdentifier> alreadyProcessed = new HashSet<>(extensions.size());
+                    final DependencyHandler dependencies = project.getDependencies();
+                    final Set<Dependency> deploymentDependencies = new HashSet<>();
+                    for (ExtensionDependency extension : extensions) {
+                        if (extension instanceof LocalExtensionDependency) {
+                            LocalExtensionDependency localExtensionDependency = (LocalExtensionDependency) extension;
+                            deploymentDependencies.add(
+                                    dependencies.project(Collections.singletonMap("path",
+                                            localExtensionDependency.findDeploymentModulePath())));
+                        } else {
+                            if (!alreadyProcessed.add(extension.getExtensionId())) {
+                                continue;
+                            }
+                            deploymentDependencies.add(dependencies.create(
+                                    extension.getDeploymentModule().getGroupId() + ":"
+                                            + extension.getDeploymentModule().getArtifactId() + ":"
+                                            + extension.getDeploymentModule().getVersion()));
+                        }
+                    }
+                    return deploymentDependencies;
+                }));
+            });
+        }
+    }
+
+    public Configuration getPlatformConfiguration() {
+        return project.getConfigurations().getByName(this.platformConfigurationName);
+    }
+
+    private Configuration getRawRuntimeConfiguration() {
+        return project.getConfigurations().getByName(this.runtimeConfigurationName);
+    }
+
+    /**
+     * Forces deployment configuration to resolve to discover conditional dependencies.
+     */
+    public Configuration getRuntimeConfiguration() {
+        this.getDeploymentConfiguration().resolve();
+        return project.getConfigurations().getByName(this.runtimeConfigurationName);
     }
 
     public Configuration getDeploymentConfiguration() {
-        String deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(runtimeConfig.getName());
-        Configuration deploymentConfig = project.getConfigurations().findByName(deploymentConfigurationName);
-        if (deploymentConfig != null) {
-            return deploymentConfig;
-        }
-
-        final Collection<ExtensionDependency> allExtensions = getConditionalDependenciesEnabler().getAllExtensions();
-        Set<ExtensionDependency> extensions = collectFirstMetQuarkusExtensions(getRuntimeConfiguration(), allExtensions);
-        // Add conditional extensions
-        for (ExtensionDependency knownExtension : allExtensions) {
-            if (knownExtension.isConditional()) {
-                extensions.add(knownExtension);
-            }
-        }
-
-        return project.getConfigurations().create(deploymentConfigurationName, config -> {
-            config.withDependencies(ds -> ds.addAll(enforcedPlatforms));
-
-            final Set<ModuleVersionIdentifier> alreadyProcessed = new HashSet<>(extensions.size());
-            final DependencyHandler dependencies = project.getDependencies();
-            for (ExtensionDependency extension : extensions) {
-                if (extension instanceof LocalExtensionDependency) {
-                    DependencyUtils.addLocalDeploymentDependency(deploymentConfigurationName,
-                            (LocalExtensionDependency) extension, dependencies);
-                } else {
-                    if (!alreadyProcessed.add(extension.getExtensionId())) {
-                        continue;
-                    }
-                    DependencyUtils.requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
-                }
-            }
-        });
+        return project.getConfigurations().getByName(this.deploymentConfigurationName);
     }
 
-    private ConditionalDependenciesEnabler getConditionalDependenciesEnabler() {
-        if (cdEnabler == null) {
-            cdEnabler = new ConditionalDependenciesEnabler(project, mode, enforcedPlatforms);
-        }
-        return cdEnabler;
+    /**
+     * Forces the platform configuration to resolve and then uses that to populate platform imports.
+     */
+    public PlatformImports getPlatformImports() {
+        this.getPlatformConfiguration().getResolvedConfiguration();
+        return platformImports.get(this.platformImportName);
     }
 
     private Set<ExtensionDependency> collectFirstMetQuarkusExtensions(Configuration configuration,

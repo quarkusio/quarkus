@@ -335,6 +335,11 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .extendsFrom(configContainer.findByName(JavaPlugin.TEST_RUNTIME_ONLY_CONFIGURATION_NAME));
 
         ApplicationDeploymentClasspathBuilder.initConfigurations(project);
+
+        // Also initialize the configurations that are specific to a LaunchMode
+        for (LaunchMode launchMode : LaunchMode.values()) {
+            new ApplicationDeploymentClasspathBuilder(project, launchMode);
+        }
     }
 
     private Set<Path> getSourcesParents(SourceSet mainSourceSet) {

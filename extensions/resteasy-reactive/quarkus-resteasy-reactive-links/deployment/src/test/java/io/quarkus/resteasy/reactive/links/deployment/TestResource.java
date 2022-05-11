@@ -31,7 +31,7 @@ public class TestResource {
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
-    @RestLink(entityType = TestRecord.class, rel = "list")
+    @RestLink(entityType = TestRecord.class)
     @InjectRestLinks
     public Uni<List<TestRecord>> getAll() {
         return Uni.createFrom().item(RECORDS).onItem().delayIt().by(Duration.ofMillis(100));
@@ -40,7 +40,7 @@ public class TestResource {
     @GET
     @Path("/without-links")
     @Produces(MediaType.APPLICATION_JSON)
-    @RestLink
+    @RestLink(rel = "list-without-links")
     public List<TestRecord> getAllWithoutLinks() {
         return RECORDS;
     }
@@ -48,7 +48,7 @@ public class TestResource {
     @GET
     @Path("/{id: \\d+}")
     @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
-    @RestLink(entityType = TestRecord.class, rel = "self")
+    @RestLink(entityType = TestRecord.class)
     @InjectRestLinks(RestLinkType.INSTANCE)
     public TestRecord getById(@PathParam("id") int id) {
         return RECORDS.stream()
@@ -60,7 +60,7 @@ public class TestResource {
     @GET
     @Path("/{slug: [a-zA-Z-]+}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RestLink
+    @RestLink(rel = "get-by-slug")
     @InjectRestLinks(RestLinkType.INSTANCE)
     public TestRecord getBySlug(@PathParam("slug") String slug) {
         return RECORDS.stream()

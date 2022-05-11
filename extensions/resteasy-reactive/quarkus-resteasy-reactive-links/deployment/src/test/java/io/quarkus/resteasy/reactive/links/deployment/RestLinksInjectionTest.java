@@ -35,9 +35,9 @@ public class RestLinksInjectionTest {
                 .getValues("Link");
         assertThat(firstRecordLinks).containsOnly(
                 Link.fromUri(recordsUrl).rel("list").build().toString(),
-                Link.fromUri(recordsWithoutLinksUrl).rel("getAllWithoutLinks").build().toString(),
+                Link.fromUri(recordsWithoutLinksUrl).rel("list-without-links").build().toString(),
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/1")).rel("self").build().toString(),
-                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/first")).rel("getBySlug").build().toString());
+                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/first")).rel("get-by-slug").build().toString());
 
         List<String> secondRecordLinks = when().get(recordsUrl + "/2")
                 .thenReturn()
@@ -45,10 +45,10 @@ public class RestLinksInjectionTest {
                 .getValues("Link");
         assertThat(secondRecordLinks).containsOnly(
                 Link.fromUri(recordsUrl).rel("list").build().toString(),
-                Link.fromUri(recordsWithoutLinksUrl).rel("getAllWithoutLinks").build().toString(),
+                Link.fromUri(recordsWithoutLinksUrl).rel("list-without-links").build().toString(),
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/2")).rel("self").build().toString(),
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/second"))
-                        .rel("getBySlug")
+                        .rel("get-by-slug")
                         .build()
                         .toString());
     }
@@ -61,9 +61,9 @@ public class RestLinksInjectionTest {
                 .getValues("Link");
         assertThat(firstRecordLinks).containsOnly(
                 Link.fromUri(recordsUrl).rel("list").build().toString(),
-                Link.fromUri(recordsWithoutLinksUrl).rel("getAllWithoutLinks").build().toString(),
+                Link.fromUri(recordsWithoutLinksUrl).rel("list-without-links").build().toString(),
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/1")).rel("self").build().toString(),
-                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/first")).rel("getBySlug").build().toString());
+                Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/first")).rel("get-by-slug").build().toString());
 
         List<String> secondRecordLinks = when().get(recordsUrl + "/second")
                 .thenReturn()
@@ -71,10 +71,10 @@ public class RestLinksInjectionTest {
                 .getValues("Link");
         assertThat(secondRecordLinks).containsOnly(
                 Link.fromUri(recordsUrl).rel("list").build().toString(),
-                Link.fromUri(recordsWithoutLinksUrl).rel("getAllWithoutLinks").build().toString(),
+                Link.fromUri(recordsWithoutLinksUrl).rel("list-without-links").build().toString(),
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/2")).rel("self").build().toString(),
                 Link.fromUriBuilder(UriBuilder.fromUri(recordsUrl).path("/second"))
-                        .rel("getBySlug")
+                        .rel("get-by-slug")
                         .build()
                         .toString());
     }
@@ -87,7 +87,7 @@ public class RestLinksInjectionTest {
                 .getValues("Link");
         assertThat(links).containsOnly(
                 Link.fromUri(recordsUrl).rel("list").build().toString(),
-                Link.fromUri(recordsWithoutLinksUrl).rel("getAllWithoutLinks").build().toString());
+                Link.fromUri(recordsWithoutLinksUrl).rel("list-without-links").build().toString());
     }
 
     @Test

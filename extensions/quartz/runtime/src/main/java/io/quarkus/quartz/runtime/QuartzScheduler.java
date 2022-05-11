@@ -166,6 +166,7 @@ public class QuartzScheduler implements Scheduler {
                         String cron = SchedulerUtils.lookUpPropertyValue(scheduled.cron());
                         if (!cron.isEmpty()) {
                             if (SchedulerUtils.isOff(cron)) {
+                                this.pause(identity);
                                 continue;
                             }
                             if (!CronType.QUARTZ.equals(cronType)) {
@@ -214,6 +215,7 @@ public class QuartzScheduler implements Scheduler {
                         } else if (!scheduled.every().isEmpty()) {
                             OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
                             if (!everyMillis.isPresent()) {
+                                this.pause(identity);
                                 continue;
                             }
                             SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule()

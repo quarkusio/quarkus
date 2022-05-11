@@ -771,7 +771,7 @@ and finally write the test code. Given the Wiremock-based resource above, the fi
 
 ==== Keycloak
 
-If you work with Keycloak then you can use the same approach as described in the xref:security-openid-connect#integration-testing-keycloak.adoc[OpenID Connect Bearer Token Integration testing] `Keycloak` section.
+If you work with Keycloak then you can use the same approach as described in the xref:security-openid-connect#integration-testing-keycloak.adoc[OpenID Connect Bearer Token Integration testing] Keycloak section.
 
 === How to check the errors in the logs
 

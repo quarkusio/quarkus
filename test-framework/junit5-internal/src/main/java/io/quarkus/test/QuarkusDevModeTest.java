@@ -1,6 +1,5 @@
 package io.quarkus.test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -526,9 +525,12 @@ public class QuarkusDevModeTest
                             if (manifestFilePath.startsWith("file:")) {
                                 // manifest file path will be of the form jar:file:....!META-INF/MANIFEST.MF
                                 final String jarFilePath = manifestFilePath.substring(5, manifestFilePath.lastIndexOf('!'));
-                                final File surefirebooterJar = new File(
+                                final Path surefirebooterJar = Path.of(
                                         URLDecoder.decode(jarFilePath, StandardCharsets.UTF_8.name()));
-                                context.setDevModeRunnerJarFile(surefirebooterJar);
+                                final Path targetJar = Path.of(context.getApplicationRoot().getTargetDir())
+                                        .resolve(surefirebooterJar.getFileName());
+                                Files.copy(surefirebooterJar, targetJar);
+                                context.setDevModeRunnerJarFile(targetJar.toFile());
                             }
                             return true;
                         }

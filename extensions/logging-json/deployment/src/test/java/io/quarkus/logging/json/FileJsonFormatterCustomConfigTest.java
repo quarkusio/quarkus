@@ -1,6 +1,6 @@
 package io.quarkus.logging.json;
 
-import static io.quarkus.logging.json.JsonFormatterDefaultConfigTest.getJsonFormatter;
+import static io.quarkus.logging.json.FileJsonFormatterDefaultConfigTest.getJsonFormatter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.ZoneId;
@@ -19,12 +19,12 @@ import io.quarkus.logging.json.runtime.AdditionalFieldConfig;
 import io.quarkus.logging.json.runtime.JsonFormatter;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class JsonFormatterCustomConfigTest {
+public class FileJsonFormatterCustomConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(JsonFormatterDefaultConfigTest.class))
-            .withConfigurationResource("application-json-formatter-custom.properties");
+            .withApplicationRoot((jar) -> jar.addClasses(FileJsonFormatterDefaultConfigTest.class))
+            .withConfigurationResource("application-file-json-formatter-custom.properties");
 
     @Test
     public void jsonFormatterCustomConfigurationTest() {

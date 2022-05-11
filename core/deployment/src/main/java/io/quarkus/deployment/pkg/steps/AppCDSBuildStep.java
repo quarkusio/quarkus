@@ -102,7 +102,9 @@ public class AppCDSBuildStep {
 
     private String determineContainerImage(PackageConfig packageConfig,
             Optional<AppCDSContainerImageBuildItem> appCDSContainerImage) {
-        if (packageConfig.appcdsBuilderImage.isPresent()) {
+        if (!packageConfig.appcdsUseContainer) {
+            return null;
+        } else if (packageConfig.appcdsBuilderImage.isPresent()) {
             return packageConfig.appcdsBuilderImage.get();
         } else if (appCDSContainerImage.isPresent()) {
             return appCDSContainerImage.get().getContainerImage();

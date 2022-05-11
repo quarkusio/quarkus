@@ -211,6 +211,10 @@
                         <parentFirstArtifact>au.com.dius.pact.consumer:junit5</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius.pact:consumer</parentFirstArtifact>
 
+                        <!-- Testcontainers support.-->
+                        <parentFirstArtifact>org.testcontainers:testcontainers</parentFirstArtifact>
+                        <parentFirstArtifact>com.github.docker-java:docker-java-api</parentFirstArtifact>
+
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>

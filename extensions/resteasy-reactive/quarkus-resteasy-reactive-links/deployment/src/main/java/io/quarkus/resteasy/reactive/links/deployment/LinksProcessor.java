@@ -33,7 +33,6 @@ import io.quarkus.resteasy.reactive.links.runtime.LinksProviderRecorder;
 import io.quarkus.resteasy.reactive.links.runtime.RestLinksProviderProducer;
 import io.quarkus.resteasy.reactive.links.runtime.hal.HalServerResponseFilter;
 import io.quarkus.resteasy.reactive.links.runtime.hal.ResteasyReactiveHalService;
-import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveDeploymentInfoBuildItem;
 import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveResourceMethodEntriesBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
@@ -56,7 +55,6 @@ final class LinksProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     void initializeLinksProvider(JaxRsResourceIndexBuildItem indexBuildItem,
-            ResteasyReactiveDeploymentInfoBuildItem deploymentInfoBuildItem,
             ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
@@ -66,7 +64,7 @@ final class LinksProcessor {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClassesProducer, true);
 
         // Initialize links container
-        LinksContainer linksContainer = getLinksContainer(deploymentInfoBuildItem, resourceMethodEntriesBuildItem);
+        LinksContainer linksContainer = getLinksContainer(resourceMethodEntriesBuildItem, index);
         // Implement getters to access link path parameter values
         RuntimeValue<GetterAccessorsContainer> getterAccessorsContainer = implementPathParameterValueGetters(
                 index, classOutput, linksContainer, getterAccessorsContainerRecorder, bytecodeTransformersProducer);
@@ -98,11 +96,10 @@ final class LinksProcessor {
         }
     }
 
-    private LinksContainer getLinksContainer(ResteasyReactiveDeploymentInfoBuildItem deploymentInfoBuildItem,
-            ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem) {
+    private LinksContainer getLinksContainer(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem,
+            IndexView index) {
         LinksContainerFactory linksContainerFactory = new LinksContainerFactory();
-        return linksContainerFactory.getLinksContainer(
-                resourceMethodEntriesBuildItem.getEntries());
+        return linksContainerFactory.getLinksContainer(resourceMethodEntriesBuildItem.getEntries(), index);
     }
 
     /**

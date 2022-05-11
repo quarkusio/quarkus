@@ -755,6 +755,9 @@ Empty build items are final (usually empty) classes which extend `io.quarkus.bui
 They represent build items that don't actually carry any data, and allow such items to be produced and consumed
 without having to instantiate empty classes.  They cannot themselves be instantiated.
 
+IMPORTANT: As they cannot be instantiated, they cannot be injected by any means, nor be returned by a build step (or via a `BuildProducer`).
+To produce an empty build item you must annotate the build step with `@Produce(MyEmptyBuildItem.class)` and to consume it by `@Consume(MyEmptyBuildItem.class)`.
+
 .Example of an empty build item
 [source%nowrap,java]
 ----

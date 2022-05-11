@@ -1,14 +1,12 @@
 package org.jboss.resteasy.reactive.server.core.startup;
 
 import static org.jboss.resteasy.reactive.common.util.DeploymentUtils.loadClass;
+import static org.jboss.resteasy.reactive.common.util.types.Types.getEffectiveReturnType;
+import static org.jboss.resteasy.reactive.common.util.types.Types.getRawType;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import javax.ws.rs.RuntimeType;
@@ -28,7 +25,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
@@ -615,45 +611,6 @@ public class RuntimeResourceDeployment {
             }
         }
         return pathParameterIndexes;
-    }
-
-    private Class<?> getRawType(Type type) {
-        if (type instanceof Class)
-            return (Class<?>) type;
-        if (type instanceof ParameterizedType) {
-            ParameterizedType ptype = (ParameterizedType) type;
-            return (Class<?>) ptype.getRawType();
-        }
-        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + type);
-    }
-
-    private Type getEffectiveReturnType(Type returnType) {
-        if (returnType instanceof Class)
-            return returnType;
-        if (returnType instanceof ParameterizedType) {
-            ParameterizedType type = (ParameterizedType) returnType;
-            Type firstTypeArgument = type.getActualTypeArguments()[0];
-            if (type.getRawType() == CompletionStage.class) {
-                return getEffectiveReturnType(firstTypeArgument);
-            }
-            if (type.getRawType() == Uni.class) {
-                return getEffectiveReturnType(firstTypeArgument);
-            }
-            if (type.getRawType() == Multi.class) {
-                return getEffectiveReturnType(firstTypeArgument);
-            }
-            if (type.getRawType() == RestResponse.class) {
-                return getEffectiveReturnType(firstTypeArgument);
-            }
-            return returnType;
-        }
-        if (returnType instanceof WildcardType) {
-            Type[] bounds = ((WildcardType) returnType).getLowerBounds();
-            if (bounds.length > 0)
-                return getRawType(bounds[0]);
-            return getRawType(((WildcardType) returnType).getUpperBounds()[0]);
-        }
-        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }
 
 }

@@ -46,6 +46,7 @@ import javax.lang.model.type.TypeMirror;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import io.quarkus.annotation.processor.Constants;
 import io.quarkus.annotation.processor.generate_doc.JavaDocParser.SectionHolder;
 
 class ConfigDoItemFinder {
@@ -57,6 +58,7 @@ class ConfigDoItemFinder {
             Arrays.asList("byte", "short", "int", "long", "float", "double", "boolean", "char"));
 
     private final JavaDocParser javaDocParser = new JavaDocParser();
+    private final JavaDocParser enumJavaDocParser = new JavaDocParser(true);
     private final ScannedConfigDocsItemHolder holder = new ScannedConfigDocsItemHolder();
 
     private final Set<ConfigRootInfo> configRoots;
@@ -327,7 +329,9 @@ class ConfigDoItemFinder {
                                             .map(defaultEnumValue -> hyphenateEnumValue(defaultEnumValue.trim()))
                                             .collect(Collectors.joining(COMMA));
                                 }
-                                acceptedValues = extractEnumValues(realTypeMirror, useHyphenateEnumValue);
+                                acceptedValues = extractEnumValues(realTypeMirror, useHyphenateEnumValue,
+                                        clazz.getQualifiedName().toString());
+                                configDocKey.setEnum(true);
                             }
                         }
                     } else {
@@ -336,7 +340,9 @@ class ConfigDoItemFinder {
                             if (useHyphenateEnumValue) {
                                 defaultValue = hyphenateEnumValue(defaultValue);
                             }
-                            acceptedValues = extractEnumValues(declaredType, useHyphenateEnumValue);
+                            acceptedValues = extractEnumValues(declaredType, useHyphenateEnumValue,
+                                    clazz.getQualifiedName().toString());
+                            configDocKey.setEnum(true);
                         } else if (isDurationType(declaredType) && !defaultValue.isEmpty()) {
                             defaultValue = DocGeneratorUtil.normalizeDurationValue(defaultValue);
                         }
@@ -394,14 +400,27 @@ class ConfigDoItemFinder {
         return typeMirror.toString();
     }
 
-    private List<String> extractEnumValues(TypeMirror realTypeMirror, boolean useHyphenatedEnumValue) {
+    private List<String> extractEnumValues(TypeMirror realTypeMirror, boolean useHyphenatedEnumValue, String javaDocKey) {
         Element declaredTypeElement = ((DeclaredType) realTypeMirror).asElement();
         List<String> acceptedValues = new ArrayList<>();
 
         for (Element field : declaredTypeElement.getEnclosedElements()) {
             if (field.getKind() == ElementKind.ENUM_CONSTANT) {
                 String enumValue = field.getSimpleName().toString();
-                acceptedValues.add(useHyphenatedEnumValue ? hyphenateEnumValue(enumValue) : enumValue);
+
+                // Find enum constant description
+                final String constantJavaDocKey = javaDocKey + DOT + enumValue;
+                final String rawJavaDoc = javaDocProperties.getProperty(constantJavaDocKey);
+
+                enumValue = useHyphenatedEnumValue ? hyphenateEnumValue(enumValue) : enumValue;
+                if (rawJavaDoc != null && !rawJavaDoc.isBlank()) {
+                    // Show enum constant description as a Tooltip
+                    String javaDoc = enumJavaDocParser.parseConfigDescription(rawJavaDoc);
+                    acceptedValues.add(String.format(Constants.TOOLTIP, enumValue, javaDoc));
+                } else {
+                    acceptedValues.add(Constants.CODE_DELIMITER
+                            + enumValue + Constants.CODE_DELIMITER);
+                }
             }
         }
 

@@ -23,6 +23,7 @@ final public class Constants {
     };
 
     public static final char DOT = '.';
+    public static final String CODE_DELIMITER = "`";
     public static final String EMPTY = "";
     public static final String DASH = "-";
     public static final String ADOC_EXTENSION = ".adoc";
@@ -113,5 +114,10 @@ final public class Constants {
             +
             "If no suffix is given, assume bytes.\n" +
             "====\n";
+
+    /**
+     * Tooltip is custom AsciiDoc inline macro that transforms inputs to a CSS Tooltip.
+     */
+    public static final String TOOLTIP = "tooltip:%s[%s]";
 
 }

@@ -249,11 +249,28 @@ public class JavaDocConfigDescriptionParserTest {
     public void escape(String ch) {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
-        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
-                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
 
         final String asciiDoc = parser.parseConfigDescription(javaDoc);
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
+                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
+        assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "#", "*", "\\", "[", "]", "|" })
+    public void escapeInsideInlineElement(String ch) {
+        final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
+                + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
+
+        final String asciiDoc = new JavaDocParser(true).parseConfigDescription(javaDoc);
+        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+
+        if (ch.equals("]")) {
+            ch = "&#93;";
+        }
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
+                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
         assertEquals(expected, actual);
     }
 

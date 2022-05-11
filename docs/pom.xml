@@ -54,6 +54,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- Required by Tooltip inline macro -->
+        <dependency>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctorj</artifactId>
+            <version>${asciidoctorj.version}</version>
+        </dependency>
 
         <!-- Minimal test dependencies for consistent build order -->
         <!-- START update-extension-dependencies.sh -->
@@ -2894,6 +2900,13 @@
                                 <linkcss>true</linkcss>
                                 <copycss>true</copycss>
                             </attributes>
+                            <extensions>
+                                <extension>
+                                    <!--  Register custom inline macro  -->
+                                    <className>io.quarkus.docs.generation.TooltipInlineMacroProcessor</className>
+                                    <blockName>tooltip</blockName>
+                                </extension>
+                            </extensions>
                         </configuration>
                     </execution>
                 </executions>
@@ -2902,6 +2915,12 @@
                         <groupId>org.asciidoctor</groupId>
                         <artifactId>asciidoctorj</artifactId>
                         <version>${asciidoctorj.version}</version>
+                    </dependency>
+                    <!-- Tooltip inline macro is provided by quarkus-documentation -->
+                    <dependency>
+                        <groupId>${project.groupId}</groupId>
+                        <artifactId>${project.artifactId}</artifactId>
+                        <version>${project.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>

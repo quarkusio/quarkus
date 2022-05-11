@@ -1,5 +1,6 @@
 package io.quarkus.test.junit.internal;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import com.thoughtworks.xstream.XStream;
@@ -17,10 +18,13 @@ class XStreamDeepClone implements DeepClone {
             XStream result = new XStream();
             result.allowTypesByRegExp(new String[] { ".*" });
             result.setClassLoader(classLoader);
+            result.allowTypes(new Class[] { Optional.class });
             result.registerConverter(new CustomListConverter(result.getMapper()));
             result.registerConverter(new CustomSetConverter(result.getMapper()));
             result.registerConverter(new CustomMapConverter(result.getMapper()));
             result.registerConverter(new CustomMapEntryConverter(result.getMapper()));
+            result.registerConverter(new OptionalConverter(result.getMapper()));
+
             return result;
         };
     }

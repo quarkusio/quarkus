@@ -48,4 +48,6 @@ public class QuarkusRestClientProperties {
      */
     public static final String DISABLE_CONTEXTUAL_ERROR_MESSAGES = "io.quarkus.rest.client.disable-contextual-error-messages";
 
+    public static final String USER_AGENT = "io.quarkus.rest.client.user-agent";
+
 }

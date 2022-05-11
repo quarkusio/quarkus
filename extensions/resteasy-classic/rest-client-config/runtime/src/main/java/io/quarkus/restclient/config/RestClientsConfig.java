@@ -116,6 +116,14 @@ public class RestClientsConfig {
     @ConfigItem(defaultValue = "false")
     public boolean disableContextualErrorMessages;
 
+    /**
+     * Configure the HTTP user-agent header to use.
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> userAgent;
+
     public RestClientConfig getClientConfig(String configKey) {
         if (configKey == null) {
             return RestClientConfig.EMPTY;

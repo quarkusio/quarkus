@@ -103,6 +103,7 @@ public class RestClientCDIDelegateBuilderTest {
         configRoot.connectTimeout = 5000L;
         configRoot.readTimeout = 10000L;
         configRoot.multipartPostEncoderMode = Optional.empty();
+        configRoot.userAgent = Optional.empty();
         RestClientBuilderImpl restClientBuilderMock = Mockito.mock(RestClientBuilderImpl.class);
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
@@ -142,6 +143,7 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.headers = Collections.emptyMap();
         clientConfig.shared = Optional.of(true);
         clientConfig.name = Optional.of("my-client");
+        clientConfig.userAgent = Optional.of("rest-client");
 
         RestClientsConfig configRoot = new RestClientsConfig();
         configRoot.multipartPostEncoderMode = Optional.of("HTML5");

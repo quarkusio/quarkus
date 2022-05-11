@@ -21,7 +21,6 @@ import io.quarkus.rest.data.panache.deployment.Constants;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
-import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.smallrye.mutiny.Uni;
@@ -171,7 +170,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
                     resource, page, sort);
 
             // Return response
-            tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities, links));
+            tryBlock.returnValue(responseImplementor.ok(tryBlock, entities, links));
             tryBlock.close();
         } else {
             ResultHandle uniPageCount = methodCreator.invokeVirtualMethod(
@@ -188,7 +187,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
                                         Sort.class),
                                 resource, page, sort);
                         body.returnValue(UniImplementor.map(body, uniEntities, EXCEPTION_MESSAGE,
-                                (listBody, list) -> listBody.returnValue(ResponseImplementor.ok(listBody, list, links))));
+                                (listBody, list) -> listBody.returnValue(responseImplementor.ok(listBody, list, links))));
                     }));
         }
 
@@ -218,7 +217,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
                     ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME,
                             List.class, Page.class, Sort.class),
                     resource, tryBlock.loadNull(), sort);
-            tryBlock.returnValue(ResponseImplementor.ok(tryBlock, entities));
+            tryBlock.returnValue(responseImplementor.ok(tryBlock, entities));
             tryBlock.close();
         } else {
             ResultHandle uniEntities = methodCreator.invokeVirtualMethod(
@@ -227,7 +226,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
                     resource, methodCreator.loadNull(), sort);
 
             methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntities, EXCEPTION_MESSAGE,
-                    (body, entities) -> body.returnValue(ResponseImplementor.ok(body, entities))));
+                    (body, entities) -> body.returnValue(responseImplementor.ok(body, entities))));
         }
 
         methodCreator.close();

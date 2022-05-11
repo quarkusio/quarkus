@@ -21,6 +21,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -29,6 +30,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
+import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
@@ -75,27 +77,27 @@ class SpringDataRestProcessor {
     }
 
     @BuildStep
-    void registerCrudRepositories(CombinedIndexBuildItem indexBuildItem,
+    void registerCrudRepositories(CombinedIndexBuildItem indexBuildItem, Capabilities capabilities,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<ResourcePropertiesBuildItem> resourcePropertiesProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer) {
         IndexView index = indexBuildItem.getIndex();
 
-        implementResources(implementationsProducer, restDataResourceProducer, resourcePropertiesProducer,
+        implementResources(capabilities, implementationsProducer, restDataResourceProducer, resourcePropertiesProducer,
                 unremovableBeansProducer, new CrudMethodsImplementor(index), new CrudPropertiesProvider(index),
                 getRepositoriesToImplement(index, CRUD_REPOSITORY_INTERFACE));
     }
 
     @BuildStep
-    void registerPagingAndSortingRepositories(CombinedIndexBuildItem indexBuildItem,
+    void registerPagingAndSortingRepositories(CombinedIndexBuildItem indexBuildItem, Capabilities capabilities,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<ResourcePropertiesBuildItem> resourcePropertiesProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer) {
         IndexView index = indexBuildItem.getIndex();
 
-        implementResources(implementationsProducer, restDataResourceProducer, resourcePropertiesProducer,
+        implementResources(capabilities, implementationsProducer, restDataResourceProducer, resourcePropertiesProducer,
                 unremovableBeansProducer, new PagingAndSortingMethodsImplementor(index),
                 new PagingAndSortingPropertiesProvider(index),
                 getRepositoriesToImplement(index, PAGING_AND_SORTING_REPOSITORY_INTERFACE, JPA_REPOSITORY_INTERFACE));
@@ -105,7 +107,8 @@ class SpringDataRestProcessor {
      * Implement the {@link io.quarkus.rest.data.panache.RestDataResource} interface for each given Spring Data
      * repository and register its metadata and properties to be later picked up by the `rest-data-panache` extension.
      */
-    private void implementResources(BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
+    private void implementResources(Capabilities capabilities,
+            BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<ResourcePropertiesBuildItem> resourcePropertiesProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
@@ -127,8 +130,8 @@ class SpringDataRestProcessor {
                     new ResourceMetadata(resourceClass, repositoryInterface, entityType, idType)));
             // Spring Data repositories use different annotations for configuration and we translate them for
             // the rest-data-panache here.
-            resourcePropertiesProducer.produce(new ResourcePropertiesBuildItem(resourceClass,
-                    propertiesProvider.getResourceProperties(repositoryInterface)));
+            ResourceProperties resourceProperties = propertiesProvider.getResourceProperties(repositoryInterface);
+            resourcePropertiesProducer.produce(new ResourcePropertiesBuildItem(resourceClass, resourceProperties));
             // Make sure that repository bean is not removed and will be injected to the generated resource
             unremovableBeansProducer.produce(new UnremovableBeanBuildItem(
                     new UnremovableBeanBuildItem.BeanTypeExclusion(DotName.createSimple(repositoryInterface))));

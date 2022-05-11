@@ -24,6 +24,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
+import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.runtime.sort.SortQueryParamValidator;
 
 /**
@@ -33,12 +34,14 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     private static final Logger LOGGER = Logger.getLogger(StandardMethodImplementor.class);
 
+    protected final ResponseImplementor responseImplementor;
     private final boolean isResteasyClassic;
     private final boolean isReactivePanache;
 
     protected StandardMethodImplementor(boolean isResteasyClassic, boolean isReactivePanache) {
         this.isResteasyClassic = isResteasyClassic;
         this.isReactivePanache = isReactivePanache;
+        this.responseImplementor = new ResponseImplementor(isResteasyClassic);
     }
 
     /**
@@ -121,6 +124,14 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
         element.addAnnotation(DefaultValue.class).addValue("value", value);
     }
 
+    protected void addProducesJsonAnnotation(AnnotatedElement element, ResourceProperties properties) {
+        if (properties.isHal()) {
+            addProducesAnnotation(element, APPLICATION_JSON, APPLICATION_HAL_JSON);
+        } else {
+            addProducesAnnotation(element, APPLICATION_JSON);
+        }
+    }
+
     protected void addProducesAnnotation(AnnotatedElement element, String... mediaTypes) {
         element.addAnnotation(Produces.class).addValue("value", mediaTypes);
     }
@@ -145,6 +156,10 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
             suffix = suffix.substring(1);
         }
         return String.join("/", path, suffix);
+    }
+
+    protected boolean isResteasyClassic() {
+        return isResteasyClassic;
     }
 
     protected boolean isNotReactivePanache() {

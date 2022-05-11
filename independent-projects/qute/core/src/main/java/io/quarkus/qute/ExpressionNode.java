@@ -15,13 +15,11 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
 
     final ExpressionImpl expression;
     private final Engine engine;
-    private final Origin origin;
     private final boolean traceLevel;
 
-    public ExpressionNode(ExpressionImpl expression, Engine engine, Origin origin) {
+    ExpressionNode(ExpressionImpl expression, Engine engine) {
         this.expression = expression;
         this.engine = engine;
-        this.origin = origin;
         this.traceLevel = LOG.isTraceEnabled();
     }
 
@@ -48,7 +46,7 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
     }
 
     public Origin getOrigin() {
-        return origin;
+        return expression.getOrigin();
     }
 
     @Override

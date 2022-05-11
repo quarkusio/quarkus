@@ -142,4 +142,10 @@ public interface Template {
      */
     Optional<Variant> getVariant();
 
+    /**
+     *
+     * @return an immutable list of parameter declarations
+     */
+    List<ParameterDeclaration> getParameterDeclarations();
+
 }

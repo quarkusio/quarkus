@@ -48,6 +48,11 @@ class TemplateImpl implements Template {
     }
 
     @Override
+    public List<ParameterDeclaration> getParameterDeclarations() {
+        return root.getParameterDeclarations();
+    }
+
+    @Override
     public String getGeneratedId() {
         return generatedId;
     }

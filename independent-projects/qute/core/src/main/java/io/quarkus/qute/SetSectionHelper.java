@@ -140,14 +140,19 @@ public class SetSectionHelper implements SectionHelper {
                 Scope newScope = new Scope(previousScope);
                 for (Entry<String, String> e : block.getParameters().entrySet()) {
                     String key = e.getKey();
-                    if (key.endsWith("?")) {
+                    boolean isDefaultValue = key.endsWith("?");
+                    if (isDefaultValue) {
                         // foo? -> foo
                         key = key.substring(0, key.length() - 1);
                     }
                     Expression expr = block.addExpression(key, e.getValue());
                     if (expr.hasTypeInfo()) {
-                        // item.name becomes item<set#1>.name
-                        newScope.putBinding(key, key + HINT_PREFIX + expr.getGeneratedId() + ">");
+                        // Do not override the binding for a default value
+                        boolean add = !isDefaultValue || previousScope.getBinding(key) == null;
+                        if (add) {
+                            // item.name becomes item<set#1>.name
+                            newScope.putBinding(key, key + HINT_PREFIX + expr.getGeneratedId() + ">");
+                        }
                     } else {
                         newScope.putBinding(key, null);
                     }

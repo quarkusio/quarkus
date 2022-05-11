@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,6 +72,21 @@ class SectionNode implements TemplateNode {
             expressions.addAll(block.getExpressions());
         }
         return expressions;
+    }
+
+    @Override
+    public List<ParameterDeclaration> getParameterDeclarations() {
+        List<ParameterDeclaration> declarations = null;
+        for (SectionBlock block : blocks) {
+            List<ParameterDeclaration> blockDeclarations = block.getParamDeclarations();
+            if (!blockDeclarations.isEmpty()) {
+                if (declarations == null) {
+                    declarations = new ArrayList<>();
+                }
+                declarations.addAll(blockDeclarations);
+            }
+        }
+        return declarations != null ? declarations : Collections.emptyList();
     }
 
     static class Builder {

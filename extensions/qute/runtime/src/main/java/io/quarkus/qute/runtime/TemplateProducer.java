@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Location;
+import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstanceBase;
@@ -115,6 +116,11 @@ public class TemplateProducer {
         @Override
         public List<Expression> getExpressions() {
             throw new UnsupportedOperationException("Injected templates do not support getExpressions()");
+        }
+
+        @Override
+        public List<ParameterDeclaration> getParameterDeclarations() {
+            throw new UnsupportedOperationException("Injected templates do not support getParameterDeclarations()");
         }
 
         @Override

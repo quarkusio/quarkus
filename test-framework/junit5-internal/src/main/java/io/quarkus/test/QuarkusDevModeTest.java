@@ -1,13 +1,9 @@
 package io.quarkus.test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -17,7 +13,6 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +23,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
@@ -54,12 +47,10 @@ import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
-import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.test.common.GroovyCacheCleaner;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
@@ -452,7 +443,6 @@ public class QuarkusDevModeTest
                     moduleBuilder
                             .build());
 
-            setDevModeRunnerJarFile(context);
             return context;
         } catch (Exception e) {
             throw new RuntimeException("Unable to create the archive", e);
@@ -479,101 +469,6 @@ public class QuarkusDevModeTest
             } catch (IOException e) {
                 throw new RuntimeException("Failed to copy code gen directory", e);
             }
-        }
-    }
-
-    private static void setDevModeRunnerJarFile(final DevModeContext context) {
-        handleSurefire(context);
-        if (context.getDevModeRunnerJarFile() == null) {
-            handleIntelliJ(context);
-        }
-    }
-
-    /*
-     * See https://github.com/quarkusio/quarkus/issues/6280
-     * Maven surefire plugin launches the (forked) JVM for tests using a "surefirebooter" jar file.
-     * This jar file's name starts with the prefix "surefirebooter" and ends with the extension ".jar".
-     * The jar is launched using "java -jar .../surefirebooter*.jar ..." semantics. This jar has a
-     * MANIFEST which contains "Class-Path" entries. These entries trigger a bug in the JDK code
-     * https://bugs.openjdk.java.net/browse/JDK-8232170 which causes hot deployment related logic in Quarkus
-     * to fail in dev mode.
-     * The goal in this next section is to narrow down to this specific surefirebooter*.jar which was used to launch
-     * the tests and mark it as the "dev mode runner jar" (through DevModeContext#setDevModeRunnerJarFile),
-     * so that programmatic compilation of code (during hot deployment) doesn't run into issues noted in
-     * https://bugs.openjdk.java.net/browse/JDK-8232170.
-     * In reality the surefirebooter*.jar isn't really a "dev mode runner jar" (i.e. it's not the -dev.jar that
-     * Quarkus generates), but it's fine to mark it as such to get past this issue. This is more of a workaround
-     * on top of another workaround. In the medium/long term the actual JDK issue fix will make its way into
-     * almost all prominently used Java versions.
-     */
-    private static void handleSurefire(DevModeContext context) {
-        try {
-            final Enumeration<URL> manifests = QuarkusDevModeTest.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
-            while (manifests.hasMoreElements()) {
-                final URL url = manifests.nextElement();
-                // don't open streams to manifest entries unless it resembles to the one
-                // we are interested in
-                if (!url.getPath().contains("surefirebooter")) {
-                    continue;
-                }
-                final boolean foundForkedBooter = ClassPathUtils.readStream(url, is -> {
-                    try {
-                        final Manifest manifest = new Manifest(is);
-                        final String mainClass = manifest.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-                        // additional check to make sure we are probing the right jar
-                        if ("org.apache.maven.surefire.booter.ForkedBooter".equals(mainClass)) {
-                            final String manifestFilePath = url.getPath();
-                            if (manifestFilePath.startsWith("file:")) {
-                                // manifest file path will be of the form jar:file:....!META-INF/MANIFEST.MF
-                                final String jarFilePath = manifestFilePath.substring(5, manifestFilePath.lastIndexOf('!'));
-                                final File surefirebooterJar = new File(
-                                        URLDecoder.decode(jarFilePath, StandardCharsets.UTF_8.name()));
-                                context.setDevModeRunnerJarFile(surefirebooterJar);
-                            }
-                            return true;
-                        }
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                    return false;
-                });
-                if (foundForkedBooter) {
-                    break;
-                }
-            }
-        } catch (Throwable ignored) {
-
-        }
-    }
-
-    /*
-     * IntelliJ does not create a special jar when running the tests but instead sets up the classpath and uses
-     * the main class com.intellij.rt.junit.JUnitStarter from idea_rt.jar.
-     * To make DevModeMain happy in this case, all we need to do here is create a dummy jar file in the proper directory
-     */
-    private static void handleIntelliJ(DevModeContext context) {
-        try {
-            final Enumeration<URL> manifests = QuarkusDevModeTest.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
-            while (manifests.hasMoreElements()) {
-                final URL url = manifests.nextElement();
-                if (!url.getPath().contains("idea_rt.jar")) {
-                    continue;
-                }
-
-                Path intelliJPath = Paths.get(context.getApplicationRoot().getMain().getClassesPath()).getParent()
-                        .resolve("intellij");
-                Path dummyJar = intelliJPath.resolve("dummy.jar");
-
-                // create the empty dummy jar
-                try (FileSystem out = ZipUtils.newZip(dummyJar)) {
-
-                }
-
-                context.setDevModeRunnerJarFile(dummyJar.toFile());
-                break;
-            }
-        } catch (Throwable ignored) {
-
         }
     }
 

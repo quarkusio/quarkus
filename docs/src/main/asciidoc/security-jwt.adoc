@@ -805,7 +805,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 [[integration-testing-keycloak]]
 ==== Keycloak
 
-If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing-keycloak[OpenID Connect Bearer Token Integration testing] `Keycloak` section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-openid-connect.adoc#integration-testing-keycloak[OpenID Connect Bearer Token Integration testing] Keycloak section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----

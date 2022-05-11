@@ -154,5 +154,37 @@ Similarly, `quarkus-oidc-token-propagation` allows user of the legacy REST to pr
 
 When using `quarkus-rest-client-reactive` however, users must use `quarkus-oidc-token-propagation-reactive` to access the same functionality.
 
+=== Custom extensions
+
+This is an advanced section that only needs to be read by users who have developed custom extensions that depend on JAX-RS and / or REST Client functionality.
+
+==== Dependencies
+
+A first concern is whether custom extensions should depend on RESTEasy Reactive explicitly, or alternatively support both RESTEasy flavors and leave it to the user to decide.
+If the extension is some general purpose extension, it probably makes sense to choose the latter option, while the former option is easiest to adopt when the custom
+extension is used by a specific set of users / applications.
+
+When opting for supporting both extensions, the deployment module of the custom extension will usually depend on the SPI modules - `quarkus-jaxrs-spi-deployment`, `quarkus-resteasy-common-spi`, `quarkus-resteasy-reactive-spi-deployment`,
+while the runtime modules will have `optional` dependencies on the runtime modules of both RESTEasy flavors.
+
+A couple good examples of how Quarkus uses this strategy to support both RESTEasy flavors in the core repository can be seen [here](https://github.com/quarkusio/quarkus/pull/21089) and [here](https://github.com/quarkusio/quarkus/pull/20874).
+
+In general, it should not be needed to have two different versions of the custom extension to support both flavors. Such a choice is only strictly necessary if it is desired for the extension consumers (i.e. Quarkus applications) to not have to select a RESTEasy version themselves.
+
+==== Resource and Provider discovery
+
+Custom extensions that contain JAX-RS Resources, Providers or REST Client interfaces in their runtime modules and depend on Jandex indexing for
+their discovery (for example because they have an empty `META-INF/beans.xml` file) don't have to perform any additional setup to make
+these discoverable by RESTEasy Reactive.
+
+==== Provider registration via Build Items
+
+Extensions that register providers via build items use the `io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem` build item in RESTEasy Classic.
+With RESTEasy Reactive however, extensions need to use specific build items, such as `io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem` and `io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem`.
+
+==== REST Client
+
+Any code that is run as part of a Quarkus application that used the REST Client, can safely use the Reactive REST Client, as all necessary setup for it has been done at the application's static-init phase.
+
 
 

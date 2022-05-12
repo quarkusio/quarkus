@@ -11,6 +11,15 @@ import org.junit.jupiter.params.provider.ValueSource;
 import io.quarkus.test.junit.NativeImageTest;
 import io.restassured.RestAssured;
 
+/**
+ * For the Native test cases to function, the operating system has to have locales
+ * support installed. A barebone system with only C.UTF-8 default locale available
+ * won't be able to pass the tests.
+ *
+ * For example, this package satisfies the dependency on a RHEL 9 type of OS:
+ * glibc-all-langpacks
+ *
+ */
 @NativeImageTest
 public class LocalesIT {
 

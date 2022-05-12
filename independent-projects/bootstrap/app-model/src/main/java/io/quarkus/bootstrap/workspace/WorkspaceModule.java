@@ -77,6 +77,8 @@ public interface WorkspaceModule {
 
         Mutable addArtifactSources(ArtifactSources sources);
 
+        boolean hasNonTestSources();
+
         WorkspaceModule build();
 
         default Mutable mutable() {

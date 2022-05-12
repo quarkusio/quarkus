@@ -17,6 +17,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 
+import io.quarkus.it.spring.data.jpa.test.MovieRating;
+
 @Path("/movie")
 public class MovieResource {
 
@@ -135,8 +137,8 @@ public class MovieResource {
     @GET
     @Path("/rating/forTitle/{title}")
     @Produces("application/json")
-    public MovieRepository.MovieRating titleRating(@PathParam("title") String title) {
-        MovieRepository.MovieRating result = movieRepository.findRatingByTitle(title);
+    public MovieRating titleRating(@PathParam("title") String title) {
+        MovieRating result = movieRepository.findRatingByTitle(title);
         Objects.requireNonNull(result);
         return result;
     }
@@ -144,7 +146,7 @@ public class MovieResource {
     @GET
     @Path("/rating/opt/forTitle/{title}")
     @Produces("application/json")
-    public Optional<MovieRepository.MovieRating> optionalTitleRating(@PathParam("title") String title) {
+    public Optional<MovieRating> optionalTitleRating(@PathParam("title") String title) {
         Optional result = movieRepository.findOptionalRatingByTitle(title);
         return result;
     }

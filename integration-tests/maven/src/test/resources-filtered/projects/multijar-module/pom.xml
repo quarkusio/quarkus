@@ -21,10 +21,20 @@
     </properties>
     <modules>
         <module>beans</module>
+        <module>hello</module>
         <module>runner</module>
     </modules>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.2.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>${quarkus.platform.group-id}</groupId>
@@ -65,6 +75,12 @@
                 <artifactId>acme-beans</artifactId>
                 <!-- classifier>tests</classifier -->
                 <type>test-jar</type>
+                <version>\${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.acme</groupId>
+                <artifactId>acme-hello</artifactId>
+                <classifier>hello</classifier>
                 <version>\${project.version}</version>
             </dependency>
             <dependency>

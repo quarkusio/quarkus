@@ -1014,12 +1014,18 @@ public class JaxrsClientReactiveProcessor {
 
     private ClassInfo returnTypeAsClass(MethodInfo jandexMethod, IndexView index) {
         Type result = jandexMethod.returnType();
-        if (result.kind() == CLASS) {
+        if (result.kind() == PARAMETERIZED_TYPE) {
+            if (result.name().equals(COMPLETION_STAGE) || result.name().equals(UNI)) {
+                Type firstArgument = result.asParameterizedType().arguments().get(0);
+                if (firstArgument.kind() == CLASS) {
+                    return index.getClassByName(firstArgument.asClassType().name());
+                }
+            }
+        } else if (result.kind() == CLASS) {
             return index.getClassByName(result.asClassType().name());
-        } else {
-            throw new IllegalArgumentException("multipart responses can only be mapped to non-generic classes, " +
-                    "got " + result + " of type: " + result.kind());
         }
+        throw new IllegalArgumentException("multipart responses can only be mapped to non-generic classes, " +
+                "got " + result + " of type: " + result.kind());
     }
 
     private void handleSubResourceMethod(List<JaxrsClientReactiveEnricherBuildItem> enrichers,

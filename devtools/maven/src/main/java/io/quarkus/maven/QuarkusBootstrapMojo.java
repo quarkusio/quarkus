@@ -29,6 +29,8 @@ import io.quarkus.runtime.LaunchMode;
 
 public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
+    static final String CLOSE_BOOTSTRAPPED_APP = "closeBootstrappedApp";
+
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
 
@@ -120,6 +122,12 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
     private MojoExecution mojoExecution;
 
+    /**
+     * Whether to close the bootstrapped applications after the execution
+     */
+    @Parameter(property = "quarkusCloseBootstrappedApp")
+    private Boolean closeBootstrappedApp;
+
     private ArtifactKey projectId;
 
     @Override
@@ -130,7 +138,14 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         try {
             doExecute();
         } finally {
-            if (!bootstrapSessionListener.isEnabled()) {
+            if (closeBootstrappedApp != null) {
+                // This trick is for dev mode from which we invoke other goals using the invoker API,
+                // in which case the session listener won't be enabled and the app bootstrapped in generate-code will be closed immediately
+                // causing DevMojo to bootstrap a new instance
+                if (closeBootstrappedApp) {
+                    bootstrapProvider.bootstrapper(this).close();
+                }
+            } else if (!bootstrapSessionListener.isEnabled()) {
                 bootstrapProvider.bootstrapper(this).close();
             }
         }

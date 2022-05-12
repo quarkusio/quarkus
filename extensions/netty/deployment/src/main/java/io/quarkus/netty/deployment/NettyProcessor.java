@@ -13,6 +13,9 @@ import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.handler.codec.compression.BrotliOptions;
+import io.netty.handler.codec.compression.StandardCompressionOptions;
+import io.netty.handler.codec.compression.ZstdOptions;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -112,7 +115,10 @@ class NettyProcessor {
             builder
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
+                    .addRuntimeInitializedClass(StandardCompressionOptions.class.getName())
+                    .addRuntimeInitializedClass(BrotliOptions.class.getName())
+                    .addRuntimeInitializedClass(ZstdOptions.class.getName());
         } else {
             log.debug("Not registering Netty HTTP classes as they were not found");
         }

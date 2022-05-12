@@ -15,6 +15,7 @@ public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext event) {
+        event.request().resume();
         if (event.getBody() != null) {
             //really simple form data decoder
             //but we can't really re-use the netty one

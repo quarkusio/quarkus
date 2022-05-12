@@ -6,6 +6,7 @@ import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
+import io.netty.handler.codec.compression.Brotli;
 import io.vertx.core.ServiceHelper;
 import io.vertx.core.spi.JsonFactory;
 import io.vertx.core.spi.json.JsonCodec;
@@ -55,6 +56,33 @@ final class JacksonMissingSelector implements BooleanSupplier {
         } catch (ClassNotFoundException e) {
             return true;
         }
+    }
+}
+
+@TargetClass(className = "io.vertx.core.http.impl.Http1xClientConnection", onlyWith = BrotliMissingSelector.class)
+final class Target_io_vertx_core_http_impl_Http1xClientConnection {
+    @Substitute
+    private static boolean isBrotliAvailable() {
+        return false;
+    }
+}
+
+final class BrotliMissingSelector implements BooleanSupplier {
+
+    private boolean brotliAbsent;
+
+    public BrotliMissingSelector() {
+        try {
+            Class.forName("com.aayushatharva.brotli4j.encoder.Encoder");
+            brotliAbsent = false;
+        } catch (ClassNotFoundException e) {
+            brotliAbsent = true;
+        }
+    }
+
+    @Override
+    public boolean getAsBoolean() {
+        return brotliAbsent;
     }
 }
 

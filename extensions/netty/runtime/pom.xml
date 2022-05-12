@@ -61,6 +61,13 @@
             <classifier>osx-x86_64</classifier>
             <optional>true</optional>
         </dependency>
+
+        <dependency>
+            <!-- It's very unfortunate to have to add this dependency, but Netty code would need to be changed,
+            to let us remove that dependency -->
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>brotli4j</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

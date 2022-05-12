@@ -702,10 +702,12 @@ public class NativeImageBuildStep {
 
                 // 22.1 removes --allow-incomplete-classpath and makes it the default. --link-at-build-time is now
                 // needed to bring back the old behavior (which requires all classes to be resolvable at build time).
-                if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_22_0_0_2) && !classpathIsBroken) {
-                    nativeImageArgs.add("--link-at-build-time");
-                } else if (!graalVMVersion.isNewerThan(GraalVM.Version.VERSION_22_0_0_2) && classpathIsBroken) {
-                    nativeImageArgs.add("--allow-incomplete-classpath");
+                if (nativeConfig.requiresClassesResolvableAtBuildTime){
+                    if (graalVMVersion.isNewerThan(GraalVM.Version.VERSION_22_0_0_2) && !classpathIsBroken) {
+                        nativeImageArgs.add("--link-at-build-time");
+                    } else if (!graalVMVersion.isNewerThan(GraalVM.Version.VERSION_22_0_0_2) && classpathIsBroken) {
+                        nativeImageArgs.add("--allow-incomplete-classpath");
+                    }
                 }
 
                 if (nativeConfig.reportErrorsAtRuntime) {

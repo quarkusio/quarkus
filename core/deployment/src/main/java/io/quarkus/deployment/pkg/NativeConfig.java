@@ -35,6 +35,15 @@ public class NativeConfig {
     public boolean enableHttpUrlHandler;
 
     /**
+     * Requires all classes to be resolvable at build.
+     *
+     * Adds {@code --link-at-build-time} flag in GraalVM versions equal or greater than 22.0.0.2, otherwise adds
+     * {@code --allow-incomplete-classpath} flag.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean requiresClassesResolvableAtBuildTime;
+
+    /**
      * If the HTTPS url handler should be enabled, allowing you to do URL.openConnection() for HTTPS URLs
      */
     @ConfigItem

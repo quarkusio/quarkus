@@ -78,6 +78,7 @@ import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildIt
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.security.Authenticated;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoTagFilter;
@@ -405,13 +406,21 @@ public class SmallRyeOpenApiProcessor {
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             SmallRyeOpenApiConfig config) {
         if (config.autoAddSecurityRequirement) {
+            if (securitySchemeName == null) {
+                securitySchemeName = config.securitySchemeName;
+            }
+
             Map<String, List<String>> rolesAllowedMethodReferences = getRolesAllowedMethodReferences(
                     apiFilteredIndexViewBuildItem);
-            if (rolesAllowedMethodReferences != null && !rolesAllowedMethodReferences.isEmpty()) {
-                if (securitySchemeName == null) {
-                    securitySchemeName = config.securitySchemeName;
-                }
-                return new AutoRolesAllowedFilter(securitySchemeName, rolesAllowedMethodReferences);
+
+            List<String> authenticatedMethodReferences = getAuthenticatedMethodReferences(
+                    apiFilteredIndexViewBuildItem);
+
+            if ((rolesAllowedMethodReferences != null && !rolesAllowedMethodReferences.isEmpty())
+                    || (authenticatedMethodReferences != null && !authenticatedMethodReferences.isEmpty())) {
+
+                return new AutoRolesAllowedFilter(securitySchemeName, rolesAllowedMethodReferences,
+                        authenticatedMethodReferences);
             }
         }
         return null;
@@ -453,6 +462,36 @@ public class SmallRyeOpenApiProcessor {
                     if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
                         String ref = JandexUtil.createUniqueMethodReference(classInfo, method);
                         methodReferences.put(ref, List.of(ai.value().asStringArray()));
+                    }
+                }
+            }
+        }
+        return methodReferences;
+    }
+
+    private List<String> getAuthenticatedMethodReferences(
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
+        List<AnnotationInstance> authenticatedAnnotations = new ArrayList<>();
+        authenticatedAnnotations.addAll(
+                apiFilteredIndexViewBuildItem.getIndex().getAnnotations(DotName.createSimple(Authenticated.class.getName())));
+
+        List<String> methodReferences = new ArrayList<>();
+        DotName securityRequirement = DotName.createSimple(SecurityRequirement.class.getName());
+        for (AnnotationInstance ai : authenticatedAnnotations) {
+            if (ai.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
+                MethodInfo method = ai.target().asMethod();
+                if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
+                    String ref = JandexUtil.createUniqueMethodReference(method.declaringClass(), method);
+                    methodReferences.add(ref);
+                }
+            }
+            if (ai.target().kind().equals(AnnotationTarget.Kind.CLASS)) {
+                ClassInfo classInfo = ai.target().asClass();
+                List<MethodInfo> methods = classInfo.methods();
+                for (MethodInfo method : methods) {
+                    if (isValidOpenAPIMethodForAutoAdd(method, securityRequirement)) {
+                        String ref = JandexUtil.createUniqueMethodReference(classInfo, method);
+                        methodReferences.add(ref);
                     }
                 }
             }

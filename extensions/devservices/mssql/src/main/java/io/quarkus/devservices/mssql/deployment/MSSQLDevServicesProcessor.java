@@ -2,7 +2,6 @@ package io.quarkus.devservices.mssql.deployment;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -11,6 +10,7 @@ import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -29,15 +29,15 @@ public class MSSQLDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName,
-                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
-                QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(imageName, fixedExposedPort,
+                    Optional<String> datasourceName, DevServicesDatasourceContainerConfig containerConfig,
+                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(containerConfig.getImageName(),
+                        containerConfig.getFixedExposedPort(),
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
                 container.withPassword(password.orElse("Quarkuspassword1"))
                         .withReuse(true);
-                additionalJdbcUrlProperties.forEach(container::withUrlParam);
+                containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 container.start();
 
                 LOG.info("Dev Services for Microsoft SQL Server started.");

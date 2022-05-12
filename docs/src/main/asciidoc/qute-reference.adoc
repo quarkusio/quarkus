@@ -2196,6 +2196,42 @@ public class MyBean {
 ----
 <1> The annotation value is a locale tag string (IETF).
 
+==== Message Templates
+
+Every method of a message bundle interface must define a message template. The value is normally defined by `io.quarkus.qute.i18n.Message#value()`,
+but for convenience, there is also an option to define the value in a localized file.
+
+.Example of the Message Bundle Interface without the value
+[source,java]
+----
+import io.quarkus.qute.i18n.Message;
+import io.quarkus.qute.i18n.MessageBundle;
+
+@MessageBundle
+public interface AppMessages {
+
+    @Message <1>
+    String hello_name(String name);
+
+    @Message("Goodbye {name}!") <2>
+    String goodbye(String name);
+}
+----
+<1> The annotation value is not defined. In such a case, the value from supplementary localized file is taken.
+<2> The annotation value is defined and preferred to the value defined in the localized file.
+
+.Supplementary localized file
+[source,properties]
+----
+hello_name=Hello \
+   {name} and \
+   good morning!
+goodbye=Best regards, {name} <1>
+----
+<1> The value is ignored as `io.quarkus.qute.i18n.Message#value()` is always prioritized.
+
+Message templates are validated during the build. If a missing message template is detected, an exception is thrown and build fails.
+
 
 === Configuration Reference
 

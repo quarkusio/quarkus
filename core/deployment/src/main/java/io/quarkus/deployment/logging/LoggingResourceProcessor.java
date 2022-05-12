@@ -12,6 +12,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -54,6 +55,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.LogConsoleFormatBuildItem;
+import io.quarkus.deployment.builditem.LogFileFormatBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -168,7 +170,9 @@ public final class LoggingResourceProcessor {
     LoggingSetupBuildItem setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, LogBuildTimeConfig buildLog,
             Optional<WebSocketLogHandlerBuildItem> logStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
-            List<NamedLogHandlersBuildItem> namedHandlerBuildItems, List<LogConsoleFormatBuildItem> consoleFormatItems,
+            List<NamedLogHandlersBuildItem> namedHandlerBuildItems,
+            List<LogConsoleFormatBuildItem> consoleFormatItems,
+            List<LogFileFormatBuildItem> fileFormatItems,
             Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             List<LogStreamBuildItem> logStreamBuildItems,
             LaunchModeBuildItem launchModeBuildItem,
@@ -199,9 +203,12 @@ public final class LoggingResourceProcessor {
                 alwaysEnableLogStream = true;
             }
 
+            List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters = fileFormatItems.stream()
+                    .map(LogFileFormatBuildItem::getFormatterValue).collect(Collectors.toList());
             recorder.initializeLogging(log, buildLog, alwaysEnableLogStream, devUiLogHandler, handlers,
                     namedHandlers,
                     consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
+                    possibleFileFormatters,
                     possibleSupplier, launchModeBuildItem.getLaunchMode());
             LogConfig logConfig = new LogConfig();
             ConfigInstantiator.handleObject(logConfig);
@@ -215,7 +222,8 @@ public final class LoggingResourceProcessor {
             }
             ConsoleRuntimeConfig crc = new ConsoleRuntimeConfig();
             ConfigInstantiator.handleObject(crc);
-            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog, crc, launchModeBuildItem.getLaunchMode());
+            LoggingSetupRecorder.initializeBuildTimeLogging(logConfig, buildLog, crc, possibleFileFormatters,
+                    launchModeBuildItem.getLaunchMode());
             ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
                 @Override
                 public void run() {

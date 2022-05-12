@@ -12,7 +12,7 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 import org.jboss.logmanager.formatters.StructuredFormatter;
-import org.jboss.logmanager.handlers.ConsoleHandler;
+import org.jboss.logmanager.handlers.SizeRotatingFileHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,11 +21,11 @@ import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.logging.json.runtime.JsonFormatter;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class JsonFormatterDefaultConfigTest {
+public class FileJsonFormatterDefaultConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-json-formatter-default.properties");
+            .withConfigurationResource("application-file-json-formatter-default.properties");
 
     @Test
     public void jsonFormatterDefaultConfigurationTest() {
@@ -50,7 +50,7 @@ public class JsonFormatterDefaultConfigTest {
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 
         Handler handler = Arrays.stream(delayedHandler.getHandlers())
-                .filter(h -> (h instanceof ConsoleHandler))
+                .filter(h -> (h instanceof SizeRotatingFileHandler))
                 .findFirst().orElse(null);
         assertThat(handler).isNotNull();
         assertThat(handler.getLevel()).isEqualTo(Level.WARNING);

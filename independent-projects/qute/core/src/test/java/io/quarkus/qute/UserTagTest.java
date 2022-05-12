@@ -38,7 +38,7 @@ public class UserTagTest {
                 .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
                 .build();
 
-        Template tag = engine.parse("{#if showImage.or(false)}<b>{nested-content}</b>{#else}nope{/if}");
+        Template tag = engine.parse("{#if showImage.or(false)}<b>{#insert /}</b>{#else}nope{/if}");
         engine.putTemplate("my-tag-id", tag);
 
         Map<String, Object> order = new HashMap<>();
@@ -124,6 +124,19 @@ public class UserTagTest {
         assertEquals("Ondrej:Ondrej:true:2:NOT_FOUND:NOT_FOUND",
                 engine.parse("{#myTag name age=2 isCool foo.length _isolated /}")
                         .data("name", "Ondrej", "isCool", true, "foo", "bzzz").render());
+    }
+
+    @Test
+    public void testInsertSections() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag1", "mytag1"))
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag2", "mytag2"))
+                .build();
+        engine.putTemplate("mytag1", engine.parse("{#insert foo}No foo!{/insert}::{#insert bar}No bar!{/insert}"));
+        engine.putTemplate("mytag2", engine.parse("{#insert}Default content{/insert}"));
+
+        assertEquals("Baz!::No bar!", engine.parse("{#myTag1 name='Baz'}{#foo}{name}!{/foo}{/myTag1}").render());
+        assertEquals("Baz!", engine.parse("{#myTag2}Baz!{/myTag2}").render());
     }
 
 }

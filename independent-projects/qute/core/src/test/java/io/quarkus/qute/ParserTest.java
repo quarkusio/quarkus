@@ -296,6 +296,20 @@ public class ParserTest {
     }
 
     @Test
+    public void testFindExpression() {
+        Template template = Engine.builder().addDefaults().build()
+                .parse("{foo}{#each items}{it.name}{#for foo in foos}\n{foo.name}{/for}{/each}");
+        Expression fooExpr = template.findExpression(e -> e.toOriginalString().equals("foo"));
+        assertNotNull(fooExpr);
+        assertEquals(1, fooExpr.getOrigin().getLine());
+        Expression itemsExpr = template.findExpression(e -> e.toOriginalString().equals("items"));
+        assertNotNull(itemsExpr);
+        Expression fooNameExpr = template.findExpression(e -> e.toOriginalString().equals("foo.name"));
+        assertNotNull(fooNameExpr);
+        assertEquals(2, fooNameExpr.getOrigin().getLine());
+    }
+
+    @Test
     public void testParserHook() {
         Template template = Engine.builder().addDefaults().addParserHook(new ParserHook() {
             @Override

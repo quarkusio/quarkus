@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AnnotatedParameter;
@@ -116,6 +117,11 @@ public class TemplateProducer {
         @Override
         public List<Expression> getExpressions() {
             throw new UnsupportedOperationException("Injected templates do not support getExpressions()");
+        }
+
+        @Override
+        public Expression findExpression(Predicate<Expression> predicate) {
+            throw new UnsupportedOperationException("Injected templates do not support findExpression()");
         }
 
         @Override

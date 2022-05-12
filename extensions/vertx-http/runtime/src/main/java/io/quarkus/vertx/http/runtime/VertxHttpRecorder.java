@@ -511,7 +511,6 @@ public class VertxHttpRecorder {
             root = mainRouter;
         }
 
-        warnIfDeprecatedHttpConfigPropertiesPresent(httpConfiguration);
         warnIfProxyAddressForwardingAllowedWithMultipleHeaders(httpConfiguration);
         ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(httpConfiguration);
         if (forwardingProxyOptions.proxyAddressForwarding) {
@@ -602,25 +601,10 @@ public class VertxHttpRecorder {
         rootHandler = root;
     }
 
-    private void warnIfDeprecatedHttpConfigPropertiesPresent(HttpConfiguration httpConfiguration) {
-        if (httpConfiguration.proxyAddressForwarding.isPresent()) {
-            LOGGER.warn(
-                    "`quarkus.http.proxy-address-forwarding` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `quarkus.http.proxy.proxy-address-forwarding`");
-        }
-
-        if (httpConfiguration.allowForwarded.isPresent()) {
-            LOGGER.warn(
-                    "`quarkus.http.allow-forwarded` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `quarkus.http.proxy.allow-forwarded`");
-        }
-    }
-
     private void warnIfProxyAddressForwardingAllowedWithMultipleHeaders(HttpConfiguration httpConfiguration) {
         ProxyConfig proxyConfig = httpConfiguration.proxy;
-        boolean proxyAddressForwardingActivated = httpConfiguration.proxyAddressForwarding
-                .orElse(proxyConfig.proxyAddressForwarding);
-        boolean forwardedActivated = httpConfiguration.allowForwarded.orElse(proxyConfig.allowForwarded);
+        boolean proxyAddressForwardingActivated = proxyConfig.proxyAddressForwarding;
+        boolean forwardedActivated = proxyConfig.allowForwarded;
         boolean xForwardedActivated = httpConfiguration.proxy.allowXForwarded.orElse(!forwardedActivated);
 
         if (proxyAddressForwardingActivated && forwardedActivated && xForwardedActivated) {

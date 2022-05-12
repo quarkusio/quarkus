@@ -1,5 +1,12 @@
 package io.quarkus.it.keycloak;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,9 +14,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.KeycloakBuilder;
+import org.jboss.logging.Logger;
+import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -19,36 +28,101 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
+import org.keycloak.util.JsonSerialization;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.builder.Transferable;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.restassured.RestAssured;
+import io.restassured.specification.RequestSpecification;
 
-public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager {
+public class KeycloakLifecycleManager implements QuarkusTestResourceLifecycleManager {
+    private static final Logger LOGGER = Logger.getLogger(KeycloakLifecycleManager.class);
+    private GenericContainer<?> keycloak;
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
+    protected static String KEYCLOAK_SERVER_URL;
     private static final String KEYCLOAK_REALM = "quarkus";
+    private static final String KEYCLOAK_SERVICE_CLIENT = "quarkus-service-app";
+    private static final String KEYCLOAK_VERSION = System.getProperty("keycloak.version");
 
-    private Keycloak keycloak;
-
+    @SuppressWarnings("resource")
     @Override
     public Map<String, String> start() {
+        keycloak = new GenericContainer<>("quay.io/keycloak/keycloak:" + KEYCLOAK_VERSION)
+                .withExposedPorts(8080)
+                .withEnv("KEYCLOAK_ADMIN", "admin")
+                .withEnv("KEYCLOAK_ADMIN_PASSWORD", "admin")
+                .waitingFor(Wait.forLogMessage(".*Keycloak.*started.*", 1));
+
+        keycloak = keycloak
+                .withCopyToContainer(Transferable.of(createPoliciesJar().toByteArray()), "/opt/keycloak/providers/policies.jar")
+                .withCommand("start-dev");
+        keycloak.start();
+        LOGGER.info(keycloak.getLogs());
+
+        KEYCLOAK_SERVER_URL = "http://localhost:" + keycloak.getMappedPort(8080);
 
         RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
 
-        realm.getClients().add(createClient("quarkus-app"));
-        realm.getUsers().add(createUser("alice", "user", "superuser"));
-        realm.getUsers().add(createUser("admin", "user", "admin"));
-        realm.getUsers().add(createUser("jdoe", "user", "confidential"));
+        postRealm(realm);
 
-        keycloak = KeycloakBuilder.builder()
-                .serverUrl(KEYCLOAK_SERVER_URL)
-                .realm("master")
-                .clientId("admin-cli")
-                .username("admin")
-                .password("admin")
-                .build();
-        keycloak.realms().create(realm);
+        Map<String, String> properties = new HashMap<>();
 
-        return Collections.emptyMap();
+        properties.put("quarkus.oidc.auth-server-url", KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM);
+        properties.put("keycloak.url", KEYCLOAK_SERVER_URL);
+
+        return properties;
+    }
+
+    private ByteArrayOutputStream createPoliciesJar() {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        try (
+                ZipOutputStream zos = new ZipOutputStream(out);) {
+
+            List<URL> entryUrls = List.of(
+                    getClass().getResource("/policies/admin-policy.js"),
+                    getClass().getResource("/policies/always-grant.js"),
+                    getClass().getResource("/policies/body-claim-based-policy.js"),
+                    getClass().getResource("/policies/claim-based-policy.js"),
+                    getClass().getResource("/policies/confidential-policy.js"),
+                    getClass().getResource("/policies/http-claim-based-policy.js"),
+                    getClass().getResource("/policies/superuser-policy.js"));
+
+            addZipEntry("META-INF/keycloak-scripts.json", getClass().getResource("/policies/META-INF/keycloak-scripts.json"),
+                    zos);
+
+            for (URL entryUrl : entryUrls) {
+                File entryFile = Paths.get(entryUrl.toURI()).toFile();
+                addZipEntry(entryFile.getName(), entryUrl, zos);
+            }
+        } catch (Exception cause) {
+            throw new RuntimeException("Failed to create policies file", cause);
+        }
+
+        return out;
+    }
+
+    private void addZipEntry(String entryName, URL entryUrl, ZipOutputStream zos) throws URISyntaxException, IOException {
+        ZipEntry zipEntry = new ZipEntry(entryName);
+
+        zos.putNextEntry(zipEntry);
+        zos.write(Files.readAllBytes(Paths.get(entryUrl.toURI())));
+        zos.closeEntry();
+    }
+
+    private static void postRealm(RealmRepresentation realm) {
+        try {
+            createRequestSpec().auth().oauth2(getAdminAccessToken())
+                    .contentType("application/json")
+                    .body(JsonSerialization.writeValueAsBytes(realm))
+                    .when()
+                    .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
+                    .statusCode(201);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static RealmRepresentation createRealm(String name) {
@@ -58,6 +132,8 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         realm.setEnabled(true);
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());
+        realm.setAccessTokenLifespan(3);
+        realm.setSsoSessionMaxLifespan(3);
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();
@@ -70,7 +146,36 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         realm.getRoles().getRealm().add(new RoleRepresentation("admin", null, false));
         realm.getRoles().getRealm().add(new RoleRepresentation("confidential", null, false));
 
+        realm.getClients().add(createClient("quarkus-app"));
+        realm.getUsers().add(createUser("alice", "user", "superuser"));
+        realm.getUsers().add(createUser("admin", "user", "admin"));
+        realm.getUsers().add(createUser("jdoe", "user", "confidential"));
+
         return realm;
+    }
+
+    private static String getAdminAccessToken() {
+        return createRequestSpec()
+                .param("grant_type", "password")
+                .param("username", "admin")
+                .param("password", "admin")
+                .param("client_id", "admin-cli")
+                .when()
+                .post(KEYCLOAK_SERVER_URL + "/realms/master/protocol/openid-connect/token")
+                .as(AccessTokenResponse.class).getToken();
+    }
+
+    private static ClientRepresentation createServiceClient(String clientId) {
+        ClientRepresentation client = new ClientRepresentation();
+
+        client.setClientId(clientId);
+        client.setPublicClient(false);
+        client.setSecret("secret");
+        client.setDirectAccessGrantsEnabled(true);
+        client.setServiceAccountsEnabled(true);
+        client.setEnabled(true);
+
+        return client;
     }
 
     private static ClientRepresentation createClient(String clientId) {
@@ -104,59 +209,37 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
 
     private static void configurePermissionResourcePermission(ResourceServerRepresentation settings) {
         PolicyRepresentation policyConfidential = createJSPolicy("Confidential Policy",
-                "var identity = $evaluation.context.identity;\n" +
-                        "\n" +
-                        "if (identity.hasRealmRole(\"confidential\")) {\n" +
-                        "$evaluation.grant();\n" +
-                        "}",
+                "confidential-policy.js",
                 settings);
         createPermission(settings, createResource(settings, "Permission Resource", "/api/permission"), policyConfidential);
 
-        PolicyRepresentation policyAdmin = createJSPolicy("Admin Policy", "var identity = $evaluation.context.identity;\n" +
-                "\n" +
-                "if (identity.hasRealmRole(\"admin\")) {\n" +
-                "$evaluation.grant();\n" +
-                "}", settings);
+        PolicyRepresentation policyAdmin = createJSPolicy("Admin Policy", "admin-policy.js", settings);
 
         createPermission(settings, createResource(settings, "Permission Resource Tenant", "/api-permission-tenant"),
                 policyAdmin);
 
-        PolicyRepresentation policyUser = createJSPolicy("Superuser Policy", "var identity = $evaluation.context.identity;\n" +
-                "\n" +
-                "if (identity.hasRealmRole(\"superuser\")) {\n" +
-                "$evaluation.grant();\n" +
-                "}", settings);
+        PolicyRepresentation policyUser = createJSPolicy("Superuser Policy", "superuser-policy.js", settings);
 
         createPermission(settings, createResource(settings, "Permission Resource WebApp", "/api-permission-webapp"),
                 policyUser);
     }
 
     private static void configureScopePermission(ResourceServerRepresentation settings) {
-        PolicyRepresentation policy = createJSPolicy("Grant Policy", "$evaluation.grant();", settings);
+        PolicyRepresentation policy = createJSPolicy("Grant Policy", "always-grant.js", settings);
         createScopePermission(settings,
                 createResource(settings, "Scope Permission Resource", "/api/permission/scope", "read", "write"), policy,
                 "read");
     }
 
     private static void configureClaimBasedPermission(ResourceServerRepresentation settings) {
-        PolicyRepresentation policy = createJSPolicy("Claim-Based Policy", "var context = $evaluation.getContext();\n"
-                + "var attributes = context.getAttributes();\n"
-                + "\n"
-                + "if (attributes.containsValue('grant', 'true')) {\n"
-                + "    $evaluation.grant();\n"
-                + "}", settings);
+        PolicyRepresentation policy = createJSPolicy("Claim-Based Policy", "claim-based-policy.js", settings);
         createPermission(settings, createResource(settings, "Claim Protected Resource", "/api/permission/claim-protected"),
                 policy);
     }
 
     private static void configureHttpResponseClaimBasedPermission(ResourceServerRepresentation settings) {
         PolicyRepresentation policy = createJSPolicy("Http Response Claim-Based Policy",
-                "var context = $evaluation.getContext();\n"
-                        + "var attributes = context.getAttributes();\n"
-                        + "\n"
-                        + "if (attributes.containsValue('user-name', 'alice')) {\n"
-                        + "    $evaluation.grant();\n"
-                        + "}",
+                "http-claim-based-policy.js",
                 settings);
         createPermission(settings, createResource(settings, "Http Response Claim Protected Resource",
                 "/api/permission/http-response-claim-protected"), policy);
@@ -164,13 +247,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
 
     private static void configureBodyClaimBasedPermission(ResourceServerRepresentation settings) {
         PolicyRepresentation policy = createJSPolicy("Body Claim-Based Policy",
-                "var context = $evaluation.getContext();\n"
-                        + "print(context.getAttributes().toMap());"
-                        + "var attributes = context.getAttributes();\n"
-                        + "\n"
-                        + "if (attributes.containsValue('from-body', 'grant')) {\n"
-                        + "    $evaluation.grant();\n"
-                        + "}",
+                "body-claim-based-policy.js",
                 settings);
         createPermission(settings, createResource(settings, "Body Claim Protected Resource",
                 "/api/permission/body-claim"), policy);
@@ -232,9 +309,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         PolicyRepresentation policy = new PolicyRepresentation();
 
         policy.setName(name);
-        policy.setType("js");
-        policy.setConfig(new HashMap<>());
-        policy.getConfig().put("code", code);
+        policy.setType("script-" + code);
 
         settings.getPolicies().add(policy);
 
@@ -260,9 +335,38 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         return user;
     }
 
+    public static String getAccessToken(String userName) {
+        return createRequestSpec().param("grant_type", "password")
+                .param("username", userName)
+                .param("password", userName)
+                .param("client_id", KEYCLOAK_SERVICE_CLIENT)
+                .param("client_secret", "secret")
+                .when()
+                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
+                .as(AccessTokenResponse.class).getToken();
+    }
+
+    public static String getRefreshToken(String userName) {
+        return createRequestSpec().param("grant_type", "password")
+                .param("username", userName)
+                .param("password", userName)
+                .param("client_id", KEYCLOAK_SERVICE_CLIENT)
+                .param("client_secret", "secret")
+                .when()
+                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
+                .as(AccessTokenResponse.class).getRefreshToken();
+    }
+
     @Override
     public void stop() {
-        keycloak.realm(KEYCLOAK_REALM).remove();
+        createRequestSpec().auth().oauth2(getAdminAccessToken())
+                .when()
+                .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
 
+        keycloak.stop();
+    }
+
+    private static RequestSpecification createRequestSpec() {
+        return RestAssured.given().relaxedHTTPSValidation();
     }
 }

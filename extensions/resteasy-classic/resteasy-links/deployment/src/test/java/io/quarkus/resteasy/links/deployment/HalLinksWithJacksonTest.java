@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.builder.Version;
 import io.quarkus.test.QuarkusProdModeTest;
 
 public class HalLinksWithJacksonTest extends AbstractHalLinksTest {
@@ -14,8 +15,8 @@ public class HalLinksWithJacksonTest extends AbstractHalLinksTest {
                     .addClasses(AbstractEntity.class, TestRecord.class, TestResource.class))
             .setForcedDependencies(
                     Arrays.asList(
-                            new AppArtifact("io.quarkus", "quarkus-resteasy-jackson", "999-SNAPSHOT"),
-                            new AppArtifact("io.quarkus", "quarkus-hal", "999-SNAPSHOT")))
+                            new AppArtifact("io.quarkus", "quarkus-resteasy-jackson", Version.getVersion()),
+                            new AppArtifact("io.quarkus", "quarkus-hal", Version.getVersion())))
             .setLogFileName("app.log")
             .setRun(true);
 }

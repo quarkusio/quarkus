@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Each section consists of one or more blocks. The main block is always present. Additional blocks start with a label
@@ -63,6 +64,28 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
             expressions.addAll(node.getExpressions());
         }
         return expressions;
+    }
+
+    Expression find(Predicate<Expression> predicate) {
+        for (Expression e : this.expressions.values()) {
+            if (predicate.test(e)) {
+                return e;
+            }
+        }
+        for (TemplateNode node : nodes) {
+            if (node instanceof ExpressionNode) {
+                Expression e = ((ExpressionNode) node).expression;
+                if (predicate.test(e)) {
+                    return e;
+                }
+            } else if (node instanceof SectionNode) {
+                Expression found = ((SectionNode) node).findExpression(predicate);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     List<ParameterDeclaration> getParamDeclarations() {

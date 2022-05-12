@@ -972,7 +972,7 @@ This section might also come in handy when we'd like to avoid multiple expensive
 [[include_helper]]
 ==== Include Section
 
-This section can be used to include another template and possibly override some parts of the template (template inheritance).
+This section can be used to include another template and possibly override some parts of the template (see the _template inheritance_ below).
 
 .Simple Example
 [source,html]
@@ -990,7 +990,7 @@ This section can be used to include another template and possibly override some 
 <1> Include a template with id `foo`. The included template can reference data from the current context. 
 <2> It's also possible to define optional parameters that can be used in the included template.
 
-Template inheritance makes it possible to reuse template layouts.
+_Template inheritance_ makes it possible to reuse template layouts.
 
 .Template "base"
 [source,html]
@@ -1006,7 +1006,7 @@ Template inheritance makes it possible to reuse template layouts.
 </html>
 ----
 <1> `insert` sections are used to specify parts that could be overridden by a template that includes the given template.
-<2> An `insert` section may define the default content that is rendered if not overridden. If no name parameter is supplied then the main block of the relevant `{#include}` section is used.
+<2> An `insert` section may define the default content that is rendered if not overridden. If there is no name supplied then the main block of the relevant `{#include}` section is used.
 
 .Template "detail"
 [source,html]
@@ -1024,28 +1024,10 @@ Template inheritance makes it possible to reuse template layouts.
 
 NOTE: Section blocks can also define an optional end tag - `{/title}`.
 
-==== Eval Section
-
-This section can be used to parse and evaluate a template dynamically.
-The behavior is very similar to the <<include_helper>> but:
-
-1. The template content is passed directly, i.e. not obtained via an `io.quarkus.qute.TemplateLocator`,
-2. It's not possible to override parts of the evaluated template.
-
-[source,html]
-----
-{#eval myData.template name='Mia' /} <1><2><3>
-----
-<1> The result of `myData.template` will be used as the template. The template is executed with the <<current_context_object>>, i.e. can reference data from the template it's included into.
-<2> It's also possible to define optional parameters that can be used in the evaluated template.
-<3> The content of the section is always ignored. 
-
-NOTE: The evaluated template is parsed and evaluated every time the section is executed. In other words, it's not possible to cache the parsed value to conserve resources and optimize the performance.
-
 [[user_tags]]
 ==== User-defined Tags
 
-User-defined tags can be used to include a tag template and optionally pass some parameters.
+User-defined tags can be used to include a _tag template_, optionally pass some arguments and possibly override some parts of the template.
 Let's suppose we have a tag template called `itemDetail.html`:
 
 [source]
@@ -1091,6 +1073,44 @@ By default, the tag template can reference data from the parent context.
 For example, the tag above could use the following expression `{items.size}`.
 However, sometimes it might be useful to disable this behavior and execute the tag as an _isolated_ template, i.e. without access to the context of the template that calls the tag.
 In this case, just add `_isolated` or `_isolated=true` argument to the call site, e.g. `{#itemDetail item showImage=true _isolated /}`.
+
+User tags can also make use of the template inheritance in the same way as regular `{#include}` sections do.
+
+.Tag `myTag`
+[source]
+----
+This is {#insert title}my title{/title}! <1>
+----
+<1> `insert` sections are used to specify parts that could be overridden by a template that includes the given template.
+
+.Tag Call Site
+[source,html]
+----
+<p>
+  {#myTag}
+    {title}my custom title{/title} <1>
+  {/myTag}
+</p>
+----
+<1> The result would be something like `<p>This is my custom title!</p>`.
+
+==== Eval Section
+
+This section can be used to parse and evaluate a template dynamically.
+The behavior is very similar to the <<include_helper>> but:
+
+1. The template content is passed directly, i.e. not obtained via an `io.quarkus.qute.TemplateLocator`,
+2. It's not possible to override parts of the evaluated template.
+
+[source,html]
+----
+{#eval myData.template name='Mia' /} <1><2><3>
+----
+<1> The result of `myData.template` will be used as the template. The template is executed with the <<current_context_object>>, i.e. can reference data from the template it's included into.
+<2> It's also possible to define optional parameters that can be used in the evaluated template.
+<3> The content of the section is always ignored. 
+
+NOTE: The evaluated template is parsed and evaluated every time the section is executed. In other words, it's not possible to cache the parsed value to conserve resources and optimize the performance.
 
 === Rendering Output
 

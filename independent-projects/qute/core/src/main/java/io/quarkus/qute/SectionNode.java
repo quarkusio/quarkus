@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.jboss.logging.Logger;
 
 /**
@@ -72,6 +73,16 @@ class SectionNode implements TemplateNode {
             expressions.addAll(block.getExpressions());
         }
         return expressions;
+    }
+
+    public Expression findExpression(Predicate<Expression> predicate) {
+        for (SectionBlock block : blocks) {
+            Expression found = block.find(predicate);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
     }
 
     @Override

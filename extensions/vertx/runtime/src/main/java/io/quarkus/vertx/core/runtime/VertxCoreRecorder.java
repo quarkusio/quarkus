@@ -421,7 +421,9 @@ public class VertxCoreRecorder {
         if (cluster.port.isPresent()) {
             options.getEventBusOptions().setPort(cluster.port.getAsInt());
         }
-        cluster.publicHost.ifPresent(options.getEventBusOptions()::setClusterPublicHost);
+        if (cluster.publicHost.isPresent()) {
+            options.getEventBusOptions().setClusterPublicHost(cluster.publicHost.get());
+        }
         if (cluster.publicPort.isPresent()) {
             options.getEventBusOptions().setPort(cluster.publicPort.getAsInt());
         }

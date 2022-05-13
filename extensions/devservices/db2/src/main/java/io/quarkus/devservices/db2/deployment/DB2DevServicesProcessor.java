@@ -46,6 +46,7 @@ public class DB2DevServicesProcessor {
 
                 return new RunningDevServicesDatasource(container.getContainerId(),
                         container.getEffectiveJdbcUrl(),
+                        container.getReactiveUrl(),
                         container.getUsername(),
                         container.getPassword(),
                         new Closeable() {
@@ -103,6 +104,10 @@ public class DB2DevServicesProcessor {
             } else {
                 return super.getJdbcUrl();
             }
+        }
+
+        public String getReactiveUrl() {
+            return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
         }
     }
 }

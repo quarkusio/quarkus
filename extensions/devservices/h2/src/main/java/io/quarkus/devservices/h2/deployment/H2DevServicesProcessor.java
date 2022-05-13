@@ -53,6 +53,7 @@ public class H2DevServicesProcessor {
                             + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
                     return new RunningDevServicesDatasource(null,
                             connectionUrl,
+                            null,
                             "sa",
                             "sa",
                             new Closeable() {

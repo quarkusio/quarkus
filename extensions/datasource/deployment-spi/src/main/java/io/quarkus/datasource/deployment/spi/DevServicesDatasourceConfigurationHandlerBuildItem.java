@@ -3,7 +3,6 @@ package io.quarkus.datasource.deployment.spi;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -56,15 +55,16 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     @Override
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
+                        String jdbcUrl = runningDevDb.getJdbcUrl();
                         if (dsName == null) {
-                            return Collections.singletonMap("quarkus.datasource.jdbc.url", runningDevDb.getUrl());
+                            return Collections.singletonMap("quarkus.datasource.jdbc.url", jdbcUrl);
                         } else {
                             // we use quoted and unquoted versions because depending on whether a user configured other JDBC properties
                             // one of the URLs may be ignored
                             // see https://github.com/quarkusio/quarkus/issues/21387
                             return Map.of(
-                                    datasourceURLPropName(dsName), runningDevDb.getUrl(),
-                                    datasourceURLPropName("\"" + dsName + "\""), runningDevDb.getUrl());
+                                    datasourceURLPropName(dsName), jdbcUrl,
+                                    datasourceURLPropName("\"" + dsName + "\""), jdbcUrl);
                         }
                     }
 
@@ -86,31 +86,21 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
     }
 
     public static DevServicesDatasourceConfigurationHandlerBuildItem reactive(String dbKind) {
-        return reactive(dbKind, new Function<String, String>() {
-            @Override
-            public String apply(String url) {
-                return url.replaceFirst("jdbc:", "vertx-reactive:");
-            }
-        });
-    }
-
-    public static DevServicesDatasourceConfigurationHandlerBuildItem reactive(String dbKind,
-            Function<String, String> jdbcUrlTransformer) {
         return new DevServicesDatasourceConfigurationHandlerBuildItem(dbKind,
                 new BiFunction<String, DevServicesDatasourceProvider.RunningDevServicesDatasource, Map<String, String>>() {
                     @Override
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
-                        String url = jdbcUrlTransformer.apply(runningDevDb.getUrl());
+                        String reactiveUrl = runningDevDb.getReactiveUrl();
                         if (dsName == null) {
-                            return Collections.singletonMap("quarkus.datasource.reactive.url", url);
+                            return Collections.singletonMap("quarkus.datasource.reactive.url", reactiveUrl);
                         } else {
                             // we use quoted and unquoted versions because depending on whether a user configured other JDBC properties
                             // one of the URLs may be ignored
                             // see https://github.com/quarkusio/quarkus/issues/21387
                             return Map.of(
-                                    datasourceReactiveURLPropName(dsName, false), url,
-                                    datasourceReactiveURLPropName(dsName, true), url);
+                                    datasourceReactiveURLPropName(dsName, false), reactiveUrl,
+                                    datasourceReactiveURLPropName(dsName, true), reactiveUrl);
                         }
                     }
                 }, new Predicate<String>() {

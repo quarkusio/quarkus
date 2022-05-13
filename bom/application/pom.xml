@@ -81,7 +81,7 @@
         <graal-sdk.version>22.1.0</graal-sdk.version>
         <!-- Use previous graal version till https://github.com/oracle/graal/issues/4518 gets resolved -->
         <graal-svm.version>22.0.0.2</graal-svm.version>
-        <gizmo.version>1.0.10.Final</gizmo.version>
+        <gizmo.version>1.0.11.Final</gizmo.version>
         <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>

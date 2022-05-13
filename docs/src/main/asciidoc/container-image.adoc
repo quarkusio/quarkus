@@ -68,6 +68,10 @@ To use this feature, add the following extension to your project.
 :add-extension-extensions: container-image-docker
 include::includes/devtools/extension-add.adoc[]
 
+The `quarkus-container-image-docker` extension is capable of https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images/[creating multi-platform (or multi-arch)] images using https://docs.docker.com/engine/reference/commandline/buildx_build/[`docker buildx build`]. See the `quarkus.docker.platform` configuration item in the <<#DockerOptions,Docker Options>> section below.
+
+NOTE: `docker buildx build` ONLY supports https://docs.docker.com/engine/reference/commandline/buildx_build/#load[loading the result of a build] to `docker images` when building for a single platform. Therefore, if you specify more than one argument in the `quarkus.docker.platform` property, the resulting images will not be loaded into `docker images`. If `quarkus.docker.platform` is omitted or if only a single platform is specified, it will then be loaded into `docker images`.
+
 [#s2i]
 === S2I
 
@@ -190,6 +194,7 @@ In addition to the generic container image options, the `container-image-jib` al
 
 include::{generated-dir}/config/quarkus-container-image-jib.adoc[opts=optional, leveloffset=+1]
 
+[#DockerOptions]
 === Docker Options
 
 In addition to the generic container image options, the `container-image-docker` also provides the following options:

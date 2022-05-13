@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -51,4 +53,50 @@ public class DockerConfig {
      */
     @ConfigItem(defaultValue = "docker")
     public String executableName;
+
+    /**
+     * Configuration for Docker Buildx options
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public DockerBuildxConfig buildx;
+
+    /**
+     * Configuration for Docker Buildx options. These are only relevant if using Docker Buildx
+     * (https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images) to build multi-platform (or
+     * cross-platform)
+     * images.
+     * If any of these configurations are set, it will add {@code buildx} to the {@code executableName}.
+     */
+    @ConfigGroup
+    public static class DockerBuildxConfig {
+        /**
+         * Which platform(s) to target during the build. See
+         * https://docs.docker.com/engine/reference/commandline/buildx_build/#platform
+         */
+        @ConfigItem
+        public Optional<List<String>> platform;
+
+        /**
+         * Sets the export action for the build result. See
+         * https://docs.docker.com/engine/reference/commandline/buildx_build/#output. Note that any filesystem paths need to be
+         * absolute paths,
+         * not relative from where the command is executed from.
+         */
+        @ConfigItem
+        public Optional<String> output;
+
+        /**
+         * Set type of progress output ({@code auto}, {@code plain}, {@code tty}). Use {@code plain} to show container output
+         * (default “{@code auto}”). See https://docs.docker.com/engine/reference/commandline/buildx_build/#progress
+         */
+        @ConfigItem
+        public Optional<String> progress;
+
+        boolean useBuildx() {
+            return platform.filter(p -> !p.isEmpty()).isPresent() ||
+                    output.isPresent() ||
+                    progress.isPresent();
+        }
+    }
 }

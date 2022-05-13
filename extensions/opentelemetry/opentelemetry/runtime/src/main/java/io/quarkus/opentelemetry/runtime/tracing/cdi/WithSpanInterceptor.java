@@ -18,6 +18,7 @@ import io.opentelemetry.extension.annotations.SpanAttribute;
 import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.annotation.support.MethodSpanAttributesExtractor;
 import io.opentelemetry.instrumentation.api.annotation.support.ParameterAttributeNamesExtractor;
+import io.opentelemetry.instrumentation.api.annotation.support.async.AsyncOperationEndSupport;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
@@ -27,15 +28,15 @@ import io.opentelemetry.instrumentation.api.util.SpanNames;
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE)
 public class WithSpanInterceptor {
-    private final Instrumenter<MethodRequest, Void> instrumenter;
+    private final Instrumenter<MethodRequest, Object> instrumenter;
 
     public WithSpanInterceptor(final OpenTelemetry openTelemetry) {
-        InstrumenterBuilder<MethodRequest, Void> builder = Instrumenter.builder(
+        InstrumenterBuilder<MethodRequest, Object> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
                 new MethodRequestSpanNameExtractor());
 
-        MethodSpanAttributesExtractor<MethodRequest, Void> attributesExtractor = MethodSpanAttributesExtractor.newInstance(
+        MethodSpanAttributesExtractor<MethodRequest, Object> attributesExtractor = MethodSpanAttributesExtractor.newInstance(
                 MethodRequest::getMethod,
                 new WithSpanParameterAttributeNamesExtractor(),
                 MethodRequest::getArgs);
@@ -50,26 +51,33 @@ public class WithSpanInterceptor {
 
         Context parentContext = Context.current();
         Context spanContext = null;
-        Scope scope = null;
+        final Scope scope;
         boolean shouldStart = instrumenter.shouldStart(parentContext, methodRequest);
         if (shouldStart) {
             spanContext = instrumenter.start(parentContext, methodRequest);
             scope = spanContext.makeCurrent();
+        } else {
+            scope = Scope.noop();
         }
 
-        try {
+        try (scope) {
             Object result = invocationContext.proceed();
 
             if (shouldStart) {
-                instrumenter.end(spanContext, methodRequest, null, null);
+                return createAsyncEndSupport(methodRequest).asyncEnd(spanContext, methodRequest, result, null);
             }
 
             return result;
-        } finally {
-            if (scope != null) {
-                scope.close();
-            }
+        } catch (final Throwable failure) {
+            // async handling not necessary here. In fact not even possible.
+            instrumenter.end(spanContext, methodRequest, null, failure);
+            throw failure;
         }
+    }
+
+    private AsyncOperationEndSupport<MethodRequest, Object> createAsyncEndSupport(
+            final MethodRequest methodRequest) {
+        return AsyncOperationEndSupport.create(instrumenter, Object.class, methodRequest.getMethod().getReturnType());
     }
 
     private static SpanKind spanKindFromMethod(Method method) {

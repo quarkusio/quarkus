@@ -26,9 +26,9 @@ public class MutinyAsyncProcessor {
 
     @BuildStep(onlyIf = MutinyAsyncEnabled.class)
     void registerAsyncStrategy(final MutinyAsyncConfig.MutinyAsyncRuntimeConfig runtimeConfig) {
+
         final MutinyAsyncOperationEndStrategy mutinyAsyncOperationEndStrategy = new MutinyAsyncOperationEndStrategy(
                 runtimeConfig);
-
         AsyncOperationEndStrategies.instance().registerStrategy(mutinyAsyncOperationEndStrategy);
     }
 }

@@ -64,9 +64,6 @@ recipeList:
   - org.openrewrite.maven.ChangePropertyValue:
       key: jakarta.persistence-api.version
       newValue: 3.0.0
-  - org.openrewrite.maven.ChangePropertyValue:
-      key: hibernate-reactive.version
-      newValue: 1.1.5.Beta1
   - org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId:
       oldGroupId: org.hibernate
       oldArtifactId: hibernate-core

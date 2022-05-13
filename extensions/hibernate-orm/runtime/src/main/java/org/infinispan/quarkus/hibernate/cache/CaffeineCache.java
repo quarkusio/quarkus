@@ -18,7 +18,12 @@ final class CaffeineCache implements InternalCache {
     private static final boolean trace = log.isTraceEnabled();
 
     private static final Ticker TICKER = Ticker.systemTicker();
-    static final Time.NanosService TIME_SERVICE = TICKER::read;
+    static final Time.NanosService TIME_SERVICE = new Time.NanosService() {
+        @Override
+        public long nanoTime() {
+            return TICKER.read();
+        }
+    };
 
     private final Cache cache;
     private final String cacheName;

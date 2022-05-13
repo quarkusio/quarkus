@@ -189,7 +189,9 @@ public final class QuarkusInfinispanRegionFactory implements RegionFactory {
         log.debug("Clear region references");
 
         // Ensure we cleanup any caches we created
-        regions.forEach(Region::destroy);
+        for (Region region : regions) {
+            region.destroy();
+        }
         regions.clear();
     }
 

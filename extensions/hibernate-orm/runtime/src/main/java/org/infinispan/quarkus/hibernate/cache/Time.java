@@ -25,7 +25,12 @@ final class Time {
 
     @FunctionalInterface
     public interface MillisService {
-        MillisService SYSTEM = System::currentTimeMillis;
+        MillisService SYSTEM = new MillisService() {
+            @Override
+            public long milliTime() {
+                return System.currentTimeMillis();
+            }
+        };
 
         long milliTime();
     }

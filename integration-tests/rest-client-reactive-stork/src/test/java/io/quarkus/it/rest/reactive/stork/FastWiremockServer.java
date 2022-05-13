@@ -12,14 +12,19 @@ public class FastWiremockServer extends WiremockBase {
     static final String FAST_RESPONSE = "hello, I'm a fast server";
 
     @Override
-    int port() {
+    int httpPort() {
         return 8766;
+    }
+
+    @Override
+    int httpsPort() {
+        return 8443;
     }
 
     @Override
     protected Map<String, String> initWireMock(WireMockServer server) {
         server.stubFor(WireMock.get("/hello")
                 .willReturn(aResponse().withBody(FAST_RESPONSE).withStatus(200)));
-        return Map.of("fast-service", "localhost:8766");
+        return Map.of("fast-service", "localhost:8443");
     }
 }

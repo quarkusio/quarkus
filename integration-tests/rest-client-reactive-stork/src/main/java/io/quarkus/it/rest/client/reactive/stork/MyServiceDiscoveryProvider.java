@@ -19,6 +19,7 @@ import io.smallrye.stork.utils.StorkAddressUtils;
 import io.vertx.core.Vertx;
 
 @ServiceDiscoveryType("my")
+@ServiceDiscoveryAttribute(name = "secure", description = "https")
 @ServiceDiscoveryAttribute(name = "address-list", description = "a comma-separated list of addresses")
 public class MyServiceDiscoveryProvider implements ServiceDiscoveryProvider<MyConfiguration> {
     public static volatile Vertx providedVertx;
@@ -28,14 +29,16 @@ public class MyServiceDiscoveryProvider implements ServiceDiscoveryProvider<MyCo
             ServiceConfig serviceConfig, StorkInfrastructure storkInfrastructure) {
         providedVertx = storkInfrastructure.get(Vertx.class, () -> null);
         String addressList = config.getAddressList();
+        boolean secure = Boolean.parseBoolean(config.getSecure());
         Uni<List<ServiceInstance>> instances = Uni.createFrom()
-                .item(Arrays.stream(addressList.split(",")).map(address -> toServiceInstance(address, serviceName))
+                .item(Arrays.stream(addressList.split(","))
+                        .map(address -> toServiceInstance(address, serviceName, secure))
                         .collect(Collectors.toList()));
         return () -> instances;
     }
 
-    private ServiceInstance toServiceInstance(String address, String serviceName) {
+    private ServiceInstance toServiceInstance(String address, String serviceName, boolean secure) {
         HostAndPort hostAndPort = StorkAddressUtils.parseToHostAndPort(address, 80, serviceName);
-        return new DefaultServiceInstance(ServiceInstanceIds.next(), hostAndPort.host, hostAndPort.port, false);
+        return new DefaultServiceInstance(ServiceInstanceIds.next(), hostAndPort.host, hostAndPort.port, secure);
     }
 }

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.arc.Arc;
 import io.quarkus.it.rest.client.reactive.stork.MyServiceDiscoveryProvider;
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.DisabledOnNativeImage;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
 import io.vertx.core.Vertx;
@@ -24,7 +24,7 @@ import io.vertx.core.Vertx;
 public class RestClientReactiveStorkTest {
 
     @Test
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     void shouldUseQuarkusVertxInstance() {
         Vertx providedVertx = MyServiceDiscoveryProvider.providedVertx;
         assertThat(providedVertx).isNotNull()

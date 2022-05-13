@@ -12,8 +12,13 @@ public class SlowWiremockServer extends WiremockBase {
     static final String SLOW_RESPONSE = "hello, I'm a slow server";
 
     @Override
-    int port() {
+    int httpPort() {
         return 8767;
+    }
+
+    @Override
+    int httpsPort() {
+        return 8444;
     }
 
     @Override
@@ -21,6 +26,6 @@ public class SlowWiremockServer extends WiremockBase {
         server.stubFor(WireMock.get("/hello")
                 .willReturn(aResponse().withFixedDelay(1000)
                         .withBody(SLOW_RESPONSE).withStatus(200)));
-        return Map.of("slow-service", "localhost:8767");
+        return Map.of("slow-service", "localhost:8444");
     }
 }

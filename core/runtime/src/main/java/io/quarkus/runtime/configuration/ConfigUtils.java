@@ -183,7 +183,7 @@ public final class ConfigUtils {
 
     @SuppressWarnings("unchecked")
     public static SmallRyeConfigBuilder configBuilder(SmallRyeConfigBuilder builder, List<ConfigBuilder> configBuilders) {
-        configBuilders.sort(Comparator.comparing(ConfigBuilder::priority));
+        configBuilders.sort(ConfigBuilderComparator.INSTANCE);
 
         for (ConfigBuilder configBuilder : configBuilders) {
             builder = configBuilder.configBuilder(builder);
@@ -331,6 +331,19 @@ public final class ConfigUtils {
         @Override
         public Set<String> getPropertyNames() {
             return Collections.emptySet();
+        }
+    }
+
+    private static class ConfigBuilderComparator implements Comparator<ConfigBuilder> {
+
+        private static final ConfigBuilderComparator INSTANCE = new ConfigBuilderComparator();
+
+        private ConfigBuilderComparator() {
+        }
+
+        @Override
+        public int compare(ConfigBuilder o1, ConfigBuilder o2) {
+            return Integer.compare(o1.priority(), o2.priority());
         }
     }
 }

@@ -11,9 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.InjectionPoint;
 
@@ -21,8 +19,12 @@ public final class Instances {
 
     static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[] {};
 
-    static final Comparator<InjectableBean<?>> PRIORITY_COMPARATOR = Collections
-            .reverseOrder(Comparator.comparingInt(InjectableBean::getPriority));
+    static final Comparator<InjectableBean<?>> PRIORITY_COMPARATOR = new Comparator<>() {
+        @Override
+        public int compare(InjectableBean<?> ib1, InjectableBean<?> ib2) {
+            return Integer.compare(ib2.getPriority(), ib1.getPriority());
+        }
+    };
 
     private Instances() {
     }
@@ -32,12 +34,16 @@ public final class Instances {
     }
 
     public static List<InjectableBean<?>> resolveBeans(Type requiredType, Annotation... requiredQualifiers) {
-        return ArcContainerImpl.instance()
-                .getResolvedBeans(requiredType, requiredQualifiers)
-                .stream()
-                .filter(Predicate.not(InjectableBean::isSuppressed))
-                .sorted(PRIORITY_COMPARATOR)
-                .collect(Collectors.toUnmodifiableList());
+        Set<InjectableBean<?>> resolvedBeans = ArcContainerImpl.instance()
+                .getResolvedBeans(requiredType, requiredQualifiers);
+        List<InjectableBean<?>> nonSuppressed = new ArrayList<>(resolvedBeans.size());
+        for (InjectableBean<?> injectableBean : resolvedBeans) {
+            if (!injectableBean.isSuppressed()) {
+                nonSuppressed.add(injectableBean);
+            }
+        }
+        nonSuppressed.sort(PRIORITY_COMPARATOR);
+        return List.copyOf(nonSuppressed);
     }
 
     @SuppressWarnings("unchecked")

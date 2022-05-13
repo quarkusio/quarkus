@@ -44,6 +44,7 @@ public class MSSQLDevServicesProcessor {
 
                 return new RunningDevServicesDatasource(container.getContainerId(),
                         container.getEffectiveJdbcUrl(),
+                        container.getReactiveUrl(),
                         container.getUsername(),
                         container.getPassword(),
                         new ContainerShutdownCloseable(container, "Microsoft SQL Server"));
@@ -93,6 +94,16 @@ public class MSSQLDevServicesProcessor {
             } else {
                 return super.getJdbcUrl();
             }
+        }
+
+        public String getReactiveUrl() {
+            StringBuilder url = new StringBuilder("vertx-reactive:sqlserver://");
+            if (useSharedNetwork) {
+                url.append(hostName).append(":").append(MS_SQL_SERVER_PORT);
+            } else {
+                url.append(this.getHost()).append(":").append(this.getMappedPort(MS_SQL_SERVER_PORT));
+            }
+            return url.toString();
         }
     }
 }

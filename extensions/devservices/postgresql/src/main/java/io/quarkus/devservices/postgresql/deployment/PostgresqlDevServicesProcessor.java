@@ -54,6 +54,7 @@ public class PostgresqlDevServicesProcessor {
 
                 return new RunningDevServicesDatasource(container.getContainerId(),
                         container.getEffectiveJdbcUrl(),
+                        container.getReactiveUrl(),
                         container.getUsername(),
                         container.getPassword(),
                         new ContainerShutdownCloseable(container, "PostgreSQL"));
@@ -106,6 +107,10 @@ public class PostgresqlDevServicesProcessor {
             } else {
                 return super.getJdbcUrl();
             }
+        }
+
+        public String getReactiveUrl() {
+            return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
         }
     }
 }

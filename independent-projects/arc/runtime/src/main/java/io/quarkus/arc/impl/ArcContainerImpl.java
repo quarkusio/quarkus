@@ -115,10 +115,10 @@ public class ArcContainerImpl implements ArcContainer {
         applicationContext = new ApplicationContext();
         singletonContext = new SingletonContext();
         requestContext = new RequestContext(this.currentContextFactory.create(RequestScoped.class));
-        contexts = new HashMap<>();
-        putContext(requestContext);
-        putContext(applicationContext);
-        putContext(singletonContext);
+        Map<Class<? extends Annotation>, List<InjectableContext>> contexts = new HashMap<>();
+        putContext(requestContext, contexts);
+        putContext(applicationContext, contexts);
+        putContext(singletonContext, contexts);
 
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
             Components components = componentsProvider.getComponents();
@@ -143,11 +143,14 @@ public class ArcContainerImpl implements ArcContainer {
                     throw new IllegalStateException(
                             "Failed to register a context - built-in singleton context is always active: " + context);
                 }
-                putContext(context);
+                putContext(context, contexts);
             }
             transitiveInterceptorBindings.putAll(components.getTransitiveInterceptorBindings());
             qualifierNonbindingMembers.putAll(components.getQualifierNonbindingMembers());
         }
+
+        this.contexts = Map.copyOf(contexts);
+
         // register built-in beans
         addBuiltInBeans(beans);
 
@@ -173,7 +176,7 @@ public class ArcContainerImpl implements ArcContainer {
         this.qualifierNonbindingMembers = Map.copyOf(qualifierNonbindingMembers);
     }
 
-    private void putContext(InjectableContext context) {
+    private void putContext(InjectableContext context, Map<Class<? extends Annotation>, List<InjectableContext>> contexts) {
         Collection<InjectableContext> values = contexts.get(context.getScope());
         if (values == null) {
             contexts.put(context.getScope(), Collections.singletonList(context));
@@ -181,7 +184,7 @@ public class ArcContainerImpl implements ArcContainer {
             List<InjectableContext> multi = new ArrayList<>(values.size() + 1);
             multi.addAll(values);
             multi.add(context);
-            contexts.put(context.getScope(), Collections.unmodifiableList(multi));
+            contexts.put(context.getScope(), List.copyOf(multi));
         }
     }
 
@@ -407,7 +410,6 @@ public class ArcContainerImpl implements ArcContainer {
 
             // Clear caches
             Reflections.clearCaches();
-            contexts.clear();
             resolved.clear();
             running.set(false);
             InterceptedStaticMethods.clear();

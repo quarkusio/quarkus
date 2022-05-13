@@ -249,6 +249,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGetKind(beanCreator, InjectableBean.Kind.SYNTHETIC);
         implementEquals(bean, beanCreator);
         implementHashCode(bean, beanCreator);
+        implementToString(beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -342,6 +343,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementIsSuppressed(bean, beanCreator);
         implementEquals(bean, beanCreator);
         implementHashCode(bean, beanCreator);
+        implementToString(beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -445,6 +447,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementIsSuppressed(bean, beanCreator);
         implementEquals(bean, beanCreator);
         implementHashCode(bean, beanCreator);
+        implementToString(beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -533,6 +536,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementIsSuppressed(bean, beanCreator);
         implementEquals(bean, beanCreator);
         implementHashCode(bean, beanCreator);
+        implementToString(beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -1695,6 +1699,11 @@ public class BeanGenerator extends AbstractGenerator {
         MethodCreator hashCode = beanCreator.getMethodCreator("hashCode", int.class).setModifiers(ACC_PUBLIC);
         final ResultHandle constantHashCodeResult = hashCode.load(bean.getIdentifier().hashCode());
         hashCode.returnValue(constantHashCodeResult);
+    }
+
+    protected void implementToString(ClassCreator beanCreator) {
+        MethodCreator toString = beanCreator.getMethodCreator("toString", String.class).setModifiers(ACC_PUBLIC);
+        toString.returnValue(toString.invokeStaticMethod(MethodDescriptors.BEANS_TO_STRING, toString.getThis()));
     }
 
     /**

@@ -5,6 +5,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import java.util.List;
 import javax.enterprise.context.ContextNotActiveException;
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.Contextual;
 
 public final class ClientProxies {
@@ -43,7 +44,13 @@ public final class ClientProxies {
             }
         }
         if (result == null) {
-            throw new ContextNotActiveException();
+            String msg = String.format(
+                    "%s context was not active when trying to obtain a bean instance for a client proxy of %s",
+                    bean.getScope().getSimpleName(), bean);
+            if (bean.getScope().equals(RequestScoped.class)) {
+                msg += "\n\t- you can activate the request context for a specific method using the @ActivateRequestContext interceptor binding";
+            }
+            throw new ContextNotActiveException(msg);
         }
         return result;
     }

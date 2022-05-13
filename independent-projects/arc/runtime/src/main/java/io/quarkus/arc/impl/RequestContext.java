@@ -81,7 +81,7 @@ class RequestContext implements ManagedContext {
         T result = getIfActive(contextual,
                 CreationalContextImpl.unwrap(Objects.requireNonNull(creationalContext, "CreationalContext must not be null")));
         if (result == null) {
-            throw new ContextNotActiveException();
+            throw notActive();
         }
         return result;
     }
@@ -96,7 +96,7 @@ class RequestContext implements ManagedContext {
         }
         RequestContextState state = currentContext.get();
         if (state == null) {
-            throw new ContextNotActiveException();
+            throw notActive();
         }
         ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) state.map.get(contextual);
         return instance == null ? null : instance.get();
@@ -112,7 +112,7 @@ class RequestContext implements ManagedContext {
         RequestContextState state = currentContext.get();
         if (state == null) {
             // Context is not active
-            throw new ContextNotActiveException();
+            throw notActive();
         }
         ContextInstanceHandle<?> instance = state.map.remove(contextual);
         if (instance != null) {
@@ -140,7 +140,7 @@ class RequestContext implements ManagedContext {
         RequestContextState state = currentContext.get();
         if (state == null) {
             // Thread local not set - context is not active!
-            throw new ContextNotActiveException();
+            throw notActive();
         }
         return state;
     }
@@ -204,6 +204,11 @@ class RequestContext implements ManagedContext {
         if (!notifier.isEmpty()) {
             notifier.notify(toString());
         }
+    }
+
+    private ContextNotActiveException notActive() {
+        String msg = "Request context is not active - you can activate the request context for a specific method using the @ActivateRequestContext interceptor binding";
+        return new ContextNotActiveException(msg);
     }
 
     private static Notifier<Object> createInitializedNotifier() {

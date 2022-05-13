@@ -148,7 +148,9 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         PRODUCER_METHOD,
         SYNTHETIC,
         INTERCEPTOR,
-        DECORATOR;
+        DECORATOR,
+        BUILTIN,
+        ;
 
         public static Kind from(String value) {
             for (Kind kind : values()) {

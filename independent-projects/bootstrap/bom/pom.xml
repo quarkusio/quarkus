@@ -343,6 +343,11 @@
                 <artifactId>jsoup</artifactId>
                 <version>${jsoup.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.github.crac</groupId>
+                <artifactId>org-crac</artifactId>
+                <version>${org-crac.version}</version>
+            </dependency>
             <!-- Smallrye Common dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.smallrye.common</groupId>

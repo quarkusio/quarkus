@@ -7,6 +7,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.crac.Context;
+import org.crac.Resource;
 
 /**
  * Classloader used with the fast-jar package type.
@@ -41,6 +43,8 @@ public final class RunnerClassLoader extends ClassLoader {
     //Protected by synchronization on the above field, as they are related.
     private boolean postBootPhase = false;
 
+    private final CracResource resource;
+
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages, Set<String> nonExistentResources,
             List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
@@ -50,6 +54,9 @@ public final class RunnerClassLoader extends ClassLoader {
         this.nonExistentResources = nonExistentResources;
         this.fullyIndexedDirectories = fullyIndexedDirectories;
         this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
+
+        resource = new CracResource();
+        org.crac.Core.getGlobalContext().register(resource);
     }
 
     @Override
@@ -288,6 +295,24 @@ public final class RunnerClassLoader extends ClassLoader {
                 }
             }
             this.postBootPhase = true;
+        }
+    }
+
+    class CracResource implements Resource {
+        @Override
+        public void beforeCheckpoint(Context<? extends Resource> ctx) {
+            synchronized (currentlyBufferedResources) {
+                for (int i = 0; i < currentlyBufferedResources.length; ++i) {
+                    if (currentlyBufferedResources[i] != null) {
+                        currentlyBufferedResources[i].resetInternalCaches();
+                        currentlyBufferedResources[i] = null;
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void afterRestore(Context<? extends Resource> ctx) {
         }
     }
 }

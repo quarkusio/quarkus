@@ -67,6 +67,7 @@
         <smallrye-common.version>1.11.0</smallrye-common.version>
         <gradle-tooling.version>7.4.2</gradle-tooling.version>
         <quarkus-fs-util.version>0.0.9</quarkus-fs-util.version>
+        <org-crac.version>0.1.1</org-crac.version>
     </properties>
     <modules>
         <module>bom</module>

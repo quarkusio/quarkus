@@ -68,6 +68,7 @@ public class WebSocketLogHandler extends ExtHandler {
                 history.add(record);
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
+                Thread.currentThread().interrupt();
             }
         }
     }

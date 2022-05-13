@@ -28,7 +28,7 @@
         <opentelemetry-alpha.version>1.13.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.0</jaeger.version>
         <quarkus-http.version>4.1.9</quarkus-http.version>
-        <micrometer.version>1.8.5</micrometer.version>
+        <micrometer.version>1.8.6</micrometer.version>
         <google-auth.version>0.22.0</google-auth.version>
         <microprofile-config-api.version>2.0.1</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0.1</microprofile-metrics-api.version>
@@ -78,8 +78,9 @@
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
-        <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
-        <graal-sdk.version>22.0.0.2</graal-sdk.version>
+        <graal-sdk.version>22.1.0</graal-sdk.version>
+        <!-- Use previous graal version till https://github.com/oracle/graal/issues/4518 gets resolved -->
+        <graal-svm.version>22.0.0.2</graal-svm.version>
         <gizmo.version>1.0.10.Final</gizmo.version>
         <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
@@ -127,7 +128,7 @@
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <testng.version>6.14.2</testng.version>
-        <infinispan.version>13.0.9.Final</infinispan.version>
+        <infinispan.version>13.0.10.Final</infinispan.version>
         <infinispan.protostream.version>4.4.3.Final</infinispan.protostream.version>
         <caffeine.version>2.9.3</caffeine.version>
         <netty.version>4.1.74.Final</netty.version>
@@ -4052,7 +4053,7 @@
             <dependency>
                 <groupId>org.graalvm.nativeimage</groupId>
                 <artifactId>svm</artifactId>
-                <version>${graal-sdk.version}</version>
+                <version>${graal-svm.version}</version>
                 <!-- TODO: declaring a provided or test scope in BoM is not necessarily a good practice. We should think of removing it -->
                 <scope>provided</scope>
                 <!-- We only want the included annotations -->

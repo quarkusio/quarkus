@@ -12,6 +12,7 @@
           "io.quarkus:quarkus-resteasy-reactive-jaxb",
           "io.quarkus:quarkus-resteasy-reactive-kotlin-serialization",
           "io.quarkus:quarkus-resteasy-reactive-qute",
+          "io.quarkus:quarkus-resteasy-reactive-links",
           "io.quarkus:quarkus-rest-client-reactive",
           "io.quarkus:quarkus-rest-client-reactive-jackson",
           "io.quarkus:quarkus-rest-client-reactive-jsonb",
@@ -24,6 +25,7 @@
           "io.quarkus:quarkus-resteasy-multipart",
           "io.quarkus:quarkus-resteasy-mutiny",
           "io.quarkus:quarkus-resteasy-qute",
+          "io.quarkus:quarkus-resteasy-links",
           "io.quarkus:quarkus-rest-client-jackson",
           "io.quarkus:quarkus-rest-client-jsonb",
           "io.quarkus:quarkus-rest-client-jaxb"

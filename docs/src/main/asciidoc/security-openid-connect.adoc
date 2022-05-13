@@ -167,7 +167,7 @@ Example configuration:
 ----
 %prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=backend-service
-quarkus.oidc.client-secret=secret
+quarkus.oidc.credentials.secret=secret
 
 # Tell Dev Services for Keycloak to import the realm file
 # This property is not effective when running the application in JVM or Native modes
@@ -179,7 +179,7 @@ NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures
 
 === Starting and Configuring the Keycloak Server
 
-NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
+NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information. Make sure to put the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a {quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
 
 To start a Keycloak Server you can use Docker and just run the following command:
 
@@ -251,7 +251,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 [source,bash]
 ----
-./target/security-openid-connect-quickstart-runner
+./target/security-openid-connect-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 === Testing the Application
@@ -302,7 +302,7 @@ In order to access the admin endpoint you should obtain a token for the `admin` 
 [source,bash]
 ----
 export access_token=$(\
-    curl --insecure -X POST https://localhost:8543/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
@@ -377,7 +377,7 @@ If UserInfo is the source of the roles then set `quarkus.oidc.authentication.use
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented xref:security.adoc#security-identity-customization[here].
 
 [[token-verification-introspection]]
-=== Token Verification And Introspection 
+=== Token Verification And Introspection
 
 If the token is a JWT token then, by default, it will be verified with a `JsonWebKey` (JWK) key from a local `JsonWebKeySet` retrieved from the OpenID Connect Provider's JWK endpoint. The token's key identifier `kid` header value will be used to find the matching JWK key.
 If no matching `JWK` is available locally then `JsonWebKeySet` will be refreshed by fetching the current key set from the JWK endpoint. The `JsonWebKeySet` refresh can be repeated again only after the `quarkus.oidc.token.forced-jwk-refresh-interval` (default is 10 minutes) expires.
@@ -637,10 +637,8 @@ and finally write the test code, for example:
 ----
 import static org.hamcrest.Matchers.equalTo;
 
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Set;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -655,8 +653,8 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testBearerToken() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice", new HashSet<>(Arrays.asList("user"))))
-            .when().get("/api/users/preferredUserName")
+        RestAssured.given().auth().oauth2(getAccessToken("alice", Set.of("user")))
+            .when().get("/api/users/me")
             .then()
             .statusCode(200)
             // the test endpoint returns the name extracted from the injected SecurityIdentity Principal
@@ -681,6 +679,11 @@ Testing your `quarkus-oidc` `service` application with `OidcWiremockTestResource
 If there is an immediate need for a test to define Wiremock stubs not currently supported by `OidcWiremockTestResource`
 one can do so via a `WireMockServer` instance injected into the test class, for example:
 
+[NOTE]
+====
+`OidcWiremockTestResource` does not work with `@QuarkusIntegrationTest` against Docker containers, because the Wiremock server is running in the JVM running the test, which cannot be accessed from the Docker container running the Quarkus application.
+====
+
 [source, java]
 ----
 package io.quarkus.it.keycloak;
@@ -693,14 +696,11 @@ import org.junit.jupiter.api.Test;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
-import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(OidcWiremockTestResource.class)
 public class CustomOidcWireMockStubTest {
 
     @OidcWireMock
@@ -708,7 +708,7 @@ public class CustomOidcWireMockStubTest {
 
     @Test
     public void testInvalidBearerToken() {
-        wireMockServer.stubFor(WireMock.post("/realms/quarkus/protocol/openid-connect/token/introspect")
+        wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
                 .withRequestBody(matching(".*token=invalid_token.*"))
                 .willReturn(WireMock.aResponse().withStatus(400)));
 
@@ -1029,7 +1029,7 @@ public class ProtectedResource {
 ----
 
 Note that `@TestSecurity` annotation must always be used and its `user` property is returned as `JsonWebToken.getName()` and `roles` property - as `JsonWebToken.getGroups()`.
-`@OidcSecurity` annotation is optional and can be used to set the additional token claims, as well as `UserInfo` and `OidcConfigurationMetadata` properties. 
+`@OidcSecurity` annotation is optional and can be used to set the additional token claims, as well as `UserInfo` and `OidcConfigurationMetadata` properties.
 Additionally, if `quarkus.oidc.token.issuer` property is configured then it will be used as an `OidcConfigurationMetadata` `issuer` property value.
 
 If you work with the opaque tokens then you can test them as follows:

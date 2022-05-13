@@ -52,7 +52,7 @@ include::includes/devtools/dev.adoc[]
 
 Note that you can disable sharing the containers with `quarkus.keycloak.devservices.shared=false`.
 
-Now open the main link:http://localhost:8080/q/dev[Dev UI page] and you will see the `OpenID Connect Card` linking to a `Keycloak` page:
+Now open the main link:http://localhost:8080/q/dev[Dev UI page] and you will see the `OpenID Connect Card` linking to a Keycloak page:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
 

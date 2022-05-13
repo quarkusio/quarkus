@@ -38,7 +38,7 @@ The Apicurio Dev Service will be enabled when the `quarkus-apicurio-registry-avr
 address has not been explicitly configured. More information can be found at the
 xref:apicurio-registry-dev-services.adoc[Apicurio Registry Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-apicurio-registry-devservices-apicurio-registry-avro-apicurio-registry-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-apicurio-registry-devservices-apicurio-registry-devservice-apicurio-registry-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
 == Databases
 

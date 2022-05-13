@@ -443,7 +443,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
         return requestOptions.onItem()
                 .transform(r -> r.setMethod(HttpMethod.valueOf(state.getHttpMethod()))
-                        .setURI(uri.getPath() + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery()))
+                        .setURI(uri.getRawPath() + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery()))
                         .setFollowRedirects(followRedirects))
                 .onItem().invoke(r -> {
                     if (readTimeout instanceof Long) {

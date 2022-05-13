@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 
 class NativeImageBuildContainerRunnerTest {
 
@@ -21,7 +22,8 @@ class NativeImageBuildContainerRunnerTest {
         String[] command;
 
         nativeConfig.builderImage = "graalvm";
-        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
+        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"),
+                CompiledJavaVersionBuildItem.JavaVersion.Unknown.INSTANCE);
         command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
         found = false;
         for (String part : command) {
@@ -32,7 +34,8 @@ class NativeImageBuildContainerRunnerTest {
         assertThat(found).isTrue();
 
         nativeConfig.builderImage = "mandrel";
-        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
+        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"),
+                CompiledJavaVersionBuildItem.JavaVersion.Unknown.INSTANCE);
         command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
         found = false;
         for (String part : command) {
@@ -43,7 +46,8 @@ class NativeImageBuildContainerRunnerTest {
         assertThat(found).isTrue();
 
         nativeConfig.builderImage = "RandomString";
-        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"));
+        localRunner = new NativeImageBuildLocalContainerRunner(nativeConfig, Path.of("/tmp"),
+                CompiledJavaVersionBuildItem.JavaVersion.Unknown.INSTANCE);
         command = localRunner.buildCommand("docker", Collections.emptyList(), Collections.emptyList());
         found = false;
         for (String part : command) {

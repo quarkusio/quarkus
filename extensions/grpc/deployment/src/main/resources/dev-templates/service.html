@@ -137,6 +137,7 @@ span.connected-status {
         }
 
         $(document).ready(function(){
+          connect();
           if (!ideKnown()) {
             return;
           }
@@ -165,7 +166,6 @@ span.connected-status {
                     editor.refresh();
                 });      
           
-          connect();
         });
 
         function disconnect(serviceName, methodName, methodType) {

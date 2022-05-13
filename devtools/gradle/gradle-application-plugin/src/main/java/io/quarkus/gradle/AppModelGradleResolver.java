@@ -167,8 +167,8 @@ public class AppModelGradleResolver implements AppModelResolver {
 
     protected void ensureProjectCoords(ArtifactCoords appArtifact) throws AppModelResolverException {
         if (project.getName().equals(appArtifact.getArtifactId())
-                && appArtifact.getGroupId().equals(appArtifact.getGroupId())
-                && appArtifact.getVersion().equals(appArtifact.getVersion())) {
+                && project.getGroup().toString().equals(appArtifact.getGroupId())
+                && project.getVersion().toString().equals(appArtifact.getVersion())) {
             return;
         }
         throw new AppModelResolverException(

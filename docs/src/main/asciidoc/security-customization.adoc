@@ -72,11 +72,11 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 
 == Dealing with more than one HttpAuthenticationMechanism
 
-More than one `HttpAuthenticationMechanism` can be combined, for example, the built-in `Basic` or `JWT` mechanism provided by `quarkus-smallrye-jwt` has to be used to verify the service clients credentials passed as the HTTP `Authorization` `Basic` or `Bearer` scheme values while the `Authorization Code` mechanism provided by `quarkus-oidc` has to be used to authenticate the users with `Keycloak` or other `OpenId Connect` providers.
+More than one `HttpAuthenticationMechanism` can be combined, for example, the built-in `Basic` or `JWT` mechanism provided by `quarkus-smallrye-jwt` has to be used to verify the service clients credentials passed as the HTTP `Authorization` `Basic` or `Bearer` scheme values while the `Authorization Code` mechanism provided by `quarkus-oidc` has to be used to authenticate the users with Keycloak or other OpenID Connect providers.
 
 In such cases the mechanisms are asked to verify the credentials in turn until a `SecurityIdentity` is created. The mechanisms are sorted in the descending order using their priority. `Basic` authentication mechanism has the highest priority of `2000`, followed by the `Authorization Code` one with the priority of `1001`, with all other mechanisms provided by Quarkus having the priority of `1000`.
 
-If no credentials are provided then the mechanism specific challenge is created, for example, `401` status is returned by either `Basic` or `JWT` mechanisms, URL redirecting the user to the `OpenId Connect` provider is returned by `quarkus-oidc`, etc.
+If no credentials are provided then the mechanism specific challenge is created, for example, `401` status is returned by either `Basic` or `JWT` mechanisms, URL redirecting the user to the OpenID Connect provider is returned by `quarkus-oidc`, etc.
 
 So if `Basic` and `Authorization Code` mechanisms are combined then `401` will be returned if no credentials are provided and if `JWT` and `Authorization Code` mechanisms are combined then a redirect URL will be returned.
 

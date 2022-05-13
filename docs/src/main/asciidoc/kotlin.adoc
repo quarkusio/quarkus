@@ -327,6 +327,55 @@ When you now execute an HTTP GET request against `http://localhost:8080/hello`, 
 
 One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other. We hope to alleviate this limitation in the future.
 
+
+=== Configuring live reload compiler
+
+If you need to customize the compiler flags used by `kotlinc` in development mode, you can configure them in the quarkus plugin:
+
+[source, xml, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+<plugin>
+  <groupId>${quarkus.platform.group-id}</groupId>
+  <artifactId>quarkus-maven-plugin</artifactId>
+  <version>${quarkus.platform.version}</version>
+
+  <configuration>
+    <source>${maven.compiler.source}</source>
+    <target>${maven.compiler.target}</target>
+    <compilerOptions>
+      <compiler>
+        <name>kotlin</name>
+        <args>
+          <arg>-Werror</arg>
+        </args>
+      </compiler>
+    </compilerOptions>
+  </configuration>
+
+  ...
+</plugin>
+----
+[source, groovy, subs=attributes+, role="secondary asciidoc-tabs-sync-groovy"]
+.Gradle (Groovy DSL)
+----
+quarkusDev {
+    compilerOptions {
+        compiler("kotlin").args(['-Werror'])
+    }
+}
+----
+
+[source, kotlin, subs=attributes+, role="secondary asciidoc-tabs-sync-kotlin"]
+.Gradle (Kotlin DSL)
+----
+tasks.quarkusDev {
+     compilerOptions {
+        compiler("kotlin").args(["-Werror"])
+    }
+}
+----
+
 == Packaging the application
 
 As usual, the application can be packaged using:

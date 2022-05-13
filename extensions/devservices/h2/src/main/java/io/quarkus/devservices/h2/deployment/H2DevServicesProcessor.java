@@ -9,12 +9,12 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 
 import org.h2.tools.Server;
 import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -29,17 +29,18 @@ public class H2DevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.H2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName,
-                    Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties,
-                    OptionalInt port, LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    Optional<String> datasourceName, DevServicesDatasourceContainerConfig containerConfig,
+                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort",
-                            port.isPresent() ? String.valueOf(port.getAsInt()) : "0",
+                            containerConfig.getFixedExposedPort().isPresent()
+                                    ? String.valueOf(containerConfig.getFixedExposedPort().getAsInt())
+                                    : "0",
                             "-ifNotExists");
                     tcpServer.start();
 
                     StringBuilder additionalArgs = new StringBuilder();
-                    for (Map.Entry<String, String> i : additionalJdbcUrlProperties.entrySet()) {
+                    for (Map.Entry<String, String> i : containerConfig.getAdditionalJdbcUrlProperties().entrySet()) {
                         additionalArgs.append(";");
                         additionalArgs.append(i.getKey());
                         additionalArgs.append("=");

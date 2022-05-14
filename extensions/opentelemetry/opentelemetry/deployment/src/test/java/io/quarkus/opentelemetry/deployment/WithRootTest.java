@@ -37,18 +37,34 @@ public class WithRootTest {
     }
 
     @Test
-    void span() {
+    void withRoot() {
         spanBean.nestedRoot();
-        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(2);
 
         final SpanData withRoot = spanItems.get(0);
         final SpanData nestedRoot = spanItems.get(1);
 
-        assertThat(withRoot.getName()).isEqualTo("SpanBean.withRoot");
+        assertThat(withRoot.getName()).isEqualTo("SpanChildBean.withRoot");
         assertThat(nestedRoot.getName()).isEqualTo("SpanBean.nestedRoot");
 
         assertThat(withRoot.getParentSpanContext()).isEqualTo(Span.fromContext(Context.root()).getSpanContext());
+        assertThat(withRoot.getLinks()).isEmpty();
+    }
 
+    @Test
+    void withRootAndLinks() {
+        spanBean.nestedRootAndLink();
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(2);
+
+        final SpanData withRootAndLink = spanItems.get(0);
+        final SpanData nestedRootAndLink = spanItems.get(1);
+
+        assertThat(withRootAndLink.getName()).isEqualTo("SpanChildBean.withRootAndLink");
+        assertThat(nestedRootAndLink.getName()).isEqualTo("SpanBean.nestedRootAndLink");
+
+        assertThat(withRootAndLink.getParentSpanContext()).isEqualTo(Span.fromContext(Context.root()).getSpanContext());
+        assertThat(withRootAndLink.getLinks()).isNotEmpty().hasSize(1);
+        assertThat(withRootAndLink.getLinks().get(0).getSpanContext()).isEqualTo(nestedRootAndLink.getSpanContext());
     }
 
     @ApplicationScoped
@@ -61,6 +77,11 @@ public class WithRootTest {
         public void nestedRoot() {
             spanChildBean.withRoot();
         }
+
+        @WithSpan
+        public void nestedRootAndLink() {
+            spanChildBean.withRootAndLink();
+        }
     }
 
     @ApplicationScoped
@@ -68,6 +89,12 @@ public class WithRootTest {
         @WithRoot
         @WithSpan
         public void withRoot() {
+
+        }
+
+        @WithRoot(link = true)
+        @WithSpan
+        public void withRootAndLink() {
 
         }
     }

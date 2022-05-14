@@ -21,12 +21,33 @@ public class InstrumenterTracer {
             final Context parentContext, final REQUEST request, final Class<RESPONSE> responseType,
             final Class<T> returnType, final ExceptionSupplier<T> inSpanSupplier) throws Exception {
 
-        final Context actualParentContext = parentContext != null ? parentContext : Context.current();
+        final Context currentContext = Context.current();
+        final Context actualParentContext = parentContext != null ? parentContext : currentContext;
+
+        final Scope parentScope;
+        if (actualParentContext != currentContext) {
+            // TODO: overwriting the parent is normally possible in OpenTelemetry. Some tools might ignore it
+            //  though. They only would reset to root in case of spanBuilder.setNoParent(). This is not possible via
+            //  instrumenter.
+            //  Check if there is a different solution. Or maybe the possibility to register some hooks? I donno.
+            parentScope = actualParentContext.makeCurrent();
+        } else {
+            parentScope = Scope.noop();
+        }
+
+        try (parentScope) {
+            return executeWithSpan(instrumenter, request, responseType, returnType, inSpanSupplier, actualParentContext);
+        }
+    }
+
+    private static <T, REQUEST, RESPONSE> T executeWithSpan(final Instrumenter<REQUEST, RESPONSE> instrumenter,
+            final REQUEST request, final Class<RESPONSE> responseType, final Class<T> returnType,
+            final ExceptionSupplier<T> inSpanSupplier, final Context parentContext) throws Exception {
         Context spanContext = null;
         final Scope scope;
-        final boolean shouldStart = instrumenter.shouldStart(actualParentContext, request);
+        final boolean shouldStart = instrumenter.shouldStart(parentContext, request);
         if (shouldStart) {
-            spanContext = instrumenter.start(actualParentContext, request);
+            spanContext = instrumenter.start(parentContext, request);
             scope = spanContext.makeCurrent();
         } else {
             scope = Scope.noop();
@@ -36,8 +57,8 @@ public class InstrumenterTracer {
             final T result = inSpanSupplier.get();
 
             if (shouldStart) {
-                return createAsyncEndSupport(instrumenter, responseType, getReturnType(returnType, result))
-                        .asyncEnd(spanContext, request, result, null);
+                return createAsyncEndSupport(instrumenter, responseType, getReturnType(returnType, result)).asyncEnd(
+                        spanContext, request, result, null);
             }
 
             return result;

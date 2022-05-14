@@ -24,9 +24,12 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.extension.annotations.SpanAttribute;
 import io.opentelemetry.extension.annotations.WithSpan;
+import io.opentelemetry.instrumentation.api.annotation.support.async.AsyncOperationEndStrategies;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.async.mutiny.runtime.tracing.OpenTelemetryMultiInterceptor;
 import io.quarkus.opentelemetry.async.mutiny.runtime.tracing.OpenTelemetryUniInterceptor;
+import io.quarkus.opentelemetry.async.mutiny.runtime.tracing.TracingMulti;
+import io.quarkus.opentelemetry.async.mutiny.runtime.tracing.TracingUni;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -36,7 +39,8 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 public class WithSpanInterceptorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication()
+            .overrideConfigKey("quarkus.opentelemetry.tracer.async.mutiny.event.on-subscribe", "MyCustomText")
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class).addClass(SpanBean.class)
                             .addClass(TestSpanExporter.class)
@@ -55,6 +59,16 @@ public class WithSpanInterceptorTest {
     @AfterEach
     void tearDown() {
         spanExporter.reset();
+    }
+
+    @Test
+    void testAsyncStrategies() {
+        assertThat(AsyncOperationEndStrategies.instance().resolveStrategy(Uni.class)).isNotNull();
+        assertThat(AsyncOperationEndStrategies.instance().resolveStrategy(Multi.class)).isNotNull();
+
+        // TODO: Not sure how much sense this makes to test this if it is registered above.
+        assertThat(Uni.createFrom().item("test")).isInstanceOf(TracingUni.class);
+        assertThat(Multi.createFrom().item("test")).isInstanceOf(TracingMulti.class);
     }
 
     @Test
@@ -142,9 +156,36 @@ public class WithSpanInterceptorTest {
         assertEquals("SpanChildBean.stream1", stream1.getName());
         assertEquals("SpanBean.multiSpanMerge", parent.getName());
 
+        // TODO: Not sure if we can verify that. In theory we do not know what end earlier.
+        //  we only know the order the spans are registered because we register on stream creation. This is actually
+        //  what OpenTelemetry also does for other reactive libraries.
         assertThat(stream2.getEndEpochNanos()).isLessThan(stream1.getEndEpochNanos());
         assertThat(stream2.getParentSpanId()).isEqualTo(parent.getSpanId());
         assertThat(stream1.getParentSpanId()).isEqualTo(parent.getSpanId());
+    }
+
+    @Test
+    void subscriptionEvent() {
+        spanBean.span().subscribe().withSubscriber(UniAssertSubscriber.create()).awaitItem().assertCompleted();
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
+
+        final SpanData span = spanItems.get(0);
+        assertEquals("SpanBean.span", span.getName());
+
+        assertThat(span.getEvents()).hasSize(1);
+        assertThat(span.getEvents().get(0).getName()).isEqualTo("MyCustomText");
+    }
+
+    @Test
+    void cancellationAttribute() {
+        spanBean.slow().subscribe().withSubscriber(UniAssertSubscriber.create()).cancel();
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
+
+        final SpanData span = spanItems.get(0);
+        assertEquals("SpanBean.slow", span.getName());
+
+        assertThat(span.getAttributes().size()).isEqualTo(1);
+        assertThat(span.getAttributes().get(AttributeKey.booleanKey("mutiny.canceled"))).isNotNull().isTrue();
     }
 
     @ApplicationScoped
@@ -152,6 +193,11 @@ public class WithSpanInterceptorTest {
         @WithSpan
         public Uni<String> span() {
             return createDefaultUni();
+        }
+
+        @WithSpan
+        public Uni<String> slow() {
+            return createDefaultUni(10000);
         }
 
         @WithSpan("name")
@@ -191,15 +237,6 @@ public class WithSpanInterceptorTest {
         public Multi<String> multiSpanMerge() {
             return Multi.createBy().merging().streams(spanChildBean.stream1(), spanChildBean.stream2());
         }
-
-        //
-        //@Inject
-        //SpanRestClient spanRestClient;
-        //
-        //@WithSpan
-        //public void spanRestClient() {
-        //    spanRestClient.spanRestClient();
-        //}
     }
 
     @ApplicationScoped
@@ -254,6 +291,7 @@ public class WithSpanInterceptorTest {
         return Multi.createFrom().items("SUPERSONIC", "SUBATOMIC", "JAVA")
                 .onItem().call(() -> Uni.createFrom()
                         .voidItem().onItem().delayIt().by(Duration.ofMillis(delayMs)))
+                // Verify that we have the expected context.
                 .onItem().invoke(() -> assertThat(Span.current().getSpanContext()).isEqualTo(context));
     }
 

@@ -20,7 +20,10 @@ public class MutinyAsyncOperationEndStrategy implements AsyncOperationEndStrateg
 
     @Override
     public boolean supports(final Class<?> asyncType) {
-        return asyncType == Uni.class || asyncType == Multi.class;
+        if (asyncType == null) {
+            return false;
+        }
+        return Uni.class.isAssignableFrom(asyncType) || Multi.class.isAssignableFrom(asyncType);
     }
 
     @Override

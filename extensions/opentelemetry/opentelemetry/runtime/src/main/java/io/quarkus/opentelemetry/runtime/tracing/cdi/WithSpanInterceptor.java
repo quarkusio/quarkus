@@ -1,9 +1,11 @@
 package io.quarkus.opentelemetry.runtime.tracing.cdi;
 
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryConfig.INSTRUMENTATION_NAME;
+import static io.quarkus.opentelemetry.runtime.tracing.InstrumenterTracer.withSpan;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Optional;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
@@ -11,16 +13,16 @@ import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
 import io.opentelemetry.extension.annotations.SpanAttribute;
 import io.opentelemetry.extension.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.annotation.support.MethodSpanAttributesExtractor;
 import io.opentelemetry.instrumentation.api.annotation.support.ParameterAttributeNamesExtractor;
-import io.opentelemetry.instrumentation.api.annotation.support.async.AsyncOperationEndSupport;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.instrumenter.SpanLinksBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.util.SpanNames;
 
@@ -41,43 +43,26 @@ public class WithSpanInterceptor {
                 new WithSpanParameterAttributeNamesExtractor(),
                 MethodRequest::getArgs);
 
+        builder.addSpanLinksExtractor(
+                (spanLinks, parentContext, methodRequest) -> addLinksToActualParentIfLinkEnabled(spanLinks, methodRequest));
+
         this.instrumenter = builder.addAttributesExtractor(attributesExtractor)
                 .newInstrumenter(methodRequest -> spanKindFromMethod(methodRequest.getMethod()));
     }
 
+    @SuppressWarnings("unchecked")
     @AroundInvoke
     public Object span(final InvocationContext invocationContext) throws Exception {
-        MethodRequest methodRequest = new MethodRequest(invocationContext.getMethod(), invocationContext.getParameters());
+        final MethodRequest methodRequest = new MethodRequest(invocationContext.getMethod(),
+                invocationContext.getParameters(), Context.current());
 
-        Context parentContext = Context.current();
-        Context spanContext = null;
-        final Scope scope;
-        boolean shouldStart = instrumenter.shouldStart(parentContext, methodRequest);
-        if (shouldStart) {
-            spanContext = instrumenter.start(parentContext, methodRequest);
-            scope = spanContext.makeCurrent();
-        } else {
-            scope = Scope.noop();
-        }
-
-        try (scope) {
-            Object result = invocationContext.proceed();
-
-            if (shouldStart) {
-                return createAsyncEndSupport(methodRequest).asyncEnd(spanContext, methodRequest, result, null);
-            }
-
-            return result;
-        } catch (final Throwable failure) {
-            // async handling not necessary here. In fact not even possible.
-            instrumenter.end(spanContext, methodRequest, null, failure);
-            throw failure;
-        }
+        return withSpan(instrumenter, getParentContext(methodRequest), methodRequest,
+                (Class<Object>) methodRequest.getMethod().getReturnType(),
+                invocationContext::proceed);
     }
 
-    private AsyncOperationEndSupport<MethodRequest, Object> createAsyncEndSupport(
-            final MethodRequest methodRequest) {
-        return AsyncOperationEndSupport.create(instrumenter, Object.class, methodRequest.getMethod().getReturnType());
+    private Context getParentContext(final MethodRequest methodRequest) {
+        return getWithRootAnnotation(methodRequest).isPresent() ? Context.root() : Context.current();
     }
 
     private static SpanKind spanKindFromMethod(Method method) {
@@ -124,5 +109,18 @@ public class WithSpanInterceptor {
                 return null;
             }
         }
+    }
+
+    private static Optional<WithRoot> getWithRootAnnotation(final MethodRequest methodRequest) {
+        return Optional.ofNullable(methodRequest.getMethod().getAnnotation(WithRoot.class));
+    }
+
+    private static void addLinksToActualParentIfLinkEnabled(final SpanLinksBuilder spanLinks,
+            final MethodRequest methodRequest) {
+        getWithRootAnnotation(methodRequest).ifPresent(annotation -> {
+            if (annotation.link()) {
+                spanLinks.addLink(Span.fromContext(methodRequest.getActualContext()).getSpanContext());
+            }
+        });
     }
 }

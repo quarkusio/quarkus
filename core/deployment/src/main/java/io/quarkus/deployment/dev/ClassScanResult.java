@@ -37,7 +37,7 @@ public class ClassScanResult {
         ret.changedClassNames.addAll(m2.changedClassNames);
         ret.deletedClassNames.addAll(m2.deletedClassNames);
         ret.addedClassNames.addAll(m2.addedClassNames);
-        ret.compilationHappened = m1.compilationHappened | m2.compilationHappened;
+        ret.compilationHappened = m1.compilationHappened || m2.compilationHappened;
         return ret;
     }
 

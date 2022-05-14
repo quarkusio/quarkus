@@ -5,7 +5,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +23,9 @@ import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
 import org.hibernate.tool.schema.spi.ScriptTargetOutput;
 import org.hibernate.tool.schema.spi.TargetDescriptor;
 
-public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrmDevConsoleInfoSupplier.PersistenceUnitsInfo> {
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
-    private static final String DEFAULT = "<default>";
+public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrmDevConsoleInfoSupplier.PersistenceUnitsInfo> {
 
     public static final PersistenceUnitsInfo INSTANCE = new PersistenceUnitsInfo();
 
@@ -99,7 +98,7 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
     public static class PersistenceUnitsInfo {
 
         private final Map<String, PersistenceUnitInfo> persistenceUnits = Collections
-                .synchronizedMap(new TreeMap<>(new PersistenceUnitNameComparator()));
+                .synchronizedMap(new TreeMap<>(new PersistenceUnitUtil.PersistenceUnitNameComparator()));
 
         public Collection<PersistenceUnitInfo> getPersistenceUnits() {
             return persistenceUnits.values();
@@ -228,18 +227,5 @@ public class HibernateOrmDevConsoleInfoSupplier implements Supplier<HibernateOrm
             return type;
         }
 
-    }
-
-    static class PersistenceUnitNameComparator implements Comparator<String> {
-        @Override
-        public int compare(String o1, String o2) {
-            if (DEFAULT.equals(o1)) {
-                return -1;
-            } else if (DEFAULT.equals(o2)) {
-                return +1;
-            } else {
-                return o1.compareTo(o2);
-            }
-        }
     }
 }

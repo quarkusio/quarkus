@@ -2,6 +2,8 @@ package io.quarkus.hibernate.search.orm.elasticsearch.runtime.devconsole;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -19,9 +21,9 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class HibernateSearchDevConsoleRecorder {
 
-    public Supplier<List<HibernateSearchSupplier.DevUiIndexedEntity>> infoSupplier(
-            HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
-        return new HibernateSearchSupplier(runtimeConfig);
+    public Supplier<HibernateSearchSupplier.IndexedPersistenceUnits> infoSupplier(
+            HibernateSearchElasticsearchRuntimeConfig runtimeConfig, Set<String> persistenceUnitNames) {
+        return new HibernateSearchSupplier(runtimeConfig, persistenceUnitNames);
     }
 
     public Handler<RoutingContext> indexEntity() {
@@ -31,19 +33,25 @@ public class HibernateSearchDevConsoleRecorder {
                 if (form.isEmpty()) {
                     return;
                 }
-                SearchMapping mapping = HibernateSearchSupplier.searchMapping();
-                if (mapping == null) {
+                Set<String> persitenceUnitNames = form.entries().stream().map(Map.Entry::getValue)
+                        .collect(Collectors.toSet());
+                Map<String, SearchMapping> mappings = HibernateSearchSupplier.searchMapping(persitenceUnitNames);
+                if (mappings.isEmpty()) {
                     flashMessage(event, "There are no indexed entity types.", FlashScopeUtil.FlashMessageStatus.ERROR);
                     return;
                 }
-                mapping.scope(Object.class,
-                        mapping.allIndexedEntities().stream()
-                                .map(SearchIndexedEntity::jpaName)
-                                .filter(form::contains)
-                                .collect(Collectors.toList()))
-                        .massIndexer()
-                        .startAndWait();
-                flashMessage(event, "Entities successfully reindexed", Duration.ofSeconds(10));
+                for (Map.Entry<String, SearchMapping> entry : mappings.entrySet()) {
+                    SearchMapping mapping = entry.getValue();
+                    List<String> entityNames = mapping.allIndexedEntities().stream()
+                            .map(SearchIndexedEntity::jpaName)
+                            .filter(jpaName -> form.contains(jpaName, entry.getKey(), false))
+                            .collect(Collectors.toList());
+                    if (!entityNames.isEmpty()) {
+                        mapping.scope(Object.class, entityNames).massIndexer()
+                                .startAndWait();
+                        flashMessage(event, "Entities successfully reindexed", Duration.ofSeconds(10));
+                    }
+                }
             }
         };
     }

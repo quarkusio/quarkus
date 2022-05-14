@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+
 public class PersistenceUnitNameComparatorTestCase {
 
     @Test
@@ -16,7 +18,7 @@ public class PersistenceUnitNameComparatorTestCase {
         names.add("alpha");
         names.add("<default>");
         names.add("beta");
-        names.sort(new HibernateOrmDevConsoleInfoSupplier.PersistenceUnitNameComparator());
+        names.sort(new PersistenceUnitUtil.PersistenceUnitNameComparator());
 
         assertThat(names.get(0)).isEqualTo("<default>");
         assertThat(names.get(1)).isEqualTo("alpha");

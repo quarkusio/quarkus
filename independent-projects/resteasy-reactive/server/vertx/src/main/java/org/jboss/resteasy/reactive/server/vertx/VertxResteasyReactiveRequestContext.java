@@ -328,7 +328,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public ServerHttpResponse end() {
         if (!response.ended()) {
-            response.end();
+            response.end((Handler<AsyncResult<Void>>) null);
         }
         return this;
     }
@@ -340,13 +340,13 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse end(byte[] data) {
-        response.end(Buffer.buffer(data));
+        response.end(Buffer.buffer(data), null);
         return this;
     }
 
     @Override
     public ServerHttpResponse end(String data) {
-        response.end(data);
+        response.end(Buffer.buffer(data), null);
         return this;
     }
 

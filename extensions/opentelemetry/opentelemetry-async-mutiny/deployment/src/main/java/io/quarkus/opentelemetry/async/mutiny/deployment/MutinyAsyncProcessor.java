@@ -2,15 +2,16 @@ package io.quarkus.opentelemetry.async.mutiny.deployment;
 
 import java.util.function.BooleanSupplier;
 
-import io.opentelemetry.instrumentation.api.annotation.support.async.AsyncOperationEndStrategies;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.opentelemetry.async.mutiny.runtime.MutinyAsyncConfig;
-import io.quarkus.opentelemetry.async.mutiny.runtime.tracing.MutinyAsyncOperationEndStrategy;
+import io.quarkus.opentelemetry.async.mutiny.runtime.tracing.MutinyAsyncRecorder;
 import io.quarkus.opentelemetry.async.mutiny.runtime.tracing.OpenTelemetryMultiInterceptor;
 import io.quarkus.opentelemetry.async.mutiny.runtime.tracing.OpenTelemetryUniInterceptor;
 
@@ -30,11 +31,10 @@ public class MutinyAsyncProcessor {
     }
 
     @BuildStep(onlyIf = MutinyAsyncEnabled.class)
-    void registerAsyncStrategy(final MutinyAsyncConfig.MutinyAsyncRuntimeConfig runtimeConfig) {
-
-        final MutinyAsyncOperationEndStrategy mutinyAsyncOperationEndStrategy = new MutinyAsyncOperationEndStrategy(
-                runtimeConfig);
-        AsyncOperationEndStrategies.instance().registerStrategy(mutinyAsyncOperationEndStrategy);
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerAsyncStrategy(final MutinyAsyncConfig.MutinyAsyncRuntimeConfig runtimeConfig,
+            final MutinyAsyncRecorder recorder) {
+        recorder.registerAsyncStrategy(runtimeConfig);
     }
 
     @BuildStep(onlyIf = MutinyAsyncEnabled.class)

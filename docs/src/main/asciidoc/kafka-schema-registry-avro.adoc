@@ -651,7 +651,7 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
         registry.start();
         Map<String, String> properties = new HashMap<>();
         properties.put("mp.messaging.connector.smallrye-kafka.apicurio.registry.url",
-                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/apis/registry/v2");
+                "http://" + registry.getHost() + ":" + registry.getMappedPort(8080) + "/apis/registry/v2");
         properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());
         return properties;
     }

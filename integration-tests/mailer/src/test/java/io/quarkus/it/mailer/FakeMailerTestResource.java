@@ -22,8 +22,8 @@ public class FakeMailerTestResource implements QuarkusTestResourceLifecycleManag
         server.start();
         HashMap<String, String> properties = new HashMap<>();
         properties.put("quarkus.mailer.port", Integer.toString(server.getMappedPort(1025)));
-        properties.put("quarkus.mailer.host", server.getContainerIpAddress());
-        properties.put("fake.mailer", server.getContainerIpAddress() + ":" + server.getMappedPort(1080));
+        properties.put("quarkus.mailer.host", server.getHost());
+        properties.put("fake.mailer", server.getHost() + ":" + server.getMappedPort(1080));
         //        properties.put("quarkus.mailer.port", Integer.toString(32787));
         //        properties.put("quarkus.mailer.host", "localhost");
         //        properties.put("fake.mailer", "localhost" + ":" + 32786);

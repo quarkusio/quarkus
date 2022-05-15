@@ -15,7 +15,7 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
     private final StrimziKafkaContainer kafka = new StrimziKafkaContainer()
             .withServerProperties(MountableFile.forClasspathResource("server.properties"))
             .withBootstrapServers(
-                    container -> String.format("SASL_PLAINTEXT://%s:%s", container.getContainerIpAddress(),
+                    container -> String.format("SASL_PLAINTEXT://%s:%s", container.getHost(),
                             container.getMappedPort(KAFKA_PORT)));
 
     @Override

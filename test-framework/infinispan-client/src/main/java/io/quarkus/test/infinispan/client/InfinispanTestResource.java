@@ -47,7 +47,7 @@ public class InfinispanTestResource implements QuarkusTestResourceLifecycleManag
                 HOTROD_PORT, USER, PASSWORD);
         INFINISPAN.start();
 
-        final String hosts = INFINISPAN.getContainerIpAddress() + ":" + INFINISPAN.getMappedPort(HOTROD_PORT);
+        final String hosts = INFINISPAN.getHost() + ":" + INFINISPAN.getMappedPort(HOTROD_PORT);
         return Collections.singletonMap("quarkus.infinispan-client.server-list", hosts);
     }
 

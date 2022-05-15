@@ -36,7 +36,7 @@ public class KafkaKeycloakTestResource implements QuarkusTestResourceLifecycleMa
                 .withNetworkAliases("kafka")
                 .withServerProperties(MountableFile.forClasspathResource("kafkaServer.properties"))
                 .withBootstrapServers(
-                        c -> String.format("JWT://%s:%s", c.getContainerIpAddress(), c.getMappedPort(KAFKA_PORT)));
+                        c -> String.format("JWT://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)));
         this.kafka.start();
         log.info(this.kafka.getLogs());
         properties.put("kafka.bootstrap.servers", this.kafka.getBootstrapServers());

@@ -12,11 +12,11 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
     private static GenericContainer<?> registry;
 
     public static String getConfluentSchemaRegistryUrl() {
-        return "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api/ccompat";
+        return "http://" + registry.getHost() + ":" + registry.getMappedPort(8080) + "/api/ccompat";
     }
 
     public static String getApicurioSchemaRegistryUrl() {
-        return "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api";
+        return "http://" + registry.getHost() + ":" + registry.getMappedPort(8080) + "/api";
     }
 
     @Override
@@ -27,9 +27,9 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
         registry.start();
         Map<String, String> properties = new HashMap<>();
         properties.put("schema.url.confluent",
-                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api/ccompat");
+                "http://" + registry.getHost() + ":" + registry.getMappedPort(8080) + "/api/ccompat");
         properties.put("schema.url.apicurio",
-                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api");
+                "http://" + registry.getHost() + ":" + registry.getMappedPort(8080) + "/api");
         return properties;
     }
 

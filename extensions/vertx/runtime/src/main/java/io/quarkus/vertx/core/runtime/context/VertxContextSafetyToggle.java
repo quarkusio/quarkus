@@ -41,7 +41,14 @@ public final class VertxContextSafetyToggle {
 
     private static final Object ACCESS_TOGGLE_KEY = new Object();
     public static final String UNRESTRICTED_BY_DEFAULT_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.UNRESTRICTED_BY_DEFAULT";
+
+    /**
+     * This gets exposed for people who prefer fully disabling all safeguards, for example because they have tested it all
+     * carefully under load already and are preferring maximum efficiency over the safeguards introduced by this class.
+     */
+    public static final String FULLY_DISABLE_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.I_HAVE_CHECKED_EVERYTHING";
     private static final boolean UNRESTRICTED_BY_DEFAULT = Boolean.getBoolean(UNRESTRICTED_BY_DEFAULT_PROPERTY);
+    private static final boolean FULLY_DISABLED = Boolean.getBoolean(FULLY_DISABLE_PROPERTY);
 
     /**
      * Verifies if the current Vert.x context was flagged as safe
@@ -58,6 +65,8 @@ public final class VertxContextSafetyToggle {
      * @throws IllegalStateException if the context exists and it failed to be validated
      */
     public static void validateContextIfExists(final String errorMessageOnVeto, final String errorMessageOnDoubt) {
+        if (FULLY_DISABLED)
+            return;
         final io.vertx.core.Context context = Vertx.currentContext();
         if (context != null) {
             checkIsSafe(context, errorMessageOnVeto, errorMessageOnDoubt);
@@ -90,6 +99,8 @@ public final class VertxContextSafetyToggle {
      * @throws IllegalStateException if there is no current context, or if it's of the wrong type.
      */
     public static void setCurrentContextSafe(final boolean safe) {
+        if (FULLY_DISABLED)
+            return;
         final io.vertx.core.Context context = Vertx.currentContext();
         setContextSafe(context, safe);
     }
@@ -101,6 +112,8 @@ public final class VertxContextSafetyToggle {
      * @throws IllegalStateException if context is null or not of the expected type.
      */
     public static void setContextSafe(final Context context, final boolean safe) {
+        if (FULLY_DISABLED)
+            return;
         if (context == null) {
             throw new IllegalStateException("Can't set the context safety flag: no Vert.x context found");
         } else if (!VertxContext.isDuplicatedContext(context)) {

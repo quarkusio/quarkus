@@ -546,7 +546,7 @@ Please refer to https://github.com/quarkusio/quarkus/blob/{quarkus-version}/devt
 You will need to apply the `io.quarkus.extension` plugin in the `runtime` module of your extension project.
 The plugin includes the `extensionDescriptor` task that will generate `META-INF/quarkus-extension.properties` and `META-INF/quarkus-extension.yml` files.
 The plugin also enables the `io.quarkus:quarkus-extension-processor` annotation processor in both `deployment` and `runtime` modules.
-The name of the deployment module can be configured in the plugin by setting the `deploymentArtifact` property. The property is set to `deployment` by default:
+The name of the deployment module can be configured in the plugin by setting the `deploymentModule` property. The property is set to `deployment` by default:
 
 [source,groovy,subs=attributes+]
 ----
@@ -556,7 +556,7 @@ plugins {
 }
 
 quarkusExtension {
-    deploymentArtifact = 'deployment'
+    deploymentModule = 'deployment'
 }
 
 dependencies {

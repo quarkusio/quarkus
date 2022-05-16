@@ -1,20 +1,46 @@
 package org.jboss.resteasy.reactive.server.core;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import javax.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.server.spi.ContentType;
 
 /**
  * Wrapper around MediaType that saves the toString value, to avoid
  * the expensive header delegate processing.
+ * It also harmonizes the use of charset
  */
 public class EncodedMediaType implements ContentType {
     final MediaType mediaType;
+    final String charset;
     String encoded;
-    String charset;
 
     public EncodedMediaType(MediaType mediaType) {
-        this.mediaType = mediaType;
-        this.charset = mediaType.getParameters().get("charset");
+        MediaType effectiveMediaType = mediaType;
+        String effectiveCharset;
+        String originalCharset = mediaType.getParameters().get("charset");
+        if (isStringMediaType(mediaType)) {
+            effectiveCharset = originalCharset;
+            if (effectiveCharset == null) {
+                effectiveCharset = StandardCharsets.UTF_8.name();
+            }
+        } else {
+            // it doesn't make sense to add charset to non string types
+            effectiveCharset = null;
+        }
+        this.charset = effectiveCharset;
+        if (!Objects.equals(originalCharset, effectiveCharset)) {
+            effectiveMediaType = mediaType.withCharset(effectiveCharset);
+        }
+        this.mediaType = effectiveMediaType;
+    }
+
+    // TODO: does this need to be more complex?
+    private boolean isStringMediaType(MediaType mediaType) {
+        String type = mediaType.getType();
+        String subtype = mediaType.getSubtype();
+        return (type.equals("application") && (subtype.contains("json") || subtype.contains("xml") || subtype.contains("yaml")))
+                || type.equals("text");
     }
 
     @Override
@@ -37,9 +63,6 @@ public class EncodedMediaType implements ContentType {
 
     @Override
     public String getCharset() {
-        if (charset == null) {
-            return charset = mediaType.getParameters().get("charset");
-        }
         return charset;
     }
 }

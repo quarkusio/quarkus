@@ -91,7 +91,8 @@ public class DynamicEntityWriter implements EntityWriter {
                     serverSerializersMediaType = selectedMediaType;
                     context.setResponseContentType(selectedMediaType);
                     // this will be used as the fallback if Response does NOT contain a type
-                    context.serverResponse().addResponseHeader(HttpHeaders.CONTENT_TYPE, selectedMediaType.toString());
+                    context.serverResponse().addResponseHeader(HttpHeaders.CONTENT_TYPE,
+                            context.getResponseContentType().toString());
                 }
             }
         } else {

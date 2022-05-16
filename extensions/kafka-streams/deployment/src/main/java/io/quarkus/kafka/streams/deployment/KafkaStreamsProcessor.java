@@ -75,6 +75,9 @@ class KafkaStreamsProcessor {
                 org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
                 org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class));
+        // State store dependency. Add class representing process file which is loaded by Jackson from local JSON file
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
+                "org.apache.kafka.streams.processor.internals.StateDirectory$StateDirectoryProcessFile"));
     }
 
     private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,

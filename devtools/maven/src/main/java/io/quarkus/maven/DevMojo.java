@@ -94,6 +94,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
+import io.quarkus.maven.components.CompilerOptions;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
@@ -304,6 +305,12 @@ public class DevMojo extends AbstractMojo {
      */
     @Parameter
     private List<String> compilerArgs;
+
+    /**
+     * Additional compiler arguments
+     */
+    @Parameter
+    private List<CompilerOptions> compilerOptions;
 
     /**
      * The --release argument to javac.
@@ -957,11 +964,17 @@ public class DevMojo extends AbstractMojo {
 
         builder.sourceEncoding(getSourceEncoding());
 
+        if (compilerOptions != null) {
+            for (CompilerOptions compilerOption : compilerOptions) {
+                builder.compilerOptions(compilerOption.getName(), compilerOption.getArgs());
+            }
+        }
+
         // Set compilation flags.  Try the explicitly given configuration first.  Otherwise,
         // refer to the configuration of the Maven Compiler Plugin.
         final Optional<Xpp3Dom> compilerPluginConfiguration = findCompilerPluginConfiguration();
         if (compilerArgs != null) {
-            builder.compilerOptions(compilerArgs);
+            builder.compilerOptions("java", compilerArgs);
         } else if (compilerPluginConfiguration.isPresent()) {
             final Xpp3Dom compilerPluginArgsConfiguration = compilerPluginConfiguration.get().getChild("compilerArgs");
             if (compilerPluginArgsConfiguration != null) {
@@ -974,9 +987,10 @@ public class DevMojo extends AbstractMojo {
                         && !compilerPluginArgsConfiguration.getValue().isEmpty()) {
                     compilerPluginArgs.add(compilerPluginArgsConfiguration.getValue().trim());
                 }
-                builder.compilerOptions(compilerPluginArgs);
+                builder.compilerOptions("java", compilerPluginArgs);
             }
         }
+
         if (release != null) {
             builder.releaseJavaVersion(release);
         } else if (compilerPluginConfiguration.isPresent()) {

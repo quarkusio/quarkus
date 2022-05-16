@@ -272,6 +272,10 @@ public final class MethodDescriptors {
             ComponentsProvider.class, "unableToLoadRemovedBeanType",
             void.class, String.class, Throwable.class);
 
+    public static final MethodDescriptor BEANS_TO_STRING = MethodDescriptor.ofMethod(io.quarkus.arc.impl.Beans.class,
+            "toString", String.class,
+            InjectableBean.class);
+
     private MethodDescriptors() {
     }
 

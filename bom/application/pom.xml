@@ -78,16 +78,15 @@
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
-        <graal-sdk.version>22.1.0</graal-sdk.version>
-        <!-- Use previous graal version till https://github.com/oracle/graal/issues/4518 gets resolved -->
-        <graal-svm.version>22.0.0.2</graal-svm.version>
+        <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
+        <graal-sdk.version>22.0.0.2</graal-sdk.version>
         <gizmo.version>1.0.10.Final</gizmo.version>
         <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <hibernate-orm.version>5.6.8.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
+        <hibernate-orm.version>5.6.9.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.9</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>1.1.4.Final</hibernate-reactive.version>
         <hibernate-validator.version>6.2.3.Final</hibernate-validator.version>
@@ -4053,7 +4052,7 @@
             <dependency>
                 <groupId>org.graalvm.nativeimage</groupId>
                 <artifactId>svm</artifactId>
-                <version>${graal-svm.version}</version>
+                <version>${graal-sdk.version}</version>
                 <!-- TODO: declaring a provided or test scope in BoM is not necessarily a good practice. We should think of removing it -->
                 <scope>provided</scope>
                 <!-- We only want the included annotations -->

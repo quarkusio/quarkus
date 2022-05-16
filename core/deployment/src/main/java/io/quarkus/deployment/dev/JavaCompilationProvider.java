@@ -41,6 +41,11 @@ public class JavaCompilationProvider implements CompilationProvider {
     DiagnosticCollector<JavaFileObject> fileManagerDiagnostics;
 
     @Override
+    public String getProviderKey() {
+        return "java";
+    }
+
+    @Override
     public Set<String> handledExtensions() {
         return Collections.singleton(".java");
     }
@@ -64,7 +69,7 @@ public class JavaCompilationProvider implements CompilationProvider {
             fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClasspath());
             fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(context.getOutputDirectory()));
 
-            CompilerFlags compilerFlags = new CompilerFlags(COMPILER_OPTIONS, context.getCompilerOptions(),
+            CompilerFlags compilerFlags = new CompilerFlags(COMPILER_OPTIONS, context.getCompilerOptions(getProviderKey()),
                     context.getReleaseJavaVersion(), context.getSourceJavaVersion(), context.getTargetJvmVersion());
 
             Iterable<? extends JavaFileObject> sources = fileManager.getJavaFileObjectsFromFiles(filesToCompile);

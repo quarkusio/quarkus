@@ -13,6 +13,12 @@ import scala.tools.nsc.Global;
 import scala.tools.nsc.Settings;
 
 public class ScalaCompilationProvider implements CompilationProvider {
+
+    @Override
+    public String getProviderKey() {
+        return "scala";
+    }
+
     @Override
     public Set<String> handledExtensions() {
         return Collections.singleton(".scala");

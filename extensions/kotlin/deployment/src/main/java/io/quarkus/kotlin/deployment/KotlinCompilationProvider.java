@@ -3,6 +3,7 @@ package io.quarkus.kotlin.deployment;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -30,6 +31,11 @@ public class KotlinCompilationProvider implements CompilationProvider {
     // see: https://github.com/JetBrains/kotlin/blob/v1.3.72/libraries/tools/kotlin-maven-plugin/src/main/java/org/jetbrains/kotlin/maven/KotlinCompileMojoBase.java#L181
     private final static Pattern OPTION_PATTERN = Pattern.compile("([^:]+):([^=]+)=(.*)");
     private static final String KOTLIN_PACKAGE = "org.jetbrains.kotlin";
+
+    @Override
+    public String getProviderKey() {
+        return "kotlin";
+    }
 
     @Override
     public Set<String> handledExtensions() {
@@ -73,6 +79,12 @@ public class KotlinCompilationProvider implements CompilationProvider {
         compilerArguments.setSuppressWarnings(true);
         SimpleKotlinCompilerMessageCollector messageCollector = new SimpleKotlinCompilerMessageCollector();
         K2JVMCompiler compiler = new K2JVMCompiler();
+
+        Collection<String> compilerOptions = context.getCompilerOptions(getProviderKey());
+
+        if (compilerOptions != null && !compilerOptions.isEmpty()) {
+            compiler.parseArguments(compilerOptions.toArray(new String[0]), compilerArguments);
+        }
 
         ExitCode exitCode = compiler.exec(
                 messageCollector,

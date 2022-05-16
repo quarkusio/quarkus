@@ -49,7 +49,7 @@
 
         <!-- Versions -->
         <assertj.version>3.22.0</assertj.version>
-        <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
+        <jackson-bom.version>2.13.3</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <junit.version>5.8.2</junit.version>
         <commons-compress.version>1.21</commons-compress.version>

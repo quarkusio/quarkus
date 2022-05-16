@@ -244,7 +244,7 @@ public final class Expressions {
 
     }
 
-    interface SplitConfig {
+    public interface SplitConfig {
 
         boolean isSeparator(char candidate);
 

@@ -4,8 +4,11 @@ import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -14,6 +17,7 @@ import javax.inject.Singleton;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
@@ -31,12 +35,15 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -46,7 +53,9 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.jackson.JacksonMixin;
 import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.runtime.MixinsRecorder;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
@@ -72,6 +81,7 @@ public class JacksonProcessor {
     private static final String JDK8_MODULE = "com.fasterxml.jackson.datatype.jdk8.Jdk8Module";
 
     private static final String PARAMETER_NAMES_MODULE = "com.fasterxml.jackson.module.paramnames.ParameterNamesModule";
+    private static final DotName JACKSON_MIXIN = DotName.createSimple(JacksonMixin.class.getName());
 
     // this list can probably be enriched with more modules
     private static final List<String> MODULES_NAMES_TO_AUTO_REGISTER = Arrays.asList(TIME_MODULE, JDK8_MODULE,
@@ -321,5 +331,50 @@ public class JacksonProcessor {
                 priority.returnValue(priority.load(ObjectMapperCustomizer.QUARKUS_CUSTOMIZER_PRIORITY));
             }
         }
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    public void supportMixins(MixinsRecorder recorder,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> jacksonMixins = index.getAnnotations(JACKSON_MIXIN);
+        if (jacksonMixins.isEmpty()) {
+            return;
+        }
+
+        Map<Class<?>, Class<?>> mixinsMap = new HashMap<>();
+        for (AnnotationInstance instance : jacksonMixins) {
+            if (instance.target().kind() != CLASS) {
+                continue;
+            }
+            ClassInfo mixinClassInfo = instance.target().asClass();
+            String mixinClassName = mixinClassInfo.name().toString();
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, mixinClassName));
+            try {
+                Type[] targetTypes = instance.value().asClassArray();
+                if ((targetTypes == null) || targetTypes.length == 0) {
+                    continue;
+                }
+                Class<?> mixinClass = Thread.currentThread().getContextClassLoader().loadClass(mixinClassName);
+                for (Type targetType : targetTypes) {
+                    String targetClassName = targetType.name().toString();
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, targetClassName));
+                    mixinsMap.put(Thread.currentThread().getContextClassLoader().loadClass(targetClassName),
+                            mixinClass);
+                }
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Unable to determine Jackson mixin usage at build", e);
+            }
+        }
+        if (mixinsMap.isEmpty()) {
+            return;
+        }
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(ObjectMapperCustomizer.class)
+                .scope(Singleton.class)
+                .supplier(recorder.customizerSupplier(mixinsMap))
+                .done());
     }
 }

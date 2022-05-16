@@ -252,6 +252,12 @@ public class CustomObjectMapper {
 }
 ----
 
+===== Mixin support
+
+Quarkus automates the registration of Jackson's Mixin support, via the `io.quarkus.jackson.JacksonMixin` annotation.
+This annotation can be placed on classes that are meant to be used as Jackson mixins while the classes they are meant to customize
+are defined as the value of the annotation.
+
 ==== JSON-B
 
 As stated above, Quarkus provides the option of using JSON-B instead of Jackson via the use of the `quarkus-resteasy-jsonb` extension.

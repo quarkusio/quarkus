@@ -561,9 +561,18 @@ public class IfSectionHelper implements SectionHelper {
     }
 
     private static boolean isGroupingNeeded(List<Object> params) {
-        // No operators or all of the same precedence
-        return params.stream().filter(p -> (p instanceof Operator)).map(p -> ((Operator) p).getPrecedence()).distinct()
-                .count() > 1;
+        Integer lastPrecedence = null;
+        for (Object param : params) {
+            if (param instanceof Operator) {
+                Operator op = (Operator) param;
+                if (lastPrecedence == null) {
+                    lastPrecedence = op.getPrecedence();
+                } else if (!lastPrecedence.equals(op.getPrecedence())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static <B extends ErrorInitializer & WithOrigin> void replaceOperatorsAndCompositeParams(List<Object> params,

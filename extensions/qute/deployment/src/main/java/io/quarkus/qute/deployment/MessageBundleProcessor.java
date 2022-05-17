@@ -86,6 +86,7 @@ import io.quarkus.qute.Resolver;
 import io.quarkus.qute.deployment.QuteProcessor.LookupConfig;
 import io.quarkus.qute.deployment.QuteProcessor.Match;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
+import io.quarkus.qute.deployment.Types.AssignableInfo;
 import io.quarkus.qute.generator.Descriptors;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.i18n.Localized;
@@ -423,6 +424,7 @@ public class MessageBundleProcessor {
                 .filter(Predicate.not(TemplateExtensionMethodBuildItem::hasNamespace)).collect(Collectors.toUnmodifiableList());
 
         LookupConfig lookupConfig = new QuteProcessor.FixedLookupConfig(index, QuteProcessor.initDefaultMembersFilter(), false);
+        Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
 
         // bundle name -> (key -> method)
         Map<String, Map<String, MethodInfo>> bundleMethodsMap = new HashMap<>();
@@ -527,10 +529,10 @@ public class MessageBundleProcessor {
                                             results, excludes, incorrectExpressions, expression, index,
                                             implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
                                             checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,
-                                            regularExtensionMethods, namespaceExtensionMethods);
+                                            regularExtensionMethods, namespaceExtensionMethods, assignableCache);
                                     Match match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !Types.isAssignableFrom(match.type(),
-                                            methodParams.get(idx), index)) {
+                                            methodParams.get(idx), index, assignableCache)) {
                                         incorrectExpressions
                                                 .produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
                                                         "Message bundle method " + method.declaringClass().name() + "#" +

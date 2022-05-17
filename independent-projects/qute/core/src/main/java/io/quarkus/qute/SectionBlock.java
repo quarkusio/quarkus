@@ -181,8 +181,8 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
     }
 
     static SectionBlock.Builder builder(String id, Function<String, Expression> expressionFunc,
-            Function<String, TemplateException.Builder> errorFun) {
-        return new Builder(id, expressionFunc, errorFun).setLabel(id);
+            ErrorInitializer errorInitializer) {
+        return new Builder(id, expressionFunc, errorInitializer).setLabel(id);
     }
 
     static class Builder implements BlockInfo {
@@ -194,14 +194,14 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
         private final List<TemplateNode> nodes;
         private Map<String, Expression> expressions;
         private final Function<String, Expression> expressionFun;
-        private final Function<String, TemplateException.Builder> errorFun;
+        private final ErrorInitializer errorInitializer;
 
         public Builder(String id, Function<String, Expression> expressionFun,
-                Function<String, TemplateException.Builder> errorFun) {
+                ErrorInitializer errorInitializer) {
             this.id = id;
             this.nodes = new ArrayList<>();
             this.expressionFun = expressionFun;
-            this.errorFun = errorFun;
+            this.errorInitializer = errorInitializer;
         }
 
         SectionBlock.Builder setOrigin(Origin origin) {
@@ -252,7 +252,7 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
 
         @Override
         public TemplateException.Builder error(String message) {
-            return errorFun.apply(message);
+            return errorInitializer.error(message);
         }
 
         SectionBlock build() {

@@ -52,10 +52,9 @@ public class QuarkusPluginExtension {
     public QuarkusPluginExtension(Project project) {
         this.project = project;
 
-        finalName = project.getObjects().property( String.class );
-        finalName.convention( project.provider(
-                () -> String.format("%s-%s", project.getName(), project.getVersion() )
-        ) );
+        finalName = project.getObjects().property(String.class);
+        finalName.convention(project.provider(
+                () -> String.format("%s-%s", project.getName(), project.getVersion())));
 
         final SourceSet mainSourceSet = getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
@@ -63,7 +62,8 @@ public class QuarkusPluginExtension {
         outputDirectory.convention(mainSourceSet.getJava().getDestinationDirectory());
 
         sourceDirectory = project.getObjects().directoryProperty();
-        sourceDirectory.convention(mainSourceSet.getJava().getSourceDirectories().getElements().map(QuarkusPluginExtension::lastDirectory));
+        sourceDirectory.convention(
+                mainSourceSet.getJava().getSourceDirectories().getElements().map(QuarkusPluginExtension::lastDirectory));
 
         workingDirectory = project.getObjects().directoryProperty();
         workingDirectory.convention(outputDirectory);
@@ -198,7 +198,7 @@ public class QuarkusPluginExtension {
      * @see #getFinalName()
      */
     public String finalName() {
-		return finalName.get();
+        return finalName.get();
     }
 
     /**
@@ -206,7 +206,7 @@ public class QuarkusPluginExtension {
      */
     @Deprecated
     public void setFinalName(String value) {
-        finalName.set( value );
+        finalName.set(value);
     }
 
     public void sourceSets(Action<? super SourceSetExtension> action) {
@@ -263,14 +263,14 @@ public class QuarkusPluginExtension {
      * Needed for the Scala plugin.
      */
     public static Provider<Directory> lastDirectoryProvider(FileCollection fileCollection) {
-        return fileCollection.getElements().map( QuarkusPluginExtension::lastDirectory );
+        return fileCollection.getElements().map(QuarkusPluginExtension::lastDirectory);
     }
 
     public static Directory lastDirectory(Set<FileSystemLocation> locations) {
         Directory result = null;
 
-        for ( FileSystemLocation fileSystemLocation : locations ) {
-            if ( fileSystemLocation instanceof Directory ) {
+        for (FileSystemLocation fileSystemLocation : locations) {
+            if (fileSystemLocation instanceof Directory) {
                 result = (Directory) fileSystemLocation;
             }
         }

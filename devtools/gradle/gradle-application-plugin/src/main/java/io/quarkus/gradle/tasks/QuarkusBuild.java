@@ -51,17 +51,17 @@ public class QuarkusBuild extends QuarkusTask {
 
         ignoredEntries = getProject().getObjects().listProperty(String.class);
 
-        runnerJar = getProject().getLayout().getBuildDirectory().file( runnerJarName() );
-        nativeRunner = getProject().getLayout().getBuildDirectory().file( nativeRunnerName() );
-        fastJar = getProject().getLayout().getBuildDirectory().file( "quarkus-app" );
+        runnerJar = getProject().getLayout().getBuildDirectory().file(runnerJarName());
+        nativeRunner = getProject().getLayout().getBuildDirectory().file(nativeRunnerName());
+        fastJar = getProject().getLayout().getBuildDirectory().file("quarkus-app");
     }
 
     private Provider<String> runnerJarName() {
-        return extension().getFinalName().map( (finalName) -> finalName + "-runner.jar" );
+        return extension().getFinalName().map((finalName) -> finalName + "-runner.jar");
     }
 
     private Provider<String> nativeRunnerName() {
-        return extension().getFinalName().map( (finalName) -> finalName + "-runner" );
+        return extension().getFinalName().map((finalName) -> finalName + "-runner");
     }
 
     public QuarkusBuild nativeArgs(Action<Map<String, ?>> action) {

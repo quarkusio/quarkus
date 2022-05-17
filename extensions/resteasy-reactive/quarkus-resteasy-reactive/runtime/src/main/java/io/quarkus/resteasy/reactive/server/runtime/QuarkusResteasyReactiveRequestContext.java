@@ -69,4 +69,52 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     private <E extends Throwable> RuntimeException sneakyThrow(Throwable e) throws E {
         throw (E) e;
     }
+
+    /**
+     * The implementation looks like it makes no sense, but it in fact does make sense from a performance perspective.
+     * The idea is to reduce the use instances of megamorphic calls into a series of instance checks and monomorphic calls.
+     * The rationale behind this is fully explored in
+     * https://shipilev.net/blog/2015/black-magic-method-dispatch/#_cheating_the_runtime_2
+     * and this specific instance has been verified experimentally to result in better performance.
+     */
+    @Override
+    protected void invokeHandler(int pos) throws Exception {
+        var handler = handlers[pos];
+        if (handler instanceof org.jboss.resteasy.reactive.server.handlers.MatrixParamHandler) {
+            handler.handle(this);
+        } else if (handler instanceof io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.RestInitialHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.AbortChainHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.NonBlockingHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.BlockingHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.InputHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ParameterHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.InstanceHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.InvocationHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.FixedProducesHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ResponseHandler) {
+            handler.handle(this);
+        } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler) {
+            handler.handle(this);
+        } else {
+            // megamorphic call for other handlers
+            handler.handle(this);
+        }
+    }
 }

@@ -888,7 +888,7 @@ webAuthn.registerOnly({ name: userName, displayName: firstName + " " + lastName 
   });
 ----
 
-=== Only invoke the registration challenge and authenticator
+=== Only invoke the login challenge and authenticator
 
 The `webAuthn.loginOnly` method invokes the login challenge endpoint, then calls the authenticator and returns 
 a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise object] containing a
@@ -897,7 +897,7 @@ in hidden form `input` elements, for example, and send it as part of a regular H
 
 [source,javascript]
 ----
-webAuthn.login({ name: userName })
+webAuthn.loginOnly({ name: userName })
   .then(body => {
     // store the login JSON in form elements
     document.getElementById('webAuthnId').value = body.id;

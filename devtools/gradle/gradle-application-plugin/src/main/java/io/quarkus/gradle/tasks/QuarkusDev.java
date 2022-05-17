@@ -15,8 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
 import javax.inject.Inject;
 
+import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -67,7 +69,6 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
-import org.apache.tools.ant.types.Commandline;
 
 public class QuarkusDev extends QuarkusTask {
 

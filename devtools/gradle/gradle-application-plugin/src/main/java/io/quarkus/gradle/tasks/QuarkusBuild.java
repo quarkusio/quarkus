@@ -138,7 +138,7 @@ public class QuarkusBuild extends QuarkusTask {
 
     /**
      * Same as {@link #getRunnerJarFile()}, except this method resolves the value.
-     * <p/>
+     * <p>
      * Prefer {@link #getRunnerJarFile()} for delayed configuration
      */
     @Internal
@@ -153,7 +153,7 @@ public class QuarkusBuild extends QuarkusTask {
 
     /**
      * Same as {@link #getNativeRunnerFile()}, except this method resolves the value.
-     * <p/>
+     * <p>
      * Prefer {@link #getNativeRunnerFile()} for delayed configuration
      */
     @Internal
@@ -168,7 +168,7 @@ public class QuarkusBuild extends QuarkusTask {
 
     /**
      * Same as {@link #getFastJarFile()}, except this method resolves the value.
-     * <p/>
+     * <p>
      * Prefer {@link #getFastJarFile()} for delayed configuration
      */
     @Internal

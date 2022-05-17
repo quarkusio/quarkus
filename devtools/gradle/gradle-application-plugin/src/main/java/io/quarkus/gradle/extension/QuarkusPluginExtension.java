@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
-import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.file.RegularFile;
@@ -37,15 +36,7 @@ public class QuarkusPluginExtension {
 
     private final Project project;
 
-    private final DirectoryProperty outputDirectory;
-
     private final Property<String> finalName;
-
-    private final DirectoryProperty sourceDirectory;
-
-    private final DirectoryProperty workingDirectory;
-
-    private final DirectoryProperty outputConfigDirectory;
 
     private final SourceSetExtension sourceSetExtension;
 
@@ -57,19 +48,6 @@ public class QuarkusPluginExtension {
                 () -> String.format("%s-%s", project.getName(), project.getVersion())));
 
         final SourceSet mainSourceSet = getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-
-        outputDirectory = project.getObjects().directoryProperty();
-        outputDirectory.convention(mainSourceSet.getJava().getDestinationDirectory());
-
-        sourceDirectory = project.getObjects().directoryProperty();
-        sourceDirectory.convention(
-                mainSourceSet.getJava().getSourceDirectories().getElements().map(QuarkusPluginExtension::lastDirectory));
-
-        workingDirectory = project.getObjects().directoryProperty();
-        workingDirectory.convention(outputDirectory);
-
-        outputConfigDirectory = project.getObjects().directoryProperty();
-        outputConfigDirectory.convention(mainSourceSet.getResources().getDestinationDirectory());
 
         this.sourceSetExtension = new SourceSetExtension();
     }
@@ -139,52 +117,85 @@ public class QuarkusPluginExtension {
         return classesDir;
     }
 
-    public DirectoryProperty getOutputDirectory() {
-        return outputDirectory;
-    }
-
-    public File outputDirectory() {
-        return getOutputDirectory().get().getAsFile();
-    }
-
-    public void setOutputDirectory(String outputDirectory) {
-        this.outputDirectory.set(new File(outputDirectory));
-    }
-
-    public DirectoryProperty getOutputConfigDirectory() {
-        return outputConfigDirectory;
-    }
-
-    public File outputConfigDirectory() {
-        return getOutputConfigDirectory().get().getAsFile();
-    }
-
-    public void setOutputConfigDirectory(String outputConfigDirectory) {
-        this.outputConfigDirectory.set(new File(outputConfigDirectory));
-    }
-
-    public DirectoryProperty getSourceDirectory() {
-        return sourceDirectory;
-    }
-
+    /**
+     * @deprecated Unsupported
+     */
+    @Deprecated
     public File sourceDir() {
-        return getSourceDirectory().get().getAsFile();
+        project.getLogger().warn("Unsupported property `{}#sourceDir`", getClass().getName());
+        return getLastFile(getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getAllJava());
     }
 
+    /**
+     * @deprecated Unsupported
+     */
+    @Deprecated
     public void setSourceDir(String sourceDir) {
-        this.sourceDirectory.set(new File(sourceDir));
+        project.getLogger().warn("Unsupported property `{}#sourceDir`", getClass().getName());
     }
 
-    public DirectoryProperty getWorkingDirectory() {
-        return workingDirectory;
+    /**
+     * @deprecated Unsupported
+     */
+    @Deprecated
+    public File outputDirectory() {
+        project.getLogger().warn("Unsupported property `{}#outputDirectory`", getClass().getName());
+
+        return getSourceSets()
+                .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                .getAllJava()
+                .getDestinationDirectory()
+                .get()
+                .getAsFile();
     }
 
+    /**
+     * @deprecated Unsupported
+     */
+    @Deprecated
+    public void setOutputDirectory(String outputDirectory) {
+        project.getLogger().warn("Unsupported property `{}#outputDirectory`", getClass().getName());
+    }
+
+    /**
+     * @deprecated Unsupported
+     */
+    @Deprecated
+    public File outputConfigDirectory() {
+        project.getLogger().warn("Unsupported property `{}#outputConfigDirectory`", getClass().getName());
+
+        return getSourceSets()
+                .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                .getResources()
+                .getDestinationDirectory()
+                .get()
+                .getAsFile();
+    }
+
+    /**
+     * @deprecated Unsupported
+     */
+    @Deprecated
+    public void setOutputConfigDirectory(String outputConfigDirectory) {
+        project.getLogger().warn("Unsupported property `{}#outputConfigDirectory`", getClass().getName());
+    }
+
+    /**
+     * @deprecated Unsupported
+     */
+    @Deprecated
     public File workingDir() {
-        return getWorkingDirectory().get().getAsFile();
+        project.getLogger().warn("Unsupported property `{}#workingDir`", getClass().getName());
+        return outputDirectory();
     }
 
+    /**
+     * @deprecated Unsupported
+     */
+    @Deprecated
     public void setWorkingDir(String workingDir) {
-        this.workingDirectory.set(new File(workingDir));
+        project.getLogger().warn("Unsupported property `{}#workingDir`", getClass().getName());
+        setOutputDirectory(workingDir);
     }
 
     /**

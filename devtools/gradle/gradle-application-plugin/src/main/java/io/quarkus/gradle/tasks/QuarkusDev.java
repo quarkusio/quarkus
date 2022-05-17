@@ -27,7 +27,6 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.file.Directory;
-import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -36,7 +35,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
@@ -64,6 +62,7 @@ import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.gradle.dsl.CompilerOption;
 import io.quarkus.gradle.dsl.CompilerOptions;
+import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -79,10 +78,6 @@ public class QuarkusDev extends QuarkusTask {
     private final Set<File> filesIncludedInClasspath = new HashSet<>();
 
     protected final Configuration quarkusDevConfiguration;
-
-    private final DirectoryProperty sourceDirectory;
-
-    private final DirectoryProperty workingDirectory;
 
     private final ListProperty<String> jvmArgs;
 
@@ -109,12 +104,6 @@ public class QuarkusDev extends QuarkusTask {
         final SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
         mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-        sourceDirectory = getProject().getObjects().directoryProperty();
-        sourceDirectory.convention(extension().getSourceDirectory());
-
-        workingDirectory = getProject().getObjects().directoryProperty();
-        workingDirectory.convention(extension().getWorkingDirectory());
-
         preventNoVerify = getProject().getObjects().property(Boolean.class);
         preventNoVerify.convention(false);
 
@@ -126,11 +115,18 @@ public class QuarkusDev extends QuarkusTask {
         jvmArgs = getProject().getObjects().listProperty(String.class);
     }
 
+    /**
+     * The dependency Configuration associated with this task. Used
+     * for up-to-date checks
+     */
     @CompileClasspath
     public Configuration getQuarkusDevConfiguration() {
         return this.quarkusDevConfiguration;
     }
 
+    /**
+     * The JVM sources (Java, Kotlin, ..) for the project
+     */
     @Optional
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
@@ -138,46 +134,53 @@ public class QuarkusDev extends QuarkusTask {
         return mainSourceSet.getAllJava();
     }
 
+    /**
+     * The JVM classes directory (compilation output)
+     */
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
     public Provider<Directory> getClassesDirectory() {
         return mainSourceSet.getJava().getClassesDirectory();
     }
 
-    @Optional
-    @InputDirectory
-    @PathSensitive(PathSensitivity.RELATIVE)
-    public DirectoryProperty getSourceDirectory() {
-        return sourceDirectory;
-    }
-
+    /**
+     * @deprecated See {@link #getSources()}
+     */
+    @Deprecated
     @Internal
     public File getSourceDir() {
-        return getSourceDirectory().get().getAsFile();
+        getProject().getLogger().warn("Deprecated property has no effect - {}#sourceDir", getName());
+        return QuarkusPluginExtension.getLastFile(getSources());
     }
 
+    /**
+     * @deprecated See {@link #getSources()}
+     */
+    @Deprecated
     @Option(description = "Set source directory", option = "source-dir")
     public void setSourceDir(String sourceDir) {
-        sourceDirectory.set(new File(sourceDir));
+        getProject().getLogger().warn("Deprecated property has no effect - {}#sourceDir", getName());
     }
 
-    @InputDirectory
-    @PathSensitive(PathSensitivity.RELATIVE)
-    public DirectoryProperty getWorkingDirectory() {
-        return workingDirectory;
-    }
-
+    /**
+     * @deprecated See {@link #getClassesDirectory()}
+     */
+    @Deprecated
     @Internal
     public String getWorkingDir() {
-        return getWorkingDirectory().get().getAsFile().toString();
+        getProject().getLogger().warn("Deprecated property has no effect - {}#workingDir", getName());
+        return getClassesDirectory().get().getAsFile().toString();
     }
 
+    /**
+     * @deprecated See {@link #getClassesDirectory()}
+     */
+    @Deprecated
     @Option(description = "Set working directory", option = "working-dir")
     public void setWorkingDir(String workingDir) {
-        getWorkingDirectory().set(new File(workingDir));
+        getProject().getLogger().warn("Deprecated property has no effect - {}#workingDir", getName());
     }
 
-    @Optional
     @Input
     public ListProperty<String> getJvmArguments() {
         return jvmArgs;
@@ -193,7 +196,6 @@ public class QuarkusDev extends QuarkusTask {
         this.jvmArgs.set(jvmArgs);
     }
 
-    @Optional
     @Input
     public ListProperty<String> getArguments() {
         return args;
@@ -230,7 +232,6 @@ public class QuarkusDev extends QuarkusTask {
         this.preventNoVerify.set(preventNoVerify);
     }
 
-    @Optional
     @Input
     public ListProperty<String> getCompilerArguments() {
         return compilerArgs;

@@ -1,7 +1,5 @@
 package io.quarkus.qute;
 
-import static java.util.function.Predicate.not;
-
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
@@ -18,6 +16,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -27,13 +26,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 /**
  * Simple non-reusable parser.
  */
-class Parser implements Function<String, Expression>, ParserHelper, ParserDelegate, WithOrigin {
+class Parser implements Function<String, Expression>, ParserHelper, ParserDelegate, WithOrigin, ErrorInitializer {
 
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
     static final String ROOT_HELPER_NAME = "$root";
@@ -119,7 +117,7 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
 
     Template parse() {
 
-        sectionStack.addFirst(SectionNode.builder(ROOT_HELPER_NAME, origin(0), this, this::error)
+        sectionStack.addFirst(SectionNode.builder(ROOT_HELPER_NAME, origin(0), this, this)
                 .setEngine(engine)
                 .setHelperFactory(ROOT_SECTION_HELPER_FACTORY));
 
@@ -450,7 +448,7 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
                         && !engine.getSectionHelperFactories().containsKey(sectionName))) {
 
             // => New section block
-            SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this::error)
+            SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this)
                     .setOrigin(origin(0)).setLabel(sectionName);
             lastSection.addBlock(block);
 
@@ -470,7 +468,7 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
                         .build();
             }
             SectionNode.Builder sectionNode = SectionNode
-                    .builder(sectionName, origin(0), this, this::error)
+                    .builder(sectionName, origin(0), this, this)
                     .setEngine(engine)
                     .setHelperFactory(factory);
 
@@ -595,7 +593,7 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
                                 .build();
             }
             SectionNode.Builder sectionNode = SectionNode
-                    .builder("let", origin(0), this, this::error)
+                    .builder("let", origin(0), this, this)
                     .setEngine(engine)
                     .setHelperFactory(factory);
 
@@ -698,16 +696,20 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
         }
 
         // Use the default values if needed
-        factoryParams.stream()
-                .filter(Parameter::hasDefaultValue)
-                .forEach(p -> params.putIfAbsent(p.name, p.defaultValue));
+        for (Parameter param : factoryParams) {
+            if (param.hasDefaultValue()) {
+                params.putIfAbsent(param.name, param.defaultValue);
+            }
+        }
 
         // Find undeclared mandatory params
-        List<String> undeclaredParams = factoryParams.stream()
-                .filter(not(Parameter::isOptional))
-                .map(Parameter::getName)
-                .filter(not(params::containsKey))
-                .collect(Collectors.toList());
+        List<String> undeclaredParams = new ArrayList<>(factoryParams.size());
+        for (Parameter param : factoryParams) {
+            if (param.isOptional() || params.containsKey(param.name)) {
+                continue;
+            }
+            undeclaredParams.add(param.name);
+        }
         if (!undeclaredParams.isEmpty()) {
             throw error(ParserError.MANDATORY_SECTION_PARAMS_MISSING,
                     "mandatory section parameters not declared for {tag}: {undeclaredParams}")
@@ -716,7 +718,9 @@ class Parser implements Function<String, Expression>, ParserHelper, ParserDelega
                             .build();
         }
 
-        params.forEach(block::addParameter);
+        for (Entry<String, String> e : params.entrySet()) {
+            block.addParameter(e.getKey(), e.getValue());
+        }
     }
 
     private Parameter findFactoryParameter(String paramValue, List<Parameter> factoryParams, Predicate<String> included,

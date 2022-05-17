@@ -19,7 +19,7 @@ class SectionNode implements TemplateNode {
     private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
 
     static Builder builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
-            Function<String, TemplateException.Builder> errorFun) {
+            ErrorInitializer errorFun) {
         return new Builder(helperName, origin, expressionFun, errorFun);
     }
 
@@ -108,17 +108,17 @@ class SectionNode implements TemplateNode {
         private SectionBlock.Builder currentBlock;
         SectionHelperFactory<?> factory;
         private EngineImpl engine;
-        private final Function<String, TemplateException.Builder> errorFun;
+        private final ErrorInitializer errorInitializer;
 
         Builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
-                Function<String, TemplateException.Builder> errorFun) {
+                ErrorInitializer errorInitializer) {
             this.helperName = helperName;
             this.origin = origin;
             this.blocks = new ArrayList<>();
-            this.errorFun = errorFun;
+            this.errorInitializer = errorInitializer;
             // The main block is always present
             addBlock(SectionBlock
-                    .builder(SectionHelperFactory.MAIN_BLOCK_NAME, expressionFun, errorFun)
+                    .builder(SectionHelperFactory.MAIN_BLOCK_NAME, expressionFun, errorInitializer)
                     .setOrigin(origin));
         }
 
@@ -155,7 +155,7 @@ class SectionNode implements TemplateNode {
             }
             List<SectionBlock> blocks = builder.build();
             return new SectionNode(helperName, blocks,
-                    factory.initialize(new SectionInitContextImpl(engine, blocks, errorFun)), origin);
+                    factory.initialize(new SectionInitContextImpl(engine, blocks, errorInitializer)), origin);
         }
 
     }

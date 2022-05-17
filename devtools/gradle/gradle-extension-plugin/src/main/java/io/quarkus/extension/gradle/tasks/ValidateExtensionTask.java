@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
@@ -20,26 +22,22 @@ import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 
 public class ValidateExtensionTask extends DefaultTask {
 
-    private QuarkusExtensionConfiguration extensionConfiguration;
     private Configuration runtimeModuleClasspath;
     private Configuration deploymentModuleClasspath;
 
-    public ValidateExtensionTask() {
+    @Inject
+    public ValidateExtensionTask(QuarkusExtensionConfiguration quarkusExtensionConfiguration,
+            Configuration runtimeModuleClasspath) {
         setDescription("Validate extension dependencies");
         setGroup("quarkus");
-    }
 
-    public void setQuarkusExtensionConfiguration(QuarkusExtensionConfiguration extensionConfiguration) {
-        this.extensionConfiguration = extensionConfiguration;
+        this.runtimeModuleClasspath = runtimeModuleClasspath;
+        this.onlyIf(t -> !quarkusExtensionConfiguration.isValidationDisabled().get());
     }
 
     @Internal
     public Configuration getRuntimeModuleClasspath() {
         return this.runtimeModuleClasspath;
-    }
-
-    public void setRuntimeModuleClasspath(Configuration runtimeModuleClasspath) {
-        this.runtimeModuleClasspath = runtimeModuleClasspath;
     }
 
     @Internal

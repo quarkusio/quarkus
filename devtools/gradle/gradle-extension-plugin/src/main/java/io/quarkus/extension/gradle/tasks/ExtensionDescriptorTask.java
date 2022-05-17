@@ -13,12 +13,15 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.tasks.Classpath;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 
 import com.fasterxml.jackson.core.util.DefaultIndenter;
@@ -44,34 +47,26 @@ import io.quarkus.maven.dependency.GACT;
  */
 public class ExtensionDescriptorTask extends DefaultTask {
 
-    private QuarkusExtensionConfiguration quarkusExtensionConfiguration;
-    private Configuration classpath;
-    private File outputResourcesDir;
-    private String inputResourcesDir;
+    private final QuarkusExtensionConfiguration quarkusExtensionConfiguration;
+    private final Configuration classpath;
+    private final File outputResourcesDir;
+    private final String inputResourcesDir;
 
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
     private static final String METADATA = "metadata";
 
-    public ExtensionDescriptorTask() {
+    @Inject
+    public ExtensionDescriptorTask(QuarkusExtensionConfiguration quarkusExtensionConfiguration, SourceSet mainSourceSet,
+            Configuration runtimeClasspath) {
+
         setDescription("Generate extension descriptor file");
         setGroup("quarkus");
-    }
 
-    public void setOutputResourcesDir(File outputResourcesDir) {
-        this.outputResourcesDir = outputResourcesDir;
-    }
-
-    public void setInputResourcesDir(String inputResourcesDir) {
-        this.inputResourcesDir = inputResourcesDir;
-    }
-
-    public void setQuarkusExtensionConfiguration(QuarkusExtensionConfiguration quarkusExtensionConfiguration) {
         this.quarkusExtensionConfiguration = quarkusExtensionConfiguration;
-    }
-
-    public void setClasspath(Configuration classpath) {
-        this.classpath = classpath;
+        this.outputResourcesDir = mainSourceSet.getOutput().getResourcesDir();
+        this.inputResourcesDir = mainSourceSet.getResources().getSourceDirectories().getAsPath();
+        this.classpath = runtimeClasspath;
     }
 
     @Classpath

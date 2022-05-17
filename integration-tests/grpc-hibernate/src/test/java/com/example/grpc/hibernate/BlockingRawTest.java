@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import com.example.test.Test;
 import com.example.test.TestOuterClass;
 import com.example.test.TestRaw;
 
@@ -35,7 +35,7 @@ public class BlockingRawTest {
         }).await().atMost(Duration.ofSeconds(20));
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     @Timeout(TIMEOUT)
     void shouldAdd() {
         List<String> expected = new ArrayList<>();
@@ -62,7 +62,7 @@ public class BlockingRawTest {
         assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     @Timeout(TIMEOUT)
     void shouldAddViaBidi() {
         List<String> expected = new ArrayList<>();

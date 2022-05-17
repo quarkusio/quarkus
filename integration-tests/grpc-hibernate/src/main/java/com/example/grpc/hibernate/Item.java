@@ -11,4 +11,12 @@ public class Item {
     public Long id;
 
     public String text;
+
+    @Override
+    public String toString() {
+        return "Item{" +
+                "id=" + id +
+                ", text='" + text + '\'' +
+                '}';
+    }
 }

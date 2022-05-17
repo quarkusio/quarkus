@@ -1,9 +1,13 @@
 package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import javax.enterprise.context.ContextNotActiveException;
+import javax.enterprise.context.control.ActivateRequestContext;
 import javax.inject.Inject;
+import javax.persistence.TransactionRequiredException;
 import javax.transaction.Transactional;
 
 import org.hibernate.Session;
@@ -14,6 +18,7 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.DefaultEntity;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.Plane;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
+import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MultiplePersistenceUnitsCdiSessionTest {
@@ -39,7 +44,7 @@ public class MultiplePersistenceUnitsCdiSessionTest {
 
     @Test
     @Transactional
-    public void testDefault() {
+    public void defaultEntityManagerInTransaction() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
         defaultSession.persist(defaultEntity);
 
@@ -48,8 +53,31 @@ public class MultiplePersistenceUnitsCdiSessionTest {
     }
 
     @Test
+    @ActivateRequestContext
+    public void defaultEntityManagerInRequestNoTransaction() {
+        // Reads are allowed
+        assertThatCode(() -> defaultSession.createQuery("select count(*) from DefaultEntity"))
+                .doesNotThrowAnyException();
+        // Writes are not
+        DefaultEntity defaultEntity = new DefaultEntity("default");
+        assertThatThrownBy(() -> defaultSession.persist(defaultEntity))
+                .isInstanceOf(TransactionRequiredException.class)
+                .hasMessageContaining(
+                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+    }
+
+    @Test
+    public void defaultEntityManagerNoRequestNoTransaction() {
+        DefaultEntity defaultEntity = new DefaultEntity("default");
+        assertThatThrownBy(() -> defaultSession.persist(defaultEntity))
+                .isInstanceOf(ContextNotActiveException.class)
+                .hasMessageContainingAll("RequestScoped context was not active",
+                        RequestScopedSessionHolder.class.getName());
+    }
+
+    @Test
     @Transactional
-    public void testUser() {
+    public void usersEntityManagerInTransaction() {
         User user = new User("gsmet");
         usersSession.persist(user);
 
@@ -58,13 +86,59 @@ public class MultiplePersistenceUnitsCdiSessionTest {
     }
 
     @Test
+    @ActivateRequestContext
+    public void usersEntityManagerInRequestNoTransaction() {
+        // Reads are allowed
+        assertThatCode(() -> usersSession.createQuery("select count(*) from User"))
+                .doesNotThrowAnyException();
+        // Writes are not
+        User user = new User("gsmet");
+        assertThatThrownBy(() -> usersSession.persist(user))
+                .isInstanceOf(TransactionRequiredException.class)
+                .hasMessageContaining(
+                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+    }
+
+    @Test
+    public void usersEntityManagerNoRequestNoTransaction() {
+        User user = new User("gsmet");
+        assertThatThrownBy(() -> usersSession.persist(user))
+                .isInstanceOf(ContextNotActiveException.class)
+                .hasMessageContainingAll("RequestScoped context was not active",
+                        RequestScopedSessionHolder.class.getName());
+    }
+
+    @Test
     @Transactional
-    public void testPlane() {
+    public void inventoryEntityManagerInTransaction() {
         Plane plane = new Plane("Airbus A380");
         inventorySession.persist(plane);
 
         Plane savedPlane = inventorySession.get(Plane.class, plane.getId());
         assertEquals(plane.getName(), savedPlane.getName());
+    }
+
+    @Test
+    @ActivateRequestContext
+    public void inventoryEntityManagerInRequestNoTransaction() {
+        // Reads are allowed
+        assertThatCode(() -> inventorySession.createQuery("select count(*) from Plane"))
+                .doesNotThrowAnyException();
+        // Writes are not
+        Plane plane = new Plane("Airbus A380");
+        assertThatThrownBy(() -> inventorySession.persist(plane))
+                .isInstanceOf(TransactionRequiredException.class)
+                .hasMessageContaining(
+                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+    }
+
+    @Test
+    public void inventoryEntityManagerNoRequestNoTransaction() {
+        Plane plane = new Plane("Airbus A380");
+        assertThatThrownBy(() -> inventorySession.persist(plane))
+                .isInstanceOf(ContextNotActiveException.class)
+                .hasMessageContainingAll("RequestScoped context was not active",
+                        RequestScopedSessionHolder.class.getName());
     }
 
     @Test

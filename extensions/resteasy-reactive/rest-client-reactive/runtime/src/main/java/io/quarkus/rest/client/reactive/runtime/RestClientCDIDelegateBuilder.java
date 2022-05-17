@@ -107,6 +107,12 @@ public class RestClientCDIDelegateBuilder<T> {
 
         builder.property(QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES,
                 configRoot.disableContextualErrorMessages);
+
+        Optional<String> userAgent = oneOf(clientConfigByClassName().userAgent,
+                clientConfigByConfigKey().userAgent, configRoot.userAgent);
+        if (userAgent.isPresent()) {
+            builder.property(QuarkusRestClientProperties.USER_AGENT, userAgent.get());
+        }
     }
 
     private void configureProxy(RestClientBuilderImpl builder) {

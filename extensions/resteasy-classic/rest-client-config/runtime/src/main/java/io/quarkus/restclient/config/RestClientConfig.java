@@ -44,6 +44,7 @@ public class RestClientConfig {
         EMPTY.headers = Collections.emptyMap();
         EMPTY.shared = Optional.empty();
         EMPTY.name = Optional.empty();
+        EMPTY.userAgent = Optional.empty();
     }
 
     /**
@@ -220,6 +221,14 @@ public class RestClientConfig {
     @ConfigItem
     public Optional<String> name;
 
+    /**
+     * Configure the HTTP user-agent header to use.
+     *
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    public Optional<String> userAgent;
+
     public static RestClientConfig load(String configKey) {
         final RestClientConfig instance = new RestClientConfig();
 
@@ -248,6 +257,7 @@ public class RestClientConfig {
         instance.headers = getConfigValues(configKey, "headers", String.class, String.class);
         instance.shared = getConfigValue(configKey, "shared", Boolean.class);
         instance.name = getConfigValue(configKey, "name", String.class);
+        instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
 
         return instance;
     }
@@ -280,6 +290,7 @@ public class RestClientConfig {
         instance.headers = getConfigValues(interfaceClass, "headers", String.class, String.class);
         instance.shared = getConfigValue(interfaceClass, "shared", Boolean.class);
         instance.name = getConfigValue(interfaceClass, "name", String.class);
+        instance.userAgent = getConfigValue(interfaceClass, "user-agent", String.class);
 
         return instance;
     }

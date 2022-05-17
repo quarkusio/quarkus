@@ -25,6 +25,7 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -313,6 +314,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                 .orElse(false);
 
         clientBuilder.trustAll(trustAll);
+
+        String userAgent = (String) getConfiguration().getProperty(QuarkusRestClientProperties.USER_AGENT);
+        if (userAgent != null) {
+            clientBuilder.setUserAgent(userAgent);
+        } else if (restClientsConfig.userAgent.isPresent()) {
+            clientBuilder.setUserAgent(restClientsConfig.userAgent.get());
+        }
 
         if (proxyHost != null) {
             configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts);

@@ -2,13 +2,18 @@ package io.quarkus.gradle.tasks;
 
 import java.util.function.Consumer;
 
+import javax.inject.Inject;
+
+import org.gradle.api.artifacts.Configuration;
+
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedTestModeMain;
 
 public class QuarkusTest extends QuarkusDev {
 
-    public QuarkusTest() {
-        super("Continuous testing mode: enables continuous testing without starting dev mode");
+    @Inject
+    public QuarkusTest(Configuration quarkusDevDependencies) {
+        super("Continuous testing mode: enables continuous testing without starting dev mode", quarkusDevDependencies);
     }
 
     protected void modifyDevModeContext(GradleDevModeLauncher.Builder builder) {

@@ -28,8 +28,8 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileTree;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
@@ -78,7 +78,7 @@ public class QuarkusDev extends QuarkusTask {
 
     private final Set<File> filesIncludedInClasspath = new HashSet<>();
 
-    protected Configuration quarkusDevConfiguration;
+    protected final Configuration quarkusDevConfiguration;
 
     private final DirectoryProperty sourceDirectory;
 
@@ -97,12 +97,14 @@ public class QuarkusDev extends QuarkusTask {
     private final Property<Boolean> shouldPropagateJavaCompilerArgs;
 
     @Inject
-    public QuarkusDev() {
-        this("Development mode: enables hot deployment with background compilation");
+    public QuarkusDev(Configuration quarkusDevConfiguration) {
+        this("Development mode: enables hot deployment with background compilation", quarkusDevConfiguration);
     }
 
-    public QuarkusDev(String name) {
+    public QuarkusDev(String name, Configuration quarkusDevConfiguration) {
         super(name);
+
+        this.quarkusDevConfiguration = quarkusDevConfiguration;
 
         final SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
         mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
@@ -116,12 +118,12 @@ public class QuarkusDev extends QuarkusTask {
         preventNoVerify = getProject().getObjects().property(Boolean.class);
         preventNoVerify.convention(false);
 
+        shouldPropagateJavaCompilerArgs = getProject().getObjects().property(Boolean.class);
+        shouldPropagateJavaCompilerArgs.convention(true);
+
         args = getProject().getObjects().listProperty(String.class);
         compilerArgs = getProject().getObjects().listProperty(String.class);
         jvmArgs = getProject().getObjects().listProperty(String.class);
-
-        shouldPropagateJavaCompilerArgs = getProject().getObjects().property(Boolean.class);
-        shouldPropagateJavaCompilerArgs.convention(true);
     }
 
     @CompileClasspath
@@ -129,20 +131,11 @@ public class QuarkusDev extends QuarkusTask {
         return this.quarkusDevConfiguration;
     }
 
-    public void setQuarkusDevConfiguration(Configuration quarkusDevConfiguration) {
-        this.quarkusDevConfiguration = quarkusDevConfiguration;
-    }
-
-    @InputDirectory
     @Optional
+    @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
-    public Provider<Directory> getBuildDirectory() {
-        return getProject().getLayout().getBuildDirectory();
-    }
-
-    @Internal
-    public File getBuildDir() {
-        return getBuildDirectory().get().getAsFile();
+    public FileTree getSources() {
+        return mainSourceSet.getAllJava();
     }
 
     @InputFiles
@@ -265,11 +258,11 @@ public class QuarkusDev extends QuarkusTask {
 
     @TaskAction
     public void startDev() {
-        if (!getSourceDir().isDirectory()) {
+        if (getSources().isEmpty() || getSources().getFiles().isEmpty()) {
             throw new GradleException("The `src/main/java` directory is required, please create it.");
         }
 
-        if (!extension().outputDirectory().isDirectory()) {
+        if (!getClassesDirectory().get().getAsFile().isDirectory()) {
             throw new GradleException("The project has no output yet, " +
                     "this should not happen as build should have been executed first. " +
                     "Does the project have any source files?");
@@ -280,7 +273,7 @@ public class QuarkusDev extends QuarkusTask {
             String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
             if (outputFile == null) {
                 getProject().exec(action -> {
-                    action.commandLine(runner.args()).workingDir(getWorkingDir());
+                    action.commandLine(runner.args()).workingDir(getClassesDirectory());
                     action.setStandardInput(System.in)
                             .setErrorOutput(System.out)
                             .setStandardOutput(System.out);
@@ -315,8 +308,8 @@ public class QuarkusDev extends QuarkusTask {
         GradleDevModeLauncher.Builder builder = GradleDevModeLauncher.builder(getLogger(), java)
                 .preventnoverify(isPreventnoverify())
                 .projectDir(project.getProjectDir())
-                .buildDir(getBuildDir())
-                .outputDir(getBuildDir())
+                .buildDir(project.getBuildDir())
+                .outputDir(project.getBuildDir())
                 .debug(System.getProperty("debug"))
                 .debugHost(System.getProperty("debugHost"))
                 .debugPort(System.getProperty("debugPort"))
@@ -378,11 +371,9 @@ public class QuarkusDev extends QuarkusTask {
             }
         }
 
-        JavaPluginConvention javaPluginConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
-        if (javaPluginConvention != null) {
-            builder.sourceJavaVersion(javaPluginConvention.getSourceCompatibility().toString());
-            builder.targetJavaVersion(javaPluginConvention.getTargetCompatibility().toString());
-        }
+        JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+        builder.sourceJavaVersion(javaPluginExtension.getSourceCompatibility().toString());
+        builder.targetJavaVersion(javaPluginExtension.getTargetCompatibility().toString());
 
         for (CompilerOption compilerOptions : compilerOptions.getCompilerOptions()) {
             builder.compilerOptions(compilerOptions.getName(), compilerOptions.getArgs());

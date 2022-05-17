@@ -4,99 +4,113 @@ import java.util.List;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 
 import io.quarkus.extension.gradle.dsl.Capabilities;
 import io.quarkus.extension.gradle.dsl.Capability;
 
 public class QuarkusExtensionConfiguration {
 
-    private boolean disableValidation;
-    private String deploymentArtifact;
-    private String deploymentModule;
-    private List<String> excludedArtifacts;
-    private List<String> parentFirstArtifacts;
-    private List<String> runnerParentFirstArtifacts;
-    private List<String> lesserPriorityArtifacts;
-    private List<String> conditionalDependencies;
-    private List<String> dependencyCondition;
+    private Property<Boolean> disableValidation;
+    private Property<String> deploymentArtifact;
+    private Property<String> deploymentModule;
+    private ListProperty<String> excludedArtifacts;
+    private ListProperty<String> parentFirstArtifacts;
+    private ListProperty<String> runnerParentFirstArtifacts;
+    private ListProperty<String> lesserPriorityArtifacts;
+    private ListProperty<String> conditionalDependencies;
+    private ListProperty<String> dependencyCondition;
     private Capabilities capabilities = new Capabilities();
 
     private Project project;
 
     public QuarkusExtensionConfiguration(Project project) {
         this.project = project;
+        disableValidation = project.getObjects().property(Boolean.class);
+        disableValidation.convention(false);
+        deploymentArtifact = project.getObjects().property(String.class);
+        deploymentModule = project.getObjects().property(String.class);
+        deploymentModule.convention("deployment");
+
+        excludedArtifacts = project.getObjects().listProperty(String.class);
+        parentFirstArtifacts = project.getObjects().listProperty(String.class);
+        runnerParentFirstArtifacts = project.getObjects().listProperty(String.class);
+        lesserPriorityArtifacts = project.getObjects().listProperty(String.class);
+        conditionalDependencies = project.getObjects().listProperty(String.class);
+        dependencyCondition = project.getObjects().listProperty(String.class);
     }
 
     public void setDisableValidation(boolean disableValidation) {
-        this.disableValidation = disableValidation;
+        this.disableValidation.set(disableValidation);
     }
 
-    public boolean isValidationDisabled() {
+    public Property<Boolean> isValidationDisabled() {
         return disableValidation;
     }
 
-    public String getDeploymentArtifact() {
+    public Property<String> getDeploymentArtifact() {
         return deploymentArtifact;
     }
 
     public void setDeploymentArtifact(String deploymentArtifact) {
-        this.deploymentArtifact = deploymentArtifact;
+        this.deploymentArtifact.set(deploymentArtifact);
     }
 
-    public String getDeploymentModule() {
+    public Property<String> getDeploymentModule() {
         return deploymentModule;
     }
 
     public void setDeploymentModule(String deploymentModule) {
-        this.deploymentModule = deploymentModule;
+        this.deploymentModule.set(deploymentModule);
     }
 
-    public List<String> getExcludedArtifacts() {
+    public ListProperty<String> getExcludedArtifacts() {
         return excludedArtifacts;
     }
 
     public void setExcludedArtifacts(List<String> excludedArtifacts) {
-        this.excludedArtifacts = excludedArtifacts;
+        this.excludedArtifacts.addAll(excludedArtifacts);
     }
 
-    public List<String> getParentFirstArtifacts() {
+    public ListProperty<String> getParentFirstArtifacts() {
         return parentFirstArtifacts;
     }
 
     public void setParentFirstArtifacts(List<String> parentFirstArtifacts) {
-        this.parentFirstArtifacts = parentFirstArtifacts;
+        this.parentFirstArtifacts.addAll(parentFirstArtifacts);
     }
 
-    public List<String> getRunnerParentFirstArtifacts() {
+    public ListProperty<String> getRunnerParentFirstArtifacts() {
         return runnerParentFirstArtifacts;
     }
 
     public void setRunnerParentFirstArtifacts(List<String> runnerParentFirstArtifacts) {
-        this.runnerParentFirstArtifacts = runnerParentFirstArtifacts;
+        this.runnerParentFirstArtifacts.addAll(runnerParentFirstArtifacts);
     }
 
-    public List<String> getLesserPriorityArtifacts() {
+    public ListProperty<String> getLesserPriorityArtifacts() {
         return lesserPriorityArtifacts;
     }
 
     public void setLesserPriorityArtifacts(List<String> lesserPriorityArtifacts) {
-        this.lesserPriorityArtifacts = lesserPriorityArtifacts;
+        this.lesserPriorityArtifacts.addAll(lesserPriorityArtifacts);
     }
 
-    public List<String> getConditionalDependencies() {
+    public ListProperty<String> getConditionalDependencies() {
         return conditionalDependencies;
     }
 
     public void setConditionalDependencies(List<String> conditionalDependencies) {
-        this.conditionalDependencies = conditionalDependencies;
+        this.conditionalDependencies.addAll(conditionalDependencies);
     }
 
-    public List<String> getDependencyConditions() {
+    public ListProperty<String> getDependencyConditions() {
         return dependencyCondition;
     }
 
     public void setDependencyConditions(List<String> dependencyCondition) {
-        this.dependencyCondition = dependencyCondition;
+        this.dependencyCondition.addAll(dependencyCondition);
     }
 
     public List<Capability> getProvidedCapabilities() {

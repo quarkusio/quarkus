@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.ServiceLoader;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -94,8 +95,16 @@ public final class LauncherUtil {
                     "Interrupted while waiting to determine the status of process '" + quarkusProcess.pid() + "'.");
         }
         if (!quarkusProcess.isAlive()) {
-            throw new RuntimeException("Unable to successfully launch process '" + quarkusProcess.pid() + "'. Exit code is: '"
-                    + quarkusProcess.exitValue() + "'.");
+            int exit = quarkusProcess.exitValue();
+            String message = "Unable to successfully launch process '" + quarkusProcess.pid() + "'. Exit code is: '"
+                    + exit + "'.";
+            String osName = System.getProperty("os.name", "generic").toLowerCase(Locale.ROOT);
+            boolean isMac = osName.contains("mac") || osName.contains("darwin");
+            if (isMac && exit == 126) {
+                message += System.lineSeparator()
+                        + "This may be caused by building the native binary in a Linux container while the host is macOS.";
+            }
+            throw new RuntimeException(message);
         }
     }
 

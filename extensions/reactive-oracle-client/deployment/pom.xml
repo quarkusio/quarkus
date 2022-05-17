@@ -154,7 +154,7 @@
                                             <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
                                             <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
                                             <time>60000</time>
-                                            <!-- leversge the healthcheck in the image we use -->
+                                            <!-- leverage the healthcheck in the image we use -->
                                             <healthy>yes</healthy>
                                         </wait>
                                     </run>

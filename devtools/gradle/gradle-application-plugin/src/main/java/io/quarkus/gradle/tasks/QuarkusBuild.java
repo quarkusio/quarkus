@@ -2,7 +2,6 @@ package io.quarkus.gradle.tasks;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -12,7 +11,10 @@ import java.util.Properties;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
@@ -38,11 +40,28 @@ public class QuarkusBuild extends QuarkusTask {
     private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
     private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
 
-    private List<String> ignoredEntries = new ArrayList<>();
-    private Manifest manifest = new Manifest();
+    private final Manifest manifest = new Manifest();
+    private final ListProperty<String> ignoredEntries;
+    private final Provider<RegularFile> runnerJar;
+    private final Provider<RegularFile> nativeRunner;
+    private final Provider<RegularFile> fastJar;
 
     public QuarkusBuild() {
         super("Quarkus builds a runner jar based on the build jar");
+
+        ignoredEntries = getProject().getObjects().listProperty(String.class);
+
+        runnerJar = getProject().getLayout().getBuildDirectory().file( runnerJarName() );
+        nativeRunner = getProject().getLayout().getBuildDirectory().file( nativeRunnerName() );
+        fastJar = getProject().getLayout().getBuildDirectory().file( "quarkus-app" );
+    }
+
+    private Provider<String> runnerJarName() {
+        return extension().getFinalName().map( (finalName) -> finalName + "-runner.jar" );
+    }
+
+    private Provider<String> nativeRunnerName() {
+        return extension().getFinalName().map( (finalName) -> finalName + "-runner" );
     }
 
     public QuarkusBuild nativeArgs(Action<Map<String, ?>> action) {
@@ -54,16 +73,21 @@ public class QuarkusBuild extends QuarkusTask {
         return this;
     }
 
-    @Optional
     @Input
-    public List<String> getIgnoredEntries() {
+    @Optional
+    @Option(description = "When using the uber-jar option, this option can be used to "
+            + "specify one or more entries that should be excluded from the final jar", option = "ignored-entry")
+    public ListProperty<String> getIgnoredEntriesList() {
         return ignoredEntries;
     }
 
-    @Option(description = "When using the uber-jar option, this option can be used to "
-            + "specify one or more entries that should be excluded from the final jar", option = "ignored-entry")
-    public void setIgnoredEntries(List<String> ignoredEntries) {
-        this.ignoredEntries.addAll(ignoredEntries);
+    @Internal
+    public List<String> getIgnoredEntries() {
+        return ignoredEntries.get();
+    }
+
+    public void setIgnoredEntries(List<String> values) {
+        ignoredEntries.addAll(values);
     }
 
     @Classpath
@@ -108,18 +132,48 @@ public class QuarkusBuild extends QuarkusTask {
     }
 
     @OutputFile
+    public Provider<RegularFile> getRunnerJarFile() {
+        return runnerJar;
+    }
+
+    /**
+     * Same as {@link #getRunnerJarFile()}, except this method resolves the value.
+     * <p/>
+     * Prefer {@link #getRunnerJarFile()} for delayed configuration
+     */
+    @Internal
     public File getRunnerJar() {
-        return new File(getProject().getBuildDir(), extension().finalName() + "-runner.jar");
+        return getRunnerJarFile().get().getAsFile();
     }
 
     @OutputFile
+    public Provider<RegularFile> getNativeRunnerFile() {
+        return nativeRunner;
+    }
+
+    /**
+     * Same as {@link #getNativeRunnerFile()}, except this method resolves the value.
+     * <p/>
+     * Prefer {@link #getNativeRunnerFile()} for delayed configuration
+     */
+    @Internal
     public File getNativeRunner() {
-        return new File(getProject().getBuildDir(), extension().finalName() + "-runner");
+        return getNativeRunnerFile().get().getAsFile();
     }
 
     @OutputDirectory
+    public Provider<RegularFile> getFastJarFile() {
+        return fastJar;
+    }
+
+    /**
+     * Same as {@link #getFastJarFile()}, except this method resolves the value.
+     * <p/>
+     * Prefer {@link #getFastJarFile()} for delayed configuration
+     */
+    @Internal
     public File getFastJar() {
-        return new File(getProject().getBuildDir(), "quarkus-app");
+        return getFastJarFile().get().getAsFile();
     }
 
     @TaskAction
@@ -133,8 +187,8 @@ public class QuarkusBuild extends QuarkusTask {
         }
 
         final Properties effectiveProperties = getBuildSystemProperties(appModel.getAppArtifact());
-        if (ignoredEntries != null && ignoredEntries.size() > 0) {
-            String joinedEntries = String.join(",", ignoredEntries);
+        if (!ignoredEntries.get().isEmpty()) {
+            String joinedEntries = String.join(",", ignoredEntries.get());
             effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
         }
 

@@ -12,10 +12,13 @@ import java.util.stream.Collectors;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -34,20 +37,40 @@ public class QuarkusPluginExtension {
 
     private final Project project;
 
-    private File outputDirectory;
+    private final DirectoryProperty outputDirectory;
 
-    private String finalName;
+    private final Property<String> finalName;
 
-    private File sourceDir;
+    private final DirectoryProperty sourceDirectory;
 
-    private File workingDir;
+    private final DirectoryProperty workingDirectory;
 
-    private File outputConfigDirectory;
+    private final DirectoryProperty outputConfigDirectory;
 
     private final SourceSetExtension sourceSetExtension;
 
     public QuarkusPluginExtension(Project project) {
         this.project = project;
+
+        finalName = project.getObjects().property( String.class );
+        finalName.convention( project.provider(
+                () -> String.format("%s-%s", project.getName(), project.getVersion() )
+        ) );
+
+        final SourceSet mainSourceSet = getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+        outputDirectory = project.getObjects().directoryProperty();
+        outputDirectory.convention(mainSourceSet.getJava().getDestinationDirectory());
+
+        sourceDirectory = project.getObjects().directoryProperty();
+        sourceDirectory.convention(mainSourceSet.getJava().getSourceDirectories().getElements().map(QuarkusPluginExtension::lastDirectory));
+
+        workingDirectory = project.getObjects().directoryProperty();
+        workingDirectory.convention(outputDirectory);
+
+        outputConfigDirectory = project.getObjects().directoryProperty();
+        outputConfigDirectory.convention(mainSourceSet.getResources().getDestinationDirectory());
+
         this.sourceSetExtension = new SourceSetExtension();
     }
 
@@ -116,62 +139,74 @@ public class QuarkusPluginExtension {
         return classesDir;
     }
 
-    public File outputDirectory() {
-        if (outputDirectory == null) {
-            outputDirectory = getLastFile(getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput()
-                    .getClassesDirs());
-        }
+    public DirectoryProperty getOutputDirectory() {
         return outputDirectory;
     }
 
-    public void setOutputDirectory(String outputDirectory) {
-        this.outputDirectory = new File(outputDirectory);
+    public File outputDirectory() {
+        return getOutputDirectory().get().getAsFile();
     }
 
-    public File outputConfigDirectory() {
-        if (outputConfigDirectory == null) {
-            outputConfigDirectory = getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput()
-                    .getResourcesDir();
-        }
+    public void setOutputDirectory(String outputDirectory) {
+        this.outputDirectory.set(new File(outputDirectory));
+    }
+
+    public DirectoryProperty getOutputConfigDirectory() {
         return outputConfigDirectory;
     }
 
+    public File outputConfigDirectory() {
+        return getOutputConfigDirectory().get().getAsFile();
+    }
+
     public void setOutputConfigDirectory(String outputConfigDirectory) {
-        this.outputConfigDirectory = new File(outputConfigDirectory);
+        this.outputConfigDirectory.set(new File(outputConfigDirectory));
+    }
+
+    public DirectoryProperty getSourceDirectory() {
+        return sourceDirectory;
     }
 
     public File sourceDir() {
-        if (sourceDir == null) {
-            sourceDir = getLastFile(getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getAllJava()
-                    .getSourceDirectories());
-        }
-        return sourceDir;
+        return getSourceDirectory().get().getAsFile();
     }
 
     public void setSourceDir(String sourceDir) {
-        this.sourceDir = new File(sourceDir);
+        this.sourceDirectory.set(new File(sourceDir));
+    }
+
+    public DirectoryProperty getWorkingDirectory() {
+        return workingDirectory;
     }
 
     public File workingDir() {
-        if (workingDir == null) {
-            workingDir = outputDirectory();
-        }
-        return workingDir;
+        return getWorkingDirectory().get().getAsFile();
     }
 
     public void setWorkingDir(String workingDir) {
-        this.workingDir = new File(workingDir);
+        this.workingDirectory.set(new File(workingDir));
     }
 
-    public String finalName() {
-        if (finalName == null || finalName.length() == 0) {
-            this.finalName = String.format("%s-%s", project.getName(), project.getVersion());
-        }
+    /**
+     * The name of the application - `${project.name}-${project.version}` by default
+     */
+    public Property<String> getFinalName() {
         return finalName;
     }
 
-    public void setFinalName(String finalName) {
-        this.finalName = finalName;
+    /**
+     * @see #getFinalName()
+     */
+    public String finalName() {
+		return finalName.get();
+    }
+
+    /**
+     * Setter for {@link #getFinalName()}
+     */
+    @Deprecated
+    public void setFinalName(String value) {
+        finalName.set( value );
     }
 
     public void sourceSets(Action<? super SourceSetExtension> action) {
@@ -213,7 +248,7 @@ public class QuarkusPluginExtension {
      * Returns the last file from the specified {@link FileCollection}.
      * Needed for the Scala plugin.
      */
-    private File getLastFile(FileCollection fileCollection) {
+    public static File getLastFile(FileCollection fileCollection) {
         File result = null;
         for (File f : fileCollection) {
             if (result == null || f.exists()) {
@@ -224,11 +259,31 @@ public class QuarkusPluginExtension {
     }
 
     /**
+     * Returns the last file from the specified {@link FileCollection}.
+     * Needed for the Scala plugin.
+     */
+    public static Provider<Directory> lastDirectoryProvider(FileCollection fileCollection) {
+        return fileCollection.getElements().map( QuarkusPluginExtension::lastDirectory );
+    }
+
+    public static Directory lastDirectory(Set<FileSystemLocation> locations) {
+        Directory result = null;
+
+        for ( FileSystemLocation fileSystemLocation : locations ) {
+            if ( fileSystemLocation instanceof Directory ) {
+                result = (Directory) fileSystemLocation;
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Convenience method to get the source sets associated with the current project.
      *
      * @return the source sets associated with the current project.
      */
     private SourceSetContainer getSourceSets() {
-        return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets();
+        return project.getExtensions().getByType(SourceSetContainer.class);
     }
 }

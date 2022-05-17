@@ -11,15 +11,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import javax.inject.Inject;
 
-import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -27,15 +24,24 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.options.Option;
@@ -61,40 +67,60 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
+import org.apache.tools.ant.types.Commandline;
 
 public class QuarkusDev extends QuarkusTask {
 
     public static final String IO_QUARKUS_DEVMODE_ARGS = "io.quarkus.devmode-args";
 
-    private Set<File> filesIncludedInClasspath = new HashSet<>();
+    private final SourceSet mainSourceSet;
+
+    private final Set<File> filesIncludedInClasspath = new HashSet<>();
 
     protected Configuration quarkusDevConfiguration;
 
-    private File buildDir;
+    private final DirectoryProperty sourceDirectory;
 
-    private String sourceDir;
+    private final DirectoryProperty workingDirectory;
 
-    private String workingDir;
+    private final ListProperty<String> jvmArgs;
 
-    private List<String> jvmArgs;
+    private final Property<Boolean> preventNoVerify;
 
-    private boolean preventnoverify = false;
+    private final ListProperty<String> args;
 
-    private List<String> args = new LinkedList<String>();
+    private final ListProperty<String> compilerArgs;
 
-    private List<String> compilerArgs = new LinkedList<>();
+    private final CompilerOptions compilerOptions = new CompilerOptions();
 
-    private CompilerOptions compilerOptions = new CompilerOptions();
-
-    private boolean shouldPropagateJavaCompilerArgs = true;
+    private final Property<Boolean> shouldPropagateJavaCompilerArgs;
 
     @Inject
     public QuarkusDev() {
-        super("Development mode: enables hot deployment with background compilation");
+        this("Development mode: enables hot deployment with background compilation");
     }
 
     public QuarkusDev(String name) {
         super(name);
+
+        final SourceSetContainer sourceSets = getProject().getExtensions().getByType(SourceSetContainer.class);
+        mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+        sourceDirectory = getProject().getObjects().directoryProperty();
+        sourceDirectory.convention(extension().getSourceDirectory());
+
+        workingDirectory = getProject().getObjects().directoryProperty();
+        workingDirectory.convention(extension().getWorkingDirectory());
+
+        preventNoVerify = getProject().getObjects().property(Boolean.class);
+        preventNoVerify.convention(false);
+
+        args = getProject().getObjects().listProperty(String.class);
+        compilerArgs = getProject().getObjects().listProperty(String.class);
+        jvmArgs = getProject().getObjects().listProperty(String.class);
+
+        shouldPropagateJavaCompilerArgs = getProject().getObjects().property(Boolean.class);
+        shouldPropagateJavaCompilerArgs.convention(true);
     }
 
     @CompileClasspath
@@ -108,66 +134,84 @@ public class QuarkusDev extends QuarkusTask {
 
     @InputDirectory
     @Optional
-    public File getBuildDir() {
-        if (buildDir == null) {
-            buildDir = getProject().getBuildDir();
-        }
-        return buildDir;
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public Provider<Directory> getBuildDirectory() {
+        return getProject().getLayout().getBuildDirectory();
     }
 
-    public void setBuildDir(File buildDir) {
-        this.buildDir = buildDir;
+    @Internal
+    public File getBuildDir() {
+        return getBuildDirectory().get().getAsFile();
+    }
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public Provider<Directory> getClassesDirectory() {
+        return mainSourceSet.getJava().getClassesDirectory();
     }
 
     @Optional
     @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public DirectoryProperty getSourceDirectory() {
+        return sourceDirectory;
+    }
+
+    @Internal
     public File getSourceDir() {
-        if (sourceDir == null) {
-            return extension().sourceDir();
-        } else {
-            return new File(sourceDir);
-        }
+        return getSourceDirectory().get().getAsFile();
     }
 
     @Option(description = "Set source directory", option = "source-dir")
     public void setSourceDir(String sourceDir) {
-        this.sourceDir = sourceDir;
+        sourceDirectory.set(new File(sourceDir));
     }
 
-    @Input
-    // @InputDirectory this breaks kotlin projects, the working dir at this stage will be evaluated to 'classes/java/main' instead of 'classes/kotlin/main'
+    @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public DirectoryProperty getWorkingDirectory() {
+        return workingDirectory;
+    }
+
+    @Internal
     public String getWorkingDir() {
-        if (workingDir == null) {
-            return extension().workingDir().toString();
-        } else {
-            return workingDir;
-        }
+        return getWorkingDirectory().get().getAsFile().toString();
     }
 
     @Option(description = "Set working directory", option = "working-dir")
     public void setWorkingDir(String workingDir) {
-        this.workingDir = workingDir;
+        getWorkingDirectory().set(new File(workingDir));
     }
 
     @Optional
     @Input
-    public List<String> getJvmArgs() {
+    public ListProperty<String> getJvmArguments() {
         return jvmArgs;
+    }
+
+    @Internal
+    public List<String> getJvmArgs() {
+        return jvmArgs.get();
     }
 
     @Option(description = "Set JVM arguments", option = "jvm-args")
     public void setJvmArgs(List<String> jvmArgs) {
-        this.jvmArgs = jvmArgs;
+        this.jvmArgs.set(jvmArgs);
     }
 
     @Optional
     @Input
-    public List<String> getArgs() {
+    public ListProperty<String> getArguments() {
         return args;
     }
 
+    @Internal
+    public List<String> getArgs() {
+        return args.get();
+    }
+
     public void setArgs(List<String> args) {
-        this.args = args;
+        this.args.set(args);
     }
 
     @Option(description = "Set application arguments", option = "quarkus-args")
@@ -176,26 +220,35 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     @Input
+    public Property<Boolean> getPreventNoVerify() {
+        return preventNoVerify;
+    }
+
+    @Internal
     public boolean isPreventnoverify() {
-        return preventnoverify;
+        return getPreventNoVerify().get();
     }
 
     @Option(description = "value is intended to be set to true when some generated bytecode is" +
             " erroneous causing the JVM to crash when the verify:none option is set " +
             "(which is on by default)", option = "prevent-noverify")
-    public void setPreventnoverify(boolean preventnoverify) {
-        this.preventnoverify = preventnoverify;
+    public void setPreventnoverify(boolean preventNoVerify) {
+        this.preventNoVerify.set(preventNoVerify);
     }
 
     @Optional
     @Input
-    public List<String> getCompilerArgs() {
+    public ListProperty<String> getCompilerArguments() {
         return compilerArgs;
+    }
+
+    public List<String> getCompilerArgs() {
+        return getCompilerArguments().get();
     }
 
     @Option(description = "Additional parameters to pass to javac when recompiling changed source files", option = "compiler-args")
     public void setCompilerArgs(List<String> compilerArgs) {
-        this.compilerArgs = compilerArgs;
+        getCompilerArguments().set(compilerArgs);
     }
 
     @Internal
@@ -333,7 +386,7 @@ public class QuarkusDev extends QuarkusTask {
             builder.compilerOptions(compilerOptions.getName(), compilerOptions.getArgs());
         }
 
-        if (getCompilerArgs().isEmpty() && shouldPropagateJavaCompilerArgs) {
+        if (getCompilerArgs().isEmpty() && shouldPropagateJavaCompilerArgs.get()) {
             getJavaCompileTask()
                     .map(compileTask -> compileTask.getOptions().getCompilerArgs())
                     .ifPresent(args -> builder.compilerOptions("java", args));
@@ -354,8 +407,8 @@ public class QuarkusDev extends QuarkusTask {
 
         extension().outputDirectory().mkdirs();
 
-        if (!args.isEmpty()) {
-            builder.applicationArgs(String.join(" ", args));
+        if (!args.get().isEmpty()) {
+            builder.applicationArgs(String.join(" ", args.get()));
         }
 
         return builder.build();
@@ -544,6 +597,6 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     public void shouldPropagateJavaCompilerArgs(boolean shouldPropagateJavaCompilerArgs) {
-        this.shouldPropagateJavaCompilerArgs = shouldPropagateJavaCompilerArgs;
+        this.shouldPropagateJavaCompilerArgs.set(shouldPropagateJavaCompilerArgs);
     }
 }

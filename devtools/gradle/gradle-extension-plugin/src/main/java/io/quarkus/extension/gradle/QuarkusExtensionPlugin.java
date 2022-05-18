@@ -44,25 +44,17 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     private void registerTasks(Project project, QuarkusExtensionConfiguration quarkusExt) {
         TaskContainer tasks = project.getTasks();
+
+        JavaPluginConvention convention = project.getConvention().getPlugin(JavaPluginConvention.class);
+        SourceSet mainSourceSet = convention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         Configuration runtimeModuleClasspath = project.getConfigurations()
                 .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
 
         TaskProvider<ExtensionDescriptorTask> extensionDescriptorTask = tasks.register(EXTENSION_DESCRIPTOR_TASK_NAME,
-                ExtensionDescriptorTask.class, task -> {
-                    JavaPluginConvention convention = project.getConvention().getPlugin(JavaPluginConvention.class);
-                    SourceSet mainSourceSet = convention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                    task.setOutputResourcesDir(mainSourceSet.getOutput().getResourcesDir());
-                    task.setInputResourcesDir(mainSourceSet.getResources().getSourceDirectories().getAsPath());
-                    task.setQuarkusExtensionConfiguration(quarkusExt);
-                    task.setClasspath(runtimeModuleClasspath);
-                });
+                ExtensionDescriptorTask.class, quarkusExt, mainSourceSet, runtimeModuleClasspath);
 
         TaskProvider<ValidateExtensionTask> validateExtensionTask = tasks.register(VALIDATE_EXTENSION_TASK_NAME,
-                ValidateExtensionTask.class, task -> {
-                    task.setRuntimeModuleClasspath(runtimeModuleClasspath);
-                    task.setQuarkusExtensionConfiguration(quarkusExt);
-                    task.onlyIf(t -> !quarkusExt.isValidationDisabled());
-                });
+                ValidateExtensionTask.class, quarkusExt, runtimeModuleClasspath);
 
         project.getPlugins().withType(
                 JavaPlugin.class,
@@ -131,7 +123,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     private Project findDeploymentProject(Project project, QuarkusExtensionConfiguration configuration) {
 
-        String deploymentProjectName = configuration.getDeploymentModule();
+        String deploymentProjectName = configuration.getDeploymentModule().get();
         if (deploymentProjectName == null) {
             deploymentProjectName = DEFAULT_DEPLOYMENT_PROJECT_NAME;
         }

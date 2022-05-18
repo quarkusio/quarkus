@@ -86,22 +86,23 @@ public class DevModeMain implements Closeable {
                     }
                 }
             }
-            final PathList.Builder appRoots = PathList.builder();
-            Path p = Path.of(context.getApplicationRoot().getMain().getClassesPath());
-            if (Files.exists(p)) {
-                appRoots.add(p);
+            final PathList.Builder appRootsBuilder = PathList.builder();
+            final Path classesPath = Path.of(context.getApplicationRoot().getMain().getClassesPath());
+            if (Files.exists(classesPath)) {
+                appRootsBuilder.add(classesPath);
             }
             if (context.getApplicationRoot().getMain().getResourcesOutputPath() != null
                     && !context.getApplicationRoot().getMain().getResourcesOutputPath()
                             .equals(context.getApplicationRoot().getMain().getClassesPath())) {
-                p = Paths.get(context.getApplicationRoot().getMain().getResourcesOutputPath());
-                if (Files.exists(p)) {
-                    appRoots.add(p);
+                final Path resourcesOutputPath = Paths.get(context.getApplicationRoot().getMain().getResourcesOutputPath());
+                if (Files.exists(resourcesOutputPath)) {
+                    appRootsBuilder.add(resourcesOutputPath);
                 }
             }
 
+            final PathList appRoots = appRootsBuilder.build();
             QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
-                    .setApplicationRoot(appRoots.build())
+                    .setApplicationRoot(appRoots)
                     .setIsolateDeployment(true)
                     .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
                     .addAdditionalDeploymentArchive(path)
@@ -109,12 +110,10 @@ public class DevModeMain implements Closeable {
                     .setMode(context.getMode());
             if (context.getDevModeRunnerJarFile() != null) {
                 bootstrapBuilder.setTargetDirectory(context.getDevModeRunnerJarFile().getParentFile().toPath());
+            } else if (context.getApplicationRoot().getTargetDir() != null) {
+                bootstrapBuilder.setTargetDirectory(Path.of(context.getApplicationRoot().getTargetDir()));
             }
-            if (context.getProjectDir() != null) {
-                bootstrapBuilder.setProjectRoot(context.getProjectDir().toPath());
-            } else {
-                bootstrapBuilder.setProjectRoot(new File(".").toPath());
-            }
+            bootstrapBuilder.setProjectRoot(resolveProjectRoot());
             for (ArtifactKey i : context.getLocalArtifacts()) {
                 bootstrapBuilder.addLocalArtifact(i);
             }
@@ -138,6 +137,18 @@ public class DevModeMain implements Closeable {
             throw new RuntimeException(t);
             //System.exit(1);
         }
+    }
+
+    private Path resolveProjectRoot() {
+        final Path projectRoot;
+        if (context.getProjectDir() != null) {
+            projectRoot = context.getProjectDir().toPath();
+        } else if (context.getApplicationRoot().getProjectDirectory() != null) {
+            projectRoot = Path.of(context.getApplicationRoot().getProjectDirectory());
+        } else {
+            projectRoot = new File(".").toPath();
+        }
+        return projectRoot;
     }
 
     // links the .env file to the directory where the process is running

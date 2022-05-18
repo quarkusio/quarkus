@@ -95,7 +95,9 @@ public class AutoRolesAllowedFilter implements OASFilter {
                                     operation = operation.addSecurityRequirement(securityRequirement);
                                     APIResponses responses = operation.getResponses();
                                     for (APIResponseImpl response : getSecurityResponses()) {
-                                        responses.addAPIResponse(response.getResponseCode(), response);
+                                        if (!responses.hasAPIResponse(response.getResponseCode())) {
+                                            responses.addAPIResponse(response.getResponseCode(), response);
+                                        }
                                     }
                                     operation = operation.responses(responses);
                                 } else if (hasAuthenticatedMethodReferences()
@@ -105,7 +107,9 @@ public class AutoRolesAllowedFilter implements OASFilter {
                                     operation = operation.addSecurityRequirement(securityRequirement);
                                     APIResponses responses = operation.getResponses();
                                     for (APIResponseImpl response : getSecurityResponses()) {
-                                        responses.addAPIResponse(response.getResponseCode(), response);
+                                        if (!responses.hasAPIResponse(response.getResponseCode())) {
+                                            responses.addAPIResponse(response.getResponseCode(), response);
+                                        }
                                     }
                                     operation = operation.responses(responses);
                                 }

@@ -14,7 +14,6 @@ import org.hibernate.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SinglePersistenceUnitCdiSessionTest {
@@ -57,8 +56,10 @@ public class SinglePersistenceUnitCdiSessionTest {
         DefaultEntity defaultEntity = new DefaultEntity("default");
         assertThatThrownBy(() -> session.persist(defaultEntity))
                 .isInstanceOf(ContextNotActiveException.class)
-                .hasMessageContainingAll("RequestScoped context was not active",
-                        RequestScopedSessionHolder.class.getName());
+                .hasMessageContainingAll(
+                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Consider adding @Transactional to your method to automatically activate a transaction",
+                        "@ActivateRequestContext if you have valid reasons not to use transactions");
     }
 
 }

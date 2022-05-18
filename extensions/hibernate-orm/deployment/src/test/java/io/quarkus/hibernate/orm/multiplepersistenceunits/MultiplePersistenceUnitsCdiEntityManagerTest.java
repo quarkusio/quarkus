@@ -18,7 +18,6 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.DefaultEntity;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.Plane;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
-import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MultiplePersistenceUnitsCdiEntityManagerTest {
@@ -71,8 +70,10 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
         DefaultEntity defaultEntity = new DefaultEntity("default");
         assertThatThrownBy(() -> defaultEntityManager.persist(defaultEntity))
                 .isInstanceOf(ContextNotActiveException.class)
-                .hasMessageContainingAll("RequestScoped context was not active",
-                        RequestScopedSessionHolder.class.getName());
+                .hasMessageContainingAll(
+                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Consider adding @Transactional to your method to automatically activate a transaction",
+                        "@ActivateRequestContext if you have valid reasons not to use transactions");
     }
 
     @Test
@@ -104,8 +105,10 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
         User user = new User("gsmet");
         assertThatThrownBy(() -> usersEntityManager.persist(user))
                 .isInstanceOf(ContextNotActiveException.class)
-                .hasMessageContainingAll("RequestScoped context was not active",
-                        RequestScopedSessionHolder.class.getName());
+                .hasMessageContainingAll(
+                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Consider adding @Transactional to your method to automatically activate a transaction",
+                        "@ActivateRequestContext if you have valid reasons not to use transactions");
     }
 
     @Test
@@ -137,8 +140,10 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
         Plane plane = new Plane("Airbus A380");
         assertThatThrownBy(() -> inventoryEntityManager.persist(plane))
                 .isInstanceOf(ContextNotActiveException.class)
-                .hasMessageContainingAll("RequestScoped context was not active",
-                        RequestScopedSessionHolder.class.getName());
+                .hasMessageContainingAll(
+                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Consider adding @Transactional to your method to automatically activate a transaction",
+                        "@ActivateRequestContext if you have valid reasons not to use transactions");
     }
 
     @Test

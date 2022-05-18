@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.Instance;
 import javax.persistence.EntityGraph;
 import javax.persistence.EntityManagerFactory;
@@ -49,6 +50,7 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.hibernate.stat.SessionStatistics;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
@@ -96,13 +98,15 @@ public class TransactionScopedSession implements Session {
             // - org.hibernate.internal.SessionImpl.beforeTransactionCompletion
             // - org.hibernate.internal.SessionImpl.afterTransactionCompletion
             return new SessionResult(newSession, false, true);
-        } else {
-            //this will throw an exception if the request scope is not active
-            //this is expected as either the request scope or an active transaction
-            //is required to properly managed the EM lifecycle
+        } else if (Arc.container().requestContext().isActive()) {
             RequestScopedSessionHolder requestScopedSessions = this.requestScopedSessions.get();
             return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
                     false, false);
+        } else {
+            throw new ContextNotActiveException(
+                    "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active."
+                            + " Consider adding @Transactional to your method to automatically activate a transaction,"
+                            + " or @ActivateRequestContext if you have valid reasons not to use transactions.");
         }
     }
 

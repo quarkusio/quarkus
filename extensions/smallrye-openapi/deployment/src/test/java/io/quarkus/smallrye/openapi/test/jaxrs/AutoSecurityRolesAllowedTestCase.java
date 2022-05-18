@@ -55,4 +55,78 @@ public class AutoSecurityRolesAllowedTestCase {
 
     }
 
+    @Test
+    public void testOpenAPIAnnotations() {
+        RestAssured.given().header("Accept", "application/json")
+                .when().get("/q/openapi")
+                .then()
+                .log().body()
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/1'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/1'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/2'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/2'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/3'.get.responses.401.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/3'.get.responses.403.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/4'.get.responses.401.description",
+                        Matchers.equalTo("Who are you?"))
+                .and()
+                .body("paths.'/resource2/test-security/classLevel/4'.get.responses.403.description",
+                        Matchers.equalTo("You cannot do that."))
+                .and()
+                .body("paths.'/resource2/test-security/naked'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/naked'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/annotated'.get.responses.401.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/annotated'.get.responses.403.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/1'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/1'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/2'.get.responses.401.description",
+                        Matchers.equalTo("Not Authorized"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/2'.get.responses.403.description",
+                        Matchers.equalTo("Not Allowed"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/public'.get.responses.401.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/public'.get.responses.403.description",
+                        Matchers.nullValue())
+                .and()
+                .body("paths.'/resource2/test-security/annotated/documented'.get.responses.401.description",
+                        Matchers.equalTo("Who are you?"))
+                .and()
+                .body("paths.'/resource2/test-security/annotated/documented'.get.responses.403.description",
+                        Matchers.equalTo("You cannot do that."))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/3'.get.responses.401.description",
+                        Matchers.equalTo("Who are you?"))
+                .and()
+                .body("paths.'/resource2/test-security/methodLevel/3'.get.responses.403.description",
+                        Matchers.equalTo("You cannot do that."));
+    }
+
 }

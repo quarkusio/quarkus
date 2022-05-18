@@ -23,6 +23,16 @@ import io.quarkus.test.junit.QuarkusTest;
 public class AmazonLambdaSimpleTestCase {
 
     @Test
+    public void testComma() throws Exception {
+        given()
+                .when()
+                .header("Access-Control-Request-Headers", "foo, bar, yello")
+                .get("/hello/comma")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
     public void testContext() throws Exception {
         given()
                 .when()

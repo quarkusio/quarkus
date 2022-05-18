@@ -9,10 +9,12 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.jboss.logging.Logger;
@@ -47,8 +49,13 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
     private static final int BUFFER_SIZE = 8096;
 
     private static final Headers errorHeaders = new Headers();
+
+    // comma headers for headers that have comma in value and we don't want to split it up into
+    // multiple headers
+    private static final Set<String> commaHeaders = new HashSet();
     static {
         errorHeaders.putSingle("Content-Type", "application/json");
+        commaHeaders.add("access-control-request-headers");
     }
 
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
@@ -182,8 +189,14 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         if (request.getHeaders() != null) { //apparently this can be null if no headers are sent
             for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
                 if (header.getValue() != null) {
-                    for (String val : header.getValue().split(","))
-                        nettyRequest.headers().add(header.getKey(), val);
+                    // Some header values have commas in them and we don't want to
+                    // split them up into multiple header values.
+                    if (commaHeaders.contains(header.getKey().toLowerCase(Locale.ROOT))) {
+                        nettyRequest.headers().add(header.getKey(), header.getValue());
+                    } else {
+                        for (String val : header.getValue().split(","))
+                            nettyRequest.headers().add(header.getKey(), val);
+                    }
                 }
             }
         }

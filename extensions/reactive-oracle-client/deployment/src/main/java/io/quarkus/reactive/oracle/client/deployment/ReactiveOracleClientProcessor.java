@@ -26,6 +26,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
@@ -34,6 +35,7 @@ import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.oracle.client.runtime.DataSourcesReactiveOracleConfig;
 import io.quarkus.reactive.oracle.client.runtime.OraclePoolRecorder;
+import io.quarkus.reactive.oracle.client.runtime.OracleServiceBindingConverter;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
@@ -88,7 +90,13 @@ class ReactiveOracleClientProcessor {
     }
 
     @BuildStep
-    void registerServiceBinding(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+        if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
+            serviceProvider.produce(
+                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                            OracleServiceBindingConverter.class.getName()));
+        }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.ORACLE));
     }
 

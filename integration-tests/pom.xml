@@ -234,6 +234,7 @@
                 <module>kubernetes</module>
                 <module>kubernetes-client</module>
                 <module>kubernetes-service-binding-jdbc</module>
+                <module>kubernetes-service-binding-reactive</module>
                 <module>openshift-client</module>
                 <module>mongodb-client</module>
                 <module>jackson</module>

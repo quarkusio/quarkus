@@ -16,6 +16,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.hal.HalCollectionWrapper;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.RestDataResource;
@@ -23,10 +24,8 @@ import io.quarkus.rest.data.panache.deployment.Constants;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
-import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
-import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapper;
 import io.smallrye.mutiny.Uni;
 
 public final class ListHalMethodImplementor extends HalMethodImplementor {
@@ -190,9 +189,10 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
 
         ResultHandle wrapper = wrapHalEntities(body, entities, resourceMetadata.getEntityType(),
                 resourceProperties.getHalCollectionName());
+
         body.invokeVirtualMethod(
                 ofMethod(HalCollectionWrapper.class, "addLinks", void.class, Link[].class), wrapper, links);
-        body.returnValue(ResponseImplementor.ok(body, wrapper, links));
+        body.returnValue(responseImplementor.ok(body, wrapper, links));
     }
 
     private void implementNotPaged(ClassCreator classCreator, ResourceMetadata resourceMetadata,
@@ -237,6 +237,6 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
             ResultHandle entities) {
         ResultHandle wrapper = wrapHalEntities(body, entities, resourceMetadata.getEntityType(),
                 resourceProperties.getHalCollectionName());
-        body.returnValue(ResponseImplementor.ok(body, wrapper));
+        body.returnValue(responseImplementor.ok(body, wrapper));
     }
 }

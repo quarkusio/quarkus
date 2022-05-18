@@ -454,9 +454,9 @@ the heroes:
 
 <1> Here receive the films as a batch, allowing you to fetch the corresponding heroes.
 
-=== Reactive
+=== Non blocking
 
-Queries can be made reactive by using `Uni`, or `CompletionStage` as a return type, for example:
+Queries can be made reactive by using `Uni` as a return type, or adding `@NonBlocking` to the method:
 
 [source,java]
 ----
@@ -467,40 +467,38 @@ Queries can be made reactive by using `Uni`, or `CompletionStage` as a return ty
     }
 ----
 
-NOTE: Due to the underlying library, graphql-java, `Uni` is creating a `CompletionStage` under the hood.
 
-Or you can use `CompletionStage`:
+Or you can use `@NonBlocking`:
 
 [source,java]
 ----
     @Query
     @Description("Get a Films from a galaxy far far away")
-    public CompletionStage<Film> getFilm(int filmId) {
+    @NonBlocking
+    public Film getFilm(int filmId) {
         // ...
     }
 ----
  
-Using `Uni` or `CompletionStage` means that when a request contains more than one query, they will be executed concurrently.
+Using `Uni` or `@NonBlocking` means that the request will be executed on Event-loop threads rather than Worker threads.
 
-For instance, the query below will fetch `film0` and `film1` concurrently:
+You can mix Blocking and Non-blocking in one request, 
 
-[source, graphql]
+[source, java]
 ----
-query getFilms {
-  film0: film(filmId: 0) {
-    title
-    director
-    releaseDate
-    episodeID
-  }
-  film1: film(filmId: 1) {
-    title
-    director
-    releaseDate
-    episodeID
-  }
-}
+    @Query
+    @Description("Get a Films from a galaxy far far away")
+    @NonBlocking
+    public Film getFilm(int filmId) {
+        // ...
+    }
+
+    public List<Hero> heroes(@Source Film film) { 
+        return service.getHeroesByFilm(film);
+    }
 ----
+
+Above will fetch the film on the event-loop threads, but switch to the worker thread to fetch the heroes.
 
 == Mutations
 
@@ -569,9 +567,8 @@ Similar to the `createHero` mutation method we also retrieve the `name` and
 
 == Subscriptions
 
-Subscriptions allows you to subscribe to a query. It allows you to receive events.
-
-NOTE: Subscription is currently still considered experimental.
+Subscriptions allows you to subscribe to a query. It allows you to receive events and is using web sockets. 
+See the https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md[GraphQL over WebSocket Protocol] spec for more details.
 
 Example: We want to know when new Heroes are being created:
 
@@ -714,33 +711,35 @@ By using the `@Observer` you can add anything to the Schema builder.
 
 NOTE: For the Observer to work, you need to enable events. In `application.properties`, add the following: `quarkus.smallrye-graphql.events.enabled=true`.
 
-== Map to Scalar
+== Adapting
+
+=== Adapt to Scalar
 
 Another SmallRye specific experimental feature, allows you to map an existing scalar (that is mapped by the implementation to a certain Java type) to another type,
 or to map complex object, that would typically create a `Type` or `Input` in GraphQL, to an existing scalar.
 
-=== Mapping an existing Scalar to another type:
+==== Adapting an existing Scalar to another type:
 
 [source,java]
 ----
 public class Movie {
 
-    @ToScalar(Scalar.Int.class)
+    @AdaptToScalar(Scalar.Int.class)
     Long idLongThatShouldChangeToInt;
     
     // ....
 }
 ----
 
-Above will map the `Long` java type to an `Int` Scalar type, rather than the https://download.eclipse.org/microprofile/microprofile-graphql-1.0/microprofile-graphql.html#scalars[default] `BigInteger`.
+Above will adapt the `Long` java type to an `Int` Scalar type, rather than the https://download.eclipse.org/microprofile/microprofile-graphql-1.0/microprofile-graphql.html#scalars[default] `BigInteger`.
 
-=== Mapping a complex object to a Scalar type:
+==== Adapting a complex object to a Scalar type:
 
 [source,java]
 ----
 public class Person {
 
-    @ToScalar(Scalar.String.class)
+    @AdaptToScalar(Scalar.String.class)
     Phone phone;
     
     // ....
@@ -771,7 +770,189 @@ public class Phone {
 }
 ----
 
-See more about the `@ToScalar` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.0.6/index.html?io/smallrye/graphql/api/ToScalar.html[JavaDoc].
+See more about the `@AdaptToScalar` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.5.0/io/smallrye/graphql/api/AdaptToScalar.html[JavaDoc].
+
+=== Adapt with
+
+Another option for more complex cases is to provide an Adapter. You can then do the mapping yourself in the adapter. 
+
+See more about the `AdaptWith` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.5.0/io/smallrye/graphql/api/AdaptWith.html[JavaDoc].
+
+For example:
+
+[source,java]
+----
+    public class Profile {
+        // Map this to an email address
+        @AdaptWith(AddressAdapter.class)
+        public Address address;
+
+        // other getters/setters...
+    }
+
+    public class AddressAdapter implements Adapter<EmailAddress, Address> {
+
+        @Override
+        public Address from(EmailAddress email) {
+            Address a = new Address();
+            a.addressType = AddressType.email;
+            a.addLine(email.getValue());
+            return a;
+        }
+
+        @Override
+        public EmailAddress to(Address address) {
+            if (address != null && address.addressType != null && address.addressType.equals(AddressType.email)) {
+                return new EmailAddress(address.lines.get(0));
+            }
+            return null;
+        }
+    }
+
+----
+
+NOTE: `@JsonbTypeAdapter` is also supported.
+
+=== Built-in support for Maps
+
+By default, due to the fact that maps are hard to model in a schema (as the keys and values can be dynamic at runtime) GraphQL does not support maps by default.
+Using the above adaption, `Map` support is added for Quarkus and are mapped to an `Entry<Key,Value>` with an optional key parameter. 
+This allows you to return a map, and optionally query it by key.
+
+Example:
+
+[source,java]
+----
+
+    @Query
+    public Map<ISO6391, Language> language() {
+        return languageService.getLanguages();
+    }
+
+    public enum ISO6391 {
+        af,
+        en,
+        de,
+        fr
+    }
+
+    public class Language {
+        private ISO6391 iso6391;
+        private String nativeName;
+        private String enName;
+        private String please;
+        private String thankyou;
+
+        // Getters & Setters
+    }
+
+----
+
+NOTE: The key and value object can be any of Enum, Scalar or Complex object
+
+You can now query the whole map with all the fields:
+
+[source,graphql]
+----
+{
+  language{
+    key
+    value {
+      enName
+      iso6391
+      nativeName
+      please
+      thankyou
+    }
+  }
+}
+----
+
+This will return a result like this for example:
+
+[source,json]
+----
+{
+  "data": {
+    "language": [
+      {
+        "key": "fr",
+        "value": {
+          "enName": "french",
+          "iso6391": "fr",
+          "nativeName": "français",
+          "please": "s'il te plaît",
+          "thankyou": "merci"
+        }
+      },
+      {
+        "key": "af",
+        "value": {
+          "enName": "afrikaans",
+          "iso6391": "af",
+          "nativeName": "afrikaans",
+          "please": "asseblief",
+          "thankyou": "dankie"
+        }
+      },
+      {
+        "key": "de",
+        "value": {
+          "enName": "german",
+          "iso6391": "de",
+          "nativeName": "deutsch",
+          "please": "bitte",
+          "thankyou": "danke dir"
+        }
+      },
+      {
+        "key": "en",
+        "value": {
+          "enName": "english",
+          "iso6391": "en",
+          "nativeName": "english",
+          "please": "please",
+          "thankyou": "thank you"
+        }
+      }
+    ]
+  }
+}
+----
+
+You can also query by key
+
+[source,graphql]
+----
+{
+  language (key:af){
+    value {
+      please
+      thankyou
+    }
+  }
+}
+----
+
+That will return only that value in the map:
+
+[source,json]
+----
+{
+  "data": {
+    "language": [
+      {
+        "value": {
+          "please": "asseblief",
+          "thankyou": "dankie"
+        }
+      }
+    ]
+  }
+}
+----
+
+NOTE: The default map adapter can to overridden with our own implementation.
 
 == Error code
 

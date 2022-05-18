@@ -194,6 +194,10 @@ public class GradleRunner implements BuildSystemRunner {
             setSkipTests(args);
         }
 
+        if (devOptions.offline) {
+            args.add("--offline");
+        }
+
         debugOptions.addDebugArguments(args, jvmArgs);
         propertiesOptions.flattenJvmArgs(jvmArgs, args);
 

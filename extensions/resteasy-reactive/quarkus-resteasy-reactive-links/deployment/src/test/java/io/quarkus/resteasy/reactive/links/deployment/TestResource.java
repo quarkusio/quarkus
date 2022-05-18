@@ -13,6 +13,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
+
 import io.quarkus.resteasy.reactive.links.InjectRestLinks;
 import io.quarkus.resteasy.reactive.links.RestLink;
 import io.quarkus.resteasy.reactive.links.RestLinkType;
@@ -28,8 +30,8 @@ public class TestResource {
             new TestRecord(ID_COUNTER.incrementAndGet(), "second", "Second value")));
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @RestLink(entityType = TestRecord.class, rel = "list")
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @RestLink(entityType = TestRecord.class)
     @InjectRestLinks
     public Uni<List<TestRecord>> getAll() {
         return Uni.createFrom().item(RECORDS).onItem().delayIt().by(Duration.ofMillis(100));
@@ -38,15 +40,15 @@ public class TestResource {
     @GET
     @Path("/without-links")
     @Produces(MediaType.APPLICATION_JSON)
-    @RestLink
+    @RestLink(rel = "list-without-links")
     public List<TestRecord> getAllWithoutLinks() {
         return RECORDS;
     }
 
     @GET
     @Path("/{id: \\d+}")
-    @Produces(MediaType.APPLICATION_JSON)
-    @RestLink(entityType = TestRecord.class, rel = "self")
+    @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
+    @RestLink(entityType = TestRecord.class)
     @InjectRestLinks(RestLinkType.INSTANCE)
     public TestRecord getById(@PathParam("id") int id) {
         return RECORDS.stream()
@@ -58,7 +60,7 @@ public class TestResource {
     @GET
     @Path("/{slug: [a-zA-Z-]+}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RestLink
+    @RestLink(rel = "get-by-slug")
     @InjectRestLinks(RestLinkType.INSTANCE)
     public TestRecord getBySlug(@PathParam("slug") String slug) {
         return RECORDS.stream()

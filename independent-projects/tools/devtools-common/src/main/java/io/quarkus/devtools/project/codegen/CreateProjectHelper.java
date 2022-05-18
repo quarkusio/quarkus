@@ -44,6 +44,24 @@ public class CreateProjectHelper {
     }
 
     /**
+     * {@link CreateProjectHelper#completeCatalog}
+     *
+     * @param catalog original extension catalog
+     * @param extensions extra extensions to add to the catalog
+     * @param mvn Maven artifact resolver
+     * @return complete extension catalog
+     * @throws BootstrapMavenException in case of a failure to resolve extensions requested by the user
+     */
+    public static ExtensionCatalog completeCatalogWithCoords(ExtensionCatalog catalog, Collection<ArtifactCoords> extensions,
+            MavenArtifactResolver mvn) {
+        final List<String> exts = extensions.stream()
+                .filter(e -> e.getVersion() != null)
+                .map(ArtifactCoords::toString)
+                .collect(Collectors.toList());
+        return completeCatalog(catalog, exts, mvn);
+    }
+
+    /**
      * This method checks whether extensions to be added are specified using complete artifact coordinates,
      * in which case they are resolved and added to the catalog so that their codestarts are picked up by the code generator.
      *

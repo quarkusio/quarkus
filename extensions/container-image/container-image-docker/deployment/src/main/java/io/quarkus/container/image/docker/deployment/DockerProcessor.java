@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -162,8 +163,34 @@ public class DockerProcessor {
             OutputTargetBuildItem out, ImageIdReader reader, boolean forNative, boolean pushRequested,
             PackageConfig packageConfig) {
 
+        var useBuildx = dockerConfig.buildx.useBuildx();
+        var pushImages = pushRequested || containerImageConfig.isPushExplicitlyEnabled();
+
+        // useBuildx: Whether or not any of the buildx parameters are set
+        //
+        // pushImages: Whether or not the user requested the built images to be pushed to a registry
+        // Pushing images is different based on if you're using buildx or not.
+        // If not using any of the buildx params (useBuildx == false), then the flow is as it was before:
+        //
+        // 1) Build the image (docker build)
+        // 2) Apply any tags (docker tag)
+        // 3) Push the image and all tags (docker push)
+        //
+        // If using any of the buildx options (useBuildx == true), the tagging & pushing happens
+        // as part of the 'docker buildx build' command via the added -t and --push params (see the getDockerArgs method).
+        //
+        // This is because when using buildx with more than one platform, the resulting images are not loaded into 'docker images'.
+        // Therefore, a docker tag or docker push will not work after a docker build.
+
         DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, forNative, packageConfig, out);
-        String[] dockerArgs = getDockerArgs(containerImageInfo.getImage(), dockerfilePaths, containerImageConfig, dockerConfig);
+        String[] dockerArgs = getDockerArgs(containerImageInfo.getImage(), dockerfilePaths, containerImageConfig, dockerConfig,
+                containerImageInfo, pushImages);
+
+        if (useBuildx && pushImages) {
+            // Needed because buildx will push all the images in a single step
+            loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, dockerConfig);
+        }
+
         log.infof("Executing the following command to build docker image: '%s %s'", dockerConfig.executableName,
                 String.join(" ", dockerArgs));
         boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, dockerConfig.executableName,
@@ -172,61 +199,109 @@ public class DockerProcessor {
             throw dockerException(dockerArgs);
         }
 
-        log.infof("Built container image %s (%s)\n", containerImageInfo.getImage(), reader.getImageId());
+        dockerConfig.buildx.platform
+                .filter(platform -> platform.size() > 1)
+                .ifPresentOrElse(
+                        platform -> log.infof("Built container image %s (%s platform(s))\n", containerImageInfo.getImage(),
+                                String.join(",", platform)),
+                        () -> log.infof("Built container image %s (%s)\n", containerImageInfo.getImage(), reader.getImageId()));
 
-        if (!containerImageInfo.getAdditionalImageTags().isEmpty()) {
-            createAdditionalTags(containerImageInfo.getImage(), containerImageInfo.getAdditionalImageTags(), dockerConfig);
-        }
-
-        if (pushRequested || containerImageConfig.isPushExplicitlyEnabled()) {
-            String registry = "docker.io";
-            if (!containerImageInfo.getRegistry().isPresent()) {
-                log.info("No container image registry was set, so 'docker.io' will be used");
-            } else {
-                registry = containerImageInfo.getRegistry().get();
-            }
-            // Check if we need to login first
-            if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
-                boolean loginSuccessful = ExecUtil.exec(dockerConfig.executableName, "login", registry, "-u",
-                        containerImageConfig.username.get(),
-                        "-p" + containerImageConfig.password.get());
-                if (!loginSuccessful) {
-                    throw dockerException(new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });
-                }
+        if (!useBuildx) {
+            // If we didn't use buildx, now we need to process any tags
+            if (!containerImageInfo.getAdditionalImageTags().isEmpty()) {
+                createAdditionalTags(containerImageInfo.getImage(), containerImageInfo.getAdditionalImageTags(), dockerConfig);
             }
 
-            List<String> imagesToPush = new ArrayList<>(containerImageInfo.getAdditionalImageTags());
-            imagesToPush.add(containerImageInfo.getImage());
-            for (String imageToPush : imagesToPush) {
-                pushImage(imageToPush, dockerConfig);
+            if (pushImages) {
+                // If not using buildx, push the images
+                loginToRegistryIfNeeded(containerImageConfig, containerImageInfo, dockerConfig);
+
+                Stream.concat(containerImageInfo.getAdditionalTags().stream(), Stream.of(containerImageInfo.getImage()))
+                        .forEach(imageToPush -> pushImage(imageToPush, dockerConfig));
             }
         }
 
         return containerImageInfo.getImage();
     }
 
-    private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, ContainerImageConfig containerImageConfig,
-            DockerConfig dockerConfig) {
-        List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size());
-        dockerArgs.addAll(Arrays.asList("build", "-f", dockerfilePaths.getDockerfilePath().toAbsolutePath().toString()));
-        for (Map.Entry<String, String> entry : dockerConfig.buildArgs.entrySet()) {
-            dockerArgs.addAll(Arrays.asList("--build-arg", entry.getKey() + "=" + entry.getValue()));
-        }
-        for (Map.Entry<String, String> entry : containerImageConfig.labels.entrySet()) {
-            dockerArgs.addAll(Arrays.asList("--label", String.format("%s=%s", entry.getKey(), entry.getValue())));
-        }
-        if (dockerConfig.cacheFrom.isPresent()) {
-            List<String> cacheFrom = dockerConfig.cacheFrom.get();
-            if (!cacheFrom.isEmpty()) {
-                dockerArgs.add("--cache-from");
-                dockerArgs.add(String.join(",", cacheFrom));
+    private void loginToRegistryIfNeeded(ContainerImageConfig containerImageConfig,
+            ContainerImageInfoBuildItem containerImageInfo, DockerConfig dockerConfig) {
+        var registry = containerImageInfo.getRegistry()
+                .orElseGet(() -> {
+                    log.info("No container image registry was set, so 'docker.io' will be used");
+                    return "docker.io";
+                });
+
+        // Check if we need to login first
+        if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
+            boolean loginSuccessful = ExecUtil.exec(dockerConfig.executableName, "login", registry, "-u",
+                    containerImageConfig.username.get(),
+                    "-p" + containerImageConfig.password.get());
+            if (!loginSuccessful) {
+                throw dockerException(new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });
             }
         }
-        if (dockerConfig.network.isPresent()) {
-            dockerArgs.add("--network");
-            dockerArgs.add(dockerConfig.network.get());
+    }
+
+    private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, ContainerImageConfig containerImageConfig,
+            DockerConfig dockerConfig, ContainerImageInfoBuildItem containerImageInfo, boolean pushImages) {
+        List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size());
+        var useBuildx = dockerConfig.buildx.useBuildx();
+
+        if (useBuildx) {
+            // Check the executable. If not 'docker', then fail the build
+            if (!DOCKER.equals(dockerConfig.executableName)) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "The 'buildx' properties are specific to 'executable-name=docker' and can not be used with the '%s' executable name. Either remove the `buildx` properties or the `executable-name` property.",
+                                dockerConfig.executableName));
+            }
+
+            dockerArgs.add("buildx");
         }
+
+        dockerArgs.addAll(Arrays.asList("build", "-f", dockerfilePaths.getDockerfilePath().toAbsolutePath().toString()));
+        dockerConfig.buildx.platform
+                .filter(platform -> !platform.isEmpty())
+                .ifPresent(platform -> {
+                    dockerArgs.add("--platform");
+                    dockerArgs.add(String.join(",", platform));
+
+                    if (platform.size() == 1) {
+                        // Buildx only supports loading the image to the docker system if there is only 1 image
+                        dockerArgs.add("--load");
+                    }
+                });
+        dockerConfig.buildx.progress.ifPresent(progress -> dockerArgs.addAll(List.of("--progress", progress)));
+        dockerConfig.buildx.output.ifPresent(output -> dockerArgs.addAll(List.of("--output", output)));
+        dockerConfig.buildArgs
+                .forEach((key, value) -> dockerArgs.addAll(Arrays.asList("--build-arg", String.format("%s=%s", key, value))));
+        containerImageConfig.labels
+                .forEach((key, value) -> dockerArgs.addAll(Arrays.asList("--label", String.format("%s=%s", key, value))));
+        dockerConfig.cacheFrom
+                .filter(cacheFrom -> !cacheFrom.isEmpty())
+                .ifPresent(cacheFrom -> {
+                    dockerArgs.add("--cache-from");
+                    dockerArgs.add(String.join(",", cacheFrom));
+                });
+        dockerConfig.network.ifPresent(network -> {
+            dockerArgs.add("--network");
+            dockerArgs.add(network);
+        });
         dockerArgs.addAll(Arrays.asList("-t", image));
+
+        if (useBuildx) {
+            // When using buildx for multi-arch images, it wants to push in a single step
+            // 1) Create all the additional tags
+            containerImageInfo.getAdditionalImageTags()
+                    .forEach(additionalImageTag -> dockerArgs.addAll(List.of("-t", additionalImageTag)));
+
+            if (pushImages) {
+                // 2) Enable the --push flag
+                dockerArgs.add("--push");
+            }
+        }
+
         dockerArgs.add(dockerfilePaths.getDockerExecutionPath().toAbsolutePath().toString());
         return dockerArgs.toArray(new String[0]);
     }

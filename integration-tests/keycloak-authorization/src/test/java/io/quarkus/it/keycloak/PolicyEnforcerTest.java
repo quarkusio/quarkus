@@ -15,6 +15,7 @@ import com.gargoylesoftware.htmlunit.WebResponse;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -23,9 +24,9 @@ import io.restassured.http.ContentType;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusTest
+@QuarkusTestResource(KeycloakLifecycleManager.class)
 public class PolicyEnforcerTest {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
 
     @Test
@@ -229,7 +230,8 @@ public class PolicyEnforcerTest {
                 .param("client_id", "quarkus-app")
                 .param("client_secret", "secret")
                 .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
+                .post(KeycloakLifecycleManager.KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM
+                        + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
     }
 }

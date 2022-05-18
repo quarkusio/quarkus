@@ -68,6 +68,10 @@ To use this feature, add the following extension to your project.
 :add-extension-extensions: container-image-docker
 include::includes/devtools/extension-add.adoc[]
 
+The `quarkus-container-image-docker` extension is capable of https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images/[creating multi-platform (or multi-arch)] images using https://docs.docker.com/engine/reference/commandline/buildx_build/[`docker buildx build`]. See the `quarkus.docker.buildx.*` configuration items in the <<#DockerOptions,Docker Options>> section below.
+
+NOTE: `docker buildx build` ONLY supports https://docs.docker.com/engine/reference/commandline/buildx_build/#load[loading the result of a build] to `docker images` when building for a single platform. Therefore, if you specify more than one argument in the `quarkus.docker.buildx.platform` property, the resulting images will not be loaded into `docker images`. If `quarkus.docker.buildx.platform` is omitted or if only a single platform is specified, it will then be loaded into `docker images`.
+
 [#s2i]
 === S2I
 
@@ -138,7 +142,6 @@ To run tests on the resulting image, `quarkus.container-image.build=true` needs 
 ./gradlew quarkusIntTest -Dquarkus.container-image.build=true
 ----
 
-
 == Pushing
 
 To push a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.
@@ -190,6 +193,7 @@ In addition to the generic container image options, the `container-image-jib` al
 
 include::{generated-dir}/config/quarkus-container-image-jib.adoc[opts=optional, leveloffset=+1]
 
+[#DockerOptions]
 === Docker Options
 
 In addition to the generic container image options, the `container-image-docker` also provides the following options:

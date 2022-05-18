@@ -18,6 +18,12 @@ include::./status-include.adoc[]
 
 include::includes/devtools/prerequisites.adoc[]
 
+[WARNING]
+====
+If building with Mandrel, make sure to use version Mandrel 22.1 or above, for example `ubi-quarkus-mandrel:22.1-java17`.
+With older versions, you might encounter errors when trying to deserialize JSON documents that have null or missing fields, similar to the errors mentioned in the <<kotlin-jackson>> section.
+====
+
 NB: For Gradle project setup please see below, and for further reference consult the guide in the xref:gradle-tooling.adoc[Gradle setup page].
 
 == Creating the Maven project
@@ -321,6 +327,55 @@ When you now execute an HTTP GET request against `http://localhost:8080/hello`, 
 
 One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other. We hope to alleviate this limitation in the future.
 
+
+=== Configuring live reload compiler
+
+If you need to customize the compiler flags used by `kotlinc` in development mode, you can configure them in the quarkus plugin:
+
+[source, xml, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+<plugin>
+  <groupId>${quarkus.platform.group-id}</groupId>
+  <artifactId>quarkus-maven-plugin</artifactId>
+  <version>${quarkus.platform.version}</version>
+
+  <configuration>
+    <source>${maven.compiler.source}</source>
+    <target>${maven.compiler.target}</target>
+    <compilerOptions>
+      <compiler>
+        <name>kotlin</name>
+        <args>
+          <arg>-Werror</arg>
+        </args>
+      </compiler>
+    </compilerOptions>
+  </configuration>
+
+  ...
+</plugin>
+----
+[source, groovy, subs=attributes+, role="secondary asciidoc-tabs-sync-groovy"]
+.Gradle (Groovy DSL)
+----
+quarkusDev {
+    compilerOptions {
+        compiler("kotlin").args(['-Werror'])
+    }
+}
+----
+
+[source, kotlin, subs=attributes+, role="secondary asciidoc-tabs-sync-kotlin"]
+.Gradle (Kotlin DSL)
+----
+tasks.quarkusDev {
+     compilerOptions {
+        compiler("kotlin").args(["-Werror"])
+    }
+}
+----
+
 == Packaging the application
 
 As usual, the application can be packaged using:
@@ -333,6 +388,7 @@ You can also build the native executable using:
 
 include::includes/devtools/build-native.adoc[]
 
+[[kotlin-jackson]]
 == Kotlin and Jackson
 
 If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or one of the `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` extensions) have been added to the project,

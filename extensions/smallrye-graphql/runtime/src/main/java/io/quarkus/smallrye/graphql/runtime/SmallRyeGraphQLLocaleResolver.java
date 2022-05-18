@@ -50,7 +50,11 @@ public class SmallRyeGraphQLLocaleResolver implements LocaleResolver {
     @SuppressWarnings("unchecked")
     private Map<String, List<String>> getHeaders() {
         SmallRyeContext smallRyeContext = SmallRyeContextManager.getCurrentSmallRyeContext();
-        DataFetchingEnvironment dfe = smallRyeContext.unwrap(DataFetchingEnvironment.class);
-        return (Map<String, List<String>>) dfe.getGraphQlContext().get("httpHeaders");
+        if (smallRyeContext != null) {
+            DataFetchingEnvironment dfe = smallRyeContext.unwrap(DataFetchingEnvironment.class);
+            return (Map<String, List<String>>) dfe.getGraphQlContext().get("httpHeaders");
+        } else {
+            return null;
+        }
     }
 }

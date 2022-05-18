@@ -13,7 +13,6 @@ import org.eclipse.microprofile.openapi.models.Paths;
 import org.eclipse.microprofile.openapi.models.responses.APIResponses;
 import org.eclipse.microprofile.openapi.models.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
-import org.jboss.logging.Logger;
 
 import io.smallrye.openapi.api.models.OperationImpl;
 import io.smallrye.openapi.api.models.responses.APIResponseImpl;
@@ -23,26 +22,43 @@ import io.smallrye.openapi.api.models.security.SecurityRequirementImpl;
  * Automatically add security requirement to RolesAllowed methods
  */
 public class AutoRolesAllowedFilter implements OASFilter {
-    private static final Logger log = Logger.getLogger(AutoRolesAllowedFilter.class);
-
-    private Map<String, List<String>> methodReferences;
+    private Map<String, List<String>> rolesAllowedMethodReferences;
+    private List<String> authenticatedMethodReferences;
     private String defaultSecuritySchemeName;
 
     public AutoRolesAllowedFilter() {
 
     }
 
-    public AutoRolesAllowedFilter(String defaultSecuritySchemeName, Map<String, List<String>> methodReferences) {
+    public AutoRolesAllowedFilter(String defaultSecuritySchemeName, Map<String, List<String>> rolesAllowedMethodReferences,
+            List<String> authenticatedMethodReferences) {
         this.defaultSecuritySchemeName = defaultSecuritySchemeName;
-        this.methodReferences = methodReferences;
+        this.rolesAllowedMethodReferences = rolesAllowedMethodReferences;
+        this.authenticatedMethodReferences = authenticatedMethodReferences;
     }
 
-    public Map<String, List<String>> getMethodReferences() {
-        return methodReferences;
+    public Map<String, List<String>> getRolesAllowedMethodReferences() {
+        return rolesAllowedMethodReferences;
     }
 
-    public void setMethodReferences(Map<String, List<String>> methodReferences) {
-        this.methodReferences = methodReferences;
+    public void setRolesAllowedMethodReferences(Map<String, List<String>> rolesAllowedMethodReferences) {
+        this.rolesAllowedMethodReferences = rolesAllowedMethodReferences;
+    }
+
+    public boolean hasRolesAllowedMethodReferences() {
+        return this.rolesAllowedMethodReferences != null && !this.rolesAllowedMethodReferences.isEmpty();
+    }
+
+    public List<String> getAuthenticatedMethodReferences() {
+        return authenticatedMethodReferences;
+    }
+
+    public void setAuthenticatedMethodReferences(List<String> authenticatedMethodReferences) {
+        this.authenticatedMethodReferences = authenticatedMethodReferences;
+    }
+
+    public boolean hasAuthenticatedMethodReferences() {
+        return this.authenticatedMethodReferences != null && !this.authenticatedMethodReferences.isEmpty();
     }
 
     public String getDefaultSecuritySchemeName() {
@@ -56,7 +72,7 @@ public class AutoRolesAllowedFilter implements OASFilter {
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
 
-        if (!methodReferences.isEmpty()) {
+        if (hasRolesAllowedMethodReferences() || hasAuthenticatedMethodReferences()) {
             String securitySchemeName = getSecuritySchemeName(openAPI);
             Paths paths = openAPI.getPaths();
             if (paths != null) {
@@ -71,10 +87,21 @@ public class AutoRolesAllowedFilter implements OASFilter {
 
                                 OperationImpl operationImpl = (OperationImpl) operation;
 
-                                if (methodReferences.keySet().contains(operationImpl.getMethodRef())) {
+                                if (hasRolesAllowedMethodReferences()
+                                        && rolesAllowedMethodReferences.keySet().contains(operationImpl.getMethodRef())) {
                                     SecurityRequirement securityRequirement = new SecurityRequirementImpl();
-                                    List<String> roles = methodReferences.get(operationImpl.getMethodRef());
+                                    List<String> roles = rolesAllowedMethodReferences.get(operationImpl.getMethodRef());
                                     securityRequirement = securityRequirement.addScheme(securitySchemeName, roles);
+                                    operation = operation.addSecurityRequirement(securityRequirement);
+                                    APIResponses responses = operation.getResponses();
+                                    for (APIResponseImpl response : getSecurityResponses()) {
+                                        responses.addAPIResponse(response.getResponseCode(), response);
+                                    }
+                                    operation = operation.responses(responses);
+                                } else if (hasAuthenticatedMethodReferences()
+                                        && authenticatedMethodReferences.contains(operationImpl.getMethodRef())) {
+                                    SecurityRequirement securityRequirement = new SecurityRequirementImpl();
+                                    securityRequirement = securityRequirement.addScheme(securitySchemeName);
                                     operation = operation.addSecurityRequirement(securityRequirement);
                                     APIResponses responses = operation.getResponses();
                                     for (APIResponseImpl response : getSecurityResponses()) {

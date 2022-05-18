@@ -210,7 +210,6 @@
                         <parentFirstArtifact>au.com.dius.pact.core:matcher</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius.pact.consumer:junit5</parentFirstArtifact>
                         <parentFirstArtifact>au.com.dius.pact:consumer</parentFirstArtifact>
-
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
@@ -223,6 +222,8 @@
                         <runnerParentFirstArtifact>org.wildfly.common:wildfly-common</runnerParentFirstArtifact>
                         <!-- This is needed because it contains some jar handling classes -->
                         <runnerParentFirstArtifact>io.smallrye.common:smallrye-common-io</runnerParentFirstArtifact>
+                        <!-- QuarkusEntryPoint needs org-crac class definition -->
+                        <runnerParentFirstArtifact>io.github.crac:org-crac</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

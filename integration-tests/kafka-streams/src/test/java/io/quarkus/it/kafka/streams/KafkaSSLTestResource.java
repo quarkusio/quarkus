@@ -15,7 +15,7 @@ public class KafkaSSLTestResource implements QuarkusTestResourceLifecycleManager
 
     private static final StrimziKafkaContainer kafka = new StrimziKafkaContainer()
             .withServerProperties(MountableFile.forClasspathResource("server.properties"))
-            .withBootstrapServers(c -> String.format("SSL://%s:%s", c.getContainerIpAddress(), c.getMappedPort(KAFKA_PORT)))
+            .withBootstrapServers(c -> String.format("SSL://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)))
             .withCopyFileToContainer(MountableFile.forClasspathResource("ks-keystore.p12"),
                     "/opt/kafka/config/kafka-keystore.p12")
             .withCopyFileToContainer(MountableFile.forClasspathResource("ks-truststore.p12"),

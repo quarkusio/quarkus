@@ -175,7 +175,7 @@ public class KnativeProcessor {
 
         if (config.clusterLocal) {
             result.add(new DecoratorBuildItem(KNATIVE,
-                    new AddLabelDecorator(name, "serving.knative.dev/visibility", "cluster-local")));
+                    new AddLabelDecorator(name, "networking.knative.dev/visibility", "cluster-local")));
         }
 
         /**

@@ -19,10 +19,7 @@ import io.quarkus.rest.data.panache.deployment.methods.GetMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.ListMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.MethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.UpdateMethodImplementor;
-import io.quarkus.rest.data.panache.deployment.methods.hal.AddHalMethodImplementor;
-import io.quarkus.rest.data.panache.deployment.methods.hal.GetHalMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.hal.ListHalMethodImplementor;
-import io.quarkus.rest.data.panache.deployment.methods.hal.UpdateHalMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.runtime.util.HashUtil;
 
@@ -36,16 +33,14 @@ class JaxRsResourceImplementor {
     private final List<MethodImplementor> methodImplementors;
 
     JaxRsResourceImplementor(boolean withValidation, boolean isResteasyClassic, boolean isReactivePanache) {
-        this.methodImplementors = Arrays.asList(
-                new GetMethodImplementor(isResteasyClassic, isReactivePanache),
-                new GetHalMethodImplementor(isResteasyClassic, isReactivePanache),
+        this.methodImplementors = Arrays.asList(new GetMethodImplementor(isResteasyClassic, isReactivePanache),
                 new ListMethodImplementor(isResteasyClassic, isReactivePanache),
-                new ListHalMethodImplementor(isResteasyClassic, isReactivePanache),
                 new AddMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
-                new AddHalMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
                 new UpdateMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
-                new UpdateHalMethodImplementor(withValidation, isResteasyClassic, isReactivePanache),
-                new DeleteMethodImplementor(isResteasyClassic, isReactivePanache));
+                new DeleteMethodImplementor(isResteasyClassic, isReactivePanache),
+                // The list hal endpoint needs to be added for both resteasy classic and resteasy reactive
+                // because the pagination links are programmatically added.
+                new ListHalMethodImplementor(isResteasyClassic, isReactivePanache));
     }
 
     /**

@@ -29,14 +29,9 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-common-spi</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson-spi</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonb-spi</artifactId>
+            <artifactId>quarkus-hal-deployment</artifactId>
         </dependency>
 
         <dependency>

@@ -9,8 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.deployment.TypeInfos.Info;
+import io.quarkus.qute.deployment.TypeInfos.TypeInfo;
 
 public class TypeInfosTest {
 
@@ -59,6 +62,24 @@ public class TypeInfosTest {
         assertEquals("String", parameterizedType.arguments().get(1).toString());
         assertTrue(infos.get(1).isProperty());
         assertEquals("size", infos.get(1).value);
+    }
+
+    @Test
+    public void testNestedGenerics() throws IOException {
+        List<Expression> expressions = Engine.builder().build()
+                .parse("{@java.util.List<java.util.Map$Entry<String,Integer>> list}{list.size}")
+                .getExpressions();
+        IndexView index = index(Foo.class, List.class, Entry.class);
+        List<Info> infos = TypeInfos.create(expressions.get(0), index, id -> "dummy");
+        assertEquals(2, infos.size());
+        assertTrue(infos.get(0).isTypeInfo());
+        TypeInfo info = infos.get(0).asTypeInfo();
+        assertEquals(DotName.createSimple(List.class.getName()), info.rawClass.name());
+        ParameterizedType entryType = info.resolvedType.asParameterizedType().arguments().get(0).asParameterizedType();
+        assertEquals(DotName.createSimple(Entry.class.getName()), entryType.name());
+        assertEquals(DotName.createSimple("String"), entryType.arguments().get(0).name());
+        assertEquals(DotName.createSimple("Integer"), entryType.arguments().get(1).name());
+        assertTrue(infos.get(1).isProperty());
     }
 
     private void assertHints(String hintStr, String... expectedHints) {

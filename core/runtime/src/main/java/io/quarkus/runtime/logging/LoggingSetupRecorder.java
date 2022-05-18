@@ -76,6 +76,7 @@ public class LoggingSetupRecorder {
         new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(config, buildConfig, false, null,
                 Collections.emptyList(),
                 Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyList(), banner, LaunchMode.DEVELOPMENT);
     }
 
@@ -84,7 +85,8 @@ public class LoggingSetupRecorder {
             final RuntimeValue<Optional<Handler>> devUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
-            final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
+            final List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
+            final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier, LaunchMode launchMode) {
 
         final Map<String, CategoryConfig> categories = config.categories;
@@ -125,7 +127,7 @@ public class LoggingSetupRecorder {
         if (config.console.enable) {
             final Handler consoleHandler = configureConsoleHandler(config.console, consoleRuntimeConfig.getValue(),
                     errorManager, cleanupFiler,
-                    possibleFormatters, possibleBannerSupplier, launchMode);
+                    possibleConsoleFormatters, possibleBannerSupplier, launchMode);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
         }
@@ -149,7 +151,7 @@ public class LoggingSetupRecorder {
         }
 
         if (config.file.enable) {
-            handlers.add(configureFileHandler(config.file, errorManager, cleanupFiler));
+            handlers.add(configureFileHandler(config.file, errorManager, cleanupFiler, possibleFileFormatters));
         }
 
         if (config.syslog.enable) {
@@ -177,7 +179,7 @@ public class LoggingSetupRecorder {
 
         if (!categories.isEmpty()) {
             Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleRuntimeConfig.getValue(),
-                    possibleFormatters, errorManager,
+                    possibleConsoleFormatters, possibleFileFormatters, errorManager,
                     cleanupFiler, launchMode);
 
             Map<String, Handler> additionalNamedHandlersMap;
@@ -228,7 +230,8 @@ public class LoggingSetupRecorder {
     }
 
     public static void initializeBuildTimeLogging(LogConfig config, LogBuildTimeConfig buildConfig,
-            ConsoleRuntimeConfig consoleConfig, LaunchMode launchMode) {
+            ConsoleRuntimeConfig consoleConfig, List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
+            LaunchMode launchMode) {
 
         final Map<String, CategoryConfig> categories = config.categories;
         final LogContext logContext = LogContext.getLogContext();
@@ -255,8 +258,8 @@ public class LoggingSetupRecorder {
             handlers.add(consoleHandler);
         }
 
-        Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, Collections.emptyList(), errorManager,
-                logCleanupFilter, launchMode);
+        Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, Collections.emptyList(),
+                possibleFileFormatters, errorManager, logCleanupFilter, launchMode);
 
         for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
             final String categoryName = entry.getKey();
@@ -307,7 +310,9 @@ public class LoggingSetupRecorder {
     }
 
     private static Map<String, Handler> createNamedHandlers(LogConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,
-            List<RuntimeValue<Optional<Formatter>>> possibleFormatters, ErrorManager errorManager,
+            List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
+            List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
+            ErrorManager errorManager,
             LogCleanupFilter cleanupFilter, LaunchMode launchMode) {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers.entrySet()) {
@@ -317,7 +322,7 @@ public class LoggingSetupRecorder {
             }
             final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, consoleRuntimeConfig, errorManager,
                     cleanupFilter,
-                    possibleFormatters, null, launchMode);
+                    possibleConsoleFormatters, null, launchMode);
             addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers.entrySet()) {
@@ -325,7 +330,8 @@ public class LoggingSetupRecorder {
             if (!namedFileConfig.enable) {
                 continue;
             }
-            final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter);
+            final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter,
+                    possibleFileFormatters);
             addToNamedHandlers(namedHandlers, fileHandler, fileConfigEntry.getKey());
         }
         for (Entry<String, SyslogConfig> sysLogConfigEntry : config.syslogHandlers.entrySet()) {
@@ -461,14 +467,14 @@ public class LoggingSetupRecorder {
         }
 
         if (formatterWarning) {
-            handler.getErrorManager().error("Multiple formatters were activated", null, ErrorManager.GENERIC_FAILURE);
+            handler.getErrorManager().error("Multiple console formatters were activated", null, ErrorManager.GENERIC_FAILURE);
         }
 
         return handler;
     }
 
     private static Handler configureFileHandler(final FileConfig config, final ErrorManager errorManager,
-            final LogCleanupFilter cleanupFilter) {
+            final LogCleanupFilter cleanupFilter, final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters) {
         FileHandler handler;
         FileConfig.RotationConfig rotationConfig = config.rotation;
         if (rotationConfig.fileSuffix.isPresent()) {
@@ -485,8 +491,22 @@ public class LoggingSetupRecorder {
             handler = sizeRotatingFileHandler;
         }
 
-        final PatternFormatter formatter = new PatternFormatter(config.format);
+        Formatter formatter = null;
+        boolean formatterWarning = false;
+        for (RuntimeValue<Optional<Formatter>> value : possibleFileFormatters) {
+            if (formatter != null) {
+                formatterWarning = true;
+            }
+            final Optional<Formatter> val = value.getValue();
+            if (val.isPresent()) {
+                formatter = val.get();
+            }
+        }
+        if (formatter == null) {
+            formatter = new PatternFormatter(config.format);
+        }
         handler.setFormatter(formatter);
+
         handler.setAppend(true);
         try {
             handler.setFile(config.path);
@@ -496,6 +516,11 @@ public class LoggingSetupRecorder {
         handler.setErrorManager(errorManager);
         handler.setLevel(config.level);
         handler.setFilter(cleanupFilter);
+
+        if (formatterWarning) {
+            handler.getErrorManager().error("Multiple file formatters were activated", null, ErrorManager.GENERIC_FAILURE);
+        }
+
         if (config.async.enable) {
             return createAsyncHandler(config.async, config.level, handler);
         }

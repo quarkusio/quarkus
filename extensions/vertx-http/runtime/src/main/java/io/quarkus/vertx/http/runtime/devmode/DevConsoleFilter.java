@@ -34,13 +34,14 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
         for (Map.Entry<String, String> entry : event.request().headers()) {
             headers.put(entry.getKey(), event.request().headers().getAll(entry.getKey()));
         }
-        event.request().resume();
         if (event.getBody() != null) {
+            event.request().resume();
             DevConsoleRequest request = new DevConsoleRequest(event.request().method().name(), event.request().uri(), headers,
                     event.getBody().getBytes());
             setupFuture(event, request.getResponse());
             DevConsoleManager.sentRequest(request);
         } else if (event.request().isEnded()) {
+            event.request().resume();
             DevConsoleRequest request = new DevConsoleRequest(event.request().method().name(), event.request().uri(), headers,
                     new byte[0]);
             setupFuture(event, request.getResponse());
@@ -55,6 +56,7 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
                     DevConsoleManager.sentRequest(request);
                 }
             });
+            event.request().resume();
         }
 
     }

@@ -53,6 +53,11 @@
             <artifactId>quarkus-smallrye-graphql-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.stork</groupId>
+            <artifactId>stork-service-discovery-static-list</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

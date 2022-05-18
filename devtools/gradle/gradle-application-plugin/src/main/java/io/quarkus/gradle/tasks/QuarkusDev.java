@@ -20,6 +20,7 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.apache.tools.ant.types.Commandline;
+import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -33,6 +34,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -52,6 +54,8 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
+import io.quarkus.gradle.dsl.CompilerOption;
+import io.quarkus.gradle.dsl.CompilerOptions;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -79,6 +83,8 @@ public class QuarkusDev extends QuarkusTask {
     private List<String> args = new LinkedList<String>();
 
     private List<String> compilerArgs = new LinkedList<>();
+
+    private CompilerOptions compilerOptions = new CompilerOptions();
 
     private boolean shouldPropagateJavaCompilerArgs = true;
 
@@ -190,6 +196,16 @@ public class QuarkusDev extends QuarkusTask {
     @Option(description = "Additional parameters to pass to javac when recompiling changed source files", option = "compiler-args")
     public void setCompilerArgs(List<String> compilerArgs) {
         this.compilerArgs = compilerArgs;
+    }
+
+    @Internal
+    public CompilerOptions getCompilerOptions() {
+        return this.compilerOptions;
+    }
+
+    public QuarkusDev compilerOptions(Action<CompilerOptions> action) {
+        action.execute(compilerOptions);
+        return this;
     }
 
     @TaskAction
@@ -313,12 +329,16 @@ public class QuarkusDev extends QuarkusTask {
             builder.targetJavaVersion(javaPluginConvention.getTargetCompatibility().toString());
         }
 
+        for (CompilerOption compilerOptions : compilerOptions.getCompilerOptions()) {
+            builder.compilerOptions(compilerOptions.getName(), compilerOptions.getArgs());
+        }
+
         if (getCompilerArgs().isEmpty() && shouldPropagateJavaCompilerArgs) {
             getJavaCompileTask()
                     .map(compileTask -> compileTask.getOptions().getCompilerArgs())
-                    .ifPresent(builder::compilerOptions);
+                    .ifPresent(args -> builder.compilerOptions("java", args));
         } else {
-            builder.compilerOptions(getCompilerArgs());
+            builder.compilerOptions("java", getCompilerArgs());
         }
 
         modifyDevModeContext(builder);

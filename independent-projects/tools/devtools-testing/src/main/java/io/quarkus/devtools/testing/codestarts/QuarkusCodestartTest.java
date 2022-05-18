@@ -2,6 +2,8 @@ package io.quarkus.devtools.testing.codestarts;
 
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.PROJECT_PACKAGE_NAME;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
+import static io.quarkus.devtools.project.QuarkusProjectHelper.artifactResolver;
+import static io.quarkus.devtools.project.codegen.CreateProjectHelper.completeCatalogWithCoords;
 import static io.quarkus.devtools.testing.RegistryClientTestHelper.disableRegistryClientTestConfig;
 import static io.quarkus.devtools.testing.RegistryClientTestHelper.enableRegistryClientTestConfig;
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
@@ -72,6 +74,8 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     private final boolean enableRegistryClient;
     private final Collection<String> artifacts;
     private final Collection<ArtifactCoords> extensions;
+    private final String quarkusBomGroupId;
+    private final String quarkusBomVersion;
     private Path targetDir;
     private ExtensionCatalog extensionCatalog;
     private QuarkusCodestartCatalog quarkusCodestartCatalog;
@@ -82,6 +86,8 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
         this.languages = builder.languages;
         this.buildTool = builder.buildTool;
         this.quarkusCodestartCatalog = builder.quarkusCodestartCatalog;
+        this.quarkusBomGroupId = builder.quarkusBomGroupId;
+        this.quarkusBomVersion = builder.quarkusBomVersion;
         this.extensionCatalog = builder.extensionCatalog;
         this.enableRegistryClient = builder.extensionCatalog == null;
         this.data = builder.data;
@@ -97,7 +103,11 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         if (enableRegistryClient) {
-            enableRegistryClientTestConfig();
+            if (quarkusBomVersion != null) {
+                enableRegistryClientTestConfig(quarkusBomGroupId != null ? quarkusBomGroupId : "io.quarkus", quarkusBomVersion);
+            } else {
+                enableRegistryClientTestConfig();
+            }
         }
         targetDir = Paths.get("target/quarkus-codestart-test/" + getTestId());
         SnapshotTesting.deleteTestDirectory(targetDir.toFile());
@@ -113,11 +123,13 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     public ExtensionCatalog getExtensionsCatalog() {
         if (extensionCatalog == null) {
             try {
-                extensionCatalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
+                ExtensionCatalog baseExtensionCatalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
+                extensionCatalog = completeCatalogWithCoords(baseExtensionCatalog, extensions, artifactResolver());
             } catch (Exception e) {
                 throw new RuntimeException("Failed to resolve extension catalog", e);
             }
         }
+
         return extensionCatalog;
     }
 

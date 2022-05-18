@@ -94,6 +94,7 @@ import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
 import io.quarkus.qute.LoopSectionHelper;
+import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.ParserHelper;
 import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.ResultNode;
@@ -113,6 +114,7 @@ import io.quarkus.qute.WhenSectionHelper;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.TypeCheck;
 import io.quarkus.qute.deployment.TypeInfos.Info;
+import io.quarkus.qute.deployment.Types.AssignableInfo;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator.ResolveCreator;
@@ -477,7 +479,8 @@ public class QuteProcessor {
         for (TemplatePathBuildItem path : templatePaths) {
             Template template = dummyEngine.getTemplate(path.getPath());
             if (template != null) {
-                analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(), path.getPath()));
+                analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(),
+                        template.getParameterDeclarations(), path.getPath()));
             }
         }
 
@@ -485,7 +488,7 @@ public class QuteProcessor {
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             Template template = dummyEngine.parse(messageBundleMethod.getTemplate(), null, messageBundleMethod.getTemplateId());
             analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template.getGeneratedId(),
-                    template.getExpressions(),
+                    template.getExpressions(), template.getParameterDeclarations(),
                     messageBundleMethod.getMethod().declaringClass().name() + "#" + messageBundleMethod.getMethod().name()
                             + "()"));
         }
@@ -538,6 +541,7 @@ public class QuteProcessor {
                 .filter(Predicate.not(TemplateExtensionMethodBuildItem::hasNamespace)).collect(Collectors.toUnmodifiableList());
 
         LookupConfig lookupConfig = new FixedLookupConfig(index, initDefaultMembersFilter(), false);
+        Map<DotName, AssignableInfo> assignableCache = new HashMap<>();
 
         for (TemplateAnalysis templateAnalysis : templatesAnalysis.getAnalysis()) {
             // The relevant checked template, may be null
@@ -551,12 +555,47 @@ public class QuteProcessor {
                     continue;
                 }
                 Match match = validateNestedExpressions(config, templateAnalysis, null, new HashMap<>(), excludes,
-                        incorrectExpressions,
-                        expression, index, implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
+                        incorrectExpressions, expression, index, implicitClassToMembersUsed, templateIdToPathFun,
+                        generatedIdsToMatches,
                         checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData, regularExtensionMethods,
-                        namespaceExtensionMethods);
+                        namespaceExtensionMethods, assignableCache);
                 generatedIdsToMatches.put(expression.getGeneratedId(), match);
             }
+
+            // Validate default values of parameter declarations
+            for (ParameterDeclaration parameterDeclaration : templateAnalysis.parameterDeclarations) {
+                Expression defaultValue = parameterDeclaration.getDefaultValue();
+                if (defaultValue != null) {
+                    Match match;
+                    if (defaultValue.isLiteral()) {
+                        match = new Match(index);
+                        setMatchValues(match, defaultValue, generatedIdsToMatches, index);
+                    } else {
+                        match = generatedIdsToMatches.get(defaultValue.getGeneratedId());
+                        if (match == null) {
+                            LOGGER.debugf(
+                                    "No type info available - unable to validate the default value of a parameter declaration ["
+                                            + parameterDeclaration.getKey() + "] in " + defaultValue.getOrigin());
+                            continue;
+                        }
+                    }
+                    Info info = TypeInfos.create(parameterDeclaration.getTypeInfo(), null, index, templateIdToPathFun,
+                            parameterDeclaration.getDefaultValue().getOrigin());
+                    if (!info.isTypeInfo()) {
+                        throw new IllegalStateException("Invalid type info [" + info + "] of parameter declaration ["
+                                + parameterDeclaration.getKey() + "] in "
+                                + defaultValue.getOrigin().toString());
+                    }
+                    if (!Types.isAssignableFrom(info.asTypeInfo().resolvedType, match.type(), index, assignableCache)) {
+                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(defaultValue.toOriginalString(),
+                                "The type of the default value [" + match.type()
+                                        + "] does not match the type of the parameter declaration ["
+                                        + info.asTypeInfo().resolvedType + "]",
+                                defaultValue.getOrigin()));
+                    }
+                }
+            }
+
             expressionMatches
                     .produce(new TemplateExpressionMatchesBuildItem(templateAnalysis.generatedId, generatedIdsToMatches));
         }
@@ -628,7 +667,8 @@ public class QuteProcessor {
             LookupConfig lookupConfig, Map<String, BeanInfo> namedBeans,
             Map<String, TemplateDataBuildItem> namespaceTemplateData,
             List<TemplateExtensionMethodBuildItem> regularExtensionMethods,
-            Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods) {
+            Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods,
+            Map<DotName, AssignableInfo> assignableCache) {
 
         LOGGER.debugf("Validate %s from %s", expression, expression.getOrigin());
 
@@ -644,7 +684,7 @@ public class QuteProcessor {
                         validateNestedExpressions(config, templateAnalysis, null, results, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
                                 generatedIdsToMatches, checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData,
-                                regularExtensionMethods, namespaceExtensionMethods);
+                                regularExtensionMethods, namespaceExtensionMethods, assignableCache);
                     }
                 }
             }
@@ -734,7 +774,7 @@ public class QuteProcessor {
         if (extensionMethods != null) {
             // Namespace is used and at least one namespace extension method exists for the given namespace
             TemplateExtensionMethodBuildItem extensionMethod = findTemplateExtensionMethod(root, null, extensionMethods,
-                    expression, index, templateIdToPathFun, results);
+                    expression, index, templateIdToPathFun, results, assignableCache);
             if (extensionMethod != null) {
                 MethodInfo method = extensionMethod.getMethod();
                 ClassInfo returnType = index.getClassByName(method.returnType().name());
@@ -851,7 +891,7 @@ public class QuteProcessor {
                     if (match.clazz() != null) {
                         if (info.isVirtualMethod()) {
                             member = findMethod(info.part.asVirtualMethod(), match.clazz(), expression, index,
-                                    templateIdToPathFun, results, lookupConfig);
+                                    templateIdToPathFun, results, lookupConfig, assignableCache);
                             if (member != null) {
                                 membersUsed.add(member.asMethod().name());
                             }
@@ -868,8 +908,7 @@ public class QuteProcessor {
                 if (member == null) {
                     // Then try to find an etension method
                     extensionMethod = findTemplateExtensionMethod(info, match.type(), regularExtensionMethods, expression,
-                            index,
-                            templateIdToPathFun, results);
+                            index, templateIdToPathFun, results, assignableCache);
                     if (extensionMethod != null) {
                         member = extensionMethod.getMethod();
                     }
@@ -1786,13 +1825,15 @@ public class QuteProcessor {
 
     private static TemplateExtensionMethodBuildItem findTemplateExtensionMethod(Info info, Type matchType,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods, Expression expression, IndexView index,
-            Function<String, String> templateIdToPathFun, Map<String, Match> results) {
+            Function<String, String> templateIdToPathFun, Map<String, Match> results,
+            Map<DotName, AssignableInfo> assignableCache) {
         if (!info.isProperty() && !info.isVirtualMethod()) {
             return null;
         }
         String name = info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name;
         for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
-            if (matchType != null && !Types.isAssignableFrom(extensionMethod.getMatchType(), matchType, index)) {
+            if (matchType != null
+                    && !Types.isAssignableFrom(extensionMethod.getMatchType(), matchType, index, assignableCache)) {
                 // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"
                 continue;
             }
@@ -1842,7 +1883,7 @@ public class QuteProcessor {
                             paramType = evaluatedParams.get(idx).type;
                         }
                         if (!Types.isAssignableFrom(paramType,
-                                result.type, index)) {
+                                result.type, index, assignableCache)) {
                             matches = false;
                             break;
                         }
@@ -1936,7 +1977,7 @@ public class QuteProcessor {
 
     private static AnnotationTarget findMethod(VirtualMethodPart virtualMethod, ClassInfo clazz, Expression expression,
             IndexView index, Function<String, String> templateIdToPathFun, Map<String, Match> results,
-            LookupConfig config) {
+            LookupConfig config, Map<DotName, AssignableInfo> assignableCache) {
         // Find a method with the given name, matching number of params and assignable parameter types
         Set<DotName> interfaceNames = config.declaredMembersOnly() ? null : new HashSet<>();
         while (clazz != null) {
@@ -1945,7 +1986,8 @@ public class QuteProcessor {
             }
             for (MethodInfo method : clazz.methods()) {
                 if (config.filter().test(method)
-                        && methodMatches(method, virtualMethod, expression, index, templateIdToPathFun, results)) {
+                        && methodMatches(method, virtualMethod, expression, index, templateIdToPathFun, results,
+                                assignableCache)) {
                     return method;
                 }
             }
@@ -1963,7 +2005,8 @@ public class QuteProcessor {
                 if (interfaceClassInfo != null) {
                     for (MethodInfo method : interfaceClassInfo.methods()) {
                         if (config.filter().test(method)
-                                && methodMatches(method, virtualMethod, expression, index, templateIdToPathFun, results)) {
+                                && methodMatches(method, virtualMethod, expression, index, templateIdToPathFun, results,
+                                        assignableCache)) {
                             return method;
                         }
                     }
@@ -1975,7 +2018,8 @@ public class QuteProcessor {
     }
 
     private static boolean methodMatches(MethodInfo method, VirtualMethodPart virtualMethod, Expression expression,
-            IndexView index, Function<String, String> templateIdToPathFun, Map<String, Match> results) {
+            IndexView index, Function<String, String> templateIdToPathFun, Map<String, Match> results,
+            Map<DotName, AssignableInfo> assignableCache) {
 
         if (!method.name().equals(virtualMethod.getName())) {
             return false;
@@ -2013,7 +2057,7 @@ public class QuteProcessor {
                     paramType = parameters.get(idx);
                 }
                 if (!Types.isAssignableFrom(paramType,
-                        result.type, index)) {
+                        result.type, index, assignableCache)) {
                     matches = false;
                     break;
                 }

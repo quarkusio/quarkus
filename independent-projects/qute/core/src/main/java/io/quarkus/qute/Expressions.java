@@ -212,7 +212,7 @@ public final class Expressions {
 
         @Override
         public boolean isLiteralSeparator(char candidate) {
-            return candidate == '<' || candidate == '>';
+            return SplitConfig.super.isLiteralSeparator(candidate) || candidate == '<' || candidate == '>';
         }
 
     };
@@ -244,7 +244,7 @@ public final class Expressions {
 
     }
 
-    interface SplitConfig {
+    public interface SplitConfig {
 
         boolean isSeparator(char candidate);
 

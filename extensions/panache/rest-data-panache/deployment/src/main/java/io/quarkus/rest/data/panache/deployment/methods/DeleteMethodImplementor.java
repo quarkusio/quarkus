@@ -13,7 +13,6 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
-import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.smallrye.mutiny.Uni;
 
@@ -105,8 +104,8 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
 
             // Return response
             BranchResult entityWasDeleted = tryBlock.ifNonZero(deleted);
-            entityWasDeleted.trueBranch().returnValue(ResponseImplementor.noContent(entityWasDeleted.trueBranch()));
-            entityWasDeleted.falseBranch().returnValue(ResponseImplementor.notFound(entityWasDeleted.falseBranch()));
+            entityWasDeleted.trueBranch().returnValue(responseImplementor.noContent(entityWasDeleted.trueBranch()));
+            entityWasDeleted.falseBranch().returnValue(responseImplementor.notFound(entityWasDeleted.falseBranch()));
 
             tryBlock.close();
         } else {
@@ -124,9 +123,10 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
                                 ofMethod(Boolean.class, "compareTo", int.class, Boolean.class), deleted, falseDefault);
 
                         BranchResult entityWasDeleted = body.ifNonZero(deletedAsInt);
-                        entityWasDeleted.trueBranch().returnValue(ResponseImplementor.noContent(entityWasDeleted.trueBranch()));
+                        entityWasDeleted.trueBranch()
+                                .returnValue(responseImplementor.noContent(entityWasDeleted.trueBranch()));
                         entityWasDeleted.falseBranch()
-                                .returnValue(ResponseImplementor.notFound(entityWasDeleted.falseBranch()));
+                                .returnValue(responseImplementor.notFound(entityWasDeleted.falseBranch()));
                     }));
         }
 

@@ -10,7 +10,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
     private static final String TABLE_CLOSING_TAG = "\n|===";
     public static final String SEARCHABLE_TABLE_CLASS = ".searchable"; // a css class indicating if a table is searchable
     public static final String CONFIGURATION_TABLE_CLASS = ".configuration-reference";
-    private static final String TABLE_ROW_FORMAT = "\n\na|%s [[%s]]`link:#%s[%s]`\n\n[.description]\n--\n%s\n--|%s %s\n|%s\n";
+    private static final String TABLE_ROW_FORMAT = "\n\na|%s [[%s]]`link:#%s[%s]`\n\n[.description]\n--\n%s\n--%s|%s %s\n|%s\n";
     private static final String SECTION_TITLE = "[[%s]]link:#%s[%s]";
     private static final String TABLE_SECTION_ROW_FORMAT = "\n\nh|%s\n%s\nh|Type\nh|Default";
     private static final String TABLE_HEADER_FORMAT = "[.configuration-legend]%s\n[%s, cols=\"80,.^10,.^10\"]\n|===";
@@ -53,7 +53,11 @@ final class SummaryTableDocFormatter implements DocFormatter {
     public void format(Writer writer, ConfigDocKey configDocKey) throws IOException {
         String typeContent = "";
         if (configDocKey.hasAcceptedValues()) {
-            typeContent = DocGeneratorUtil.joinAcceptedValues(configDocKey.getAcceptedValues());
+            if (configDocKey.isEnum()) {
+                typeContent = DocGeneratorUtil.joinEnumValues(configDocKey.getAcceptedValues());
+            } else {
+                typeContent = DocGeneratorUtil.joinAcceptedValues(configDocKey.getAcceptedValues());
+            }
         } else if (configDocKey.hasType()) {
             typeContent = configDocKey.computeTypeSimpleName();
             final String javaDocLink = configDocKey.getJavaDocSiteLink();
@@ -84,6 +88,8 @@ final class SummaryTableDocFormatter implements DocFormatter {
                 key,
                 // make sure nobody inserts a table cell separator here
                 doc.replace("|", "\\|"),
+                // if ConfigDocKey is enum, cell style operator must support block elements
+                configDocKey.isEnum() ? " a" : Constants.EMPTY,
                 typeContent, typeDetail,
                 defaultValue.isEmpty() ? required
                         : String.format("`%s`", defaultValue.replace("|", "\\|")

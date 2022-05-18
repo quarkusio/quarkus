@@ -11,10 +11,7 @@ public class IncludeTest {
 
     @Test
     public void testInclude() {
-        Engine engine = Engine.builder().addSectionHelper(new IncludeSectionHelper.Factory())
-                .addSectionHelper(new InsertSectionHelper.Factory())
-                .addValueResolver(ValueResolvers.thisResolver())
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
         engine.putTemplate("super", engine.parse("{this}: {#insert header}default header{/insert}"));
         assertEquals("HEADER: super header",
@@ -23,10 +20,7 @@ public class IncludeTest {
 
     @Test
     public void testMultipleInserts() {
-        Engine engine = Engine.builder().addSectionHelper(new IncludeSectionHelper.Factory())
-                .addSectionHelper(new InsertSectionHelper.Factory())
-                .addValueResolver(ValueResolvers.thisResolver())
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
         engine.putTemplate("super",
                 engine.parse("{#insert header}default header{/insert} AND {#insert content}default content{/insert}"));
@@ -38,10 +32,7 @@ public class IncludeTest {
 
     @Test
     public void testIncludeSimpleData() {
-        Engine engine = Engine.builder().addSectionHelper(new IncludeSectionHelper.Factory())
-                .addSectionHelper(new InsertSectionHelper.Factory())
-                .addValueResolver(ValueResolvers.mapResolver())
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
         Map<String, String> data = new HashMap<>();
         data.put("name", "Al");
@@ -184,6 +175,13 @@ public class IncludeTest {
                         "Rendering error in template [foo.html] line 1: included template [super] not found")
                 .hasFieldOrProperty("origin")
                 .hasFieldOrProperty("code");
+    }
+
+    @Test
+    public void testIsolated() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo", engine.parse("{val ?: 'bar'}"));
+        assertEquals("bar", engine.parse("{#include foo _isolated /}").data("val", "baz").render());
     }
 
 }

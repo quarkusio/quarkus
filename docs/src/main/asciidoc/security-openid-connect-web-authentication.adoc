@@ -471,7 +471,7 @@ quarkus.oidc.logout.extra-params.client_id=${quarkus.oidc.client-id}
 [[back-channel-logout]]
 ==== Back-Channel Logout
 
-link:https://openid.net/specs/openid-connect-backchannel-1_0.html[Back-Channel Logout] is used by OpenId Connect providers to logout the current user from all the applications this user is currently logged in, bypassing the user agent.
+link:https://openid.net/specs/openid-connect-backchannel-1_0.html[Back-Channel Logout] is used by OpenID Connect providers to logout the current user from all the applications this user is currently logged in, bypassing the user agent.
 
 You can configure Quarkus to support `Back-Channel Logout` as follows:
 
@@ -485,7 +485,7 @@ quarkus.oidc.application-type=web-app
 quarkus.oidc.logout.backchannel.path=/back-channel-logout
 ----
 
-Absolute `Back-Channel Logout` URL is calculated by adding `quarkus.oidc.back-channel-logout.path` to the current endpoint URL, for example, `http://localhost:8080/back-channel-logout`. You will need to configure this URL in the Admin Console of your OpenId Connect Provider.
+Absolute `Back-Channel Logout` URL is calculated by adding `quarkus.oidc.back-channel-logout.path` to the current endpoint URL, for example, `http://localhost:8080/back-channel-logout`. You will need to configure this URL in the Admin Console of your OpenID Connect Provider.
 
 [[local-logout]]
 ==== Local Logout
@@ -627,7 +627,7 @@ public class CustomTokenStateManager implements TokenStateManager {
 
 link:https://datatracker.ietf.org/doc/html/rfc7636[Proof Of Key for Code Exchange] (PKCE) minimizes the risk of the authorization code interception.
 
-While `PKCE` is of primary importance to the public OpenId Connect clients (such as the SPA scripts running in a browser), it can also provide an extra level of protection to Quarkus OIDC `web-app` applications which are confidential OpenId Connect clients capable of securely storing the client secret and using it to exchange the code for the tokens.
+While `PKCE` is of primary importance to the public OpenID Connect clients (such as the SPA scripts running in a browser), it can also provide an extra level of protection to Quarkus OIDC `web-app` applications which are confidential OpenID Connect clients capable of securely storing the client secret and using it to exchange the code for the tokens.
 
 If can enable `PKCE` for your OIDC `web-app` endpoint with a `quarkus.oidc.authentication.pkce-required` property and a 32 characters long secret, for example:
 
@@ -639,7 +639,7 @@ quarkus.oidc.authentication.pkce-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 
 If you already have a 32 character long client secret then `quarkus.oidc.authentication.pkce-secret` does not have to be set unless you prefer to use a different secret key.
 
-The secret key is required for encrypting a randomly generated `PKCE` `code_verifier` while the user is being redirected with the `code_challenge` query parameter to OpenId Connect Provider to authenticate. The `code_verifier` will be decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret and other parameters to complete the code exchange. The provider will fail the code exchange if a `SHA256` digest of the `code_verifier` does not match the `code_challenge` provided during the authentication request.
+The secret key is required for encrypting a randomly generated `PKCE` `code_verifier` while the user is being redirected with the `code_challenge` query parameter to OpenID Connect Provider to authenticate. The `code_verifier` will be decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret and other parameters to complete the code exchange. The provider will fail the code exchange if a `SHA256` digest of the `code_verifier` does not match the `code_challenge` provided during the authentication request.
 
 === Listening to important authentication events
 
@@ -696,33 +696,33 @@ If you plan to consume this application from a Single Page Application running o
 [[oauth2]]
 === Integration with GitHub and other OAuth2 providers
 
-Some well known providers such as `GitHub` or `LinkedIn` are not `OpenID Connect` but `OAuth2` providers which support the `authorization code flow`, for example, link:https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps[GitHub OAuth2] and link:https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow[LinkedIn OAuth2].
+Some well known providers such as GitHub or LinkedIn are not OpenID Connect but OAuth2 providers which support the `authorization code flow`, for example, link:https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps[GitHub OAuth2] and link:https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow[LinkedIn OAuth2].
 
-The main difference between `OpenID Connect` and `OAuth2` providers is that `OpenID Connect` providers, by building on top of `OAuth2`, return an `ID Token` representing a user authentication, in addition to the standard authorization code flow `access` and `refresh` tokens returned by `OAuth2` providers.
+The main difference between OpenID Connect and OAuth2 providers is that OpenID Connect providers, by building on top of OAuth2, return an `ID Token` representing a user authentication, in addition to the standard authorization code flow `access` and `refresh` tokens returned by `OAuth2` providers.
 
-`OAuth2` providers such as `GitHub` do not return `IdToken`, the fact of the user authentication is implicit and is indirectly represented by the `access` token which represents an authenticated user authorizing the current Quarkus `web-app` application to access some data on behalf of the authenticated user.
+OAuth2 providers such as GitHub do not return `IdToken`, the fact of the user authentication is implicit and is indirectly represented by the `access` token which represents an authenticated user authorizing the current Quarkus `web-app` application to access some data on behalf of the authenticated user.
 
-For example, when working with `GitHub`, the Quarkus endpoint can acquire an `access` token which will allow it to request a `GitHub` profile of the current user.
-In fact this is exactly how a standard `OpenID Connect` `UserInfo` acqusition also works - by authenticating into your `OpenID Connect` provider you also give a permission to Quarkus application to acquire your <<user-info,UserInfo>> on your behalf - and it also shows what is meant by `OpenID Connect` being built on top of `OAuth2`.
+For example, when working with GitHub, the Quarkus endpoint can acquire an `access` token which will allow it to request a GitHub profile of the current user.
+In fact this is exactly how a standard OpenID Connect `UserInfo` acquisition also works - by authenticating into your OpenID Connect provider you also give a permission to Quarkus application to acquire your <<user-info,UserInfo>> on your behalf - and it also shows what is meant by OpenID Connect being built on top of OAuth2.
 
-In order to support the integration with such `OAuth2` servers, `quarkus-oidc` needs to be configured to allow the authorization code flow responses without `IdToken`: `quarkus.oidc.authentication.id-token-required=false`.
+In order to support the integration with such OAuth2 servers, `quarkus-oidc` needs to be configured to allow the authorization code flow responses without `IdToken`: `quarkus.oidc.authentication.id-token-required=false`.
 
 It is required because `quarkus-oidc` expects that not only `access` and `refresh` tokens but also `IdToken` will be returned once the authorization code flow completes.
 
-Note, even though you will configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` will be generated to support the way `quarkus-oidc` operates where an `IdToken` is used to support the authentication session and to avoid redirecting the user to the provider such as `GitHub` on every request. In this case the session lifespan is set to 5 minutes which can be extended further as described in the <<session-management,session management>> section.
+Note, even though you will configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` will be generated to support the way `quarkus-oidc` operates where an `IdToken` is used to support the authentication session and to avoid redirecting the user to the provider such as GitHub on every request. In this case the session lifespan is set to 5 minutes which can be extended further as described in the <<session-management,session management>> section.
 
 The next step is to ensure that the returned access token can be useful to the current Quarkus endpoint.
-If the `OAuth2` provider supports the introspection endpoint then you may be able to use this access token as a source of roles with `quarkus.oidc.roles.source=accesstoken`. If no introspection endpoint is available then at the very least it should be possible to request <<user-info,UserInfo>> from this provider with `quarkus.oidc.authentication.user-info-required` - this is the case with `GitHib`.
+If the OAuth2 provider supports the introspection endpoint then you may be able to use this access token as a source of roles with `quarkus.oidc.roles.source=accesstoken`. If no introspection endpoint is available then at the very least it should be possible to request <<user-info,UserInfo>> from this provider with `quarkus.oidc.authentication.user-info-required` - this is the case with GitHub.
 
-Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quarkus-oidc` can be integrated with the providers such as `GitHib`.
+Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quarkus-oidc` can be integrated with the providers such as GitHub.
 
 Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see <<token-introspection-userinfo-cache,Token Introspection and UserInfo Cache> for more details.
 
-Alternatively, you may want to request that `UserInfo` is embedded into the internal generated `IdToken`with the `quarkus.oidc.cache-user-info-in-idtoken=true` property - the advantage of this approach is that by default no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie. You may also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data, please see <<token-state-manager,Encrypt Tokens With TokenStateManager>> for more information.
+Alternatively, you may want to request that `UserInfo` is embedded into the internal generated `IdToken` with the `quarkus.oidc.cache-user-info-in-idtoken=true` property - the advantage of this approach is that by default no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie. You may also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data, please see <<token-state-manager,Encrypt Tokens With TokenStateManager>> for more information.
 
 Also, OAuth2 servers may not support a well-known configuration endpoint in which case the discovery has to be disabled and the authorization, token, and introspection and/or userinfo endpoint paths have to be configured manually.
 
-Here is how you can integrate `quarkus-oidc` with `GitHub` after you have link:https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app[created a GitHub OAuth application]. Configure your Quarkus endpoint like this:
+Here is how you can integrate `quarkus-oidc` with GitHub after you have link:https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app[created a GitHub OAuth application]. Configure your Quarkus endpoint like this:
 
 [source,properties]
 ----
@@ -741,7 +741,7 @@ quarkus.oidc.credentials.secret=github_app_clientsecret
 # quarkus.oidc.cache-user-info-in-idtoken=true
 ----
 
-See xref:security-openid-connect-providers.adoc[Well Known OpenId Connect providers] for more details about configuring other well-known providers.
+See xref:security-openid-connect-providers.adoc[Well Known OpenID Connect providers] for more details about configuring other well-known providers.
 
 This is all what is needed for an endpoint like this one to return the currently authenticated user's profile with `GET http://localhost:8080/github/userinfo` and access it as the individual `UserInfo` properties:
 
@@ -771,7 +771,7 @@ public class TokenResource {
 }
 ----
 
-If you support more than one social provider with the help of xref:security-openid-connect-multitenancy.adoc[OpenID Connect Multi-Tenancy], for example, `Google` which is an OpenID Connect Provider returning `IdToken` and `GitHub` which is an `OAuth2` provider returning no `IdToken` and only allowing to access `UserInfo` then you can have your endpoint working with only the injected `SecurityIdentity` for both `Google` and `GitHub` flows. A simple augmentation of `SecurityIdentity` will be required where a principal created with the internally generated `IdToken` will be replaced with the `UserInfo` based principal when the GiHub flow is active:
+If you support more than one social provider with the help of xref:security-openid-connect-multitenancy.adoc[OpenID Connect Multi-Tenancy], for example, Google which is an OpenID Connect Provider returning `IdToken` and GitHub which is an OAuth2 provider returning no `IdToken` and only allowing to access `UserInfo` then you can have your endpoint working with only the injected `SecurityIdentity` for both Google and GitHub flows. A simple augmentation of `SecurityIdentity` will be required where a principal created with the internally generated `IdToken` will be replaced with the `UserInfo` based principal when the GiHub flow is active:
 
 [source,java]
 ----
@@ -814,7 +814,7 @@ public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmento
 }
 ----
 
-Now, the following code will work when the user is signing in into your application with both `Google` or `GitHub`:   
+Now, the following code will work when the user is signing in into your application with both Google or GitHub:
  
 [source,java]
 ----
@@ -1014,7 +1014,7 @@ Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures th
 
 ==== Additional JWT Authentication options
 
-If `client_secret_jwt`, `private_key_jwt` authentication methods are used or an `Apple` `post_jwt` method is used then the JWT signature algorithm, key identifier, audience, subject and issuer can be customized, for example:
+If `client_secret_jwt`, `private_key_jwt` authentication methods are used or an Apple `post_jwt` method is used then the JWT signature algorithm, key identifier, audience, subject and issuer can be customized, for example:
 
 [source,properties]
 ----
@@ -1366,7 +1366,7 @@ quarkus.oidc.authentication.extra-params.response_mode=query
 
 === Customize authentication error response
 
-If the user authentication has failed at the OpenId Connect Authorization endpoint, for example, due to an invalid scope or other invalid parameters included in the redirect to the provider, then the provider will redirect the user back to Quarkus not with the `code` but `error` and `error_description` parameters.
+If the user authentication has failed at the OpenID Connect Authorization endpoint, for example, due to an invalid scope or other invalid parameters included in the redirect to the provider, then the provider will redirect the user back to Quarkus not with the `code` but `error` and `error_description` parameters.
 
 In such cases HTTP `401` will be returned by default. However, you can instead request that a custom public error endpoint is called in order to return a user friendly HTML error page. Use `quarkus.oidc.authentication.error-path`, for example:
 
@@ -1388,7 +1388,7 @@ include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
-* xref:security-openid-connect-providers.adoc[Well Known OpenId Connect providers].
+* xref:security-openid-connect-providers.adoc[Well Known OpenID Connect providers].
 * xref:security-openid-connect-client.adoc[Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security.adoc#oidc-jwt-oauth2-comparison[Summary of Quarkus OIDC, JWT and OAuth2 features]

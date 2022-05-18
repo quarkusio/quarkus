@@ -290,6 +290,111 @@ public class CustomJsonbConfig {
 }
 ----
 
+[[links]]
+=== JSON Hypertext Application Language (HAL) support
+
+The https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL] standard is a simple format to represent web links. 
+
+To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-resteasy-jsonb` or the `quarkus-resteasy-jackson` extension.
+
+.Table Context object
+|===
+|GAV|Usage
+
+|`io.quarkus:quarkus-hal`
+|https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL]
+
+|===
+
+After adding the extensions, we can now annotate the REST resources to produce the media type `application/hal+json` (or use RestMediaType.APPLICATION_HAL_JSON). For example:
+
+[source,java]
+----
+@Path("/records")
+public class RecordsResource {
+
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON, "application/hal+json" })
+    @LinkResource(entityClassName = "org.acme.Record", rel = "list")
+    public List<TestRecord> getAll() {
+        // ...
+    }
+
+    @GET
+    @Path("/first")
+    @Produces({ MediaType.APPLICATION_JSON, "application/hal+json" })
+    @LinkResource(rel = "first")
+    public TestRecord getFirst() {
+        // ...
+    }
+}
+----
+
+Now, the endpoints `/records` and `/records/first` will accept the media type both `json` and `hal+json` to print the records in Hal format. 
+
+For example, if we invoke the `/records` endpoint using curl to return a list of records, the HAL format will look like as follows:
+
+[source,bash]
+----
+& curl -H "Accept:application/hal+json" -i localhost:8080/records
+{
+    "_embedded": {
+        "items": [
+            {
+                "id": 1,
+                "slug": "first",
+                "value": "First value",
+                "_links": {
+                    "list": {
+                        "href": "http://localhost:8081/records"
+                    },
+                    "first": {
+                        "href": "http://localhost:8081/records/first"
+                    }
+                }
+            },
+            {
+                "id": 2,
+                "slug": "second",
+                "value": "Second value",
+                "_links": {
+                    "list": {
+                        "href": "http://localhost:8081/records"
+                    },
+                    "first": {
+                        "href": "http://localhost:8081/records/first"
+                    }
+                }
+            }
+        ]
+    },
+    "_links": {
+        "list": {
+            "href": "http://localhost:8081/records"
+        }
+    }
+}
+----
+
+When we call a resource `/records/first` that returns only one instance, then the output is:
+
+[source,bash]
+----
+& curl -H "Accept:application/hal+json" -i localhost:8080/records/first
+{
+    "id": 1,
+    "slug": "first",
+    "value": "First value",
+    "_links": {
+        "list": {
+            "href": "http://localhost:8081/records"
+        },
+        "first": {
+            "href": "http://localhost:8081/records/first"
+        }
+    }
+}
+----
 
 == Creating a frontend
 

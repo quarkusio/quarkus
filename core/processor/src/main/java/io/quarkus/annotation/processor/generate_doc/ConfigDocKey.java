@@ -24,6 +24,7 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     private boolean withinAConfigGroup;
     // if a key is "quarkus.kubernetes.part-of", then the value of this would be "kubernetes"
     private String topLevelGrouping;
+    private boolean isEnum;
 
     public ConfigDocKey() {
     }
@@ -172,6 +173,14 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
 
     public String getTopLevelGrouping() {
         return topLevelGrouping;
+    }
+
+    public boolean isEnum() {
+        return isEnum;
+    }
+
+    public void setEnum(boolean anEnum) {
+        isEnum = anEnum;
     }
 
     @Override

@@ -63,30 +63,6 @@ public class HttpConfiguration {
     public int testSslPort;
 
     /**
-     * If this is true then the address, scheme etc will be set from headers forwarded by the proxy server, such as
-     * {@code X-Forwarded-For}. This should only be set if you are behind a proxy that sets these headers.
-     *
-     * @deprecated use quarkus.http.proxy.proxy-address-forwarding instead.
-     */
-    @Deprecated
-    @ConfigItem
-    public Optional<Boolean> proxyAddressForwarding;
-
-    /**
-     * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used.
-     * In case the not standard {@code X-Forwarded-For} header is enabled and detected on HTTP requests, the standard header has
-     * the precedence.
-     * Activating this together with {@code quarkus.http.proxy.allow-x-forwarded} has security implications as clients can forge
-     * requests with a forwarded header that is not overwritten by the proxy. Therefore proxies should strip unexpected
-     * `X-Forwarded` or `X-Forwarded-*` headers from the client.
-     *
-     * @deprecated use quarkus.http.proxy.allow-forwarded instead.
-     */
-    @Deprecated
-    @ConfigItem
-    public Optional<Boolean> allowForwarded;
-
-    /**
      * If insecure (i.e. http rather than https) requests are allowed. If this is {@code enabled}
      * then http works as normal. {@code redirect} will still open the http port, but
      * all requests will be redirected to the HTTPS port. {@code disabled} will prevent the HTTP
@@ -188,7 +164,7 @@ public class HttpConfiguration {
     /**
      * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "-1")
     public int acceptBacklog;
 
     /**

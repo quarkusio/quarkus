@@ -891,6 +891,7 @@ The following operators are supported in `is`/`case` block conditions:
 ==== Let Section
 
 This section allows you to define named local variables:
+
 [source,html]
 ----
 {#let myParent=order.item.parent isActive=false age=10} <1>
@@ -902,7 +903,18 @@ This section allows you to define named local variables:
 <1> The local variable is initialized with an expression that can also represent a <<literals,literal>>.
 <2> Keep in mind that the variable is not available outside the `let` section that defines it.
 
-The section tag is also registered under the `set` alias:
+If a key of a section parameter (aka the name of the local variable) ends with a `?` then the local variable is only set if the key without the `?` suffix resolves to `null` or _"not found"_:
+
+[source,html]
+----
+{#let enabled?=true} <1> <2>
+  {#if enabled}ON{/if} 
+{/let}
+----
+<1> `true` is effectively a _default value_ that is only used if the parent scope does not define `enabled` already.
+<2> `enabled?=true` is a short version of `enabled=enabled.or(true)`.
+
+This section tag is also registered under the `set` alias:
 
 [source,html]
 ----
@@ -960,7 +972,7 @@ This section might also come in handy when we'd like to avoid multiple expensive
 [[include_helper]]
 ==== Include Section
 
-This section can be used to include another template and possibly override some parts of the template (template inheritance).
+This section can be used to include another template and possibly override some parts of the template (see the _template inheritance_ below).
 
 .Simple Example
 [source,html]
@@ -978,7 +990,7 @@ This section can be used to include another template and possibly override some 
 <1> Include a template with id `foo`. The included template can reference data from the current context. 
 <2> It's also possible to define optional parameters that can be used in the included template.
 
-Template inheritance makes it possible to reuse template layouts.
+_Template inheritance_ makes it possible to reuse template layouts.
 
 .Template "base"
 [source,html]
@@ -994,7 +1006,7 @@ Template inheritance makes it possible to reuse template layouts.
 </html>
 ----
 <1> `insert` sections are used to specify parts that could be overridden by a template that includes the given template.
-<2> An `insert` section may define the default content that is rendered if not overridden. If no name parameter is supplied then the main block of the relevant `{#include}` section is used.
+<2> An `insert` section may define the default content that is rendered if not overridden. If there is no name supplied then the main block of the relevant `{#include}` section is used.
 
 .Template "detail"
 [source,html]
@@ -1012,28 +1024,10 @@ Template inheritance makes it possible to reuse template layouts.
 
 NOTE: Section blocks can also define an optional end tag - `{/title}`.
 
-==== Eval Section
-
-This section can be used to parse and evaluate a template dynamically.
-The behavior is very similar to the <<include_helper>> but:
-
-1. The template content is passed directly, i.e. not obtained via an `io.quarkus.qute.TemplateLocator`,
-2. It's not possible to override parts of the evaluated template.
-
-[source,html]
-----
-{#eval myData.template name='Mia' /} <1><2><3>
-----
-<1> The result of `myData.template` will be used as the template. The template is executed with the <<current_context_object>>, i.e. can reference data from the template it's included into.
-<2> It's also possible to define optional parameters that can be used in the evaluated template.
-<3> The content of the section is always ignored. 
-
-NOTE: The evaluated template is parsed and evaluated every time the section is executed. In other words, it's not possible to cache the parsed value to conserve resources and optimize the performance.
-
 [[user_tags]]
 ==== User-defined Tags
 
-User-defined tags can be used to include a tag template and optionally pass some parameters.
+User-defined tags can be used to include a _tag template_, optionally pass some arguments and possibly override some parts of the template.
 Let's suppose we have a tag template called `itemDetail.html`:
 
 [source]
@@ -1079,6 +1073,44 @@ By default, the tag template can reference data from the parent context.
 For example, the tag above could use the following expression `{items.size}`.
 However, sometimes it might be useful to disable this behavior and execute the tag as an _isolated_ template, i.e. without access to the context of the template that calls the tag.
 In this case, just add `_isolated` or `_isolated=true` argument to the call site, e.g. `{#itemDetail item showImage=true _isolated /}`.
+
+User tags can also make use of the template inheritance in the same way as regular `{#include}` sections do.
+
+.Tag `myTag`
+[source]
+----
+This is {#insert title}my title{/title}! <1>
+----
+<1> `insert` sections are used to specify parts that could be overridden by a template that includes the given template.
+
+.Tag Call Site
+[source,html]
+----
+<p>
+  {#myTag}
+    {title}my custom title{/title} <1>
+  {/myTag}
+</p>
+----
+<1> The result would be something like `<p>This is my custom title!</p>`.
+
+==== Eval Section
+
+This section can be used to parse and evaluate a template dynamically.
+The behavior is very similar to the <<include_helper>> but:
+
+1. The template content is passed directly, i.e. not obtained via an `io.quarkus.qute.TemplateLocator`,
+2. It's not possible to override parts of the evaluated template.
+
+[source,html]
+----
+{#eval myData.template name='Mia' /} <1><2><3>
+----
+<1> The result of `myData.template` will be used as the template. The template is executed with the <<current_context_object>>, i.e. can reference data from the template it's included into.
+<2> It's also possible to define optional parameters that can be used in the evaluated template.
+<3> The content of the section is always ignored. 
+
+NOTE: The evaluated template is parsed and evaluated every time the section is executed. In other words, it's not possible to cache the parsed value to conserve resources and optimize the performance.
 
 === Rendering Output
 
@@ -1353,6 +1385,19 @@ Note that sections can override names that would otherwise match a parameter dec
 <1> Validated against `org.acme.Foo`.
 <2> Not validated - `foo` is overridden in the loop section.
 
+A paramater declaration may specify the _default value_ after the key.
+The key and the default value are separated by an equals sign: `{@int age=10}`.
+The default value is used in the template if the parameter key resolves to `null` or is not found.
+
+For example, if there's a parameter declaration `{@String foo="Ping"}` and `foo` is not found then you can use `{foo}` and the output will be `Ping`.
+On the other hand, if the value is set (e.g. via `TemplateInstance.data("foo", "Pong")`) then the output of `{foo}` will be `Pong`.
+
+The type of a default value must be assignable to the type of the parameter declaration, i.e. the following parameter declaration is incorrect and results in a build failure: `{@org.acme.Foo foo=1}`.
+
+TIP: The default value is actually an <<expressions,expression>>. So the default value does not have to be a literal (such as `42` or `true`). For example, you can leverage the `@TemplateEnum` and specify an enum constant as a default value of a parameter declaration: `{@org.acme.MyEnum myEnum=MyEnum:FOO}`. However, the infix notation is not supported in default values.
+
+IMPORTANT: The type of a default value is not validated in <<standalone, Qute standalone>>.
+
 .More Parameter Declarations Examples 
 [source]
 ----
@@ -1360,11 +1405,13 @@ Note that sections can override names that would otherwise match a parameter dec
 {@java.util.List<String> strings} <2>
 {@java.util.Map<String,? extends Number> numbers} <3>
 {@java.util.Optional<?> param} <4>
+{@String name="Quarkus"} <5>
 ----
 <1> A primitive type.
 <2> `String` is replaced with `java.lang.String`: `{@java.util.List<java.lang.String> strings}`
 <3> The wildcard is ignored and the upper bound is used instead: `{@java.util.Map<String,Number>}`
 <4> The wildcard is ignored and the `java.lang.Object` is used instead: `{@java.util.Optional<java.lang.Object>}`
+<5> The type is `java.lang.String`, the key is `name` and the default value is `Quarkus`. 
  
 [[typesafe_templates]]
 === Type-safe Templates
@@ -2168,6 +2215,42 @@ public class MyBean {
 }
 ----
 <1> The annotation value is a locale tag string (IETF).
+
+==== Message Templates
+
+Every method of a message bundle interface must define a message template. The value is normally defined by `io.quarkus.qute.i18n.Message#value()`,
+but for convenience, there is also an option to define the value in a localized file.
+
+.Example of the Message Bundle Interface without the value
+[source,java]
+----
+import io.quarkus.qute.i18n.Message;
+import io.quarkus.qute.i18n.MessageBundle;
+
+@MessageBundle
+public interface AppMessages {
+
+    @Message <1>
+    String hello_name(String name);
+
+    @Message("Goodbye {name}!") <2>
+    String goodbye(String name);
+}
+----
+<1> The annotation value is not defined. In such a case, the value from supplementary localized file is taken.
+<2> The annotation value is defined and preferred to the value defined in the localized file.
+
+.Supplementary localized file
+[source,properties]
+----
+hello_name=Hello \
+   {name} and \
+   good morning!
+goodbye=Best regards, {name} <1>
+----
+<1> The value is ignored as `io.quarkus.qute.i18n.Message#value()` is always prioritized.
+
+Message templates are validated during the build. If a missing message template is detected, an exception is thrown and build fails.
 
 
 === Configuration Reference

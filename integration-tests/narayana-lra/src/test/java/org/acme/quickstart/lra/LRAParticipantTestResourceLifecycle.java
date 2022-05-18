@@ -30,7 +30,7 @@ public class LRAParticipantTestResourceLifecycle implements QuarkusTestResourceL
         Map<String, String> properties = new HashMap<>();
 
         coordinatorEndpoint = String.format("http://%s:%d/%s",
-                registry.getContainerIpAddress(),
+                registry.getHost(),
                 registry.getFirstMappedPort(),
                 LRAConstants.COORDINATOR_PATH_NAME);
 

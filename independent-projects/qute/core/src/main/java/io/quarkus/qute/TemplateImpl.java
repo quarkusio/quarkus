@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.jboss.logging.Logger;
 
 class TemplateImpl implements Template {
@@ -45,6 +46,16 @@ class TemplateImpl implements Template {
     @Override
     public List<Expression> getExpressions() {
         return root.getExpressions();
+    }
+
+    @Override
+    public Expression findExpression(Predicate<Expression> predicate) {
+        return root.findExpression(predicate);
+    }
+
+    @Override
+    public List<ParameterDeclaration> getParameterDeclarations() {
+        return root.getParameterDeclarations();
     }
 
     @Override

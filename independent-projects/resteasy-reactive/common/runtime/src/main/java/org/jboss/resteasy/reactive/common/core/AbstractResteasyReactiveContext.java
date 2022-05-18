@@ -138,7 +138,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 int pos = position;
                 position++; //increment before, as reset may reset it to zero
                 try {
-                    handlers[pos].handle((T) this);
+                    invokeHandler(pos);
                     if (suspended) {
                         synchronized (this) {
                             // as running is not volatile but instead read from inside the same monitor,
@@ -213,6 +213,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
             }
         }
+    }
+
+    protected void invokeHandler(int pos) throws Exception {
+        handlers[pos].handle((T) this);
     }
 
     protected void beginAsyncProcessing() {

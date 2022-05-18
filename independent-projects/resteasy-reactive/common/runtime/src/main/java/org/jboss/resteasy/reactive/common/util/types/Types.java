@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.common.util.types;
 
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -7,6 +9,8 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
+import org.jboss.resteasy.reactive.RestResponse;
 
 /**
  * Type conversions and generic type manipulations
@@ -166,6 +170,35 @@ public final class Types {
         } else {
             return EMPTY_TYPE_ARRAY;
         }
+    }
+
+    public static Type getEffectiveReturnType(Type returnType) {
+        if (returnType instanceof Class)
+            return returnType;
+        if (returnType instanceof ParameterizedType) {
+            ParameterizedType type = (ParameterizedType) returnType;
+            Type firstTypeArgument = type.getActualTypeArguments()[0];
+            if (type.getRawType() == CompletionStage.class) {
+                return getEffectiveReturnType(firstTypeArgument);
+            }
+            if (type.getRawType() == Uni.class) {
+                return getEffectiveReturnType(firstTypeArgument);
+            }
+            if (type.getRawType() == Multi.class) {
+                return getEffectiveReturnType(firstTypeArgument);
+            }
+            if (type.getRawType() == RestResponse.class) {
+                return getEffectiveReturnType(firstTypeArgument);
+            }
+            return returnType;
+        }
+        if (returnType instanceof WildcardType) {
+            Type[] bounds = ((WildcardType) returnType).getLowerBounds();
+            if (bounds.length > 0)
+                return getRawType(bounds[0]);
+            return getRawType(((WildcardType) returnType).getUpperBounds()[0]);
+        }
+        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }
 
     public static Class<?> getRawType(Type type) {

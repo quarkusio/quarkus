@@ -8,6 +8,8 @@ import org.jboss.logging.Logger;
 
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
@@ -31,9 +33,23 @@ public class PrometheusHandler implements Handler<RoutingContext> {
             response.setStatusCode(500)
                     .setStatusMessage("Unable to resolve Prometheus registry instance");
         } else {
-            response.putHeader("Content-Type", TextFormat.CONTENT_TYPE_004)
-                    .end(Buffer.buffer(registry.scrape()));
+            ManagedContext requestContext = Arc.container().requestContext();
+            if (requestContext.isActive()) {
+                doHandle(response);
+            } else {
+                requestContext.activate();
+                try {
+                    doHandle(response);
+                } finally {
+                    requestContext.terminate();
+                }
+            }
         }
+    }
+
+    private void doHandle(HttpServerResponse response) {
+        response.putHeader("Content-Type", TextFormat.CONTENT_TYPE_004)
+                .end(Buffer.buffer(registry.scrape()));
     }
 
     private void setup() {

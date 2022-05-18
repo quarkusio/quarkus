@@ -38,6 +38,9 @@ public class QuarkusCompiler implements Closeable {
     private static final Logger log = Logger.getLogger(QuarkusCompiler.class);
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile(" ");
 
+    private static final String JAVA_COMPILER_KEY = "java";
+    private static final String KOTLIN_COMPILER_KEY = "kotlin";
+
     private final List<CompilationProvider> compilationProviders;
     /**
      * map of compilation contexts to source directories
@@ -157,6 +160,7 @@ public class QuarkusCompiler implements Closeable {
                         + "'. It is advised that this module be compiled before launching dev mode");
                 return;
             }
+
             for (Path sourcePath : compilationUnit.getSourcePaths()) {
                 final String srcPathStr = sourcePath.toString();
                 if (this.compilationContexts.containsKey(srcPathStr)) {

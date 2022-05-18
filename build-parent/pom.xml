@@ -101,11 +101,11 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>17.0.1</keycloak.version>
+        <keycloak.version>18.0.0</keycloak.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
-
-        <unboundid-ldap.version>6.0.4</unboundid-ldap.version>
+        
+        <unboundid-ldap.version>6.0.5</unboundid-ldap.version>
 
         <assertj.version>3.22.0</assertj.version>
 
@@ -113,7 +113,7 @@
         <wiremock-maven-plugin.version>7.1.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.21.0</artemis.version>
+        <artemis.version>2.22.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -143,7 +143,7 @@
         <build-helper-plugin.version>1.9.1</build-helper-plugin.version>
         <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
         <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
-        <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
+         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
         <revapi.oldVersion>1.6.0.Final</revapi.oldVersion>
         <revapi.newVersion>${project.version}</revapi.newVersion>
         <!-- severity Possible values: equivalent, nonBreaking, potentiallyBreaking, breaking -->
@@ -365,8 +365,8 @@
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.activemq</groupId>
-                        <artifactId>artemis-server</artifactId>
+                       <groupId>org.apache.activemq</groupId>
+                       <artifactId>artemis-server</artifactId>
                     </exclusion>
                     <!-- Excluding the API jar as the impl jar also contains the API -->
                     <exclusion>
@@ -413,9 +413,7 @@
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m
-                            -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional}
-                        </argLine>
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional}</argLine>
                         <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
                         <trimStackTrace>false</trimStackTrace>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
@@ -504,9 +502,9 @@
                                             <exclude>org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec</exclude>
                                             <exclude>org.jboss.spec.javax.el:jboss-el-api_3.0_spec</exclude>
                                             <!-- except for these 2 for now as most of the RESTEasy optional artifacts depend on them
-                                             <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>
-                                             <exclude>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</exclude>
-                                             -->
+                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>
+                                            <exclude>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</exclude>
+                                            -->
                                             <exclude>jakarta.xml.bind:jakarta.xml.bind-api</exclude>
                                             <exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>
                                             <!-- Exclude javax dependencies in favor of Jakarta -->
@@ -677,7 +675,7 @@
                             <groupId>io.quarkus</groupId>
                             <version>${project.version}</version>
                         </dependency>
-                    </dependencies>
+                      </dependencies>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
@@ -1177,9 +1175,7 @@
                                 <configurationFile>
                                     <path>api-changes.xml</path>
                                     <roots>
-                                        <root>
-                                            versions/v${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}
-                                        </root>
+                                        <root>versions/v${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}</root>
                                     </roots>
                                 </configurationFile>
                             </analysisConfigurationFiles>
@@ -1191,8 +1187,7 @@
                             <failBuildOnProblemsFound>true</failBuildOnProblemsFound>
                             <checkDependencies>${revapi.checkdeps}</checkDependencies>
                             <ignoreSuggestionsFormat>xml</ignoreSuggestionsFormat>
-                            <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml
-                            </ignoreSuggestionsFile>
+                            <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml</ignoreSuggestionsFile>
                             <expandProperties>true</expandProperties>
                         </configuration>
                         <!-- Running two executions is a workaround to make sure 

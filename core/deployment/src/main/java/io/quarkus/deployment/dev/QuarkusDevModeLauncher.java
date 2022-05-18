@@ -147,15 +147,19 @@ public abstract class QuarkusDevModeLauncher {
             return (B) this;
         }
 
-        @SuppressWarnings("unchecked")
-        public B compilerOption(String option) {
-            compilerOptions.add(option);
+        public B compilerOptions(String name, List<String> options) {
+            compilerOptions.compute(name, (key, value) -> {
+                if (value == null) {
+                    return new HashSet<>(options);
+                }
+                value.addAll(options);
+                return value;
+            });
             return (B) this;
         }
 
-        @SuppressWarnings("unchecked")
-        public B compilerOptions(List<String> options) {
-            compilerOptions.addAll(options);
+        public B compilerOptions(Map<String, Set<String>> options) {
+            compilerOptions.putAll(options);
             return (B) this;
         }
 
@@ -286,7 +290,7 @@ public abstract class QuarkusDevModeLauncher {
     private String applicationName;
     private String applicationVersion;
     private String sourceEncoding;
-    private List<String> compilerOptions = new ArrayList<>(0);
+    private Map<String, Set<String>> compilerOptions = new HashMap<>(1);
     private List<String> compilerPluginArtifacts;
     private List<String> compilerPluginOptions;
     private String releaseJavaVersion;

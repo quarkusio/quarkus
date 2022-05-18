@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Represents an immutable template definition.
@@ -121,6 +122,13 @@ public interface Template {
     List<Expression> getExpressions();
 
     /**
+     *
+     * @param predicate
+     * @return the first expression matching the given predicate or {@code null} if no such expression is used in the template
+     */
+    Expression findExpression(Predicate<Expression> predicate);
+
+    /**
      * The id is unique for the engine instance.
      *
      * @return the generated id
@@ -141,5 +149,11 @@ public interface Template {
      * @return the template variant
      */
     Optional<Variant> getVariant();
+
+    /**
+     *
+     * @return an immutable list of parameter declarations
+     */
+    List<ParameterDeclaration> getParameterDeclarations();
 
 }

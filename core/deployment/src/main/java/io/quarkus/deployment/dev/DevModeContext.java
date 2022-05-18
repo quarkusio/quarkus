@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +51,7 @@ public class DevModeContext implements Serializable {
     // args of the main-method
     private String[] args;
 
-    private List<String> compilerOptions;
+    private Map<String, Set<String>> compilerOptions;
     private String releaseJavaVersion;
     private String sourceJavaVersion;
     private String targetJvmVersion;
@@ -138,11 +139,11 @@ public class DevModeContext implements Serializable {
         this.abortOnFailedStart = abortOnFailedStart;
     }
 
-    public List<String> getCompilerOptions() {
+    public Map<String, Set<String>> getCompilerOptions() {
         return compilerOptions;
     }
 
-    public void setCompilerOptions(List<String> compilerOptions) {
+    public void setCompilerOptions(Map<String, Set<String>> compilerOptions) {
         this.compilerOptions = compilerOptions;
     }
 
@@ -451,6 +452,6 @@ public class DevModeContext implements Serializable {
         if (compilerOptions == null) {
             return false;
         }
-        return compilerOptions.contains(ENABLE_PREVIEW_FLAG);
+        return compilerOptions.getOrDefault("java", Collections.emptySet()).contains(ENABLE_PREVIEW_FLAG);
     }
 }

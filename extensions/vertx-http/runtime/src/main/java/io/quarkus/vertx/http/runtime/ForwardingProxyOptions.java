@@ -28,10 +28,8 @@ public class ForwardingProxyOptions {
     }
 
     public static ForwardingProxyOptions from(HttpConfiguration httpConfiguration) {
-        final boolean proxyAddressForwarding = httpConfiguration.proxyAddressForwarding
-                .orElse(httpConfiguration.proxy.proxyAddressForwarding);
-        final boolean allowForwarded = httpConfiguration.allowForwarded
-                .orElse(httpConfiguration.proxy.allowForwarded);
+        final boolean proxyAddressForwarding = httpConfiguration.proxy.proxyAddressForwarding;
+        final boolean allowForwarded = httpConfiguration.proxy.allowForwarded;
         final boolean allowXForwarded = httpConfiguration.proxy.allowXForwarded.orElse(!allowForwarded);
 
         final boolean enableForwardedHost = httpConfiguration.proxy.enableForwardedHost;

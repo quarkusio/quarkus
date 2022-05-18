@@ -198,7 +198,7 @@ public final class LauncherUtil {
         private final Duration waitTime;
         private final CountDownLatch signal;
         private final AtomicReference<ListeningAddress> resultReference;
-        private final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://\\S*:(\\d+)");
+        private final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
         private final Pattern startedRegex = Pattern.compile(".*Quarkus .* started in \\d+.*s.*");
 
         public CaptureListeningDataReader(Path processOutput, Duration waitTime, CountDownLatch signal,

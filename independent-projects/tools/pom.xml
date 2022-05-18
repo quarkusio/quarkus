@@ -49,11 +49,11 @@
 
         <!-- Versions -->
         <assertj.version>3.22.0</assertj.version>
-        <jackson-bom.version>2.13.2.20220328</jackson-bom.version>
+        <jackson-bom.version>2.13.3</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <junit.version>5.8.2</junit.version>
         <commons-compress.version>1.21</commons-compress.version>
-        <jboss-logging.version>3.4.3.Final</jboss-logging.version>
+        <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <maven-core.version>3.8.4</maven-core.version>
         <mockito.version>4.5.1</mockito.version>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
@@ -372,6 +372,22 @@
             <activation>
                 <property>
                     <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>quick-build-docs</id>
+            <activation>
+                <property>
+                    <name>quicklyDocs</name>
                 </property>
             </activation>
             <properties>

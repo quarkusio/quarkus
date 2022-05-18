@@ -15,6 +15,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
@@ -261,13 +262,17 @@ public class DevServicesDatasourceProcessor {
                 prefix = prefix + dbName + ".";
             }
 
+            DevServicesDatasourceContainerConfig containerConfig = new DevServicesDatasourceContainerConfig(
+                    dataSourceBuildTimeConfig.devservices.imageName,
+                    dataSourceBuildTimeConfig.devservices.containerProperties,
+                    dataSourceBuildTimeConfig.devservices.properties,
+                    dataSourceBuildTimeConfig.devservices.port);
+
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(ConfigProvider.getConfig().getOptionalValue(prefix + "username", String.class),
                             ConfigProvider.getConfig().getOptionalValue(prefix + "password", String.class),
-                            Optional.ofNullable(dbName), dataSourceBuildTimeConfig.devservices.imageName,
-                            dataSourceBuildTimeConfig.devservices.containerProperties,
-                            dataSourceBuildTimeConfig.devservices.properties,
-                            dataSourceBuildTimeConfig.devservices.port, launchMode, globalDevServicesConfig.timeout);
+                            Optional.ofNullable(dbName), containerConfig,
+                            launchMode, globalDevServicesConfig.timeout);
 
             propertiesMap.put(prefix + "db-kind", dataSourceBuildTimeConfig.dbKind.orElse(null));
             String devServicesPrefix = prefix + "devservices.";

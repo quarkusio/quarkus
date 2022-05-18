@@ -20,6 +20,7 @@ The Quarkus CLI is available in several developer-oriented package managers such
 * https://sdkman.io[SDKMAN!]
 * https://brew.sh[Homebrew]
 * https://community.chocolatey.org/packages/quarkus[Chocolatey]
+* https://scoop.sh[Scoop]
 
 If you already use (or want to use) one of these tools, it is the simplest way to install the Quarkus CLI and keep it updated.
 
@@ -30,6 +31,7 @@ Choose the alternative that is the most practical for you:
 * SDKMAN! - for Linux and macOS
 * Homebrew - for Linux and macOS
 * Chocolatey - for Windows
+* Scoop - for Windows
 
 [role="primary asciidoc-tabs-sync-jbang"]
 .JBang
@@ -214,6 +216,35 @@ You can upgrade the Quarkus CLI with:
 [source,shell]
 ----
 choco upgrade quarkus
+----
+****
+
+[role="secondary asciidoc-tabs-sync-scoop"]
+.Scoop
+****
+https://scoop.sh[Scoop] is a package manager for Windows.
+You can use Scoop to install (and update) the Quarkus CLI.
+[NOTE]
+====
+Make sure you have a JDK installed before installing the Quarkus CLI.
+You can install a JDK with `scoop install openjdk17` for Java 17 or `scoop install openjdk11` for Java 11.
+====
+To install the Quarkus CLI using Scoop, run the following command:
+[source,shell]
+----
+scoop install quarkus-cli
+----
+It will install the latest version of the Quarkus CLI.
+Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
+[source,shell,subs=attributes+]
+----
+quarkus --version
+{quarkus-version}
+----
+You can upgrade the Quarkus CLI with:
+[source,shell]
+----
+scoop update quarkus-cli
 ----
 ****
 

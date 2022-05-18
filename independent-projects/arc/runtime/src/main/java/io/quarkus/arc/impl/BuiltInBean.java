@@ -18,4 +18,15 @@ public abstract class BuiltInBean<T> implements InjectableBean<T> {
     public T create(CreationalContext<T> creationalContext) {
         return get(creationalContext);
     }
+
+    @Override
+    public Kind getKind() {
+        return Kind.BUILTIN;
+    }
+
+    @Override
+    public String toString() {
+        return Beans.toString(this);
+    }
+
 }

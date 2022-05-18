@@ -29,7 +29,7 @@ public final class Types {
         Set<Type> types = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
 
-        if (typeParameters.isEmpty() || !typeParameters.stream().allMatch(resolvedTypeParameters::containsKey)) {
+        if (typeParameters.isEmpty() || !resolvedTypeParameters.keySet().containsAll(typeParameters)) {
             // Not a parameterized type or a raw type
             types.add(Type.create(classInfo.name(), Kind.CLASS));
         } else {
@@ -128,15 +128,41 @@ public final class Types {
         return false;
     }
 
-    static boolean isAssignableFrom(Type type1, Type type2, IndexView index) {
+    static boolean isAssignableFrom(Type type1, Type type2, IndexView index, Map<DotName, AssignableInfo> assignableCache) {
         // TODO consider type params in assignability rules
         if (type1.kind() == Kind.ARRAY && type2.kind() == Kind.ARRAY) {
-            return isAssignableFrom(type1.asArrayType().component(), type2.asArrayType().component(), index);
+            return isAssignableFrom(type1.asArrayType().component(), type2.asArrayType().component(), index, assignableCache);
         }
-        return Types.isAssignableFrom(box(type1).name(), box(type2).name(), index);
+        return Types.isAssignableFrom(box(type1).name(), box(type2).name(), index, assignableCache);
     }
 
-    static boolean isAssignableFrom(DotName class1, DotName class2, IndexView index) {
+    static class AssignableInfo {
+
+        final Set<DotName> subclasses;
+        final Set<DotName> implementors;
+        final Set<DotName> extendingInterfaces;
+
+        public AssignableInfo(Collection<ClassInfo> subclasses, Collection<ClassInfo> implementors,
+                Set<DotName> extendingInterfaces) {
+            this.subclasses = new HashSet<>();
+            for (ClassInfo subclass : subclasses) {
+                this.subclasses.add(subclass.name());
+            }
+            this.implementors = new HashSet<>();
+            for (ClassInfo implementor : implementors) {
+                this.implementors.add(implementor.name());
+            }
+            this.extendingInterfaces = extendingInterfaces;
+        }
+
+        boolean isAssignableFrom(DotName clazz) {
+            return subclasses.contains(clazz) || implementors.contains(clazz) || extendingInterfaces.contains(clazz);
+        }
+
+    }
+
+    static boolean isAssignableFrom(DotName class1, DotName class2, IndexView index,
+            Map<DotName, AssignableInfo> assignableCache) {
         // java.lang.Object is assignable from any type
         if (class1.equals(DotNames.OBJECT)) {
             return true;
@@ -145,18 +171,13 @@ public final class Types {
         if (class1.equals(class2)) {
             return true;
         }
-        // type1 is a superclass
-        Set<DotName> assignables = new HashSet<>();
-        Collection<ClassInfo> subclasses = index.getAllKnownSubclasses(class1);
-        for (ClassInfo subclass : subclasses) {
-            assignables.add(subclass.name());
+        AssignableInfo assignableInfo = assignableCache.get(class1);
+        if (assignableInfo == null) {
+            assignableInfo = new AssignableInfo(index.getAllKnownSubclasses(class1), index.getAllKnownImplementors(class1),
+                    getAllInterfacesExtending(class1, index));
+            assignableCache.put(class1, assignableInfo);
         }
-        Collection<ClassInfo> implementors = index.getAllKnownImplementors(class1);
-        for (ClassInfo implementor : implementors) {
-            assignables.add(implementor.name());
-        }
-        assignables.addAll(getAllInterfacesExtending(class1, index));
-        return assignables.contains(class2);
+        return assignableInfo.isAssignableFrom(class2);
     }
 
     static Type box(Type type) {
@@ -192,7 +213,9 @@ public final class Types {
     private static Set<DotName> getAllInterfacesExtending(DotName target, IndexView index) {
         Set<DotName> ret = new HashSet<>();
         for (ClassInfo clazz : index.getKnownClasses()) {
-            if (!Modifier.isInterface(clazz.flags())) {
+            if (!Modifier.isInterface(clazz.flags())
+                    || clazz.isAnnotation()
+                    || clazz.isEnum()) {
                 continue;
             }
             if (clazz.interfaceNames().contains(target)) {

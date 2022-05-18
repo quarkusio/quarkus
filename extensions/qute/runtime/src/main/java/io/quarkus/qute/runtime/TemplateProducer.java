@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AnnotatedParameter;
@@ -22,6 +23,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Location;
+import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstanceBase;
@@ -115,6 +117,16 @@ public class TemplateProducer {
         @Override
         public List<Expression> getExpressions() {
             throw new UnsupportedOperationException("Injected templates do not support getExpressions()");
+        }
+
+        @Override
+        public Expression findExpression(Predicate<Expression> predicate) {
+            throw new UnsupportedOperationException("Injected templates do not support findExpression()");
+        }
+
+        @Override
+        public List<ParameterDeclaration> getParameterDeclarations() {
+            throw new UnsupportedOperationException("Injected templates do not support getParameterDeclarations()");
         }
 
         @Override

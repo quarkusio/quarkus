@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 
 import javax.enterprise.event.Event;
 
+import org.crac.Resource;
 import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
@@ -511,7 +512,6 @@ public class VertxHttpRecorder {
             root = mainRouter;
         }
 
-        warnIfDeprecatedHttpConfigPropertiesPresent(httpConfiguration);
         warnIfProxyAddressForwardingAllowedWithMultipleHeaders(httpConfiguration);
         ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(httpConfiguration);
         if (forwardingProxyOptions.proxyAddressForwarding) {
@@ -602,25 +602,10 @@ public class VertxHttpRecorder {
         rootHandler = root;
     }
 
-    private void warnIfDeprecatedHttpConfigPropertiesPresent(HttpConfiguration httpConfiguration) {
-        if (httpConfiguration.proxyAddressForwarding.isPresent()) {
-            LOGGER.warn(
-                    "`quarkus.http.proxy-address-forwarding` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `quarkus.http.proxy.proxy-address-forwarding`");
-        }
-
-        if (httpConfiguration.allowForwarded.isPresent()) {
-            LOGGER.warn(
-                    "`quarkus.http.allow-forwarded` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `quarkus.http.proxy.allow-forwarded`");
-        }
-    }
-
     private void warnIfProxyAddressForwardingAllowedWithMultipleHeaders(HttpConfiguration httpConfiguration) {
         ProxyConfig proxyConfig = httpConfiguration.proxy;
-        boolean proxyAddressForwardingActivated = httpConfiguration.proxyAddressForwarding
-                .orElse(proxyConfig.proxyAddressForwarding);
-        boolean forwardedActivated = httpConfiguration.allowForwarded.orElse(proxyConfig.allowForwarded);
+        boolean proxyAddressForwardingActivated = proxyConfig.proxyAddressForwarding;
+        boolean forwardedActivated = proxyConfig.allowForwarded;
         boolean xForwardedActivated = httpConfiguration.proxy.allowXForwarded.orElse(!forwardedActivated);
 
         if (proxyAddressForwardingActivated && forwardedActivated && xForwardedActivated) {
@@ -1039,7 +1024,7 @@ public class VertxHttpRecorder {
         return new GracefulShutdownFilter();
     }
 
-    private static class WebDeploymentVerticle extends AbstractVerticle {
+    private static class WebDeploymentVerticle extends AbstractVerticle implements Resource {
 
         private HttpServer httpServer;
         private HttpServer httpsServer;
@@ -1065,6 +1050,7 @@ public class VertxHttpRecorder {
             this.insecureRequests = insecureRequests;
             this.quarkusConfig = quarkusConfig;
             this.connectionCount = connectionCount;
+            org.crac.Core.getGlobalContext().register(this);
         }
 
         @Override
@@ -1174,60 +1160,63 @@ public class VertxHttpRecorder {
                     }
                 });
             }
-            httpServer.listen(options.getPort(), options.getHost(), event -> {
-                if (event.cause() != null) {
-                    startFuture.fail(event.cause());
-                } else {
-                    // Port may be random, so set the actual port
-                    int actualPort = event.result().actualPort();
-
-                    if (https) {
-                        actualHttpsPort = actualPort;
+            httpServer.listen(options.getPort(), options.getHost(), new Handler<>() {
+                @Override
+                public void handle(AsyncResult<HttpServer> event) {
+                    if (event.cause() != null) {
+                        startFuture.fail(event.cause());
                     } else {
-                        actualHttpPort = actualPort;
-                    }
-                    if (remainingCount.decrementAndGet() == 0) {
-                        //make sure we only set the properties once
-                        if (actualPort != options.getPort()) {
-                            // Override quarkus.http(s)?.(test-)?port
-                            String schema;
-                            if (https) {
-                                clearHttpsProperty = true;
-                                schema = "https";
-                            } else {
-                                clearHttpProperty = true;
-                                actualHttpPort = actualPort;
-                                schema = "http";
-                            }
-                            portPropertiesToRestore = new HashMap<>();
-                            String portPropertyValue = String.valueOf(actualPort);
-                            //we always set the .port property, even if we are in test mode, so this will always
-                            //reflect the current port
-                            String portPropertyName = "quarkus." + schema + ".port";
-                            String prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
-                            if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
-                                portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
-                            }
-                            if (launchMode == LaunchMode.TEST) {
-                                //we also set the test-port property in a test
-                                String testPropName = "quarkus." + schema + ".test-port";
-                                String prevTestPropPrevValue = System.setProperty(testPropName, portPropertyValue);
-                                if (!Objects.equals(prevTestPropPrevValue, portPropertyValue)) {
-                                    portPropertiesToRestore.put(testPropName, prevTestPropPrevValue);
+                        // Port may be random, so set the actual port
+                        int actualPort = event.result().actualPort();
+
+                        if (https) {
+                            actualHttpsPort = actualPort;
+                        } else {
+                            actualHttpPort = actualPort;
+                        }
+                        if (remainingCount.decrementAndGet() == 0) {
+                            //make sure we only set the properties once
+                            if (actualPort != options.getPort()) {
+                                // Override quarkus.http(s)?.(test-)?port
+                                String schema;
+                                if (https) {
+                                    clearHttpsProperty = true;
+                                    schema = "https";
+                                } else {
+                                    clearHttpProperty = true;
+                                    actualHttpPort = actualPort;
+                                    schema = "http";
                                 }
-                            }
-                            if (launchMode.isDevOrTest()) {
-                                // set the profile property as well to make sure we don't have any inconsistencies
-                                portPropertyName = propertyWithProfilePrefix(portPropertyName);
-                                prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
+                                portPropertiesToRestore = new HashMap<>();
+                                String portPropertyValue = String.valueOf(actualPort);
+                                //we always set the .port property, even if we are in test mode, so this will always
+                                //reflect the current port
+                                String portPropertyName = "quarkus." + schema + ".port";
+                                String prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
                                 if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
                                     portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
                                 }
+                                if (launchMode == LaunchMode.TEST) {
+                                    //we also set the test-port property in a test
+                                    String testPropName = "quarkus." + schema + ".test-port";
+                                    String prevTestPropPrevValue = System.setProperty(testPropName, portPropertyValue);
+                                    if (!Objects.equals(prevTestPropPrevValue, portPropertyValue)) {
+                                        portPropertiesToRestore.put(testPropName, prevTestPropPrevValue);
+                                    }
+                                }
+                                if (launchMode.isDevOrTest()) {
+                                    // set the profile property as well to make sure we don't have any inconsistencies
+                                    portPropertyName = propertyWithProfilePrefix(portPropertyName);
+                                    prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
+                                    if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
+                                        portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
+                                    }
+                                }
                             }
+                            startFuture.complete(null);
                         }
-                        startFuture.complete(null);
-                    }
 
+                    }
                 }
             });
         }
@@ -1293,6 +1282,24 @@ public class VertxHttpRecorder {
 
         private String propertyWithProfilePrefix(String portPropertyName) {
             return "%" + launchMode.getDefaultProfile() + "." + portPropertyName;
+        }
+
+        @Override
+        public void beforeCheckpoint(org.crac.Context<? extends Resource> context) throws Exception {
+            Promise<Void> p = Promise.promise();
+            stop(p);
+            CountDownLatch latch = new CountDownLatch(1);
+            p.future().onComplete(event -> latch.countDown());
+            latch.await();
+        }
+
+        @Override
+        public void afterRestore(org.crac.Context<? extends Resource> context) throws Exception {
+            Promise<Void> p = Promise.promise();
+            start(p);
+            CountDownLatch latch = new CountDownLatch(1);
+            p.future().onComplete(event -> latch.countDown());
+            latch.await();
         }
     }
 

@@ -679,6 +679,11 @@ Testing your `quarkus-oidc` `service` application with `OidcWiremockTestResource
 If there is an immediate need for a test to define Wiremock stubs not currently supported by `OidcWiremockTestResource`
 one can do so via a `WireMockServer` instance injected into the test class, for example:
 
+[NOTE]
+====
+`OidcWiremockTestResource` does not work with `@QuarkusIntegrationTest` against Docker containers, because the Wiremock server is running in the JVM running the test, which cannot be accessed from the Docker container running the Quarkus application.
+====
+
 [source, java]
 ----
 package io.quarkus.it.keycloak;

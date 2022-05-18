@@ -36,7 +36,7 @@ public class KafkaSaslTestResource implements QuarkusTestResourceLifecycleManage
         //Start kafka container
         kafka = new StrimziKafkaContainer()
                 .withBootstrapServers(
-                        c -> String.format("SASL_PLAINTEXT://%s:%s", c.getContainerIpAddress(), c.getMappedPort(KAFKA_PORT)))
+                        c -> String.format("SASL_PLAINTEXT://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)))
                 .withPort(KAFKA_PORT)
                 .withServerProperties(MountableFile.forClasspathResource("kafkaServer.properties"))
                 .withCopyFileToContainer(MountableFile.forClasspathResource("krb5KafkaBroker.conf"), "/etc/krb5.conf")

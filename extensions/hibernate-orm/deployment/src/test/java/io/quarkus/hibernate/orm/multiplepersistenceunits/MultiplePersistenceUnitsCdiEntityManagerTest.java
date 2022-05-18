@@ -1,10 +1,14 @@
 package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import javax.enterprise.context.ContextNotActiveException;
+import javax.enterprise.context.control.ActivateRequestContext;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
+import javax.persistence.TransactionRequiredException;
 import javax.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
@@ -39,7 +43,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
 
     @Test
     @Transactional
-    public void testDefault() {
+    public void defaultEntityManagerInTransaction() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
         defaultEntityManager.persist(defaultEntity);
 
@@ -48,8 +52,33 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     }
 
     @Test
+    @ActivateRequestContext
+    public void defaultEntityManagerInRequestNoTransaction() {
+        // Reads are allowed
+        assertThatCode(() -> defaultEntityManager.createQuery("select count(*) from DefaultEntity"))
+                .doesNotThrowAnyException();
+        // Writes are not
+        DefaultEntity defaultEntity = new DefaultEntity("default");
+        assertThatThrownBy(() -> defaultEntityManager.persist(defaultEntity))
+                .isInstanceOf(TransactionRequiredException.class)
+                .hasMessageContaining(
+                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+    }
+
+    @Test
+    public void defaultEntityManagerNoRequestNoTransaction() {
+        DefaultEntity defaultEntity = new DefaultEntity("default");
+        assertThatThrownBy(() -> defaultEntityManager.persist(defaultEntity))
+                .isInstanceOf(ContextNotActiveException.class)
+                .hasMessageContainingAll(
+                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Consider adding @Transactional to your method to automatically activate a transaction",
+                        "@ActivateRequestContext if you have valid reasons not to use transactions");
+    }
+
+    @Test
     @Transactional
-    public void testUser() {
+    public void usersEntityManagerInTransaction() {
         User user = new User("gsmet");
         usersEntityManager.persist(user);
 
@@ -58,13 +87,63 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     }
 
     @Test
+    @ActivateRequestContext
+    public void usersEntityManagerInRequestNoTransaction() {
+        // Reads are allowed
+        assertThatCode(() -> usersEntityManager.createQuery("select count(*) from User"))
+                .doesNotThrowAnyException();
+        // Writes are not
+        User user = new User("gsmet");
+        assertThatThrownBy(() -> usersEntityManager.persist(user))
+                .isInstanceOf(TransactionRequiredException.class)
+                .hasMessageContaining(
+                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+    }
+
+    @Test
+    public void usersEntityManagerNoRequestNoTransaction() {
+        User user = new User("gsmet");
+        assertThatThrownBy(() -> usersEntityManager.persist(user))
+                .isInstanceOf(ContextNotActiveException.class)
+                .hasMessageContainingAll(
+                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Consider adding @Transactional to your method to automatically activate a transaction",
+                        "@ActivateRequestContext if you have valid reasons not to use transactions");
+    }
+
+    @Test
     @Transactional
-    public void testPlane() {
+    public void inventoryEntityManagerInTransaction() {
         Plane plane = new Plane("Airbus A380");
         inventoryEntityManager.persist(plane);
 
         Plane savedPlane = inventoryEntityManager.find(Plane.class, plane.getId());
         assertEquals(plane.getName(), savedPlane.getName());
+    }
+
+    @Test
+    @ActivateRequestContext
+    public void inventoryEntityManagerInRequestNoTransaction() {
+        // Reads are allowed
+        assertThatCode(() -> inventoryEntityManager.createQuery("select count(*) from Plane"))
+                .doesNotThrowAnyException();
+        // Writes are not
+        Plane plane = new Plane("Airbus A380");
+        assertThatThrownBy(() -> inventoryEntityManager.persist(plane))
+                .isInstanceOf(TransactionRequiredException.class)
+                .hasMessageContaining(
+                        "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
+    }
+
+    @Test
+    public void inventoryEntityManagerNoRequestNoTransaction() {
+        Plane plane = new Plane("Airbus A380");
+        assertThatThrownBy(() -> inventoryEntityManager.persist(plane))
+                .isInstanceOf(ContextNotActiveException.class)
+                .hasMessageContainingAll(
+                        "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
+                        "Consider adding @Transactional to your method to automatically activate a transaction",
+                        "@ActivateRequestContext if you have valid reasons not to use transactions");
     }
 
     @Test

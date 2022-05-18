@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.ServiceLoader;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +25,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.utilities.OS;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class LauncherUtil {
@@ -98,9 +98,7 @@ public final class LauncherUtil {
             int exit = quarkusProcess.exitValue();
             String message = "Unable to successfully launch process '" + quarkusProcess.pid() + "'. Exit code is: '"
                     + exit + "'.";
-            String osName = System.getProperty("os.name", "generic").toLowerCase(Locale.ROOT);
-            boolean isMac = osName.contains("mac") || osName.contains("darwin");
-            if (isMac && exit == 126) {
+            if (OS.determineOS().equals(OS.MAC) && exit == 126) {
                 message += System.lineSeparator()
                         + "This may be caused by building the native binary in a Linux container while the host is macOS.";
             }

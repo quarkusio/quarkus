@@ -243,6 +243,7 @@ public class QuarkusDev extends QuarkusTask {
         return compilerArgs;
     }
 
+    @Internal
     public List<String> getCompilerArgs() {
         return getCompilerArguments().get();
     }

@@ -2,7 +2,7 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       discovery.type: "single-node"

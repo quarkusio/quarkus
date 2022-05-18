@@ -184,6 +184,7 @@
                                     <run>
                                         <env>
                                             <discovery.type>single-node</discovery.type>
+                                            <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
                                         </env>
                                         <ports>
                                             <port>9200:9200</port>

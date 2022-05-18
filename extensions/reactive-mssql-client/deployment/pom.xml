@@ -114,8 +114,7 @@
                 </plugins>
             </build>
         </profile>
-
-
+        
         <profile>
             <id>docker-mssql</id>
             <activation>

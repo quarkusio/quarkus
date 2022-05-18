@@ -104,7 +104,7 @@
         <keycloak.version>18.0.0</keycloak.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.version}-legacy</keycloak.docker.legacy.image>
-        
+
         <unboundid-ldap.version>6.0.5</unboundid-ldap.version>
 
         <assertj.version>3.22.0</assertj.version>
@@ -143,7 +143,7 @@
         <build-helper-plugin.version>1.9.1</build-helper-plugin.version>
         <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
         <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
-         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
+        <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
         <revapi.oldVersion>1.6.0.Final</revapi.oldVersion>
         <revapi.newVersion>${project.version}</revapi.newVersion>
         <!-- severity Possible values: equivalent, nonBreaking, potentiallyBreaking, breaking -->
@@ -365,8 +365,8 @@
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>
-                       <groupId>org.apache.activemq</groupId>
-                       <artifactId>artemis-server</artifactId>
+                        <groupId>org.apache.activemq</groupId>
+                        <artifactId>artemis-server</artifactId>
                     </exclusion>
                     <!-- Excluding the API jar as the impl jar also contains the API -->
                     <exclusion>
@@ -675,7 +675,7 @@
                             <groupId>io.quarkus</groupId>
                             <version>${project.version}</version>
                         </dependency>
-                      </dependencies>
+                    </dependencies>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
@@ -1240,7 +1240,7 @@
             <properties>
                 <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
                 <volume.access.modifier></volume.access.modifier>
-                <!-- An ARM image for db2 isn't available, but if we request the amd64 one it all works fine -->
+                <!-- An ARM image for db2 isn't available, but if we explicitly request the amd64 one it all works fine -->
                 <db2.image.platform>linux/amd64</db2.image.platform>
                 <!-- See
      https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.

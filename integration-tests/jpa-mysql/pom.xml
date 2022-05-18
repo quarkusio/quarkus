@@ -166,10 +166,6 @@
                                     <name>healthcheck-${mysql.image}</name>
                                     <alias>quarkus-test-mysql</alias>
                                     <build>
-                                        <createImageOptions>
-                                            <!--                                                                                  We need to explicitly set the platform for the docker image or we get a 404 -->
-                                            <platform>${db2.image.platform}</platform>
-                                        </createImageOptions>
                                         <from>${mysql.image}</from>
                                         <healthCheck>
                                             <!-- The exact values for these aren't very important, but it is important they are there -->
